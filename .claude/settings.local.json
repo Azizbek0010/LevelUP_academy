@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git -C \"D:\Все\Рабочи стол\LevelUp Academy\" pull --ff-only",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "cd \"D:\Все\Рабочи стол\LevelUp Academy\" && python scripts/update-done.py",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"D:\Все\Рабочи стол\LevelUp Academy\" && python -c \"import re,sys;sys.stdout.reconfigure(encoding='utf-8');c=open(sys.argv[1],'r',encoding='utf-8').read();m=re.search(r'git(\s+\S+)*\s+push\b',c);print('PUSH' if m else 'NO')\" 2>/dev/null && (cd \"D:\Все\Рабочи стол\LevelUp Academy\" && python scripts/update-done.py && git add done.md && git commit -m 'chore: auto-update done.md' --no-verify 2>/dev/null && git push 2>/dev/null) || true",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "\"C:\Users\user\.claude\mcp-servers\telegram-mcp\.venv\Scripts\python.exe\" \"D:\Все\Рабочи стол\LevelUp Academy\.claude\hooks\tg-push-notify.py\"",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
