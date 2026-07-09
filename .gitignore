@@ -16,3 +16,15 @@ coverage/
 __pycache__/
 *.pyc
 .env.*
+dist/
+build/
+coverage/
+__pycache__/
+*.pyc
+.env.*
+dist/
+build/
+coverage/
+__pycache__/
+*.pyc
+.env.*
