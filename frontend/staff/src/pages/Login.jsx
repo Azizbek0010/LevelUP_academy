@@ -29,7 +29,10 @@ function LoginForm({ onForgot }) {
       await login(email, password);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.status === 401 ? 'Неверный email или пароль' : err.message);
+      if (err.status === 401) setError('Неверный email или пароль');
+      else if (err.status === 429) setError('Слишком много попыток — попробуйте позже');
+      else if (err.status === 422) setError('Введите email и пароль');
+      else setError(err.message || 'Не удалось войти');
     } finally { setBusy(false); }
   };
 
@@ -48,18 +51,20 @@ function LoginForm({ onForgot }) {
   return (
     <>
       <h1 className="text-2xl font-bold">Вход в панель</h1>
-      <p className="text-sm opacity-60 mb-6">Super Admin / Администратор / Ментор</p>
+      <p className="text-sm opacity-60 mb-6">Super Admin / Администратор / Ментор / Методист</p>
       {error && <div role="alert" className="alert alert-error text-sm py-2 mb-4"><span>{error}</span></div>}
 
       <form onSubmit={onSubmit} className="space-y-3">
         <label className="form-control w-full">
           <span className="label-text mb-1">Email</span>
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+          <input type="email" required autoFocus autoComplete="username"
+            value={email} onChange={(e) => setEmail(e.target.value)}
             placeholder="you@gmail.com" className="input input-bordered w-full" />
         </label>
         <label className="form-control w-full">
           <span className="label-text mb-1">Пароль</span>
-          <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+          <input type="password" required autoComplete="current-password"
+            value={password} onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••" className="input input-bordered w-full" />
         </label>
         <button type="submit" className="btn btn-primary w-full" disabled={busy}>
@@ -123,7 +128,7 @@ function ForgotForm({ onBack }) {
       {stage === 'request' && (
         <form onSubmit={sendCode} className="space-y-3 mt-4">
           <p className="text-sm opacity-60">Укажите email — пришлём 6-значный код на почту.</p>
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+          <input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)}
             placeholder="you@gmail.com" className="input input-bordered w-full" />
           <button className="btn btn-primary w-full" disabled={busy}>
             {busy ? <span className="loading loading-spinner loading-sm" /> : 'Отправить код'}
@@ -136,10 +141,10 @@ function ForgotForm({ onBack }) {
           <p className="text-sm opacity-60">
             Код отправлен на <b>{email}</b> (проверьте почту, в т.ч. «Спам»). Введите код и новый пароль.
           </p>
-          <input inputMode="numeric" maxLength={6} required value={otp}
+          <input inputMode="numeric" maxLength={6} required autoComplete="one-time-code" value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
             placeholder="Код из письма (6 цифр)" className="input input-bordered w-full tracking-widest" />
-          <input type="password" required minLength={8} value={newPassword}
+          <input type="password" required minLength={8} autoComplete="new-password" value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="Новый пароль (мин. 8)" className="input input-bordered w-full" />
           <button className="btn btn-primary w-full" disabled={busy}>
@@ -170,7 +175,7 @@ export default function Login() {
         <img src="/logo-white.svg" alt="LevelUp Academy" className="h-10 w-auto self-start" />
         <div>
           <h2 className="text-3xl font-bold leading-tight">Панель управления</h2>
-          <p className="opacity-60 mt-2 max-w-sm">Super Admin, Администратор и Ментор — управляйте своей организацией из одной панели.</p>
+          <p className="opacity-60 mt-2 max-w-sm">Super Admin, Администратор, Ментор и Методист — управляйте своей организацией из одной панели.</p>
         </div>
         <div className="text-xs opacity-40">LevelUp Academy · SaaS</div>
       </div>
