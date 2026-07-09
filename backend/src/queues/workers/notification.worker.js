@@ -1,0 +1,72 @@
+import { Worker } from 'bullmq';
+import { redisConnection } from '../../config/redis.js';
+import { pool } from '../../config/db.js';
+import { logger } from '../../config/logger.js';
+import { bot } from '../../modules/telegram/bot.js';
+
+const HANDLERS = {
+  'coins.changed': async ({ studentId, amount, reason }) => {
+    const chatIds = await resolveChatIds(studentId, ['student', 'parent']);
+    const sign = amount > 0 ? '+' : '';
+    await sendToAll(chatIds, `🪙 Coins: ${sign}${amount}\nПричина: ${reason}`);
+  },
+  'payment.received': async ({ studentId, amount }) => {
+    const chatIds = await resolveChatIds(studentId, ['parent']);
+    await sendToAll(chatIds, `✅ Оплата принята: ${fmt(amount)} сум`);
+  },
+  'debt.overdue': async ({ studentId, amount, dueDate }) => {
+    const chatIds = await resolveChatIds(studentId, ['parent']);
+    await sendToAll(chatIds, `⚠️ Просрочен платёж ${fmt(amount)} сум (срок: ${dueDate})`);
+  },
+  'homework.due': async ({ studentId, title, deadline }) => {
+    const chatIds = await resolveChatIds(studentId, ['student']);
+    await sendToAll(chatIds, `📚 Дедлайн завтра: «${title}» до ${deadline}`);
+  },
+};
+
+export const notificationWorker = new Worker(
+  'notifications',
+  async (job) => {
+    const handler = HANDLERS[job.name];
+    if (!handler) throw new Error(`Unknown notification type: ${job.name}`);
+    await handler(job.data);
+  },
+  // limiter: Telegram Bot API ≈ 30 msg/sec — держимся ниже
+  { connection: redisConnection, concurrency: 5, limiter: { max: 25, duration: 1000 } },
+);
+
+notificationWorker.on('failed', (job, err) => {
+  logger.error({ jobId: job?.id, name: job?.name, err }, 'Notification job failed');
+});
+
+// без слушателя 'error' EventEmitter бросает синхронно → обрыв Redis валит worker-процесс
+notificationWorker.on('error', (err) => {
+  logger.error({ err }, 'Notification worker redis error');
+});
+
+async function resolveChatIds(studentId, roles) {
+  const { rows } = await pool.query(
+    `SELECT ta.tg_chat_id
+       FROM telegram_accounts ta
+       JOIN users u ON u.id = ta.user_id
+  LEFT JOIN student_profiles sp ON sp.parent_id = ta.user_id
+      WHERE (ta.user_id = $1 AND 'student' = ANY($2))
+         OR (sp.user_id = $1 AND 'parent'  = ANY($2))`,
+    [studentId, roles],
+  );
+  return rows.map((r) => r.tg_chat_id);
+}
+
+async function sendToAll(chatIds, text) {
+  if (!bot) {
+    logger.warn({ chatIds, text }, '[dev] Telegram delivery skipped — TELEGRAM_BOT_TOKEN is not set');
+    return;
+  }
+  for (const chatId of chatIds) {
+    await bot.api.sendMessage(chatId, text);
+  }
+}
+
+function fmt(n) {
+  return new Intl.NumberFormat('ru-RU').format(n);
+}
