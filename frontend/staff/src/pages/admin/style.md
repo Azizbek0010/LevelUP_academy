@@ -230,12 +230,6 @@ className="hover:translate-y-[-4px] hover:shadow-[0_12px_40px_var(--shadow-lg),0
 className="hover:translate-y-[-2px] hover:shadow-[0_4px_12px_var(--shadow)] hover:bg-[var(--surface-hover)]"
 ```
 
-### 10. Настройки (Settings)
-- **Табы**: `hover:bg-[var(--surface-hover)]`
-- **Тоггл строки**: `hover:bg-[var(--surface-hover)]`
-- **Опции темы**: `hover:border-[var(--green)]`
-- **Секции безопасности**: `hover:bg-[var(--surface-hover)]`
-
 ---
 
 ## Отступы
@@ -358,10 +352,8 @@ className="hover:translate-y-[-2px] hover:shadow-[0_4px_12px_var(--shadow)] hove
 | **Dashboard** | ✅ To'liq | `src/pages/Dashboard.jsx` |
 | **Groups** | ✅ To'liq | `src/pages/Groups.jsx` |
 | **GroupDetail** | ✅ To'liq | `src/pages/GroupDetail.jsx` |
-| **Settings** | ✅ To'liq | `src/pages/Settings.jsx` |
 | **NotFound** | ✅ To'liq | `src/pages/NotFound.jsx` |
 
 **Boshqalar uchun namunalar:**
 - Dashboard → eng yaxshi namuna (StatCard, chart, animation, hover patternlari)
-- Settings → form/toggle/select patternlari uchun namuna
 - Groups → card grid + filter tabs + modal uchun namuna

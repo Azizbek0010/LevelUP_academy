@@ -1,58 +1,45 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { login as apiLogin } from '../services/adminService.js';
+import { setAccessToken, getAccessToken } from '../services/api.js';
 
 const AuthContext = createContext(null);
 
-function getInitialUser() {
-  try {
-    const stored = localStorage.getItem('admin_user');
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  // Demo mode: auto-setup mock auth
-  const mockUser = { firstName: 'Admin', lastName: '' };
-  localStorage.setItem('admin_user', JSON.stringify(mockUser));
-  localStorage.setItem('admin_token', 'mock-token');
-  return mockUser;
-}
-
-function getInitialToken() {
-  const stored = localStorage.getItem('admin_token');
-  if (stored) return stored;
-  // Token was set by getInitialUser above
-  return 'mock-token';
-}
+const DEMO_USER = { firstName: 'Admin', lastName: '' };
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(getInitialUser);
-  const [token, setToken] = useState(getInitialToken);
+  const [user, setUser] = useState(DEMO_USER);
+  const [token, setToken] = useState(() => getAccessToken() || 'demo-token');
   const [loading, setLoading] = useState(false);
+
+  // Sync token with api.js module-level variable
+  const updateToken = useCallback((t) => {
+    setAccessToken(t);
+    setToken(t);
+  }, []);
 
   const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
       const res = await apiLogin(email, password);
       const { token: t, user: u } = res;
-      localStorage.setItem('admin_token', t);
-      localStorage.setItem('admin_user', JSON.stringify(u));
-      setToken(t);
+      updateToken(t);
       setUser(u);
       return u;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [updateToken]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_user');
-    setToken(null);
+    updateToken(null);
     setUser(null);
-  }, []);
+  }, [updateToken]);
 
+  // Periodic check that token is still alive
   useEffect(() => {
     if (!token) return;
     const handle = setInterval(() => {
-      const t = localStorage.getItem('admin_token');
+      const t = getAccessToken();
       if (!t) logout();
     }, 60000);
     return () => clearInterval(handle);

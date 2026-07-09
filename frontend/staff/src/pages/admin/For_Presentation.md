@@ -67,7 +67,6 @@ admin_page/
 │   │   ├── Reports.jsx      # Hisobotlar
 │   │   ├── Mentors.jsx      # Mentorlar
 │   │   ├── Chat.jsx         # Chat
-│   │   ├── Settings.jsx     # Sozlamalar (to'xtatilgan)
 │   │   └── NotFound.jsx     # 404
 │   ├── context/             # React Context lari
 │   │   ├── AuthContext.jsx  # Autentifikatsiya (demo)
@@ -287,20 +286,6 @@ const filtered = groups.filter((g) => {
 ```
 - Tanlangan filter yashil rangda, qolganlari oddiy
 - Yonida soni ko'rsatilgan (masalan: "Active (8)")
-
----
-
-### 📌 4. Settings — Sozlamalar (290+ qator, to'xtatilgan)
-
-**Maqsad:** Tizim sozlamalarini boshqarish (6 ta tab).
-
-**Nega to'xtatilgan?** Backend tayyor emas, sozlamalar backend bilan bog'liq. Tabs:
-1. **General** — Markaz nomi, logotip, til
-2. **Appearance** — Dark/Light mode, accent rang
-3. **Notifications** — Email/SMS bildirishnomalar
-4. **Security** — Parol, 2FA
-5. **Finance** — Valyuta, to'lov usullari
-6. **Localization** — Til, vaqt zonasi
 
 ---
 
@@ -1170,10 +1155,9 @@ main (production)
 
 ### Keyingi qadamlar:
 1. Backend tayyor bo'lgach, mock data ni API ga almashtirish
-2. Settings sahifasini backend bilan to'ldirish
-3. Real-time chat (WebSocket yoki Firebase)
-4. Autentifikatsiya (login/logout)
-5. Deploy qilish (Vercel frontend, Render backend)
+2. Real-time chat (WebSocket yoki Firebase)
+3. Autentifikatsiya (login/logout)
+4. Deploy qilish (Vercel frontend, Render backend)
 
 ---
 
