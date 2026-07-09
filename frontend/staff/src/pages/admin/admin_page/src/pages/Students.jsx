@@ -1,51 +1,24 @@
-import { useState, useMemo, useCallback, memo } from 'react';
-import { HiOutlineMagnifyingGlass, HiOutlinePlus, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlinePencilSquare, HiOutlineTrash, HiOutlineKey, HiOutlineStar, HiOutlineEye, HiOutlineEyeSlash } from 'react-icons/hi2';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import {
+  HiOutlineMagnifyingGlass, HiOutlinePlus, HiOutlineChevronLeft, HiOutlineChevronRight,
+  HiOutlinePencilSquare, HiOutlineTrash, HiOutlineKey, HiOutlineStar, HiOutlineArrowPath,
+} from 'react-icons/hi2';
 import Badge from '../components/Badge.jsx';
 import Button from '../components/Button.jsx';
 import Modal from '../components/Modal.jsx';
 import Input from '../components/Input.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import {
+  fetchStudents as apiFetchStudents,
+  createStudent as apiCreateStudent,
+  updateStudent as apiUpdateStudent,
+  deleteStudent as apiDeleteStudent,
+  fetchGroups as apiFetchGroups,
+} from '../services/adminService.js';
 
-// ─── Backend model: student = { id, firstName, lastName, phone, status, login, password, coinBalance, totalDebt, hasParent, groups: [{id, name}], createdAt } ───
-
-function generateLogin(firstName, lastName) {
-  const base = (firstName + lastName).toLowerCase().replace(/[^a-z]/g, '');
-  const suffix = Math.floor(10 + Math.random() * 90); // 2 xonali son
-  return base.slice(0, 10) + suffix;
-}
-
-function generatePassword() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  let pwd = '';
-  for (let i = 0; i < 8; i++) {
-    pwd += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return pwd;
-}
+// ─── Backend model: student = { id, firstName, lastName, phone, status, loginCode, coinBalance, totalDebt, hasParent, groups: [{id, name}], createdAt } ───
 
 const ITEMS_PER_PAGE = 10;
-
-const MOCK_GROUPS = [
-  { id: 'g1', name: 'Frontend N13' },
-  { id: 'g2', name: 'Backend N7' },
-  { id: 'g3', name: 'Design N2' },
-  { id: 'g4', name: 'Data Science' },
-];
-
-const MOCK_STUDENTS = [
-  { id: 's1', firstName: 'Abdulloh', lastName: 'Karimov', phone: '+998 90 123 45 67', status: 'active', login: 'abdulloh12', password: 'KwR7pX3m', coinBalance: 250, totalDebt: 0, hasParent: true, groups: [{ id: 'g1', name: 'Frontend N13' }], createdAt: '2026-01-15' },
-  { id: 's2', firstName: 'Odiljon', lastName: 'Rahimov', phone: '+998 91 234 56 78', status: 'active', login: 'odiljon45', password: 'bN8sV2kL', coinBalance: 180, totalDebt: 0, hasParent: false, groups: [{ id: 'g2', name: 'Backend N7' }], createdAt: '2026-02-10' },
-  { id: 's3', firstName: 'Hamidulla', lastName: 'Sobirov', phone: '+998 93 345 67 89', status: 'active', login: 'hamidulla78', password: 'xJ5mR9qW', coinBalance: 90, totalDebt: 450000, hasParent: true, groups: [{ id: 'g1', name: 'Frontend N13' }], createdAt: '2026-01-20' },
-  { id: 's4', firstName: 'Malika', lastName: 'Azizova', phone: '+998 90 456 78 90', status: 'active', login: 'malika33', password: 'pF2tH7cN', coinBalance: 310, totalDebt: 0, hasParent: false, groups: [{ id: 'g3', name: 'Design N2' }], createdAt: '2026-03-05' },
-  { id: 's5', firstName: 'Javohir', lastName: 'Toshmatov', phone: '+998 94 567 89 01', status: 'frozen', login: 'javohir56', password: 'dK9wB4mX', coinBalance: 45, totalDebt: 0, hasParent: false, groups: [{ id: 'g2', name: 'Backend N7' }], createdAt: '2026-01-08' },
-  { id: 's6', firstName: 'Zarina', lastName: 'Nurmatova', phone: '+998 91 678 90 12', status: 'active', login: 'zarina91', password: 'gH3nR8vP', coinBalance: 420, totalDebt: 0, hasParent: true, groups: [{ id: 'g1', name: 'Frontend N13' }], createdAt: '2026-04-12' },
-  { id: 's7', firstName: 'Dilmurod', lastName: 'Ergashev', phone: '+998 93 789 01 23', status: 'active', login: 'dilmurod27', password: 'tL6fW2kS', coinBalance: 0, totalDebt: 320000, hasParent: false, groups: [{ id: 'g3', name: 'Design N2' }], createdAt: '2026-02-28' },
-  { id: 's8', firstName: 'Sevara', lastName: 'Abdullaeva', phone: '+998 90 890 12 34', status: 'active', login: 'sevara64', password: 'mC1zX9qJ', coinBalance: 195, totalDebt: 0, hasParent: true, groups: [{ id: 'g2', name: 'Backend N7' }], createdAt: '2026-03-20' },
-  { id: 's9', firstName: 'Rustam', lastName: 'Yuldashev', phone: '+998 94 901 23 45', status: 'frozen', login: 'rustam82', password: 'hR4eT6aL', coinBalance: 120, totalDebt: 150000, hasParent: false, groups: [{ id: 'g1', name: 'Frontend N13' }], createdAt: '2026-01-25' },
-  { id: 's10', firstName: 'Nodira', lastName: 'Alimova', phone: '+998 91 012 34 56', status: 'active', login: 'nodira15', password: 'wK8fV3nG', coinBalance: 280, totalDebt: 0, hasParent: false, groups: [{ id: 'g3', name: 'Design N2' }], createdAt: '2026-04-05' },
-  { id: 's11', firstName: 'Bexruz', lastName: 'Salimov', phone: '+998 93 123 45 67', status: 'active', login: 'bexruz39', password: 'qP5jM2rX', coinBalance: 160, totalDebt: 0, hasParent: true, groups: [{ id: 'g2', name: 'Backend N7' }], createdAt: '2026-05-01' },
-  { id: 's12', firstName: 'Gulnora', lastName: 'Rahimova', phone: '+998 90 234 56 78', status: 'active', login: 'gulnora73', password: 'vN9yH6dK', coinBalance: 75, totalDebt: 500000, hasParent: false, groups: [{ id: 'g1', name: 'Frontend N13' }], createdAt: '2026-02-14' },
-];
 
 const STATUS_FILTERS = ['All', 'Active', 'Frozen', 'Dropped'];
 
@@ -54,7 +27,8 @@ function formatCurrency(n) {
 }
 
 export default function Students() {
-  const [students, setStudents] = useState(MOCK_STUDENTS);
+  const [students, setStudents] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [statusFilter, setStatusFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -63,27 +37,93 @@ export default function Students() {
   const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', groupId: '', status: 'active' });
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showCredentials, setShowCredentials] = useState({});
-  const [newStudentCreds, setNewStudentCreds] = useState(null); // { login, password } after add
+  const [newStudentCreds, setNewStudentCreds] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const loadTimerRef = useRef(null);
+
+  // ─── Backend data fetching ──────────────────────────────────
+
+  const loadStudents = useCallback(async (searchQuery) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = { limit: 100 };
+      if (searchQuery) params.search = searchQuery;
+      const data = await apiFetchStudents(params);
+      const mapped = (data.students || []).map((s) => ({
+        id: s.id,
+        firstName: s.firstName,
+        lastName: s.lastName,
+        phone: s.phone,
+        status: s.status,
+        login: s.loginCode,
+        password: '',
+        coinBalance: s.coinBalance,
+        totalDebt: s.totalDebt || 0,
+        hasParent: s.hasParent,
+        groups: s.groups || [],
+        createdAt: s.createdAt,
+      }));
+      setStudents(mapped);
+    } catch (err) {
+      console.error('Failed to load students:', err);
+      setError(err.response?.data?.message || err.message || 'Studentlarni yuklashda xatolik');
+      setStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadGroups = useCallback(async () => {
+    try {
+      const data = await apiFetchGroups({ limit: 100 });
+      setGroups(data.groups || []);
+    } catch (err) {
+      console.error('Failed to load groups:', err);
+      setGroups([]);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    loadStudents();
+    loadGroups();
+  }, [loadStudents, loadGroups]);
+
+  // Search with debounce
+  useEffect(() => {
+    if (loadTimerRef.current) clearTimeout(loadTimerRef.current);
+    loadTimerRef.current = setTimeout(() => {
+      loadStudents(search || undefined);
+      setPage(1);
+    }, 350);
+    return () => {
+      if (loadTimerRef.current) clearTimeout(loadTimerRef.current);
+    };
+  }, [search, loadStudents]);
 
   // ⚡ PERFORMANCE: Memoized filter — avoids re-filtering on unrelated state changes
   const filtered = useMemo(() => students.filter((s) => {
     if (statusFilter !== 'All' && s.status !== statusFilter.toLowerCase()) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
-      if (!fullName.includes(q) && !s.phone.includes(q) && !(s.login || '').toLowerCase().includes(q)) return false;
-    }
     return true;
-  }), [students, statusFilter, search]);
+  }), [students, statusFilter]);
 
   const totalPages = useMemo(() => Math.ceil(filtered.length / ITEMS_PER_PAGE), [filtered.length]);
   const paginated = useMemo(() => filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE), [filtered, page]);
 
   const getStatusCount = useCallback((status) =>
-    status === 'All' ? students.length : students.filter((s) => s.status === status.toLowerCase()).length,
+    status === 'All'
+      ? students.length
+      : students.filter((s) => s.status === status.toLowerCase()).length,
   [students]);
 
-  // ─── Modal actions ───
+  // Reset page when status filter changes
+  useEffect(() => { setPage(1); }, [statusFilter]);
+
+  // ─── Modal actions ─────────────────────────────────────────
+
   const openAddModal = () => {
     setEditStudent(null);
     setFormData({ firstName: '', lastName: '', phone: '', groupId: '', status: 'active' });
@@ -102,56 +142,77 @@ export default function Students() {
     setModalOpen(true);
   };
 
-  const handleSave = () => {
-    if (editStudent) {
-      setStudents(students.map((s) =>
-        s.id === editStudent.id
-          ? {
-              ...s,
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              phone: formData.phone,
-              status: formData.status,
-              groups: formData.groupId
-                ? [{ id: formData.groupId, name: MOCK_GROUPS.find((g) => g.id === formData.groupId)?.name || '' }]
-                : [],
-            }
-          : s
-      ));
-      setModalOpen(false);
-    } else {
-      const newGroup = formData.groupId ? MOCK_GROUPS.find((g) => g.id === formData.groupId) : null;
-      const login = generateLogin(formData.firstName, formData.lastName);
-      const password = generatePassword();
-      const newStudent = {
-        id: `s${Date.now()}`,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone,
-        status: formData.status,
-        login,
-        password,
-        coinBalance: 0,
-        totalDebt: 0,
-        hasParent: false,
-        groups: newGroup ? [{ id: newGroup.id, name: newGroup.name }] : [],
-        createdAt: new Date().toISOString().slice(0, 10),
-      };
-      setStudents([...students, newStudent]);
-      setNewStudentCreds({ login, password, firstName: formData.firstName, lastName: formData.lastName });
-      setFormData({ firstName: '', lastName: '', phone: '', groupId: '', status: 'active' });
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      if (editStudent) {
+        // UPDATE — backend accepts: firstName, lastName, phone, birthDate (optional)
+        await apiUpdateStudent(editStudent.id, {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
+        });
+        setModalOpen(false);
+        await loadStudents(search || undefined);
+      } else {
+        // CREATE — backend generates login + password automatically
+        const data = await apiCreateStudent({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
+          groupId: formData.groupId || undefined,
+        });
+        const creds = data.student;
+        setNewStudentCreds({
+          login: creds.loginCode,
+          password: creds.password,
+          firstName: creds.firstName,
+          lastName: creds.lastName,
+        });
+        setFormData({ firstName: '', lastName: '', phone: '', groupId: '', status: 'active' });
+        await loadStudents(search || undefined);
+      }
+    } catch (err) {
+      console.error('Save failed:', err);
+      setError(err.response?.data?.message || err.message || 'Saqlashda xatolik');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setStudents(students.filter((s) => s.id !== deleteTarget.id));
-    setDeleteTarget(null);
+    setSaving(true);
+    setError(null);
+    try {
+      await apiDeleteStudent(deleteTarget.id);
+      setDeleteTarget(null);
+      await loadStudents(search || undefined);
+    } catch (err) {
+      console.error('Delete failed:', err);
+      setError(err.response?.data?.message || err.message || "O'chirishda xatolik");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // ─── Render ───
+  // ─── Render ────────────────────────────────────────────────
+
   return (
     <div className="space-y-4">
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-[12px] text-[12px] font-semibold"
+          style={{ background: 'rgba(232,84,62,0.12)', color: '#E8543E', border: '1px solid rgba(232,84,62,0.2)' }}
+        >
+          <span className="flex-1">{error}</span>
+          <button onClick={() => setError(null)} className="hover:opacity-70 transition-opacity">
+            <HiOutlineTrash className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Search + Add */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
@@ -159,10 +220,15 @@ export default function Students() {
           <input
             placeholder="Ism, telefon yoki login orqali qidirish..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => { setSearch(e.target.value); }}
             className="w-full h-10 pl-10 pr-4 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none focus:border-[var(--green)] transition-colors"
             style={{ background: 'var(--surface)' }}
           />
+          {loading && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <HiOutlineArrowPath className="w-4 h-4 text-[var(--text-muted)] animate-spin" />
+            </div>
+          )}
         </div>
         <Button variant="primary" size="sm" onClick={openAddModal}>
           <HiOutlinePlus className="w-4 h-4" />
@@ -175,7 +241,7 @@ export default function Students() {
         {STATUS_FILTERS.map((status) => (
           <button
             key={status}
-            onClick={() => { setStatusFilter(status); setPage(1); }}
+            onClick={() => setStatusFilter(status)}
             className="px-4 py-2 rounded-[10px] text-[12px] font-semibold transition-all"
             style={{
               background: statusFilter === status ? 'var(--green)' : 'var(--surface)',
@@ -193,7 +259,12 @@ export default function Students() {
       </div>
 
       {/* Table */}
-      {paginated.length === 0 ? (
+      {loading && students.length === 0 ? (
+        <div className="glass-strong rounded-[20px] p-12 flex flex-col items-center justify-center">
+          <HiOutlineArrowPath className="w-8 h-8 text-[var(--text-muted)] animate-spin mb-3" />
+          <p className="text-[13px] text-[var(--text-secondary)]">Studentlar yuklanmoqda...</p>
+        </div>
+      ) : paginated.length === 0 ? (
         <EmptyState
           title="Talabalar topilmadi"
           description={search ? 'Qidiruvni o‘zgartiring' : 'Hozircha talabalar yo‘q'}
@@ -248,7 +319,7 @@ export default function Students() {
                             </span>
                             <span className="flex items-center gap-1">
                               <HiOutlineKey className="w-3 h-3 shrink-0" />
-                              Parol: <strong>{student.password}</strong>
+                              Parol: <strong className="text-[var(--text-muted)]">••••••</strong>
                             </span>
                           </div>
                         ) : (
@@ -353,8 +424,8 @@ export default function Students() {
         </div>
       )}
 
-      {/* Add/Edit Modal — backend POST /api/admin/students */}
-      <Modal open={modalOpen} title={editStudent ? 'Talabani tahrirlash' : 'Yangi talaba qo‘shish'} onClose={() => setModalOpen(false)}>
+      {/* Add/Edit Modal */}{/* backend POST /api/admin/students | PATCH /api/admin/students/:id */}
+      <Modal open={modalOpen} title={editStudent ? 'Talabani tahrirlash' : 'Yangi talaba qo‘shish'} onClose={() => { if (!saving) setModalOpen(false); }}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <Input
@@ -389,20 +460,9 @@ export default function Students() {
               }}
             >
               <option value="">Guruh tanlanmagan</option>
-              {MOCK_GROUPS.map((g) => (
+              {groups.map((g) => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1.5">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full h-10 px-4 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none focus:border-[var(--green)] transition-colors"
-            >
-              <option value="active">Faol</option>
-              <option value="frozen">Muzlatilgan</option>
             </select>
           </div>
           {!editStudent && (
@@ -413,10 +473,17 @@ export default function Students() {
               </p>
             </div>
           )}
+          {error && (
+            <div className="text-[11px] text-[var(--danger)] font-semibold rounded-[8px] px-3 py-2"
+              style={{ background: 'rgba(232,84,62,0.08)' }}
+            >
+              {error}
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" size="sm" onClick={() => setModalOpen(false)}>Bekor qilish</Button>
-            <Button variant="primary" size="sm" onClick={handleSave}>
-              {editStudent ? 'Saqlash' : 'Qo‘shish'}
+            <Button variant="ghost" size="sm" onClick={() => setModalOpen(false)} disabled={saving}>Bekor qilish</Button>
+            <Button variant="primary" size="sm" onClick={handleSave} disabled={saving || !formData.firstName || !formData.lastName || !formData.phone}>
+              {saving ? 'Saqlanmoqda...' : (editStudent ? 'Saqlash' : 'Qo‘shish')}
             </Button>
           </div>
         </div>
@@ -426,7 +493,7 @@ export default function Students() {
       <Modal open={!!newStudentCreds} title="Talaba yaratildi" onClose={() => setNewStudentCreds(null)}>
         <div className="space-y-4">
           <p className="text-[13px] text-[var(--text-secondary)]">
-            <span className="font-semibold text-[var(--text)]">{newStudentCreds?.firstName} {newStudentCreds?.lastName}</span>{" "}
+            <span className="font-semibold text-[var(--text)]">{newStudentCreds?.firstName} {newStudentCreds?.lastName}</span>{' '}
             uchun login va parol yaratildi:
           </p>
           <div className="rounded-[16px] p-4 space-y-3" style={{ background: 'var(--green-bg)' }}>
@@ -452,15 +519,24 @@ export default function Students() {
       </Modal>
 
       {/* Delete Confirmation */}
-      <Modal open={!!deleteTarget} title="Talabani o‘chirish" onClose={() => setDeleteTarget(null)}>
+      <Modal open={!!deleteTarget} title="Talabani o‘chirish" onClose={() => { if (!saving) setDeleteTarget(null); }}>
         <div className="space-y-5">
           <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
-            <span className="font-semibold text-[var(--text)]">{deleteTarget?.firstName} {deleteTarget?.lastName}</span>{" "}
+            <span className="font-semibold text-[var(--text)]">{deleteTarget?.firstName} {deleteTarget?.lastName}</span>{' '}
             ni o‘chirishni xohlaysizmi? Bu amalni qaytarib bo‘lmaydi.
           </p>
+          {error && (
+            <div className="text-[11px] text-[var(--danger)] font-semibold rounded-[8px] px-3 py-2"
+              style={{ background: 'rgba(232,84,62,0.08)' }}
+            >
+              {error}
+            </div>
+          )}
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(null)}>Bekor qilish</Button>
-            <Button variant="danger" size="sm" onClick={handleDelete}>O‘chirish</Button>
+            <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Bekor qilish</Button>
+            <Button variant="danger" size="sm" onClick={handleDelete} disabled={saving}>
+              {saving ? "O'chirilmoqda..." : "O'chirish"}
+            </Button>
           </div>
         </div>
       </Modal>
