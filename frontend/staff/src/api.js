@@ -1,6 +1,8 @@
 // Все запросы идут на /api (dev-прокси Vite → http://localhost:4000).
+// VITE_API_URL — боевой бэкенд (Render) для production build.
 // USE_MOCKS = true — эмуляция на localStorage для разработки без бэкенда.
 
+const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
 const USE_MOCKS = true;
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -609,7 +611,7 @@ async function request(path, { method = 'GET', body, token } = {}) {
   }
 
   // Реальный бэкенд-запрос
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}/api${path}`, {
     method,
     credentials: 'include',
     headers: {

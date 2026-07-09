@@ -1,8 +1,11 @@
 // Все запросы идут на /api (dev-прокси Vite → http://localhost:4000).
+// VITE_API_URL — боевой бэкенд (Render) для production build.
 // credentials:'include' — чтобы refresh-cookie ставилась и слалась.
 
+const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
+
 async function request(path, { method = 'GET', body, token } = {}) {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}/api${path}`, {
     method,
     credentials: 'include',
     headers: {
