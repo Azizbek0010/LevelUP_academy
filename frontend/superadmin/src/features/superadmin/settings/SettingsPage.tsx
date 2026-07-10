@@ -1,13 +1,15 @@
 import { useState, type FormEvent } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { Check, Globe, KeyRound, Moon, Palette, Save, Settings, Sun, User } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Building2, Calendar, Check, Globe, KeyRound, Moon, Palette, Save, Settings, ShieldCheck, Sun, User } from 'lucide-react';
 import clsx from 'clsx';
 import { usersApi } from '../../../shared/api/endpoints/users';
+import { organizationApi } from '../../../shared/api/endpoints/organization';
 import { ApiError } from '../../../shared/api/http';
 import { useT } from '../../../shared/i18n/useT';
 import { useSettingsStore, type Lang, type ThemeMode } from '../../../shared/stores/settings';
 import { useAuthStore } from '../../../shared/stores/auth';
 import { PageHeader } from '../../../shared/ui/PageHeader';
+import { Skeleton } from '../../../shared/ui/Skeleton';
 
 const LANGS: Array<{ value: Lang; label: string; code: string }> = [
   { value: 'ru', label: 'Русский', code: 'RU' },
@@ -141,6 +143,9 @@ export default function SettingsPage(): React.ReactElement {
 
       {/* Password */}
       <PasswordCard />
+
+      {/* Organization */}
+      <OrganizationCard />
 
       {user && (
         <div className="text-xs text-base-content/40 text-center pt-6 pb-2 font-mono">
@@ -373,6 +378,155 @@ function PasswordCard(): React.ReactElement {
           )}
         </div>
       </form>
+    </SectionCard>
+  );
+}
+
+// ────────────────────────────────────────────────────────────
+// Organization section (from Islom's save-zone API integration)
+// ────────────────────────────────────────────────────────────
+
+function OrganizationCard(): React.ReactElement {
+  const qc = useQueryClient();
+  const [form, setForm] = useState({ name: '', domain: '' });
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['organization'],
+    queryFn: () => organizationApi.get(),
+  });
+
+  const org = data?.organization;
+
+  if (!initialized && org) {
+    setForm({ name: org.name, domain: org.domain ?? '' });
+    setInitialized(true);
+  }
+
+  const mut = useMutation({
+    mutationFn: () =>
+      organizationApi.update({
+        name: form.name.trim() || undefined,
+        domain: form.domain.trim() || undefined,
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['organization'] });
+      setError(null);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    },
+    onError: (err) => {
+      setError(err instanceof ApiError ? err.payload.message : 'Не удалось сохранить');
+    },
+  });
+
+  function formatDate(iso: string) {
+    return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  return (
+    <SectionCard icon={Building2} title="Организация" hint="профиль учебного центра" delay={320}>
+      {isLoading || !org ? (
+        <div className="space-y-3">
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-10 rounded-lg" />
+          <Skeleton className="h-10 rounded-lg" />
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {/* Org meta row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-1 rounded-xl border border-base-300 p-4 text-center bg-base-200/30 space-y-2">
+              <div className="size-14 rounded-2xl bg-primary/10 mx-auto grid place-items-center">
+                <Building2 className="size-7 text-primary" />
+              </div>
+              <div className="font-bold text-sm leading-tight">{org.name}</div>
+              <div className="flex items-center justify-center gap-1 text-[11px] text-base-content/50">
+                <Globe className="size-3" />
+                <span>{org.domain || 'домен не указан'}</span>
+              </div>
+              <div className={clsx(
+                'badge badge-sm mx-auto block w-fit',
+                org.status === 'active' ? 'badge-success' : 'badge-ghost',
+              )}>
+                {org.status === 'active' ? 'Активна' : org.status}
+              </div>
+            </div>
+
+            <div className="sm:col-span-2 space-y-3">
+              <div className="flex items-center gap-2 text-[11px] text-base-content/50">
+                <Calendar className="size-3.5" />
+                <span>Создана {formatDate(org.createdAt)}</span>
+              </div>
+
+              {org.plan && (
+                <div className="rounded-xl border border-base-300 p-4 bg-base-200/20">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-base-content/60 uppercase tracking-wider mb-2">
+                    <ShieldCheck className="size-3.5" /> Тариф
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-[10px] text-base-content/40 uppercase tracking-wider">Лимит филиалов</div>
+                      <div className="font-semibold mt-0.5">
+                        {org.plan.branchLimit ? `${org.plan.branchLimit} шт.` : 'Без ограничений'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-base-content/40 uppercase tracking-wider">Диск</div>
+                      <div className="font-semibold mt-0.5">{org.plan.diskSpace ?? '500 ГБ'}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Edit form */}
+          <form
+            className="space-y-3 pt-3 border-t border-base-300"
+            onSubmit={(e) => { e.preventDefault(); mut.mutate(); }}
+          >
+            <SettingsField
+              label="Название организации"
+              value={form.name}
+              onChange={(v) => setForm({ ...form, name: v })}
+            />
+            <SettingsField
+              label="Собственный домен"
+              value={form.domain}
+              onChange={(v) => setForm({ ...form, domain: v })}
+              mono
+            />
+            <div className="text-[11px] text-base-content/40 font-mono">
+              Домен используется для брендирования кабинетов студентов.
+            </div>
+
+            {error && (
+              <div role="alert" className="rounded-lg border border-error/40 bg-error/5 px-3 py-2 text-error text-sm font-mono">
+                ✕ {error}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm gap-2 rounded-lg wow-shine"
+                disabled={mut.isPending}
+              >
+                {mut.isPending ? <span className="loading loading-spinner loading-xs" /> : <Save className="size-4" />}
+                Сохранить
+              </button>
+              {saved && (
+                <span className="text-success text-sm inline-flex items-center gap-1 wow-rise">
+                  <Check className="size-4" /> Сохранено
+                </span>
+              )}
+            </div>
+          </form>
+        </div>
+      )}
     </SectionCard>
   );
 }
