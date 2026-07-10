@@ -1,56 +1,143 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiOutlineMagnifyingGlass, HiOutlinePlus, HiOutlineChevronRight, HiOutlineUser, HiOutlineClock, HiOutlineHomeModern } from 'react-icons/hi2';
+import { HiOutlineMagnifyingGlass, HiOutlinePlus, HiOutlineChevronRight, HiOutlineUser, HiOutlineClock, HiOutlineHomeModern, HiOutlineArrowPath } from 'react-icons/hi2';
 import Badge from '../components/Badge.jsx';
 import Button from '../components/Button.jsx';
 import Modal from '../components/Modal.jsx';
 import Input from '../components/Input.jsx';
 import EmptyState from '../components/EmptyState.jsx';
-
-const MOCK_GROUPS = [
-  { id: 1, name: 'Frontend N13', mentor: 'Aziz Karimov', time: '09:00 - 11:00', days: 'Dush/Chor/Juma', room: '201', students: 12, maxStudents: 15, status: 'active' },
-  { id: 2, name: 'Backend N7', mentor: 'Jasur Toshmatov', time: '11:00 - 13:00', days: 'Sesh/Pay/Shan', room: '103', students: 15, maxStudents: 15, status: 'full' },
-  { id: 3, name: 'Design N2', mentor: 'Malika Rahimova', time: '14:00 - 16:00', days: 'Dush/Chor', room: '305', students: 8, maxStudents: 12, status: 'active' },
-  { id: 4, name: 'English B1', mentor: 'Sevara Azizova', time: '16:00 - 18:00', days: 'Sesh/Pay', room: '202', students: 3, maxStudents: 12, status: 'starting' },
-  { id: 5, name: 'Math Advanced', mentor: 'Rustam Yuldashev', time: '10:00 - 12:00', days: 'Shan/Yak', room: '101', students: 10, maxStudents: 12, status: 'active' },
-  { id: 6, name: 'Mobile Dev N4', mentor: 'Dilmurod Ergashev', time: '13:00 - 15:00', days: 'Dush/Chor/Juma', room: '204', students: 14, maxStudents: 15, status: 'full' },
-  { id: 7, name: 'IELTS Prep', mentor: 'Gulnora Sobirova', time: '09:00 - 11:00', days: 'Sesh/Pay/Shan', room: '301', students: 6, maxStudents: 10, status: 'starting' },
-  { id: 8, name: 'Python N2', mentor: 'Temur Abdurahimov', time: '15:00 - 17:00', days: 'Dush/Chor/Juma', room: '104', students: 0, maxStudents: 12, status: 'archived' },
-];
+import { fetchGroups as apiFetchGroups, createGroup as apiCreateGroup, fetchMentors as apiFetchMentors } from '../services/adminService.js';
 
 const FILTERS = ['All', 'Active', 'Full', 'Starting', 'Archived'];
 
+// Map API status
+function mapStatus(group) {
+  if (group.isArchived) return 'archived';
+  if (group.students >= 15) return 'full';
+  if (group.students === 0) return 'starting';
+  return 'active';
+}
+
+// Format schedule array -> display string
+function formatSchedule(schedule) {
+  if (!schedule || !schedule.length) return '';
+  const dayMap = { mon: 'Dush', tue: 'Sesh', wed: 'Chor', thu: 'Pay', fri: 'Juma', sat: 'Shan', sun: 'Yak' };
+  const days = schedule.map((s) => dayMap[s.day] || s.day).filter(Boolean);
+  const uniqueDays = [...new Set(days)];
+  const time = schedule[0]?.start && schedule[0]?.end ? `${schedule[0].start} - ${schedule[0].end}` : '';
+  return uniqueDays.length ? `${time ? time + ' · ' : ''}${uniqueDays.join('/')}` : '';
+}
+
 export default function Groups() {
   const navigate = useNavigate();
-  const [groups, setGroups] = useState(MOCK_GROUPS);
+  const [groups, setGroups] = useState([]);
+  const [mentors, setMentors] = useState([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [modalOpen, setModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: '', mentor: '', time: '', days: '', room: '', maxStudents: 12 });
+  const [formData, setFormData] = useState({ name: '', subject: '', mentorId: '', monthlyPrice: '', room: '', scheduleDays: '', scheduleStart: '', scheduleEnd: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const loadGroups = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetchGroups({ limit: 100 });
+      setGroups(data.groups || []);
+    } catch (err) {
+      console.error('Failed to load groups:', err);
+      setError(err.response?.data?.message || err.message || 'Guruhlarni yuklashda xatolik');
+      setGroups([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadMentors = useCallback(async () => {
+    try {
+      const data = await apiFetchMentors();
+      setMentors(data.mentors || []);
+    } catch (err) {
+      console.error('Failed to load mentors:', err);
+      setMentors([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadGroups();
+    loadMentors();
+  }, [loadGroups, loadMentors]);
 
   const filtered = useMemo(() => groups.filter((g) => {
-    if (filter !== 'All' && g.status !== filter.toLowerCase()) return false;
+    const status = mapStatus(g);
+    if (filter !== 'All' && status !== filter.toLowerCase()) return false;
     if (search && !g.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   }), [groups, filter, search]);
 
   const counts = useMemo(() => ({
     All: groups.length,
-    Active: groups.filter((g) => g.status === 'active').length,
-    Full: groups.filter((g) => g.status === 'full').length,
-    Starting: groups.filter((g) => g.status === 'starting').length,
-    Archived: groups.filter((g) => g.status === 'archived').length,
+    Active: groups.filter((g) => mapStatus(g) === 'active').length,
+    Full: groups.filter((g) => mapStatus(g) === 'full').length,
+    Starting: groups.filter((g) => mapStatus(g) === 'starting').length,
+    Archived: groups.filter((g) => mapStatus(g) === 'archived').length,
   }), [groups]);
 
-  const handleSave = () => {
-    setGroups([...groups, { id: Date.now(), ...formData, students: 0 }]);
-    setModalOpen(false);
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const schedule = [];
+      if (formData.scheduleDays) {
+        const dayMap = { Dush: 'mon', Sesh: 'tue', Chor: 'wed', Pay: 'thu', Juma: 'fri', Shan: 'sat', Yak: 'sun' };
+        const days = formData.scheduleDays.split('/').map((d) => d.trim()).filter(Boolean);
+        days.forEach((day) => {
+          const mapped = dayMap[day] || day.toLowerCase().slice(0, 3);
+          schedule.push({
+            day: mapped,
+            start: formData.scheduleStart || '09:00',
+            end: formData.scheduleEnd || '11:00',
+          });
+        });
+      }
+      await apiCreateGroup({
+        name: formData.name,
+        subject: formData.subject || undefined,
+        mentorId: formData.mentorId || undefined,
+        monthlyPrice: formData.monthlyPrice ? Number(formData.monthlyPrice) : undefined,
+        room: formData.room || undefined,
+        schedule: schedule.length > 0 ? schedule : undefined,
+      });
+      setModalOpen(false);
+      setFormData({ name: '', subject: '', mentorId: '', monthlyPrice: '', room: '', scheduleDays: '', scheduleStart: '', scheduleEnd: '' });
+      await loadGroups();
+    } catch (err) {
+      console.error('Create group failed:', err);
+      setError(err.response?.data?.message || err.message || 'Guruh yaratishda xatolik');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const progressColor = (pct) => pct >= 100 ? '#EF4444' : pct >= 80 ? '#F59E0B' : '#10B981';
+  const MAX_STUDENTS = 15;
 
   return (
     <div className="space-y-5">
+
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-[12px] text-[12px] font-semibold"
+          style={{ background: 'rgba(232,84,62,0.12)', color: '#E8543E', border: '1px solid rgba(232,84,62,0.2)' }}
+        >
+          <span className="flex-1">{error}</span>
+          <button onClick={() => setError(null)} className="hover:opacity-70 transition-opacity">
+            <span className="text-[16px]">&times;</span>
+          </button>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -63,8 +150,13 @@ export default function Groups() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-10 pl-10 pr-4 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
           />
+          {loading && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <HiOutlineArrowPath className="w-4 h-4 text-[var(--text-muted)] animate-spin" />
+            </div>
+          )}
         </div>
-        <Button variant="primary" size="sm" onClick={() => { setFormData({ name: '', mentor: '', time: '', days: '', room: '', maxStudents: 12 }); setModalOpen(true); }}>
+        <Button variant="primary" size="sm" onClick={() => { setFormData({ name: '', subject: '', mentorId: '', monthlyPrice: '', room: '', scheduleDays: '', scheduleStart: '', scheduleEnd: '' }); setModalOpen(true); }}>
           <HiOutlinePlus className="w-4 h-4" />
           Yangi guruh
         </Button>
@@ -88,13 +180,27 @@ export default function Groups() {
         ))}
       </div>
 
-      {/* Cards */}
-      {filtered.length === 0 ? (
-        <EmptyState title="Guruhlar topilmadi" description="Yangi guruh yarating" action={{ label: 'Yangi guruh', onClick: () => setModalOpen(true) }} />
+      {/* Loading */}
+      {loading && groups.length === 0 ? (
+        <div className="glass-strong rounded-[20px] p-12 flex flex-col items-center justify-center">
+          <HiOutlineArrowPath className="w-8 h-8 text-[var(--text-muted)] animate-spin mb-3" />
+          <p className="text-[13px] text-[var(--text-secondary)]">Guruhlar yuklanmoqda...</p>
+        </div>
+      ) : filtered.length === 0 && !loading ? (
+        <EmptyState
+          title="Guruhlar topilmadi"
+          description={search ? 'Qidiruvni o\'zgartiring' : 'Yangi guruh yarating'}
+          action={search ? undefined : { label: 'Yangi guruh', onClick: () => setModalOpen(true) }}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((group) => {
-            const progress = Math.round((group.students / group.maxStudents) * 100);
+            const students = group.students || 0;
+            const max = MAX_STUDENTS;
+            const progress = Math.min(Math.round((students / max) * 100), 100);
+            const status = mapStatus(group);
+            const mentorName = group.mentor?.name || '—';
+            const scheduleStr = formatSchedule(group.schedule);
             return (
               <div
                 key={group.id}
@@ -103,16 +209,20 @@ export default function Groups() {
               >
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-[15px] font-bold text-[var(--text)]">{group.name}</h3>
-                  <Badge status={group.status} />
+                  <Badge status={status} />
                 </div>
                 <div className="space-y-1.5 text-[12px] text-[var(--text-secondary)] mb-4">
-                  <p className="flex items-center gap-1.5"><HiOutlineUser className="w-3.5 h-3.5 shrink-0" /> {group.mentor}</p>
-                  <p className="flex items-center gap-1.5"><HiOutlineClock className="w-3.5 h-3.5 shrink-0" /> {group.time} · {group.days}</p>
-                  <p className="flex items-center gap-1.5"><HiOutlineHomeModern className="w-3.5 h-3.5 shrink-0" /> Xona {group.room}</p>
+                  <p className="flex items-center gap-1.5"><HiOutlineUser className="w-3.5 h-3.5 shrink-0" /> {mentorName}</p>
+                  {scheduleStr && (
+                    <p className="flex items-center gap-1.5"><HiOutlineClock className="w-3.5 h-3.5 shrink-0" /> {scheduleStr}</p>
+                  )}
+                  {group.room && (
+                    <p className="flex items-center gap-1.5"><HiOutlineHomeModern className="w-3.5 h-3.5 shrink-0" /> Xona {group.room}</p>
+                  )}
                 </div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
-                    Student: <span className="text-[var(--text)]">{group.students}/{group.maxStudents}</span>
+                    Student: <span className="text-[var(--text)]">{students}/{max}</span>
                   </span>
                   <span className="text-[11px] font-bold" style={{ color: progressColor(progress) }}>{progress}%</span>
                 </div>
@@ -130,22 +240,58 @@ export default function Groups() {
         </div>
       )}
 
-      {/* Create modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Yangi guruh yaratish">
+      {/* Create modal — backend POST /api/admin/groups body: { name, subject, mentorId, monthlyPrice, schedule?, room? } */}
+      <Modal open={modalOpen} onClose={() => { if (!saving) setModalOpen(false); }} title="Yangi guruh yaratish">
         <div className="space-y-4">
-          <Input label="Guruh nomi" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Frontend N13" />
-          <Input label="Mentor" value={formData.mentor} onChange={(e) => setFormData({ ...formData, mentor: e.target.value })} placeholder="Ism familiya" />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Vaqt" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} placeholder="09:00 - 11:00" />
-            <Input label="Kunlar" value={formData.days} onChange={(e) => setFormData({ ...formData, days: e.target.value })} placeholder="Dush/Chor/Juma" />
+          <Input label="Guruh nomi *" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Frontend N13" />
+
+          <Input label="Fan (ixtiyoriy)" value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} placeholder="Frontend dasturlash" />
+
+          <div>
+            <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-[0.06em]">Mentor</label>
+            <select
+              value={formData.mentorId}
+              onChange={(e) => setFormData({ ...formData, mentorId: e.target.value })}
+              className="w-full h-10 px-4 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none focus:border-[var(--green)] transition-colors appearance-none cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238FA283' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 12px center',
+              }}
+            >
+              <option value="">Mentor tanlanmagan</option>
+              {mentors.map((m) => (
+                <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>
+              ))}
+            </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Xona" value={formData.room} onChange={(e) => setFormData({ ...formData, room: e.target.value })} placeholder="201" />
-            <Input label="Maks. o'rin" type="number" value={formData.maxStudents} onChange={(e) => setFormData({ ...formData, maxStudents: Number(e.target.value) })} />
+
+          <Input label="Oylik to'lov (so'm)" type="number" value={formData.monthlyPrice} onChange={(e) => setFormData({ ...formData, monthlyPrice: e.target.value })} placeholder="500000" />
+
+          <Input label="Xona (ixtiyoriy)" value={formData.room} onChange={(e) => setFormData({ ...formData, room: e.target.value })} placeholder="201" />
+
+          <div className="rounded-[12px] p-3" style={{ background: 'var(--green-bg)' }}>
+            <p className="text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">Dars jadvali (ixtiyoriy)</p>
+            <div className="grid grid-cols-3 gap-2">
+              <Input label="Kunlar" value={formData.scheduleDays} onChange={(e) => setFormData({ ...formData, scheduleDays: e.target.value })} placeholder="Dush/Chor/Juma" className="col-span-3" />
+              <Input label="Boshlanish" value={formData.scheduleStart} onChange={(e) => setFormData({ ...formData, scheduleStart: e.target.value })} placeholder="09:00" />
+              <Input label="Tugash" value={formData.scheduleEnd} onChange={(e) => setFormData({ ...formData, scheduleEnd: e.target.value })} placeholder="11:00" />
+            </div>
           </div>
+
+          {error && (
+            <div className="text-[11px] text-[var(--danger)] font-semibold rounded-[8px] px-3 py-2"
+              style={{ background: 'rgba(232,84,62,0.08)' }}
+            >
+              {error}
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" size="sm" onClick={() => setModalOpen(false)}>Bekor qilish</Button>
-            <Button variant="primary" size="sm" onClick={handleSave}>Yaratish</Button>
+            <Button variant="ghost" size="sm" onClick={() => setModalOpen(false)} disabled={saving}>Bekor qilish</Button>
+            <Button variant="primary" size="sm" onClick={handleSave} disabled={saving || !formData.name}>
+              {saving ? 'Yaratilmoqda...' : 'Yaratish'}
+            </Button>
           </div>
         </div>
       </Modal>

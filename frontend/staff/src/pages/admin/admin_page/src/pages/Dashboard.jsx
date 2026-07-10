@@ -1,8 +1,8 @@
-import { memo, useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   HiOutlineArrowTrendingUp, HiOutlineExclamationTriangle,
-  HiOutlineBanknotes, HiOutlineCheckCircle,
+  HiOutlineCurrencyDollar, HiOutlineCheckCircle,
   HiOutlineUserPlus, HiOutlineSquaresPlus,
   HiOutlineReceiptRefund, HiOutlineDocumentText,
   HiOutlineChatBubbleLeftRight, HiOutlineCalendarDays,
@@ -10,8 +10,12 @@ import {
 } from 'react-icons/hi2';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import StatCard from '../components/StatCard.jsx';
+import { SkeletonCard } from '../components/Skeleton.jsx';
+import ErrorState from '../components/ErrorState.jsx';
+import { fetchDashboard } from '../services/adminService.js';
+import { useApi } from '../hooks/useApi.js';
 
-// ==================== DATA ====================
+// ==================== CHART DATA (static / frontend-only) ====================
 
 const weeklyData = [
   { day: 'Dush', income: 4200000, outcome: 1800000 },
@@ -34,31 +38,12 @@ const monthlyIncome = [
 ];
 
 const recentPayments = [
-  { id: 1, name: 'Abdulloh Karimov', amount: 1200000, date: 'Bugun 14:30', status: 'paid' },
-  { id: 2, name: 'Malika Azizova', amount: 1200000, date: 'Bugun 12:15', status: 'paid' },
-  { id: 3, name: 'Javohir Toshmatov', amount: 1500000, date: 'Kecha 16:45', status: 'pending' },
-  { id: 4, name: 'Zarina Nurmatova', amount: 900000, date: 'Kecha 10:20', status: 'overdue' },
-  { id: 5, name: 'Rustam Yuldashev', amount: 1200000, date: '03.07.2026', status: 'paid' },
+  { id: 1, name: 'Ali Valiyev', amount: 450000, date: '10 Iyul, 14:30', status: 'paid' },
+  { id: 2, name: 'Zarina Sobirova', amount: 550000, date: '10 Iyul, 12:15', status: 'paid' },
+  { id: 3, name: 'Jamshid Karimov', amount: 450000, date: '09 Iyul, 16:45', status: 'pending' },
+  { id: 4, name: 'Dildora Erkinova', amount: 650000, date: '09 Iyul, 10:20', status: 'overdue' },
+  { id: 5, name: 'Bobur Abdullayev', amount: 350000, date: '08 Iyul, 11:00', status: 'paid' },
 ];
-
-// Backend API shu strukturada qaytaradi -> admin.service.js -> dashboard()
-const MOCK = {
-  totals: {
-    revenue: 128_500_000,
-    expenses: 42_300_000,
-    profit: 86_200_000,
-    outstandingDebt: 15_700_000,
-    activeStudents: 342,
-    groups: 18,
-    overdueInvoices: 7,
-    currency: 'UZS',
-  },
-  thisMonth: {
-    revenue: 38_200_000,
-    expenses: 12_600_000,
-    profit: 25_600_000,
-  },
-};
 
 // ==================== HELPERS ====================
 
@@ -85,10 +70,52 @@ function CustomTooltip({ active, payload, label }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const d = useMemo(() => MOCK, []);
-  const { revenue, expenses, profit, outstandingDebt: debt, activeStudents, groups: groupCount, overdueInvoices } = useMemo(() => d.totals, [d]);
-  const m = useMemo(() => d.thisMonth, [d]);
+  const { data: d, loading, error, execute } = useApi(fetchDashboard);
+
+  useEffect(() => { execute(); }, [execute]);
+
   const weeklyTotal = useMemo(() => weeklyData.reduce((s, r) => s + r.income, 0), []);
+
+  // Loading state
+  if (loading && !d) {
+    return (
+      <div className="space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && !d) {
+    return <ErrorState message={error} onRetry={() => execute()} />;
+  }
+
+  // Normalise data (API response may have 'data' wrapper)
+  const raw = d?.data || d;
+  const { totals, thisMonth: m } = raw || {
+    totals: {},
+    thisMonth: {},
+  };
+
+  const {
+    revenue = 0,
+    expenses = 0,
+    profit = 0,
+    outstandingDebt: debt = 0,
+    activeStudents = 0,
+    groups: groupCount = 0,
+    overdueInvoices = 0,
+  } = totals;
 
   return (
     <div className="space-y-5">
@@ -121,7 +148,7 @@ export default function Dashboard() {
             value={`${fm(expenses)} so'm`}
             delta={3.2}
             deltaLabel="shu oy"
-            icon={<HiOutlineBanknotes className="w-4 h-4" />}
+            icon={<HiOutlineCurrencyDollar className="w-4 h-4" />}
             color="#EF4444"
           />
         </div>

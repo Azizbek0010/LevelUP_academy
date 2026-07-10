@@ -1,28 +1,24 @@
-import { useState, useMemo, useCallback } from 'react';
-import { HiOutlineMagnifyingGlass, HiOutlinePlus, HiOutlineTrash, HiOutlineCurrencyDollar, HiOutlineCalendarDays, HiOutlineChartBarSquare } from 'react-icons/hi2';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { HiOutlineMagnifyingGlass, HiOutlinePlus, HiOutlineTrash, HiOutlineCurrencyDollar, HiOutlineCalendarDays, HiOutlineChartBarSquare, HiOutlineArrowPath } from 'react-icons/hi2';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Button from '../components/Button.jsx';
 import Modal from '../components/Modal.jsx';
 import Input from '../components/Input.jsx';
 import StatCard from '../components/StatCard.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import { fetchExpenses as apiFetchExpenses, createExpense as apiCreateExpense, deleteExpense as apiDeleteExpense } from '../services/adminService.js';
 
 const CATEGORIES = ['All', 'Rent', 'Salary', 'Materials', 'Utility', 'Other'];
 const CATEGORY_COLORS = { Rent: '#3B82F6', Salary: '#2ECC71', Materials: '#F59E0B', Utility: '#E8543E', Other: '#8FA283' };
 
-const MOCK_EXPENSES = [
-  { id: 1, category: 'Rent', amount: 5000000, date: '01.07.2026', description: 'Iyul oyi ijara' },
-  { id: 2, category: 'Salary', amount: 8000000, date: '05.07.2026', description: 'Mentorlar maoshi' },
-  { id: 3, category: 'Materials', amount: 1200000, date: '03.07.2026', description: 'O\'quv materiallari' },
-  { id: 4, category: 'Utility', amount: 450000, date: '06.07.2026', description: 'Elektr energiyasi' },
-  { id: 5, category: 'Other', amount: 350000, date: '02.07.2026', description: 'Kanselyariya' },
-  { id: 6, category: 'Salary', amount: 4000000, date: '05.07.2026', description: 'Admin xodimlar' },
-  { id: 7, category: 'Rent', amount: 5000000, date: '01.06.2026', description: 'Iyun oyi ijara' },
-  { id: 8, category: 'Materials', amount: 800000, date: '28.06.2026', description: 'Daftar va kitoblar' },
-];
-
 function formatCurrency(n) {
   return Number(n || 0).toLocaleString('uz-UZ') + " so'm";
+}
+
+function formatDate(isoStr) {
+  if (!isoStr) return '—';
+  const d = new Date(isoStr);
+  return d.toLocaleDateString('ru-RU');
 }
 
 function CustomTooltip({ active, payload, label }) {
@@ -38,45 +34,119 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function Expenses() {
-  const [expenses, setExpenses] = useState(MOCK_EXPENSES);
+  const [expenses, setExpenses] = useState([]);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ category: 'Other', amount: '', date: '', description: '' });
+  const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const loadExpenses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetchExpenses({ limit: 100 });
+      setExpenses(data.expenses || []);
+    } catch (err) {
+      console.error('Failed to load expenses:', err);
+      setError(err.response?.data?.message || err.message || 'Xarajatlarni yuklashda xatolik');
+      setExpenses([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadExpenses(); }, [loadExpenses]);
 
   const filtered = useMemo(() => expenses.filter((e) => {
     if (filter !== 'All' && e.category !== filter) return false;
-    if (search && !e.description.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const note = (e.note || '').toLowerCase();
+      const cat = (e.category || '').toLowerCase();
+      if (!note.includes(q) && !cat.includes(q)) return false;
+    }
     return true;
   }), [expenses, filter, search]);
 
-  const totalAmount = useMemo(() => filtered.reduce((sum, e) => sum + e.amount, 0), [filtered]);
-  const thisMonth = useMemo(() => filtered.filter((e) => e.date.startsWith('07.')).reduce((sum, e) => sum + e.amount, 0), [filtered]);
+  const totalAmount = useMemo(() => filtered.reduce((sum, e) => sum + (e.amount || 0), 0), [filtered]);
+  const thisMonth = useMemo(() => {
+    const now = new Date();
+    const m = now.getMonth();
+    const y = now.getFullYear();
+    return filtered.filter((e) => {
+      if (!e.spentAt) return false;
+      const d = new Date(e.spentAt);
+      return d.getMonth() === m && d.getFullYear() === y;
+    }).reduce((sum, e) => sum + (e.amount || 0), 0);
+  }, [filtered]);
   const avgDaily = useMemo(() => expenses.length > 0 ? Math.round(totalAmount / expenses.length) : 0, [totalAmount, expenses.length]);
 
-  // Budget chart data — uses all expenses, not filtered
   const budgetData = useMemo(() => CATEGORIES.filter((c) => c !== 'All').map((cat) => ({
     name: cat,
-    amount: expenses.filter((e) => e.category === cat).reduce((s, e) => s + e.amount, 0),
+    amount: expenses.filter((e) => e.category === cat).reduce((s, e) => s + (e.amount || 0), 0),
     fill: CATEGORY_COLORS[cat],
   })), [expenses]);
 
   const openModal = () => {
     const today = new Date().toISOString().split('T')[0];
-    setFormData({ category: 'Other', amount: '', date: today, description: '' });
+    setFormData({ category: 'Other', amount: '', spentAt: today, note: '' });
     setModalOpen(true);
   };
 
-  const handleSave = useCallback(() => {
-    const d = formData.date ? new Date(formData.date).toLocaleDateString('ru-RU') : new Date().toLocaleDateString('ru-RU');
-    setExpenses((prev) => [...prev, { id: Date.now(), ...formData, amount: Number(formData.amount), date: d }]);
-    setModalOpen(false);
-  }, [formData]);
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await apiCreateExpense({
+        category: formData.category,
+        amount: Number(formData.amount),
+        spentAt: formData.spentAt || undefined,
+        note: formData.note || undefined,
+      });
+      setModalOpen(false);
+      await loadExpenses();
+    } catch (err) {
+      console.error('Create expense failed:', err);
+      setError(err.response?.data?.message || err.message || 'Xarajat qo\'shishda xatolik');
+    } finally {
+      setSaving(false);
+    }
+  }, [formData, loadExpenses]);
 
-  const handleDelete = useCallback((id) => setExpenses((prev) => prev.filter((e) => e.id !== id)), []);
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await apiDeleteExpense(deleteTarget.id);
+      setDeleteTarget(null);
+      await loadExpenses();
+    } catch (err) {
+      console.error('Delete expense failed:', err);
+      setError(err.response?.data?.message || err.message || 'O\'chirishda xatolik');
+    } finally {
+      setSaving(false);
+    }
+  }, [deleteTarget, loadExpenses]);
 
   return (
     <>
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-[12px] text-[12px] font-semibold mb-4"
+          style={{ background: 'rgba(232,84,62,0.12)', color: '#E8543E', border: '1px solid rgba(232,84,62,0.2)' }}
+        >
+          <span className="flex-1">{error}</span>
+          <button onClick={() => setError(null)} className="hover:opacity-70 transition-opacity">
+            <span className="text-[16px]">&times;</span>
+          </button>
+        </div>
+      )}
+
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="animate-fade-in stagger-1">
@@ -100,6 +170,11 @@ export default function Expenses() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-10 pl-10 pr-4 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
           />
+          {loading && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <HiOutlineArrowPath className="w-4 h-4 text-[var(--text-muted)] animate-spin" />
+            </div>
+          )}
         </div>
         <Button variant="primary" size="sm" onClick={openModal}>
           <HiOutlinePlus className="w-4 h-4" />
@@ -131,8 +206,13 @@ export default function Expenses() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
         {/* Table */}
         <div className="glass-strong rounded-[20px] overflow-hidden min-w-0">
-          {filtered.length === 0 ? (
-            <div className="p-8"><EmptyState title="Xarajatlar topilmadi" description="Yangi xarajat qo'shing" action={{ label: "Qo'shish", onClick: openModal }} /></div>
+          {loading && expenses.length === 0 ? (
+            <div className="p-12 flex flex-col items-center justify-center">
+              <HiOutlineArrowPath className="w-8 h-8 text-[var(--text-muted)] animate-spin mb-3" />
+              <p className="text-[13px] text-[var(--text-secondary)]">Xarajatlar yuklanmoqda...</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-8"><EmptyState title="Xarajatlar topilmadi" description={search ? 'Qidiruvni o\'zgartiring' : 'Yangi xarajat qo\'shing'} action={search ? undefined : { label: "Qo'shish", onClick: openModal }} /></div>
           ) : (
             <>
               <table className="w-full text-left">
@@ -150,15 +230,15 @@ export default function Expenses() {
                     <tr key={e.id} className="border-t border-[var(--border)] text-[13px] transition-colors hover:bg-[var(--surface-hover)]">
                       <td className="px-5 py-3.5">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[11px] font-semibold"
-                          style={{ background: `${CATEGORY_COLORS[e.category]}20`, color: CATEGORY_COLORS[e.category] }}>
+                          style={{ background: `${CATEGORY_COLORS[e.category] || '#8FA283'}20`, color: CATEGORY_COLORS[e.category] || '#8FA283' }}>
                           {e.category}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-right font-semibold text-[var(--text)]">{formatCurrency(e.amount)}</td>
-                      <td className="px-5 py-3.5 text-[var(--text-secondary)]">{e.date}</td>
-                      <td className="px-5 py-3.5 text-[var(--text-secondary)]">{e.description}</td>
+                      <td className="px-5 py-3.5 text-[var(--text-secondary)]">{formatDate(e.spentAt)}</td>
+                      <td className="px-5 py-3.5 text-[var(--text-secondary)] max-w-[200px] truncate">{e.note || '—'}</td>
                       <td className="px-5 py-3.5">
-                        <button onClick={() => handleDelete(e.id)}
+                        <button onClick={() => setDeleteTarget(e)}
                           className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--danger)] hover:bg-[rgba(232,84,62,0.1)] transition-all">
                           <HiOutlineTrash className="w-4 h-4" />
                         </button>
@@ -182,11 +262,7 @@ export default function Expenses() {
                   tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={60} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="amount" radius={[0, 6, 6, 0]} barSize={20} isAnimationActive={false}>
-                  {budgetData.map((entry, i) => (
-                    <rect key={i} fill={entry.fill} />
-                  ))}
-                </Bar>
+                <Bar dataKey="amount" radius={[0, 6, 6, 0]} barSize={20} isAnimationActive={false} fill="#C6FF34" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -204,26 +280,56 @@ export default function Expenses() {
         </div>
       </div>
 
+      {/* Add Modal */}
       {modalOpen && (
-        <Modal title="Xarajat qo'shish" onClose={() => setModalOpen(false)}>
+        <Modal title="Xarajat qo'shish" onClose={() => { if (!saving) setModalOpen(false); }}>
           <div className="space-y-4">
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1.5">Kategoriya</label>
+              <label className="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1.5">Kategoriya *</label>
               <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full h-10 px-4 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none focus:border-[var(--green)]">
                 {CATEGORIES.filter((c) => c !== 'All').map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            <Input label="Summa" type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} placeholder="500000" />
-            <Input label="Sana" type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} />
-            <Input label="Izoh" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Xarajat haqida izoh" />
+            <Input label="Summa *" type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} placeholder="500000" />
+            <Input label="Sana" type="date" value={formData.spentAt} onChange={(e) => setFormData({ ...formData, spentAt: e.target.value })} />
+            <Input label="Izoh" value={formData.note} onChange={(e) => setFormData({ ...formData, note: e.target.value })} placeholder="Xarajat haqida izoh" />
+            {error && (
+              <div className="text-[11px] text-[var(--danger)] font-semibold rounded-[8px] px-3 py-2"
+                style={{ background: 'rgba(232,84,62,0.08)' }}
+              >
+                {error}
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" size="sm" onClick={() => setModalOpen(false)}>Bekor qilish</Button>
-              <Button variant="primary" size="sm" onClick={handleSave}>Qo'shish</Button>
+              <Button variant="ghost" size="sm" onClick={() => setModalOpen(false)} disabled={saving}>Bekor qilish</Button>
+              <Button variant="primary" size="sm" onClick={handleSave} disabled={saving || !formData.amount}>Qo'shish</Button>
             </div>
           </div>
         </Modal>
       )}
+
+      {/* Delete Confirmation */}
+      <Modal open={!!deleteTarget} title="Xarajatni o'chirish" onClose={() => { if (!saving) setDeleteTarget(null); }}>
+        <div className="space-y-5">
+          <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+            <span className="font-semibold text-[var(--text)]">{deleteTarget?.category}</span> — {formatCurrency(deleteTarget?.amount)} xarajatni o'chirishni xohlaysizmi?
+          </p>
+          {error && (
+            <div className="text-[11px] text-[var(--danger)] font-semibold rounded-[8px] px-3 py-2"
+              style={{ background: 'rgba(232,84,62,0.08)' }}
+            >
+              {error}
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Bekor qilish</Button>
+            <Button variant="danger" size="sm" onClick={handleDelete} disabled={saving}>
+              {saving ? "O'chirilmoqda..." : "O'chirish"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

@@ -1,10 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area,
 } from 'recharts';
-import { HiOutlineBanknotes, HiOutlineArrowTrendingUp, HiOutlineUserGroup, HiOutlineCheckCircle } from 'react-icons/hi2';
+import { HiOutlineCurrencyDollar, HiOutlineArrowTrendingUp, HiOutlineUserGroup, HiOutlineCheckCircle, HiOutlineArrowPath } from 'react-icons/hi2';
 import StatCard from '../components/StatCard.jsx';
+import { fetchDashboard } from '../services/adminService.js';
+import { useApi } from '../hooks/useApi.js';
 
 // ─── Utility ───────────────────────────────────────────────
 function formatCurrency(n) {
@@ -16,7 +18,7 @@ function cn(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
-// ─── Dummy data ────────────────────────────────────────────
+// ─── Static chart data (frontend-only, no historical API yet) ───
 const MONTHS = [
   'Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun',
   'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek',
@@ -85,6 +87,18 @@ const PERIODS = ['This Week', 'This Month', 'This Quarter', 'This Year'];
 // ─── Main Component ────────────────────────────────────────
 export default function Reports() {
   const [period, setPeriod] = useState('This Year');
+  const { data: d, loading, error, execute } = useApi(fetchDashboard);
+
+  useEffect(() => { execute(); }, [execute]);
+
+  const raw = d?.data || d;
+  const { totals } = raw || { totals: {} };
+  const {
+    revenue = 0,
+    expenses = 0,
+    profit = 0,
+    activeStudents = 0,
+  } = totals;
 
   const data = useMemo(() => periodData[period], [period]);
 
@@ -100,8 +114,8 @@ export default function Reports() {
     [data],
   );
 
-  // Summary stats
-  const stats = useMemo(() => {
+  // Period stats (for chart footer, kept as illustration)
+  const chartStats = useMemo(() => {
     const totalRevenue = data.revenue.reduce((a, b) => a + b, 0);
     const totalExpenses = data.expenses.reduce((a, b) => a + b, 0);
     const totalEnrolled = data.enrolled.reduce((a, b) => a + b, 0);
@@ -115,6 +129,17 @@ export default function Reports() {
   }, [data]);
 
   // ─── Render ────────────────────────────────────────────
+  if (loading && !d) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <HiOutlineArrowPath className="w-8 h-8 text-[var(--text-muted)] animate-spin" />
+          <p className="text-[13px] text-[var(--text-secondary)]">Hisobot yuklanmoqda...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 page-enter">
       {/* Header + Period filter */}
@@ -138,23 +163,29 @@ export default function Reports() {
             </button>
           ))}
         </div>
-        <span className="text-[11px] text-[var(--text-muted)] font-medium">
-          {period === 'This Week' && '7 kunlik'}
-          {period === 'This Month' && '4 haftalik'}
-          {period === 'This Quarter' && '3 oylik'}
-          {period === 'This Year' && '12 oylik'}
-          {' dinamika'}
-        </span>
+        <div className="flex items-center gap-2">
+          {error && (
+            <span className="text-[10px] text-[var(--danger)]">Ma'lumotlarni yuklashda xatolik</span>
+          )}
+          {loading && <HiOutlineArrowPath className="w-4 h-4 text-[var(--text-muted)] animate-spin" />}
+          <span className="text-[11px] text-[var(--text-muted)] font-medium">
+            {period === 'This Week' && '7 kunlik'}
+            {period === 'This Month' && '4 haftalik'}
+            {period === 'This Quarter' && '3 oylik'}
+            {period === 'This Year' && '12 oylik'}
+            {' dinamika'}
+          </span>
+        </div>
       </div>
 
-      {/* ── StatCards ── */}
+      {/* ── StatCards (REAL data from dashboard API) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="animate-fade-in stagger-1">
           <StatCard
             title="Jami daromad"
-            value={formatCurrency(stats.totalRevenue)}
+            value={formatCurrency(revenue)}
             delta={12.5}
-            deltaLabel={period === 'This Week' ? 'haftalik' : period === 'This Year' ? 'yillik' : 'davr'}
+            deltaLabel="jami"
             icon={<HiOutlineArrowTrendingUp className="w-4 h-4" />}
             color="#2ECC71"
           />
@@ -162,19 +193,19 @@ export default function Reports() {
         <div className="animate-fade-in stagger-2">
           <StatCard
             title="Jami xarajat"
-            value={formatCurrency(stats.totalExpenses)}
+            value={formatCurrency(expenses)}
             delta={3.2}
-            deltaLabel={period === 'This Week' ? 'haftalik' : period === 'This Year' ? 'yillik' : 'davr'}
-            icon={<HiOutlineBanknotes className="w-4 h-4" />}
+            deltaLabel="jami"
+            icon={<HiOutlineCurrencyDollar className="w-4 h-4" />}
             color="#F59E0B"
           />
         </div>
         <div className="animate-fade-in stagger-3">
           <StatCard
             title="Sof foyda"
-            value={formatCurrency(stats.netProfit)}
+            value={formatCurrency(profit)}
             delta={18.7}
-            deltaLabel={period === 'This Week' ? 'haftalik' : period === 'This Year' ? 'yillik' : 'davr'}
+            deltaLabel="jami"
             icon={<HiOutlineCheckCircle className="w-4 h-4" />}
             color="#2ECC71"
           />
@@ -182,16 +213,16 @@ export default function Reports() {
         <div className="animate-fade-in stagger-4">
           <StatCard
             title="Faol o‘quvchilar"
-            value={String(stats.activeStudents)}
+            value={String(activeStudents)}
             delta={8.4}
-            deltaLabel="yangi qabul"
+            deltaLabel="jami"
             icon={<HiOutlineUserGroup className="w-4 h-4" />}
             color="#3B82F6"
           />
         </div>
       </div>
 
-      {/* ── Charts row ── */}
+      {/* ── Charts row (illustrative — dedicated reports API coming) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Revenue vs Expenses BarChart */}
         <div className="glass-strong rounded-[20px] p-5 animate-slide-up stagger-2">
@@ -315,7 +346,7 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* ── Group Performance Table ── */}
+      {/* ── Group Performance Table (illustrative) ── */}
       <div className="glass-strong rounded-[20px] p-5 animate-slide-up stagger-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[14px] font-bold text-[var(--text)]">Guruhlar reytingi</h2>
