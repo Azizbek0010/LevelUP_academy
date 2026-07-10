@@ -1,8 +1,16 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, LogOut, Menu, Bell, BookOpen, Layers, FileQuestion, ClipboardCheck, TrendingUp,
+  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, Layers, FileQuestion, ClipboardCheck, TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
+
+const superNav = [
+  { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
+  { to: '/branches', label: 'Филиалы', Icon: Building2 },
+  { to: '/admins', label: 'Админы', Icon: Users },
+  { to: '/reports', label: 'Аналитика', Icon: BarChart3 },
+  { to: '/settings', label: 'Настройки', Icon: Settings },
+];
 
 const adminNav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
@@ -19,19 +27,21 @@ const methodistNav = [
 ];
 
 const ROLE_NAV = {
+  superadmin: superNav,
   admin: adminNav,
   mentor: mentorNav,
   methodist: methodistNav,
 };
 
 const ROLE_TITLE = {
+  superadmin: 'Super Admin',
   admin: 'Администратор',
   mentor: 'Ментор',
   methodist: 'Методист',
 };
 
 function SidebarContent({ role }) {
-  const nav = ROLE_NAV[role] || adminNav;
+  const nav = ROLE_NAV[role] || superNav;
   return (
     <aside className="w-64 min-h-full bg-sidebar text-neutral-content flex flex-col">
       <div className="px-5 py-6">
