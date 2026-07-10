@@ -28,13 +28,13 @@ const NAV_ITEMS = [
   { to: '/superadmin', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
   { to: '/superadmin/branches', labelKey: 'nav.branches', icon: Building2 },
   { to: '/superadmin/users', labelKey: 'nav.users', icon: Users },
-  { to: '/superadmin/stats', labelKey: 'nav.stats', icon: BarChart3 },
-  { to: '/superadmin/announcements', labelKey: 'nav.announcements', icon: Megaphone },
-  { to: '/superadmin/audit', labelKey: 'nav.audit', icon: FileClock },
-  { to: '/superadmin/reminders', labelKey: 'nav.reminders', icon: Bell },
-  { to: '/superadmin/students', labelKey: 'nav.students', icon: GraduationCap },
-  { to: '/superadmin/groups', labelKey: 'nav.groups', icon: Users2 },
-  { to: '/superadmin/attendance', labelKey: 'nav.attendance', icon: CalendarCheck2 },
+  { to: '/superadmin/stats', labelKey: 'nav.stats', icon: BarChart3, soon: true },
+  { to: '/superadmin/announcements', labelKey: 'nav.announcements', icon: Megaphone, soon: true },
+  { to: '/superadmin/audit', labelKey: 'nav.audit', icon: FileClock, soon: true },
+  { to: '/superadmin/reminders', labelKey: 'nav.reminders', icon: Bell, soon: true },
+  { to: '/superadmin/students', labelKey: 'nav.students', icon: GraduationCap, soon: true },
+  { to: '/superadmin/groups', labelKey: 'nav.groups', icon: Users2, soon: true },
+  { to: '/superadmin/attendance', labelKey: 'nav.attendance', icon: CalendarCheck2, soon: true },
   { to: '/superadmin/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
@@ -96,7 +96,7 @@ export default function SuperAdminLayout(): React.ReactElement {
 
         {/* Nav */}
         <nav className="flex-1 px-3 pb-3 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map(({ to, labelKey, icon: Icon, end }) => (
+          {NAV_ITEMS.map(({ to, labelKey, icon: Icon, end, soon }) => (
             <NavLink
               key={to}
               to={to}
@@ -106,12 +106,19 @@ export default function SuperAdminLayout(): React.ReactElement {
                   'flex items-center gap-3 px-3 py-2 rounded-lg text-[13.5px] transition-colors',
                   isActive
                     ? 'bg-white/[0.07] text-primary font-medium'
-                    : 'text-white/60 hover:text-white/90 hover:bg-white/[0.04]',
+                    : soon
+                      ? 'text-white/35 hover:text-white/50 hover:bg-white/[0.03]'
+                      : 'text-white/60 hover:text-white/90 hover:bg-white/[0.04]',
                 )
               }
             >
               <Icon className="size-4 shrink-0" />
-              <span>{t(labelKey)}</span>
+              <span className="flex-1">{t(labelKey)}</span>
+              {soon && (
+                <span className="text-[9px] bg-warning/20 text-warning/70 px-1.5 py-0.5 rounded font-semibold tracking-wide uppercase">
+                  скоро
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

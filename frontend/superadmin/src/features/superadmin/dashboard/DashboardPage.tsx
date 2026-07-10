@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { dashboardApi, type DashboardBranchItem } from '../../../shared/api/endpoints/dashboard';
 import { AnimatedNumber } from '../../../shared/ui/AnimatedNumber';
+import { Skeleton, SkeletonTable } from '../../../shared/ui/Skeleton';
 import { useResolvedTheme } from '../../../shared/hooks/useResolvedTheme';
 
 const CURRENCY = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
@@ -74,10 +75,35 @@ export default function DashboardPage(): React.ReactElement {
   if (isLoading) {
     return (
       <div className="p-8 space-y-6">
+        <div className="flex items-start justify-between flex-wrap gap-3">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-56" />
+            <Skeleton className="h-4 w-44" />
+          </div>
+          <Skeleton className="h-7 w-16 rounded-full" />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="card bg-base-100 border border-base-300 h-32 animate-pulse" />
+            <div key={i} className="card bg-base-100 border border-base-300 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-8 w-8 rounded-lg" />
+              </div>
+              <Skeleton className="h-9 w-32" />
+              <div className="flex items-end justify-between">
+                <Skeleton className="h-5 w-12 rounded-full" />
+                <Skeleton className="h-8 w-20" />
+              </div>
+            </div>
           ))}
+        </div>
+        <Skeleton className="h-80 w-full rounded-2xl" />
+        <div className="card bg-base-100 border border-base-300 overflow-hidden">
+          <div className="px-5 py-4 border-b border-base-300 flex items-center justify-between">
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-8 w-28 rounded-lg" />
+          </div>
+          <SkeletonTable rows={4} cols={6} />
         </div>
       </div>
     );
@@ -89,6 +115,13 @@ export default function DashboardPage(): React.ReactElement {
         <div role="alert" className="alert alert-error">
           <span>Ошибка загрузки дашборда. Проверьте подключение к серверу.</span>
         </div>
+        <button
+          type="button"
+          className="btn btn-sm mt-3"
+          onClick={() => window.location.reload()}
+        >
+          Попробовать снова
+        </button>
       </div>
     );
   }
@@ -98,9 +131,9 @@ export default function DashboardPage(): React.ReactElement {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Organization Dashboard</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Дашборд организации</h1>
           <p className="text-base-content/60 text-sm mt-1">
-            Обзор всей организации · {activeBranches.length} активных филиалов
+            Обзор всей сети · {activeBranches.length} активных филиалов
           </p>
         </div>
         <div className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-primary/15 border border-primary/30 text-[11px] font-semibold">
@@ -112,7 +145,7 @@ export default function DashboardPage(): React.ReactElement {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <BigKpi
-          label="Total Revenue"
+          label="Выручка"
           value={totals?.revenue ?? 0}
           format={(v) => `${formatCurrency(v)} ${totals?.currency ?? 'UZS'}`}
           icon={Wallet}
@@ -121,7 +154,7 @@ export default function DashboardPage(): React.ReactElement {
           trendPositive
         />
         <BigKpi
-          label="Outstanding Debts"
+          label="Долги"
           value={totals?.outstandingDebt ?? 0}
           format={(v) => `${formatCurrency(v)} ${totals?.currency ?? 'UZS'}`}
           icon={TrendingUp}
@@ -129,7 +162,7 @@ export default function DashboardPage(): React.ReactElement {
           color="oklch(68% 0.22 25)"
         />
         <BigKpi
-          label="Active Students"
+          label="Студентов"
           value={totals?.activeStudents ?? 0}
           format={(v) => String(Math.round(v))}
           icon={GraduationCap}
@@ -138,7 +171,7 @@ export default function DashboardPage(): React.ReactElement {
           trendPositive
         />
         <BigKpi
-          label="Admins"
+          label="Администраторов"
           value={totals?.admins ?? 0}
           format={(v) => String(Math.round(v))}
           icon={Users}
@@ -225,11 +258,11 @@ export default function DashboardPage(): React.ReactElement {
       {/* Bottom Stats Bar */}
       <div className="panel-dark rounded-2xl mt-6 relative">
         <div className="px-6 py-5 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <BottomStat label="Branches" value={String(totals?.branches ?? 0)} />
-          <BottomStat label="Students" value={formatCompact(totals?.activeStudents ?? 0)} />
-          <BottomStat label="Revenue" value={`${formatCurrency(totals?.revenue ?? 0)} сум`} />
+          <BottomStat label="Филиалов" value={String(totals?.branches ?? 0)} />
+          <BottomStat label="Студентов" value={formatCompact(totals?.activeStudents ?? 0)} />
+          <BottomStat label="Выручка" value={`${formatCurrency(totals?.revenue ?? 0)} сум`} />
           <BottomStat
-            label="Collected"
+            label="Собрано"
             value={collectionRate(totals?.revenue ?? 0, totals?.outstandingDebt ?? 0)}
             check
           />
@@ -321,7 +354,7 @@ function BigKpi({
         </div>
         <div className="flex items-end justify-between gap-2 mt-1">
           <span className={clsx('inline-flex items-center gap-1 h-5 px-2 rounded-full text-[10px] font-bold', trendPositive ? 'bg-success/15 text-success' : 'bg-base-200 text-base-content/40')}>
-            {trendPositive ? '↑' : '·'} Live
+            {trendPositive ? '↑ Рост' : '· Данные'}
           </span>
           <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="w-24 h-8 shrink-0">
             <defs>
@@ -348,7 +381,7 @@ function RevenueByBranchCard({ data, branches }: { data: Array<{ name: string; r
       <div className="card-body">
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.15em] text-base-content/50 font-semibold">Revenue by branch</div>
+            <div className="text-[10px] uppercase tracking-[0.15em] text-base-content/50 font-semibold">Выручка по филиалам</div>
             <div className="text-lg font-semibold mt-0.5">Выручка и долги по филиалам</div>
           </div>
           <div className="flex items-center gap-3 flex-wrap">

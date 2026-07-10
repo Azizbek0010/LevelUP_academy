@@ -6,6 +6,7 @@ import { adminsApi, type AdminItem, type AdminCreateInput } from '../../../share
 import { methodistsApi, type MethodistItem, type MethodistCreateInput } from '../../../shared/api/endpoints/methodists';
 import { branchesApi } from '../../../shared/api/endpoints/branches';
 import { PageHeader, Avatar } from '../../../shared/ui/PageHeader';
+import { SkeletonTable } from '../../../shared/ui/Skeleton';
 import { Modal } from '../../../shared/ui/Modal';
 import { toast } from '../../../shared/ui/Toast';
 import { useForm } from 'react-hook-form';
@@ -88,8 +89,8 @@ export default function UsersPage(): React.ReactElement {
 
       {/* Table */}
       {isLoading ? (
-        <div className="space-y-3">
-          {[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-base-200 rounded-xl animate-pulse" />)}
+        <div className="card bg-base-100 border border-base-300 overflow-hidden">
+          <SkeletonTable rows={5} cols={tab === 'admins' ? 6 : 5} />
         </div>
       ) : tab === 'admins' ? (
         <AdminsTable admins={filteredAdmins} onFreeze={(id, frozen) => freezeAdmin.mutate({ id, frozen })} />

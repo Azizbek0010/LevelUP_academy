@@ -7,6 +7,7 @@ import { branchesApi, type BranchItem } from '../../../shared/api/endpoints/bran
 import { ConfirmDialog } from '../../../shared/ui/ConfirmDialog';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { PageHeader } from '../../../shared/ui/PageHeader';
+import { SkeletonTable } from '../../../shared/ui/Skeleton';
 import { toast } from '../../../shared/ui/Toast';
 import { BranchFormModal } from './BranchFormModal';
 
@@ -101,7 +102,7 @@ export default function BranchesPage(): React.ReactElement {
         </div>
 
         {query.isLoading ? (
-          <div className="p-10 text-center text-base-content/40 text-sm">Загрузка…</div>
+          <SkeletonTable rows={5} cols={7} />
         ) : branches.length === 0 ? (
           <div className="p-8">
             <EmptyState icon={Building2} title="Филиалов не найдено"
