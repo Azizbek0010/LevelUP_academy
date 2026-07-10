@@ -41,10 +41,10 @@
 
 - [x] K-METHODIST: Training types, topics, lessons CRUD + analytics (modules/methodist)
 
-## Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task)
+## Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
 
-- [ ] K-PAY: Payments modul: invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + refund/void + chek S3 ga; commit dan KEYIN notificationQueue 'payment.received'; total_debt + invoice.status qayta hisob. NASIYA YO'Q
-- [ ] K-PAY: Branch reports: filial bo'yicha tushum va qarzlar (guruhlar kesimida)
+- [x] K-PAY: Payments modul: oylik avto-hisoblash (billing.worker, 1-sana, muddat 5-sana) + invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + ad-hoc to'lov + refund/void + chek S3 ga; commit dan KEYIN notificationQueue ('payment.received'/'payment.due'/'payment.refunded'); total_debt + invoice.status qayta hisob. To'lamasa (5-sanadan keyin, invoice='overdue') — student panelga umuman data qaytmaydi (paymentGate, 402). NASIYA YO'Q
+- [x] K-PAY: Branch reports: filial bo'yicha tushum va qarzlar (guruhlar kesimida) — GET /api/admin/reports
 
 ## Backend — V1 qolganlari (Abdulaziz)
 

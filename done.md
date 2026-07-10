@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 10.07.2026 22:40 (UTC+5, Toshkent vaqti)
-> Statistika: 58/98 task tugallangan (59%)
+> Oxirgi yangilanish: 10.07.2026 23:18 (UTC+5, Toshkent vaqti)
+> Statistika: 60/98 task tugallangan (61%)
 
 ---
 
-## Progress: [###########.........] 59%
+## Progress: [############........] 61%
 
 ## Tugallangan vazifalar
 
@@ -38,6 +38,10 @@
 
 ### Backend — Methodist (Karis)
 - [x] K-METHODIST: Training types, topics, lessons CRUD + analytics (modules/methodist)
+
+### Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
+- [x] K-PAY: Payments modul: oylik avto-hisoblash (billing.worker, 1-sana, muddat 5-sana) + invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + ad-hoc to'lov + refund/void + chek S3 ga; commit dan KEYIN notificationQueue ('payment.received'/'payment.due'/'payment.refunded'); total_debt + invoice.status qayta hisob. To'lamasa (5-sanadan keyin, invoice='overdue') — student panelga umuman data qaytmaydi (paymentGate, 402). NASIYA YO'Q
+- [x] K-PAY: Branch reports: filial bo'yicha tushum va qarzlar (guruhlar kesimida) — GET /api/admin/reports
 
 ### Backend — Infrastructure (Abdulaziz) ✅
 - [x] AB-INFRA: Scaffold + structure + deps + docker-compose
@@ -97,6 +101,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 29 task
+- Karis (Backend): 31 task
 - Abdulaziz (Backend): 27 task
 - Frontend jamoasi: 11 task

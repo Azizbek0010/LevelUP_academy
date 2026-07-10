@@ -20,15 +20,20 @@ import {
   listGroupsQuery,
 } from './admin.schemas.js';
 import * as ctrl from './admin.controller.js';
+import paymentsRoutes from './payments/payments.routes.js';
+import reportsRoutes from './reports/reports.routes.js';
 
 /**
  * K-ADMIN — панель филиала. Только Admin; scope жёстко = свой branch_id.
  * Управление: дашборд, расходы, студенты (add-student с генерацией логин-кода),
- * группы. Платежи (invoices/transactions/Nasiya) — отдельным роутером (2-й инкремент).
+ * группы, платежи (/payments), отчёты (/reports).
  */
 const router = Router();
 
 router.use(authenticate, authorize('admin'));
+
+router.use('/payments', paymentsRoutes);
+router.use('/reports', reportsRoutes);
 
 // дашборд филиала: доход − расход = прибыль, студенты, группы, долги
 router.get('/dashboard', ctrl.dashboard);
