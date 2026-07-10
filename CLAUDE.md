@@ -168,7 +168,9 @@ LevelUp-Academy/
 │   │   │   ├── auth/        # Вход, JWT, OTP, Google OAuth
 │   │   │   ├── main/        # Main Admin: онбординг, биллинг, лиды
 │   │   │   ├── super/       # Super Admin: филиалы, админы
-│   │   │   ├── admin/       # Admin: дашборд, расходы, студенты, группы
+│   │   │   ├── admin/       # Admin: дашборд, расходы, студенты, группы, менторы
+│   │   │   │   ├── payments/   # K-PAY: инвойсы, оплата (full/split), refund/void, чек в S3
+│   │   │   │   └── reports/    # K-PAY: выручка + долги филиала по группам
 │   │   │   ├── mentor/      # Mentor: davomat, ДЗ, тесты, коины, зарплата
 │   │   │   ├── student/     # Student: home, магазин, ДЗ, тесты, видео
 │   │   │   ├── parent/      # Parent: обзор ребёнка
@@ -177,8 +179,8 @@ LevelUp-Academy/
 │   │   │   ├── coins/       # Баланс/история коинов
 │   │   │   ├── users/       # Профили, список филиала
 │   │   │   └── telegram/    # Telegram-бот (grammY)
-│   │   ├── middlewares/     # authenticate, authorize, validate, errorHandler
-│   │   ├── queues/          # BullMQ: notification.queue + workers
+│   │   ├── middlewares/     # authenticate, authorize, validate, errorHandler, paymentGate (блок студента при overdue-долге)
+│   │   ├── queues/          # BullMQ: notification.queue + workers (notification, overdue, billing — авто-начисление/просрочка K-PAY)
 │   │   ├── sockets/         # Socket.io: chat, presence, auth
 │   │   ├── db/              # Миграции (node-pg-migrate), seeds
 │   │   ├── shared/          # Общий код (membership, period)
@@ -186,12 +188,17 @@ LevelUp-Academy/
 │   ├── tests/               # Тесты: mentor/ student/ parent/
 │   ├── worker.js            # Entry point для BullMQ worker
 │   └── package.json
-├── frontend/                 # React SPA
-│   ├── landing-page/        # Лендинг (React + Vite)
-│   ├── main-admin/          # Панель Main Admin (DaisyUI лайм)
-│   ├── staff/               # Панель Admin + Mentor + Super Admin + Methodist (ОБЩИЙ)
-│   ├── auth/                # Логин/регистрация
-│   └── logos/               # Логотипы
+├── frontend/                 # React SPA — 5 независимых Vite-приложений (не монолит)
+│   ├── landing-page/        # Лендинг (React + Vite), форма заявки → POST /api/leads
+│   ├── main-admin/          # Панель Main Admin (DaisyUI лайм), свой логин
+│   ├── staff/               # ОДНО приложение, ОДИН логин: Admin + Mentor + Methodist + Super Admin
+│   │   └── src/pages/super/ # Super Admin-секция (роуты /super/*, TS/TSX) — свой Layout,
+│   │                        # свой auth-store (zustand), синхронизируется с общим
+│   │                        # useAuth() через AuthSync.jsx (см. docs/FRONTEND-ARCHITECTURE.md §2)
+│   ├── member/               # Логин + кабинет Student/Parent (по логин-коду), Elyor
+│   ├── student/              # Student SPA: home/tests/homework/videos/shop/leaderboard
+│   │                         # (использует сессию из member/, своей страницы логина нет)
+│   └── logos/                # Логотипы
 ├── docs/                     # Архитектурная документация
 │   ├── BACKEND-ARCHITECTURE.md
 │   ├── FRONTEND-ARCHITECTURE.md
@@ -252,12 +259,32 @@ cd frontend/landing-page && npm run dev
 # Main Admin
 cd frontend/main-admin && npm run dev
 
-# Auth
-cd frontend/auth && npm run dev
-
-# Staff (Admin + Super Admin + Mentor + Methodist)
+# Staff (один логин: Admin + Super Admin + Mentor + Methodist)
 cd frontend/staff && npm run dev
+
+# Member — логин + кабинет Student/Parent
+cd frontend/member && npm run dev
+
+# Student SPA (использует сессию member/, своего логина нет)
+cd frontend/student && npm run dev
 ```
+
+⚠️ `frontend/member` и `frontend/student` по умолчанию просят один и тот же dev-порт (5175) —
+при одновременном локальном запуске обоих указывайте порт вручную (`npm run dev -- --port 5176`).
+
+---
+
+## Workflow: Claude работает только в `save-zone` (ОБЯЗАТЕЛЬНО)
+
+По умолчанию Claude Code ведёт работу исключительно в ветке `save-zone`, не в `main`:
+
+- Начало сессии/задачи → `git checkout save-zone` (не `main`).
+- Слияние чужих веток команды (feature-ветки, персональные ветки типа `elyor`/`rey`/`xob`/`Islom`/`shohjahon` и т.п.) → мержить их **тоже в `save-zone`**, не напрямую в `main`.
+- Свой код (бэкенд-фичи, фиксы, рефактор) → коммитить и пушить тоже в `save-zone`.
+- `main` трогается ТОЛЬКО после того, как `save-zone` протестирован (хотя бы вживую в браузере/playwright там, где это возможно без бэкенда) и пользователь явно просит закатить в `main` ("main ga push qill" и т.п.) — то есть промоушен `save-zone → main` не автоматический, а по прямой команде.
+- После любого изменения в `main` — обязательно синхронизировать обратно `save-zone` (`git merge main --no-ff` в `save-zone` + push), чтобы ветки не расходились.
+
+Это относится и к самому Claude Code как к участнику разработки — не только к людям-контрибьюторам (см. также Save Zone Workflow в глобальном `CLAUDE.md` пользователя, который описывает тот же принцип для человека-Team Lead).
 
 ---
 
