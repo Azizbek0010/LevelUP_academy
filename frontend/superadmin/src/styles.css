@@ -1,0 +1,389 @@
+@import 'tailwindcss';
+@plugin 'daisyui' {
+  themes:
+    levelup --default,
+    levelup-dark;
+}
+
+/* ── Light: bright content · lime accent · dark navigation ── */
+@plugin 'daisyui/theme' {
+  name: 'levelup';
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(99% 0.005 130);
+  --color-base-200: oklch(97% 0.008 130);
+  --color-base-300: oklch(93% 0.01 130);
+  --color-base-content: oklch(20% 0 0);
+
+  --color-primary: oklch(88% 0.22 130);
+  --color-primary-content: oklch(20% 0.05 155);
+
+  --color-secondary: oklch(65% 0.14 165);
+  --color-secondary-content: oklch(98% 0 0);
+
+  --color-accent: oklch(88% 0.22 130);
+  --color-accent-content: oklch(15% 0 0);
+
+  --color-neutral: oklch(15% 0.01 150);
+  --color-neutral-content: oklch(97% 0.01 130);
+
+  --color-info: oklch(70% 0.15 220);
+  --color-success: oklch(72% 0.20 145);
+  --color-warning: oklch(75% 0.18 80);
+  --color-error: oklch(62% 0.24 25);
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* ── Dark: espresso brown base · lime accent ── */
+/* Sidebar панель всегда espresso (см. .panel-dark), content — чуть светлее и теплее,
+   чтобы sidebar visually отделялся, а не сливался. */
+@plugin 'daisyui/theme' {
+  name: 'levelup-dark';
+  default: false;
+  prefersdark: true;
+  color-scheme: dark;
+
+  --color-base-100: oklch(24% 0.02 55);
+  --color-base-200: oklch(28% 0.022 55);
+  --color-base-300: oklch(34% 0.025 55);
+  --color-base-content: oklch(95% 0 0);
+
+  --color-primary: oklch(85% 0.22 130);
+  --color-primary-content: oklch(18% 0.05 130);
+
+  --color-secondary: oklch(70% 0.15 165);
+  --color-secondary-content: oklch(15% 0.02 45);
+
+  --color-accent: oklch(85% 0.22 130);
+  --color-accent-content: oklch(15% 0 0);
+
+  --color-neutral: oklch(12% 0.012 45);
+  --color-neutral-content: oklch(95% 0.02 60);
+
+  --color-info: oklch(72% 0.14 220);
+  --color-success: oklch(78% 0.18 145);
+  --color-warning: oklch(80% 0.16 80);
+  --color-error: oklch(68% 0.22 25);
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Sidebar/bottom-stats — всегда espresso, независимо от темы. */
+.panel-dark {
+  background: oklch(15% 0.015 45);
+  color: oklch(97% 0.02 60);
+}
+.panel-dark-hover:hover {
+  background: oklch(22% 0.02 45);
+}
+
+/* Плотные таблицы в стиле референса — минималистичные, без alternating rows. */
+.dense-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+.dense-table thead th {
+  text-align: left;
+  padding: 0.5rem 1rem;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-base-content);
+  opacity: 0.5;
+  border-bottom: 1px solid var(--color-base-300);
+}
+.dense-table tbody td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-base-300);
+  vertical-align: middle;
+}
+.dense-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.dense-table tbody tr {
+  transition: background 120ms;
+}
+.dense-table tbody tr:hover {
+  background: oklch(from var(--color-base-200) l c h / 0.5);
+}
+.dense-table tbody tr[data-clickable='true'] {
+  cursor: pointer;
+}
+
+/* Avatar-кружки для таблиц. */
+.avatar-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-primary) 20%, transparent);
+  color: color-mix(in oklch, var(--color-primary) 100%, black 30%);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   WOW-эффекты (микроинтерактивы для всей системы)
+   Источники вдохновения: Factory (короткие переходы, hairline)
+   и Slash (pill-контуры, тонкие hover-сдвиги)
+   ───────────────────────────────────────────────────────────── */
+
+/* Все кнопки daisyUI получают плавный transition для всех состояний */
+.btn {
+  transition:
+    transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 120ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 120ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn:not(.btn-disabled):not([disabled]):hover {
+  transform: translateY(-1px);
+}
+
+.btn:not(.btn-disabled):not([disabled]):active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 60ms;
+}
+
+/* Primary кнопка — с glow эффектом на hover (lime свечение) */
+.btn-primary:not(.btn-disabled):not([disabled]):hover {
+  box-shadow:
+    0 4px 12px -2px color-mix(in oklch, var(--color-primary) 40%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--color-primary) 50%, transparent);
+}
+
+/* Focus ring для всех interactive элементов — заметно, но не крикливо */
+.btn:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--color-primary) 60%, transparent);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* Универсальная утилита: subtle lift для интерактивных карт */
+.wow-lift {
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.wow-lift:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 30px -12px color-mix(in oklch, var(--color-primary) 25%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--color-primary) 20%, transparent);
+}
+
+/* Shine sweep — тонкий световой блик по кнопке при hover.
+   Пример использования: <button className="btn btn-primary wow-shine">…</button> */
+.wow-shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.wow-shine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    color-mix(in oklch, white 40%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  transition: transform 700ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+.wow-shine:hover::before {
+  transform: translateX(120%);
+}
+.wow-shine > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Хайлайт «активной» карты (selected state) */
+.wow-selected {
+  position: relative;
+}
+.wow-selected::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    color-mix(in oklch, var(--color-primary) 40%, transparent)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Плавное появление снизу для секций */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.wow-rise {
+  animation: rise-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Пульсация primary-точки (для «онлайн», «в сети сейчас») */
+@keyframes pulse-primary {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--color-primary) 50%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in oklch, var(--color-primary) 0%, transparent);
+  }
+}
+.wow-pulse {
+  animation: pulse-primary 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Input с толстым focus-glow (для «премиум» ощущения на полях профиля) */
+.wow-input {
+  transition:
+    border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.wow-input:hover {
+  border-color: color-mix(in oklch, var(--color-primary) 40%, var(--color-base-300));
+}
+.wow-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 20%, transparent);
+  outline: none;
+}
+
+/* Section-card с «шляпкой» — иконка в градиентной обёртке слева от заголовка.
+   Используется вручную: <div class="wow-card"><header class="wow-card-head">... */
+.wow-card {
+  border-radius: 16px;
+  background: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
+  overflow: hidden;
+  transition: box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.wow-card:hover {
+  box-shadow: 0 6px 24px -12px color-mix(in oklch, black 25%, transparent);
+}
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+code,
+pre,
+kbd {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+/* ─── Chart entry animations ─── */
+
+@keyframes chart-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes chart-shine {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.chart-rise {
+  animation: chart-rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.chart-rise-delay-1 { animation-delay: 60ms; }
+.chart-rise-delay-2 { animation-delay: 120ms; }
+.chart-rise-delay-3 { animation-delay: 180ms; }
+.chart-rise-delay-4 { animation-delay: 240ms; }
+.chart-rise-delay-5 { animation-delay: 320ms; }
+.chart-rise-delay-6 { animation-delay: 420ms; }
+
+.card-lift {
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -12px oklch(20% 0.02 260 / 0.15);
+}
+
+/* ─── Left-to-right chart sweep reveal ─── */
+@keyframes chart-sweep {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+.chart-sweep {
+  animation: chart-sweep 1800ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.chart-sweep-delay-1 { animation-delay: 100ms; }
+.chart-sweep-delay-2 { animation-delay: 300ms; }
+.chart-sweep-delay-3 { animation-delay: 500ms; }
+
+/* ─── Neon glow dot on hover ─── */
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 4px oklch(75% 0.24 340 / 0.8)); }
+  50%      { filter: drop-shadow(0 0 8px oklch(75% 0.24 340 / 1)); }
+}
+.neon-dot { animation: pulse-glow 1.6s ease-in-out infinite; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
