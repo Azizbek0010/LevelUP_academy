@@ -4,10 +4,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 
-// Super Admin переехал в отдельное приложение (frontend/superadmin) — здесь
-// у него остаётся только страница-редирект на новую панель.
-const superNav = [{ to: '/', label: 'Панель', Icon: LayoutDashboard, end: true }];
-
 const adminNav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
 ];
@@ -23,21 +19,19 @@ const methodistNav = [
 ];
 
 const ROLE_NAV = {
-  superadmin: superNav,
   admin: adminNav,
   mentor: mentorNav,
   methodist: methodistNav,
 };
 
 const ROLE_TITLE = {
-  superadmin: 'Super Admin',
   admin: 'Администратор',
   mentor: 'Ментор',
   methodist: 'Методист',
 };
 
 function SidebarContent({ role }) {
-  const nav = ROLE_NAV[role] || superNav;
+  const nav = ROLE_NAV[role] || adminNav;
   return (
     <aside className="w-64 min-h-full bg-sidebar text-neutral-content flex flex-col">
       <div className="px-5 py-6">
