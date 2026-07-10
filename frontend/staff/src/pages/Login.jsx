@@ -99,7 +99,7 @@ function LoginForm({ onForgot }) {
   return (
     <>
       <h1 className="text-2xl font-bold tracking-tight">Вход в панель</h1>
-      <p className="text-sm opacity-60 mb-6">Администратор · Ментор · Методист</p>
+      <p className="text-sm opacity-60 mb-6">Super Admin · Администратор · Ментор · Методист</p>
       {error && <div role="alert" className="alert alert-error text-sm py-2 mb-4"><span>{error}</span></div>}
 
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
@@ -242,7 +242,7 @@ export default function Login() {
         <img src="/logo-white.svg" alt="LevelUp Academy" className="relative h-10 w-auto self-start" />
         <div className="relative">
           <h2 className="text-3xl font-bold leading-tight">Панель управления</h2>
-          <p className="opacity-60 mt-2 max-w-sm">Администратор, Ментор и Методист — управляйте своей организацией из одной панели.</p>
+          <p className="opacity-60 mt-2 max-w-sm">Super Admin, Администратор, Ментор и Методист — управляйте своей организацией из одной панели.</p>
           <ul className="mt-8 space-y-3">
             {FEATURES.map((f) => (
               <li key={f} className="flex items-center gap-3 text-sm opacity-80">
