@@ -12,8 +12,33 @@ function useAuthedQuery(queryKey, queryFn, opts = {}) {
   return q;
 }
 
-// Super Admin переехал в отдельное приложение (frontend/superadmin) — хуки
-// super-* удалены отсюда вместе со старыми pages/super/*.
+// -------- SUPER ADMIN --------
+export function useSuperDashboard() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-dashboard'], () => api.superDashboard(token));
+}
+
+export function useSuperBranches() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-branches'], () => api.superBranches(token));
+}
+
+export function useSuperBranchDetail(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-branch', id], () => api.superBranchDetail(token, id), {
+    enabled: !!id,
+  });
+}
+
+export function useSuperAdmins() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-admins'], () => api.superAdmins(token));
+}
+
+export function useSuperOrganization() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-organization'], () => api.superGetOrganization(token));
+}
 
 // -------- ADMIN --------
 export function useAdminDashboard() {
