@@ -74,11 +74,11 @@
 - [ ] Дашборд филиала: **доход + расход = прибыль**
 - [ ] Расходы 🆕: CRUD `expenses`
 - [ ] Студенты филиала (CRUD, заморозка); группы (CRUD, привязка ментора)
-- [ ] Платежи: full + split (валидация суммы до BEGIN, FOR UPDATE, split_batch_id, джоб после commit); Nasiya (создание + взнос); refund/void; чеки в S3
+- [ ] Платежи: full + split (валидация суммы до BEGIN, FOR UPDATE, split_batch_id, джоб после commit); refund/void; чеки в S3. **Nasiya/рассрочка УБРАНА из v1** (решение 05–07.07) — долги через `total_debt`
 - [ ] Отчёты филиала (выручка, долги по группам)
 
 ### K-TEST — проверка (моё)
-- [ ] Интеграционные тесты денег (full/split/Nasiya) и auth-флоу (login→refresh→reuse-detect→OTP)
+- [ ] Интеграционные тесты денег (full/split — БЕЗ Nasiya) и auth-флоу (login→refresh→reuse-detect→OTP) — переданы Abdulaziz'у (см. корневой TASK.md, AB-V1)
 
 ---
 
