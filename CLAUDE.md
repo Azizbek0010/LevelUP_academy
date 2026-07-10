@@ -22,9 +22,21 @@
 
 ---
 
-## ⛔ СТРОГОЕ ПРАВИЛО: Frontend ≠ Backend
+## 🚪 ВХОД В ПРОЕКТ: сначала спроси «Кто ты?» (ОБЯЗАТЕЛЬНО, ПЕРВЫМ ДЕЛОМ)
 
-**При входе в проект ОБЯЗАТЕЛЬНО спроси: "Frontend или Backend?"**
+**На первое сообщение любой сессии в этом проекте Claude ОБЯЗАН сначала задать вопрос-тест: «Кто ты?» — списком выбора из всех участников таблицы «Команда» (см. ниже).** Никакой работы до ответа.
+
+После выбора участника:
+
+1. **Работать ТОЛЬКО в зоне этого участника** (колонка «Права доступа» в таблице «Команда»). Человек не должен выходить за свою линию.
+2. **Попытка редактировать чужие файлы → ОТКАЗ** + напоминание правила. Никаких исключений «ну только одну строчку».
+3. **Karis (Team Lead)** — единственный с полным доступом: любые файлы, коммиты прямо в `main`.
+4. **`abdulazizSEO`** — если Abdulaziz представился так, у него SEO-режим: правки в любых файлах обеих зон, но только SEO-задачи (meta, sitemap, robots, скорость, разметка).
+5. **Имя не из списка → СТОП**, работу не начинать, сообщить Team Lead'у (Karis).
+
+---
+
+## ⛔ СТРОГОЕ ПРАВИЛО: Frontend ≠ Backend
 
 Это **АБСОЛЮТНОЕ** правило — нарушение = ломает весь проект:
 
@@ -42,9 +54,9 @@
 
 ### Как применять
 
-1. **При старте сессии** — спроси: "Сегодня работаем над backend или frontend?"
-2. **Если backend** — работай ТОЛЬКО в `backend/`, **КАТЕГОРИЧЕСКИ** не заходи в `frontend/`
-3. **Если frontend** — работай ТОЛЬКО в `frontend/`, **КАТЕГОРИЧЕСКИ** не заходи в `backend/`
+1. **Зона определяется ответом на вопрос «Кто ты?»** (см. раздел «Вход в проект» выше) — отдельно спрашивать frontend/backend не нужно
+2. **Backend-люди** — работают ТОЛЬКО в `backend/`, **КАТЕГОРИЧЕСКИ** не заходят в `frontend/`
+3. **Frontend-люди** — работают ТОЛЬКО в `frontend/`, **КАТЕГОРИЧЕСКИ** не заходят в `backend/`
 4. **Если нужен общий контекст** — читай `docs/` и `.md/` (это общая документация)
 5. **Нарушение правила = остановка работы и объяснение руководителю**
 
@@ -54,8 +66,8 @@
 
 | Роль | Кто | Идентификатор входа | Права |
 |------|-----|---------------------|-------|
-| **Team Lead** | Azizbek (владелец репозитория) | обычный вход, не нужен спец-код | Видит и правит любые файлы (`frontend/` + `backend/` + `docs/`); работает и коммитит **прямо в `main`**, в обход `save-zone` |
-| **SEO** | Abdulaziz | входит под `abdulazizSEO` | На время SEO-задач может править любые файлы обеих зон: meta-теги, `sitemap.xml`, `robots.txt`, заголовки/alt-тексты, семантическая разметка, скорость загрузки, SSR/prerender-настройки |
+| **Team Lead** | Karis (@Azizbek2603, владелец репозитория) | выбирает «Karis» в вопросе «Кто ты?» | Видит и правит любые файлы (`frontend/` + `backend/` + `docs/`); работает и коммитит **прямо в `main`**, в обход `save-zone` |
+| **SEO** | Abdulaziz | представляется как `abdulazizSEO` | На время SEO-задач может править любые файлы обеих зон: meta-теги, `sitemap.xml`, `robots.txt`, заголовки/alt-тексты, семантическая разметка, скорость загрузки, SSR/prerender-настройки |
 
 Вне контекста `abdulazizSEO` Abdulaziz остаётся в рамках своей обычной backend-зоны (Mentor/Student/Parent/Infra) — SEO-доступ не отменяет, а **добавляется** к его основной роли.
 
@@ -184,10 +196,8 @@ LevelUp-Academy/
 │   ├── BACKEND-ARCHITECTURE.md
 │   ├── FRONTEND-ARCHITECTURE.md
 │   ├── FRONTEND-DESIGN-SYSTEM.md
-│   ├── TASK-frontend-login.md
-│   ├── TASK-frontend-super-admin.md
-│   ├── TASK-frontend-admin.md
-│   └── TASK-telegram-bot.md
+│   └── TASK-telegram-bot.md  # задание Bilol (бот)
+│   # ⚠️ Фронт-задачи и API-контракты панелей — ТОЛЬКО в frontend/TEAM-TASKS.md (дубли удалены)
 ├── .md/                      # Общие правила и ссылки
 │   ├── RULES.md             # Архитектурные правила
 │   ├── SOURCES.md           # Ссылки на документацию
@@ -200,22 +210,21 @@ LevelUp-Academy/
 
 ## Команда
 
-| Участник | Зона ответственности |
-|----------|---------------------|
-| **Azizbek** (владелец репо, Team Lead) | Видит и правит все файлы (frontend + backend), коммитит прямо в `main` |
-| **Karis** (@Azizbek2603) | Main Admin, Methodist фронт, Super Admin, Admin, Auth + Billing |
-| **Abdulaziz** (@YakubovAbdulaziz) | Mentor, Student, Parent, Инфраструктура **+ SEO** (кросс-доступ ко всем файлам под идентификатором `abdulazizSEO`) |
-| **Bilol** | Telegram-бот |
-| **Elyor** (@Elyor2011) | Auth фронт, каркас SPA |
-| **Said Islom** | Super Admin фронт (дашборд) |
-| **Aziz** | Super Admin фронт (филиалы) |
-| **sxvs** | Super Admin фронт (админы) |
-| **Abduloh** | Admin фронт |
-| **Odil** | Admin фронт |
-| **Hamidula** | Admin фронт |
-| **Sardor** | Mentor фронт |
-| **Kozim** | Mentor фронт |
-| **Alish** | Mentor фронт |
+| Участник | Зона ответственности | Права доступа |
+|----------|---------------------|---------------|
+| **Karis** (@Azizbek2603) — **Team Lead**, владелец репо | Backend: Auth, Main Admin, Super Admin, Admin, Billing, платежи + Methodist фронт | **ВСЁ**: видит и правит любые файлы (frontend + backend), коммитит прямо в `main` |
+| **Abdulaziz** (@YakubovAbdulaziz) | Backend: Mentor, Student, Parent, Инфраструктура | Своя backend-зона; **как `abdulazizSEO`** — SEO-правки в любых файлах обеих зон |
+| **Bilol** | Telegram-бот | только `backend/src/modules/telegram/` + воркеры уведомлений |
+| **Elyor** (@Elyor2011) | Auth фронт, каркас SPA | только auth-часть фронта |
+| **Said Islom** | Super Admin фронт (дашборд) | только `frontend/staff` (super) |
+| **Aziz** | Super Admin фронт (филиалы) | только `frontend/staff` (super) |
+| **sxvs** | Super Admin фронт (админы) | только `frontend/staff` (super) |
+| **Abduloh** | Admin фронт | только `frontend/staff` (admin) |
+| **Odil** | Admin фронт | только `frontend/staff` (admin) |
+| **Hamidula** | Admin фронт | только `frontend/staff` (admin) |
+| **Sardor** | Mentor фронт | только `frontend/staff` (mentor) |
+| **Kozim** | Mentor фронт | только `frontend/staff` (mentor) |
+| **Alish** | Mentor фронт | только `frontend/staff` (mentor) |
 
 
 ---
