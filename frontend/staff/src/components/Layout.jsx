@@ -1,16 +1,12 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, Layers, FileQuestion, ClipboardCheck, TrendingUp,
+  LayoutDashboard, LogOut, Menu, Bell, BookOpen, Layers, FileQuestion, ClipboardCheck, TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 
-const superNav = [
-  { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
-  { to: '/branches', label: 'Филиалы', Icon: Building2 },
-  { to: '/admins', label: 'Админы', Icon: Users },
-  { to: '/reports', label: 'Аналитика', Icon: BarChart3 },
-  { to: '/settings', label: 'Настройки', Icon: Settings },
-];
+// Super Admin переехал в отдельное приложение (frontend/superadmin) — здесь
+// у него остаётся только страница-редирект на новую панель.
+const superNav = [{ to: '/', label: 'Панель', Icon: LayoutDashboard, end: true }];
 
 const adminNav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },

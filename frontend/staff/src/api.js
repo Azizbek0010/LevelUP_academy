@@ -662,21 +662,8 @@ export const api = {
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
   resetPassword: (body) => request('/auth/reset-password', { method: 'POST', body }),
 
-  // -------- SUPER ADMIN --------
-  superDashboard: (token) => request('/super/dashboard', { token }),
-  superBranches: (token) => request('/super/branches', { token }),
-  superBranchDetail: (token, id) => request(`/super/branches/${id}`, { token }),
-  superCreateBranch: (token, body) => request('/super/branches', { method: 'POST', token, body }),
-  superUpdateBranch: (token, id, body) => request(`/super/branches/${id}`, { method: 'PATCH', token, body }),
-  superArchiveBranch: (token, id) => request(`/super/branches/${id}/archive`, { method: 'POST', token }),
-  superUnarchiveBranch: (token, id) => request(`/super/branches/${id}/unarchive`, { method: 'POST', token }),
-  superAdmins: (token) => request('/super/admins', { token }),
-  superCreateAdmin: (token, body) => request('/super/admins', { method: 'POST', token, body }),
-  superUpdateAdmin: (token, id, body) => request(`/super/admins/${id}`, { method: 'PATCH', token, body }),
-  superFreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
-  superUnfreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
-  superGetOrganization: (token) => request('/super/organization', { token }),
-  superUpdateOrganization: (token, body) => request('/super/organization', { method: 'PATCH', token, body }),
+  // Super Admin переехал в отдельное приложение (frontend/superadmin) — все
+  // super-* запросы теперь там (frontend/superadmin/src/shared/api/endpoints).
 
   // -------- METHODIST CONTENT --------
   methodistTrainingTypes: (token) => request('/methodist/training-types', { token }),
