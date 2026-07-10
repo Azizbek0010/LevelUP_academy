@@ -48,6 +48,17 @@
 4. **Если нужен общий контекст** — читай `docs/` и `.md/` (это общая документация)
 5. **Нарушение правила = остановка работы и объяснение руководителю**
 
+### Исключения из правила (кросс-доступ)
+
+Эти две роли — единственные, кто может выходить за рамки своей зоны (`frontend/` ⇄ `backend/`) без нарушения правила выше:
+
+| Роль | Кто | Идентификатор входа | Права |
+|------|-----|---------------------|-------|
+| **Team Lead** | Azizbek (владелец репозитория) | обычный вход, не нужен спец-код | Видит и правит любые файлы (`frontend/` + `backend/` + `docs/`); работает и коммитит **прямо в `main`**, в обход `save-zone` |
+| **SEO** | Abdulaziz | входит под `abdulazizSEO` | На время SEO-задач может править любые файлы обеих зон: meta-теги, `sitemap.xml`, `robots.txt`, заголовки/alt-тексты, семантическая разметка, скорость загрузки, SSR/prerender-настройки |
+
+Вне контекста `abdulazizSEO` Abdulaziz остаётся в рамках своей обычной backend-зоны (Mentor/Student/Parent/Infra) — SEO-доступ не отменяет, а **добавляется** к его основной роли.
+
 ---
 
 ## Стек технологий
@@ -191,8 +202,9 @@ LevelUp-Academy/
 
 | Участник | Зона ответственности |
 |----------|---------------------|
+| **Azizbek** (владелец репо, Team Lead) | Видит и правит все файлы (frontend + backend), коммитит прямо в `main` |
 | **Karis** (@Azizbek2603) | Main Admin, Methodist фронт, Super Admin, Admin, Auth + Billing |
-| **Abdulaziz** (@YakubovAbdulaziz) | Mentor, Student, Parent, Инфраструктура |
+| **Abdulaziz** (@YakubovAbdulaziz) | Mentor, Student, Parent, Инфраструктура **+ SEO** (кросс-доступ ко всем файлам под идентификатором `abdulazizSEO`) |
 | **Bilol** | Telegram-бот |
 | **Elyor** (@Elyor2011) | Auth фронт, каркас SPA |
 | **Said Islom** | Super Admin фронт (дашборд) |
@@ -220,7 +232,7 @@ npm start          # продакшн
 npm run migrate    # миграции
 npm run seed       # тестовые данные
 npm run test       # тесты
-```
+```     
 
 ### Frontend (отдельные приложения)
 
@@ -237,6 +249,22 @@ cd frontend/auth && npm run dev
 # Staff (Admin + Super Admin + Mentor + Methodist)
 cd frontend/staff && npm run dev
 ```
+
+---
+
+## Release
+
+Версия проекта хранится в файле `VERSION` (semver: `MAJOR.MINOR.PATCH`). Релиз = зафиксированная точка в `main`, помеченная git-тегом `vX.Y.Z` + GitHub Release с списком изменений.
+
+**Когда делать релиз:** после того как `save-zone` протестирован и смёржен в `main` (см. workflow в глобальном `CLAUDE.md` пользователя) — то есть релиз это ФИНАЛЬНЫЙ шаг после `save-zone → main`, не замена ему.
+
+```bash
+python scripts/release.py          # patch: 0.1.0 -> 0.1.1 (мелкие фиксы)
+python scripts/release.py minor    # 0.1.0 -> 0.2.0 (новая фича, без breaking changes)
+python scripts/release.py major    # 0.1.0 -> 1.0.0 (крупный этап, напр. конец MVP1)
+```
+
+Скрипт сам: требует чистый `git status` и ветку `main` → пуллит → бампит `VERSION` → собирает `CHANGELOG.md` из коммитов с прошлого тега → коммитит, ставит тег, пушит `main`+тег → создаёт GitHub Release (`gh release create`).
 
 ---
 
