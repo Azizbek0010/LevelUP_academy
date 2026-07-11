@@ -67,7 +67,7 @@ Mavjud Dashboard tayyor, lekin:
 | Doimiy | Code review |
 
 
-yaxshiroq ish qil 
+yaxshiroq ish qil yanyam
 ## 🎨 Dizayn
 - Fon: `#F6FBEA`
 - Sidebar: `#F1F7E4` (light) / `#0A0E0A` (dark)
