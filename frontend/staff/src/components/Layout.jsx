@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, TrendingUp, Wifi,
+  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, TrendingUp, Wifi, CalendarCheck, ClipboardCheck, Coins,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
@@ -20,6 +20,10 @@ const adminNav = [
 
 const mentorNav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
+  { to: '/groups', label: 'Группы', Icon: Users },
+  { to: '/attendance', label: 'Davomat', Icon: CalendarCheck },
+  { to: '/homework', label: 'Домашки', Icon: ClipboardCheck },
+  { to: '/coins', label: 'Коины', Icon: Coins },
 ];
 
 const methodistNav = [

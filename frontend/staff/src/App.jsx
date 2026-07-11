@@ -17,6 +17,10 @@ const SuperSettings = lazy(() => import('./pages/super/Settings.jsx'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
 const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
+const MentorGroups = lazy(() => import('./pages/mentor/Groups.jsx'));
+const MentorAttendance = lazy(() => import('./pages/mentor/Attendance.jsx'));
+const MentorHomework = lazy(() => import('./pages/mentor/Homework.jsx'));
+const MentorCoins = lazy(() => import('./pages/mentor/Coins.jsx'));
 
 const MethodistDashboard = lazy(() => import('./pages/methodist/Dashboard.jsx'));
 const TrainingTypes = lazy(() => import('./pages/methodist/TrainingTypes.jsx'));
@@ -57,6 +61,11 @@ export default function App() {
         }
       >
         <Route path="/" element={<SuspenseWrapper><DashboardRedirect /></SuspenseWrapper>} />
+        {/* Mentor routes */}
+        <Route path="/groups" element={<SuspenseWrapper><MentorGroups /></SuspenseWrapper>} />
+        <Route path="/attendance" element={<SuspenseWrapper><MentorAttendance /></SuspenseWrapper>} />
+        <Route path="/homework" element={<SuspenseWrapper><MentorHomework /></SuspenseWrapper>} />
+        <Route path="/coins" element={<SuspenseWrapper><MentorCoins /></SuspenseWrapper>} />
         {/* Super Admin routes — защищены RoleGuard */}
         <Route element={<RoleGuard allow={['superadmin']} />}>
           <Route path="/branches" element={<SuspenseWrapper><SuperBranches /></SuspenseWrapper>} />
