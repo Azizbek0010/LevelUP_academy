@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, Layers, FileQuestion, ClipboardCheck, TrendingUp,
+  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, Layers, FileQuestion, ClipboardCheck, TrendingUp, CalendarCheck, Coins,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 
@@ -18,6 +18,10 @@ const adminNav = [
 
 const mentorNav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
+  { to: '/groups', label: 'Группы', Icon: Users },
+  { to: '/attendance', label: 'Davomat', Icon: CalendarCheck },
+  { to: '/homework', label: 'Домашки', Icon: ClipboardCheck },
+  { to: '/coins', label: 'Коины', Icon: Coins },
 ];
 
 const methodistNav = [
