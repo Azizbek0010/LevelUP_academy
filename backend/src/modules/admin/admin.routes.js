@@ -18,6 +18,7 @@ import {
   updateGroupSchema,
   addGroupStudentSchema,
   listGroupsQuery,
+  createAnnouncementSchema,
 } from './admin.schemas.js';
 import * as ctrl from './admin.controller.js';
 import paymentsRoutes from './payments/payments.routes.js';
@@ -68,5 +69,8 @@ router.post('/groups/:id/archive', validate({ params: idParam }), ctrl.archiveGr
 router.post('/groups/:id/unarchive', validate({ params: idParam }), ctrl.unarchiveGroup);
 router.post('/groups/:id/students', validate({ params: idParam, body: addGroupStudentSchema }), ctrl.addGroupStudent);
 router.delete('/groups/:id/students/:studentId', validate({ params: groupStudentParams }), ctrl.removeGroupStudent);
+
+// объявления (для Telegram-бота — рассылка родителям/студентам филиала или группы)
+router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
 
 export default router;
