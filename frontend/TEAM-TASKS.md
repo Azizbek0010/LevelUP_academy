@@ -42,7 +42,7 @@
 | Odil | Admin (группы) | Auth, Super Admin, Mentor, Methodist |
 | Hamidula | Admin (расходы) | Auth, Super Admin, Mentor, Methodist |
 | Sardor | Mentor (дашборд) | Auth, Super Admin, Admin, Methodist |
-| Kozim | Mentor (домашки) | Auth, Super Admin, Admin, Methodist |
+| Kozim | Mentor (домашки) | Auth, Super Admin, Admin, Methodist |  
 | Alish | Mentor (тесты) | Auth, Super Admin, Admin, Methodist |
 | Azizbek | Methodist | Auth, Super Admin, Admin, Mentor |
 
