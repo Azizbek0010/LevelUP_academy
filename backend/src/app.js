@@ -30,7 +30,10 @@ export function createApp() {
   app.set('trust proxy', 1);
 
   app.use(helmet());
-  app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
+  // credentials: true требует конкретный Origin в ответе, а не '*' (браузер иначе блокирует
+  // credentialed-запросы) — origin: true отражает Origin запроса динамически, то есть фактически
+  // открыто для любого фронта, но остаётся совместимо с httpOnly refresh-cookie.
+  app.use(cors({ origin: true, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
   app.use(pinoHttp({ logger, autoLogging: env.NODE_ENV !== 'test' }));
   app.use(createRateLimiter({ keyPrefix: 'rl:api', points: 300, duration: 60 }));
