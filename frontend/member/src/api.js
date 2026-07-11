@@ -6,7 +6,9 @@
 // (в него кладут ЛОГИН-КОД, не email). Тело идентично staff/main. Google-входа нет.
 
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
-const USE_MOCKS = true;
+// По умолчанию включены (разработка без бэкенда); выключить реальным бэком: VITE_USE_MOCKS=false в .env.
+const USE_MOCKS =
+  typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS !== 'false' : true;
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 

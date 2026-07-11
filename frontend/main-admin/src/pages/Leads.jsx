@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, X, UserPlus } from 'lucide-react';
+import { Check, X, UserPlus, Sparkles, PhoneCall, CheckCircle2, XCircle, Inbox, ListFilter } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { useLeads, useInvalidate } from '../queries.js';
@@ -18,6 +18,9 @@ const VIEWS = [
   { key: 'rejected', label: 'Отклонённые', match: (s) => s === 'rejected' },
   { key: 'all', label: 'Все', match: () => true },
 ];
+
+// та же лайм-иконка-система, что и в KPI-карточках Dashboard/Student
+const STATUS_ICON = { new: Sparkles, contacted: PhoneCall, onboarded: CheckCircle2, rejected: XCircle };
 
 export default function Leads() {
   const { token } = useAuth();
@@ -56,6 +59,7 @@ export default function Leads() {
         <div className="card bg-base-100">
           <div className="card-body gap-4">
             <div className="flex flex-wrap items-center gap-2">
+              <ListFilter size={16} className="text-base-content/40" />
               <select className="select select-bordered select-sm" value={view} onChange={(e) => setView(e.target.value)}>
                 {VIEWS.map((v) => <option key={v.key} value={v.key}>{v.label}</option>)}
               </select>
@@ -71,12 +75,16 @@ export default function Leads() {
                 </thead>
                 <tbody>
                   {visible.length === 0 ? (
-                    <tr><td colSpan={6} className="text-center opacity-50 py-8">
-                      {view === 'active' ? 'Активных заявок нет — обработанные ушли в «Партнёры»' : 'Заявок нет'}
+                    <tr><td colSpan={6} className="text-center py-10">
+                      <Inbox size={28} className="mx-auto text-base-content/25 mb-2" />
+                      <div className="opacity-50 text-sm">
+                        {view === 'active' ? 'Активных заявок нет — обработанные ушли в «Партнёры»' : 'Заявок нет'}
+                      </div>
                     </td></tr>
                   ) : (
                     visible.map((l) => {
                       const s = LEAD_STATUS[l.status] || { label: l.status, cls: 'badge-ghost' };
+                      const StatusIcon = STATUS_ICON[l.status];
                       return (
                         <tr key={l.id}>
                           <td>
@@ -90,7 +98,12 @@ export default function Leads() {
                           </td>
                           <td className="whitespace-nowrap">{l.phone}</td>
                           <td className="max-w-[220px] truncate text-sm opacity-70" title={l.message || ''}>{l.message || '—'}</td>
-                          <td><span className={`badge badge-sm ${s.cls}`}>{s.label}</span></td>
+                          <td>
+                            <span className={`badge badge-sm gap-1 ${s.cls}`}>
+                              {StatusIcon && <StatusIcon size={11} />}
+                              {s.label}
+                            </span>
+                          </td>
                           <td className="whitespace-nowrap text-sm">{dateShort(l.createdAt)}</td>
                           <td>
                             <div className="flex items-center gap-1.5 justify-end">

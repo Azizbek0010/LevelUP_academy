@@ -18,6 +18,11 @@ function Splash() {
   );
 }
 
+// URL общего входа (панель member) — свой в dev, свой в проде.
+const MEMBER_LOGIN_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env.VITE_MEMBER_URL) ||
+  'http://localhost:5175';
+
 /** Сессии нет — вход делает общий Auth-модуль, не эта панель. */
 function NoSession() {
   return (
@@ -39,6 +44,19 @@ function NoSession() {
         Сессия не найдена. Войди через общий вход LevelUp Academy — после авторизации кабинет
         студента откроется автоматически.
       </p>
+      <a
+        href={`${MEMBER_LOGIN_URL}/login`}
+        style={{
+          padding: '10px 20px',
+          borderRadius: 10,
+          background: 'var(--accent, #C6FF34)',
+          color: '#000',
+          fontWeight: 600,
+          textDecoration: 'none',
+        }}
+      >
+        Перейти к входу
+      </a>
     </div>
   );
 }

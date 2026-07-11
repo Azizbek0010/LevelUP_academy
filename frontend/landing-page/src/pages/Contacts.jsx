@@ -1,12 +1,28 @@
 import { useState } from 'react';
 import Icon from '../components/Icon.jsx';
+import { useSeo, breadcrumb } from '../lib/seo.js';
 
 // в dev — vite-прокси на :4000; в prod задаётся VITE_API_URL
 const API_URL = import.meta.env.VITE_API_URL ?? '';
 
+const jsonLd = [
+  breadcrumb([
+    { name: 'Главная', path: '/landing' },
+    { name: 'Контакты', path: '/landing/contacts' },
+  ]),
+];
+
 export default function Contacts() {
   const [status, setStatus] = useState('idle'); // idle | sending | sent | error
   const [error, setError] = useState('');
+
+  useSeo({
+    title: 'Контакты и заявка | LevelUp Academy',
+    description:
+      'Оставьте заявку — расскажем о LevelUp Academy и ответим на вопросы. Первая неделя бесплатно, без карты и обязательств.',
+    path: '/landing/contacts',
+    jsonLd,
+  });
 
   const onSubmit = async (e) => {
     e.preventDefault();
