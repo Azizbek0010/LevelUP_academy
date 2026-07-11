@@ -80,3 +80,28 @@ export const addStudentToGroup = (groupId, studentId) =>
 
 export const removeStudentFromGroup = (groupId, studentId) =>
   api.delete(`/admin/groups/${groupId}/students/${studentId}`).then((r) => r.data);
+
+// ==================== PAYMENTS ====================
+export const fetchInvoices = (params = {}) =>
+  api.get('/admin/payments/invoices', { params }).then((r) => r.data);
+
+export const createPayment = (data) =>
+  api.post('/admin/payments', data).then((r) => r.data);
+
+export const payInvoice = (id, data) =>
+  api.post(`/admin/payments/invoices/${id}/pay`, data).then((r) => r.data);
+
+export const refundTransaction = (id, reason) =>
+  api.post(`/admin/payments/transactions/${id}/refund`, { reason }).then((r) => r.data);
+
+// ==================== REPORTS ====================
+export const fetchReports = (params = {}) =>
+  api.get('/admin/reports', { params }).then((r) => r.data);
+
+// ==================== SETTINGS ====================
+// TODO: Backend /admin/settings endpoint TBD — placeholder for branch settings
+export const fetchSettings = () =>
+  api.get('/admin/settings').then((r) => r.data);
+
+export const updateSettings = (data) =>
+  api.put('/admin/settings', data).then((r) => r.data);

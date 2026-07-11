@@ -18,6 +18,7 @@ const Expenses = React.lazy(() => import("./pages/Expenses.jsx"));
 const Reports = React.lazy(() => import("./pages/Reports.jsx"));
 const Mentors = React.lazy(() => import("./pages/Mentors.jsx"));
 const Chat = React.lazy(() => import("./pages/Chat.jsx"));
+const Settings = React.lazy(() => import("./pages/Settings.jsx"));
 const NotFound = React.lazy(() => import("./pages/NotFound.jsx"));
 const ErrorPage = React.lazy(() => import("./pages/ErrorPage.jsx"));
 
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
       { path: "reports", element: <React.Suspense fallback={<PageFallback />}><Reports /></React.Suspense> },
       { path: "mentors", element: <React.Suspense fallback={<PageFallback />}><Mentors /></React.Suspense> },
       { path: "chat", element: <React.Suspense fallback={<PageFallback />}><Chat /></React.Suspense> },
+      { path: "settings", element: <React.Suspense fallback={<PageFallback />}><Settings /></React.Suspense> },
       { path: "*", element: <React.Suspense fallback={<PageFallback />}><NotFound /></React.Suspense> },
     ],
   },

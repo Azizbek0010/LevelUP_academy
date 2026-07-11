@@ -42,7 +42,7 @@
 | Odil | Admin (группы) | Auth, Super Admin, Mentor, Methodist |
 | Hamidula | Admin (расходы) | Auth, Super Admin, Mentor, Methodist |
 | Sardor | Mentor (дашборд) | Auth, Super Admin, Admin, Methodist |
-| Kozim | Mentor (домашки) | Auth, Super Admin, Admin, Methodist |
+| Kozim | Mentor (домашки) | Auth, Super Admin, Admin, Methodist |  
 | Alish | Mentor (тесты) | Auth, Super Admin, Admin, Methodist |
 | Azizbek | Methodist | Auth, Super Admin, Admin, Mentor |
 
@@ -185,11 +185,13 @@ src/
 
 | Панель | Люди | Backend API | Канон-контракт |
 |--------|------|-------------|----------------|
-| **Auth** | Elyor | K-AUTH ✅ | `docs/TASK-frontend-login.md` |
-| **Super Admin** | Said Islom, Aziz, sxvs | K-SUPER ✅ | `docs/TASK-frontend-super-admin.md` |
-| **Admin** | Abduloh, Odil, Hamidula | K-ADMIN ✅ (платежи ⏳) | `docs/TASK-frontend-admin.md` |
-| **Mentor** | Sardor, Kozim, Alish | AB-MENTOR ✅ | пути в файлах панели |
-| **Methodist** | Azizbek | AB-METHODIST ✅ | `docs/TASK-frontend-methodist.md` |
+| **Auth** | Elyor | K-AUTH ✅ | §7 этого файла |
+| **Super Admin** | Said Islom, Aziz, sxvs | K-SUPER ✅ | §8 этого файла |
+| **Admin** | Abduloh, Odil, Hamidula | K-ADMIN ✅ (платежи ⏳) | §9 этого файла |
+| **Mentor** | Sardor, Kozim, Alish | AB-MENTOR ✅ | §10 этого файла |
+| **Methodist** | Azizbek (Karis) | AB-METHODIST ✅ | §11 этого файла |
+
+> Отдельные `docs/TASK-frontend-*.md` УДАЛЕНЫ — контракты живут только здесь, чтобы не расходились.
 
 ---
 

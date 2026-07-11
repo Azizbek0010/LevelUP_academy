@@ -35,6 +35,11 @@ export function useSuperAdmins() {
   return useAuthedQuery(['super-admins'], () => api.superAdmins(token));
 }
 
+export function useSuperOrganization() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-organization'], () => api.superGetOrganization(token));
+}
+
 // -------- ADMIN --------
 export function useAdminDashboard() {
   const { token } = useAuth();
@@ -42,9 +47,48 @@ export function useAdminDashboard() {
 }
 
 // -------- MENTOR --------
-export function useMentorDashboard() {
+export function useMentorGroups() {
   const { token } = useAuth();
-  return useAuthedQuery(['mentor-dashboard'], () => api.mentorDashboard(token));
+  return useAuthedQuery(['mentor-groups'], () => api.mentorGroups(token));
+}
+
+export function useMentorGroupStudents(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(['mentor-group-students', groupId], () => api.mentorGroupStudents(token, groupId), {
+    enabled: !!groupId,
+  });
+}
+
+export function useMentorAttendance(groupId, date) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['mentor-attendance', groupId, date],
+    () => api.mentorAttendance(token, groupId, { date }),
+    { enabled: !!groupId && !!date },
+  );
+}
+
+export function useMentorHomeworkList(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(['mentor-homework', groupId], () => api.mentorHomeworkList(token, groupId), {
+    enabled: !!groupId,
+  });
+}
+
+export function useMentorHomeworkSubmissions(homeworkId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['mentor-submissions', homeworkId],
+    () => api.mentorHomeworkSubmissions(token, homeworkId),
+    { enabled: !!homeworkId },
+  );
+}
+
+export function useMentorCoinHistory(studentId) {
+  const { token } = useAuth();
+  return useAuthedQuery(['mentor-coin-history', studentId], () => api.mentorCoinHistory(token, studentId), {
+    enabled: !!studentId,
+  });
 }
 
 // -------- METHODIST CONTENT --------

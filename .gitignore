@@ -20,3 +20,8 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Windows reserved names
+nul
+NUL
+Nul

@@ -138,6 +138,10 @@ export function listStudents({ branchId, search, groupId, limit, offset }, clien
     .query(
       `SELECT u.id, u.first_name, u.last_name, u.phone, u.status, u.login_code, u.created_at,
               sp.coin_balance, sp.total_debt, sp.parent_id,
+              EXISTS (
+                SELECT 1 FROM invoices i
+                 WHERE i.student_id = u.id AND i.status = 'overdue' AND i.deleted_at IS NULL
+              ) AS has_overdue_invoice,
               COALESCE(
                 (SELECT json_agg(json_build_object('id', g.id, 'name', g.name))
                    FROM group_students gs
@@ -184,7 +188,11 @@ export function findStudentInBranch(id, branchId, client = pool) {
     .query(
       `SELECT u.id, u.first_name, u.last_name, u.phone, u.status, u.login_code, u.created_at,
               sp.coin_balance, sp.total_debt, sp.parent_id, sp.birth_date,
-              sp.frozen_at, sp.frozen_reason
+              sp.frozen_at, sp.frozen_reason,
+              EXISTS (
+                SELECT 1 FROM invoices i
+                 WHERE i.student_id = u.id AND i.status = 'overdue' AND i.deleted_at IS NULL
+              ) AS has_overdue_invoice
          FROM users u
          JOIN student_profiles sp ON sp.user_id = u.id
         WHERE u.id = $1 AND u.branch_id = $2 AND u.role = 'student' AND u.deleted_at IS NULL`,

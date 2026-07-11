@@ -16,6 +16,7 @@
     "migrate:down": "node-pg-migrate -j js -m src/db/migrations down",
     "migrate:create": "node-pg-migrate -j js -m src/db/migrations create",
     "seed": "node src/db/seeds/seed.js",
+    "docs:md": "node scripts/generate-api-docs.js",
     "test": "node tests/mentor/run.js && node tests/student/run.js && node tests/parent/run.js"
   },
   "dependencies": {
@@ -38,6 +39,8 @@
     "pino-http": "^10.3.0",
     "rate-limiter-flexible": "^5.0.4",
     "socket.io": "^4.8.1",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {

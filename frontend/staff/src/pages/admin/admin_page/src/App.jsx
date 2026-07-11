@@ -14,6 +14,7 @@ const pageTitles = {
   '/reports': { title: 'Hisobotlar', subtitle: 'Tahlil va statistika' },
   '/mentors': { title: 'Mentorlar', subtitle: "O'qituvchilar" },
   '/chat': { title: 'Chat', subtitle: 'Xabarlar' },
+  '/settings': { title: 'Sozlamalar', subtitle: 'Filial sozlamalari' },
 };
 
 function findPageTitle(pathname) {

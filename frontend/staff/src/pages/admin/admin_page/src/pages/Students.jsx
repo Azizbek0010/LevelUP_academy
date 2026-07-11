@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   HiOutlineMagnifyingGlass, HiOutlinePlus, HiOutlineChevronLeft, HiOutlineChevronRight,
   HiOutlinePencilSquare, HiOutlineTrash, HiOutlineKey, HiOutlineStar, HiOutlineArrowPath,
+  HiOutlineLockClosed, HiOutlineLockOpen, HiOutlineInformationCircle,
 } from 'react-icons/hi2';
 import Badge from '../components/Badge.jsx';
 import Button from '../components/Button.jsx';
@@ -13,6 +14,7 @@ import {
   createStudent as apiCreateStudent,
   updateStudent as apiUpdateStudent,
   deleteStudent as apiDeleteStudent,
+  freezeStudent as apiFreezeStudent,
   fetchGroups as apiFetchGroups,
 } from '../services/adminService.js';
 
@@ -38,6 +40,8 @@ export default function Students() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showCredentials, setShowCredentials] = useState({});
   const [newStudentCreds, setNewStudentCreds] = useState(null);
+  const [freezeModal, setFreezeModal] = useState(null); // student object or null
+  const [freezeReason, setFreezeReason] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -192,6 +196,24 @@ export default function Students() {
     } catch (err) {
       console.error('Delete failed:', err);
       setError(err.response?.data?.message || err.message || "O'chirishda xatolik");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleFreeze = async () => {
+    if (!freezeModal) return;
+    const isFrozen = freezeModal.status === 'frozen';
+    setSaving(true);
+    setError(null);
+    try {
+      await apiFreezeStudent(freezeModal.id, !isFrozen, freezeReason);
+      setFreezeModal(null);
+      setFreezeReason('');
+      await loadStudents(search || undefined);
+    } catch (err) {
+      console.error('Freeze/unfreeze failed:', err);
+      setError(err.response?.data?.message || err.message || 'Amalni bajarishda xatolik');
     } finally {
       setSaving(false);
     }
@@ -370,6 +392,21 @@ export default function Students() {
                           <HiOutlinePencilSquare className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => { setFreezeModal(student); setFreezeReason(''); }}
+                          className="w-8 h-8 rounded-[8px] flex items-center justify-center transition-all"
+                          style={{
+                            color: student.status === 'frozen' ? 'var(--success)' : 'var(--text-muted)',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-hover)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                          title={student.status === 'frozen' ? 'Muzlatishni ochish' : 'Muzlatish'}
+                        >
+                          {student.status === 'frozen'
+                            ? <HiOutlineLockOpen className="w-4 h-4" />
+                            : <HiOutlineLockClosed className="w-4 h-4" />
+                          }
+                        </button>
+                        <button
                           onClick={() => setDeleteTarget(student)}
                           className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--danger)] hover:bg-[rgba(232,84,62,0.1)] transition-all"
                           title="O‘chirish"
@@ -536,6 +573,82 @@ export default function Students() {
             <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Bekor qilish</Button>
             <Button variant="danger" size="sm" onClick={handleDelete} disabled={saving}>
               {saving ? "O'chirilmoqda..." : "O'chirish"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Freeze / Unfreeze Modal */}
+      <Modal
+        open={!!freezeModal}
+        title={freezeModal?.status === 'frozen' ? 'Muzlatishni ochish' : 'Talabani muzlatish'}
+        onClose={() => { if (!saving) { setFreezeModal(null); setFreezeReason(''); } }}
+      >
+        <div className="space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-[12px] flex items-center justify-center"
+              style={{ background: freezeModal?.status === 'frozen' ? 'rgba(46,204,113,0.14)' : 'rgba(245,158,11,0.14)' }}
+            >
+              {freezeModal?.status === 'frozen'
+                ? <HiOutlineLockOpen className="w-5 h-5 text-[#2ECC71]" />
+                : <HiOutlineLockClosed className="w-5 h-5 text-[#F59E0B]" />
+              }
+            </div>
+            <div>
+              <p className="text-[14px] font-bold text-[var(--text)]">
+                {freezeModal?.firstName} {freezeModal?.lastName}
+              </p>
+              <p className="text-[11px] text-[var(--text-secondary)]">
+                {freezeModal?.status === 'frozen' ? 'Hozirda muzlatilgan' : 'Hozirda faol'}
+              </p>
+            </div>
+          </div>
+
+          <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+            {freezeModal?.status === 'frozen'
+              ? 'Talabaning muzlatishini ochish — u yana darslarga kirishi va tizimdan foydalanishi mumkin bo\'ladi.'
+              : 'Talabani muzlatish — u vaqtincha darslarga kira olmaydi va tizimga kirishi cheklanadi. Bu amalni keyin ochish mumkin.'
+            }
+          </p>
+
+          {/* Reason input (only when freezing, not when unfreezing) */}
+          {freezeModal?.status !== 'frozen' && (
+            <div>
+              <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-[0.06em]">
+                Muzlatish sababi <span className="text-[var(--danger)]">*</span>
+              </label>
+              <textarea
+                value={freezeReason}
+                onChange={(e) => setFreezeReason(e.target.value)}
+                placeholder="Sababni kiriting... (masalan: 3 oy to'lamagan)"
+                rows={3}
+                className="w-full px-4 py-3 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none focus:border-[var(--green)] transition-colors resize-none"
+              />
+            </div>
+          )}
+
+          {error && (
+            <div className="text-[11px] text-[var(--danger)] font-semibold rounded-[8px] px-3 py-2"
+              style={{ background: 'rgba(232,84,62,0.08)' }}
+            >
+              {error}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => { setFreezeModal(null); setFreezeReason(''); }} disabled={saving}>
+              Bekor qilish
+            </Button>
+            <Button
+              variant={freezeModal?.status === 'frozen' ? 'primary' : 'danger'}
+              size="sm"
+              onClick={handleFreeze}
+              disabled={saving || (freezeModal?.status !== 'frozen' && !freezeReason.trim())}
+            >
+              {saving
+                ? (freezeModal?.status === 'frozen' ? 'Ochilmoqda...' : 'Muzlatilmoqda...')
+                : (freezeModal?.status === 'frozen' ? 'Muzlatishni ochish' : 'Muzlatish')
+              }
             </Button>
           </div>
         </div>
