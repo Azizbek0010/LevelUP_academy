@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Wallet, Building2, Users, Landmark, GitBranch, GraduationCap } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { useDashboard, usePricing, useInvalidate } from '../queries.js';
@@ -7,10 +8,30 @@ import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../components/Skeleton.jsx';
 
 const FIELDS = [
-  { key: 'baseFirstBranch', label: 'Первый филиал', hint: 'база за 1 филиал' },
-  { key: 'perExtraBranch', label: 'Доп. филиал', hint: 'за каждый филиал сверх первого' },
-  { key: 'perStudent', label: 'За ученика', hint: 'за каждого ученика в месяц' },
+  { key: 'baseFirstBranch', label: 'Первый филиал', hint: 'база за 1 филиал', Icon: Landmark },
+  { key: 'perExtraBranch', label: 'Доп. филиал', hint: 'за каждый филиал сверх первого', Icon: GitBranch },
+  { key: 'perStudent', label: 'За ученика', hint: 'за каждого ученика в месяц', Icon: GraduationCap },
 ];
+
+// та же карточка, что в Dashboard.jsx — держим 1-в-1, чтобы вид совпадал
+function Kpi({ Icon, tint, title, value, unit }) {
+  return (
+    <div className="card bg-base-100">
+      <div className="card-body p-5">
+        <div className="flex items-center gap-3">
+          <span className="w-10 h-10 rounded-xl grid place-items-center shrink-0" style={{ background: tint.bg, color: tint.fg }}>
+            <Icon size={20} strokeWidth={2.2} />
+          </span>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 leading-tight">
+            {title}
+          </div>
+        </div>
+        <div className="text-3xl font-extrabold mt-3 leading-none">{value}</div>
+        {unit && <div className="text-xs text-base-content/45 mt-1">{unit}</div>}
+      </div>
+    </div>
+  );
+}
 
 export default function Billing() {
   const { token } = useAuth();
@@ -59,13 +80,22 @@ export default function Billing() {
         </>
       ) : (
         <>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <Kpi Icon={Wallet} tint={{ bg: '#E6F4D7', fg: '#3F6212' }} title="Общий счёт / мес" value={fmt(partners.reduce((sum, p) => sum + p.monthlyBill, 0))} unit={cur} />
+            <Kpi Icon={Building2} tint={{ bg: '#E0F2FE', fg: '#075985' }} title="Партнёров на биллинге" value={fmt(partners.length)} unit="учебных центров" />
+            <Kpi Icon={Users} tint={{ bg: '#EDE9FE', fg: '#5B21B6' }} title="Средний счёт" value={fmt(partners.length ? Math.round(partners.reduce((sum, p) => sum + p.monthlyBill, 0) / partners.length) : 0)} unit={cur} />
+          </div>
+
           <form onSubmit={save} className="card bg-base-100">
             <div className="card-body">
               <h2 className="card-title text-base">Цены (редактирует Main Admin)</h2>
               <div className="grid sm:grid-cols-3 gap-4 mt-2">
                 {FIELDS.map((f) => (
                   <label key={f.key} className="form-control">
-                    <span className="label-text mb-1">{f.label}</span>
+                    <span className="label-text mb-1 flex items-center gap-1.5">
+                      <f.Icon size={14} className="text-base-content/40" />
+                      {f.label}
+                    </span>
                     <div className="join">
                       <input type="number" min="0" className="input input-bordered join-item w-full"
                         value={form[f.key] ?? ''}
