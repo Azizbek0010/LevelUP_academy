@@ -1,8 +1,12 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// dev-прокси: фронт зовёт /api/... как свой origin → без CORS/куки-головной боли
-// VITE_API_URL — боевой бэкенд (Render) для build / preview
+// dev-прокси: фронт зовёт /api/... как свой origin → без CORS/куки-головной боли.
+// Target для прокси — DEV_API_PROXY (НЕ VITE_ префикс, серверная переменная, в браузер
+// не попадает). VITE_API_URL — отдельно, только для build/preview (боевой бэкенд Render),
+// в dev должен быть ПУСТ: если задать его и в dev, api.js склеит АБСОЛЮТНЫЙ URL к Render
+// прямо в браузере — прокси окажется в обходе, и вылезет CORS (Access-Control-Allow-Origin
+// не совпадёт с dev-портом).
 // loadEnv нужен, т.к. process.env НЕ читает .env автоматически внутри vite.config.js
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -12,7 +16,7 @@ export default defineConfig(({ mode }) => {
       port: 5273,
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'http://localhost:4000',
+          target: env.DEV_API_PROXY || 'http://localhost:4000',
           changeOrigin: true,
         },
       },

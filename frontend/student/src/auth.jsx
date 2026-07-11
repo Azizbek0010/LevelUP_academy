@@ -31,6 +31,10 @@ export function AuthProvider({ children }) {
     await api.logout().catch(() => {});
     setAccessToken(null);
     setUser(null);
+    const memberUrl =
+      (typeof import.meta !== 'undefined' && import.meta.env.VITE_MEMBER_URL) ||
+      'http://localhost:5175';
+    window.location.href = `${memberUrl}/login`;
   };
 
   return <AuthCtx.Provider value={{ user, ready, logout }}>{children}</AuthCtx.Provider>;
