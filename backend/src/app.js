@@ -2,11 +2,13 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
+import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { createRateLimiter } from './middlewares/rateLimiter.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { AppError } from './utils/AppError.js';
+import { swaggerSpec } from './config/swagger.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import chatRoutes from './modules/chat/chat.routes.js';
 import coinsRoutes from './modules/coins/coins.routes.js';
@@ -34,6 +36,26 @@ export function createApp() {
   app.use(createRateLimiter({ keyPrefix: 'rl:api', points: 300, duration: 60 }));
 
   app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
+  // --- API docs (swagger-jsdoc + swagger-ui-express) ---
+  // No auth gate exists elsewhere for docs-style routes in this codebase, so we
+  // default to the safer option: serve only outside production. In dev/test the
+  // UI is fully public (no authenticate()) so partners' onboarding devs can browse
+  // it without a token; in production it's not mounted at all (avoids exposing the
+  // full endpoint/schema surface of a multi-tenant payments API to the internet).
+  if (env.NODE_ENV !== 'production') {
+    // helmet()'s default CSP blocks the inline <script>/<style> that
+    // swagger-ui-express injects into its HTML page — relax it only for this path.
+    const relaxCspForDocs = (_req, res, next) => {
+      res.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:;",
+      );
+      next();
+    };
+    app.use('/api/docs', relaxCspForDocs, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    app.get('/api/docs.json', (_req, res) => res.json(swaggerSpec));
+  }
 
   // --- modules ---
   app.use('/api/auth', authRoutes);
