@@ -9,6 +9,7 @@ const USE_MOCKS =
 
 let accessToken = null;
 let onSessionExpired = () => {};
+let onPaymentOverdue = () => {};
 let refreshPromise = null;
 
 export function setAccessToken(token) {
@@ -17,6 +18,11 @@ export function setAccessToken(token) {
 
 export function setOnSessionExpired(handler) {
   onSessionExpired = handler;
+}
+
+/** 402 от blockIfOverdue: у студента просроченный счёт — панель закрыта до оплаты. */
+export function setOnPaymentOverdue(handler) {
+  onPaymentOverdue = handler;
 }
 
 // ============================================================
@@ -223,6 +229,7 @@ async function rawRequest(path, { method = 'GET', body, skipAuth = false } = {})
   if (!res.ok) {
     const err = new Error(data.message || `HTTP ${res.status}`);
     err.status = res.status;
+    err.details = data.details || null;
     err.fields = data.details || data.errors || null;
     throw err;
   }
@@ -244,6 +251,11 @@ async function request(path, opts = {}) {
   try {
     return await rawRequest(path, opts);
   } catch (err) {
+    // 402 — просроченный счёт: бэкенд закрыл весь student-домен, повтор не поможет.
+    if (err.status === 402) {
+      onPaymentOverdue(err.details?.amount ?? null);
+      throw err;
+    }
     if (err.status !== 401 || opts.skipAuth) throw err;
     try {
       const session = await refreshSession();

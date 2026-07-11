@@ -1,6 +1,6 @@
-export function SkeletonKpis({ count = 4 }) {
+export function SkeletonKpis({ count = 4, className = 'grid-cols-2 lg:grid-cols-4' }) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className={`grid gap-4 ${className}`}>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="card bg-base-100"><div className="card-body p-5 gap-3">
           <div className="flex items-center gap-3">
