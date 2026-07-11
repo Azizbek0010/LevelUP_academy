@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 10.07.2026 23:18 (UTC+5, Toshkent vaqti)
-> Statistika: 60/98 task tugallangan (61%)
+> Oxirgi yangilanish: 12.07.2026 00:49 (UTC+5, Toshkent vaqti)
+> Statistika: 63/98 task tugallangan (64%)
 
 ---
 
-## Progress: [############........] 61%
+## Progress: [############........] 64%
 
 ## Tugallangan vazifalar
 
@@ -86,6 +86,11 @@
 - [x] SUPER: CRUD admins
 - [x] SUPER: Reports
 
+### Frontend — Mentor (Sardor, Kozim, Alish)
+- [x] MENTOR: Dashboard (groups, upcoming lessons)
+- [x] MENTOR: Homework (check, grades)
+- [x] MENTOR: Coins (assign/deduct)
+
 ### Frontend — Landing Page ✅
 - [x] LANDING: Home, Features, Roles, Finance, Gamification, Contacts
 - [x] LANDING: Header, Footer, CTA
@@ -102,5 +107,5 @@
 ## Jamoa boyicha
 
 - Karis (Backend): 31 task
-- Abdulaziz (Backend): 27 task
-- Frontend jamoasi: 11 task
+- Abdulaziz (Backend): 30 task
+- Frontend jamoasi: 14 task

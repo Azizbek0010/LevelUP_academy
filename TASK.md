@@ -127,11 +127,11 @@
 
 ## Frontend — Mentor (Sardor, Kozim, Alish)
 
-- [ ] MENTOR: Dashboard (groups, upcoming lessons)
+- [x] MENTOR: Dashboard (groups, upcoming lessons)
 - [ ] MENTOR: Attendance journal
-- [ ] MENTOR: Homework (check, grades)
+- [x] MENTOR: Homework (check, grades)
 - [ ] MENTOR: Tests (create, results)
-- [ ] MENTOR: Coins (assign/deduct)
+- [x] MENTOR: Coins (assign/deduct)
 
 ## Frontend — Student (mas'ul TAYINLANMAGAN ⚠️)
 
