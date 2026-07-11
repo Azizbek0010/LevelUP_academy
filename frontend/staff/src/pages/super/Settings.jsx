@@ -4,6 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../auth.jsx';
 import { Building2, Globe, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { useSuperOrganization, useInvalidate } from '../../queries.js';
+import { api } from '../../api.js';
+import { dateShort } from '../../format.js';
+import PageHeader from '../../components/PageHeader.jsx';
+import { SkeletonKpis } from '../../components/Skeleton.jsx';
 
 const domainRegex = /^[a-z0-9.-]+\.[a-z]{2,}$/;
 
@@ -12,39 +17,53 @@ const settingsSchema = z.object({
   domain: z.string().trim().toLowerCase().regex(domainRegex, 'Неверный формат домена (например, levelup.uz)').or(z.literal('')),
 });
 
-const DEFAULTS = { name: 'LevelUp Academy', domain: 'levelup.uz' };
-
 export default function SuperSettings() {
-  const { user } = useAuth();
+  const { token } = useAuth();
+  const { data, isLoading, error } = useSuperOrganization();
+  const invalidate = useInvalidate();
   const [successMsg, setSuccessMsg] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const load = () => {
-    try {
-      const s = localStorage.getItem('levelup_org_settings');
-      return s ? JSON.parse(s) : DEFAULTS;
-    } catch { return DEFAULTS; }
-  };
-  const [org, setOrg] = useState(load);
+  const org = data?.organization;
 
-  const { register, handleSubmit, formState: { errors, isDirty } } = useForm({
+  const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { name: org.name, domain: org.domain || '' },
+    defaultValues: { name: org?.name || '', domain: org?.domain || '' },
+    values: org ? { name: org.name || '', domain: org.domain || '' } : undefined,
   });
 
-  const onSubmit = (data) => {
-    const updated = { ...org, name: data.name, domain: data.domain };
-    localStorage.setItem('levelup_org_settings', JSON.stringify(updated));
-    setOrg(updated);
-    setSuccessMsg('Настройки сохранены!');
-    setTimeout(() => setSuccessMsg(''), 3000);
+  const onSubmit = async (formData) => {
+    setBusy(true);
+    try {
+      await api.superUpdateOrganization(token, {
+        name: formData.name.trim(),
+        domain: formData.domain.trim(),
+      });
+      invalidate('super-organization');
+      setSuccessMsg('Настройки сохранены!');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (e) {
+      setSuccessMsg('');
+    } finally {
+      setBusy(false);
+    }
   };
+
+  if (error && error.status !== 401)
+    return <div className="alert alert-error text-sm"><span>{error.message}</span></div>;
+
+  if (isLoading || !org) {
+    return (
+      <div className="space-y-6 max-w-4xl">
+        <PageHeader title="Настройки организации" subtitle="Профиль учебного центра и параметры системы" />
+        <SkeletonKpis count={2} className="grid-cols-1 md:grid-cols-3" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold">Настройки организации</h1>
-        <p className="text-sm text-base-content/50">Профиль учебного центра и параметры системы</p>
-      </div>
+      <PageHeader title="Настройки организации" subtitle="Профиль учебного центра и параметры системы" />
 
       {successMsg && (
         <div className="alert alert-success text-sm flex items-center gap-2">
@@ -68,11 +87,13 @@ export default function SuperSettings() {
               <div className="w-full space-y-3 text-left text-xs">
                 <div className="flex justify-between">
                   <span className="text-base-content/50">Статус:</span>
-                  <span className="badge badge-success badge-sm">Активен</span>
+                  <span className={`badge badge-sm ${org.status === 'active' ? 'badge-success' : 'badge-ghost'}`}>
+                    {org.status === 'active' ? 'Активен' : org.status}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-base-content/50">Создана:</span>
-                  <span className="font-semibold">{new Date().toLocaleDateString('ru-RU')}</span>
+                  <span className="font-semibold">{dateShort(org.createdAt)}</span>
                 </div>
               </div>
             </div>
@@ -100,7 +121,10 @@ export default function SuperSettings() {
                   {errors.domain && <span className="text-xs text-error mt-1">{errors.domain.message}</span>}
                 </label>
                 <div className="flex justify-end pt-4">
-                  <button type="submit" className="btn btn-primary" disabled={!isDirty}>Сохранить изменения</button>
+                  <button type="submit" className="btn btn-primary" disabled={!isDirty || busy}>
+                    {busy && <span className="loading loading-spinner loading-sm" />}
+                    Сохранить изменения
+                  </button>
                 </div>
               </form>
             </div>
@@ -115,11 +139,11 @@ export default function SuperSettings() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 text-xs">
                 <div className="p-3.5 bg-base-200/50 rounded-xl space-y-1">
                   <div className="font-bold">Лимит филиалов</div>
-                  <div className="text-base-content/50">Без ограничений</div>
+                  <div className="text-base-content/50">{org.plan?.branchLimit ? `${org.plan.branchLimit} филиалов` : 'Без ограничений'}</div>
                 </div>
                 <div className="p-3.5 bg-base-200/50 rounded-xl space-y-1">
                   <div className="font-bold">Дисковое пространство</div>
-                  <div className="text-base-content/50">500 ГБ</div>
+                  <div className="text-base-content/50">{org.plan?.diskSpace || '500 ГБ'}</div>
                 </div>
               </div>
             </div>
