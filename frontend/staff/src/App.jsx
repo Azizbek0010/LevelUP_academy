@@ -1,22 +1,29 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './auth.jsx';
 
 import Layout from './components/Layout.jsx';
 import Login from './pages/Login.jsx';
-import SuperDashboard from './pages/super/Dashboard.jsx';
-import SuperBranches from './pages/super/Branches.jsx';
-import SuperAdmins from './pages/super/Admins.jsx';
-import SuperBranchDetail from './pages/super/BranchDetail.jsx';
-import SuperReports from './pages/super/Reports.jsx';
-import SuperSettings from './pages/super/Settings.jsx';
-import AdminDashboard from './pages/admin/Dashboard.jsx';
-import MentorDashboard from './pages/mentor/Dashboard.jsx';
-import MethodistDashboard from './pages/methodist/Dashboard.jsx';
-import TrainingTypes from './pages/methodist/TrainingTypes.jsx';
-import Topics from './pages/methodist/Topics.jsx';
-import Lessons from './pages/methodist/Lessons.jsx';
-import LessonEditor from './pages/methodist/LessonEditor.jsx';
-import MethodistAnalytics from './pages/methodist/Analytics.jsx';
+import RoleGuard from './components/RoleGuard.jsx';
+import Splash from './components/Splash.jsx';
+
+// Lazy-loaded pages
+const SuperDashboard = lazy(() => import('./pages/super/Dashboard.jsx'));
+const SuperBranches = lazy(() => import('./pages/super/Branches.jsx'));
+const SuperAdmins = lazy(() => import('./pages/super/Admins.jsx'));
+const SuperBranchDetail = lazy(() => import('./pages/super/BranchDetail.jsx'));
+const SuperReports = lazy(() => import('./pages/super/Reports.jsx'));
+const SuperSettings = lazy(() => import('./pages/super/Settings.jsx'));
+
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
+const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
+
+const MethodistDashboard = lazy(() => import('./pages/methodist/Dashboard.jsx'));
+const TrainingTypes = lazy(() => import('./pages/methodist/TrainingTypes.jsx'));
+const Topics = lazy(() => import('./pages/methodist/Topics.jsx'));
+const Lessons = lazy(() => import('./pages/methodist/Lessons.jsx'));
+const LessonEditor = lazy(() => import('./pages/methodist/LessonEditor.jsx'));
+const MethodistAnalytics = lazy(() => import('./pages/methodist/Analytics.jsx'));
 
 function Protected({ children }) {
   const { token } = useAuth();
@@ -33,6 +40,10 @@ function DashboardRedirect() {
   return <AdminDashboard />;
 }
 
+const SuspenseWrapper = ({ children }) => (
+  <Suspense fallback={<Splash />}>{children}</Suspense>
+);
+
 export default function App() {
   const { token } = useAuth();
   return (
@@ -45,19 +56,21 @@ export default function App() {
           </Protected>
         }
       >
-        <Route path="/" element={<DashboardRedirect />} />
-        {/* Super Admin routes */}
-        <Route path="/branches" element={<SuperBranches />} />
-        <Route path="/branches/:id" element={<SuperBranchDetail />} />
-        <Route path="/admins" element={<SuperAdmins />} />
-        <Route path="/reports" element={<SuperReports />} />
-        <Route path="/settings" element={<SuperSettings />} />
+        <Route path="/" element={<SuspenseWrapper><DashboardRedirect /></SuspenseWrapper>} />
+        {/* Super Admin routes — защищены RoleGuard */}
+        <Route element={<RoleGuard allow={['superadmin']} />}>
+          <Route path="/branches" element={<SuspenseWrapper><SuperBranches /></SuspenseWrapper>} />
+          <Route path="/branches/:id" element={<SuspenseWrapper><SuperBranchDetail /></SuspenseWrapper>} />
+          <Route path="/admins" element={<SuspenseWrapper><SuperAdmins /></SuspenseWrapper>} />
+          <Route path="/reports" element={<SuspenseWrapper><SuperReports /></SuspenseWrapper>} />
+          <Route path="/settings" element={<SuspenseWrapper><SuperSettings /></SuspenseWrapper>} />
+        </Route>
         {/* Methodist routes */}
-        <Route path="/methodist/types" element={<TrainingTypes />} />
-        <Route path="/methodist/types/:trainingTypeId/topics" element={<Topics />} />
-        <Route path="/methodist/topics/:topicId/lessons" element={<Lessons />} />
-        <Route path="/methodist/lessons/:lessonId/edit" element={<LessonEditor />} />
-        <Route path="/methodist/analytics" element={<MethodistAnalytics />} />
+        <Route path="/methodist/types" element={<SuspenseWrapper><TrainingTypes /></SuspenseWrapper>} />
+        <Route path="/methodist/types/:trainingTypeId/topics" element={<SuspenseWrapper><Topics /></SuspenseWrapper>} />
+        <Route path="/methodist/topics/:topicId/lessons" element={<SuspenseWrapper><Lessons /></SuspenseWrapper>} />
+        <Route path="/methodist/lessons/:lessonId/edit" element={<SuspenseWrapper><LessonEditor /></SuspenseWrapper>} />
+        <Route path="/methodist/analytics" element={<SuspenseWrapper><MethodistAnalytics /></SuspenseWrapper>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
