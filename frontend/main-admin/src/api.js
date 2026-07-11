@@ -5,15 +5,24 @@
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
 
 async function request(path, { method = 'GET', body, token } = {}) {
-  const res = await fetch(`${API_BASE}/api${path}`, {
-    method,
-    credentials: 'include',
-    headers: {
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api${path}`, {
+      method,
+      credentials: 'include',
+      headers: {
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    // fetch сам бросает сырой TypeError ("Failed to fetch") при обрыве сети/
+    // недоступном сервере — до пользователя это доходить не должно
+    const err = new Error('Сервер недоступен. Проверьте подключение и попробуйте ещё раз');
+    err.status = 0;
+    throw err;
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error(data.message || `HTTP ${res.status}`);

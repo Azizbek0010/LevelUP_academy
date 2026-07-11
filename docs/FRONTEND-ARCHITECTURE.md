@@ -24,75 +24,63 @@
 
 ---
 
-## 2. Структура директорий
+## 2. Структура директорий (актуально, 2026-07-11)
 
-Feature-based: фича владеет своими страницами, компонентами, хуками и API-вызовами.
+> ⚠️ Разделы 3+ ниже описывают ПЕРВОНАЧАЛЬНЫЙ план (единый SPA-монолит с Redux Toolkit,
+> одним `router.jsx`, `features/<domain>/`) — он разошёлся с тем, что реально построила
+> команда. Актуальна только структура ниже; при противоречии с разделами 3+ верить этому разделу.
 
-```
-educrm-frontend/
-├── src/
-│   ├── app/
-│   │   ├── App.jsx               # провайдеры: Redux Provider, Router, QueryClient, Theme
-│   │   ├── router.jsx            # всё дерево маршрутов + lazy()
-│   │   └── queryClient.js        # настройки TanStack Query
-│   │
-│   ├── components/               # переиспользуемое, без бизнес-логики
-│   │   ├── ui/                   # Button, Modal, Table, Badge, Skeleton, EmptyState
-│   │   ├── layout/               # Sidebar, Topbar, PageHeader
-│   │   └── feedback/             # ErrorBoundary, Toast, ConfirmDialog
-│   │
-│   ├── layouts/                  # каркас кабинета на роль
-│   │   ├── SuperAdminLayout.jsx
-│   │   ├── AdminLayout.jsx
-│   │   ├── MentorLayout.jsx
-│   │   ├── ParentLayout.jsx
-│   │   └── StudentLayout.jsx
-│   │
-│   ├── features/
-│   │   ├── auth/                 # LoginPage, useAuth, tokenStore
-│   │   ├── dashboard/            # ролевые дашборды + live-счётчик онлайна
-│   │   ├── users/                # студенты/менторы/родители (Admin CRUD, заморозка)
-│   │   ├── groups/               # группы, архивация, состав
-│   │   ├── attendance/           # Davomat: журнал ментора, история для родителя
-│   │   ├── payments/             # PaymentModal (full/split/nasiya), инвойсы, долги
-│   │   ├── homework/             # список, сдача (upload), проверка ментором
-│   │   ├── tests/                # конструктор (mentor), прохождение с таймером (student)
-│   │   ├── gamification/         # коины ±, coin history, лидерборды
-│   │   ├── shop/                 # витрина, покупка за коины
-│   │   ├── videos/               # каталог, защищённый плеер
-│   │   ├── chat/                 # global chat + parent direct
-│   │   └── reports/              # выручка/долги (admin), зарплата (mentor)
-│   │
-│   ├── hooks/                    # общие: useDebounce, usePagination, useOnlineCount
-│   ├── services/
-│   │   ├── api.js                # axios instance + interceptors
-│   │   └── upload.js             # presigned URL upload в MinIO/S3
-│   ├── sockets/
-│   │   └── socket.js             # singleton socket.io-client + useSocket
-│   ├── store/
-│   │   ├── index.js              # configureStore + типизированные хуки
-│   │   ├── authSlice.js          # Redux Toolkit: user, accessToken
-│   │   └── uiSlice.js            # тема, sidebar, активные модалки
-│   ├── styles/
-│   │   ├── index.css             # Tailwind directives + @layer
-│   │   └── themes.css            # CSS variables (:root / [data-theme])
-│   └── main.jsx
-│
-├── tailwind.config.js
-├── vite.config.js
-└── .env.example                  # VITE_API_URL, VITE_SOCKET_URL
-```
-
-Внутри фичи:
+**Не монолит — 5 независимых Vite-приложений** в `frontend/`, каждое свой `package.json`/`vite.config.js`/деплой:
 
 ```
-features/payments/
-├── pages/            # PaymentsPage.jsx, InvoiceDetailsPage.jsx
-├── components/       # PaymentModal.jsx, SplitPaymentForm.jsx, ScheduleTable.jsx
-├── hooks/            # usePayments.js, useCreatePayment.js (TanStack Query)
-├── api.js            # функции запросов: createPayment(), getInvoices()
-└── schemas.js        # zod-схемы форм
+frontend/
+├── landing-page/     # Лендинг, форма заявки → POST /api/leads (публично, без токена)
+├── main-admin/       # Main Admin: свой логин (email+пароль, POST /api/auth/main/login + Google)
+├── staff/            # ОДНО приложение, ОДИН логин (POST /api/auth/staff/login) —
+│                     # Admin + Mentor + Methodist + Super Admin. Роль из JWT решает,
+│                     # какой раздел показывать (App.jsx: DashboardRedirect/RequireSuperadmin)
+├── member/           # Student/Parent: логин-код+пароль (POST /api/auth/member/login)
+├── student/          # Student SPA (тесты/ДЗ/видео/магазин/лидерборд) — БЕЗ своей
+│                     # страницы логина, читает уже готовую сессию через api.refresh()
+│                     # (логинится пользователь всегда через member/)
+└── logos/            # SVG-логотипы, общие для всех приложений
 ```
+
+Внутри каждого приложения (staff/main-admin/member/student) — единообразный плоский паттерн,
+НЕ вложенная feature-структура из разделов 3+:
+
+```
+<app>/src/
+├── main.jsx           # createRoot + QueryClientProvider + BrowserRouter + AuthProvider
+├── App.jsx             # <Routes> дерево + role-based редиректы
+├── auth.jsx             # AuthProvider/useAuth — token/user в React Context (НЕ Redux),
+│                        # boot = POST /auth/refresh по httpOnly cookie
+├── api.js               # плоский объект { methodName: (token, ...) => fetch(...) }
+│                        # — НЕ axios instance, обычный fetch с ручным Bearer-заголовком
+├── queries.js            # TanStack Query хуки поверх api.js (useAuthedQuery-обёртка)
+├── format.js             # money/date форматтеры (где есть)
+├── components/           # общие переиспользуемые: Layout, PageHeader, Avatar, Skeleton, Toast
+└── pages/                # ПЛОСКО по ролям: pages/admin/, pages/mentor/, pages/methodist/
+                          # (в staff), либо просто pages/*.jsx (в member/student)
+```
+
+### Особый случай: `frontend/staff/src/pages/super/`
+
+Super Admin-раздел (роуты `/super/*`) — перенесённый код отдельного прототипа
+(автор Shohjahon), архитектурно ОТЛИЧАЕТСЯ от остального staff:
+
+- **TypeScript (.ts/.tsx)**, а не JS/JSX — Vite это поддерживает без доп. конфига
+- Свой `Layout` (`layouts/SuperAdminLayout.tsx`) — не общий `components/Layout.jsx`
+- Свой auth-store на **zustand** (`shared/stores/auth.ts`), а не React Context — синхронизируется
+  с общим `useAuth()` через `AuthSync.jsx` (mount-обёртка, копирует token/user в zustand при их
+  смене), поэтому логин один общий, но код читает сессию по-своему
+- Свой fetch-клиент `shared/api/http.ts` (не общий `api.js`), TanStack Query — тот же клиент,
+  что и остальной staff (`QueryClientProvider` в `main.jsx` один на всё приложение)
+- Свой CSS: `superadmin.css` — портирован с Tailwind v4 (оригинал) под Tailwind v3 (staff),
+  с CSS-переменными-мостиком под тему `tailwind.config.js`
+- Внутренняя структура (`features/superadmin/<domain>/*Page.tsx`, `shared/ui/*`,
+  `shared/api/endpoints/*`) — не описывается здесь построчно, см. сам код в
+  `frontend/staff/src/pages/super/`
 
 ---
 
@@ -206,7 +194,7 @@ export function RoleGuard({ allow, children }) {
 - Чужая роль на чужом входе режется на бэке — возвращается 401 (тот же, что при неверном
   пароле), фронту достаточно показать общее «неверный логин или пароль».
 
-Задача на реализацию — `docs/TASK-frontend-login.md` (исполнитель: @Elyor2011).
+Задача на реализацию — `frontend/TEAM-TASKS.md` §7 (исполнитель: @Elyor2011).
 
 ---
 

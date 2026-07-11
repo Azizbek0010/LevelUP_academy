@@ -22,9 +22,21 @@
 
 ---
 
-## ⛔ СТРОГОЕ ПРАВИЛО: Frontend ≠ Backend
+## 🚪 ВХОД В ПРОЕКТ: сначала спроси «Кто ты?» (ОБЯЗАТЕЛЬНО, ПЕРВЫМ ДЕЛОМ)
 
-**При входе в проект ОБЯЗАТЕЛЬНО спроси: "Frontend или Backend?"**
+**На первое сообщение любой сессии в этом проекте Claude ОБЯЗАН сначала задать вопрос-тест: «Кто ты?» — списком выбора из всех участников таблицы «Команда» (см. ниже).** Никакой работы до ответа.
+
+После выбора участника:
+
+1. **Работать ТОЛЬКО в зоне этого участника** (колонка «Права доступа» в таблице «Команда»). Человек не должен выходить за свою линию.
+2. **Попытка редактировать чужие файлы → ОТКАЗ** + напоминание правила. Никаких исключений «ну только одну строчку».
+3. **Karis (Team Lead)** — единственный с полным доступом: любые файлы, коммиты прямо в `main`.
+4. **`abdulazizSEO`** — если Abdulaziz представился так, у него SEO-режим: правки в любых файлах обеих зон, но только SEO-задачи (meta, sitemap, robots, скорость, разметка).
+5. **Имя не из списка → СТОП**, работу не начинать, сообщить Team Lead'у (Karis).
+
+---
+
+## ⛔ СТРОГОЕ ПРАВИЛО: Frontend ≠ Backend
 
 Это **АБСОЛЮТНОЕ** правило — нарушение = ломает весь проект:
 
@@ -42,9 +54,9 @@
 
 ### Как применять
 
-1. **При старте сессии** — спроси: "Сегодня работаем над backend или frontend?"
-2. **Если backend** — работай ТОЛЬКО в `backend/`, **КАТЕГОРИЧЕСКИ** не заходи в `frontend/`
-3. **Если frontend** — работай ТОЛЬКО в `frontend/`, **КАТЕГОРИЧЕСКИ** не заходи в `backend/`
+1. **Зона определяется ответом на вопрос «Кто ты?»** (см. раздел «Вход в проект» выше) — отдельно спрашивать frontend/backend не нужно
+2. **Backend-люди** — работают ТОЛЬКО в `backend/`, **КАТЕГОРИЧЕСКИ** не заходят в `frontend/`
+3. **Frontend-люди** — работают ТОЛЬКО в `frontend/`, **КАТЕГОРИЧЕСКИ** не заходят в `backend/`
 4. **Если нужен общий контекст** — читай `docs/` и `.md/` (это общая документация)
 5. **Нарушение правила = остановка работы и объяснение руководителю**
 
@@ -54,10 +66,21 @@
 
 | Роль | Кто | Идентификатор входа | Права |
 |------|-----|---------------------|-------|
-| **Team Lead** | Azizbek (владелец репозитория) | обычный вход, не нужен спец-код | Видит и правит любые файлы (`frontend/` + `backend/` + `docs/`); работает и коммитит **прямо в `main`**, в обход `save-zone` |
-| **SEO** | Abdulaziz | входит под `abdulazizSEO` | На время SEO-задач может править любые файлы обеих зон: meta-теги, `sitemap.xml`, `robots.txt`, заголовки/alt-тексты, семантическая разметка, скорость загрузки, SSR/prerender-настройки |
+| **Team Lead** | Karis (@Azizbek2603, владелец репозитория) | выбирает «Karis» в вопросе «Кто ты?» | Видит и правит любые файлы (`frontend/` + `backend/` + `docs/`); работает и коммитит **прямо в `main`**, в обход `save-zone` |
+| **SEO** | Abdulaziz | представляется как `abdulazizSEO` | На время SEO-задач может править любые файлы обеих зон: meta-теги, `sitemap.xml`, `robots.txt`, заголовки/alt-тексты, семантическая разметка, скорость загрузки, SSR/prerender-настройки |
 
 Вне контекста `abdulazizSEO` Abdulaziz остаётся в рамках своей обычной backend-зоны (Mentor/Student/Parent/Infra) — SEO-доступ не отменяет, а **добавляется** к его основной роли.
+
+---
+
+## ⛔ ЗАПРЕТ: удалять/затирать чужую работу и трогать root-файлы
+
+Это **АБСОЛЮТНОЕ** правило для всей команды (см. таблицу «Команда» выше) — нарушение = потерянная работа другого человека:
+
+1. **Никто не имеет права удалять, перезаписывать или силой (`--force`) затирать чужую ветку, чужие коммиты или чужой код** — ни свой, ни чужой branch нельзя перетирать чужой работой без согласия автора. Если код конфликтует — решать через merge/обсуждение, не через удаление чужого.
+2. **Запрещено трогать файлы в корне репозитория** (`README.md`, `CLAUDE.md`, `package.json` в корне, `render.yaml`, `VERSION`, `TASK.md`, `done.md`, `.gitignore`, `scripts/` и т.п.) — это зона **только Team Lead (Karis)**. Нужно что-то поменять в root-файле → написать Karis'у, не редактировать самому.
+3. Это правило действует **поверх** зоны Frontend ⇄ Backend (см. выше) — даже внутри своей зоны нельзя стирать работу коллеги по той же зоне (например, один фронтендер не может затереть ветку/файлы другого фронтендера).
+4. Нарушение → откат изменений + разбор с Team Lead'ом.
 
 ---
 
@@ -156,7 +179,9 @@ LevelUp-Academy/
 │   │   │   ├── auth/        # Вход, JWT, OTP, Google OAuth
 │   │   │   ├── main/        # Main Admin: онбординг, биллинг, лиды
 │   │   │   ├── super/       # Super Admin: филиалы, админы
-│   │   │   ├── admin/       # Admin: дашборд, расходы, студенты, группы
+│   │   │   ├── admin/       # Admin: дашборд, расходы, студенты, группы, менторы
+│   │   │   │   ├── payments/   # K-PAY: инвойсы, оплата (full/split), refund/void, чек в S3
+│   │   │   │   └── reports/    # K-PAY: выручка + долги филиала по группам
 │   │   │   ├── mentor/      # Mentor: davomat, ДЗ, тесты, коины, зарплата
 │   │   │   ├── student/     # Student: home, магазин, ДЗ, тесты, видео
 │   │   │   ├── parent/      # Parent: обзор ребёнка
@@ -165,8 +190,8 @@ LevelUp-Academy/
 │   │   │   ├── coins/       # Баланс/история коинов
 │   │   │   ├── users/       # Профили, список филиала
 │   │   │   └── telegram/    # Telegram-бот (grammY)
-│   │   ├── middlewares/     # authenticate, authorize, validate, errorHandler
-│   │   ├── queues/          # BullMQ: notification.queue + workers
+│   │   ├── middlewares/     # authenticate, authorize, validate, errorHandler, paymentGate (блок студента при overdue-долге)
+│   │   ├── queues/          # BullMQ: notification.queue + workers (notification, overdue, billing — авто-начисление/просрочка K-PAY)
 │   │   ├── sockets/         # Socket.io: chat, presence, auth
 │   │   ├── db/              # Миграции (node-pg-migrate), seeds
 │   │   ├── shared/          # Общий код (membership, period)
@@ -174,20 +199,23 @@ LevelUp-Academy/
 │   ├── tests/               # Тесты: mentor/ student/ parent/
 │   ├── worker.js            # Entry point для BullMQ worker
 │   └── package.json
-├── frontend/                 # React SPA
-│   ├── landing-page/        # Лендинг (React + Vite)
-│   ├── main-admin/          # Панель Main Admin (DaisyUI лайм)
-│   ├── staff/               # Панель Admin + Mentor + Super Admin + Methodist (ОБЩИЙ)
-│   ├── auth/                # Логин/регистрация
-│   └── logos/               # Логотипы
+├── frontend/                 # React SPA — 5 независимых Vite-приложений (не монолит)
+│   ├── landing-page/        # Лендинг (React + Vite), форма заявки → POST /api/leads
+│   ├── main-admin/          # Панель Main Admin (DaisyUI лайм), свой логин
+│   ├── staff/               # ОДНО приложение, ОДИН логин: Admin + Mentor + Methodist + Super Admin
+│   │   └── src/pages/super/ # Super Admin-секция (роуты /super/*, TS/TSX) — свой Layout,
+│   │                        # свой auth-store (zustand), синхронизируется с общим
+│   │                        # useAuth() через AuthSync.jsx (см. docs/FRONTEND-ARCHITECTURE.md §2)
+│   ├── member/               # Логин + кабинет Student/Parent (по логин-коду), Elyor
+│   ├── student/              # Student SPA: home/tests/homework/videos/shop/leaderboard
+│   │                         # (использует сессию из member/, своей страницы логина нет)
+│   └── logos/                # Логотипы
 ├── docs/                     # Архитектурная документация
 │   ├── BACKEND-ARCHITECTURE.md
 │   ├── FRONTEND-ARCHITECTURE.md
 │   ├── FRONTEND-DESIGN-SYSTEM.md
-│   ├── TASK-frontend-login.md
-│   ├── TASK-frontend-super-admin.md
-│   ├── TASK-frontend-admin.md
-│   └── TASK-telegram-bot.md
+│   └── TASK-telegram-bot.md  # задание Bilol (бот)
+│   # ⚠️ Фронт-задачи и API-контракты панелей — ТОЛЬКО в frontend/TEAM-TASKS.md (дубли удалены)
 ├── .md/                      # Общие правила и ссылки
 │   ├── RULES.md             # Архитектурные правила
 │   ├── SOURCES.md           # Ссылки на документацию
@@ -200,22 +228,22 @@ LevelUp-Academy/
 
 ## Команда
 
-| Участник | Зона ответственности |
-|----------|---------------------|
-| **Azizbek** (владелец репо, Team Lead) | Видит и правит все файлы (frontend + backend), коммитит прямо в `main` |
-| **Karis** (@Azizbek2603) | Main Admin, Methodist фронт, Super Admin, Admin, Auth + Billing |
-| **Abdulaziz** (@YakubovAbdulaziz) | Mentor, Student, Parent, Инфраструктура **+ SEO** (кросс-доступ ко всем файлам под идентификатором `abdulazizSEO`) |
-| **Bilol** | Telegram-бот |
-| **Elyor** (@Elyor2011) | Auth фронт, каркас SPA |
-| **Said Islom** | Super Admin фронт (дашборд) |
-| **Aziz** | Super Admin фронт (филиалы) |
-| **sxvs** | Super Admin фронт (админы) |
-| **Abduloh** | Admin фронт |
-| **Odil** | Admin фронт |
-| **Hamidula** | Admin фронт |
-| **Sardor** | Mentor фронт |
-| **Kozim** | Mentor фронт |
-| **Alish** | Mentor фронт |
+| Участник | Зона ответственности | Права доступа |
+|----------|---------------------|---------------|
+| **Karis** (@Azizbek2603) — **Team Lead**, владелец репо | Backend: Auth, Main Admin, Super Admin, Admin, Billing, платежи | **ВСЁ**: видит и правит любые файлы (frontend + backend), коммитит прямо в `main` |
+| **Abdulaziz** (@YakubovAbdulaziz) | Backend: Mentor, Student, Parent, Инфраструктура | Своя backend-зона; **как `abdulazizSEO`** — SEO-правки в любых файлах обеих зон |
+| **Bilol** | Telegram-бот | только `backend/src/modules/telegram/` + воркеры уведомлений |
+| **iface9808-sketch** (GitHub) | Methodist фронт | только `frontend/staff` (methodist) |
+| **Elyor** (@Elyor2011) | Auth фронт, каркас SPA | только auth-часть фронта |
+| **Said Islom** | Super Admin фронт (дашборд) | только `frontend/staff` (super) |
+| **Aziz** | Super Admin фронт (филиалы) | только `frontend/staff` (super) |
+| **sxvs** | Super Admin фронт (админы) | только `frontend/staff` (super) |
+| **Abduloh** | Admin фронт | только `frontend/staff` (admin) |
+| **Odil** | Admin фронт | только `frontend/staff` (admin) |
+| **Hamidula** | Admin фронт | только `frontend/staff` (admin) |
+| **Sardor** | Mentor фронт | только `frontend/staff` (mentor) |
+| **Kozim** | Mentor фронт | только `frontend/staff` (mentor) |
+| **Alish** | Mentor фронт | только `frontend/staff` (mentor) |
 
 
 ---
@@ -243,12 +271,32 @@ cd frontend/landing-page && npm run dev
 # Main Admin
 cd frontend/main-admin && npm run dev
 
-# Auth
-cd frontend/auth && npm run dev
-
-# Staff (Admin + Super Admin + Mentor + Methodist)
+# Staff (один логин: Admin + Super Admin + Mentor + Methodist)
 cd frontend/staff && npm run dev
+
+# Member — логин + кабинет Student/Parent
+cd frontend/member && npm run dev
+
+# Student SPA (использует сессию member/, своего логина нет)
+cd frontend/student && npm run dev
 ```
+
+⚠️ `frontend/member` и `frontend/student` по умолчанию просят один и тот же dev-порт (5175) —
+при одновременном локальном запуске обоих указывайте порт вручную (`npm run dev -- --port 5176`).
+
+---
+
+## Workflow: Claude работает только в `save-zone` (ОБЯЗАТЕЛЬНО)
+
+По умолчанию Claude Code ведёт работу исключительно в ветке `save-zone`, не в `main`:
+
+- Начало сессии/задачи → `git checkout save-zone` (не `main`).
+- Слияние чужих веток команды (feature-ветки, персональные ветки типа `elyor`/`rey`/`xob`/`Islom`/`shohjahon` и т.п.) → мержить их **тоже в `save-zone`**, не напрямую в `main`.
+- Свой код (бэкенд-фичи, фиксы, рефактор) → коммитить и пушить тоже в `save-zone`.
+- `main` трогается ТОЛЬКО после того, как `save-zone` протестирован (хотя бы вживую в браузере/playwright там, где это возможно без бэкенда) и пользователь явно просит закатить в `main` ("main ga push qill" и т.п.) — то есть промоушен `save-zone → main` не автоматический, а по прямой команде.
+- После любого изменения в `main` — обязательно синхронизировать обратно `save-zone` (`git merge main --no-ff` в `save-zone` + push), чтобы ветки не расходились.
+
+Это относится и к самому Claude Code как к участнику разработки — не только к людям-контрибьюторам (см. также Save Zone Workflow в глобальном `CLAUDE.md` пользователя, который описывает тот же принцип для человека-Team Lead).
 
 ---
 

@@ -1,5 +1,13 @@
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
+import { useSeo, breadcrumb } from '../lib/seo.js';
+
+const jsonLd = [
+  breadcrumb([
+    { name: 'Главная', path: '/landing' },
+    { name: 'Мотивация', path: '/landing/gamification' },
+  ]),
+];
 
 const leaders = [
   { place: 1, name: 'Азиза Р.', score: '2 480' },
@@ -10,6 +18,14 @@ const leaders = [
 ];
 
 export default function Gamification() {
+  useSeo({
+    title: 'Мотивация и геймификация | LevelUp Academy',
+    description:
+      'Коины за успеваемость, магазин наград и живые лидерборды недели и месяца. Append-only журнал коинов — мотивация, которую видно каждый день.',
+    path: '/landing/gamification',
+    jsonLd,
+  });
+
   return (
     <main>
       <section className="page-hero">

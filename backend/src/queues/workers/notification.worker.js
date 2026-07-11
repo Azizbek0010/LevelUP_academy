@@ -14,9 +14,17 @@ const HANDLERS = {
     const chatIds = await resolveChatIds(studentId, ['parent']);
     await sendToAll(chatIds, `✅ Оплата принята: ${fmt(amount)} сум`);
   },
+  'payment.due': async ({ studentId, amount, dueDate }) => {
+    const chatIds = await resolveChatIds(studentId, ['parent']);
+    await sendToAll(chatIds, `💳 Начислена оплата за месяц: ${fmt(amount)} сум. Оплатите до ${dueDate}`);
+  },
+  'payment.refunded': async ({ studentId, amount }) => {
+    const chatIds = await resolveChatIds(studentId, ['parent']);
+    await sendToAll(chatIds, `↩️ Возврат по оплате: ${fmt(amount)} сум`);
+  },
   'debt.overdue': async ({ studentId, amount, dueDate }) => {
     const chatIds = await resolveChatIds(studentId, ['parent']);
-    await sendToAll(chatIds, `⚠️ Просрочен платёж ${fmt(amount)} сум (срок: ${dueDate})`);
+    await sendToAll(chatIds, `⚠️ Просрочен платёж ${fmt(amount)} сум (срок: ${dueDate}). Доступ ученика ограничен до оплаты`);
   },
   'homework.due': async ({ studentId, title, deadline }) => {
     const chatIds = await resolveChatIds(studentId, ['student']);
