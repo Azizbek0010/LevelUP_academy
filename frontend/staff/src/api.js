@@ -337,6 +337,17 @@ async function request(path, { method = 'GET', body, token } = {}) {
       }
     }
 
+    // -------- SUPER ADMIN: Organization --------
+    if (path === '/super/organization') {
+      let org = JSON.parse(localStorage.getItem('mock_org') || 'null');
+      if (!org) {
+        org = { id: 'org-uuid-0001', name: 'LevelUp Academy', domain: 'levelup.uz', status: 'active', createdAt: '2026-01-01T00:00:00.000Z', plan: { branchLimit: 10, diskSpace: '500 ГБ' } };
+        localStorage.setItem('mock_org', JSON.stringify(org));
+      }
+      if (method === 'PATCH') { org = { ...org, ...body }; localStorage.setItem('mock_org', JSON.stringify(org)); return { organization: org }; }
+      return { organization: org };
+    }
+
     // -------- TRAINING TYPES --------
     if (path === '/methodist/training-types') {
       if (method === 'POST') {
@@ -653,6 +664,8 @@ export const api = {
   superUpdateAdmin: (token, id, body) => request(`/super/admins/${id}`, { method: 'PATCH', token, body }),
   superFreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
   superUnfreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
+  superOrganization: (token) => request('/super/organization', { token }),
+  superUpdateOrganization: (token, body) => request('/super/organization', { method: 'PATCH', token, body }),
 
   // -------- METHODIST CONTENT --------
   methodistTrainingTypes: (token) => request('/methodist/training-types', { token }),

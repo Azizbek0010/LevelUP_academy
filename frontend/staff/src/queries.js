@@ -35,6 +35,11 @@ export function useSuperAdmins() {
   return useAuthedQuery(['super-admins'], () => api.superAdmins(token));
 }
 
+export function useOrganization() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-organization'], () => api.superOrganization(token));
+}
+
 // -------- ADMIN --------
 export function useAdminDashboard() {
   const { token } = useAuth();
