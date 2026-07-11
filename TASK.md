@@ -133,7 +133,7 @@
 - [ ] MENTOR: Tests (create, results)
 - [x] MENTOR: Coins (assign/deduct)
 
-## Frontend — Student (mas'ul TAYINLANMAGAN ⚠️)
+## Frontend — Student (Abdulaziz)
 
 - [ ] STUDENT: Home (coins, groups, deadlines)
 - [ ] STUDENT: Tests
@@ -142,7 +142,7 @@
 - [ ] STUDENT: Videos
 - [ ] STUDENT: Leaderboard
 
-## Frontend — Parent (mas'ul TAYINLANMAGAN ⚠️)
+## Frontend — Parent (hozircha KEYINGA qoldirildi — shart emas, mas'ul yo'q)
 
 - [ ] PARENT: Child overview
 - [ ] PARENT: Chat
