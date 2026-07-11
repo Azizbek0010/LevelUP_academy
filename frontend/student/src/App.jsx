@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useAuth } from './auth.jsx';
+import { useAuth, MEMBER_URL } from './auth.jsx';
+import { fmtMoney } from './format.js';
 
 import Layout from './components/Layout.jsx';
 import Home from './pages/Home.jsx';
@@ -18,54 +19,91 @@ function Splash() {
   );
 }
 
-// URL общего входа (панель member) — свой в dev, свой в проде.
-const MEMBER_LOGIN_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env.VITE_MEMBER_URL) ||
-  'http://localhost:5175';
+const screenStyle = {
+  minHeight: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 14,
+  textAlign: 'center',
+  padding: 24,
+};
 
-/** Сессии нет — вход делает общий Auth-модуль, не эта панель. */
+const actionStyle = {
+  padding: '10px 20px',
+  borderRadius: 10,
+  background: 'var(--accent, #C6FF34)',
+  color: '#000',
+  fontWeight: 600,
+  textDecoration: 'none',
+  border: 'none',
+  cursor: 'pointer',
+};
+
+/** Сессии нет — вход делает общий Auth-модуль (member), не эта панель. */
 function NoSession() {
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 14,
-        textAlign: 'center',
-        padding: 24,
-      }}
-    >
+    <div style={screenStyle}>
       <img src="/logo-mark.svg" alt="" width={44} />
       <h2>Нужен вход</h2>
       <p style={{ color: 'var(--text-muted)', maxWidth: '38ch' }}>
         Сессия не найдена. Войди через общий вход LevelUp Academy — после авторизации кабинет
         студента откроется автоматически.
       </p>
-      <a
-        href={`${MEMBER_LOGIN_URL}/login`}
-        style={{
-          padding: '10px 20px',
-          borderRadius: 10,
-          background: 'var(--accent, #C6FF34)',
-          color: '#000',
-          fontWeight: 600,
-          textDecoration: 'none',
-        }}
-      >
+      <a href={`${MEMBER_URL}/login`} style={actionStyle}>
         Перейти к входу
       </a>
     </div>
   );
 }
 
+/** Вошёл не студент (например, родитель) — этот кабинет не для него. */
+function WrongRole({ onLogout }) {
+  return (
+    <div style={screenStyle}>
+      <img src="/logo-mark.svg" alt="" width={44} />
+      <h2>Кабинет ученика</h2>
+      <p style={{ color: 'var(--text-muted)', maxWidth: '38ch' }}>
+        Эта панель доступна только ученикам. Войди под учётной записью ученика.
+      </p>
+      <button type="button" onClick={onLogout} style={actionStyle}>
+        Выйти
+      </button>
+    </div>
+  );
+}
+
+/** 402 от blockIfOverdue — просроченный счёт закрывает весь кабинет до оплаты. */
+function PaymentOverdue({ amount, onLogout }) {
+  return (
+    <div style={screenStyle}>
+      <img src="/logo-mark.svg" alt="" width={44} />
+      <h2>Доступ приостановлен</h2>
+      <p style={{ color: 'var(--text-muted)', maxWidth: '42ch' }}>
+        По твоему счёту есть просроченная задолженность
+        {amount ? (
+          <>
+            {' '}
+            — <b>{fmtMoney(amount)}</b>
+          </>
+        ) : null}
+        . Кабинет откроется сразу после оплаты — обратись к администратору учебного центра.
+      </p>
+      <button type="button" onClick={onLogout} style={actionStyle}>
+        Выйти
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
-  const { user, ready } = useAuth();
+  const { user, ready, overdue, logout } = useAuth();
 
   if (!ready) return <Splash />;
   if (!user) return <NoSession />;
+  if (user.role !== 'student') return <WrongRole onLogout={logout} />;
+  if (overdue) return <PaymentOverdue amount={overdue.amount} onLogout={logout} />;
 
   return (
     <Routes>
