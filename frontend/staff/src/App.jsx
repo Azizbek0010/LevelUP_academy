@@ -9,6 +9,7 @@ import SuperAdmins from './pages/super/Admins.jsx';
 import SuperBranchDetail from './pages/super/BranchDetail.jsx';
 import SuperReports from './pages/super/Reports.jsx';
 import SuperSettings from './pages/super/Settings.jsx';
+import SuperComingSoon from './pages/super/ComingSoon.jsx';
 import AdminDashboard from './pages/admin/Dashboard.jsx';
 import MentorDashboard from './pages/mentor/Dashboard.jsx';
 import MethodistDashboard from './pages/methodist/Dashboard.jsx';
@@ -52,6 +53,13 @@ export default function App() {
         <Route path="/admins" element={<SuperAdmins />} />
         <Route path="/reports" element={<SuperReports />} />
         <Route path="/settings" element={<SuperSettings />} />
+        <Route path="/students" element={<SuperComingSoon path="/students" />} />
+        <Route path="/groups" element={<SuperComingSoon path="/groups" />} />
+        <Route path="/attendance" element={<SuperComingSoon path="/attendance" />} />
+        <Route path="/stats" element={<SuperComingSoon path="/stats" />} />
+        <Route path="/announcements" element={<SuperComingSoon path="/announcements" />} />
+        <Route path="/reminders" element={<SuperComingSoon path="/reminders" />} />
+        <Route path="/audit" element={<SuperComingSoon path="/audit" />} />
         {/* Methodist routes */}
         <Route path="/methodist/types" element={<TrainingTypes />} />
         <Route path="/methodist/types/:trainingTypeId/topics" element={<Topics />} />
