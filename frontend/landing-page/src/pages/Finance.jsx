@@ -1,7 +1,23 @@
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
+import { useSeo, breadcrumb } from '../lib/seo.js';
+
+const jsonLd = [
+  breadcrumb([
+    { name: 'Главная', path: '/landing' },
+    { name: 'Финансы', path: '/landing/finance' },
+  ]),
+];
 
 export default function Finance() {
+  useSeo({
+    title: 'Финансы и платежи центра | LevelUp Academy',
+    description:
+      'Сплит-платежи наличными и картой, инвойсы, чеки в облаке, контроль долгов и живые отчёты по выручке. Деньги учебного центра — до копейки.',
+    path: '/landing/finance',
+    jsonLd,
+  });
+
   return (
     <main>
       <section className="page-hero">

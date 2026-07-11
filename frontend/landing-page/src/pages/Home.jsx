@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
+import { useSeo } from '../lib/seo.js';
 
 const features = [
   {
@@ -78,6 +79,13 @@ const bars = [
 ];
 
 export default function Home() {
+  useSeo({
+    title: 'LevelUp Academy — CRM для учебного центра',
+    description:
+      'CRM для учебного центра: оплаты и сплит-платежи, посещаемость, экзамены, геймификация и Telegram-уведомления в одной системе. Первая неделя — бесплатно.',
+    path: '/landing',
+  });
+
   return (
     <main>
       {/* ===== Hero ===== */}
