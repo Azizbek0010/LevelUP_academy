@@ -876,4 +876,43 @@ export const api = {
   methodistDifficulty: (token) => request('/methodist/difficulty', { token }),
   methodistGroups: (token) => request('/methodist/groups', { token }),
   methodistStudents: (token) => request('/methodist/students', { token }),
+
+  // -------- ADMIN (branch) --------
+  adminDashboard: (token) => request('/admin/dashboard', { token }),
+  adminReports: (token, qs = '') => request(`/admin/reports${qs}`, { token }),
+
+  adminExpenses: (token, qs = '') => request(`/admin/expenses${qs}`, { token }),
+  adminCreateExpense: (token, body) => request('/admin/expenses', { method: 'POST', token, body }),
+  adminDeleteExpense: (token, id) => request(`/admin/expenses/${id}`, { method: 'DELETE', token }),
+
+  adminStudents: (token, qs = '') => request(`/admin/students${qs}`, { token }),
+  adminStudentDetail: (token, id) => request(`/admin/students/${id}`, { token }),
+  adminCreateStudent: (token, body) => request('/admin/students', { method: 'POST', token, body }),
+  adminUpdateStudent: (token, id, body) => request(`/admin/students/${id}`, { method: 'PATCH', token, body }),
+  adminFreezeStudent: (token, id, frozen, reason) => request(`/admin/students/${id}/freeze`, { method: 'POST', token, body: { frozen, reason } }),
+  adminRegenStudentPassword: (token, id) => request(`/admin/students/${id}/regenerate-password`, { method: 'POST', token }),
+  adminDeleteStudent: (token, id) => request(`/admin/students/${id}`, { method: 'DELETE', token }),
+
+  adminMentors: (token) => request('/admin/mentors', { token }),
+  adminCreateMentor: (token, body) => request('/admin/mentors', { method: 'POST', token, body }),
+  adminUpdateMentor: (token, id, body) => request(`/admin/mentors/${id}`, { method: 'PATCH', token, body }),
+  adminFreezeMentor: (token, id, frozen) => request(`/admin/mentors/${id}/freeze`, { method: 'POST', token, body: { frozen } }),
+  adminDeleteMentor: (token, id) => request(`/admin/mentors/${id}`, { method: 'DELETE', token }),
+
+  adminGroups: (token, qs = '') => request(`/admin/groups${qs}`, { token }),
+  adminGroupDetail: (token, id) => request(`/admin/groups/${id}`, { token }),
+  adminCreateGroup: (token, body) => request('/admin/groups', { method: 'POST', token, body }),
+  adminUpdateGroup: (token, id, body) => request(`/admin/groups/${id}`, { method: 'PATCH', token, body }),
+  adminArchiveGroup: (token, id) => request(`/admin/groups/${id}/archive`, { method: 'POST', token }),
+  adminUnarchiveGroup: (token, id) => request(`/admin/groups/${id}/unarchive`, { method: 'POST', token }),
+  adminAddStudentToGroup: (token, groupId, studentId) => request(`/admin/groups/${groupId}/students`, { method: 'POST', token, body: { studentId } }),
+  adminRemoveStudentFromGroup: (token, groupId, studentId) => request(`/admin/groups/${groupId}/students/${studentId}`, { method: 'DELETE', token }),
+
+  adminInvoices: (token, qs = '') => request(`/admin/payments/invoices${qs}`, { token }),
+  adminCreatePayment: (token, body) => request('/admin/payments', { method: 'POST', token, body }),
+  adminPayInvoice: (token, id, body) => request(`/admin/payments/invoices/${id}/pay`, { method: 'POST', token, body }),
+  adminRefundTransaction: (token, id, reason) => request(`/admin/payments/transactions/${id}/refund`, { method: 'POST', token, body: { reason } }),
+
+  adminSettings: (token) => request('/admin/settings', { token }),
+  adminUpdateSettings: (token, body) => request('/admin/settings', { method: 'PUT', token, body }),
 };
