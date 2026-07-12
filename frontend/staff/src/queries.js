@@ -46,6 +46,46 @@ export function useAdminDashboard() {
   return useAuthedQuery(['admin-dashboard'], () => api.adminDashboard(token));
 }
 
+export function useAdminExpenses(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-expenses', qs], () => api.adminExpenses(token, qs));
+}
+
+export function useAdminStudents(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-students', qs], () => api.adminStudents(token, qs));
+}
+
+export function useAdminGroups(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-groups', qs], () => api.adminGroups(token, qs));
+}
+
+export function useAdminGroupDetail(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-group', id], () => api.adminGroupDetail(token, id), { enabled: !!id });
+}
+
+export function useAdminMentors() {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-mentors'], () => api.adminMentors(token));
+}
+
+export function useAdminInvoices(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-invoices', qs], () => api.adminInvoices(token, qs));
+}
+
+export function useAdminReports(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-reports', qs], () => api.adminReports(token, qs));
+}
+
+export function useAdminSettings() {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-settings'], () => api.adminSettings(token), { retry: false });
+}
+
 // -------- MENTOR --------
 export function useMentorGroups() {
   const { token } = useAuth();
