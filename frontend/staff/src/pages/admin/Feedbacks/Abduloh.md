@@ -66,6 +66,8 @@ Mavjud Dashboard tayyor, lekin:
 | 2-3 | Settings.jsx — tablar + formalar |
 | Doimiy | Code review |
 
+
+
 ## 🎨 Dizayn
 - Fon: `#F6FBEA`
 - Sidebar: `#F1F7E4` (light) / `#0A0E0A` (dark)

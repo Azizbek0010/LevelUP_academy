@@ -1,11 +1,11 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area,
 } from 'recharts';
-import { HiOutlineCurrencyDollar, HiOutlineArrowTrendingUp, HiOutlineUserGroup, HiOutlineCheckCircle, HiOutlineArrowPath } from 'react-icons/hi2';
+import { HiOutlineCurrencyDollar, HiOutlineArrowTrendingUp, HiOutlineUserGroup, HiOutlineCheckCircle, HiOutlineArrowPath, HiOutlineExclamationCircle } from 'react-icons/hi2';
 import StatCard from '../components/StatCard.jsx';
-import { fetchDashboard } from '../services/adminService.js';
+import { fetchDashboard, fetchReports as apiFetchReports } from '../services/adminService.js';
 import { useApi } from '../hooks/useApi.js';
 
 // ─── Utility ───────────────────────────────────────────────
@@ -55,17 +55,6 @@ const periodData = {
   },
 };
 
-const groupPerformance = [
-  { name: 'Web Dasturlash N1', students: 18, avgGrade: 88, revenue: 28500000, progress: 85 },
-  { name: 'Mobile Development', students: 15, avgGrade: 92, revenue: 24000000, progress: 92 },
-  { name: 'Data Science Pro', students: 12, avgGrade: 78, revenue: 21000000, progress: 70 },
-  { name: 'Frontend React', students: 20, avgGrade: 85, revenue: 32000000, progress: 82 },
-  { name: 'Backend Node.js', students: 14, avgGrade: 90, revenue: 22500000, progress: 90 },
-  { name: 'UI/UX Design', students: 10, avgGrade: 76, revenue: 16500000, progress: 65 },
-  { name: 'DevOps Engineering', students: 8, avgGrade: 94, revenue: 14200000, progress: 78 },
-  { name: 'Python Backend', students: 16, avgGrade: 82, revenue: 25500000, progress: 75 },
-];
-
 // ─── Custom Tooltip ────────────────────────────────────────
 function ChartTooltip({ active, payload, label, formatter }) {
   if (!active || !payload) return null;
@@ -84,12 +73,57 @@ function ChartTooltip({ active, payload, label, formatter }) {
 // ─── Period filter ─────────────────────────────────────────
 const PERIODS = ['This Week', 'This Month', 'This Quarter', 'This Year'];
 
+// ─── Helper: get from/to for period ────────────────────────
+function getPeriodRange(period) {
+  const now = new Date();
+  const end = now.toISOString();
+  let start;
+  switch (period) {
+    case 'This Week':
+      start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      break;
+    case 'This Month':
+      start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      break;
+    case 'This Quarter':
+      start = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1).toISOString();
+      break;
+    case 'This Year':
+    default:
+      start = new Date(now.getFullYear(), 0, 1).toISOString();
+      break;
+  }
+  return { from: start, to: end };
+}
+
 // ─── Main Component ────────────────────────────────────────
 export default function Reports() {
   const [period, setPeriod] = useState('This Year');
   const { data: d, loading, error, execute } = useApi(fetchDashboard);
+  const [reportsData, setReportsData] = useState(null);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportsError, setReportsError] = useState(null);
 
   useEffect(() => { execute(); }, [execute]);
+
+  const loadReports = useCallback(async (p) => {
+    setReportsLoading(true);
+    setReportsError(null);
+    try {
+      const range = getPeriodRange(p);
+      const data = await apiFetchReports(range);
+      setReportsData(data);
+    } catch (err) {
+      console.error('Failed to load reports:', err);
+      setReportsError(err.response?.data?.message || err.message || 'Hisobotlarni yuklashda xatolik');
+    } finally {
+      setReportsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadReports(period);
+  }, [period, loadReports]);
 
   const raw = d?.data || d;
   const { totals } = raw || { totals: {} };
@@ -102,7 +136,7 @@ export default function Reports() {
 
   const data = useMemo(() => periodData[period], [period]);
 
-  // Chart data
+  // Chart data (illustrative — no time-series API yet)
   const chartData = useMemo(() =>
     data.labels.map((label, i) => ({
       name: label,
@@ -113,20 +147,6 @@ export default function Reports() {
     })),
     [data],
   );
-
-  // Period stats (for chart footer, kept as illustration)
-  const chartStats = useMemo(() => {
-    const totalRevenue = data.revenue.reduce((a, b) => a + b, 0);
-    const totalExpenses = data.expenses.reduce((a, b) => a + b, 0);
-    const totalEnrolled = data.enrolled.reduce((a, b) => a + b, 0);
-    const totalDropped = data.dropped.reduce((a, b) => a + b, 0);
-    return {
-      totalRevenue,
-      totalExpenses,
-      netProfit: totalRevenue - totalExpenses,
-      activeStudents: totalEnrolled - totalDropped,
-    };
-  }, [data]);
 
   // ─── Render ────────────────────────────────────────────
   if (loading && !d) {
@@ -346,52 +366,45 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* ── Group Performance Table (illustrative) ── */}
+      {/* ── Group Performance Table (from /admin/reports API) ── */}
       <div className="glass-strong rounded-[20px] p-5 animate-slide-up stagger-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[14px] font-bold text-[var(--text)]">Guruhlar reytingi</h2>
-          <span className="text-[10px] text-[var(--text-muted)]">
-            {groupPerformance.length} ta guruh
+          <span className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
+            {reportsLoading && <HiOutlineArrowPath className="w-3 h-3 animate-spin" />}
+            {reportsData?.byGroup ? `${reportsData.byGroup.length} ta guruh` : 'Ma\'lumot yo‘q'}
           </span>
         </div>
 
-        {/* Table wrapper with horizontal scroll for small screens */}
-        <div className="overflow-x-auto -mx-5 px-5">
-          <table className="w-full min-w-[600px]">
-            <thead>
-              <tr className="border-b border-[var(--border)]">
-                <th className="text-left text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em] pb-3 pr-4">
-                  Guruh
-                </th>
-                <th className="text-center text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em] pb-3 px-3">
-                  O‘quvchilar
-                </th>
-                <th className="text-center text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em] pb-3 px-3">
-                  O‘rt. baho
-                </th>
-                <th className="text-right text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em] pb-3 px-3">
-                  Daromad
-                </th>
-                <th className="text-left text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em] pb-3 pl-3">
-                  Progress
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {groupPerformance.map((group, i) => {
-                const gradeColor =
-                  group.avgGrade >= 90 ? '#2ECC71' :
-                  group.avgGrade >= 80 ? '#F59E0B' :
-                  '#E8543E';
+        {reportsError && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] text-[11px] font-semibold mb-3"
+            style={{ background: 'rgba(232,84,62,0.08)', color: '#E8543E' }}
+          >
+            <HiOutlineExclamationCircle className="w-4 h-4 shrink-0" />
+            {reportsError}
+          </div>
+        )}
 
-                const progressColor =
-                  group.progress >= 80 ? '#2ECC71' :
-                  group.progress >= 60 ? '#F59E0B' :
-                  '#E8543E';
-
-                return (
+        {reportsData?.byGroup?.length > 0 ? (
+          <div className="overflow-x-auto -mx-5 px-5">
+            <table className="w-full min-w-[500px]">
+              <thead>
+                <tr className="border-b border-[var(--border)]">
+                  <th className="text-left text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em] pb-3 pr-4">
+                    Guruh
+                  </th>
+                  <th className="text-right text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em] pb-3 px-3">
+                    Daromad
+                  </th>
+                  <th className="text-right text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em] pb-3 pl-3">
+                    Qarz
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportsData.byGroup.map((group, i) => (
                   <tr
-                    key={group.name}
+                    key={group.groupId || i}
                     className={cn(
                       'border-b border-[var(--border)] transition-all duration-200',
                       'hover:bg-[var(--surface-hover)]',
@@ -408,44 +421,33 @@ export default function Reports() {
                         >
                           {i + 1}
                         </span>
-                        <span className="text-[12px] font-semibold text-[var(--text)]">{group.name}</span>
+                        <span className="text-[12px] font-semibold text-[var(--text)]">{group.groupName || 'Noma\'lum guruh'}</span>
                       </div>
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className="text-[12px] font-bold tabular-nums text-[var(--text)]">{group.students}</span>
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className="text-[12px] font-bold tabular-nums" style={{ color: gradeColor }}>
-                        {group.avgGrade}%
-                      </span>
                     </td>
                     <td className="py-3 px-3 text-right">
                       <span className="text-[12px] font-bold tabular-nums text-[var(--text)]">
                         {formatCurrency(group.revenue)}
                       </span>
                     </td>
-                    <td className="py-3 pl-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-1.5 rounded-full" style={{ background: 'var(--border)' }}>
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{
-                              width: `${group.progress}%`,
-                              background: progressColor,
-                            }}
-                          />
-                        </div>
-                        <span className="text-[10px] font-bold tabular-nums shrink-0" style={{ color: progressColor }}>
-                          {group.progress}%
-                        </span>
-                      </div>
+                    <td className="py-3 pl-3 text-right">
+                      <span className={`text-[12px] font-bold tabular-nums ${group.debt > 0 ? 'text-[var(--danger)]' : 'text-[var(--success)]'}`}>
+                        {group.debt > 0 ? formatCurrency(group.debt) : '—'}
+                      </span>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 text-[13px] text-[var(--text-secondary)]">
+            {reportsLoading ? (
+              <p>Hisobot ma'lumotlari yuklanmoqda...</p>
+            ) : (
+              <p>Guruhlar bo‘yicha ma'lumot mavjud emas</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,7 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   HiOutlineSquares2X2, HiOutlineArrowRightOnRectangle, HiOutlineXMark,
   HiOutlineUserGroup, HiOutlineBookOpen, HiOutlineCurrencyDollar,
-  HiOutlineAcademicCap, HiOutlineChatBubbleLeftRight, HiOutlineDocumentText, HiOutlineReceiptRefund,
+  HiOutlineAcademicCap, HiOutlineChatBubbleLeftRight, HiOutlineDocumentText,
+  HiOutlineReceiptRefund, HiOutlineCog8Tooth,
 } from 'react-icons/hi2';
 
 const navItems = [
@@ -15,6 +16,7 @@ const navItems = [
   { path: '/reports', label: 'Hisobotlar', icon: HiOutlineDocumentText },
   { path: '/mentors', label: 'Mentorlar', icon: HiOutlineAcademicCap },
   { path: '/chat', label: 'Chat', icon: HiOutlineChatBubbleLeftRight },
+  { path: '/settings', label: 'Sozlamalar', icon: HiOutlineCog8Tooth },
 ];
 
 export default function Sidebar({ open, onClose }) {
