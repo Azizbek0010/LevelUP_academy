@@ -40,6 +40,11 @@ export function createApp() {
 
   app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
+  // Корень — не эндпоинт данных; API живёт на /api/*. Отдаём подсказку вместо 404,
+  // чтобы фронтендеры, открывшие корень для проверки, не пугались.
+  app.get('/', (_req, res) =>
+    res.json({ success: true, service: 'LevelUp Academy API', api: '/api', health: '/health' }));
+
   // --- API docs (swagger-jsdoc + swagger-ui-express) ---
   // No auth gate exists elsewhere for docs-style routes in this codebase, so we
   // default to the safer option: serve only outside production. In dev/test the
