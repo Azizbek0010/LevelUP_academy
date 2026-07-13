@@ -238,7 +238,7 @@ LevelUp-Academy/
 | **Said Islom** | Super Admin фронт (дашборд) | только `frontend/staff` (super) |
 | **Aziz** | Super Admin фронт (филиалы) | только `frontend/staff` (super) |
 | **sxvs** | Super Admin фронт (админы) | только `frontend/staff` (super) |
-| **Abduloh** | Admin фронт | только `frontend/staff` (admin) |
+| **Abduloh** (@Corvin_0, git: yunusovabdullox36-hash) | Admin фронт | только `frontend/staff` (admin) |
 | **Odil** | Admin фронт | только `frontend/staff` (admin) |
 | **Hamidula** | Admin фронт | только `frontend/staff` (admin) |
 | **Sardor** | Mentor фронт | только `frontend/staff` (mentor) |
