@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 // Боевой домен лендинга — база для canonical, og:url, sitemap.
-export const SITE_URL = 'https://levelupacademy.uz';
+export const SITE_URL = 'https://levelup-academy.uz';
 export const OG_IMAGE = `${SITE_URL}/og-cover.png`;
 
 function upsert(selector, create) {
