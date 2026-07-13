@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Building2, Users, Phone, MapPin, AlertTriangle, TrendingUp, Wallet, UserX, FolderX, UserCog } from 'lucide-react';
 import { fmt, money, dateShort } from '../../format.js';
@@ -9,6 +10,13 @@ import { SkeletonList } from '../../components/Skeleton.jsx';
 export default function SuperBranchDetail() {
   const { id } = useParams();
   const { data, isLoading, error, refetch } = useSuperBranchDetail(id);
+
+  const branchName = data?.branch?.name || data?.name;
+  useEffect(() => {
+    if (branchName) {
+      document.title = `${branchName} | Филиалы | LevelUp Academy`;
+    }
+  }, [branchName]);
 
   if (error && error.status !== 401) {
     return (
@@ -72,8 +80,8 @@ export default function SuperBranchDetail() {
       {/* KPI Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI: Students */}
-        <div className="card bg-base-100 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-          <div className="p-3.5 bg-primary/10 text-primary rounded-2xl shadow-sm shadow-primary/5">
+        <div className="card bg-base-100 border border-base-200/50 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow-lg hover:border-primary/20 hover:-translate-y-1 transition-all duration-300 group">
+          <div className="p-3.5 bg-primary/10 text-primary rounded-2xl shadow-sm shadow-primary/5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
             <Users size={22} />
           </div>
           <div>
@@ -83,8 +91,8 @@ export default function SuperBranchDetail() {
         </div>
 
         {/* KPI: Revenue */}
-        <div className="card bg-base-100 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-          <div className="p-3.5 bg-success/10 text-success rounded-2xl shadow-sm shadow-success/5">
+        <div className="card bg-base-100 border border-base-200/50 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow-lg hover:border-success/20 hover:-translate-y-1 transition-all duration-300 group">
+          <div className="p-3.5 bg-success/10 text-success rounded-2xl shadow-sm shadow-success/5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
             <TrendingUp size={22} />
           </div>
           <div>
@@ -94,21 +102,21 @@ export default function SuperBranchDetail() {
         </div>
 
         {/* KPI: Debt */}
-        <div className="card bg-base-100 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-          <div className="p-3.5 bg-error/10 text-error rounded-2xl shadow-sm shadow-error/5">
+        <div className="card bg-base-100 border border-base-200/50 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow-lg hover:border-error/20 hover:-translate-y-1 transition-all duration-300 group" title={money(branch.debt || 0)}>
+          <div className="p-3.5 bg-error/10 text-error rounded-2xl shadow-sm shadow-error/5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
             <Wallet size={22} />
           </div>
           <div>
             <div className="text-[11px] uppercase tracking-wider font-semibold opacity-40">Общий долг</div>
-            <div className={`text-xl font-black mt-0.5 tabular-nums ${(branch.debt || 0) > 0 ? 'text-error animate-pulse-subtle' : 'text-base-content/40'}`}>
+            <div className={`text-xl font-black mt-0.5 tabular-nums ${(branch.debt || 0) > 0 ? 'text-error animate-pulse' : 'text-base-content/40'}`}>
               {money(branch.debt || 0)}
             </div>
           </div>
         </div>
 
         {/* KPI: Staff & Groups */}
-        <div className="card bg-base-100 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-          <div className="p-3.5 bg-info/10 text-info rounded-2xl shadow-sm shadow-info/5">
+        <div className="card bg-base-100 border border-base-200/50 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow-lg hover:border-info/20 hover:-translate-y-1 transition-all duration-300 group">
+          <div className="p-3.5 bg-info/10 text-info rounded-2xl shadow-sm shadow-info/5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
             <UserCog size={22} />
           </div>
           <div>
