@@ -18,7 +18,7 @@ const branchSchema = z.object({
 });
 
 export default function SuperBranches() {
-  const { data, isLoading, error } = useSuperBranches();
+  const { data, isLoading, error, refetch } = useSuperBranches();
   const { token } = useAuth();
   const invalidate = useInvalidate();
   const [q, setQ] = useState('');
@@ -112,7 +112,7 @@ export default function SuperBranches() {
             <h3 className="font-bold text-lg">Ошибка загрузки филиалов</h3>
             <p className="text-sm text-base-content/60">{error.message || 'Произошла непредвиденная ошибка при запросе к серверу.'}</p>
             <div className="card-actions mt-2">
-              <button className="btn btn-primary btn-sm px-6" onClick={() => invalidate('super-branches')}>
+              <button className="btn btn-primary btn-sm px-6" onClick={() => refetch()}>
                 Повторить попытку
               </button>
             </div>
@@ -134,9 +134,22 @@ export default function SuperBranches() {
               />
 
               {rows.length === 0 ? (
-                <div className="card bg-base-100">
-                  <div className="card-body text-center py-12">
-                    <p className="text-base-content/40">Филиалов пока нет. Создайте первый филиал.</p>
+                <div className="card bg-base-100 shadow-sm border border-dashed border-base-300">
+                  <div className="card-body text-center py-16 space-y-4">
+                    <div className="mx-auto w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center text-base-content/40">
+                      <Building2 size={32} />
+                    </div>
+                    <div className="max-w-sm mx-auto">
+                      <h3 className="text-lg font-bold">Нет филиалов</h3>
+                      <p className="text-sm text-base-content/50 mt-1">
+                        {q ? 'По вашему запросу ничего не найдено. Попробуйте изменить поисковый запрос.' : 'Филиалов пока нет. Создайте первый филиал, чтобы начать работу.'}
+                      </p>
+                    </div>
+                    {!q && (
+                      <button className="btn btn-primary btn-sm mx-auto gap-1.5" onClick={openCreate}>
+                        <Plus size={16} /> Создать первый филиал
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -144,7 +157,7 @@ export default function SuperBranches() {
                   {rows.map((b) => (
                     <div
                       key={b.id}
-                      className={`card bg-base-100 shadow-sm hover:shadow-md transition-all duration-200 ${b.isArchived ? 'opacity-60' : ''}`}
+                      className={`card bg-base-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 ${b.isArchived ? 'opacity-60' : ''}`}
                     >
                       <div className="card-body p-5 gap-3">
                         {/* Header */}
