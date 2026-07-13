@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Building2, Users, Phone, MapPin } from 'lucide-react';
+import { Building2, Users, Phone, MapPin, AlertTriangle, TrendingUp, Wallet, UserX, FolderX, UserCog } from 'lucide-react';
 import { fmt, money, dateShort } from '../../format.js';
-import { useSuperBranchDetail } from '../../queries.js';
+import { useSuperBranchDetail, useInvalidate } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import { SkeletonList } from '../../components/Skeleton.jsx';
@@ -9,9 +9,34 @@ import { SkeletonList } from '../../components/Skeleton.jsx';
 export default function SuperBranchDetail() {
   const { id } = useParams();
   const { data, isLoading, error } = useSuperBranchDetail(id);
+  const invalidate = useInvalidate();
 
-  if (error && error.status !== 401)
-    return <div className="alert alert-error text-sm"><span>{error.message}</span></div>;
+  if (error && error.status !== 401) {
+    return (
+      <div className="space-y-6">
+        <div className="text-xs breadcrumbs text-base-content/50">
+          <ul>
+            <li><Link to="/branches" className="hover:text-base-content font-medium">Филиалы</Link></li>
+            <li className="font-semibold text-base-content">Ошибка</li>
+          </ul>
+        </div>
+        <div className="card bg-base-100 shadow-sm border border-error/20 max-w-lg mx-auto mt-6">
+          <div className="card-body items-center text-center p-6 gap-3">
+            <div className="p-3 bg-error/10 text-error rounded-full">
+              <AlertTriangle size={32} />
+            </div>
+            <h3 className="font-bold text-lg">Ошибка загрузки деталей филиала</h3>
+            <p className="text-sm text-base-content/60">{error.message || 'Произошла непредвиденная ошибка при запросе к серверу.'}</p>
+            <div className="card-actions mt-2">
+              <button className="btn btn-primary btn-sm px-6" onClick={() => invalidate(['super-branch', id])}>
+                Повторить попытку
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading || !data) {
     return (
@@ -45,34 +70,79 @@ export default function SuperBranchDetail() {
         </div>
       </div>
 
+      {/* KPI Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* KPI: Students */}
+        <div className="card bg-base-100 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow transition-shadow">
+          <div className="p-3 bg-primary/10 text-primary rounded-xl">
+            <Users size={24} />
+          </div>
+          <div>
+            <div className="text-xs opacity-50 font-medium">Ученики</div>
+            <div className="text-xl font-extrabold mt-0.5 tabular-nums">{fmt(branch.students || 0)}</div>
+          </div>
+        </div>
+
+        {/* KPI: Revenue */}
+        <div className="card bg-base-100 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow transition-shadow">
+          <div className="p-3 bg-success/10 text-success rounded-xl">
+            <TrendingUp size={24} />
+          </div>
+          <div>
+            <div className="text-xs opacity-50 font-medium">Месячный доход</div>
+            <div className="text-xl font-extrabold mt-0.5 text-success tabular-nums">{money(branch.revenue || 0)}</div>
+          </div>
+        </div>
+
+        {/* KPI: Debt */}
+        <div className="card bg-base-100 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow transition-shadow">
+          <div className="p-3 bg-error/10 text-error rounded-xl">
+            <Wallet size={24} />
+          </div>
+          <div>
+            <div className="text-xs opacity-50 font-medium">Общий долг</div>
+            <div className={`text-xl font-extrabold mt-0.5 tabular-nums ${(branch.debt || 0) > 0 ? 'text-error animate-pulse-subtle' : 'text-base-content/40'}`}>
+              {money(branch.debt || 0)}
+            </div>
+          </div>
+        </div>
+
+        {/* KPI: Staff & Groups */}
+        <div className="card bg-base-100 shadow-sm p-4 flex flex-row items-center gap-4 hover:shadow transition-shadow">
+          <div className="p-3 bg-info/10 text-info rounded-xl">
+            <UserCog size={24} />
+          </div>
+          <div>
+            <div className="text-xs opacity-50 font-medium">Админы / Группы</div>
+            <div className="text-xl font-extrabold mt-0.5 tabular-nums">
+              {branch.admins?.length || 0} <span className="text-xs font-normal text-base-content/40">/</span> {branch.groups?.length || 0}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Info card */}
       <div className="card bg-base-100 shadow-sm">
-        <div className="card-body p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-primary/10 rounded-xl shrink-0">
-              <MapPin size={18} className="text-primary" />
-            </div>
+        <div className="card-body p-5 grid grid-cols-1 md:grid-cols-3 gap-5 text-sm">
+          <div className="flex items-center gap-3">
+            <MapPin size={18} className="text-base-content/40 shrink-0" />
             <div>
-              <div className="text-xs opacity-50 font-medium">Адрес</div>
-              <div className="text-sm font-semibold mt-0.5">{branch.address || 'Не указан'}</div>
+              <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Адрес</div>
+              <div className="font-semibold mt-0.5">{branch.address || 'Не указан'}</div>
             </div>
           </div>
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-primary/10 rounded-xl shrink-0">
-              <Phone size={18} className="text-primary" />
-            </div>
+          <div className="flex items-center gap-3">
+            <Phone size={18} className="text-base-content/40 shrink-0" />
             <div>
-              <div className="text-xs opacity-50 font-medium">Телефон</div>
-              <div className="text-sm font-semibold mt-0.5">{branch.phone || 'Не указан'}</div>
+              <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Телефон</div>
+              <div className="font-semibold mt-0.5">{branch.phone || 'Не указан'}</div>
             </div>
           </div>
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-primary/10 rounded-xl shrink-0">
-              <Building2 size={18} className="text-primary" />
-            </div>
+          <div className="flex items-center gap-3">
+            <Building2 size={18} className="text-base-content/40 shrink-0" />
             <div>
-              <div className="text-xs opacity-50 font-medium">Создан</div>
-              <div className="text-sm font-semibold mt-0.5">{dateShort(branch.createdAt)}</div>
+              <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Создан</div>
+              <div className="font-semibold mt-0.5">{dateShort(branch.createdAt)}</div>
             </div>
           </div>
         </div>
@@ -82,12 +152,19 @@ export default function SuperBranchDetail() {
         {/* Админы */}
         <div className="card bg-base-100 shadow-sm">
           <div className="card-body p-6">
-            <h2 className="card-title text-base mb-4">
-              <Users size={18} /> Администраторы
+            <h2 className="card-title text-base mb-4 flex items-center gap-2">
+              <Users size={18} className="text-base-content/60" />
+              <span>Администраторы</span>
               <span className="text-base-content/40 font-normal text-sm">({branch.admins?.length || 0})</span>
             </h2>
             {!branch.admins || branch.admins.length === 0 ? (
-              <p className="text-base-content/40 text-sm py-8 text-center">Администраторов нет</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
+                <UserX size={40} className="text-base-content/30" />
+                <h4 className="font-bold text-sm text-base-content/75">Администраторы отсутствуют</h4>
+                <p className="text-xs text-base-content/55 max-w-xs">
+                  Для этого филиала еще не назначено ни одного администратора. Добавить их можно в разделе <Link to="/admins" className="text-primary hover:underline font-semibold">Админы</Link>.
+                </p>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="table table-sm">
@@ -121,12 +198,19 @@ export default function SuperBranchDetail() {
         {/* Группы */}
         <div className="card bg-base-100 shadow-sm">
           <div className="card-body p-6">
-            <h2 className="card-title text-base mb-4">
-              <Building2 size={18} /> Группы
+            <h2 className="card-title text-base mb-4 flex items-center gap-2">
+              <Building2 size={18} className="text-base-content/60" />
+              <span>Группы</span>
               <span className="text-base-content/40 font-normal text-sm">({branch.groups?.length || 0})</span>
             </h2>
             {!branch.groups || branch.groups.length === 0 ? (
-              <p className="text-base-content/40 text-sm py-8 text-center">Групп нет</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
+                <FolderX size={40} className="text-base-content/30" />
+                <h4 className="font-bold text-sm text-base-content/75">Учебные группы отсутствуют</h4>
+                <p className="text-xs text-base-content/55 max-w-xs">
+                  В этом филиале пока нет активных или архивных учебных групп.
+                </p>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="table table-sm">

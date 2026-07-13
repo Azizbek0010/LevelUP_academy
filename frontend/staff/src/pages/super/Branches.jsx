@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Building2, MapPin, Phone } from 'lucide-react';
+import { Plus, Building2, MapPin, Phone, AlertTriangle } from 'lucide-react';
 import { fmt, money, dateShort } from '../../format.js';
 import { useSuperBranches, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
@@ -103,100 +103,129 @@ export default function SuperBranches() {
         </button>
       </PageHeader>
 
-      {showErr && <div className="alert alert-error text-sm"><span>{showErr}</span></div>}
-
-      {isLoading ? (
-        <SkeletonTable rows={5} cols={6} />
-      ) : (
-        <div className="space-y-5">
-          <input
-            className="input input-bordered input-sm max-w-xs"
-            placeholder="Поиск филиалов…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-
-          {rows.length === 0 ? (
-            <div className="card bg-base-100">
-              <div className="card-body text-center py-12">
-                <p className="text-base-content/40">Филиалов пока нет. Создайте первый филиал.</p>
-              </div>
+      {error && error.status !== 401 ? (
+        <div className="card bg-base-100 shadow-sm border border-error/20 max-w-lg mx-auto mt-6">
+          <div className="card-body items-center text-center p-6 gap-3">
+            <div className="p-3 bg-error/10 text-error rounded-full">
+              <AlertTriangle size={32} />
             </div>
+            <h3 className="font-bold text-lg">Ошибка загрузки филиалов</h3>
+            <p className="text-sm text-base-content/60">{error.message || 'Произошла непредвиденная ошибка при запросе к серверу.'}</p>
+            <div className="card-actions mt-2">
+              <button className="btn btn-primary btn-sm px-6" onClick={() => invalidate('super-branches')}>
+                Повторить попытку
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {err && <div className="alert alert-error text-sm"><span>{err}</span></div>}
+
+          {isLoading ? (
+            <SkeletonTable rows={5} cols={6} />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {rows.map((b) => (
-                <div
-                  key={b.id}
-                  className={`card bg-base-100 shadow-sm hover:shadow-md transition-all duration-200 ${b.isArchived ? 'opacity-60' : ''}`}
-                >
-                  <div className="card-body p-5 gap-3">
-                    {/* Header */}
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-primary/10 rounded-xl">
-                          <Building2 size={18} className="text-primary" />
-                        </div>
-                        <div>
-                          <Link to={`/branches/${b.id}`} className="font-bold hover:text-primary text-base leading-snug block">
-                            {b.name}
-                          </Link>
-                          {b.isMain && (
-                            <span className="badge badge-primary badge-xs mt-1">Главный</span>
-                          )}
-                        </div>
-                      </div>
-                      <span className={`badge badge-sm ${b.isArchived ? 'badge-ghost' : 'badge-success'}`}>
-                        {b.isArchived ? 'Архив' : 'Активен'}
-                      </span>
-                    </div>
+            <div className="space-y-5">
+              <input
+                className="input input-bordered input-sm max-w-xs"
+                placeholder="Поиск филиалов…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
 
-                    {/* Address & Phone */}
-                    <div className="space-y-1.5 text-xs text-base-content/60 border-t border-base-200 pt-3">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin size={13} className="shrink-0" />
-                        <span>{b.address || 'Адрес не указан'}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Phone size={13} className="shrink-0" />
-                        <span>{b.phone || 'Телефон не указан'}</span>
-                      </div>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 gap-3 mt-1 bg-base-200/50 rounded-xl p-3">
-                      <div>
-                        <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Ученики</div>
-                        <div className="text-lg font-extrabold mt-0.5 tabular-nums">{fmt(b.students)}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Доход</div>
-                        <div className="text-lg font-extrabold mt-0.5 tabular-nums">{fmt(b.revenue)}</div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex justify-end gap-1.5 mt-1 pt-2 border-t border-base-200 text-xs">
-                      {!b.isArchived && (
-                        <button
-                          className="btn btn-ghost btn-xs"
-                          onClick={() => openEdit(b)}
-                        >
-                          Изменить
-                        </button>
-                      )}
-                      <button
-                        className={`btn btn-xs ${b.isArchived ? 'btn-ghost' : 'btn-ghost text-error'}`}
-                        onClick={() => toggleArchive(b.id, b.isArchived)}
-                      >
-                        {b.isArchived ? 'Активировать' : 'В архив'}
-                      </button>
-                    </div>
+              {rows.length === 0 ? (
+                <div className="card bg-base-100">
+                  <div className="card-body text-center py-12">
+                    <p className="text-base-content/40">Филиалов пока нет. Создайте первый филиал.</p>
                   </div>
                 </div>
-              ))}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {rows.map((b) => (
+                    <div
+                      key={b.id}
+                      className={`card bg-base-100 shadow-sm hover:shadow-md transition-all duration-200 ${b.isArchived ? 'opacity-60' : ''}`}
+                    >
+                      <div className="card-body p-5 gap-3">
+                        {/* Header */}
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className="p-2 bg-primary/10 rounded-xl">
+                              <Building2 size={18} className="text-primary" />
+                            </div>
+                            <div>
+                              <Link to={`/branches/${b.id}`} className="font-bold hover:text-primary text-base leading-snug block">
+                                {b.name}
+                              </Link>
+                              {b.isMain && (
+                                <span className="badge badge-primary badge-xs mt-1">Главный</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className={`badge badge-sm ${b.isArchived ? 'badge-ghost' : 'badge-success'}`}>
+                            {b.isArchived ? 'Архив' : 'Активен'}
+                          </span>
+                        </div>
+
+                        {/* Address & Phone */}
+                        <div className="space-y-1.5 text-xs text-base-content/60 border-t border-base-200 pt-3">
+                          <div className="flex items-center gap-1.5">
+                            <MapPin size={13} className="shrink-0" />
+                            <span>{b.address || 'Адрес не указан'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Phone size={13} className="shrink-0" />
+                            <span>{b.phone || 'Телефон не указан'}</span>
+                          </div>
+                        </div>
+
+                        {/* Stats 2x2 */}
+                        <div className="grid grid-cols-2 gap-3 mt-1 bg-base-200/50 rounded-xl p-3 text-xs">
+                          <div>
+                            <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Ученики</div>
+                            <div className="text-sm font-extrabold mt-0.5 tabular-nums">{fmt(b.students)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Админы</div>
+                            <div className="text-sm font-extrabold mt-0.5 tabular-nums">{fmt(b.admins)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Доход</div>
+                            <div className="text-sm font-extrabold mt-0.5 text-success tabular-nums">{money(b.revenue)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Долг</div>
+                            <div className={`text-sm font-extrabold mt-0.5 tabular-nums ${b.debt > 0 ? 'text-error font-black animate-pulse-subtle' : 'text-base-content/40'}`}>
+                              {money(b.debt)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex justify-end gap-1.5 mt-1 pt-2 border-t border-base-200 text-xs">
+                          {!b.isArchived && (
+                            <button
+                              className="btn btn-ghost btn-xs"
+                              onClick={() => openEdit(b)}
+                            >
+                              Изменить
+                            </button>
+                          )}
+                          <button
+                            className={`btn btn-xs ${b.isArchived ? 'btn-ghost' : 'btn-ghost text-error'}`}
+                            onClick={() => toggleArchive(b.id, b.isArchived)}
+                          >
+                            {b.isArchived ? 'Активировать' : 'В архив'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Create / Edit Modal */}
