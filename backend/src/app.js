@@ -30,6 +30,16 @@ export function createApp() {
   app.set('trust proxy', 1);
 
   app.use(helmet());
+
+  // API — не веб-страница: в поисковой выдаче ему делать нечего. Домен-property в Search
+  // Console (sc-domain:) охватывает и поддомены, поэтому без этого заголовка Google вправе
+  // индексировать JSON-ответы api.* — мусор в выдаче и бесплатная карта endpoint'ов.
+  // Заголовком, а не meta-тегом: у JSON нет <head>.
+  app.use((_req, res, next) => {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    next();
+  });
+
   // credentials: true требует конкретный Origin в ответе, а не '*' (браузер иначе блокирует
   // credentialed-запросы) — origin: true отражает Origin запроса динамически, то есть фактически
   // открыто для любого фронта, но остаётся совместимо с httpOnly refresh-cookie.
@@ -39,6 +49,13 @@ export function createApp() {
   app.use(createRateLimiter({ keyPrefix: 'rl:api', points: 300, duration: 60 }));
 
   app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
+  // Краулер запрашивает /robots.txt до всего остального. Без файла он получал 404 и считал,
+  // что обходить можно всё. X-Robots-Tag выше закрывает уже загруженные ответы — этот файл
+  // не даёт их загружать вовсе.
+  app.get('/robots.txt', (_req, res) => {
+    res.type('text/plain').send('User-agent: *\nDisallow: /\n');
+  });
 
   // Корень — не эндпоинт данных; API живёт на /api/*. Отдаём подсказку вместо 404,
   // чтобы фронтендеры, открывшие корень для проверки, не пугались.

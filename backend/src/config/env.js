@@ -35,6 +35,9 @@ const schema = z.object({
   // Публичное значение. Пусто → /api/auth/google отдаёт 503.
   GOOGLE_CLIENT_ID: z.string().optional().or(z.literal('')),
 
+  // за сколько дней до due_date слать родителям напоминание payment.due_soon
+  DUE_SOON_REMINDER_DAYS: z.coerce.number().int().positive().default(2),
+
   SEED_MAIN_ADMIN_PHONE: z.string().default('+998900000000'),
   SEED_MAIN_ADMIN_EMAIL: z.string().email().default('hp8187081014laptop@gmail.com'),
   SEED_MAIN_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),

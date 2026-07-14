@@ -8,6 +8,7 @@ import Roles from './pages/Roles.jsx';
 import Finance from './pages/Finance.jsx';
 import Gamification from './pages/Gamification.jsx';
 import Contacts from './pages/Contacts.jsx';
+import NotFound from './pages/NotFound.jsx';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -31,7 +32,9 @@ export default function App() {
         <Route path="/landing/finance" element={<Finance />} />
         <Route path="/landing/gamification" element={<Gamification />} />
         <Route path="/landing/contacts" element={<Contacts />} />
-        <Route path="*" element={<Navigate to="/landing" replace />} />
+        {/* Битый URL — это 404, а не повод молча увести на главную: редирект
+            делал из любого несуществующего адреса «живую» страницу (soft-404). */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />
     </>
