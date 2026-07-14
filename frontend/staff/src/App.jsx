@@ -14,6 +14,7 @@ const SuperAdmins = lazy(() => import('./pages/super/Admins.jsx'));
 const SuperBranchDetail = lazy(() => import('./pages/super/BranchDetail.jsx'));
 const SuperReports = lazy(() => import('./pages/super/Reports.jsx'));
 const SuperSettings = lazy(() => import('./pages/super/Settings.jsx'));
+const SuperComingSoon = lazy(() => import('./pages/super/ComingSoon.jsx'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
 const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
@@ -37,6 +38,11 @@ const Topics = lazy(() => import('./pages/methodist/Topics.jsx'));
 const Lessons = lazy(() => import('./pages/methodist/Lessons.jsx'));
 const LessonEditor = lazy(() => import('./pages/methodist/LessonEditor.jsx'));
 const MethodistAnalytics = lazy(() => import('./pages/methodist/Analytics.jsx'));
+
+// Super Admin «скоро» заглушки (пункты навигации без готового бэкенда)
+const SuperStudentsSoon = () => <SuperComingSoon path="/students" />;
+const SuperGroupsSoon = () => <SuperComingSoon path="/groups" />;
+const SuperAttendanceSoon = () => <SuperComingSoon path="/attendance" />;
 
 function Protected({ children }) {
   const { token } = useAuth();
@@ -79,18 +85,18 @@ export default function App() {
         <Route path="/" element={<SuspenseWrapper><DashboardRedirect /></SuspenseWrapper>} />
 
         {/* Общие пути, диспетчеризуемые по роли */}
-        <Route path="/groups" element={<SuspenseWrapper><RoleView views={{ mentor: MentorGroups, admin: AdminGroups }} /></SuspenseWrapper>} />
+        <Route path="/students" element={<SuspenseWrapper><RoleView views={{ admin: AdminStudents, superadmin: SuperStudentsSoon }} /></SuspenseWrapper>} />
+        <Route path="/groups" element={<SuspenseWrapper><RoleView views={{ mentor: MentorGroups, admin: AdminGroups, superadmin: SuperGroupsSoon }} /></SuspenseWrapper>} />
+        <Route path="/attendance" element={<SuspenseWrapper><RoleView views={{ mentor: MentorAttendance, superadmin: SuperAttendanceSoon }} /></SuspenseWrapper>} />
         <Route path="/reports" element={<SuspenseWrapper><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SuspenseWrapper>} />
         <Route path="/settings" element={<SuspenseWrapper><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SuspenseWrapper>} />
 
         {/* Mentor routes */}
-        <Route path="/attendance" element={<SuspenseWrapper><MentorAttendance /></SuspenseWrapper>} />
         <Route path="/homework" element={<SuspenseWrapper><MentorHomework /></SuspenseWrapper>} />
         <Route path="/coins" element={<SuspenseWrapper><MentorCoins /></SuspenseWrapper>} />
 
         {/* Admin routes — RoleGuard admin */}
         <Route element={<RoleGuard allow={['admin']} />}>
-          <Route path="/students" element={<SuspenseWrapper><AdminStudents /></SuspenseWrapper>} />
           <Route path="/groups/:id" element={<SuspenseWrapper><AdminGroupDetail /></SuspenseWrapper>} />
           <Route path="/payments" element={<SuspenseWrapper><AdminPayments /></SuspenseWrapper>} />
           <Route path="/expenses" element={<SuspenseWrapper><AdminExpenses /></SuspenseWrapper>} />
@@ -102,6 +108,11 @@ export default function App() {
           <Route path="/branches" element={<SuspenseWrapper><SuperBranches /></SuspenseWrapper>} />
           <Route path="/branches/:id" element={<SuspenseWrapper><SuperBranchDetail /></SuspenseWrapper>} />
           <Route path="/admins" element={<SuspenseWrapper><SuperAdmins /></SuspenseWrapper>} />
+          {/* Super Admin «скоро» заглушки */}
+          <Route path="/stats" element={<SuspenseWrapper><SuperComingSoon path="/stats" /></SuspenseWrapper>} />
+          <Route path="/announcements" element={<SuspenseWrapper><SuperComingSoon path="/announcements" /></SuspenseWrapper>} />
+          <Route path="/reminders" element={<SuspenseWrapper><SuperComingSoon path="/reminders" /></SuspenseWrapper>} />
+          <Route path="/audit" element={<SuspenseWrapper><SuperComingSoon path="/audit" /></SuspenseWrapper>} />
         </Route>
 
         {/* Methodist routes */}
