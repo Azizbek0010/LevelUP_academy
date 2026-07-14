@@ -1,5 +1,0 @@
-- generic [ref=f7e47]:
-  - img "LevelUp Academy" [ref=f7e48]
-  - heading "Добро пожаловать, Диёр!" [level=1] [ref=f7e49]
-  - paragraph [ref=f7e50]: Вы вошли как ученик. Личный кабинет скоро появится здесь.
-  - button "Выйти" [ref=f7e51] [cursor=pointer]
