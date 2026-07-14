@@ -6,8 +6,6 @@ import Layout from './components/Layout.jsx';
 import Login from './pages/Login.jsx';
 import RoleGuard from './components/RoleGuard.jsx';
 import Splash from './components/Splash.jsx';
-import SuperComingSoon from './pages/super/ComingSoon.jsx';
-
 // Lazy-loaded pages
 const SuperDashboard = lazy(() => import('./pages/super/Dashboard.jsx'));
 const SuperBranches = lazy(() => import('./pages/super/Branches.jsx'));
@@ -21,6 +19,7 @@ const SuperStats = lazy(() => import('./pages/super/Stats.jsx'));
 const SuperAnnouncements = lazy(() => import('./pages/super/Announcements.jsx'));
 const SuperReminders = lazy(() => import('./pages/super/Reminders.jsx'));
 const SuperAudit = lazy(() => import('./pages/super/Audit.jsx'));
+const SuperAttendance = lazy(() => import('./pages/super/Attendance.jsx'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
 const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
@@ -80,7 +79,7 @@ export default function App() {
         <Route path="/groups" element={<SW><RoleView views={{ superadmin: SuperGroups, mentor: MentorGroups, admin: AdminGroups }} /></SW>} />
         <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SW>} />
         <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
-        <Route path="/attendance" element={<SW><RoleView views={{ mentor: MentorAttendance, superadmin: () => <SuperComingSoon path="/attendance" /> }} /></SW>} />
+        <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: MentorAttendance }} /></SW>} />
         <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents }} /></SW>} />
 
         {/* Mentor routes */}

@@ -887,6 +887,9 @@ export const api = {
   superDeleteReminder: (token, id) => request(`/super/reminders/${id}`, { method: 'DELETE', token }),
   superResendReminder: (token, id) => request(`/super/reminders/${id}/resend`, { method: 'POST', token }),
 
+  // -------- SUPER ADMIN: Attendance --------
+  superAttendance: (token, qs = '') => request(`/super/attendance${qs}`, { token }),
+
   // -------- METHODIST CONTENT --------
   methodistTrainingTypes: (token) => request('/methodist/training-types', { token }),
   methodistCreateTrainingType: (token, body) => request('/methodist/training-types', { method: 'POST', token, body }),

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Building2, MapPin, Phone } from 'lucide-react';
+import { Plus, Building2, MapPin, Phone, DoorOpen } from 'lucide-react';
 import { fmt, money, dateShort } from '../../format.js';
 import { useSuperBranches, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
@@ -13,9 +13,10 @@ import { SkeletonTable } from '../../components/Skeleton.jsx';
 import YMapPicker from '../../components/YMapPicker.jsx';
 
 const branchSchema = z.object({
-  name: z.string().trim().min(1, 'Название обязательно').max(80, 'Макс. 80 символов'),
-  address: z.string().trim().max(160, 'Макс. 160 символов').or(z.literal('')),
-  phone: z.string().trim().max(30, 'Макс. 30 символов').or(z.literal('')),
+  name:      z.string().trim().min(1, 'Название обязательно').max(80, 'Макс. 80 символов'),
+  address:   z.string().trim().max(160, 'Макс. 160 символов').or(z.literal('')),
+  phone:     z.string().trim().max(30, 'Макс. 30 символов').or(z.literal('')),
+  roomCount: z.coerce.number().int().min(0, 'Не может быть отрицательным').max(999).optional(),
 });
 
 export default function SuperBranches() {
@@ -37,7 +38,7 @@ export default function SuperBranches() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(branchSchema),
-    defaultValues: { name: '', address: '', phone: '' },
+    defaultValues: { name: '', address: '', phone: '', roomCount: '' },
   });
 
   const branches = data?.branches || [];
@@ -51,7 +52,7 @@ export default function SuperBranches() {
     setModalMode('create');
     setErr('');
     setLocation(null);
-    reset({ name: '', address: '', phone: '' });
+    reset({ name: '', address: '', phone: '', roomCount: '' });
     setModalOpen(true);
   };
 
@@ -64,7 +65,7 @@ export default function SuperBranches() {
         ? { lat: Number(branch.lat), lng: Number(branch.lng) }
         : null,
     );
-    reset({ name: branch.name, address: branch.address || '', phone: branch.phone || '' });
+    reset({ name: branch.name, address: branch.address || '', phone: branch.phone || '', roomCount: branch.roomCount ?? '' });
     setModalOpen(true);
   };
 
@@ -76,6 +77,7 @@ export default function SuperBranches() {
         name: formData.name.trim(),
         address: formData.address.trim(),
         phone: formData.phone.trim(),
+        ...(formData.roomCount !== '' && formData.roomCount != null ? { roomCount: Number(formData.roomCount) } : {}),
         ...(location ? { lat: location.lat, lng: location.lng } : {}),
       };
       if (modalMode === 'create') {
@@ -172,10 +174,19 @@ export default function SuperBranches() {
                     </div>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-2 gap-3 mt-1 bg-base-200/50 rounded-xl p-3">
+                    <div className="grid grid-cols-3 gap-2 mt-1 bg-base-200/50 rounded-xl p-3">
                       <div>
                         <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Ученики</div>
                         <div className="text-lg font-extrabold mt-0.5 tabular-nums">{fmt(b.students)}</div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <DoorOpen size={10} className="text-base-content/50" />
+                          <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Комнаты</div>
+                        </div>
+                        <div className="text-lg font-extrabold mt-0.5 tabular-nums">
+                          {b.roomCount != null ? b.roomCount : '—'}
+                        </div>
                       </div>
                       <div>
                         <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Доход</div>
@@ -234,6 +245,19 @@ export default function SuperBranches() {
                   className={`input input-bordered w-full ${errors.address ? 'input-error' : ''}`}
                 />
                 {errors.address && <span className="text-xs text-error mt-1">{errors.address.message}</span>}
+              </label>
+
+              <label className="form-control w-full">
+                <span className="label-text mb-1">Количество комнат</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="999"
+                  {...register('roomCount')}
+                  placeholder="Например: 8"
+                  className={`input input-bordered w-full ${errors.roomCount ? 'input-error' : ''}`}
+                />
+                {errors.roomCount && <span className="text-xs text-error mt-1">{errors.roomCount.message}</span>}
               </label>
 
               {/* Map picker */}

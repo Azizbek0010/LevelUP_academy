@@ -152,7 +152,7 @@ function AdminsTab() {
           <table className="table">
             <thead>
               <tr>
-                <th>ФИО</th><th>Email</th><th>Филиал</th><th>Создан</th><th>Статус</th><th className="w-10"></th>
+                <th>ФИО</th><th>Email</th><th>Телефон</th><th>Филиал</th><th>Создан</th><th>Статус</th><th className="w-10"></th>
               </tr>
             </thead>
             <tbody>
@@ -167,6 +167,7 @@ function AdminsTab() {
                       </div>
                     </td>
                     <td className="text-sm font-mono">{a.email}</td>
+                    <td className="text-sm font-mono">{a.phone || '—'}</td>
                     <td className="font-medium">{a.branchName || '—'}</td>
                     <td className="text-sm tabular-nums">{dateShort(a.createdAt)}</td>
                     <td><span className={`badge badge-sm font-semibold ${s.cls}`}>{s.label}</span></td>
