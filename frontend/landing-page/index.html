@@ -26,7 +26,6 @@
     <!-- Open Graph — постоянная часть -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="LevelUp Academy" />
-    <meta property="og:locale" content="ru_UZ" />
     <meta property="og:image" content="https://levelup-academy.uz/og-cover.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -77,45 +76,14 @@
               "priceCurrency": "UZS",
               "description": "Первая неделя бесплатно, без карты и обязательств."
             }
-          },
-          {
-            "@type": "FAQPage",
-            "mainEntity": [
-              {
-                "@type": "Question",
-                "name": "Что такое LevelUp Academy?",
-                "acceptedAnswer": { "@type": "Answer", "text": "LevelUp Academy — SaaS-платформа (CRM) для управления учебными центрами: студенты, группы, посещаемость, тесты и домашние задания, финансы (оплаты и сплит-платежи), геймификация (коины, магазин, лидерборды), чаты и Telegram-уведомления — всё в одной системе." }
-              },
-              {
-                "@type": "Question",
-                "name": "Для кого LevelUp Academy?",
-                "acceptedAnswer": { "@type": "Answer", "text": "Для учебных центров и курсов в Узбекистане, которые хотят автоматизировать учёт студентов, посещаемость, финансы и мотивацию учеников." }
-              },
-              {
-                "@type": "Question",
-                "name": "Сколько стоит LevelUp Academy?",
-                "acceptedAnswer": { "@type": "Answer", "text": "Первая неделя — бесплатно, без карты и обязательств. Дальше — по тарифу для учебного центра." }
-              },
-              {
-                "@type": "Question",
-                "name": "Какие роли есть в системе?",
-                "acceptedAnswer": { "@type": "Answer", "text": "Main Admin (владелец платформы), Super Admin (организация), Admin (филиал), Mentor (преподаватель), Student, Parent и Methodist — у каждой роли свой кабинет и права." }
-              },
-              {
-                "@type": "Question",
-                "name": "Какие возможности у LevelUp Academy?",
-                "acceptedAnswer": { "@type": "Answer", "text": "Оплаты и сплит-платежи, посещаемость (davomat), тесты с серверным таймером, домашние задания, коины и лидерборды, realtime-чаты, отчёты и Telegram-бот для уведомлений." }
-              },
-              {
-                "@type": "Question",
-                "name": "Как начать пользоваться?",
-                "acceptedAnswer": { "@type": "Answer", "text": "Оставьте заявку на сайте levelup-academy.uz — мы создадим вашу организацию и подключим первую неделю бесплатно." }
-              }
-            ]
           }
         ]
       }
     </script>
+    <!--
+      FAQPage здесь намеренно НЕТ: разметка обязана быть на языке страницы, а этот блок
+      общий для ru и uz. Её отдаёт сама страница через useSeo (см. src/lib/seo.js → faqPage).
+    -->
   </head>
   <body>
     <div id="root"><!--app-html--></div>

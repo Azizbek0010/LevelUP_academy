@@ -15,8 +15,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = resolve(root, 'dist');
 const serverDist = resolve(dist, 'server');
 
-// Маршруты из src/App.jsx. Держать в одном списке с public/sitemap.xml.
-const ROUTES = [
+// Канонические пути (src/App.jsx → PAGES). Держать в одном списке с public/sitemap.xml.
+const PAGES = [
   '/landing',
   '/landing/features',
   '/landing/roles',
@@ -24,6 +24,11 @@ const ROUTES = [
   '/landing/gamification',
   '/landing/contacts',
 ];
+
+// Русская версия — на своих путях, узбекская — под /uz (src/i18n/index.js).
+const ROUTES = [...PAGES, ...PAGES.map((p) => `/uz${p}`)];
+
+const langOf = (route) => (route.startsWith('/uz/') ? 'uz' : 'ru');
 
 /** '/landing' → 'dist/landing/index.html' (directory index — Vercel отдаёт его по /landing). */
 const outputFor = (route) => resolve(dist, `.${route}`, 'index.html');
@@ -49,7 +54,10 @@ async function main() {
       throw new Error(`${route}: пустая разметка`);
     }
 
+    // Язык документа обязан совпадать с языком текста: <html lang> читают и поисковик,
+    // и скринридер. Шаблон всегда приходит с lang="ru" — для /uz его надо переписать.
     const page = template
+      .replace('<html lang="ru">', `<html lang="${langOf(route)}">`)
       .replace('<!--app-head-->', head)
       .replace('<!--app-html-->', html);
 

@@ -1,141 +1,31 @@
+import { useMemo } from 'react';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { useSeo, breadcrumb } from '../lib/seo.js';
-
-const jsonLd = [
-  breadcrumb([
-    { name: 'Главная', path: '/landing' },
-    { name: 'Возможности', path: '/landing/features' },
-  ]),
-  {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: [
-      {
-        '@type': 'Question',
-        name: 'Подойдёт ли система не-IT направлению?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Да. LevelUp Academy универсальна: английский, математика, подготовка к экзаменам — любые предметы. Внутри нет ничего, что привязано к программированию.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: 'Сколько филиалов можно подключить?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Ограничений нет. Мультифилиальность заложена с первого дня: каждый филиал изолирован, а SuperAdmin видит всю сеть целиком.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: 'Нужно ли ставить приложение родителям?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Нет. Родителю достаточно Telegram: привязка по одноразовому коду, дальше уведомления приходят сами. Личный кабинет доступен в браузере с телефона.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: 'Что будет с данными, если ученик ушёл?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Ничего не удаляется физически. Архив — это read-only режим: история оплат, оценок и коинов остаётся для отчётов. Вернулся ученик — вернулась и его история.',
-        },
-      },
-    ],
-  },
-];
-
-const modules = [
-  {
-    icon: 'coin',
-    title: 'Платежи и инвойсы',
-    text: 'Полный платёжный контур: счёт, транзакции, сплит-оплата наличными и картой, чек в облаке. Выручка филиала пересчитывается мгновенно.',
-    tags: ['Сплит-платежи', 'Инвойсы', 'Чеки в S3', 'Live-выручка'],
-  },
-  {
-    icon: 'calendar',
-    title: 'Группы и расписание',
-    text: 'Группы с ментором, ценой и расписанием занятий. Ученик покидает группу — история остаётся, ничего не теряется.',
-    tags: ['Расписание', 'Ментор группы', 'История членства'],
-  },
-  {
-    icon: 'check',
-    title: 'Davomat — посещаемость',
-    text: 'Ментор отмечает группу за минуту. Родитель видит историю посещений, а пропуск улетает уведомлением сразу же — без звонков администратора.',
-    tags: ['Журнал ментора', 'История для родителя', 'Авто-уведомления'],
-  },
-  {
-    icon: 'clock',
-    title: 'Тесты и экзамены',
-    text: 'Конструктор тестов с банком вопросов. Таймер держит сервер, а не браузер: после дедлайна сабмит закрыт, ответы не подделать.',
-    tags: ['Серверный таймер', 'Авто-сабмит', 'Шкала 0–100'],
-  },
-  {
-    icon: 'book',
-    title: 'Домашние задания',
-    text: 'ДЗ с вложениями, дедлайнами и оценкой. Файлы грузятся напрямую в облако — быстро даже с телефона. За сданное ДЗ ученик получает коины.',
-    tags: ['Вложения', 'Дедлайны', 'Коины за сдачу'],
-  },
-  {
-    icon: 'star',
-    title: 'Мотивация',
-    text: 'Коины, магазин наград и лидерборды недели/месяца. Каждая операция с коинами записывается в журнал навсегда — история не редактируется.',
-    tags: ['Коины', 'Магазин', 'Лидерборды', 'Append-only'],
-  },
-  {
-    icon: 'chat',
-    title: 'Realtime-чаты',
-    text: 'Общий чат центра и приватный канал родитель–администратор. Сообщения доставляются мгновенно, история хранится и подгружается по скроллу.',
-    tags: ['Socket.io', 'Live-присутствие', 'История'],
-  },
-  {
-    icon: 'video',
-    title: 'Видеоуроки',
-    text: 'Записи уроков доступны только ученикам своей группы. Ссылка на видео живёт ограниченное время — контент не утечёт наружу.',
-    tags: ['Доступ по группе', 'Защищённые ссылки'],
-  },
-  {
-    icon: 'grid',
-    title: 'Отчёты',
-    text: 'Выручка, долги, зарплаты менторов и посещаемость — в разрезе филиала или всей сети. Цифры сходятся, потому что источник один.',
-    tags: ['Финансы', 'Зарплаты', 'Филиалы'],
-  },
-  {
-    icon: 'send',
-    title: 'Telegram-бот',
-    text: 'Родитель привязывает аккаунт по одноразовому коду и получает всё важное: оплаты, пропуски, оценки, долги. Без установки приложений.',
-    tags: ['Привязка по коду', 'Очередь уведомлений'],
-  },
-  {
-    icon: 'building',
-    title: 'Мультифилиальность',
-    text: 'Каждый филиал изолирован: админ видит только своё. SuperAdmin смотрит на сеть целиком — сравнивает филиалы и находит точки роста.',
-    tags: ['Изоляция данных', 'Сеть филиалов'],
-  },
-];
-
-const flow = [
-  {
-    title: 'Утро администратора',
-    text: 'Открыл дашборд — выручка, должники и онлайн уже на экране. Никаких сводок вручную: цифры собрались сами.',
-  },
-  {
-    title: 'День ментора',
-    text: 'Отметил davomat за минуту, проверил ДЗ, начислил коины за активность. Родители уже получили уведомления — звонить никому не надо.',
-  },
-  {
-    title: 'Вечер ученика',
-    text: 'Сдал тест до серверного дедлайна, посмотрел видеоурок, потратил коины в магазине и проверил своё место в лидерборде недели.',
-  },
-];
+import { breadcrumb, faqPage, useSeo } from '../lib/seo.js';
+import { useLang, useT } from '../i18n/index.js';
 
 export default function Features() {
+  const t = useT();
+  const lang = useLang();
+  const f = t.features;
+
+  const jsonLd = useMemo(
+    () => [
+      breadcrumb(
+        [
+          { name: t.seo.breadcrumbHome, path: '/landing' },
+          { name: f.badge, path: '/landing/features' },
+        ],
+        lang,
+      ),
+      faqPage(f.faq),
+    ],
+    [t.seo.breadcrumbHome, f.badge, f.faq, lang],
+  );
+
   useSeo({
-    title: 'Возможности — 12+ модулей CRM | LevelUp Academy',
-    description:
-      'Платежи, davomat, тесты с серверным таймером, ДЗ, коины, realtime-чаты, видеоуроки, отчёты и Telegram-бот — все модули LevelUp Academy в одной системе.',
+    title: t.seo.features.title,
+    description: t.seo.features.description,
     path: '/landing/features',
     jsonLd,
   });
@@ -144,20 +34,16 @@ export default function Features() {
     <main>
       <section className="page-hero">
         <div className="container">
-          <span className="badge badge--lime">Возможности</span>
-          <h1>12+ модулей, которые работают как один</h1>
-          <p>
-            LevelUp Academy заменяет таблицы, мессенджеры и самодельные
-            журналы. Всё связано: оплата открывает доступ, пропуск шлёт
-            уведомление, оценка начисляет коины.
-          </p>
+          <span className="badge badge--lime">{f.badge}</span>
+          <h1>{f.h1}</h1>
+          <p>{f.lead}</p>
         </div>
       </section>
 
       <section className="section section--white">
         <div className="container">
           <div className="cards-3">
-            {modules.map((m) => (
+            {f.modules.map((m) => (
               <article className="feature" key={m.title}>
                 <div className="feature__icon">
                   <Icon name={m.icon} />
@@ -165,9 +51,9 @@ export default function Features() {
                 <h3>{m.title}</h3>
                 <p>{m.text}</p>
                 <div className="tag-row" style={{ marginTop: 14 }}>
-                  {m.tags.map((t) => (
-                    <span className="tag" key={t}>
-                      {t}
+                  {m.tags.map((tag) => (
+                    <span className="tag" key={tag}>
+                      {tag}
                     </span>
                   ))}
                 </div>
@@ -180,13 +66,11 @@ export default function Features() {
       <section className="section">
         <div className="container">
           <div className="section__head">
-            <h2>Один день с LevelUp Academy</h2>
-            <p>
-              Система экономит время каждой роли — от директора до ученика.
-            </p>
+            <h2>{f.flowHead}</h2>
+            <p>{f.flowLead}</p>
           </div>
           <div className="steps">
-            {flow.map((s) => (
+            {f.flow.map((s) => (
               <article className="step" key={s.title}>
                 <h3>{s.title}</h3>
                 <p>{s.text}</p>
@@ -199,48 +83,20 @@ export default function Features() {
       <section className="section section--white">
         <div className="container">
           <div className="section__head">
-            <h2>Частые вопросы</h2>
+            <h2>{f.faqHead}</h2>
           </div>
           <div className="faq">
-            <details>
-              <summary>Подойдёт ли система не-IT направлению?</summary>
-              <p>
-                Да. LevelUp Academy универсальна: английский, математика,
-                подготовка к экзаменам — любые предметы. Внутри нет ничего,
-                что привязано к программированию.
-              </p>
-            </details>
-            <details>
-              <summary>Сколько филиалов можно подключить?</summary>
-              <p>
-                Ограничений нет. Мультифилиальность заложена с первого дня:
-                каждый филиал изолирован, а SuperAdmin видит всю сеть целиком.
-              </p>
-            </details>
-            <details>
-              <summary>Нужно ли ставить приложение родителям?</summary>
-              <p>
-                Нет. Родителю достаточно Telegram: привязка по одноразовому
-                коду, дальше уведомления приходят сами. Личный кабинет доступен
-                в браузере с телефона.
-              </p>
-            </details>
-            <details>
-              <summary>Что будет с данными, если ученик ушёл?</summary>
-              <p>
-                Ничего не удаляется физически. Архив — это read-only режим:
-                история оплат, оценок и коинов остаётся для отчётов. Вернулся
-                ученик — вернулась и его история.
-              </p>
-            </details>
+            {f.faq.map((item) => (
+              <details key={item.q}>
+                <summary>{item.q}</summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
           </div>
         </div>
       </section>
 
-      <Cta
-        title="Хотите увидеть все модули вживую?"
-        text="Оставьте заявку — расскажем о системе и ответим на вопросы."
-      />
+      <Cta title={f.ctaTitle} text={f.ctaText} />
     </main>
   );
 }
