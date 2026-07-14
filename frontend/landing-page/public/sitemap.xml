@@ -2,40 +2,121 @@
 <!--
   Canonical URLs only. The site root (/) is a 308 redirect to /landing and is
   deliberately absent: a sitemap lists destinations, not redirects.
+
+  Every URL declares the full hreflang set (ru + uz + x-default), including a link to
+  itself — Google ignores the whole cluster if the references are not reciprocal.
 -->
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+>
+  <!-- ===================== RU ===================== -->
   <url>
     <loc>https://levelup-academy.uz/landing</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing" />
     <lastmod>2026-07-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://levelup-academy.uz/landing/features</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/features" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/features" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing/features" />
     <lastmod>2026-07-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://levelup-academy.uz/landing/roles</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/roles" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/roles" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing/roles" />
     <lastmod>2026-07-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://levelup-academy.uz/landing/finance</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/finance" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/finance" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing/finance" />
     <lastmod>2026-07-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://levelup-academy.uz/landing/gamification</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/gamification" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/gamification" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing/gamification" />
     <lastmod>2026-07-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://levelup-academy.uz/landing/contacts</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/contacts" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/contacts" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing/contacts" />
+    <lastmod>2026-07-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- ===================== UZ ===================== -->
+  <url>
+    <loc>https://levelup-academy.uz/uz/landing</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing" />
+    <lastmod>2026-07-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://levelup-academy.uz/uz/landing/features</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/features" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/features" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing/features" />
+    <lastmod>2026-07-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://levelup-academy.uz/uz/landing/roles</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/roles" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/roles" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing/roles" />
+    <lastmod>2026-07-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://levelup-academy.uz/uz/landing/finance</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/finance" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/finance" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing/finance" />
+    <lastmod>2026-07-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://levelup-academy.uz/uz/landing/gamification</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/gamification" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/gamification" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing/gamification" />
+    <lastmod>2026-07-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://levelup-academy.uz/uz/landing/contacts</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/contacts" />
+    <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/contacts" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/landing/contacts" />
     <lastmod>2026-07-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

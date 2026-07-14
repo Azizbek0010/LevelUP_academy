@@ -1,12 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useSeo } from '../lib/seo.js';
+import { useLocalizePath, useT } from '../i18n/index.js';
 
 export default function NotFound() {
   const { pathname } = useLocation();
+  const t = useT();
+  const lp = useLocalizePath();
 
   useSeo({
-    title: 'Страница не найдена — LevelUp Academy',
-    description: 'Такой страницы нет. Вернитесь на главную LevelUp Academy.',
+    title: t.seo.notFound.title,
+    description: t.seo.notFound.description,
     path: pathname,
     noindex: true,
   });
@@ -15,14 +18,11 @@ export default function NotFound() {
     <main>
       <section className="page-hero">
         <div className="container">
-          <span className="badge badge--lime">404</span>
-          <h1>Такой страницы нет</h1>
-          <p>
-            Возможно, ссылка устарела или в адресе опечатка. Вернитесь на
-            главную — оттуда доступны все разделы LevelUp Academy.
-          </p>
-          <Link className="btn btn--accent btn--lg" to="/landing">
-            На главную
+          <span className="badge badge--lime">{t.notFound.badge}</span>
+          <h1>{t.notFound.h1}</h1>
+          <p>{t.notFound.text}</p>
+          <Link className="btn btn--accent btn--lg" to={lp('/landing')}>
+            {t.notFound.button}
           </Link>
         </div>
       </section>

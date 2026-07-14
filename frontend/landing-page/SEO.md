@@ -55,18 +55,45 @@ the browser end up with different heads.
 
 ---
 
+## Languages (ru / uz)
+
+The site is bilingual. **Language lives in the URL, never in state:**
+
+| Language | URL | `<html lang>` |
+|---|---|---|
+| Russian (default) | `/landing/finance` | `ru` |
+| Uzbek | `/uz/landing/finance` | `uz` |
+
+Russian keeps its original paths — they are already indexed, and changing a URL throws away
+its ranking. Uzbek is added under a `/uz` prefix.
+
+A language toggle in `localStorage` would be **invisible to search engines**: one URL cannot
+rank in two languages. Each version needs its own address, and `hreflang` ties them together —
+without it Google treats them as competing duplicates and may serve the wrong one.
+
+- `src/i18n/{ru,uz}.js` — the dictionaries. **Structures must match key for key**; a missing
+  key renders as `undefined` on the page, not a build error.
+- `src/i18n/index.js` — `useT()` (dictionary), `useLang()`, `useLocalizePath()` (`lp()` for links).
+- Pages pass the **canonical** path to `useSeo` (`/landing/finance`); it localises internally
+  and emits the `hreflang` set (ru + uz + x-default, each listing all three — Google drops a
+  cluster whose references are not reciprocal).
+- FAQ/Breadcrumb JSON-LD is generated **in code**, not in `index.html`: the markup has to be in
+  the language of the page. A Russian FAQ on an Uzbek page would contradict its own content —
+  and FAQ is exactly what AI assistants quote.
+
 ## Adding a page
 
-1. Call `useSeo({ title, description, path, jsonLd })` in the component.
-   `jsonLd` **must be a module-level constant** — an inline array is a new reference every
-   render and re-runs the effect.
-2. Add the route to `src/App.jsx`.
-3. Add it to `ROUTES` in `scripts/prerender.js`. **Skip this and the page ships as an empty
-   shell** — invisible to AI crawlers.
-4. Add it to `public/sitemap.xml` with today's `lastmod`.
+1. Add the strings to **both** `src/i18n/ru.js` and `src/i18n/uz.js`.
+2. Call `useSeo({ title, description, path, jsonLd })` with the **canonical** path.
+   `jsonLd` **must have a stable reference** — wrap it in `useMemo`, otherwise the effect
+   re-runs every render.
+3. Add the route to `PAGES` in `src/App.jsx` — the `/uz` variant is generated from it.
+4. Add the canonical path to `PAGES` in `scripts/prerender.js`. **Skip this and the page ships
+   as an empty shell** — invisible to AI crawlers.
+5. Add **both** URLs to `public/sitemap.xml` with the full `hreflang` block.
 
-Rules: one unique `<title>` (≤60 chars) and one `<meta description>` (150–160 chars) per
-page. `og:image` must stay raster (1200×630 PNG) — scrapers reject SVG.
+Rules: one unique `<title>` (≤60 chars) and one `<meta description>` (150–160 chars) per page
+**per language**. `og:image` must stay raster (1200×630 PNG) — scrapers reject SVG.
 
 ---
 
@@ -125,5 +152,7 @@ are what actually work.
 
 ## Open items
 
-- Footer Telegram link is still a placeholder (`https://t.me/`, `src/components/Footer.jsx:32`).
+- **Uzbek copy is a machine draft and needs a native review.** The structure, terms and SEO
+  are correct; tone and phrasing are not guaranteed. Edit `src/i18n/uz.js` — nothing else.
+- Footer Telegram link is still a placeholder (`https://t.me/`, `src/components/Footer.jsx`).
   Needs the real handle — do not guess one.

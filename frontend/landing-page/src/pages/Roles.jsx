@@ -1,76 +1,29 @@
+import { useMemo } from 'react';
 import Cta from '../components/Cta.jsx';
-import { useSeo, breadcrumb } from '../lib/seo.js';
-
-const jsonLd = [
-  breadcrumb([
-    { name: 'Главная', path: '/landing' },
-    { name: 'Роли', path: '/landing/roles' },
-  ]),
-];
-
-const roles = [
-  {
-    tag: 'SA',
-    title: 'SuperAdmin — вся сеть как на ладони',
-    text: 'Видит каждый филиал и всю сеть сразу: общая выручка, долги, live-счётчик онлайна. Управляет филиалами, админами и глобальным чатом.',
-    list: [
-      'Сводные отчёты по всем филиалам без фильтра',
-      'Сравнение филиалов: выручка, долги, посещаемость',
-      'Live-счётчик — сколько учеников онлайн прямо сейчас',
-      'Создание филиалов и назначение администраторов',
-    ],
-  },
-  {
-    tag: 'A',
-    title: 'Admin — хозяин своего филиала',
-    text: 'Полный контроль филиала: принимает оплаты (в том числе сплит), ведёт группы и учеников, отвечает родителям в прямом чате.',
-    list: [
-      'Приём платежей: наличные, карта, сплит',
-      'CRUD групп, учеников, менторов своего филиала',
-      'Заморозка ученика — долг не растёт, история цела',
-      'Отчёты филиала: выручка, должники, посещаемость',
-    ],
-  },
-  {
-    tag: 'M',
-    title: 'Ментор — минимум рутины, максимум занятий',
-    text: 'Отмечает посещаемость за минуту, проверяет ДЗ и тесты, начисляет коины ученикам и видит собственные зарплатные инсайты.',
-    list: [
-      'Davomat своих групп в пару кликов',
-      'Проверка ДЗ и экзаменов с таймером',
-      'Коины ± с обязательной причиной — всё в журнале',
-      'Своя зарплата и нагрузка — прозрачно',
-    ],
-  },
-  {
-    tag: 'P',
-    title: 'Родитель — спокойствие без звонков',
-    text: 'Видит успеваемость, посещаемость и долг ребёнка. Пропуск, оценка или долг приходят в Telegram сами.',
-    list: [
-      'Успеваемость и посещаемость ребёнка в реальном времени',
-      'Долг виден сразу — без сюрпризов',
-      'Прямой чат с администратором и ментором',
-      'Telegram-уведомления: пропуск, оплата, долг',
-    ],
-  },
-  {
-    tag: 'S',
-    title: 'Ученик — учёба, которая затягивает',
-    text: 'Личный кабинет: тесты, ДЗ, видеоуроки. Коины за успехи, магазин наград и лидерборды — соревнование вместо скуки.',
-    list: [
-      'Тесты с честным серверным таймером',
-      'ДЗ с загрузкой файлов прямо с телефона',
-      'Видеоуроки своей группы',
-      'Магазин наград и лидерборды недели/месяца',
-    ],
-  },
-];
+import { breadcrumb, useSeo } from '../lib/seo.js';
+import { useLang, useT } from '../i18n/index.js';
 
 export default function Roles() {
+  const t = useT();
+  const lang = useLang();
+  const r = t.roles;
+
+  const jsonLd = useMemo(
+    () => [
+      breadcrumb(
+        [
+          { name: t.seo.breadcrumbHome, path: '/landing' },
+          { name: r.badge, path: '/landing/roles' },
+        ],
+        lang,
+      ),
+    ],
+    [t.seo.breadcrumbHome, r.badge, lang],
+  );
+
   useSeo({
-    title: 'Роли и доступы — 5 кабинетов | LevelUp Academy',
-    description:
-      'SuperAdmin, Admin, Ментор, Родитель и Ученик — у каждой роли свой кабинет. Доступ решает RBAC на сервере: лишнего никто не видит.',
+    title: t.seo.roles.title,
+    description: t.seo.roles.description,
     path: '/landing/roles',
     jsonLd,
   });
@@ -79,29 +32,25 @@ export default function Roles() {
     <main>
       <section className="page-hero">
         <div className="container">
-          <span className="badge badge--lime">Роли</span>
-          <h1>Каждому — свой кабинет</h1>
-          <p>
-            Один логин — и система сама открывает нужный интерфейс. Доступ
-            решает сервер (RBAC), поэтому «подсмотреть чужое» из браузера
-            невозможно.
-          </p>
+          <span className="badge badge--lime">{r.badge}</span>
+          <h1>{r.h1}</h1>
+          <p>{r.lead}</p>
         </div>
       </section>
 
       <section className="section section--white">
         <div className="container">
           <div className="cards-2">
-            {roles.map((r) => (
-              <article className="big-card" key={r.tag}>
-                <div className="role__avatar">{r.tag}</div>
-                <h3 style={{ marginTop: 12 }}>{r.title}</h3>
-                <p>{r.text}</p>
+            {r.items.map((item) => (
+              <article className="big-card" key={item.tag}>
+                <div className="role__avatar">{item.tag}</div>
+                <h3 style={{ marginTop: 12 }}>{item.title}</h3>
+                <p>{item.text}</p>
                 <ul className="checklist">
-                  {r.list.map((item) => (
-                    <li key={item}>
+                  {item.list.map((li) => (
+                    <li key={li}>
                       <span className="tick">✓</span>
-                      {item}
+                      {li}
                     </li>
                   ))}
                 </ul>
@@ -114,41 +63,21 @@ export default function Roles() {
       <section className="section">
         <div className="container">
           <div className="section__head">
-            <h2>Как это устроено под капотом</h2>
-            <p>
-              Роль зашита в токен и проверяется на сервере при каждом запросе.
-            </p>
+            <h2>{r.howHead}</h2>
+            <p>{r.howLead}</p>
           </div>
           <div className="steps">
-            <article className="step">
-              <h3>Вход</h3>
-              <p>
-                Телефон + пароль. Сервер выдаёт короткоживущий access-токен и
-                обновляет его сам — выходить и входить заново не нужно.
-              </p>
-            </article>
-            <article className="step">
-              <h3>Маршрут по роли</h3>
-              <p>
-                Из токена система читает роль и открывает нужный кабинет:
-                админ — филиал, родитель — ребёнка, ученик — свою учёбу.
-              </p>
-            </article>
-            <article className="step">
-              <h3>Проверка на сервере</h3>
-              <p>
-                Каждый запрос проходит RBAC и фильтр филиала. Даже зная адрес
-                чужого ресурса, открыть его не выйдет — сервер откажет.
-              </p>
-            </article>
+            {r.how.map((s) => (
+              <article className="step" key={s.title}>
+                <h3>{s.title}</h3>
+                <p>{s.text}</p>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      <Cta
-        title="Один вход — нужный кабинет"
-        text="Оставьте заявку — расскажем, как роли и права наведут порядок в вашем центре."
-      />
+      <Cta title={r.ctaTitle} text={r.ctaText} />
     </main>
   );
 }
