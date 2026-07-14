@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, TrendingUp, Wifi, CalendarCheck, ClipboardCheck, Coins,
+  GraduationCap, Wallet, Receipt, UserCog,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
@@ -16,6 +17,13 @@ const superNav = [
 
 const adminNav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
+  { to: '/students', label: 'Студенты', Icon: GraduationCap },
+  { to: '/groups', label: 'Группы', Icon: Users },
+  { to: '/mentors', label: 'Менторы', Icon: UserCog },
+  { to: '/payments', label: 'Платежи', Icon: Wallet },
+  { to: '/expenses', label: 'Расходы', Icon: Receipt },
+  { to: '/reports', label: 'Отчёты', Icon: BarChart3 },
+  { to: '/settings', label: 'Настройки', Icon: Settings },
 ];
 
 const mentorNav = [

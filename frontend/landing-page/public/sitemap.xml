@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://levelupacademy.uz/landing</loc>
+    <loc>https://levelup-academy.uz/landing</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://levelupacademy.uz/landing/features</loc>
+    <loc>https://levelup-academy.uz/landing/features</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://levelupacademy.uz/landing/roles</loc>
+    <loc>https://levelup-academy.uz/landing/roles</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://levelupacademy.uz/landing/finance</loc>
+    <loc>https://levelup-academy.uz/landing/finance</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://levelupacademy.uz/landing/gamification</loc>
+    <loc>https://levelup-academy.uz/landing/gamification</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://levelupacademy.uz/landing/contacts</loc>
+    <loc>https://levelup-academy.uz/landing/contacts</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

@@ -16,6 +16,15 @@ const SuperReports = lazy(() => import('./pages/super/Reports.jsx'));
 const SuperSettings = lazy(() => import('./pages/super/Settings.jsx'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
+const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
+const AdminGroups = lazy(() => import('./pages/admin/Groups.jsx'));
+const AdminGroupDetail = lazy(() => import('./pages/admin/GroupDetail.jsx'));
+const AdminPayments = lazy(() => import('./pages/admin/Payments.jsx'));
+const AdminExpenses = lazy(() => import('./pages/admin/Expenses.jsx'));
+const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'));
+const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
+const AdminSettings = lazy(() => import('./pages/admin/Settings.jsx'));
+
 const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
 const MentorGroups = lazy(() => import('./pages/mentor/Groups.jsx'));
 const MentorAttendance = lazy(() => import('./pages/mentor/Attendance.jsx'));
@@ -44,6 +53,13 @@ function DashboardRedirect() {
   return <AdminDashboard />;
 }
 
+// Один путь, разные компоненты по роли (каждый юзер — одна роль).
+function RoleView({ views }) {
+  const { user } = useAuth();
+  const Comp = views[user?.role];
+  return Comp ? <Comp /> : <Navigate to="/" replace />;
+}
+
 const SuspenseWrapper = ({ children }) => (
   <Suspense fallback={<Splash />}>{children}</Suspense>
 );
@@ -61,19 +77,33 @@ export default function App() {
         }
       >
         <Route path="/" element={<SuspenseWrapper><DashboardRedirect /></SuspenseWrapper>} />
+
+        {/* Общие пути, диспетчеризуемые по роли */}
+        <Route path="/groups" element={<SuspenseWrapper><RoleView views={{ mentor: MentorGroups, admin: AdminGroups }} /></SuspenseWrapper>} />
+        <Route path="/reports" element={<SuspenseWrapper><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SuspenseWrapper>} />
+        <Route path="/settings" element={<SuspenseWrapper><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SuspenseWrapper>} />
+
         {/* Mentor routes */}
-        <Route path="/groups" element={<SuspenseWrapper><MentorGroups /></SuspenseWrapper>} />
         <Route path="/attendance" element={<SuspenseWrapper><MentorAttendance /></SuspenseWrapper>} />
         <Route path="/homework" element={<SuspenseWrapper><MentorHomework /></SuspenseWrapper>} />
         <Route path="/coins" element={<SuspenseWrapper><MentorCoins /></SuspenseWrapper>} />
-        {/* Super Admin routes — защищены RoleGuard */}
+
+        {/* Admin routes — RoleGuard admin */}
+        <Route element={<RoleGuard allow={['admin']} />}>
+          <Route path="/students" element={<SuspenseWrapper><AdminStudents /></SuspenseWrapper>} />
+          <Route path="/groups/:id" element={<SuspenseWrapper><AdminGroupDetail /></SuspenseWrapper>} />
+          <Route path="/payments" element={<SuspenseWrapper><AdminPayments /></SuspenseWrapper>} />
+          <Route path="/expenses" element={<SuspenseWrapper><AdminExpenses /></SuspenseWrapper>} />
+          <Route path="/mentors" element={<SuspenseWrapper><AdminMentors /></SuspenseWrapper>} />
+        </Route>
+
+        {/* Super Admin routes — RoleGuard superadmin */}
         <Route element={<RoleGuard allow={['superadmin']} />}>
           <Route path="/branches" element={<SuspenseWrapper><SuperBranches /></SuspenseWrapper>} />
           <Route path="/branches/:id" element={<SuspenseWrapper><SuperBranchDetail /></SuspenseWrapper>} />
           <Route path="/admins" element={<SuspenseWrapper><SuperAdmins /></SuspenseWrapper>} />
-          <Route path="/reports" element={<SuspenseWrapper><SuperReports /></SuspenseWrapper>} />
-          <Route path="/settings" element={<SuspenseWrapper><SuperSettings /></SuspenseWrapper>} />
         </Route>
+
         {/* Methodist routes */}
         <Route path="/methodist/types" element={<SuspenseWrapper><TrainingTypes /></SuspenseWrapper>} />
         <Route path="/methodist/types/:trainingTypeId/topics" element={<SuspenseWrapper><Topics /></SuspenseWrapper>} />
