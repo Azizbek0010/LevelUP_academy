@@ -250,6 +250,102 @@ export async function updateOrganization(orgId, fields) {
   }
 }
 
+// ---------- студенты организации (Super Students страница) ----------
+
+export async function listStudents(orgId, { search, frozen, page, limit }) {
+  const { rows, total } = await repo.listOrgStudents(orgId, { search, frozen, page, limit });
+  return {
+    students: rows.map((u) => ({
+      id: u.id,
+      firstName: u.first_name,
+      lastName: u.last_name,
+      phone: u.phone,
+      status: u.status,
+      frozen: u.status === 'frozen',
+      branchName: u.branch_name,
+      createdAt: u.created_at,
+    })),
+    total,
+    page,
+    pageCount: Math.max(1, Math.ceil(total / limit)),
+  };
+}
+
+export async function deleteStudent(orgId, id) {
+  const row = await repo.softDeleteOrgStudent(id, orgId);
+  if (!row) throw new AppError(404, 'Student not found in your organization');
+  return { id: row.id };
+}
+
+// ---------- группы организации (Super Groups страница) ----------
+
+export async function listGroups(orgId) {
+  const rows = await repo.listOrgGroups(orgId);
+  return {
+    groups: rows.map((g) => ({
+      id: g.id,
+      name: g.name,
+      subject: g.subject,
+      monthlyPrice: Number(g.monthly_price),
+      schedule: g.schedule,
+      lessonDays: g.schedule,
+      room: g.room,
+      isArchived: g.is_archived,
+      branchName: g.branch_name,
+      mentorName: g.mentor_name,
+      studentsCount: Number(g.students_count),
+      createdAt: g.created_at,
+    })),
+  };
+}
+
+export async function setGroupArchived(orgId, id, archived) {
+  const row = await repo.setOrgGroupArchived(id, orgId, archived);
+  if (!row) throw new AppError(404, 'Group not found in your organization');
+  return { id: row.id, isArchived: archived };
+}
+
+export async function deleteGroup(orgId, id) {
+  const row = await repo.softDeleteOrgGroup(id, orgId);
+  if (!row) throw new AppError(404, 'Group not found in your organization');
+  return { id: row.id };
+}
+
+// ---------- посещаемость организации (Super Attendance страница) ----------
+
+export async function attendance(orgId, { groupId, date }) {
+  const rows = await repo.orgAttendance(orgId, { groupId, date });
+  const totals = { present: 0, absent: 0, late: 0, excused: 0 };
+  const records = rows.map((a) => {
+    if (totals[a.status] !== undefined) totals[a.status] += 1;
+    return {
+      id: a.id,
+      groupId: a.group_id,
+      groupName: a.group_name,
+      studentId: a.student_id,
+      firstName: a.first_name,
+      lastName: a.last_name,
+      date: a.lesson_date,
+      status: a.status,
+    };
+  });
+  return { records, lessons: records, totals, total: records.length };
+}
+
+// ---------- заглушки: нет таблиц (announcements/reminders/audit) ----------
+// Таблиц в схеме нет. Возвращаем пустые списки, чтобы страницы рендерились (EmptyState).
+// Полная реализация = миграции + notificationQueue (домен AB-V1/Bilol) — отдельная задача.
+
+export async function listAnnouncements() {
+  return { announcements: [], items: [], total: 0 };
+}
+export async function listReminders() {
+  return { reminders: [], items: [], total: 0 };
+}
+export async function listAudit() {
+  return { items: [], total: 0 };
+}
+
 // ---------- дашборд организации ----------
 
 export async function dashboard(orgId) {

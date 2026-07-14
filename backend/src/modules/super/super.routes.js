@@ -67,6 +67,28 @@ router.get('/dashboard', ctrl.dashboard);
 router.get('/organization', ctrl.getOrganization);
 router.patch('/organization', validate({ body: updateOrganizationSchema }), ctrl.updateOrganization);
 
+// --- студенты организации (Super Students) ---
+router.get('/students', ctrl.listStudents);
+router.delete('/students/:id', validate({ params: idParam }), ctrl.deleteStudent);
+
+// --- группы организации (Super Groups) ---
+router.get('/groups', ctrl.listGroups);
+router.post('/groups/:id/archive', validate({ params: idParam }), ctrl.archiveGroup);
+router.post('/groups/:id/unarchive', validate({ params: idParam }), ctrl.unarchiveGroup);
+router.delete('/groups/:id', validate({ params: idParam }), ctrl.deleteGroup);
+
+// --- посещаемость (Super Attendance) ---
+router.get('/attendance', ctrl.attendance);
+
+// --- announcements / reminders / audit (таблиц нет → GET пусто, мутации 501) ---
+router.get('/announcements', ctrl.listAnnouncements);
+router.post('/announcements', ctrl.notImplemented);
+router.delete('/announcements/:id', ctrl.notImplemented);
+router.get('/reminders', ctrl.listReminders);
+router.post('/reminders/:id/resend', ctrl.notImplemented);
+router.delete('/reminders/:id', ctrl.notImplemented);
+router.get('/audit', ctrl.listAudit);
+
 /**
  * @openapi
  * /api/super/branches:

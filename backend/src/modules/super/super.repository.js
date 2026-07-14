@@ -367,3 +367,116 @@ export function updateOrganization(orgId, fields, client = pool) {
     )
     .then((r) => r.rows[0] ?? null);
 }
+
+// ---------- студенты организации (Super Students страница) ----------
+
+export async function listOrgStudents(orgId, { search, frozen, page, limit }, client = pool) {
+  const conds = ["u.organization_id = $1", "u.role = 'student'", 'u.deleted_at IS NULL'];
+  const vals = [orgId];
+  let i = 2;
+  if (search) {
+    conds.push(`(u.first_name ILIKE $${i} OR u.last_name ILIKE $${i} OR u.phone ILIKE $${i})`);
+    vals.push(`%${search}%`);
+    i++;
+  }
+  if (frozen === true) conds.push("u.status = 'frozen'");
+  else if (frozen === false) conds.push("u.status <> 'frozen'");
+  const where = conds.join(' AND ');
+  const offset = (page - 1) * limit;
+  const [rows, cnt] = await Promise.all([
+    client.query(
+      `SELECT u.id, u.first_name, u.last_name, u.phone, u.status, u.created_at,
+              b.name AS branch_name
+         FROM users u
+         LEFT JOIN branches b ON b.id = u.branch_id
+        WHERE ${where}
+        ORDER BY u.created_at DESC
+        LIMIT $${i} OFFSET $${i + 1}`,
+      [...vals, limit, offset],
+    ),
+    client.query(`SELECT count(*)::int AS n FROM users u WHERE ${where}`, vals),
+  ]);
+  return { rows: rows.rows, total: cnt.rows[0].n };
+}
+
+export function softDeleteOrgStudent(id, orgId, client = pool) {
+  return client
+    .query(
+      `UPDATE users SET deleted_at = now(), updated_at = now()
+        WHERE id = $1 AND organization_id = $2 AND role = 'student' AND deleted_at IS NULL
+        RETURNING id`,
+      [id, orgId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+// ---------- группы организации (Super Groups страница) ----------
+
+export function listOrgGroups(orgId, client = pool) {
+  return client
+    .query(
+      `SELECT g.id, g.name, g.subject, g.monthly_price, g.schedule, g.room,
+              g.is_archived, g.created_at, b.name AS branch_name,
+              CASE WHEN m.id IS NULL THEN NULL
+                   ELSE m.first_name || ' ' || m.last_name END AS mentor_name,
+              (SELECT count(*) FROM group_students gs WHERE gs.group_id = g.id) AS students_count
+         FROM groups g
+         JOIN branches b ON b.id = g.branch_id
+         LEFT JOIN users m ON m.id = g.mentor_id
+        WHERE b.organization_id = $1 AND g.deleted_at IS NULL
+        ORDER BY g.is_archived, g.name`,
+      [orgId],
+    )
+    .then((r) => r.rows);
+}
+
+export function setOrgGroupArchived(id, orgId, archived, client = pool) {
+  return client
+    .query(
+      `UPDATE groups g
+          SET is_archived = $3,
+              archived_at = CASE WHEN $3 THEN now() ELSE NULL END,
+              updated_at = now()
+         FROM branches b
+        WHERE g.id = $1 AND g.branch_id = b.id AND b.organization_id = $2 AND g.deleted_at IS NULL
+        RETURNING g.id`,
+      [id, orgId, archived],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function softDeleteOrgGroup(id, orgId, client = pool) {
+  return client
+    .query(
+      `UPDATE groups g SET deleted_at = now(), updated_at = now()
+         FROM branches b
+        WHERE g.id = $1 AND g.branch_id = b.id AND b.organization_id = $2 AND g.deleted_at IS NULL
+        RETURNING g.id`,
+      [id, orgId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+// ---------- посещаемость организации (Super Attendance страница) ----------
+
+export function orgAttendance(orgId, { groupId, date }, client = pool) {
+  const conds = ['b.organization_id = $1'];
+  const vals = [orgId];
+  let i = 2;
+  if (groupId) { conds.push(`a.group_id = $${i++}`); vals.push(groupId); }
+  if (date) { conds.push(`a.lesson_date = $${i++}`); vals.push(date); }
+  return client
+    .query(
+      `SELECT a.id, a.group_id, a.student_id, a.lesson_date, a.status,
+              u.first_name, u.last_name, g.name AS group_name
+         FROM attendance a
+         JOIN branches b ON b.id = a.branch_id
+         JOIN users u ON u.id = a.student_id
+         JOIN groups g ON g.id = a.group_id
+        WHERE ${conds.join(' AND ')}
+        ORDER BY a.lesson_date DESC
+        LIMIT 500`,
+      vals,
+    )
+    .then((r) => r.rows);
+}
