@@ -1,8 +1,24 @@
 import { createContext, useContext, useEffect } from 'react';
+import { localizePath, useLang } from '../i18n/index.js';
 
 // Боевой домен лендинга — база для canonical, og:url, sitemap.
 export const SITE_URL = 'https://levelup-academy.uz';
 export const OG_IMAGE = `${SITE_URL}/og-cover.png`;
+
+/**
+ * hreflang-набор для канонического пути ('/landing/finance').
+ *
+ * x-default указывает на русскую версию: это язык по умолчанию для тех, чей язык
+ * не совпал ни с ru, ни с uz. Каждая версия обязана перечислять ВСЕ варианты, включая
+ * саму себя — иначе Google игнорирует связку целиком.
+ */
+export function hreflangsFor(path) {
+  return [
+    { hreflang: 'ru', href: `${SITE_URL}${localizePath(path, 'ru')}` },
+    { hreflang: 'uz', href: `${SITE_URL}${localizePath(path, 'uz')}` },
+    { hreflang: 'x-default', href: `${SITE_URL}${localizePath(path, 'ru')}` },
+  ];
+}
 
 /**
  * Канал сбора SEO во время серверного рендера (prerender).
@@ -65,14 +81,23 @@ function removeCanonical() {
  *   noindex, а canonical снимается, т.к. указывать его на несуществующий URL нельзя.
  */
 export function useSeo({ title, description, path, jsonLd, noindex = false }) {
+  const lang = useLang();
+  // `path` — канонический путь без языка ('/landing/finance'). Локализуем здесь, чтобы
+  // страницам не приходилось знать про языковые префиксы. Исключение — noindex-страница
+  // (404): её path уже реальный, локализовать его повторно нельзя.
+  const localized = noindex ? path : localizePath(path, lang);
+
   // Серверная ветка: useEffect при renderToString не выполняется, поэтому единственный
   // момент, когда страница может сообщить о себе, — сам рендер. Запись безопасна: приёмник
   // существует только внутри одного prerender-прохода и на клиенте всегда null.
   const collector = useContext(SeoCollectorContext);
-  if (collector) collector.seo = { title, description, path, jsonLd, noindex };
+  if (collector) collector.seo = { title, description, path, jsonLd, noindex, lang };
 
   useEffect(() => {
-    const url = `${SITE_URL}${path}`;
+    const url = `${SITE_URL}${localized}`;
+
+    // Язык страницы — сигнал и для поисковика, и для скринридера.
+    document.documentElement.lang = lang;
 
     if (title) {
       document.title = title;
@@ -90,6 +115,20 @@ export function useSeo({ title, description, path, jsonLd, noindex = false }) {
     if (noindex) removeCanonical();
     else setCanonical(url);
     setMetaProp('og:url', url);
+    setMetaProp('og:locale', lang === 'uz' ? 'uz_UZ' : 'ru_UZ');
+
+    // hreflang: связывает языковые версии одной страницы. Без него Google считает их
+    // конкурирующими дублями и показывает не ту, что нужна пользователю.
+    document.head.querySelectorAll('link[rel="alternate"][hreflang]').forEach((n) => n.remove());
+    const alternates = noindex ? [] : hreflangsFor(path);
+    const altNodes = alternates.map(({ hreflang, href }) => {
+      const l = document.createElement('link');
+      l.setAttribute('rel', 'alternate');
+      l.setAttribute('hreflang', hreflang);
+      l.setAttribute('href', href);
+      document.head.appendChild(l);
+      return l;
+    });
 
     const nodes = (jsonLd ?? []).map((obj) => {
       const s = document.createElement('script');
@@ -100,8 +139,8 @@ export function useSeo({ title, description, path, jsonLd, noindex = false }) {
       return s;
     });
 
-    return () => nodes.forEach((n) => n.remove());
-  }, [title, description, path, jsonLd, noindex]);
+    return () => [...nodes, ...altNodes].forEach((n) => n.remove());
+  }, [title, description, path, localized, jsonLd, noindex, lang]);
 }
 
 const escapeAttr = (s) =>
@@ -121,8 +160,8 @@ const escapeAttr = (s) =>
  */
 export function renderSeoHead(seo) {
   if (!seo) return '';
-  const { title, description, path, jsonLd, noindex = false } = seo;
-  const url = `${SITE_URL}${path}`;
+  const { title, description, path, jsonLd, noindex = false, lang = 'ru' } = seo;
+  const url = `${SITE_URL}${noindex ? path : localizePath(path, lang)}`;
   const tags = [];
 
   if (title) {
@@ -142,6 +181,13 @@ export function renderSeoHead(seo) {
   // canonical на несуществующий URL указывать нельзя — см. noindex в useSeo.
   if (!noindex) tags.push(`<link rel="canonical" href="${escapeAttr(url)}" />`);
   tags.push(`<meta property="og:url" content="${escapeAttr(url)}" />`);
+  tags.push(`<meta property="og:locale" content="${lang === 'uz' ? 'uz_UZ' : 'ru_UZ'}" />`);
+
+  if (!noindex) {
+    for (const { hreflang, href } of hreflangsFor(path)) {
+      tags.push(`<link rel="alternate" hreflang="${hreflang}" href="${escapeAttr(href)}" />`);
+    }
+  }
 
   for (const obj of jsonLd ?? []) {
     // </script> внутри JSON закрыл бы тег раньше времени.
@@ -152,8 +198,12 @@ export function renderSeoHead(seo) {
   return tags.join('\n    ');
 }
 
-/** BreadcrumbList JSON-LD из пар { name, path }. */
-export function breadcrumb(items) {
+/**
+ * BreadcrumbList JSON-LD из пар { name, path }.
+ * `path` — канонический (без языка); ссылки строятся под текущий язык, иначе узбекская
+ * страница указывала бы хлебными крошками на русские URL.
+ */
+export function breadcrumb(items, lang = 'ru') {
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -161,7 +211,26 @@ export function breadcrumb(items) {
       '@type': 'ListItem',
       position: i + 1,
       name: it.name,
-      item: `${SITE_URL}${it.path}`,
+      item: `${SITE_URL}${localizePath(it.path, lang)}`,
+    })),
+  };
+}
+
+/**
+ * FAQPage JSON-LD из пар { q, a }.
+ *
+ * Живёт в коде, а не статикой в index.html: разметка обязана быть на языке страницы —
+ * русский FAQ на узбекской странице противоречил бы её содержимому, а для AI-поиска
+ * именно FAQ — главный источник цитат.
+ */
+export function faqPage(items) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
     })),
   };
 }
