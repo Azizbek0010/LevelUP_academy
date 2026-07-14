@@ -858,6 +858,11 @@ export const api = {
   superUnfreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
   superGetOrganization: (token) => request('/super/organization', { token }),
   superUpdateOrganization: (token, body) => request('/super/organization', { method: 'PATCH', token, body }),
+  superMethodists: (token) => request('/super/methodists', { token }),
+  superCreateMethodist: (token, body) => request('/super/methodists', { method: 'POST', token, body }),
+  superUpdateMethodist: (token, id, body) => request(`/super/methodists/${id}`, { method: 'PATCH', token, body }),
+  superFreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
+  superUnfreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
 
   // -------- METHODIST CONTENT --------
   methodistTrainingTypes: (token) => request('/methodist/training-types', { token }),
