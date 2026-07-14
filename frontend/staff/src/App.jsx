@@ -15,6 +15,12 @@ const SuperAdmins = lazy(() => import('./pages/super/Admins.jsx'));
 const SuperBranchDetail = lazy(() => import('./pages/super/BranchDetail.jsx'));
 const SuperReports = lazy(() => import('./pages/super/Reports.jsx'));
 const SuperSettings = lazy(() => import('./pages/super/Settings.jsx'));
+const SuperStudents = lazy(() => import('./pages/super/Students.jsx'));
+const SuperGroups = lazy(() => import('./pages/super/Groups.jsx'));
+const SuperStats = lazy(() => import('./pages/super/Stats.jsx'));
+const SuperAnnouncements = lazy(() => import('./pages/super/Announcements.jsx'));
+const SuperReminders = lazy(() => import('./pages/super/Reminders.jsx'));
+const SuperAudit = lazy(() => import('./pages/super/Audit.jsx'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
 const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
@@ -71,11 +77,11 @@ export default function App() {
         <Route path="/" element={<SW><DashboardRedirect /></SW>} />
 
         {/* Shared paths dispatched by role */}
-        <Route path="/groups" element={<SW><RoleView views={{ superadmin: () => <SuperComingSoon path="/groups" />, mentor: MentorGroups, admin: AdminGroups }} /></SW>} />
+        <Route path="/groups" element={<SW><RoleView views={{ superadmin: SuperGroups, mentor: MentorGroups, admin: AdminGroups }} /></SW>} />
         <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SW>} />
         <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
         <Route path="/attendance" element={<SW><RoleView views={{ mentor: MentorAttendance, superadmin: () => <SuperComingSoon path="/attendance" /> }} /></SW>} />
-        <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: () => <SuperComingSoon path="/students" /> }} /></SW>} />
+        <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents }} /></SW>} />
 
         {/* Mentor routes */}
         <Route path="/homework" element={<SW><MentorHomework /></SW>} />
@@ -94,10 +100,10 @@ export default function App() {
           <Route path="/branches" element={<SW><SuperBranches /></SW>} />
           <Route path="/branches/:id" element={<SW><SuperBranchDetail /></SW>} />
           <Route path="/admins" element={<SW><SuperAdmins /></SW>} />
-          <Route path="/stats" element={<SW><SuperComingSoon path="/stats" /></SW>} />
-          <Route path="/announcements" element={<SW><SuperComingSoon path="/announcements" /></SW>} />
-          <Route path="/reminders" element={<SW><SuperComingSoon path="/reminders" /></SW>} />
-          <Route path="/audit" element={<SW><SuperComingSoon path="/audit" /></SW>} />
+          <Route path="/stats" element={<SW><SuperStats /></SW>} />
+          <Route path="/announcements" element={<SW><SuperAnnouncements /></SW>} />
+          <Route path="/reminders" element={<SW><SuperReminders /></SW>} />
+          <Route path="/audit" element={<SW><SuperAudit /></SW>} />
         </Route>
 
         {/* Methodist routes */}

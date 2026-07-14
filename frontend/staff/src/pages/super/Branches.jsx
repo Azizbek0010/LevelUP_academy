@@ -10,6 +10,7 @@ import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
+import YMapPicker from '../../components/YMapPicker.jsx';
 
 const branchSchema = z.object({
   name: z.string().trim().min(1, 'Название обязательно').max(80, 'Макс. 80 символов'),
@@ -27,6 +28,7 @@ export default function SuperBranches() {
   const [modalMode, setModalMode] = useState('create');
   const [currentId, setCurrentId] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [location, setLocation] = useState(null);
 
   const {
     register,
@@ -48,6 +50,7 @@ export default function SuperBranches() {
   const openCreate = () => {
     setModalMode('create');
     setErr('');
+    setLocation(null);
     reset({ name: '', address: '', phone: '' });
     setModalOpen(true);
   };
@@ -56,6 +59,11 @@ export default function SuperBranches() {
     setModalMode('edit');
     setCurrentId(branch.id);
     setErr('');
+    setLocation(
+      branch.lat && branch.lng
+        ? { lat: Number(branch.lat), lng: Number(branch.lng) }
+        : null,
+    );
     reset({ name: branch.name, address: branch.address || '', phone: branch.phone || '' });
     setModalOpen(true);
   };
@@ -68,6 +76,7 @@ export default function SuperBranches() {
         name: formData.name.trim(),
         address: formData.address.trim(),
         phone: formData.phone.trim(),
+        ...(location ? { lat: location.lat, lng: location.lng } : {}),
       };
       if (modalMode === 'create') {
         await api.superCreateBranch(token, body);
@@ -202,7 +211,7 @@ export default function SuperBranches() {
       {/* Create / Edit Modal */}
       {modalOpen && (
         <div className="modal modal-open">
-          <div className="modal-box max-w-md">
+          <div className="modal-box max-w-2xl">
             <h3 className="font-bold text-lg">
               {modalMode === 'create' ? 'Добавить филиал' : 'Редактировать филиал'}
             </h3>
@@ -226,6 +235,24 @@ export default function SuperBranches() {
                 />
                 {errors.address && <span className="text-xs text-error mt-1">{errors.address.message}</span>}
               </label>
+
+              {/* Map picker */}
+              <div>
+                <span className="label-text mb-1 block">
+                  Местоположение на карте
+                  {location && (
+                    <button
+                      type="button"
+                      className="ml-2 text-xs text-error hover:underline"
+                      onClick={() => setLocation(null)}
+                    >
+                      Сбросить
+                    </button>
+                  )}
+                </span>
+                <YMapPicker value={location} onChange={setLocation} height={260} />
+              </div>
+
               <label className="form-control w-full">
                 <span className="label-text mb-1">Телефон</span>
                 <input
