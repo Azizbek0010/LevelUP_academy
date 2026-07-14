@@ -540,3 +540,21 @@ export function removeStudentFromGroup(groupId, studentId, client = pool) {
     )
     .then((r) => r.rows[0] ?? null);
 }
+
+// ==================== ОБЪЯВЛЕНИЯ ====================
+
+/** id активных студентов филиала; при groupId — только участники этой группы. */
+export function listActiveStudentIds({ branchId, groupId }, client = pool) {
+  return client
+    .query(
+      `SELECT u.id
+         FROM users u
+        WHERE u.branch_id = $1 AND u.role = 'student'
+          AND u.status = 'active' AND u.deleted_at IS NULL
+          AND ($2::uuid IS NULL OR EXISTS (
+                SELECT 1 FROM group_students gs
+                 WHERE gs.student_id = u.id AND gs.group_id = $2 AND gs.left_at IS NULL))`,
+      [branchId, groupId ?? null],
+    )
+    .then((r) => r.rows.map((row) => row.id));
+}

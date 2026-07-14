@@ -3,6 +3,7 @@ import { withTransaction } from '../../config/db.js';
 import { AppError } from '../../utils/AppError.js';
 import { parsePagination, buildPageMeta } from '../../utils/pagination.js';
 import { genLoginCode, genNumericPassword } from '../auth/credentials.js';
+import { notificationQueue } from '../../queues/notification.queue.js';
 import * as repo from './admin.repository.js';
 
 const hash = (pwd) => argon2.hash(pwd, { type: argon2.argon2id });
@@ -452,4 +453,24 @@ function mapGroup(g) {
     isArchived: g.is_archived,
     createdAt: g.created_at,
   };
+}
+
+// ==================== ОБЪЯВЛЕНИЯ ====================
+
+export async function createAnnouncement(branchId, body) {
+  if (body.groupId) {
+    const group = await repo.findGroupInBranch(body.groupId, branchId);
+    if (!group) throw new AppError(404, 'Group not found in your branch');
+  }
+
+  const studentIds = await repo.listActiveStudentIds({ branchId, groupId: body.groupId ?? null });
+  if (studentIds.length > 0) {
+    await notificationQueue.add('announcement.created', {
+      studentIds,
+      title: body.title,
+      message: body.message,
+    });
+  }
+
+  return { recipients: studentIds.length };
 }
