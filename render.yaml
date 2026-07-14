@@ -1,0 +1,55 @@
+# Render Blueprint — LevelUp Academy backend (только API, free-план).
+# ⚠️ Free-веб засыпает через ~15 мин простоя (холодный старт ~30-50с).
+#    Фоновый worker (BullMQ) и cron 09:00 на free НЕ запускаются — только API.
+# БД/Redis/S3 — внешние (Neon/Upstash/Storj), подключаются через env ниже.
+services:
+  - type: web
+    name: levelup-backend
+    runtime: node
+    rootDir: backend
+    region: frankfurt
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # --- фиксированные (не секреты) ---
+      - key: NODE_ENV
+        value: production
+      - key: DB_SSL
+        value: "true"          # Neon требует TLS
+      - key: S3_REGION
+        value: us-east-1
+      - key: S3_BUCKET
+        value: levelup
+      # --- JWT: Render сгенерит сильный секрет сам ---
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      # --- секреты: вводятся в дашборде Render (значения из backend/.env) ---
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      # URL фронта для CORS — пока фронт не задеплоен, можно указать URL самого сервиса
+      - key: CLIENT_URL
+        sync: false

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
+    <meta name="theme-color" content="#1d2417" />
+
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RWCK0B6TXP"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-RWCK0B6TXP');
+    </script>
+
+    <!-- Primary meta (baseline — переопределяется per-route хуком useSeo) -->
+    <title>LevelUp Academy — CRM для учебного центра</title>
+    <meta
+      name="description"
+      content="CRM для учебного центра: оплаты и сплит-платежи, посещаемость, экзамены, геймификация и Telegram-уведомления в одной системе. Первая неделя — бесплатно."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://levelup-academy.uz/landing" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="LevelUp Academy" />
+    <meta property="og:locale" content="ru_UZ" />
+    <meta property="og:url" content="https://levelup-academy.uz/landing" />
+    <meta property="og:title" content="LevelUp Academy — CRM для учебного центра" />
+    <meta
+      property="og:description"
+      content="Оплаты, посещаемость, экзамены, геймификация и чаты — в одной системе. Пять ролей и Telegram-уведомления из коробки."
+    />
+    <meta property="og:image" content="https://levelup-academy.uz/og-cover.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="LevelUp Academy — CRM для учебного центра" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="LevelUp Academy — CRM для учебного центра" />
+    <meta
+      name="twitter:description"
+      content="Оплаты, посещаемость, экзамены, геймификация и чаты — в одной системе. Пять ролей и Telegram-уведомления из коробки."
+    />
+    <meta name="twitter:image" content="https://levelup-academy.uz/og-cover.png" />
+
+    <!-- Structured data: Organization + WebSite + SoftwareApplication -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://levelup-academy.uz/#organization",
+            "name": "LevelUp Academy",
+            "url": "https://levelup-academy.uz",
+            "logo": "https://levelup-academy.uz/logo-primary.svg",
+            "description": "SaaS-CRM для управления учебными центрами: финансы, посещаемость, экзамены, геймификация и Telegram-уведомления.",
+            "areaServed": "UZ"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://levelup-academy.uz/#website",
+            "url": "https://levelup-academy.uz",
+            "name": "LevelUp Academy",
+            "inLanguage": "ru",
+            "publisher": { "@id": "https://levelup-academy.uz/#organization" }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "LevelUp Academy",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "url": "https://levelup-academy.uz",
+            "description": "CRM для учебного центра: оплаты и сплит-платежи, посещаемость (davomat), тесты с серверным таймером, коины и лидерборды, realtime-чаты, отчёты и Telegram-бот.",
+            "inLanguage": "ru",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "UZS",
+              "description": "Первая неделя бесплатно, без карты и обязательств."
+            }
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Что такое LevelUp Academy?",
+                "acceptedAnswer": { "@type": "Answer", "text": "LevelUp Academy — SaaS-платформа (CRM) для управления учебными центрами: студенты, группы, посещаемость, тесты и домашние задания, финансы (оплаты и сплит-платежи), геймификация (коины, магазин, лидерборды), чаты и Telegram-уведомления — всё в одной системе." }
+              },
+              {
+                "@type": "Question",
+                "name": "Для кого LevelUp Academy?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Для учебных центров и курсов в Узбекистане, которые хотят автоматизировать учёт студентов, посещаемость, финансы и мотивацию учеников." }
+              },
+              {
+                "@type": "Question",
+                "name": "Сколько стоит LevelUp Academy?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Первая неделя — бесплатно, без карты и обязательств. Дальше — по тарифу для учебного центра." }
+              },
+              {
+                "@type": "Question",
+                "name": "Какие роли есть в системе?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Main Admin (владелец платформы), Super Admin (организация), Admin (филиал), Mentor (преподаватель), Student, Parent и Methodist — у каждой роли свой кабинет и права." }
+              },
+              {
+                "@type": "Question",
+                "name": "Какие возможности у LevelUp Academy?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Оплаты и сплит-платежи, посещаемость (davomat), тесты с серверным таймером, домашние задания, коины и лидерборды, realtime-чаты, отчёты и Telegram-бот для уведомлений." }
+              },
+              {
+                "@type": "Question",
+                "name": "Как начать пользоваться?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Оставьте заявку на сайте levelup-academy.uz — мы создадим вашу организацию и подключим первую неделю бесплатно." }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

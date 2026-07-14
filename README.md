@@ -1,16 +1,43 @@
-# React + Vite
+# LevelUp Academy — Educational CRM System
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+CRM для учебного центра: 5 ролей (SuperAdmin / Admin / Mentor / Parent / Student), финансы со сплит-платежами и рассрочкой (Halol Nasiya), геймификация с коинами, realtime-чаты и live-счётчики онлайна, Telegram-уведомления через очередь.
 
-Currently, two official plugins are available:
+> [!NOTE]
+> Проект в стадии проектирования: архитектура утверждена, код — следующий этап.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 📚 Документация
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Документ | Что внутри |
+|---|---|
+| [Backend Architecture](docs/BACKEND-ARCHITECTURE.md) | Полная спецификация: структура проекта, PostgreSQL DDL, middlewares (RBAC, archiveGuard), Socket.io + Redis, split-payment, Nasiya, коины, BullMQ + Telegram |
+| [Frontend Architecture](docs/FRONTEND-ARCHITECTURE.md) | React (JS/JSX) + Vite: роутинг по ролям, TanStack Query + Redux Toolkit, axios auto-refresh, socket-клиент, темизация CSS Variables + DaisyUI |
+| [Backend Diagrams](docs/diagrams/Backend-Architecture-Diagrams.md) | Визуальные Mermaid-схемы: обзор системы, ER-модель, потоки платежей, presence, pipeline запроса |
+| [Frontend Diagrams](docs/diagrams/Frontend-Architecture-Diagrams.md) | Mermaid-схемы: роутинг, слои состояния, auth-refresh, сокеты, upload, таймер экзамена |
 
-## Expanding the Oxlint configuration
+Диаграммы рендерятся прямо на GitHub — просто открой файл.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+---
+
+## 🛠️ Стек
+
+| Слой | Технология |
+|---|---|
+| Backend | Node.js + Express (JavaScript) |
+| База данных | PostgreSQL |
+| Кэш / очереди / presence | Redis + BullMQ |
+| Realtime | Socket.io |
+| Файлы | MinIO / AWS S3 (presigned URLs) |
+| Уведомления | Telegram Bot (через очередь) |
+| Frontend | React (JS/JSX) + Vite + Tailwind CSS + DaisyUI |
+
+---
+
+## 📐 Ключевые архитектурные правила
+
+- **Multi-tenancy с первого дня** — `branch_id` во всех core-таблицах
+- **Invoice ↔ Transactions** — сплит-платёж = один счёт + N транзакций с общим `split_batch_id`
+- **`coin_history` append-only** — баланс и аудит меняются только в одной SQL-транзакции
+- **Архив ≠ удаление** — `is_archived` = read-only (мутации → 403), `deleted_at` = soft-delete
+- **Всё внешнее — через очередь** — HTTP-запрос никогда не ждёт Telegram

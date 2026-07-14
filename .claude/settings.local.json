@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git -C \"D:\\Все\\Рабочи стол\\LevelUp Academy\" pull --ff-only",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "cd \"D:\\Все\\Рабочи стол\\LevelUp Academy\" && python scripts/update-done.py",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
