@@ -60,16 +60,21 @@
 - [x] AB-V1: Integration testlar: payments full/split + auth flow (login -> refresh -> reuse-detect -> OTP)
 - [ ] AB-V1: SEO — pastdagi "SEO — Landing + platforma (Abdulaziz)" bo'limiga ko'chirildi va kengaytirildi
 
-## Backend — Super Admin Integratsiya (Abdulaziz) 🔥 rasmiylashtirildi
+## Backend — Super Admin Integratsiya (Karis) 🔥 hozirgi fokus
 
-> Super Admin FRONT tayyor (Shohjahon), lekin STATIK — real backendga to'liq ulanmagan (asosan Settings/organization).
-> To'liq javobgar: **Abdulaziz**. ⚠️ Super backend moduli (`modules/super`) — Karis zonasi; bu integratsiya
-> Team Lead qarori bilan Abdulaziz'ga berildi → Karis bilan kelishib ishlash (konflikt bo'lmasin).
+> Super Admin FRONT = to'liq Shohjahon versiyasi (14 sahifa), lekin uning yangi sahifalari
+> backend endpoint'larini chaqiradi — ular YO'Q edi. **Karis quradi** (avval Abdulaziz'ga berilgandi →
+> Team Lead o'ziga qaytarib oldi). Zona: `modules/super`.
 
-- [ ] AB-SUPER-INT: GET /api/super/organization — chaqiruvchining org'i (scope.organizationId): name, domain, status, createdAt, plan
-- [ ] AB-SUPER-INT: PATCH /api/super/organization — name/domain o'zgartirish (validatsiya, authorize('superadmin'), org scope)
-- [ ] AB-SUPER-INT: super frontend'ni real backendga to'liq ulash — dashboard/branches/admins/reports/settings STATIK/mock EMAS
-- [ ] AB-SUPER-INT: har bir super sahifa E2E — real superadmin login → real ma'lumot → xatolarsiz
+- [x] K-SUPER-INT: GET + PATCH /api/super/organization — Settings (org profil) ✅ jonli tekshirildi (35586f6)
+- [ ] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa
+- [ ] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
+- [ ] K-SUPER-INT: GET /api/super/stats — Stats (KPI + grafik data, recharts)
+- [ ] K-SUPER-INT: GET/POST/DELETE /api/super/announcements — Announcements
+- [ ] K-SUPER-INT: GET /api/super/reminders (+resend/delete) — Reminders
+- [ ] K-SUPER-INT: GET /api/super/audit — Audit log
+- [ ] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
+- [ ] K-SUPER-INT: har bir sahifa E2E — real superadmin login → real data
 
 ## SEO — Landing + platforma (Abdulaziz / abdulazizSEO) 🔥 full
 
