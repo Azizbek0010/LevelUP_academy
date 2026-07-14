@@ -26,6 +26,9 @@
 
   --success: #3fae72;
   --success-soft: #e6f5ec;
+
+  --warning: #e8a838;
+  --warning-soft: #fef3d9;
 }
 
 html,

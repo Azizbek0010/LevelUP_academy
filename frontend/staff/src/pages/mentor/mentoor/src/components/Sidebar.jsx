@@ -1,7 +1,15 @@
 import { LogOut, GraduationCap } from "lucide-react";
 import { NAV_ITEMS } from "../nav";
 
-export default function Sidebar({ active, setActive }) {
+export default function Sidebar({ active, setActive, user, onLogout }) {
+  const initials = user
+    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "M"
+    : "М";
+
+  const fullName = user
+    ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Ментор"
+    : "Ментор";
+
   return (
     <aside className="flex h-full w-[220px] shrink-0 flex-col justify-between bg-sidebar px-3 py-5 font-body">
       <div>
@@ -45,14 +53,19 @@ export default function Sidebar({ active, setActive }) {
         <div className="mb-3 h-px w-full bg-sidebar-soft" />
         <div className="flex items-center gap-2 px-2 pb-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-accent-ink">
-            АС
+            {initials}
           </div>
           <div>
-            <div className="text-[12px] font-medium text-white">Алексей Смирнов</div>
-            <div className="text-[10px] text-ink-faint">Ментор</div>
+            <div className="text-[12px] font-medium text-white">{fullName}</div>
+            <div className="text-[10px] text-ink-faint">
+              {user?.role === "mentor" ? "Ментор" : user?.role || "Ментор"}
+            </div>
           </div>
         </div>
-        <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] text-[#c7cbbd] hover:bg-sidebar-active/60">
+        <button
+          onClick={onLogout}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] text-[#c7cbbd] hover:bg-sidebar-active/60"
+        >
           <LogOut size={16} />
           Выход
         </button>

@@ -33,6 +33,10 @@ export default {
           DEFAULT: "var(--success)",
           soft: "var(--success-soft)",
         },
+        warning: {
+          DEFAULT: "var(--warning)",
+          soft: "var(--warning-soft)",
+        },
       },
       fontFamily: {
         display: ["Sora", "ui-sans-serif", "system-ui", "sans-serif"],
