@@ -8,7 +8,10 @@ import { registerChat } from './chat.js';
 
 export function initSockets(httpServer) {
   const io = new Server(httpServer, {
-    cors: { origin: env.CLIENT_URL, credentials: true },
+    // Фронты живут на разных поддоменах (staff./member./owner.levelup-academy.uz)
+    // + dev-инстансы, поэтому отражаем Origin запроса (как и HTTP-CORS в app.js),
+    // а не привязываемся к одному CLIENT_URL. Доступ всё равно закрыт socketAuth (JWT).
+    cors: { origin: true, credentials: true },
   });
 
   io.adapter(createAdapter(redisPub, redisSub)); // масштабирование на N инстансов

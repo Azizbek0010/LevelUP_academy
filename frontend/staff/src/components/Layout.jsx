@@ -1,9 +1,12 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, TrendingUp,
-  GraduationCap, UsersRound, CalendarCheck, Megaphone, AlarmClock, ShieldAlert, PieChart,
+  Wifi, CalendarCheck, ClipboardCheck, Coins, GraduationCap, Wallet, Receipt, UserCog,
+  UsersRound, Megaphone, AlarmClock, ShieldAlert, PieChart,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
+import ErrorBoundary from './ErrorBoundary.jsx';
+import { useOnlineCount, disconnectSocket } from '../socket.js';
 
 const superNav = [
   { to: '/',             label: 'Дашборд',      Icon: LayoutDashboard, end: true },
@@ -22,10 +25,21 @@ const superNav = [
 
 const adminNav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
+  { to: '/students', label: 'Студенты', Icon: GraduationCap },
+  { to: '/groups', label: 'Группы', Icon: Users },
+  { to: '/mentors', label: 'Менторы', Icon: UserCog },
+  { to: '/payments', label: 'Платежи', Icon: Wallet },
+  { to: '/expenses', label: 'Расходы', Icon: Receipt },
+  { to: '/reports', label: 'Отчёты', Icon: BarChart3 },
+  { to: '/settings', label: 'Настройки', Icon: Settings },
 ];
 
 const mentorNav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
+  { to: '/groups', label: 'Группы', Icon: Users },
+  { to: '/attendance', label: 'Davomat', Icon: CalendarCheck },
+  { to: '/homework', label: 'Домашки', Icon: ClipboardCheck },
+  { to: '/coins', label: 'Коины', Icon: Coins },
 ];
 
 const methodistNav = [
@@ -49,7 +63,7 @@ const ROLE_TITLE = {
 };
 
 function SidebarContent({ role }) {
-  const nav = ROLE_NAV[role] || superNav;
+  const nav = ROLE_NAV[role] || [];
   return (
     <aside className="w-64 min-h-full bg-sidebar text-neutral-content flex flex-col">
       <div className="px-5 py-6">
@@ -89,11 +103,13 @@ function SidebarContent({ role }) {
 }
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const role = user?.role;
   const navigate = useNavigate();
+  const onlineCount = useOnlineCount(token);
 
   const onLogout = async () => {
+    disconnectSocket();
     await logout();
     navigate('/login', { replace: true });
   };
@@ -107,6 +123,15 @@ export default function Layout() {
             <Menu size={20} />
           </label>
           <div className="flex-1" />
+          {/* Live online counter */}
+          <div className="flex items-center gap-1 text-xs text-base-content/60 mr-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
+            </span>
+            <Wifi size={13} />
+            <span>{onlineCount}</span>
+          </div>
           <button className="btn btn-ghost btn-circle btn-sm">
             <Bell size={18} />
           </button>
@@ -128,7 +153,9 @@ export default function Layout() {
         </header>
 
         <main className="p-4 sm:p-7 max-w-6xl w-full mx-auto">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
 

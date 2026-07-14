@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Search, Building2, CheckCircle2, Clock, PauseCircle } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { useDashboard, useInvalidate } from '../queries.js';
@@ -6,6 +7,8 @@ import { fmt, dateShort, ORG_STATUS } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
+
+const STATUS_ICON = { active: CheckCircle2, trial: Clock, frozen: PauseCircle };
 
 export default function Organizations() {
   const { token } = useAuth();
@@ -43,12 +46,15 @@ export default function Organizations() {
       ) : (
         <div className="card bg-base-100">
           <div className="card-body gap-4">
-            <input
-              className="input input-bordered input-sm max-w-xs"
-              placeholder="Поиск по названию / домену…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
+            <label className="input input-bordered input-sm max-w-xs flex items-center gap-2">
+              <Search size={14} className="text-base-content/40" />
+              <input
+                className="grow"
+                placeholder="Поиск по названию / домену…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </label>
             <div className="overflow-x-auto">
               <table className="table table-zebra">
                 <thead>
@@ -60,10 +66,14 @@ export default function Organizations() {
                 </thead>
                 <tbody>
                   {rows.length === 0 ? (
-                    <tr><td colSpan={8} className="text-center opacity-50 py-8">Партнёров нет</td></tr>
+                    <tr><td colSpan={8} className="text-center py-10">
+                      <Building2 size={28} className="mx-auto text-base-content/25 mb-2" />
+                      <div className="opacity-50 text-sm">Партнёров нет</div>
+                    </td></tr>
                   ) : (
                     rows.map((p) => {
                       const s = ORG_STATUS[p.status] || { label: p.status, cls: 'badge-ghost' };
+                      const StatusIcon = STATUS_ICON[p.status];
                       return (
                         <tr key={p.id}>
                           <td>
@@ -76,7 +86,12 @@ export default function Organizations() {
                           <td className="text-right">{fmt(p.branches)}</td>
                           <td className="text-right">{fmt(p.students)}</td>
                           <td className="text-right font-semibold">{fmt(p.monthlyBill)}</td>
-                          <td><span className={`badge badge-sm ${s.cls}`}>{s.label}</span></td>
+                          <td>
+                            <span className={`badge badge-sm gap-1 ${s.cls}`}>
+                              {StatusIcon && <StatusIcon size={11} />}
+                              {s.label}
+                            </span>
+                          </td>
                           <td className="whitespace-nowrap text-sm">{dateShort(p.createdAt)}</td>
                           <td className="text-right">
                             <button

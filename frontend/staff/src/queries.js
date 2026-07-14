@@ -35,9 +35,9 @@ export function useSuperAdmins() {
   return useAuthedQuery(['super-admins'], () => api.superAdmins(token));
 }
 
-export function useOrganization() {
+export function useSuperOrganization() {
   const { token } = useAuth();
-  return useAuthedQuery(['super-organization'], () => api.superOrganization(token));
+  return useAuthedQuery(['super-organization'], () => api.superGetOrganization(token));
 }
 
 // -------- ADMIN --------
@@ -46,10 +46,89 @@ export function useAdminDashboard() {
   return useAuthedQuery(['admin-dashboard'], () => api.adminDashboard(token));
 }
 
-// -------- MENTOR --------
-export function useMentorDashboard() {
+export function useAdminExpenses(qs = '') {
   const { token } = useAuth();
-  return useAuthedQuery(['mentor-dashboard'], () => api.mentorDashboard(token));
+  return useAuthedQuery(['admin-expenses', qs], () => api.adminExpenses(token, qs));
+}
+
+export function useAdminStudents(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-students', qs], () => api.adminStudents(token, qs));
+}
+
+export function useAdminGroups(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-groups', qs], () => api.adminGroups(token, qs));
+}
+
+export function useAdminGroupDetail(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-group', id], () => api.adminGroupDetail(token, id), { enabled: !!id });
+}
+
+export function useAdminMentors() {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-mentors'], () => api.adminMentors(token));
+}
+
+export function useAdminInvoices(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-invoices', qs], () => api.adminInvoices(token, qs));
+}
+
+export function useAdminReports(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-reports', qs], () => api.adminReports(token, qs));
+}
+
+export function useAdminSettings() {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-settings'], () => api.adminSettings(token), { retry: false });
+}
+
+// -------- MENTOR --------
+export function useMentorGroups() {
+  const { token } = useAuth();
+  return useAuthedQuery(['mentor-groups'], () => api.mentorGroups(token));
+}
+
+export function useMentorGroupStudents(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(['mentor-group-students', groupId], () => api.mentorGroupStudents(token, groupId), {
+    enabled: !!groupId,
+  });
+}
+
+export function useMentorAttendance(groupId, date) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['mentor-attendance', groupId, date],
+    () => api.mentorAttendance(token, groupId, { date }),
+    { enabled: !!groupId && !!date },
+  );
+}
+
+export function useMentorHomeworkList(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(['mentor-homework', groupId], () => api.mentorHomeworkList(token, groupId), {
+    enabled: !!groupId,
+  });
+}
+
+export function useMentorHomeworkSubmissions(homeworkId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['mentor-submissions', homeworkId],
+    () => api.mentorHomeworkSubmissions(token, homeworkId),
+    { enabled: !!homeworkId },
+  );
+}
+
+export function useMentorCoinHistory(studentId) {
+  const { token } = useAuth();
+  return useAuthedQuery(['mentor-coin-history', studentId], () => api.mentorCoinHistory(token, studentId), {
+    enabled: !!studentId,
+  });
 }
 
 // -------- METHODIST CONTENT --------

@@ -1,5 +1,51 @@
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
+import { useSeo, breadcrumb } from '../lib/seo.js';
+
+const jsonLd = [
+  breadcrumb([
+    { name: 'Главная', path: '/landing' },
+    { name: 'Возможности', path: '/landing/features' },
+  ]),
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'Подойдёт ли система не-IT направлению?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Да. LevelUp Academy универсальна: английский, математика, подготовка к экзаменам — любые предметы. Внутри нет ничего, что привязано к программированию.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Сколько филиалов можно подключить?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Ограничений нет. Мультифилиальность заложена с первого дня: каждый филиал изолирован, а SuperAdmin видит всю сеть целиком.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Нужно ли ставить приложение родителям?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Нет. Родителю достаточно Telegram: привязка по одноразовому коду, дальше уведомления приходят сами. Личный кабинет доступен в браузере с телефона.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Что будет с данными, если ученик ушёл?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Ничего не удаляется физически. Архив — это read-only режим: история оплат, оценок и коинов остаётся для отчётов. Вернулся ученик — вернулась и его история.',
+        },
+      },
+    ],
+  },
+];
 
 const modules = [
   {
@@ -86,6 +132,14 @@ const flow = [
 ];
 
 export default function Features() {
+  useSeo({
+    title: 'Возможности — 12+ модулей CRM | LevelUp Academy',
+    description:
+      'Платежи, davomat, тесты с серверным таймером, ДЗ, коины, realtime-чаты, видеоуроки, отчёты и Telegram-бот — все модули LevelUp Academy в одной системе.',
+    path: '/landing/features',
+    jsonLd,
+  });
+
   return (
     <main>
       <section className="page-hero">

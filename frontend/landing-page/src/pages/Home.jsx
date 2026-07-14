@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
+import { useSeo } from '../lib/seo.js';
 
 const features = [
   {
@@ -77,7 +78,41 @@ const bars = [
   { label: '90–100', height: 100, opacity: 1 },
 ];
 
+const faq = [
+  {
+    q: 'Что такое LevelUp Academy?',
+    a: 'LevelUp Academy — SaaS-платформа (CRM) для управления учебными центрами: студенты, группы, посещаемость, тесты и домашние задания, финансы (оплаты и сплит-платежи), геймификация (коины, магазин, лидерборды), чаты и Telegram-уведомления — всё в одной системе.',
+  },
+  {
+    q: 'Для кого LevelUp Academy?',
+    a: 'Для учебных центров и курсов в Узбекистане, которые хотят автоматизировать учёт студентов, посещаемость, финансы и мотивацию учеников.',
+  },
+  {
+    q: 'Сколько стоит?',
+    a: 'Первая неделя — бесплатно, без карты и обязательств. Дальше — по тарифу для учебного центра.',
+  },
+  {
+    q: 'Какие роли есть в системе?',
+    a: 'Main Admin (владелец платформы), Super Admin (организация), Admin (филиал), Mentor (преподаватель), Student, Parent и Methodist — у каждой роли свой кабинет и права.',
+  },
+  {
+    q: 'Какие возможности?',
+    a: 'Оплаты и сплит-платежи, посещаемость (davomat), тесты с серверным таймером, домашние задания, коины и лидерборды, realtime-чаты, отчёты и Telegram-бот для уведомлений.',
+  },
+  {
+    q: 'Как начать?',
+    a: 'Оставьте заявку на сайте — мы создадим вашу организацию и подключим первую неделю бесплатно.',
+  },
+];
+
 export default function Home() {
+  useSeo({
+    title: 'LevelUp Academy — CRM для учебного центра',
+    description:
+      'CRM для учебного центра: оплаты и сплит-платежи, посещаемость, экзамены, геймификация и Telegram-уведомления в одной системе. Первая неделя — бесплатно.',
+    path: '/landing',
+  });
+
   return (
     <main>
       {/* ===== Hero ===== */}
@@ -329,6 +364,37 @@ export default function Home() {
                 Архив ≠ удаление: read-only, а не потеря данных
               </li>
             </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FAQ (SEO/GEO/AEO) ===== */}
+      <section className="section section--white" id="faq">
+        <div className="container">
+          <div className="section__head">
+            <h2>Частые вопросы</h2>
+            <p>Коротко о том, что такое LevelUp Academy и как это работает.</p>
+          </div>
+          <div className="faq" style={{ maxWidth: 760, margin: '0 auto' }}>
+            {faq.map((f, i) => (
+              <details
+                key={i}
+                style={{
+                  border: '1px solid var(--border, #E6EDD8)',
+                  borderRadius: 14,
+                  padding: '14px 18px',
+                  marginBottom: 12,
+                  background: '#fff',
+                }}
+              >
+                <summary style={{ cursor: 'pointer', fontWeight: 700, listStyle: 'none' }}>
+                  {f.q}
+                </summary>
+                <p style={{ marginTop: 10, color: 'var(--muted, #5E6E52)', lineHeight: 1.6 }}>
+                  {f.a}
+                </p>
+              </details>
+            ))}
           </div>
         </div>
       </section>

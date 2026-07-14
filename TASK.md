@@ -41,10 +41,10 @@
 
 - [x] K-METHODIST: Training types, topics, lessons CRUD + analytics (modules/methodist)
 
-## Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task)
+## Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
 
-- [ ] K-PAY: Payments modul: invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + refund/void + chek S3 ga; commit dan KEYIN notificationQueue 'payment.received'; total_debt + invoice.status qayta hisob. NASIYA YO'Q
-- [ ] K-PAY: Branch reports: filial bo'yicha tushum va qarzlar (guruhlar kesimida)
+- [x] K-PAY: Payments modul: oylik avto-hisoblash (billing.worker, 1-sana, muddat 5-sana) + invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + ad-hoc to'lov + refund/void + chek S3 ga; commit dan KEYIN notificationQueue ('payment.received'/'payment.due'/'payment.refunded'); total_debt + invoice.status qayta hisob. To'lamasa (5-sanadan keyin, invoice='overdue') — student panelga umuman data qaytmaydi (paymentGate, 402). NASIYA YO'Q
+- [x] K-PAY: Branch reports: filial bo'yicha tushum va qarzlar (guruhlar kesimida) — GET /api/admin/reports
 
 ## Backend — V1 qolganlari (Abdulaziz)
 
@@ -127,13 +127,13 @@
 
 ## Frontend — Mentor (Sardor, Kozim, Alish)
 
-- [ ] MENTOR: Dashboard (groups, upcoming lessons)
+- [x] MENTOR: Dashboard (groups, upcoming lessons)
 - [ ] MENTOR: Attendance journal
-- [ ] MENTOR: Homework (check, grades)
+- [x] MENTOR: Homework (check, grades)
 - [ ] MENTOR: Tests (create, results)
-- [ ] MENTOR: Coins (assign/deduct)
+- [x] MENTOR: Coins (assign/deduct)
 
-## Frontend — Student (mas'ul TAYINLANMAGAN ⚠️)
+## Frontend — Student (Abdulaziz)
 
 - [ ] STUDENT: Home (coins, groups, deadlines)
 - [ ] STUDENT: Tests
@@ -142,7 +142,7 @@
 - [ ] STUDENT: Videos
 - [ ] STUDENT: Leaderboard
 
-## Frontend — Parent (mas'ul TAYINLANMAGAN ⚠️)
+## Frontend — Parent (hozircha KEYINGA qoldirildi — shart emas, mas'ul yo'q)
 
 - [ ] PARENT: Child overview
 - [ ] PARENT: Chat
