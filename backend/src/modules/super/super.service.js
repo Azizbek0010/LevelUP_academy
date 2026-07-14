@@ -1,5 +1,6 @@
 import argon2 from 'argon2';
 import { AppError } from '../../utils/AppError.js';
+import { planLimits } from '../../config/plans.js';
 import * as repo from './super.repository.js';
 
 // ---------- филиалы ----------
@@ -213,6 +214,40 @@ function mapMethodist(u) {
     status: u.status,
     phone: u.phone,
   };
+}
+
+// ---------- организация (профиль партнёра, Settings) ----------
+
+function mapOrganization(o) {
+  const limits = planLimits(o.plan);
+  return {
+    id: o.id,
+    name: o.name,
+    domain: o.domain,
+    status: o.status,
+    createdAt: o.created_at,
+    plan: {
+      branchLimit: limits?.maxBranches ?? null,
+      diskSpace: '500 ГБ',
+    },
+  };
+}
+
+export async function getOrganization(orgId) {
+  const row = await repo.getOrganization(orgId);
+  if (!row) throw new AppError(404, 'Organization not found');
+  return mapOrganization(row);
+}
+
+export async function updateOrganization(orgId, fields) {
+  try {
+    const row = await repo.updateOrganization(orgId, fields);
+    if (!row) throw new AppError(404, 'Organization not found');
+    return mapOrganization(row);
+  } catch (err) {
+    if (err.code === '23505') throw new AppError(409, 'Domain already in use');
+    throw err;
+  }
 }
 
 // ---------- дашборд организации ----------

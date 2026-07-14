@@ -332,3 +332,38 @@ export function setMethodistStatus(id, orgId, status, client = pool) {
     )
     .then((r) => r.rows[0] ?? null);
 }
+
+// ---------- организация (профиль партнёра, Settings) ----------
+
+export function getOrganization(orgId, client = pool) {
+  return client
+    .query(
+      `SELECT id, name, domain, status, plan, created_at
+         FROM organizations
+        WHERE id = $1 AND deleted_at IS NULL`,
+      [orgId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function updateOrganization(orgId, fields, client = pool) {
+  const cols = [];
+  const vals = [];
+  let i = 1;
+  for (const [key, col] of [['name', 'name'], ['domain', 'domain']]) {
+    if (fields[key] !== undefined) {
+      cols.push(`${col} = $${i++}`);
+      vals.push(fields[key]);
+    }
+  }
+  if (cols.length === 0) return getOrganization(orgId, client);
+  vals.push(orgId);
+  return client
+    .query(
+      `UPDATE organizations SET ${cols.join(', ')}, updated_at = now()
+        WHERE id = $${i} AND deleted_at IS NULL
+        RETURNING id, name, domain, status, plan, created_at`,
+      vals,
+    )
+    .then((r) => r.rows[0] ?? null);
+}

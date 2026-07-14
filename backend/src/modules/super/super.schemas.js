@@ -5,6 +5,22 @@ const email = z.string().trim().toLowerCase().email('Invalid email');
 // :id в пути
 export const idParam = z.object({ id: z.string().uuid('Invalid id') });
 
+// редактирование организации (Settings) — частичное; domain может быть пустым => null
+const orgDomainRegex = /^[a-z0-9.-]+\.[a-z]{2,}$/;
+export const updateOrganizationSchema = z
+  .object({
+    name: z.string().trim().min(2, 'Too short').max(160),
+    domain: z
+      .union([
+        z.string().trim().toLowerCase().regex(orgDomainRegex, 'Invalid domain'),
+        z.literal(''),
+        z.null(),
+      ])
+      .transform((v) => (v ? v : null)),
+  })
+  .partial()
+  .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
+
 // редактирование филиала — частичное (хотя бы одно поле)
 export const updateBranchSchema = z
   .object({

@@ -12,6 +12,7 @@ import {
   createMethodistSchema,
   updateMethodistSchema,
   freezeMethodistSchema,
+  updateOrganizationSchema,
 } from './super.schemas.js';
 import * as ctrl from './super.controller.js';
 
@@ -61,6 +62,10 @@ router.use(authenticate, authorize('superadmin'));
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
 router.get('/dashboard', ctrl.dashboard);
+
+// --- организация (профиль партнёра, Settings) ---
+router.get('/organization', ctrl.getOrganization);
+router.patch('/organization', validate({ body: updateOrganizationSchema }), ctrl.updateOrganization);
 
 /**
  * @openapi

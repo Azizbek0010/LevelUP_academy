@@ -8,6 +8,15 @@ export const dashboard = asyncHandler(async (req, res) => {
   res.json(await service.dashboard(orgId(req)));
 });
 
+// --- организация (профиль партнёра, Settings) ---
+export const getOrganization = asyncHandler(async (req, res) => {
+  res.json({ organization: await service.getOrganization(orgId(req)) });
+});
+
+export const updateOrganization = asyncHandler(async (req, res) => {
+  res.json({ organization: await service.updateOrganization(orgId(req), req.body) });
+});
+
 // --- филиалы ---
 export const createBranch = asyncHandler(async (req, res) => {
   res.status(201).json({ branch: await service.createBranch(orgId(req), req.body) });
