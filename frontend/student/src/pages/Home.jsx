@@ -4,22 +4,39 @@ import { Coins, Wallet, Trophy, Users, BookOpen } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { useToast } from '../components/toast.jsx';
-import { Skeleton, EmptyState } from '../components/ui.jsx';
+import { Skeleton, EmptyState, ErrorState } from '../components/ui.jsx';
 import { fmtNum, fmtMoney, fmtDateTime, deadlineLabel } from '../format.js';
 
 export default function Home() {
   const { user } = useAuth();
   const toast = useToast();
   const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
     api
       .home()
-      .then((d) => setData(d.data))
-      .catch((err) => toast(err.message, 'error'))
-      .finally(() => setLoading(false));
-  }, [toast]);
+      .then((d) => {
+        if (!cancelled) setData(d.data);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        // без данных нельзя рисовать нули — они читаются как настоящий баланс/долг
+        setError(err.message);
+        toast(err.message, 'error');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [toast, reloadKey]);
 
   const debt = Number(data?.totalDebt) || 0;
 
@@ -34,6 +51,8 @@ export default function Home() {
 
       {loading ? (
         <Skeleton h={96} count={3} />
+      ) : error ? (
+        <ErrorState message={error} onRetry={() => setReloadKey((k) => k + 1)} />
       ) : (
         <>
           <div className="stat-grid">

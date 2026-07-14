@@ -1,4 +1,12 @@
 import Cta from '../components/Cta.jsx';
+import { useSeo, breadcrumb } from '../lib/seo.js';
+
+const jsonLd = [
+  breadcrumb([
+    { name: 'Главная', path: '/landing' },
+    { name: 'Роли', path: '/landing/roles' },
+  ]),
+];
 
 const roles = [
   {
@@ -59,6 +67,14 @@ const roles = [
 ];
 
 export default function Roles() {
+  useSeo({
+    title: 'Роли и доступы — 5 кабинетов | LevelUp Academy',
+    description:
+      'SuperAdmin, Admin, Ментор, Родитель и Ученик — у каждой роли свой кабинет. Доступ решает RBAC на сервере: лишнего никто не видит.',
+    path: '/landing/roles',
+    jsonLd,
+  });
+
   return (
     <main>
       <section className="page-hero">

@@ -1,4 +1,4 @@
-import { X, Inbox } from 'lucide-react';
+import { X, Inbox, AlertTriangle } from 'lucide-react';
 
 export function Skeleton({ h = 56, count = 3 }) {
   return (
@@ -16,6 +16,22 @@ export function EmptyState({ icon: Icon = Inbox, title, text }) {
       <Icon size={34} />
       <h3>{title}</h3>
       {text && <p>{text}</p>}
+    </div>
+  );
+}
+
+/** Запрос не удался — показываем это честно, а не пустыми нулями. */
+export function ErrorState({ message, onRetry }) {
+  return (
+    <div className="empty">
+      <AlertTriangle size={34} />
+      <h3>Не удалось загрузить</h3>
+      {message && <p>{message}</p>}
+      {onRetry && (
+        <button type="button" className="pill pill--lime" style={{ cursor: 'pointer' }} onClick={onRetry}>
+          Повторить
+        </button>
+      )}
     </div>
   );
 }
