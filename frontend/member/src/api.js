@@ -1,12 +1,12 @@
 // Все запросы идут на /api (dev-прокси Vite → http://localhost:4000).
 // VITE_API_URL — боевой бэкенд (Render) для production build.
-// USE_MOCKS = true — эмуляция на localStorage для разработки без бэкенда.
+// VITE_USE_MOCKS=false — отключает моки, использует реальный бэкенд.
+// По умолчанию true: эмуляция на localStorage для разработки без бэкенда.
 //
 // Вход учеников/родителей: POST /api/auth/member/login, поле называется `login`
 // (в него кладут ЛОГИН-КОД, не email). Тело идентично staff/main. Google-входа нет.
 
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
-// По умолчанию включены (разработка без бэкенда); выключить реальным бэком: VITE_USE_MOCKS=false в .env.
 const USE_MOCKS =
   typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS !== 'false' : true;
 
