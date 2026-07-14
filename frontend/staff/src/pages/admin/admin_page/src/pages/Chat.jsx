@@ -11,6 +11,11 @@ import {
   HiOutlineXMark,
   HiOutlineFaceSmile,
   HiOutlineArrowUturnLeft,
+  HiOutlineExclamationTriangle,
+  HiOutlineArrowPath,
+  HiOutlinePaperClip,
+  HiOutlineCheck,
+  HiOutlineCheckBadge,
 } from 'react-icons/hi2';
 import Button from '../components/Button.jsx';
 import api from '../services/api.js';
@@ -127,7 +132,7 @@ function highlightText(text, query) {
   const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
   return parts.map((part, i) =>
     part.toLowerCase() === query.toLowerCase()
-      ? <mark key={i} className="bg-[var(--green)]/40 text-[var(--text)] rounded-[2px] px-0.5">{part}</mark>
+      ? <mark key={i} className="bg-[var(--green)]/50 text-[var(--text)] rounded-[2px] px-0.5">{part}</mark>
       : part,
   );
 }
@@ -538,7 +543,6 @@ export default function Chat() {
   };
 
   // ─── Group consecutive messages from same sender ───
-  // Returns array of groups: { messages: [...], isFirst: bool, isLast: bool, from: string }
   const groupedMessages = useMemo(() => {
     const result = [];
     for (let i = 0; i < activeMessages.length; i++) {
@@ -558,21 +562,27 @@ export default function Chat() {
     return result;
   }, [activeMessages]);
 
+  // ═══════════════════════════════════════════
+  //  Render
+  // ═══════════════════════════════════════════
   return (
-    <div className="glass-strong rounded-[20px] overflow-hidden flex h-[calc(100vh-240px)] min-h-[500px]">
+    <div className="glass-strong rounded-[20px] overflow-hidden flex h-[calc(100vh-240px)] min-h-[500px] animate-fade-in">
       {/* ───── Left Panel — Contacts ───── */}
       <div
-        className={`w-[280px] shrink-0 border-r border-[var(--border)] flex flex-col bg-[var(--surface)]/30
+        className={`w-[300px] shrink-0 border-r border-[var(--border)] flex flex-col bg-[var(--surface)]/30
           ${showMobileList ? 'flex' : 'hidden'} lg:flex`}
       >
         {/* Search header */}
-        <div className="p-4 pb-3 border-b border-[var(--border)]">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[14px] font-extrabold text-[var(--text)] tracking-[-0.02em]">Messages</h2>
+        <div className="p-5 pb-3 border-b border-[var(--border)]">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-1 h-5 rounded-full bg-[var(--green)]" />
+              <h2 className="text-[15px] font-extrabold text-[var(--text)] tracking-[-0.02em]">Xabarlar</h2>
+            </div>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setShowContactSearch(!showContactSearch)}
-                className={`w-7 h-7 rounded-[8px] flex items-center justify-center transition-all duration-200
+                className={`w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200
                   ${showContactSearch
                     ? 'bg-[var(--green-bg)] text-[var(--green)]'
                     : 'text-[var(--text-muted)] hover:text-[var(--green)] hover:bg-[var(--surface)]'
@@ -581,21 +591,21 @@ export default function Chat() {
               >
                 <HiOutlineMagnifyingGlass className="w-3.5 h-3.5" />
               </button>
-              <span className="text-[10px] font-semibold text-[var(--text-muted)] bg-[var(--green-bg)] px-2 py-0.5 rounded-full">
-                {contacts.length} chats
+              <span className="text-[10px] font-semibold text-[var(--text-muted)] bg-[var(--green-bg)] px-2.5 py-0.5 rounded-full">
+                {contacts.length} ta
               </span>
             </div>
           </div>
 
           {showContactSearch && (
             <div className="relative mt-3 animate-slide-up">
-              <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
+              <HiOutlineMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
               <input
                 ref={contactSearchRef}
-                placeholder="Search contacts..."
+                placeholder="Kontaktlarni qidirish..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-9 pl-9 pr-9 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text)] outline-none focus:border-[var(--green)] transition-all duration-200 placeholder:text-[var(--text-muted)]"
+                className="w-full h-9 pl-10 pr-9 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text)] outline-none focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200 placeholder:text-[var(--text-muted)]"
               />
               {searchQuery && (
                 <button
@@ -603,7 +613,7 @@ export default function Chat() {
                     setSearchQuery('');
                     setShowContactSearch(false);
                   }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
                 >
                   <HiOutlineXMark className="w-3.5 h-3.5" />
                 </button>
@@ -613,98 +623,101 @@ export default function Chat() {
         </div>
 
         {/* Contact list */}
-        <div className="flex-1 overflow-y-auto py-1">
+        <div className="flex-1 overflow-y-auto py-2 scroll-smooth">
           {filteredContacts.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-[12px] text-[var(--text-secondary)] p-4">
-              No contacts found
+            <div className="flex flex-col items-center justify-center h-full gap-2 p-6 text-center">
+              <div className="w-10 h-10 rounded-[12px] bg-[var(--green-bg)] flex items-center justify-center">
+                <HiOutlineMagnifyingGlass className="w-4 h-4 text-[var(--green)]" />
+              </div>
+              <p className="text-[12px] text-[var(--text-secondary)]">Kontakt topilmadi</p>
             </div>
           ) : (
-            filteredContacts.map((contact) => {
-              const isActiveChat = activeChat === contact.id;
-              return (
-                <button
-                  key={contact.id}
-                  onClick={() => selectChat(contact.id)}
-                  className={`w-full text-left px-4 py-2.5 transition-all duration-200 relative
-                    ${isActiveChat
-                      ? 'bg-[var(--green-bg)]'
-                      : 'hover:bg-[var(--surface-hover)]'
-                    }`}
-                >
-                  {isActiveChat && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-[var(--green)] rounded-r-full" />
-                  )}
-
-                  <div className="flex items-center gap-3">
-                    <div className="relative shrink-0">
-                      <div
-                        className={`w-11 h-11 rounded-[12px] flex items-center justify-center
-                          text-[#141B10] font-extrabold text-[14px] ${getInitialsColor(contact.name)}
-                          ring-2 ring-offset-2 ${isActiveChat ? 'ring-[var(--green)]' : 'ring-transparent'} ring-offset-[var(--surface)]
-                          transition-all duration-200`}
-                      >
-                        {contact.avatar}
-                      </div>
-                      {contact.online && (
-                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[var(--success)] rounded-full border-[2.5px] border-[var(--surface)]" />
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className={`text-[13px] truncate ${contact.unread > 0 ? 'font-bold text-[var(--text)]' : 'font-semibold text-[var(--text)]'}`}>
-                          {contact.name}
-                        </span>
-                        <span className="text-[10px] text-[var(--text-muted)] shrink-0">{contact.time}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-1 mt-0.5">
-                        <span className="text-[11px] text-[var(--text-secondary)] truncate">
-                          {contact.lastMsg}
-                        </span>
-                        {contact.unread > 0 && (
-                          <span className="min-w-[20px] h-[18px] rounded-full bg-[var(--green)] text-[#141B10] text-[9px] font-bold flex items-center justify-center shrink-0 px-1.5">
-                            {contact.unread}
-                          </span>
+            <div className="space-y-0.5 px-2">
+              {filteredContacts.map((contact) => {
+                const isActiveChat = activeChat === contact.id;
+                return (
+                  <button
+                    key={contact.id}
+                    onClick={() => selectChat(contact.id)}
+                    className={`w-full text-left px-3 py-2.5 rounded-[14px] transition-all duration-200 relative group
+                      ${isActiveChat
+                        ? 'bg-[var(--green-bg)] shadow-sm'
+                        : 'hover:bg-[var(--surface-hover)]'
+                      }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative shrink-0">
+                        <div
+                          className={`w-11 h-11 rounded-[14px] flex items-center justify-center
+                            text-[#141B10] font-extrabold text-[14px] ${getInitialsColor(contact.name)}
+                            ring-2 ring-offset-2 ${isActiveChat ? 'ring-[var(--green)]' : 'ring-transparent'} ring-offset-[var(--surface)]
+                            transition-all duration-200`}
+                        >
+                          {contact.avatar}
+                        </div>
+                        {contact.online && (
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[var(--success)] rounded-full border-[2.5px] border-[var(--surface)]" />
                         )}
                       </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className={`text-[13px] truncate ${contact.unread > 0 ? 'font-bold text-[var(--text)]' : 'font-semibold text-[var(--text)]'}`}>
+                            {contact.name}
+                          </span>
+                          <span className="text-[10px] text-[var(--text-muted)] shrink-0 tabular-nums">{contact.time}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-1 mt-0.5">
+                          <span className={`text-[11px] truncate ${contact.unread > 0 ? 'font-semibold text-[var(--text)]' : 'text-[var(--text-secondary)]'}`}>
+                            {contact.lastMsg}
+                          </span>
+                          {contact.unread > 0 && (
+                            <span className="min-w-[20px] h-[18px] rounded-full bg-[var(--green)] text-[#141B10] text-[9px] font-bold flex items-center justify-center shrink-0 px-1.5">
+                              {contact.unread}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              );
-            })
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
 
       {/* ───── Right Panel — Chat ───── */}
       <div
-        className={`flex-1 flex flex-col ${!showMobileList ? 'flex' : 'hidden'} lg:flex`}
+        className={`flex-1 flex flex-col min-w-0 ${!showMobileList ? 'flex' : 'hidden'} lg:flex`}
       >
         {!activeChat ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4">
-            <div className="w-20 h-20 rounded-[24px] bg-[var(--green-bg)] flex items-center justify-center animate-float">
-              <HiOutlinePaperAirplane className="w-8 h-8 text-[var(--green)] -rotate-45" />
+          <div className="flex-1 flex flex-col items-center justify-center gap-5 p-8">
+            <div className="w-24 h-24 rounded-[28px] bg-[var(--green-bg)] flex items-center justify-center animate-float shadow-[0_0_40px_var(--green-glow)]">
+              <HiOutlinePaperAirplane className="w-9 h-9 text-[var(--green)] -rotate-45" />
             </div>
-            <div className="text-center">
-              <p className="text-[15px] font-bold text-[var(--text)] mb-1">Your messages</p>
-              <p className="text-[12px] text-[var(--text-secondary)]">Select a conversation to start chatting</p>
+            <div className="text-center max-w-xs">
+              <p className="text-[16px] font-bold text-[var(--text)] mb-1.5">Xabarlar</p>
+              <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+                Suhbat boshlash uchun kontakt tanlang
+              </p>
             </div>
           </div>
         ) : (
           <>
             {/* ── Chat Header ── */}
-            <div className="shrink-0 px-4 lg:px-5 py-3 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)]/50">
+            <div className="shrink-0 px-4 lg:px-6 py-3.5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)]/50 backdrop-blur-sm z-10">
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   onClick={goBackToList}
                   className="lg:hidden w-8 h-8 rounded-[10px] bg-[var(--surface)] border border-[var(--border)]
-                    flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text)] transition-all shrink-0"
+                    flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text)] hover:border-[var(--text-muted)] transition-all shrink-0"
                 >
                   <HiOutlineChevronLeft className="w-4 h-4" />
                 </button>
                 <div className="relative shrink-0">
                   <div
-                    className={`w-10 h-10 rounded-[12px] flex items-center justify-center
+                    className={`w-10 h-10 rounded-[13px] flex items-center justify-center
                       text-[#141B10] font-extrabold text-[13px] ${getInitialsColor(activeContact.name)}`}
                   >
                     {activeContact.avatar}
@@ -714,41 +727,46 @@ export default function Chat() {
                   )}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[14px] font-bold text-[var(--text)] truncate">
+                  <div className="text-[14px] font-bold text-[var(--text)] truncate flex items-center gap-1.5">
                     {activeContact.name}
+                    {activeContact.role === 'Mentor' && (
+                      <HiOutlineCheckBadge className="w-3.5 h-3.5 text-[var(--green)] shrink-0" />
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="flex items-center gap-1">
                       <span
                         className={`w-2 h-2 rounded-full ${
-                          activeContact.online ? 'bg-[var(--success)]' : 'bg-[var(--text-muted)]'
+                          activeContact.online ? 'bg-[var(--success)] animate-pulse-dot' : 'bg-[var(--text-muted)]'
                         }`}
                       />
                       <span className="text-[10px] text-[var(--text-secondary)]">
                         {activeContact.online ? 'Online' : 'Offline'}
                       </span>
                     </div>
-                    <span className="text-[10px] text-[var(--text-muted)]">· {activeContact.role}</span>
+                    <span className="text-[9px] text-[var(--text-muted)]">· {activeContact.role}</span>
                     {chatSearchQuery && (
-                      <span className="text-[10px] text-[var(--green)] font-semibold">· {activeMessages.length} found</span>
+                      <span className="text-[9px] text-[var(--green)] font-semibold">· {activeMessages.length} ta</span>
                     )}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 {[
-                  { icon: HiOutlineMagnifyingGlass, title: 'Search', active: showChatSearch, onClick: () => { setShowChatSearch(!showChatSearch); setChatSearchQuery(''); } },
-                  { icon: HiOutlinePhone, title: 'Call' },
-                  { icon: HiOutlineVideoCamera, title: 'Video call' },
-                  { icon: HiOutlineTrash, title: 'Delete chat', active: deleteChatConfirm, onClick: startDeleteChat },
+                  { icon: HiOutlineMagnifyingGlass, title: 'Qidirish', active: showChatSearch, onClick: () => { setShowChatSearch(!showChatSearch); setChatSearchQuery(''); } },
+                  { icon: HiOutlinePhone, title: "Qo'ng'iroq" },
+                  { icon: HiOutlineVideoCamera, title: 'Video qo\'ng\'iroq' },
+                  { icon: HiOutlineTrash, title: "Chatni o'chirish", active: deleteChatConfirm, onClick: startDeleteChat, danger: true },
                 ].map((btn, i) => (
                   <button
                     key={i}
                     onClick={btn.onClick}
                     className={`w-9 h-9 rounded-[10px] border flex items-center justify-center transition-all duration-200
                       ${btn.active
-                        ? 'bg-[var(--danger)]/20 border-[var(--danger)] text-[var(--danger)]'
-                        : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--danger)] hover:text-[var(--danger)] hover:shadow-[0_0_12px_var(--danger)/30]'
+                        ? 'bg-[var(--danger)]/15 border-[var(--danger)] text-[var(--danger)]'
+                        : btn.danger
+                          ? 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--danger)] hover:text-[var(--danger)] hover:bg-[var(--danger)]/5'
+                          : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--green)] hover:text-[var(--green)] hover:bg-[var(--green-bg)]'
                       }`}
                     title={btn.title}
                   >
@@ -760,13 +778,13 @@ export default function Chat() {
 
             {/* ── Chat Search ── */}
             {showChatSearch && (
-              <div className="shrink-0 px-4 lg:px-5 py-2.5 border-b border-[var(--border)] bg-[var(--surface-hover)] animate-slide-up">
+              <div className="shrink-0 px-4 lg:px-6 py-3 border-b border-[var(--border)] bg-[var(--surface-hover)] animate-slide-up">
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
-                    <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
+                    <HiOutlineMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
                     <input
                       ref={chatSearchRef}
-                      placeholder="Search messages..."
+                      placeholder="Xabarlarni qidirish..."
                       value={chatSearchQuery}
                       onChange={(e) => setChatSearchQuery(e.target.value)}
                       onKeyDown={(e) => {
@@ -778,12 +796,12 @@ export default function Chat() {
                           goToNextMatch();
                         }
                       }}
-                      className="w-full h-8 pl-9 pr-9 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text)] outline-none focus:border-[var(--green)] transition-all duration-200"
+                      className="w-full h-9 pl-10 pr-9 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text)] outline-none focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
                     />
                     {chatSearchQuery && (
                       <button
                         onClick={() => setChatSearchQuery('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
                       >
                         <HiOutlineXMark className="w-3.5 h-3.5" />
                       </button>
@@ -791,7 +809,7 @@ export default function Chat() {
                   </div>
 
                   {chatSearchQuery && totalMatches > 0 && (
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <span className="text-[10px] font-semibold text-[var(--text-muted)] min-w-[36px] text-center tabular-nums">
                         {searchMatchIndex + 1}/{totalMatches}
                       </span>
@@ -805,7 +823,7 @@ export default function Chat() {
                         </button>
                         <button
                           onClick={goToNextMatch}
-                          className="w-7 h-7 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--green)] hover:bg-[var(--green-bg)] transition-all"
+                          className="w-7 h-7 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--green-bg)] transition-all"
                           title="Next match (Enter)"
                         >
                           <HiOutlineChevronDown className="w-3.5 h-3.5" />
@@ -815,11 +833,11 @@ export default function Chat() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-1.5 mt-2">
+                <div className="flex items-center gap-1.5 mt-2.5">
                   {[
-                    { key: 'all', label: 'All' },
-                    { key: 'me', label: 'Me' },
-                    { key: 'them', label: activeContact?.name?.split(' ')[0] || 'Them' },
+                    { key: 'all', label: 'Barcha' },
+                    { key: 'me', label: 'Mening' },
+                    { key: 'them', label: activeContact?.name?.split(' ')[0] || 'Ular' },
                   ].map(({ key, label }) => (
                     <button
                       key={key}
@@ -834,34 +852,71 @@ export default function Chat() {
                     </button>
                   ))}
                   {searchSenderFilter !== 'all' && (
-                    <span className="text-[9px] text-[var(--text-muted)] ml-1">
-                      {activeMessages.length} msg
+                    <span className="text-[9px] text-[var(--text-muted)] ml-1 tabular-nums">
+                      {activeMessages.length} ta
                     </span>
                   )}
                 </div>
               </div>
             )}
 
+            {/* ── Error State ── */}
+            {chatError && (
+              <div className="shrink-0 px-4 lg:px-6 py-3 border-b border-[var(--border)] animate-slide-up"
+                style={{ background: 'rgba(232,84,62,0.06)', borderColor: 'rgba(232,84,62,0.15)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: 'rgba(232,84,62,0.1)' }}>
+                    <HiOutlineExclamationTriangle className="w-4 h-4 text-[var(--danger)]" />
+                  </div>
+                  <span className="flex-1 text-[12px] text-[var(--danger)] font-semibold">{chatError}</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="flex items-center gap-1.5 px-2.5 h-7 rounded-[8px] text-[11px] font-semibold text-[var(--danger)] hover:bg-[rgba(232,84,62,0.08)] transition-all"
+                    >
+                      <HiOutlineArrowPath className="w-3.5 h-3.5" />
+                      Qayta yuklash
+                    </button>
+                    <button
+                      onClick={() => setChatError(null)}
+                      className="flex items-center gap-1.5 px-2.5 h-7 rounded-[8px] text-[11px] font-semibold text-[var(--danger)] hover:bg-[rgba(232,84,62,0.08)] transition-all"
+                    >
+                      <HiOutlineXMark className="w-3.5 h-3.5" />
+                      Yopish
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ── Messages ── */}
-            <div className="flex-1 overflow-y-auto px-4 lg:px-5 py-4 space-y-0.5 scroll-smooth">
-              {activeMessages.length === 0 ? (
+            <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-5 space-y-0.5 scroll-smooth">
+              {chatLoading && allActiveMessages.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="flex flex-col items-center gap-3">
+                    <HiOutlineArrowPath className="w-6 h-6 text-[var(--green)] animate-spin" />
+                    <p className="text-[12px] text-[var(--text-secondary)]">Xabarlar yuklanmoqda...</p>
+                  </div>
+                </div>
+              ) : activeMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <div className="w-12 h-12 rounded-[14px] bg-[var(--green-bg)] flex items-center justify-center mx-auto mb-3">
-                      <HiOutlinePaperAirplane className="w-5 h-5 text-[var(--green)] -rotate-45" />
+                    <div className="w-14 h-14 rounded-[16px] bg-[var(--green-bg)] flex items-center justify-center mx-auto mb-4">
+                      <HiOutlinePaperAirplane className="w-6 h-6 text-[var(--green)] -rotate-45" />
                     </div>
-                    <p className="text-[12px] text-[var(--text-secondary)]">
-                      {chatSearchQuery ? 'No messages match your search' : 'No messages yet. Say hello!'}
+                    <p className="text-[13px] text-[var(--text-secondary)]">
+                      {chatSearchQuery ? 'Qidiruv bo\'yicha xabarlar topilmadi' : 'Hali xabarlar yo\'q. Salom ayting!'}
                     </p>
                   </div>
                 </div>
               ) : (
                 <>
                   {chatSearchQuery && (
-                    <div className="text-[10px] text-[var(--text-muted)] text-center mb-3 animate-fade-in">
+                    <div className="text-[10px] text-[var(--text-muted)] text-center mb-4 animate-fade-in bg-[var(--surface-hover)] rounded-[10px] py-1.5 px-3 inline-block mx-auto">
                       {totalMatches > 0
-                        ? `${totalMatches} match${totalMatches !== 1 ? 'es' : ''} found`
-                        : 'No matches found'
+                        ? `${totalMatches} ta natija topildi`
+                        : 'Natija topilmadi'
                       }
                     </div>
                   )}
@@ -877,7 +932,7 @@ export default function Chat() {
                           const isFirst = msg.isFirst;
                           const isLast = msg.isLast;
 
-                          // Telegram-style: show avatar only on last message of a group from them
+                          // Show avatar only on last message of a group from them
                           const showAvatar = !isMe && isLast;
 
                           return (
@@ -890,7 +945,7 @@ export default function Chat() {
                                 ${!isLast && isMe ? 'mb-0.5' : 'mb-1.5'}
                               `}
                             >
-                              {/* Telegram-style: placeholder for avatar spacing */}
+                              {/* Placeholder for avatar spacing */}
                               {!isMe && (
                                 <div className="w-8 h-0 shrink-0">
                                   {showAvatar && (
@@ -905,7 +960,7 @@ export default function Chat() {
                               )}
 
                               <div className={`relative max-w-[75%] ${isMe ? '' : 'mr-auto'}`}>
-                                {/* Message actions bar - appears on hover, Telegram style */}
+                                {/* Message actions bar - appears on hover */}
                                 <div
                                   className={`absolute -top-5 ${isMe ? 'right-0' : 'left-0'} flex items-center gap-0.5
                                     opacity-0 group-hover:opacity-100 transition-all duration-150 z-10`}
@@ -930,9 +985,9 @@ export default function Chat() {
                                   )}
                                 </div>
 
-                                {/* Telegram-style bubble with proper grouping */}
+                                {/* Message bubble */}
                                 <div
-                                  className={`relative px-3.5 py-2 leading-snug shadow-sm transition-all duration-300
+                                  className={`relative px-3.5 py-2.5 leading-snug shadow-sm transition-all duration-300
                                     ${isMe
                                       ? 'bg-[var(--green)] text-[#141B10]'
                                       : 'bg-[var(--surface)] text-[var(--text)] border border-[var(--border)]'
@@ -950,7 +1005,7 @@ export default function Chat() {
                                       : ''
                                     }`}
                                 >
-                                  {/* Telegram-style reply quote block */}
+                                  {/* Reply quote block */}
                                   {msg.replyTo && (
                                     <ReplyQuote
                                       replyTo={msg.replyTo}
@@ -964,9 +1019,9 @@ export default function Chat() {
                                     {chatSearchQuery ? highlightText(msg.text, chatSearchQuery) : msg.text}
                                   </p>
 
-                                  {/* Timestamp - only show on last message of a group (Telegram style) */}
+                                  {/* Timestamp + read status */}
                                   {isLast && (
-                                    <div className="flex items-center gap-1 mt-1 justify-end">
+                                    <div className="flex items-center gap-1 mt-1.5 justify-end">
                                       <span
                                         className={`text-[9px] ${
                                           isMe ? 'text-[#141B10]/55' : 'text-[var(--text-muted)]'
@@ -974,6 +1029,9 @@ export default function Chat() {
                                       >
                                         {msg.time}
                                       </span>
+                                      {isMe && (
+                                        <HiOutlineCheck className="w-3 h-3 text-[#141B10]/50" />
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -990,15 +1048,15 @@ export default function Chat() {
 
               {/* Typing indicator */}
               {isTyping && activeContact?.online && (
-                <div className="flex items-end gap-2 mt-2 animate-fade-in">
+                <div className="flex items-end gap-2 mt-3 animate-fade-in">
                   <div
-                    className={`w-7 h-7 rounded-[8px] flex items-center justify-center text-[8px] font-bold text-[#141B10] ${getInitialsColor(activeContact.name)}`}
+                    className={`w-7 h-7 rounded-[9px] flex items-center justify-center text-[8px] font-bold text-[#141B10] ${getInitialsColor(activeContact.name)}`}
                   >
                     {activeContact.avatar}
                   </div>
-                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[14px] rounded-bl-[6px] px-3.5 py-2 shadow-sm">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-[var(--text-muted)] font-medium">{activeContact.name} typing</span>
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[14px] rounded-bl-[6px] px-4 py-2.5 shadow-sm">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-[var(--text-secondary)] font-medium">{activeContact.name} yozmoqda</span>
                       <TypingDots />
                     </div>
                   </div>
@@ -1008,22 +1066,22 @@ export default function Chat() {
 
             {/* ── Delete Chat Confirmation ── */}
             {(deleteChatConfirm || deleteChatDone) && (
-              <div className="shrink-0 px-4 lg:px-5 py-3 border-b border-[var(--border)] bg-[var(--danger)]/10 animate-slide-up">
+              <div className="shrink-0 px-4 lg:px-6 py-3 border-b border-[var(--border)] bg-[var(--danger)]/8 animate-slide-up">
                 <div className="flex items-center justify-between">
                   <span className="text-[12px] font-bold flex items-center gap-2"
                     style={{ color: deleteChatDone ? 'var(--success)' : 'var(--danger)' }}
                   >
                     {deleteChatDone ? (
                       <>
-                        <span className="w-4 h-4 flex items-center justify-center">✓</span>
-                        Chat o‘chirildi
+                        <span className="w-4 h-4 rounded-full bg-[var(--success)]/20 flex items-center justify-center text-[10px]">✓</span>
+                        Chat o'chirildi
                       </>
                     ) : (
                       <>
                         <HiOutlineTrash className="w-4 h-4" />
                         <span>
-                          Chat o‘chirilmoqda...{' '}
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[var(--danger)]/20 text-[var(--danger)] text-[11px] font-extrabold tabular-nums">
+                          Chat o'chirilmoqda...{' '}
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[var(--danger)]/15 text-[var(--danger)] text-[11px] font-extrabold tabular-nums">
                             {deleteChatCountdown}
                           </span>
                         </span>
@@ -1032,7 +1090,7 @@ export default function Chat() {
                   </span>
                   {!deleteChatDone && (
                     <Button variant="ghost" size="sm" onClick={cancelDeleteChat}>
-                      Cancel
+                      Bekor qilish
                     </Button>
                   )}
                 </div>
@@ -1049,30 +1107,29 @@ export default function Chat() {
 
             {/* ── Delete Message Confirmation ── */}
             {deleteConfirm && (
-              <div className="shrink-0 px-4 lg:px-5 py-2.5 bg-[var(--danger)]/8 border-t border-[var(--danger)]/15 animate-slide-up">
+              <div className="shrink-0 px-4 lg:px-6 py-3 bg-[var(--danger)]/6 border-t border-[var(--danger)]/12 animate-slide-up">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--danger)] font-semibold flex items-center gap-1.5">
                     <HiOutlineTrash className="w-3.5 h-3.5" />
-                    Delete this message?
+                    Xabarni o'chirishni tasdiqlaysizmi?
                   </span>
                   <div className="flex items-center gap-2">
                     <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(null)}>
-                      Cancel
+                      Bekor qilish
                     </Button>
                     <Button variant="danger" size="sm" onClick={() => deleteMessage(activeChat, deleteConfirm)}>
-                      Delete
+                      O'chirish
                     </Button>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ── Telegram-style Reply Preview ── */}
+            {/* ── Reply Preview ── */}
             {replyTo && (
-              <div className="shrink-0 px-4 lg:px-5 py-2 bg-[var(--surface-hover)] border-t border-[var(--border)] animate-slide-up">
-                <div className="flex items-center gap-2.5">
-                  {/* Telegram-style colored left bar */}
-                  <div className="w-0.5 h-8 rounded-full bg-[var(--green)] shrink-0" />
+              <div className="shrink-0 px-4 lg:px-6 py-2.5 bg-[var(--surface-hover)] border-t border-[var(--border)] animate-slide-up">
+                <div className="flex items-center gap-3">
+                  <div className="w-0.5 h-9 rounded-full bg-[var(--green)] shrink-0" />
                   <div className="flex items-center justify-between min-w-0 flex-1">
                     <div className="min-w-0 flex-1">
                       <div className="text-[10px] font-bold text-[var(--green)] uppercase tracking-[0.04em]">
@@ -1092,16 +1149,16 @@ export default function Chat() {
             )}
 
             {/* ── Input Area ── */}
-            <div className="shrink-0 px-4 lg:px-5 py-3 border-t border-[var(--border)] bg-[var(--surface)]/50">
-              <div className="flex items-center gap-2">
+            <div className="shrink-0 px-4 lg:px-6 py-3.5 border-t border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-sm">
+              <div className="flex items-center gap-2.5">
                 {/* Emoji */}
                 <div className="relative">
                   <button
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className={`w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 shrink-0 border border-transparent
+                    className={`w-10 h-10 rounded-[12px] flex items-center justify-center transition-all duration-200 shrink-0
                       ${showEmojiPicker
-                        ? 'bg-[var(--green-bg)] text-[var(--green)] border-[var(--green)]'
-                        : 'text-[var(--text-muted)] hover:text-[var(--green)] hover:bg-[var(--surface)] hover:border-[var(--border)]'
+                        ? 'bg-[var(--green-bg)] text-[var(--green)] border border-[var(--green)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--green)] hover:bg-[var(--surface)] hover:border hover:border-[var(--border)]'
                       }`}
                     title="Emoji"
                   >
@@ -1111,13 +1168,13 @@ export default function Chat() {
                   {showEmojiPicker && (
                     <div
                       ref={emojiPickerRef}
-                      className="absolute bottom-full left-0 mb-2 w-[296px] p-3 rounded-[16px] glass-strong animate-scale-in z-50 shadow-[0_8px_32px_var(--shadow-lg)]"
+                      className="absolute bottom-full left-0 mb-2 w-[304px] p-3.5 rounded-[16px] glass-strong animate-scale-in z-50 shadow-[0_8px_32px_var(--shadow-lg)]"
                     >
-                      <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center justify-between mb-3">
                         <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em]">Emoji</span>
                         <button
                           onClick={() => setShowEmojiPicker(false)}
-                          className="text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+                          className="w-6 h-6 rounded-[6px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
                         >
                           <HiOutlineXMark className="w-3.5 h-3.5" />
                         </button>
@@ -1138,6 +1195,14 @@ export default function Chat() {
                   )}
                 </div>
 
+                {/* Attachment (UI only) */}
+                <button
+                  className="w-10 h-10 rounded-[12px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--green)] hover:bg-[var(--surface)] hover:border hover:border-[var(--border)] transition-all duration-200 shrink-0"
+                  title="Fayl biriktirish"
+                >
+                  <HiOutlinePaperClip className="w-5 h-5" />
+                </button>
+
                 {/* Input + Send */}
                 <div
                   className="flex-1 flex items-center gap-2 px-4 py-2 rounded-[14px]
@@ -1147,17 +1212,18 @@ export default function Chat() {
                 >
                   <textarea
                     ref={textareaRef}
-                    placeholder="Type a message..."
+                    placeholder="Xabar yozish..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     rows={1}
                     className="flex-1 bg-transparent border-none outline-none text-[13px] text-[var(--text)] placeholder:text-[var(--text-muted)] resize-none overflow-y-auto max-h-[150px] leading-relaxed"
+                    style={{ scrollbarWidth: 'thin' }}
                   />
                   <button
                     onClick={handleSend}
                     disabled={!input.trim()}
-                    className="w-8 h-8 rounded-[10px] bg-[var(--green)] flex items-center justify-center
+                    className="w-9 h-9 rounded-[11px] bg-[var(--green)] flex items-center justify-center
                       text-[#141B10] hover:brightness-110 hover:shadow-[0_4px_12px_var(--green-glow)]
                       transition-all duration-200 shrink-0
                       disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
