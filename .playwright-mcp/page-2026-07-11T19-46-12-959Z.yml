@@ -1,0 +1,36 @@
+- generic [ref=f1e51]:
+  - generic [ref=f1e52]:
+    - banner [ref=f1e53]:
+      - generic [ref=f1e54]: "0"
+      - button [ref=f1e63] [cursor=pointer]
+      - generic [ref=f1e67]:
+        - generic [ref=f1e68]: D
+        - generic [ref=f1e71]:
+          - generic [ref=f1e72]: Demo Mentor
+          - generic [ref=f1e73]: Ментор
+      - button "Выйти" [ref=f1e74] [cursor=pointer]
+    - main [ref=f1e79]:
+      - generic [ref=f1e167]:
+        - generic [ref=f1e169]:
+          - heading "Mening guruhlarim" [level=1] [ref=f1e170]
+          - paragraph [ref=f1e171]: Guruhlar va o'quvchilar ro'yxati
+        - generic [ref=f1e172]:
+          - generic [ref=f1e175]:
+            - heading "Guruhlar" [level=3] [ref=f1e176]
+            - paragraph [ref=f1e179]: Sizda hali guruhlar yo'q
+          - paragraph [ref=f1e189]: Chap tomondan guruhni tanlang
+  - complementary [ref=f1e135]:
+    - generic [ref=f1e136]:
+      - img "LevelUp Academy" [ref=f1e137]
+      - generic [ref=f1e138]: Ментор
+    - navigation [ref=f1e139]:
+      - link "Дашборд" [ref=f1e140] [cursor=pointer]:
+        - /url: /
+      - link "Группы" [active] [ref=f1e146] [cursor=pointer]:
+        - /url: /groups
+      - link "Davomat" [ref=f1e152] [cursor=pointer]:
+        - /url: /attendance
+      - link "Домашки" [ref=f1e156] [cursor=pointer]:
+        - /url: /homework
+      - link "Коины" [ref=f1e161] [cursor=pointer]:
+        - /url: /coins

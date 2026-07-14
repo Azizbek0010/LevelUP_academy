@@ -1,7 +1,8 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, TrendingUp, Wifi, CalendarCheck, ClipboardCheck, Coins,
-  GraduationCap, Wallet, Receipt, UserCog, UsersRound, Megaphone, AlarmClock, ShieldAlert, PieChart,
+  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, TrendingUp,
+  Wifi, CalendarCheck, ClipboardCheck, Coins, GraduationCap, Wallet, Receipt, UserCog,
+  UsersRound, Megaphone, AlarmClock, ShieldAlert, PieChart,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';

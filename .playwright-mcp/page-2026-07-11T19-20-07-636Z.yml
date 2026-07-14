@@ -1,0 +1,30 @@
+- generic [ref=f4e51]:
+  - generic [ref=f4e52]:
+    - banner [ref=f4e53]:
+      - generic [ref=f4e54]: "0"
+      - button [ref=f4e63] [cursor=pointer]
+      - generic [ref=f4e67]:
+        - generic [ref=f4e68]: D
+        - generic [ref=f4e71]:
+          - generic [ref=f4e72]: Demo Superadmin
+          - generic [ref=f4e73]: Super Admin
+      - button "Выйти" [ref=f4e74] [cursor=pointer]
+    - main [ref=f4e79]:
+      - generic [ref=f4e82]:
+        - heading "Дашборд организации" [level=1] [ref=f4e83]
+        - paragraph [ref=f4e84]: Обзор филиалов, студентов и дохода
+  - complementary [ref=f4e129]:
+    - generic [ref=f4e130]:
+      - img "LevelUp Academy" [ref=f4e131]
+      - generic [ref=f4e132]: Super Admin
+    - navigation [ref=f4e133]:
+      - link "Дашборд" [ref=f4e134] [cursor=pointer]:
+        - /url: /
+      - link "Филиалы" [ref=f4e140] [cursor=pointer]:
+        - /url: /branches
+      - link "Админы" [ref=f4e145] [cursor=pointer]:
+        - /url: /admins
+      - link "Аналитика" [ref=f4e151] [cursor=pointer]:
+        - /url: /reports
+      - link "Настройки" [ref=f4e154] [cursor=pointer]:
+        - /url: /settings

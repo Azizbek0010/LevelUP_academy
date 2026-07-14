@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../auth.jsx';
-import { useOrganization, useInvalidate } from '../../queries.js';
+import { Building2, Globe, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { useSuperOrganization, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
-import { Building2, Globe, ShieldCheck, CheckCircle2, Calendar } from 'lucide-react';
+import { dateShort } from '../../format.js';
+import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
 
 const domainRegex = /^[a-z0-9.-]+\.[a-z]{2,}$/;
@@ -22,28 +24,28 @@ const settingsSchema = z.object({
 
 export default function SuperSettings() {
   const { token } = useAuth();
-  const { data, isLoading } = useOrganization();
+  const { data, isLoading, error } = useSuperOrganization();
   const invalidate = useInvalidate();
-  const org = data?.organization;
-
   const [successMsg, setSuccessMsg] = useState('');
-  const [busy, setBusy] = useState(false);
   const [serverErr, setServerErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const org = data?.organization;
 
   const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { name: '', domain: '' },
+    defaultValues: { name: org?.name || '', domain: org?.domain || '' },
+    values: org ? { name: org.name || '', domain: org.domain || '' } : undefined,
   });
 
-  useEffect(() => {
-    if (org) reset({ name: org.name, domain: org.domain || '' });
-  }, [org, reset]);
-
-  const onSubmit = async (data) => {
+  const onSubmit = async (formData) => {
     setBusy(true);
     setServerErr('');
     try {
-      await api.superUpdateOrganization(token, { name: data.name, domain: data.domain || null });
+      await api.superUpdateOrganization(token, {
+        name: formData.name.trim(),
+        domain: formData.domain.trim() || null,
+      });
       invalidate('super-organization');
       setSuccessMsg('Настройки сохранены!');
       setTimeout(() => setSuccessMsg(''), 3000);
@@ -54,19 +56,21 @@ export default function SuperSettings() {
     }
   };
 
-  if (isLoading) return <SkeletonKpis count={3} />;
+  if (error && error.status !== 401)
+    return <div className="alert alert-error text-sm"><span>{error.message}</span></div>;
 
-  const statusLabel = org?.status === 'active' ? 'Активен' : org?.status ?? '—';
-  const createdAt = org?.createdAt ? new Date(org.createdAt).toLocaleDateString('ru-RU') : '—';
-  const branchLimit = org?.plan?.branchLimit ?? '∞';
-  const diskSpace = org?.plan?.diskSpace ?? '—';
+  if (isLoading || !org) {
+    return (
+      <div className="space-y-6 max-w-4xl">
+        <PageHeader title="Настройки организации" subtitle="Профиль учебного центра и параметры системы" />
+        <SkeletonKpis count={2} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold">Настройки организации</h1>
-        <p className="text-sm text-base-content/50">Профиль учебного центра и параметры системы</p>
-      </div>
+      <PageHeader title="Настройки организации" subtitle="Профиль учебного центра и параметры системы" />
 
       {successMsg && (
         <div className="alert alert-success text-sm flex items-center gap-2">
@@ -85,21 +89,21 @@ export default function SuperSettings() {
               <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <Building2 size={36} className="text-primary" />
               </div>
-              <h2 className="text-lg font-bold mt-3">{org?.name ?? '—'}</h2>
+              <h2 className="text-lg font-bold mt-3">{org.name}</h2>
               <div className="flex items-center gap-1 text-xs text-base-content/50 mt-1">
-                <Globe size={12} /><span>{org?.domain || 'домен не привязан'}</span>
+                <Globe size={12} /><span>{org.domain || 'домен не привязан'}</span>
               </div>
               <div className="divider my-3" />
               <div className="w-full space-y-3 text-left text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-base-content/50">Статус:</span>
-                  <span className={`badge badge-sm ${org?.status === 'active' ? 'badge-success' : 'badge-warning'}`}>
-                    {statusLabel}
+                  <span className={`badge badge-sm ${org.status === 'active' ? 'badge-success' : 'badge-ghost'}`}>
+                    {org.status === 'active' ? 'Активен' : org.status}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-base-content/50 flex items-center gap-1"><Calendar size={11} /> Создана:</span>
-                  <span className="font-semibold">{createdAt}</span>
+                <div className="flex justify-between">
+                  <span className="text-base-content/50">Создана:</span>
+                  <span className="font-semibold">{dateShort(org.createdAt)}</span>
                 </div>
               </div>
             </div>
@@ -137,12 +141,9 @@ export default function SuperSettings() {
                   {errors.domain && <span className="text-xs text-error mt-1">{errors.domain.message}</span>}
                 </label>
                 <div className="flex justify-end pt-4">
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={!isDirty || busy}
-                  >
-                    {busy ? <span className="loading loading-spinner loading-sm" /> : 'Сохранить изменения'}
+                  <button type="submit" className="btn btn-primary" disabled={!isDirty || busy}>
+                    {busy && <span className="loading loading-spinner loading-sm" />}
+                    Сохранить изменения
                   </button>
                 </div>
               </form>
@@ -160,11 +161,13 @@ export default function SuperSettings() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 text-xs">
                 <div className="p-3.5 bg-base-200/50 rounded-xl space-y-1">
                   <div className="font-bold">Лимит филиалов</div>
-                  <div className="text-base-content/50">{branchLimit === '∞' ? 'Без ограничений' : `До ${branchLimit} филиалов`}</div>
+                  <div className="text-base-content/50">
+                    {org.plan?.branchLimit ? `${org.plan.branchLimit} филиалов` : 'Без ограничений'}
+                  </div>
                 </div>
                 <div className="p-3.5 bg-base-200/50 rounded-xl space-y-1">
                   <div className="font-bold">Дисковое пространство</div>
-                  <div className="text-base-content/50">{diskSpace}</div>
+                  <div className="text-base-content/50">{org.plan?.diskSpace || '500 ГБ'}</div>
                 </div>
               </div>
             </div>

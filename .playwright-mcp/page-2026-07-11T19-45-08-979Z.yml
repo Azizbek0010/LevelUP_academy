@@ -1,0 +1,31 @@
+- generic [ref=e256]:
+  - generic [ref=e257]:
+    - img "LevelUp Academy" [ref=e258]
+    - generic [ref=e259]:
+      - heading "Панель управления" [level=2] [ref=e260]
+      - paragraph [ref=e261]: Super Admin, Администратор, Ментор и Методист — управляйте своей организацией из одной панели.
+      - list [ref=e262]:
+        - listitem [ref=e263]: Филиалы, сотрудники и студенты в одном месте
+        - listitem [ref=e267]: Финансы, платежи и отчёты
+        - listitem [ref=e271]: Тесты, домашние задания и посещаемость
+    - generic [ref=e275]: LevelUp Academy · SaaS
+  - generic [ref=e277]:
+    - generic [ref=e278]:
+      - heading "Вход в панель" [level=1] [ref=e279]
+      - paragraph [ref=e280]: Super Admin · Администратор · Ментор · Методист
+      - generic [ref=e281]:
+        - generic [ref=e282]:
+          - generic [ref=e283]: Email
+          - textbox "Email" [active] [ref=e284]:
+            - /placeholder: you@gmail.com
+        - generic [ref=e285]:
+          - generic [ref=e286]: Пароль
+          - generic [ref=e287]:
+            - textbox "Пароль Показать пароль" [ref=e288]:
+              - /placeholder: ••••••••
+            - button "Показать пароль" [ref=e289] [cursor=pointer]
+        - button "Войти" [ref=e293] [cursor=pointer]
+      - generic [ref=e294]: или
+      - button "Войти через Google" [ref=e295] [cursor=pointer]
+      - button "Забыли пароль?" [ref=e302] [cursor=pointer]
+    - paragraph [ref=e303]: © LevelUp Academy

@@ -1,0 +1,34 @@
+- generic [ref=e304]:
+  - generic [ref=e305]:
+    - banner [ref=e306]:
+      - generic [ref=e307]: "0"
+      - button [ref=e316] [cursor=pointer]
+      - generic [ref=e320]:
+        - generic [ref=e321]: D
+        - generic [ref=e324]:
+          - generic [ref=e325]: Demo Mentor
+          - generic [ref=e326]: Ментор
+      - button "Выйти" [ref=e327] [cursor=pointer]
+    - main [ref=e332]:
+      - generic [ref=e333]:
+        - generic [ref=e335]:
+          - heading "Mentor paneli" [level=1] [ref=e336]
+          - paragraph [ref=e337]: Mening guruhlarim va statistika
+        - generic [ref=e352]:
+          - heading "Mening guruhlarim" [level=2] [ref=e353]
+          - paragraph [ref=e357]: Sizda hali guruhlar yo'q
+  - complementary [ref=e359]:
+    - generic [ref=e360]:
+      - img "LevelUp Academy" [ref=e361]
+      - generic [ref=e362]: Ментор
+    - navigation [ref=e363]:
+      - link "Дашборд" [ref=e364] [cursor=pointer]:
+        - /url: /
+      - link "Группы" [ref=e370] [cursor=pointer]:
+        - /url: /groups
+      - link "Davomat" [ref=e376] [cursor=pointer]:
+        - /url: /attendance
+      - link "Домашки" [ref=e380] [cursor=pointer]:
+        - /url: /homework
+      - link "Коины" [ref=e385] [cursor=pointer]:
+        - /url: /coins

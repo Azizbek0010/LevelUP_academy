@@ -857,8 +857,38 @@ export const api = {
   superFreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
   superUnfreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
   superGetOrganization: (token) => request('/super/organization', { token }),
-  superOrganization: (token) => request('/super/organization', { token }),
   superUpdateOrganization: (token, body) => request('/super/organization', { method: 'PATCH', token, body }),
+  superMethodists: (token) => request('/super/methodists', { token }),
+  superCreateMethodist: (token, body) => request('/super/methodists', { method: 'POST', token, body }),
+  superUpdateMethodist: (token, id, body) => request(`/super/methodists/${id}`, { method: 'PATCH', token, body }),
+  superFreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
+  superUnfreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
+
+  // -------- SUPER ADMIN: Students --------
+  superStudents: (token, qs = '') => request(`/super/students${qs}`, { token }),
+  superDeleteStudent: (token, id) => request(`/super/students/${id}`, { method: 'DELETE', token }),
+
+  // -------- SUPER ADMIN: Groups --------
+  superGroups: (token) => request('/super/groups', { token }),
+  superArchiveGroup: (token, id) => request(`/super/groups/${id}/archive`, { method: 'POST', token }),
+  superUnarchiveGroup: (token, id) => request(`/super/groups/${id}/unarchive`, { method: 'POST', token }),
+  superDeleteGroup: (token, id) => request(`/super/groups/${id}`, { method: 'DELETE', token }),
+
+  // -------- SUPER ADMIN: Audit --------
+  superAudit: (token) => request('/super/audit', { token }),
+
+  // -------- SUPER ADMIN: Announcements --------
+  superAnnouncements: (token) => request('/super/announcements', { token }),
+  superCreateAnnouncement: (token, body) => request('/super/announcements', { method: 'POST', token, body }),
+  superDeleteAnnouncement: (token, id) => request(`/super/announcements/${id}`, { method: 'DELETE', token }),
+
+  // -------- SUPER ADMIN: Reminders --------
+  superReminders: (token) => request('/super/reminders', { token }),
+  superDeleteReminder: (token, id) => request(`/super/reminders/${id}`, { method: 'DELETE', token }),
+  superResendReminder: (token, id) => request(`/super/reminders/${id}/resend`, { method: 'POST', token }),
+
+  // -------- SUPER ADMIN: Attendance --------
+  superAttendance: (token, qs = '') => request(`/super/attendance${qs}`, { token }),
 
   // -------- METHODIST CONTENT --------
   methodistTrainingTypes: (token) => request('/methodist/training-types', { token }),
