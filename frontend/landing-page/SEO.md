@@ -1,109 +1,129 @@
-# SEO — LevelUp Academy Landing
+# SEO / GEO / AEO — LevelUp Academy Landing
 
-How SEO is wired in this app and how to keep it correct when you add or change pages.
+How search and AI-search are wired in this app, and how to keep them correct.
 
-- **Domain:** `https://levelupacademy.uz`
-- **Landing base path:** `/landing` (root `/` redirects to `/landing`)
-- **Stack:** React 18 + Vite SPA (client-side rendering)
-
----
-
-## Architecture — two layers
-
-A Vite SPA ships an empty HTML shell; content appears only after JS runs. Social
-scrapers (Telegram, Facebook, LinkedIn) **do not execute JS**, and crawlers render on a
-separate, budget-limited pass. So SEO is split in two:
-
-| Layer | Where | Seen by | Purpose |
-|-------|-------|---------|---------|
-| **Static baseline** | `index.html` `<head>` | Everyone, incl. no-JS scrapers | Default title/description, full Open Graph + Twitter Card, canonical, JSON-LD (Organization / WebSite / SoftwareApplication) |
-| **Per-route** | `useSeo()` hook | Googlebot (post-render) | Unique title/description/canonical/OG per page + page-specific JSON-LD (breadcrumbs, FAQ) |
-
-> **Order of impact** (from the SEO knowledge base): crawlable + indexable first
-> (robots, sitemap, canonical), then per-page relevance (title, description, headings),
-> then rich presentation (Open Graph, JSON-LD).
+- **Domain:** `https://levelup-academy.uz` (with the hyphen — `levelupacademy.uz` does not resolve)
+- **Landing base path:** `/landing`; `/` is a 308 redirect to it
+- **Stack:** React 18 + Vite, **prerendered to static HTML at build time**
 
 ---
 
-## Files
+## The core constraint
 
-| File | Role |
-|------|------|
-| `index.html` | Static `<head>` baseline: meta, OG/Twitter, canonical, `theme-color`, JSON-LD `@graph` |
-| `src/lib/seo.js` | `useSeo({ title, description, path, jsonLd })` hook + `breadcrumb()` helper + `SITE_URL` / `OG_IMAGE` |
-| `public/robots.txt` | Allow all + `Sitemap:` line |
-| `public/sitemap.xml` | All 6 canonical URLs |
-| `public/og-cover.png` | 1200×630 social share image (referenced by `og:image`) |
-| `src/pages/*.jsx` | Each page calls `useSeo()` with its own title/description/JSON-LD |
+A Vite SPA ships an empty `<div id="root">`. Googlebot executes JavaScript and renders it
+eventually, but **the AI crawlers that produce citations do not** — ChatGPT's crawler cannot
+run JS at all. An unrendered page gives them nothing to quote, no matter how good the copy is.
+
+So every route is **prerendered**: a real HTML file with its text, headings and metadata
+already inside. No part of SEO here depends on the browser running JavaScript.
 
 ---
 
-## How to maintain
+## How the build works
 
-### Adding a new page
-1. Add the route in `src/App.jsx`.
-2. In the page component, call the hook at the top:
-   ```jsx
-   import { useSeo, breadcrumb } from '../lib/seo.js';
-
-   const jsonLd = [
-     breadcrumb([
-       { name: 'Главная', path: '/landing' },
-       { name: 'Название', path: '/landing/new-page' },
-     ]),
-   ];
-
-   export default function NewPage() {
-     useSeo({
-       title: 'Заголовок — LevelUp Academy',   // unique, ≤ 60 chars
-       description: '...',                       // unique, 150–160 chars
-       path: '/landing/new-page',
-       jsonLd,                                   // optional
-     });
-     // ...
-   }
-   ```
-3. Add a `<url>` entry to `public/sitemap.xml`.
-
-### Rules
-- **One unique `<title>` and one `<meta description>` per page** — never reuse across routes.
-- `jsonLd` must be a **module-level constant** (stable reference), not built inline in
-  render — otherwise the effect re-runs every render.
-- Keep `SITE_URL` in `src/lib/seo.js` in sync with the real domain.
-- If the OG image changes, keep it 1200×630 PNG/JPG (SVG is not accepted by scrapers) and
-  update `og:image:width/height` in `index.html`.
-
----
-
-## Verify
-
-```bash
-npm run build                      # must pass; og-cover.png / robots.txt / sitemap.xml land in dist/
-npm run preview -- --port 4173     # then check per-route <head> updates
+```
+npm run build
+  ├─ build:client   vite build                → dist/ (assets + index.html template)
+  ├─ build:server   vite build --ssr          → dist/server/entry-server.js
+  └─ prerender      node scripts/prerender.js → dist/landing/**/index.html
 ```
 
-Runtime check (per route): `document.title`, `meta[name=description]`,
-`link[rel=canonical]`, `meta[property=og:url]` must all change on navigation, and
-`script[data-seo-jsonld]` must not accumulate across routes.
+`scripts/prerender.js` renders each route through `src/entry-server.jsx` and fills two
+markers in the `index.html` template:
 
-External validators:
-- **Rich Results Test** (Google) — validate JSON-LD.
-- **Facebook Sharing Debugger** / **Telegram** — preview the OG card.
-- **GSC URL Inspection → View Crawled Page** — confirm what Googlebot actually renders.
+| Marker | Filled with |
+|---|---|
+| `<!--app-head-->` | Per-route `<title>`, description, robots, canonical, `og:url`, route JSON-LD |
+| `<!--app-html-->` | The rendered page markup |
+
+The server bundle (`dist/server/`) is deleted afterwards — it is a build tool, not a deploy
+artifact. The build **fails loudly** if a route renders empty or forgets its `<title>`.
 
 ---
 
-## Known limitation & next step
+## Two layers of metadata
 
-`useSeo()` sets per-page meta **client-side**. It helps Googlebot (which renders JS) but
-does **not** fix the empty first HTML response — deep-link social scrapers only ever see
-the `index.html` baseline OG, not per-page OG.
+| Layer | Lives in | Seen by |
+|---|---|---|
+| **Static** — `og:image`, `og:type`, `twitter:card`, JSON-LD `@graph` (Organization, WebSite, SoftwareApplication, FAQPage) | `index.html` | Everyone, always |
+| **Per-route** — title, description, canonical, `og:url`, BreadcrumbList / FAQ | `useSeo()` in each page | Baked into the HTML **and** re-applied client-side on navigation |
 
-**Recommended follow-up:** add **prerendering / SSG** (e.g. `vite-plugin-prerender`) so
-each route is baked to static HTML at build time. This is the strongest fix for a
-marketing SPA and makes per-page OG + content visible on the first response. It changes
-the build/deploy pipeline, so it belongs in its own task.
+`src/lib/seo.js` serves both: in the browser `useSeo()` writes to the DOM; during the server
+pass it reports the same data through `SeoCollectorContext`, and `renderSeoHead()` turns it
+into tags. **Keep the two in sync** — add a tag to one and not the other, and the crawler and
+the browser end up with different heads.
 
-Other open items:
-- Footer Telegram link is a placeholder (`https://t.me/`) — set the real handle.
-- `Organization.logo` in JSON-LD points to an SVG; Google prefers a raster logo.
+---
+
+## Adding a page
+
+1. Call `useSeo({ title, description, path, jsonLd })` in the component.
+   `jsonLd` **must be a module-level constant** — an inline array is a new reference every
+   render and re-runs the effect.
+2. Add the route to `src/App.jsx`.
+3. Add it to `ROUTES` in `scripts/prerender.js`. **Skip this and the page ships as an empty
+   shell** — invisible to AI crawlers.
+4. Add it to `public/sitemap.xml` with today's `lastmod`.
+
+Rules: one unique `<title>` (≤60 chars) and one `<meta description>` (150–160 chars) per
+page. `og:image` must stay raster (1200×630 PNG) — scrapers reject SVG.
+
+---
+
+## Hosting (`vercel.json`)
+
+- `/` → `/landing` is a **308 redirect**. A client-side redirect is a dead end for a crawler
+  that doesn't run JS.
+- **No SPA rewrite.** Every route is a real file now, so an unknown URL returns a genuine 404
+  (`public/404.html`) instead of a soft-404 rendering the homepage. This matters: AI
+  assistants send users to hallucinated URLs ~2.9× more often than Google does.
+
+---
+
+## Verifying a change
+
+**Do not verify with `vite preview`.** It is an SPA server: it serves the root `index.html`
+for every path, so the browser gets the homepage markup while React renders the real route.
+That fakes a hydration mismatch (React error #418/#423) which does **not** happen in
+production. Serve `dist/` as plain static files instead:
+
+```bash
+npm run build
+cd dist && python -m http.server 4179
+```
+
+Check that the content is there **before** any JS runs:
+
+```bash
+curl -s localhost:4179/landing/finance/ | grep -o '<title>[^<]*</title>'   # unique per route
+curl -s localhost:4179/landing/finance/ | grep -c 'rel="canonical"'        # exactly 1
+```
+
+In the browser the console must be **clean**. React #418/#423 means the server HTML and the
+client render disagree and React threw the prerendered markup away — the prerender is then
+worthless for users, and the mismatch usually points at markup that depends on browser state.
+
+External validators: Google **Rich Results Test** (JSON-LD), **Facebook Sharing Debugger**
+(OG card), **GSC URL Inspection → View Crawled Page** (what Googlebot really sees).
+
+---
+
+## AI crawlers (GEO / AEO)
+
+`public/robots.txt` allows two families, and the difference matters:
+
+- `GPTBot`, `ClaudeBot`, `Google-Extended`, `CCBot` — training / indexing.
+- `OAI-SearchBot`, `Claude-User`, `Claude-SearchBot`, `Perplexity-User`, `ChatGPT-User` —
+  **live fetch when a user asks an assistant a question. These are the ones that generate the
+  citation.** Block them and the assistant cannot cite you even if it knows you exist.
+
+`public/llms.txt` is a plain-language product summary. Keep it truthful, but don't lean on
+it — as of 2026 no major provider has confirmed acting on it. `robots.txt` and rendered HTML
+are what actually work.
+
+---
+
+## Open items
+
+- Footer Telegram link is still a placeholder (`https://t.me/`, `src/components/Footer.jsx:32`).
+  Needs the real handle — do not guess one.
