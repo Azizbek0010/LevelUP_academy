@@ -21,9 +21,11 @@ import Button from '../components/Button.jsx';
 import api from '../services/api.js';
 
 // ──────────────────────────────────────────────
-// Data
+// Data (mock fallback — replace when backend endpoints exist)
 // ──────────────────────────────────────────────
 
+// TODO: Replace with API endpoint GET /api/chat/contacts or similar when available.
+// Backend currently has no REST endpoint for listing chat rooms/contacts.
 const initialContacts = [
   { id: 1, name: 'Aziz Karimov', role: 'Mentor', avatar: 'AK', online: true, lastMsg: 'Salom, bugun dars bormi?', time: '14:30', unread: 2 },
   { id: 2, name: 'Malika Rahimova', role: 'Student', avatar: 'MR', online: false, lastMsg: 'Rahmat, tushundim', time: '12:15', unread: 0 },
@@ -244,13 +246,20 @@ export default function Chat() {
     }
   }, [activeChat, messages]);
 
-  // Fetch messages from API when a chat is selected
+  // ─── Fetch messages from backend API when a chat is selected ───
+  // Backend endpoint: GET /api/chat/:roomKey/messages?limit=50&cursor=<ISO timestamp>
+  // Response shape: { success: true, data: { messages: [...], nextCursor: null } }
+  // Message shape per backend: { id, chat_type, room_key, sender_id, body, attachment_key, created_at, sender_first_name, sender_last_name, sender_role }
+  // TODO: Socket.io for real-time message delivery (chat:global:send / chat:parent:send events).
+  // TODO: Properly determine "me" vs "them" by comparing sender_id with current user's id from AuthContext.
   useEffect(() => {
     if (!activeChat) return;
 
     const contact = contacts.find((c) => c.id === activeChat);
     if (!contact) return;
 
+    // Room key logic: Student/Parent chats use parent:ID, others use 'global'
+    // TODO: Get actual parent ID from contact data when backend contacts endpoint exists
     const isParent = contact.role === 'Student' || contact.role === 'Parent';
     const roomKey = isParent ? `parent:${activeChat}` : 'global';
 
@@ -260,23 +269,36 @@ export default function Chat() {
     api
       .get(`/chat/${roomKey}/messages`, { params: { limit: 50 } })
       .then((res) => {
+        // Axios res.data = parsed JSON body: { success, data: { messages, nextCursor } }
         const apiMessages = res.data?.data?.messages;
         if (apiMessages && apiMessages.length > 0) {
-          setMessages((prev) => ({
-            ...prev,
-            [activeChat]: apiMessages.map((m, i) => ({
-              id: m.id || Date.now() + i,
-              from: m.sender_id === 'me' || m.sender_role === 'admin' ? 'me' : 'them',
-              text: m.body || '',
-              time: m.created_at
-                ? new Date(m.created_at).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
-                : getCurrentTime(),
-            })),
-          }));
+          // Merge API messages with any existing local messages (deduplicate by ID)
+          setMessages((prev) => {
+            const existing = prev[activeChat] || [];
+            const existingIds = new Set(existing.map((m) => m.id));
+            const newOnes = apiMessages
+              .filter((m) => !existingIds.has(m.id))
+              .map((m, i) => ({
+                id: m.id,
+                // TODO: Compare m.sender_id with current user.id (from AuthContext)
+                // For now: messages sent by admin/superadmin are treated as "me"
+                from: m.sender_role === 'admin' || m.sender_role === 'superadmin' ? 'me' : 'them',
+                text: m.body || '',
+                time: m.created_at
+                  ? new Date(m.created_at).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
+                  : getCurrentTime(),
+              }));
+            // Keep existing messages, append new API messages (API returns newest first, reverse for display order)
+            return {
+              ...prev,
+              [activeChat]: [...existing, ...newOnes.reverse()],
+            };
+          });
         }
       })
       .catch((err) => {
         console.warn('Chat API unavailable, using mock data:', err.message);
+        // Keep existing (mock) messages as fallback
         setChatError(null);
       })
       .finally(() => setChatLoading(false));
@@ -423,6 +445,13 @@ export default function Chat() {
     }
   }, []);
 
+  // ─── Send message ───
+  // Backend sends messages via Socket.io, not REST:
+  //   - Global: socket.emit('chat:global:send', { body }, ack)
+  //   - Parent direct: socket.emit('chat:parent:send', { parentId, body }, ack)
+  // Backend only has GET /api/chat/:roomKey/messages (no POST endpoint).
+  // TODO: Integrate Socket.io client (socket.io-client) for real-time sending and receiving.
+  // For now: add message locally for instant UI, attempt Socket.io if socket is available.
   const handleSend = useCallback(() => {
     const text = input.trim();
     if (!text || !activeChat) return;
@@ -435,11 +464,13 @@ export default function Chat() {
       replyTo: replyTo ? { id: replyTo.id, text: replyTo.text, from: replyTo.from } : undefined,
     };
 
+    // Add locally for instant UI feedback
     setMessages((prev) => ({
       ...prev,
       [activeChat]: [...(prev[activeChat] || []), newMessage],
     }));
 
+    // Update contact's last message
     setContacts((prev) =>
       prev.map((c) =>
         c.id === activeChat
@@ -452,15 +483,19 @@ export default function Chat() {
     setReplyTo(null);
     setShowEmojiPicker(false);
 
-    const contact = contacts.find((c) => c.id === activeChat);
-    if (contact) {
-      const isParent = contact.role === 'Student' || contact.role === 'Parent';
-      const roomKey = isParent ? `parent:${activeChat}` : 'global';
-      api
-        .get(`/chat/${roomKey}/messages`, { params: { limit: 1 } })
-        .catch(() => {});
-    }
-  }, [input, activeChat, replyTo]);
+    // ─── Attempt Socket.io send (will be silently ignored if socket is not connected) ───
+    // TODO: Connect to Socket.io on component mount and use chat:global:send / chat:parent:send events.
+    // Example (when socket is available):
+    //   if (window.chatSocket?.connected) {
+    //     const contact = contacts.find((c) => c.id === activeChat);
+    //     const isParent = contact?.role === 'Student' || contact?.role === 'Parent';
+    //     if (isParent) {
+    //       window.chatSocket.emit('chat:parent:send', { parentId: activeChat, body: text });
+    //     } else {
+    //       window.chatSocket.emit('chat:global:send', { body: text });
+    //     }
+    //   }
+  }, [input, activeChat, replyTo, contacts]);
 
   const autoResize = useCallback(() => {
     const el = textareaRef.current;

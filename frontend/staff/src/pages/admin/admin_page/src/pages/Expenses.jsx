@@ -199,6 +199,11 @@ export default function Expenses() {
     setLoading(true);
     setError(null);
     try {
+      // Backend endpoint: GET /api/admin/expenses?limit=100
+      // Response shape: { expenses: [...], meta: { page, limit, total } }
+      // Expense shape per backend: { id, category, amount, spentAt, note, createdAt, createdBy }
+      // Date filtering is done client-side (see filtered useMemo) to keep charts/stats scoped to full data.
+      // TODO: To reduce payload, pass backend-supported from/to params and compute stats from filtered data only.
       const data = await apiFetchExpenses({ limit: 100 });
       setExpenses(data.expenses || []);
     } catch (err) {
@@ -338,12 +343,22 @@ export default function Expenses() {
     });
     setError(null);
     setModalOpen(true);
+    // TODO: Backend has no PATCH/PUT /admin/expenses/:id endpoint.
+    // Saving the edit will call handleSave which calls createExpense (creates a new expense).
+    // To support editing, a PATCH /admin/expenses/:id endpoint needs to be added in backend/src/modules/admin/admin.routes.js
+    // and a corresponding updateExpense function in adminService.js:
+    //   export const updateExpense = (id, data) => api.patch(`/admin/expenses/${id}`, data).then((r) => r.data);
   };
 
   const handleSave = useCallback(async () => {
     setSaving(true);
     setError(null);
     try {
+      // Backend endpoint: POST /api/admin/expenses
+      // Request body: { category, amount, spentAt?, note? }
+      // Backend schema accepts: category (string), amount (positive number), spentAt (date, optional), note (string, optional)
+      // Note: paymentMethod field exists in the form UI but is NOT sent to backend
+      // because the backend expenses table has no payment_method column.
       await apiCreateExpense({
         category: formData.category,
         amount: Number(formData.amount),
@@ -365,6 +380,8 @@ export default function Expenses() {
     setSaving(true);
     setError(null);
     try {
+      // Backend endpoint: DELETE /api/admin/expenses/:id
+      // Backend returns 204 No Content on success (soft delete)
       await apiDeleteExpense(deleteTarget.id);
       setDeleteTarget(null);
       await loadExpenses();
