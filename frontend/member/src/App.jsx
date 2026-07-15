@@ -5,7 +5,6 @@ import Splash from './components/Splash.jsx';
 import Layout from './components/Layout.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import Login from './pages/Login.jsx';
-import Home from './pages/Home.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Attendance from './pages/Attendance.jsx';
 import Grades from './pages/Grades.jsx';
@@ -26,6 +25,16 @@ function ParentLayout() {
   );
 }
 
+function HomeRedirect() {
+  const { user } = useAuth();
+  if (user?.role === 'student') {
+    const url = import.meta.env.VITE_STUDENT_URL || 'http://localhost:5176';
+    window.location.href = url;
+    return <Splash />;
+  }
+  return <Navigate to="/dashboard" replace />;
+}
+
 export default function App() {
   const { token, loading } = useAuth();
   if (loading) return <Splash />;
@@ -39,7 +48,7 @@ export default function App() {
           path="/"
           element={
             <Protected>
-              <Home />
+              <HomeRedirect />
             </Protected>
           }
         />
