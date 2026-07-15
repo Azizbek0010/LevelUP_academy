@@ -3,18 +3,20 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Building2, MapPin, Phone } from 'lucide-react';
+import { Plus, Building2, MapPin, Phone, DoorOpen } from 'lucide-react';
 import { fmt, money, dateShort } from '../../format.js';
 import { useSuperBranches, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
+import YMapPicker from '../../components/YMapPicker.jsx';
 
 const branchSchema = z.object({
-  name: z.string().trim().min(1, 'Название обязательно').max(80, 'Макс. 80 символов'),
-  address: z.string().trim().max(160, 'Макс. 160 символов').or(z.literal('')),
-  phone: z.string().trim().max(30, 'Макс. 30 символов').or(z.literal('')),
+  name:      z.string().trim().min(1, 'Название обязательно').max(80, 'Макс. 80 символов'),
+  address:   z.string().trim().max(160, 'Макс. 160 символов').or(z.literal('')),
+  phone:     z.string().trim().max(30, 'Макс. 30 символов').or(z.literal('')),
+  roomCount: z.coerce.number().int().min(0, 'Не может быть отрицательным').max(999).optional(),
 });
 
 export default function SuperBranches() {
@@ -27,6 +29,7 @@ export default function SuperBranches() {
   const [modalMode, setModalMode] = useState('create');
   const [currentId, setCurrentId] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [location, setLocation] = useState(null);
 
   const {
     register,
@@ -35,7 +38,7 @@ export default function SuperBranches() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(branchSchema),
-    defaultValues: { name: '', address: '', phone: '' },
+    defaultValues: { name: '', address: '', phone: '', roomCount: '' },
   });
 
   const branches = data?.branches || [];
@@ -48,7 +51,8 @@ export default function SuperBranches() {
   const openCreate = () => {
     setModalMode('create');
     setErr('');
-    reset({ name: '', address: '', phone: '' });
+    setLocation(null);
+    reset({ name: '', address: '', phone: '', roomCount: '' });
     setModalOpen(true);
   };
 
@@ -56,7 +60,12 @@ export default function SuperBranches() {
     setModalMode('edit');
     setCurrentId(branch.id);
     setErr('');
-    reset({ name: branch.name, address: branch.address || '', phone: branch.phone || '' });
+    setLocation(
+      branch.lat && branch.lng
+        ? { lat: Number(branch.lat), lng: Number(branch.lng) }
+        : null,
+    );
+    reset({ name: branch.name, address: branch.address || '', phone: branch.phone || '', roomCount: branch.roomCount ?? '' });
     setModalOpen(true);
   };
 
@@ -68,6 +77,8 @@ export default function SuperBranches() {
         name: formData.name.trim(),
         address: formData.address.trim(),
         phone: formData.phone.trim(),
+        ...(formData.roomCount !== '' && formData.roomCount != null ? { roomCount: Number(formData.roomCount) } : {}),
+        ...(location ? { lat: location.lat, lng: location.lng } : {}),
       };
       if (modalMode === 'create') {
         await api.superCreateBranch(token, body);
@@ -163,10 +174,19 @@ export default function SuperBranches() {
                     </div>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-2 gap-3 mt-1 bg-base-200/50 rounded-xl p-3">
+                    <div className="grid grid-cols-3 gap-2 mt-1 bg-base-200/50 rounded-xl p-3">
                       <div>
                         <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Ученики</div>
                         <div className="text-lg font-extrabold mt-0.5 tabular-nums">{fmt(b.students)}</div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <DoorOpen size={10} className="text-base-content/50" />
+                          <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Комнаты</div>
+                        </div>
+                        <div className="text-lg font-extrabold mt-0.5 tabular-nums">
+                          {b.roomCount != null ? b.roomCount : '—'}
+                        </div>
                       </div>
                       <div>
                         <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Доход</div>
@@ -202,7 +222,7 @@ export default function SuperBranches() {
       {/* Create / Edit Modal */}
       {modalOpen && (
         <div className="modal modal-open">
-          <div className="modal-box max-w-md">
+          <div className="modal-box max-w-2xl">
             <h3 className="font-bold text-lg">
               {modalMode === 'create' ? 'Добавить филиал' : 'Редактировать филиал'}
             </h3>
@@ -226,6 +246,37 @@ export default function SuperBranches() {
                 />
                 {errors.address && <span className="text-xs text-error mt-1">{errors.address.message}</span>}
               </label>
+
+              <label className="form-control w-full">
+                <span className="label-text mb-1">Количество комнат</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="999"
+                  {...register('roomCount')}
+                  placeholder="Например: 8"
+                  className={`input input-bordered w-full ${errors.roomCount ? 'input-error' : ''}`}
+                />
+                {errors.roomCount && <span className="text-xs text-error mt-1">{errors.roomCount.message}</span>}
+              </label>
+
+              {/* Map picker */}
+              <div>
+                <span className="label-text mb-1 block">
+                  Местоположение на карте
+                  {location && (
+                    <button
+                      type="button"
+                      className="ml-2 text-xs text-error hover:underline"
+                      onClick={() => setLocation(null)}
+                    >
+                      Сбросить
+                    </button>
+                  )}
+                </span>
+                <YMapPicker value={location} onChange={setLocation} height={260} />
+              </div>
+
               <label className="form-control w-full">
                 <span className="label-text mb-1">Телефон</span>
                 <input

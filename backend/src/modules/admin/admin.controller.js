@@ -117,3 +117,8 @@ export const removeGroupStudent = asyncHandler(async (req, res) => {
   await service.removeGroupStudent(branchId(req), req.params.id, req.params.studentId);
   res.status(204).end();
 });
+
+// ---------- объявления ----------
+export const createAnnouncement = asyncHandler(async (req, res) => {
+  res.status(201).json(await service.createAnnouncement(branchId(req), req.body));
+});

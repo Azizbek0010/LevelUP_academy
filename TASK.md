@@ -46,13 +46,49 @@
 - [x] K-PAY: Payments modul: oylik avto-hisoblash (billing.worker, 1-sana, muddat 5-sana) + invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + ad-hoc to'lov + refund/void + chek S3 ga; commit dan KEYIN notificationQueue ('payment.received'/'payment.due'/'payment.refunded'); total_debt + invoice.status qayta hisob. To'lamasa (5-sanadan keyin, invoice='overdue') — student panelga umuman data qaytmaydi (paymentGate, 402). NASIYA YO'Q
 - [x] K-PAY: Branch reports: filial bo'yicha tushum va qarzlar (guruhlar kesimida) — GET /api/admin/reports
 
-## Backend — V1 qolganlari (Abdulaziz)
+## Backend — Integration (Karis) 🔥 hozirgi fokus
 
-- [ ] AB-V1: POST /api/admin/announcements -> notificationQueue (Bilol TG-boti uchun e'lonlar)
-- [ ] AB-V1: due-soon worker (to'lov muddatidan N kun oldin ota-onaga eslatma, payment.due_soon)
-- [ ] AB-V1: Partner profit main dashboardda (income - expenses; pul jadvallariga faqat SELECT)
-- [ ] AB-V1: Integration testlar: payments full/split (K-PAY chiqqandan keyin) + auth flow (login -> refresh -> reuse-detect -> OTP)
-- [ ] AB-V1: SEO landing: meta/OG teglar, sitemap.xml, robots.txt, Lighthouse 90+ (abdulazizSEO rejimida)
+> Backend kod tayyor (barcha panellar). Endi asosiy ish — frontend panellarni backend bilan ulash.
+
+- [ ] K-INT: Frontend ↔ backend integratsiya (SUPER ADMIN'dan tashqari — u Abdulaziz'da) — main-admin org-detail endpoint (Shohjahon uchun), endpoint kontraktlar, CORS/cookie, jonli E2E qolgan panellar bo'yicha
+
+## Backend — V1 qolganlari (Abdulaziz) ✅ (kod: d57dff5)
+
+- [x] AB-V1: POST /api/admin/announcements -> notificationQueue (Bilol TG-boti uchun e'lonlar)
+- [x] AB-V1: due-soon worker (to'lov muddatidan N kun oldin ota-onaga eslatma, payment.due_soon)
+- [x] AB-V1: Partner profit main dashboardda (income - expenses; pul jadvallariga faqat SELECT)
+- [x] AB-V1: Integration testlar: payments full/split + auth flow (login -> refresh -> reuse-detect -> OTP)
+- [ ] AB-V1: SEO — pastdagi "SEO — Landing + platforma (Abdulaziz)" bo'limiga ko'chirildi va kengaytirildi
+
+## Backend — Super Admin Integratsiya (Karis) 🔥 hozirgi fokus
+
+> Super Admin FRONT = to'liq Shohjahon versiyasi (14 sahifa), lekin uning yangi sahifalari
+> backend endpoint'larini chaqiradi — ular YO'Q edi. **Karis quradi** (avval Abdulaziz'ga berilgandi →
+> Team Lead o'ziga qaytarib oldi). Zona: `modules/super`.
+
+- [x] K-SUPER-INT: GET + PATCH /api/super/organization — Settings (org profil) ✅ jonli tekshirildi (35586f6)
+- [ ] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa
+- [ ] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
+- [ ] K-SUPER-INT: GET /api/super/stats — Stats (KPI + grafik data, recharts)
+- [ ] K-SUPER-INT: GET/POST/DELETE /api/super/announcements — Announcements
+- [ ] K-SUPER-INT: GET /api/super/reminders (+resend/delete) — Reminders
+- [ ] K-SUPER-INT: GET /api/super/audit — Audit log
+- [ ] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
+- [ ] K-SUPER-INT: har bir sahifa E2E — real superadmin login → real data
+
+## SEO — Landing + platforma (Abdulaziz / abdulazizSEO) 🔥 full
+
+> abdulazizSEO rejimi: ikkala zonada (frontend + backend) faqat SEO ishlari.
+> ⚠️ QISMAN BAJARILGAN (origin'da bor): landing prerender/SSG, barcha private panellar (staff/main-admin/member/student) + api noindex, FAQPage schema. Abdulaziz qolganini belgilasin.
+
+- [ ] AB-SEO: Meta teglar har sahifada (title/description/keywords) + Open Graph + Twitter Card
+- [ ] AB-SEO: sitemap.xml (barcha public sahifalar) + robots.txt (AI-crawler qoidalari)
+- [ ] AB-SEO: Structured data JSON-LD (Organization, WebSite, FAQPage, BreadcrumbList) — GEO/AEO
+- [ ] AB-SEO: Semantik razmetka (h1-h6 ierarxiya, alt-textlar, aria-labellar)
+- [ ] AB-SEO: Canonical URL + hreflang (ko'p til bo'lsa)
+- [ ] AB-SEO: Page speed — Lighthouse 90+ (LCP/CLS/TBT), rasm optimizatsiya, lazy-load
+- [ ] AB-SEO: GA4 event'lar (SPA navigatsiya + konversiyalar) — G-RWCK0B6TXP
+- [ ] AB-SEO: SSR/prerender kerak bo'lsa (public landing sahifalar uchun)
 
 ## Backend — Infrastructure (Abdulaziz) ✅
 
@@ -107,13 +143,34 @@
 - [ ] AUTH: Axios interceptor (auto-refresh)
 - [ ] AUTH: Socket.io client
 
-## Frontend — Super Admin (Said Islom, Aziz, sxvs)
+## Frontend — Super Admin ✅ TUGADI
 
-- [x] SUPER: Dashboard (org income, branches, admins, students)
-- [x] SUPER: CRUD branches (Branches -> BranchDetail)
-- [x] SUPER: CRUD admins
-- [x] SUPER: Reports
-- [ ] SUPER: Organization settings (endpoint yo'q — kutilmoqda)
+> FRONT to'liq tayyor (Shohjahon, save-zone 0bb957e), LEKIN STATIK — backend integratsiya hali yo'q
+> (Settings/organization real API ga ulanmagan). Backend integratsiya → Abdulaziz (pastda "Backend — Super Admin Integratsiya").
+> Jamoa qayta taqsimlandi: Shohjahon → Main Admin, Said Islom + Aziz → Methodist, sxvs — loyihadan olindi.
+
+- [x] SUPER (front): Dashboard (org income, branches, admins, students)
+- [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
+- [x] SUPER (front): CRUD admins
+- [x] SUPER (front): Reports
+- [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — ⚠️ STATIK: backend /api/super/organization YO'Q → Abdulaziz ulaydi
+
+## Frontend — Main Admin (Shohjahon) 🔥 YANGI — to'liq egasi
+
+> Shohjahon Super Admin panelini to'liq tugatdi → endi Main Admin paneli (`frontend/main-admin`) uning zonasi.
+> Hamma kerakli ish shu yerda. Baza tayyor (Karis qurgan), Shohjahon egalik qiladi va yakunlaydi.
+
+- [ ] MAIN: Dashboard — KPI (bizning daromad / hamkorlar / o'quvchilar / filiallar) + grafiklar (hamkorlar bo'yicha daromad, yangi arizalar)
+- [ ] MAIN: Leads — ro'yxat / filtr / status o'zgartirish, OnboardModal (temp-parol), Qabul / Rad etish
+- [ ] MAIN: Organizations (hamkorlar) — ro'yxat / qidiruv, freeze / activate
+- [ ] MAIN: Org-detail sahifasi — hamkorning filiallari / adminlari / o'quvchilari / daromadi (endpoint Karis'dan kerak — backend integratsiya)
+- [ ] MAIN: Billing — narx redaktori (UZS) + hamkor hisob-fakturalari
+- [ ] MAIN: Revenue — real tushum sahifasi (hozir zaglushka): hamkorlar kesimida + dinamika
+- [ ] MAIN: Settings — real platforma sozlamalari (hozir zaglushka)
+- [ ] MAIN: Google OAuth — jonli E2E login testi (Firebase levelup-1c059)
+- [ ] MAIN: Forgot-password — sikl polish
+- [ ] MAIN: Design-system — laym #C6FF34, Manrope, 3 holat (Skeleton/Empty/Error), responsive 1280/768/375, TanStack Query cache invalidation
+- [ ] MAIN: Test organizatsiyalarni tozalash (Karis bilan kelishib)
 
 ## Frontend — Admin (Abduloh, Odil, Hamidula)
 
@@ -127,13 +184,13 @@
 
 ## Frontend — Mentor (Sardor, Kozim, Alish)
 
-- [ ] MENTOR: Dashboard (groups, upcoming lessons)
+- [x] MENTOR: Dashboard (groups, upcoming lessons)
 - [ ] MENTOR: Attendance journal
-- [ ] MENTOR: Homework (check, grades)
+- [x] MENTOR: Homework (check, grades)
 - [ ] MENTOR: Tests (create, results)
-- [ ] MENTOR: Coins (assign/deduct)
+- [x] MENTOR: Coins (assign/deduct)
 
-## Frontend — Student (mas'ul TAYINLANMAGAN ⚠️)
+## Frontend — Student (Abdulaziz)
 
 - [ ] STUDENT: Home (coins, groups, deadlines)
 - [ ] STUDENT: Tests
@@ -142,17 +199,28 @@
 - [ ] STUDENT: Videos
 - [ ] STUDENT: Leaderboard
 
-## Frontend — Parent (mas'ul TAYINLANMAGAN ⚠️)
+## Frontend — Parent (iface9808-sketch) 🔥 to'liq egasi
 
-- [ ] PARENT: Child overview
-- [ ] PARENT: Chat
+> Methodist'dan Parent panelga o'tkazildi. Backend tayyor (AB-PARENT: child overview + assertParentOwnsChild guard).
+> Panel: `frontend/member` (parent tomoni — login-kod + parol bilan kiradi).
+
+- [ ] PARENT: Child overview — coins, qarz, reyting, guruhlar, davomat, baholar
+- [ ] PARENT: Bir nechta farzand — bolalar orasida almashtirish (agar bir nechta bo'lsa)
+- [ ] PARENT: Davomat detali — farzandning davomat tarixi
+- [ ] PARENT: Baholar / uy vazifa natijalari
+- [ ] PARENT: To'lov / qarz — farzandning invoice va qarzi
+- [ ] PARENT: Chat — mentor / admin bilan realtime (Socket.io)
+- [ ] PARENT: Bildirishnomalar
+- [ ] PARENT: Design-system — laym #C6FF34, Manrope, 3 holat (Skeleton/Empty/Error), responsive 1280/768/375, TanStack Query
 
 ## Frontend — Landing Page ✅
 
 - [x] LANDING: Home, Features, Roles, Finance, Gamification, Contacts
 - [x] LANDING: Header, Footer, CTA
 
-## Frontend — Methodist (Karis) ✅
+## Frontend — Methodist (Said Islom, Aziz — Super Admin'dan o'tkazildi) ✅ karkas
+
+> Panel karkasi tayyor (Karis). Said Islom + Aziz endi Methodist jamoasida — qo'shimcha ish + MVP2 kontent-menejer + support/maintenance.
 
 - [x] METHODIST: Training Types (CRUD)
 - [x] METHODIST: Topics (CRUD)

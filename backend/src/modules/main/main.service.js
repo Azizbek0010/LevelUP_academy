@@ -58,6 +58,8 @@ export async function onboardPartner({ organizationName, domain, admin, leadId }
 function decoratePartner(row, pricing) {
   const students = Number(row.students);
   const branches = Number(row.branches);
+  const revenue = Number(row.revenue);
+  const expenses = Number(row.expenses);
   return {
     id: row.id,
     name: row.name,
@@ -68,6 +70,9 @@ function decoratePartner(row, pricing) {
     branches,
     students,
     monthlyBill: computeBill(pricing, { students, branches }), // сколько партнёр платит нам (сумы)
+    revenue, // доход партнёра (оплаты его студентов по всем филиалам)
+    expenses, // расходы партнёра
+    profit: revenue - expenses,
   };
 }
 
@@ -86,7 +91,7 @@ export async function listPartners() {
   return rows.map((row) => decoratePartner(row, pricing));
 }
 
-/** Платформенный дашборд: наш доход = сумма счетов партнёров. */
+/** Платформенный дашборд: наш доход = сумма счетов партнёров; плюс сводная прибыль партнёров. */
 export async function platformDashboard() {
   const partners = await listPartners();
   const totals = partners.reduce(
@@ -94,13 +99,23 @@ export async function platformDashboard() {
       acc.students += p.students;
       acc.branches += p.branches;
       acc.ourMonthlyIncome += p.monthlyBill;
+      acc.partnersRevenue += p.revenue;
+      acc.partnersExpenses += p.expenses;
+      acc.partnersProfit += p.profit;
       return acc;
     },
-    { partners: partners.length, students: 0, branches: 0, ourMonthlyIncome: 0 },
+    {
+      partners: partners.length,
+      students: 0,
+      branches: 0,
+      ourMonthlyIncome: 0,
+      partnersRevenue: 0,
+      partnersExpenses: 0,
+      partnersProfit: 0,
+    },
   );
   const pricing = await repo.getPricing();
   totals.currency = pricing?.currency ?? 'UZS';
-  // прибыль каждого партнёра (его доход − расход) появится, когда будут платежи (K-ADMIN)
   return { totals, pricing, partners };
 }
 

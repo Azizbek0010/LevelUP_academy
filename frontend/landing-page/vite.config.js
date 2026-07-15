@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'http://localhost:4000',
+          target: env.VITE_API_URL || 'https://levelup-academy-1.onrender.com',
           changeOrigin: true,
         },
       },
