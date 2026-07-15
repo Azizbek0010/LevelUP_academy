@@ -3,12 +3,39 @@ import { api } from './api.js';
 
 const AuthCtx = createContext(null);
 
+const STORAGE_KEY_TOKEN = 'staff_access_token';
+const STORAGE_KEY_USER = 'staff_user';
+
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(null);
-  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(() => {
+    try { return localStorage.getItem(STORAGE_KEY_TOKEN); } catch { return null; }
+  });
+  const [user, setUser] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_USER);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
   const [loading, setLoading] = useState(true);
 
+  // Persist token + user to localStorage whenever they change
   useEffect(() => {
+    try {
+      if (token) localStorage.setItem(STORAGE_KEY_TOKEN, token);
+      else localStorage.removeItem(STORAGE_KEY_TOKEN);
+    } catch {}
+  }, [token]);
+
+  useEffect(() => {
+    try {
+      if (user) localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+      else localStorage.removeItem(STORAGE_KEY_USER);
+    } catch {}
+  }, [user]);
+
+  useEffect(() => {
+    // If we already have a token from localStorage, skip refresh
+    if (token) { setLoading(false); return; }
     api
       .refresh()
       .then((d) => {
@@ -37,6 +64,10 @@ export function AuthProvider({ children }) {
     await api.logout().catch(() => {});
     setToken(null);
     setUser(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY_TOKEN);
+      localStorage.removeItem(STORAGE_KEY_USER);
+    } catch {}
   };
 
   return (

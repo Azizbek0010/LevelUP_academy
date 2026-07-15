@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   Search, Plus, Trash2, DollarSign, CalendarDays, BarChart3,
   RefreshCw, MoreVertical, Eye, Pencil, X, Banknote,
-  ReceiptPercent, ChevronDown, AlertTriangle, Download, SlidersHorizontal,
+  Clock, ChevronDown, AlertTriangle, Download, SlidersHorizontal,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../../api.js';
@@ -478,7 +478,7 @@ export default function Expenses() {
         {[
           { title: 'Jami xarajatlar', value: formatCurrency(stats.total), icon: <Banknote className="w-5 h-5" />, color: '#E8543E', delay: 'stagger-1' },
           { title: 'Bu oy', value: formatCurrency(stats.thisMonth), icon: <CalendarDays className="w-5 h-5" />, color: '#F59E0B', delta: stats.trend, deltaLabel: "o'tgan oyga nisbatan", delay: 'stagger-2' },
-          { title: 'Kutilmoqda', value: formatCurrency(stats.pendingAmount), icon: <ReceiptPercent className="w-5 h-5" />, color: '#F59E0B', delay: 'stagger-3' },
+          { title: 'Kutilmoqda', value: formatCurrency(stats.pendingAmount), icon: <Clock className="w-5 h-5" />, color: '#F59E0B', delay: 'stagger-3' },
           { title: 'Tasdiqlangan', value: formatCurrency(stats.approvedAmount), icon: <DollarSign className="w-5 h-5" />, color: '#2ECC71', delay: 'stagger-4' },
           { title: "O'rtacha xarajat", value: formatCurrency(stats.avgAmount), icon: <BarChart3 className="w-5 h-5" />, color: '#3B82F6', delay: 'stagger-5' },
         ].map((card, i) => (
