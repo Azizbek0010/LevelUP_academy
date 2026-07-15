@@ -78,7 +78,7 @@ export function applyInvoicePayment(id, addedAmount, client) {
     .query(
       `UPDATE invoices
           SET paid_amount = paid_amount + $2,
-              status = CASE WHEN paid_amount + $2 >= total_amount THEN 'paid' ELSE 'partially_paid' END,
+              status = (CASE WHEN paid_amount + $2 >= total_amount THEN 'paid' ELSE 'partially_paid' END)::invoice_status,
               updated_at = now()
         WHERE id = $1
         RETURNING ${INVOICE_RETURN}`,
@@ -96,12 +96,12 @@ export function reverseInvoiceAmount(id, amount, client) {
     .query(
       `UPDATE invoices
           SET paid_amount = GREATEST(paid_amount - $2, 0),
-              status = CASE
+              status = (CASE
                 WHEN GREATEST(paid_amount - $2, 0) <= 0
                   THEN CASE WHEN due_date IS NOT NULL AND due_date < CURRENT_DATE THEN 'overdue' ELSE 'pending' END
                 WHEN GREATEST(paid_amount - $2, 0) >= total_amount THEN 'paid'
                 ELSE 'partially_paid'
-              END,
+              END)::invoice_status,
               updated_at = now()
         WHERE id = $1
         RETURNING ${INVOICE_RETURN}`,

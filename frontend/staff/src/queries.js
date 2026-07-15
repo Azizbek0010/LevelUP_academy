@@ -40,6 +40,11 @@ export function useSuperOrganization() {
   return useAuthedQuery(['super-organization'], () => api.superGetOrganization(token));
 }
 
+export function useSuperMethodists() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-methodists'], () => api.superMethodists(token));
+}
+
 // -------- ADMIN --------
 export function useAdminDashboard() {
   const { token } = useAuth();

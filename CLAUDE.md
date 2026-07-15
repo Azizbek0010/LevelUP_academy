@@ -231,13 +231,13 @@ LevelUp-Academy/
 | Участник | Зона ответственности | Права доступа |
 |----------|---------------------|---------------|
 | **Karis** (@Azizbek2603) — **Team Lead**, владелец репо | Backend: Auth, Main Admin, Super Admin, Admin, Billing, платежи | **ВСЁ**: видит и правит любые файлы (frontend + backend), коммитит прямо в `main` |
-| **Abdulaziz** (@YakubovAbdulaziz) | Backend: Mentor, Student, Parent, Инфраструктура | Своя backend-зона; **как `abdulazizSEO`** — SEO-правки в любых файлах обеих зон |
+| **Abdulaziz** (@YakubovAbdulaziz) | Backend: Mentor, Student, Parent, Инфраструктура + **SEO (полный)** | Своя backend-зона; **как `abdulazizSEO`** — SEO-правки в любых файлах обеих зон. (Super Admin backend-интеграция возвращена Karis'у.) |
 | **Bilol** | Telegram-бот | только `backend/src/modules/telegram/` + воркеры уведомлений |
-| **iface9808-sketch** (GitHub) | Methodist фронт | только `frontend/staff` (methodist) |
+| **iface9808-sketch** (GitHub) | Parent фронт (переведён из Methodist) | только `frontend/member` (parent) |
 | **Elyor** (@Elyor2011) | Auth фронт, каркас SPA | только auth-часть фронта |
-| **Said Islom** | Super Admin фронт (дашборд) | только `frontend/staff` (super) |
-| **Aziz** | Super Admin фронт (филиалы) | только `frontend/staff` (super) |
-| **sxvs** | Super Admin фронт (админы) | только `frontend/staff` (super) |
+| **Shohjahon** | Main Admin фронт (завершил Super Admin → переведён на Main Admin) | только `frontend/main-admin` |
+| **Said Islom** | Methodist фронт (переведён из Super Admin — панель завершена) | только `frontend/staff` (methodist) |
+| **Aziz** | Methodist фронт (переведён из Super Admin — панель завершена) | только `frontend/staff` (methodist) |
 | **Abduloh** (@Corvin_0, git: yunusovabdullox36-hash) | Admin фронт | только `frontend/staff` (admin) |
 | **Odil** | Admin фронт | только `frontend/staff` (admin) |
 | **Hamidula** | Admin фронт | только `frontend/staff` (admin) |

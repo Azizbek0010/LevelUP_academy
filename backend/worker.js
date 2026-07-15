@@ -8,11 +8,13 @@ import { closeRedis } from './src/config/redis.js';
 import { notificationWorker } from './src/queues/workers/notification.worker.js';
 import { overdueWorker, scheduleOverdueCron } from './src/queues/workers/overdue.worker.js';
 import { billingWorker, scheduleBillingCron } from './src/queues/workers/billing.worker.js';
+import { dueSoonWorker, scheduleDueSoonCron } from './src/queues/workers/dueSoon.worker.js';
 
 await scheduleOverdueCron();
 await scheduleBillingCron();
+await scheduleDueSoonCron();
 logger.info(
-  'Worker started: notifications + overdue cron (09:00 daily) + billing cron (charge 1st 00:05, overdue 09:30 daily)',
+  'Worker started: notifications + overdue cron (09:00 daily) + billing cron (charge 1st 00:05, overdue 09:30 daily) + due-soon cron (08:00 daily)',
 );
 
 let shuttingDown = false;
@@ -23,7 +25,12 @@ async function shutdown(signal) {
   logger.info({ signal }, 'Worker shutting down...');
 
   try {
-    await Promise.allSettled([notificationWorker.close(), overdueWorker.close(), billingWorker.close()]);
+    await Promise.allSettled([
+      notificationWorker.close(),
+      overdueWorker.close(),
+      billingWorker.close(),
+      dueSoonWorker.close(),
+    ]);
     await pool.end();
     await closeRedis();
     logger.info('Worker shutdown complete');

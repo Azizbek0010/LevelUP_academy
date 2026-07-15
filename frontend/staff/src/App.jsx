@@ -6,7 +6,6 @@ import Layout from './components/Layout.jsx';
 import Login from './pages/Login.jsx';
 import RoleGuard from './components/RoleGuard.jsx';
 import Splash from './components/Splash.jsx';
-
 // Lazy-loaded pages
 const SuperDashboard = lazy(() => import('./pages/super/Dashboard.jsx'));
 const SuperBranches = lazy(() => import('./pages/super/Branches.jsx'));
@@ -14,6 +13,13 @@ const SuperAdmins = lazy(() => import('./pages/super/Admins.jsx'));
 const SuperBranchDetail = lazy(() => import('./pages/super/BranchDetail.jsx'));
 const SuperReports = lazy(() => import('./pages/super/Reports.jsx'));
 const SuperSettings = lazy(() => import('./pages/super/Settings.jsx'));
+const SuperStudents = lazy(() => import('./pages/super/Students.jsx'));
+const SuperGroups = lazy(() => import('./pages/super/Groups.jsx'));
+const SuperStats = lazy(() => import('./pages/super/Stats.jsx'));
+const SuperAnnouncements = lazy(() => import('./pages/super/Announcements.jsx'));
+const SuperReminders = lazy(() => import('./pages/super/Reminders.jsx'));
+const SuperAudit = lazy(() => import('./pages/super/Audit.jsx'));
+const SuperAttendance = lazy(() => import('./pages/super/Attendance.jsx'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
 const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
@@ -53,63 +59,58 @@ function DashboardRedirect() {
   return <AdminDashboard />;
 }
 
-// Один путь, разные компоненты по роли (каждый юзер — одна роль).
 function RoleView({ views }) {
   const { user } = useAuth();
   const Comp = views[user?.role];
   return Comp ? <Comp /> : <Navigate to="/" replace />;
 }
 
-const SuspenseWrapper = ({ children }) => (
-  <Suspense fallback={<Splash />}>{children}</Suspense>
-);
+const SW = ({ children }) => <Suspense fallback={<Splash />}>{children}</Suspense>;
 
 export default function App() {
   const { token } = useAuth();
   return (
     <Routes>
       <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
-      <Route
-        element={
-          <Protected>
-            <Layout />
-          </Protected>
-        }
-      >
-        <Route path="/" element={<SuspenseWrapper><DashboardRedirect /></SuspenseWrapper>} />
+      <Route element={<Protected><Layout /></Protected>}>
+        <Route path="/" element={<SW><DashboardRedirect /></SW>} />
 
-        {/* Общие пути, диспетчеризуемые по роли */}
-        <Route path="/groups" element={<SuspenseWrapper><RoleView views={{ mentor: MentorGroups, admin: AdminGroups }} /></SuspenseWrapper>} />
-        <Route path="/reports" element={<SuspenseWrapper><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SuspenseWrapper>} />
-        <Route path="/settings" element={<SuspenseWrapper><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SuspenseWrapper>} />
+        {/* Shared paths dispatched by role */}
+        <Route path="/groups" element={<SW><RoleView views={{ superadmin: SuperGroups, mentor: MentorGroups, admin: AdminGroups }} /></SW>} />
+        <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SW>} />
+        <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
+        <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: MentorAttendance }} /></SW>} />
+        <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents }} /></SW>} />
 
         {/* Mentor routes */}
-        <Route path="/attendance" element={<SuspenseWrapper><MentorAttendance /></SuspenseWrapper>} />
-        <Route path="/homework" element={<SuspenseWrapper><MentorHomework /></SuspenseWrapper>} />
-        <Route path="/coins" element={<SuspenseWrapper><MentorCoins /></SuspenseWrapper>} />
+        <Route path="/homework" element={<SW><MentorHomework /></SW>} />
+        <Route path="/coins" element={<SW><MentorCoins /></SW>} />
 
-        {/* Admin routes — RoleGuard admin */}
+        {/* Admin routes */}
         <Route element={<RoleGuard allow={['admin']} />}>
-          <Route path="/students" element={<SuspenseWrapper><AdminStudents /></SuspenseWrapper>} />
-          <Route path="/groups/:id" element={<SuspenseWrapper><AdminGroupDetail /></SuspenseWrapper>} />
-          <Route path="/payments" element={<SuspenseWrapper><AdminPayments /></SuspenseWrapper>} />
-          <Route path="/expenses" element={<SuspenseWrapper><AdminExpenses /></SuspenseWrapper>} />
-          <Route path="/mentors" element={<SuspenseWrapper><AdminMentors /></SuspenseWrapper>} />
+          <Route path="/groups/:id" element={<SW><AdminGroupDetail /></SW>} />
+          <Route path="/payments" element={<SW><AdminPayments /></SW>} />
+          <Route path="/expenses" element={<SW><AdminExpenses /></SW>} />
+          <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
         </Route>
 
-        {/* Super Admin routes — RoleGuard superadmin */}
+        {/* Super Admin routes */}
         <Route element={<RoleGuard allow={['superadmin']} />}>
-          <Route path="/branches" element={<SuspenseWrapper><SuperBranches /></SuspenseWrapper>} />
-          <Route path="/branches/:id" element={<SuspenseWrapper><SuperBranchDetail /></SuspenseWrapper>} />
-          <Route path="/admins" element={<SuspenseWrapper><SuperAdmins /></SuspenseWrapper>} />
+          <Route path="/branches" element={<SW><SuperBranches /></SW>} />
+          <Route path="/branches/:id" element={<SW><SuperBranchDetail /></SW>} />
+          <Route path="/admins" element={<SW><SuperAdmins /></SW>} />
+          <Route path="/stats" element={<SW><SuperStats /></SW>} />
+          <Route path="/announcements" element={<SW><SuperAnnouncements /></SW>} />
+          <Route path="/reminders" element={<SW><SuperReminders /></SW>} />
+          <Route path="/audit" element={<SW><SuperAudit /></SW>} />
         </Route>
 
         {/* Methodist routes */}
-        <Route path="/methodist/types" element={<SuspenseWrapper><TrainingTypes /></SuspenseWrapper>} />
-        <Route path="/methodist/types/:trainingTypeId/topics" element={<SuspenseWrapper><Topics /></SuspenseWrapper>} />
-        <Route path="/methodist/topics/:topicId/lessons" element={<SuspenseWrapper><Lessons /></SuspenseWrapper>} />
-        <Route path="/methodist/lessons/:lessonId/edit" element={<SuspenseWrapper><LessonEditor /></SuspenseWrapper>} />
-        <Route path="/methodist/analytics" element={<SuspenseWrapper><MethodistAnalytics /></SuspenseWrapper>} />
+        <Route path="/methodist/types" element={<SW><TrainingTypes /></SW>} />
+        <Route path="/methodist/types/:trainingTypeId/topics" element={<SW><Topics /></SW>} />
+        <Route path="/methodist/topics/:topicId/lessons" element={<SW><Lessons /></SW>} />
+        <Route path="/methodist/lessons/:lessonId/edit" element={<SW><LessonEditor /></SW>} />
+        <Route path="/methodist/analytics" element={<SW><MethodistAnalytics /></SW>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

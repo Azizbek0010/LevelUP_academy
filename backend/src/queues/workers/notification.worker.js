@@ -18,6 +18,10 @@ const HANDLERS = {
     const chatIds = await resolveChatIds(studentId, ['parent']);
     await sendToAll(chatIds, `💳 Начислена оплата за месяц: ${fmt(amount)} сум. Оплатите до ${dueDate}`);
   },
+  'payment.due_soon': async ({ studentId, amount, dueDate, daysLeft }) => {
+    const chatIds = await resolveChatIds(studentId, ['parent']);
+    await sendToAll(chatIds, `⏰ Через ${daysLeft} дн. срок оплаты: ${fmt(amount)} сум (до ${dueDate})`);
+  },
   'payment.refunded': async ({ studentId, amount }) => {
     const chatIds = await resolveChatIds(studentId, ['parent']);
     await sendToAll(chatIds, `↩️ Возврат по оплате: ${fmt(amount)} сум`);
@@ -29,6 +33,10 @@ const HANDLERS = {
   'homework.due': async ({ studentId, title, deadline }) => {
     const chatIds = await resolveChatIds(studentId, ['student']);
     await sendToAll(chatIds, `📚 Дедлайн завтра: «${title}» до ${deadline}`);
+  },
+  'announcement.created': async ({ studentIds, title, message }) => {
+    const chatIds = await resolveChatIdsForMany(studentIds, ['student', 'parent']);
+    await sendToAll(chatIds, `📢 ${title}\n\n${message}`);
   },
 };
 
@@ -61,6 +69,21 @@ async function resolveChatIds(studentId, roles) {
       WHERE (ta.user_id = $1 AND 'student' = ANY($2))
          OR (sp.user_id = $1 AND 'parent'  = ANY($2))`,
     [studentId, roles],
+  );
+  return rows.map((r) => r.tg_chat_id);
+}
+
+/** Как resolveChatIds, но для набора студентов сразу — с dedup (родитель нескольких детей получит одно сообщение). */
+async function resolveChatIdsForMany(studentIds, roles) {
+  if (studentIds.length === 0) return [];
+  const { rows } = await pool.query(
+    `SELECT DISTINCT ta.tg_chat_id
+       FROM telegram_accounts ta
+       JOIN users u ON u.id = ta.user_id
+  LEFT JOIN student_profiles sp ON sp.parent_id = ta.user_id
+      WHERE (ta.user_id = ANY($1) AND 'student' = ANY($2))
+         OR (sp.user_id = ANY($1) AND 'parent'  = ANY($2))`,
+    [studentIds, roles],
   );
   return rows.map((r) => r.tg_chat_id);
 }

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Building2, GraduationCap, Users, Wallet, TriangleAlert, Wifi } from 'lucide-react';
+import { Building2, GraduationCap, Users, Wallet, TriangleAlert, Wifi, RefreshCw } from 'lucide-react';
 import { fmt } from '../../format.js';
 import { useSuperDashboard } from '../../queries.js';
 import { useOnlineCount } from '../../socket.js';
@@ -45,7 +45,7 @@ function HorizontalBar({ value, max, color, label, rightLabel }) {
 }
 
 export default function SuperDashboard() {
-  const { data, isLoading, error } = useSuperDashboard();
+  const { data, isLoading, error, refetch } = useSuperDashboard();
   const { token } = useAuth();
   const onlineCount = useOnlineCount(token);
 
@@ -53,7 +53,14 @@ export default function SuperDashboard() {
     if (error.status === 401) {
       return <div className="alert alert-warning text-sm"><span>Сессия истекла. Пожалуйста, войдите снова.</span></div>;
     }
-    return <div className="alert alert-error text-sm"><span>{error.message}</span></div>;
+    return (
+      <div className="alert alert-error text-sm flex items-center justify-between">
+        <span>{error.message}</span>
+        <button className="btn btn-sm btn-ghost gap-1" onClick={() => refetch()}>
+          <RefreshCw size={14} /> Повторить
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -126,6 +133,7 @@ function Loaded({ data, onlineCount }) {
                   <tr>
                     <th>Филиал</th>
                     <th className="text-right">Ученики</th>
+                    <th className="text-right">Комнаты</th>
                     <th className="text-right">Админы</th>
                     <th className="text-right">Доход</th>
                     <th className="text-right">Долг</th>
@@ -143,6 +151,7 @@ function Loaded({ data, onlineCount }) {
                         </span>
                       </td>
                       <td className="text-right">{fmt(b.students)}</td>
+                      <td className="text-right">{b.roomCount != null ? b.roomCount : '—'}</td>
                       <td className="text-right">{fmt(b.admins)}</td>
                       <td className="text-right font-medium">{fmt(b.revenue)}</td>
                       <td className="text-right text-error">{fmt(b.debt)}</td>
