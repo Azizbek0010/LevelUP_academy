@@ -19,7 +19,8 @@
 | Полный SEO-каркас: meta, canonical, OG, JSON-LD (Organization/WebSite/SoftwareApplication/FAQ), sitemap, robots | `index.html`, `lib/seo.js` | 11–14.07 |
 | AI-краулеры в robots (в т.ч. live-fetch агенты: Claude-User, Perplexity-User, OAI-SearchBot) | `public/robots.txt` | 14.07 |
 | `llms.txt`, растровый `logo.png` для Organization.logo | `public/` | 14.07 |
-| `noindex` на всех приватных панелях (staff, main-admin, member, student) + API | панели + `backend/src/app.js` | 14.07 |
+| `noindex` на всех приватных панелях (main-admin, student) + API | панели + `backend/src/app.js` | 14.07 |
+| staff и member: индексируется ТОЛЬКО `/login` (чтобы пользователь находил вход через Google), остальное `noindex` | `staff/`, `member/` (robots + vercel.json + index.html + sitemap) | 15.07 |
 | Узбекская версия `/uz` — i18n, hreflang, 12 prerendered страниц | `src/i18n/`, `App.jsx` | 14–15.07 |
 | GSC: sitemap отправлен, GA4 связан, prerender подтверждён (Google видит текст) | — | 15.07 |
 | Bing: сайт добавлен (импорт из GSC), sitemap отправлен | — | 15.07 |
@@ -70,6 +71,11 @@
       Нужен реальный handle.
 - [ ] **GSC: запросить индексацию 6 узбекских URL** (`/uz/landing`, `.../features`, `.../roles`,
       `.../finance`, `.../gamification`, `.../contacts`). Ручное действие в браузере.
+- [ ] **После деплоя staff/member: проверить, что индексируется ТОЛЬКО `/login`.**
+      `curl -sI https://staff.levelup-academy.uz/login` → НЕТ `X-Robots-Tag`;
+      `curl -sI https://staff.levelup-academy.uz/` → ЕСТЬ `X-Robots-Tag: noindex`.
+      То же для member. Затем в GSC запросить индексацию `staff.../login` и `member.../login`.
+      Заголовок scoped через negative-lookahead в vercel.json — поведение проверяемо только на проде.
 - [ ] **Ссылки из каталогов** (доверие домену): SaaS-каталоги (Product Hunt и т.п.) + узбекские
       бизнес-справочники. Ручная работа. Без ссылок новые страницы поднимаются медленно.
 
