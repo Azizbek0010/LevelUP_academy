@@ -185,7 +185,7 @@ src/
 | Панель | Люди | Backend API | Канон-контракт |
 |--------|------|-------------|----------------|
 | **Auth** | Elyor | K-AUTH ✅ | §7 этого файла |
-| **Super Admin** | Said Islom, Aziz | K-SUPER ✅ | §8 этого файла |
+| **Super Admin** | **Karis** (доводит/стилизует, закрыто для остальных) | K-SUPER ✅ | §8 этого файла |
 | **Admin** | Abduloh, Odil, Hamidula | K-ADMIN ✅ (платежи ⏳) | §9 этого файла |
 | **Mentor** | Sardor, Kozim, Alish | AB-MENTOR ✅ | §10 этого файла |
 | **Methodist** | Azizbek (Karis) | AB-METHODIST ✅ | §11 этого файла |
@@ -198,6 +198,12 @@ src/
 
 **Панель:** Auth (общая для всех ролей)
 **Backend:** Karis, K-AUTH — ✅ готов
+
+### 🆕 Открытые задачи (подтверждено Karis, 2026-07-15)
+
+- [ ] **Login-страницы (main/staff/member)** — доделать и запушить в свою ветку `elyor`; в `main` НЕ мержить сам → Karis вливает через `save-zone`.
+- [ ] **Auto-refresh `401 → refresh → retry`** — 🔴 важно: сейчас auth рефрешит токен только при загрузке страницы, интерцептора на 401 нет. Добавить в `api.js` (единый `refreshPromise`, `credentials:'include'`). Access-токен теперь живёт 1 час.
+- [ ] **Redux authSlice — НЕ нужен.** `useAuth()` context для auth достаточно; Redux только позже, если понадобится для socket/общего UI. Пока продолжать на context.
 
 ### Задачи
 
@@ -242,7 +248,9 @@ src/
 
 ---
 
-## 8. Super Admin — Said Islom, Aziz
+## 8. Super Admin — Karis
+
+> 🔒 **Панель Super Admin — задача Karis.** Shohjahon её собрал (богатые страницы), Karis доводит/стилизует и закрывает. **Остальным не трогать** (Said Islom, Aziz переведены в Methodist). Разделы 8.1–8.2 ниже — исторический API-контракт, теперь под Karis.
 
 **Панель:** Super Admin (владелец организации, видит ВСЕ филиалы)
 **Backend:** Karis, K-SUPER — ✅ готов
