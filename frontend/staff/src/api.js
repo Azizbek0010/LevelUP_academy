@@ -1,9 +1,11 @@
 // Все запросы идут на /api (dev-прокси Vite → http://localhost:4000).
 // VITE_API_URL — боевой бэкенд (Render) для production build.
-// USE_MOCKS = true — эмуляция на localStorage для разработки без бэкенда.
+// VITE_USE_MOCKS=false — отключает моки, использует реальный бэкенд.
+// По умолчанию true: эмуляция на localStorage для разработки без бэкенда.
 
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
-const USE_MOCKS = false; // true = mock (backend kerak emas), false = real backend
+const USE_MOCKS =
+  typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS !== 'false' : true;
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -637,151 +639,6 @@ async function request(path, { method = 'GET', body, token } = {}) {
       };
     }
 
-    // -------- MENTOR: Helper --------
-    function getMockBalances() {
-      return JSON.parse(localStorage.getItem('mock_coin_balances') || '{}');
-    }
-
-    const DEFAULT_BALANCES = { 's-1': 150, 's-2': 210, 's-3': 95, 's-4': 130, 's-5': 60, 's-6': 175, 's-7': 80, 's-8': 200, 's-9': 90, 's-10': 45 };
-
-    function studentWithBalance(s) {
-      const balances = getMockBalances();
-      return { ...s, coin_balance: balances[s.id] ?? DEFAULT_BALANCES[s.id] ?? 0 };
-    }
-
-    // -------- MENTOR: Groups --------
-    if (path === '/mentor/groups') {
-      return {
-        success: true,
-        data: [
-          { id: 'g-1', name: 'Frontend React N13', subject: 'Veb-development', monthly_price: 800000, students_count: 15 },
-          { id: 'g-2', name: 'Python Bootcamp', subject: 'Programming', monthly_price: 900000, students_count: 12 },
-          { id: 'g-3', name: 'English Advanced', subject: 'English', monthly_price: 600000, students_count: 10 },
-        ],
-      };
-    }
-
-    const groupsMatch = path.match(/^\/mentor\/groups\/([^/]+)\/students$/);
-    if (groupsMatch) {
-      const groupId = groupsMatch[1];
-      const studentsByGroup = {
-        'g-1': [
-          { id: 's-1', first_name: 'Anvar', last_name: 'Sobirov', phone: '+998901234561', status: 'active', student_code: 'ST001' },
-          { id: 's-2', first_name: 'Malika', last_name: 'Yusupova', phone: '+998901234562', status: 'active', student_code: 'ST002' },
-          { id: 's-3', first_name: 'Javlon', last_name: 'Rustamov', phone: '+998901234563', status: 'frozen', student_code: 'ST003' },
-          { id: 's-4', first_name: 'Dilnoza', last_name: 'Karimova', phone: '+998901234564', status: 'active', student_code: 'ST004' },
-          { id: 's-5', first_name: 'Sardor', last_name: 'Aliyev', phone: '+998901234565', status: 'active', student_code: 'ST005' },
-        ],
-        'g-2': [
-          { id: 's-6', first_name: 'Kamola', last_name: 'Nortojiyeva', phone: '+998901234566', status: 'active', student_code: 'ST006' },
-          { id: 's-7', first_name: 'Otabek', last_name: "Yo'ldoshev", phone: '+998901234567', status: 'active', student_code: 'ST007' },
-          { id: 's-8', first_name: 'Nilufar', last_name: 'Xoshimova', phone: '+998901234568', status: 'frozen', student_code: 'ST008' },
-        ],
-        'g-3': [
-          { id: 's-9', first_name: 'Botir', last_name: 'Xasanov', phone: '+998901234569', status: 'active', student_code: 'ST009' },
-          { id: 's-10', first_name: 'Gulnora', last_name: 'Karimova', phone: '+998901234570', status: 'active', student_code: 'ST010' },
-        ],
-      };
-      return { success: true, data: (studentsByGroup[groupId] || []).map(studentWithBalance) };
-    }
-
-    // -------- MENTOR: Attendance --------
-    const attMatch = path.match(/^\/mentor\/attendance\/groups\/([^/]+)/);
-    if (attMatch) {
-      const groupId = attMatch[1];
-      if (method === 'POST') {
-        return { success: true, data: body.records };
-      }
-      // GET - extract date params from query string
-      const url = new URL(path, 'http://localhost');
-      const dateParam = url.searchParams.get('date');
-      const fromParam = url.searchParams.get('from');
-      const toParam = url.searchParams.get('to');
-
-      // Generate attendance records for each date in range
-      const startDate = dateParam || fromParam || '2026-07-01';
-      const endDate = toParam || startDate;
-
-      const allRecords = [];
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      const statuses = ['present', 'present', 'present', 'absent', 'present', 'late', 'present'];
-      const studentIds = ['s-1', 's-2', 's-3', 's-4', 's-5'];
-
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0];
-        studentIds.forEach((sid, i) => {
-          // Random-ish but deterministic pattern per student per day
-          const idx = (d.getDate() + i) % statuses.length;
-          allRecords.push({
-            student_id: sid,
-            date: dateStr,
-            status: statuses[idx],
-          });
-        });
-      }
-
-      return { success: true, data: allRecords };
-    }
-
-    // -------- MENTOR: Homework --------
-    const hwListMatch = path.match(/^\/mentor\/homework\/groups\/([^/]+)$/);
-    if (hwListMatch && method === 'GET') {
-      return {
-        success: true,
-        data: [
-          { id: 'hw-1', title: 'Flexbox Layout', description: 'Create a responsive layout using Flexbox', max_score: 100, coin_reward: 10, deadline: '2026-07-20T23:59:00Z', submissions_count: 5, graded_count: 2, created_at: '2026-07-15T10:00:00Z' },
-          { id: 'hw-2', title: 'JavaScript Functions', description: 'Write 10 functions', max_score: 100, coin_reward: 15, deadline: '2026-07-25T23:59:00Z', submissions_count: 3, graded_count: 0, created_at: '2026-07-18T10:00:00Z' },
-          { id: 'hw-3', title: 'Python Dictionary', description: 'Working with dictionaries', max_score: 50, coin_reward: 5, deadline: '2026-07-22T23:59:00Z', submissions_count: 7, graded_count: 4, created_at: '2026-07-16T10:00:00Z' },
-        ],
-      };
-    }
-
-    const subMatch = path.match(/^\/mentor\/homework\/([^/]+)\/submissions$/);
-    if (subMatch && method === 'GET') {
-      return {
-        success: true,
-        data: [
-          { id: 'sub-1', homework_id: subMatch[1], student_id: 's-1', first_name: 'Anvar', last_name: 'Sobirov', status: 'submitted', score: null, file_key: null, text_answer: 'Here is my flexbox layout code', submitted_at: '2026-07-18T14:30:00Z', graded_at: null },
-          { id: 'sub-2', homework_id: subMatch[1], student_id: 's-2', first_name: 'Malika', last_name: 'Yusupova', status: 'submitted', score: null, file_key: null, text_answer: 'Complete all tasks', submitted_at: '2026-07-19T09:15:00Z', graded_at: null },
-          { id: 'sub-3', homework_id: subMatch[1], student_id: 's-4', first_name: 'Dilnoza', last_name: 'Karimova', status: 'graded', score: 85, file_key: null, text_answer: 'Done', submitted_at: '2026-07-17T16:00:00Z', graded_at: '2026-07-18T10:00:00Z' },
-        ],
-      };
-    }
-
-    const gradeMatch = path.match(/^\/mentor\/homework\/submissions\/([^/]+)\/grade$/);
-    if (gradeMatch && method === 'POST') {
-      return { success: true, data: { id: gradeMatch[1], score: body.score, status: 'graded' } };
-    }
-
-    // -------- MENTOR: Coins --------
-    if (path === '/mentor/coins' && method === 'POST') {
-      const historyKey = `mock_coin_history_${body.studentId}`;
-      const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
-      history.unshift({
-        id: `ch-${Date.now()}`,
-        amount: body.amount,
-        reason: body.reason,
-        operation: body.amount > 0 ? 'reward' : 'deduction',
-        created_at: new Date().toISOString(),
-      });
-      localStorage.setItem(historyKey, JSON.stringify(history));
-      // Update balance in localStorage so student roster shows updated value
-      const balances = getMockBalances();
-      const oldBal = DEFAULT_BALANCES[body.studentId] ?? 0;
-      balances[body.studentId] = (balances[body.studentId] ?? oldBal) + body.amount;
-      localStorage.setItem('mock_coin_balances', JSON.stringify(balances));
-      return { success: true, data: { balance_after: balances[body.studentId] } };
-    }
-
-    const coinHistMatch = path.match(/^\/mentor\/coins\/students\/([^/]+)$/);
-    if (coinHistMatch && method === 'GET') {
-      const historyKey = `mock_coin_history_${coinHistMatch[1]}`;
-      const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
-      return { success: true, data: { history, balance: history.reduce((s, h) => s + h.amount, 100) } };
-    }
-
     // Fallback
     const err = new Error('Mock route not implemented: ' + path);
     err.status = 404;
@@ -809,31 +666,6 @@ async function request(path, { method = 'GET', body, token } = {}) {
 }
 
 export const api = {
-  // -------- MENTOR: Groups --------
-  mentorGroups: (token) => request('/mentor/groups', { token }),
-  mentorGroupStudents: (token, groupId) => request(`/mentor/groups/${groupId}/students`, { token }),
-
-  // -------- MENTOR: Attendance --------
-  mentorAttendance: (token, groupId, params) => {
-    const query = params.date
-      ? `?date=${params.date}`
-      : `?from=${params.from}&to=${params.to}`;
-    return request(`/mentor/attendance/groups/${groupId}${query}`, { token });
-  },
-  mentorMarkAttendance: (token, groupId, body) =>
-    request(`/mentor/attendance/groups/${groupId}`, { method: 'POST', token, body }),
-
-  // -------- MENTOR: Homework (view + grade only) --------
-  mentorHomeworkList: (token, groupId) => request(`/mentor/homework/groups/${groupId}`, { token }),
-  mentorHomeworkSubmissions: (token, homeworkId) =>
-    request(`/mentor/homework/${homeworkId}/submissions`, { token }),
-  mentorGradeSubmission: (token, submissionId, body) =>
-    request(`/mentor/homework/submissions/${submissionId}/grade`, { method: 'POST', token, body }),
-
-  // -------- MENTOR: Coins --------
-  mentorGrantCoins: (token, body) => request('/mentor/coins', { method: 'POST', token, body }),
-  mentorCoinHistory: (token, studentId) => request(`/mentor/coins/students/${studentId}`, { token }),
-
   // -------- AUTH (staff — admin/superadmin/mentor/methodist) --------
   loginStaff: (login, password) =>
     request('/auth/staff/login', { method: 'POST', body: { login, password } }),
@@ -918,43 +750,4 @@ export const api = {
   methodistDifficulty: (token) => request('/methodist/difficulty', { token }),
   methodistGroups: (token) => request('/methodist/groups', { token }),
   methodistStudents: (token) => request('/methodist/students', { token }),
-
-  // -------- ADMIN (branch) --------
-  adminDashboard: (token) => request('/admin/dashboard', { token }),
-  adminReports: (token, qs = '') => request(`/admin/reports${qs}`, { token }),
-
-  adminExpenses: (token, qs = '') => request(`/admin/expenses${qs}`, { token }),
-  adminCreateExpense: (token, body) => request('/admin/expenses', { method: 'POST', token, body }),
-  adminDeleteExpense: (token, id) => request(`/admin/expenses/${id}`, { method: 'DELETE', token }),
-
-  adminStudents: (token, qs = '') => request(`/admin/students${qs}`, { token }),
-  adminStudentDetail: (token, id) => request(`/admin/students/${id}`, { token }),
-  adminCreateStudent: (token, body) => request('/admin/students', { method: 'POST', token, body }),
-  adminUpdateStudent: (token, id, body) => request(`/admin/students/${id}`, { method: 'PATCH', token, body }),
-  adminFreezeStudent: (token, id, frozen, reason) => request(`/admin/students/${id}/freeze`, { method: 'POST', token, body: { frozen, reason } }),
-  adminRegenStudentPassword: (token, id) => request(`/admin/students/${id}/regenerate-password`, { method: 'POST', token }),
-  adminDeleteStudent: (token, id) => request(`/admin/students/${id}`, { method: 'DELETE', token }),
-
-  adminMentors: (token) => request('/admin/mentors', { token }),
-  adminCreateMentor: (token, body) => request('/admin/mentors', { method: 'POST', token, body }),
-  adminUpdateMentor: (token, id, body) => request(`/admin/mentors/${id}`, { method: 'PATCH', token, body }),
-  adminFreezeMentor: (token, id, frozen) => request(`/admin/mentors/${id}/freeze`, { method: 'POST', token, body: { frozen } }),
-  adminDeleteMentor: (token, id) => request(`/admin/mentors/${id}`, { method: 'DELETE', token }),
-
-  adminGroups: (token, qs = '') => request(`/admin/groups${qs}`, { token }),
-  adminGroupDetail: (token, id) => request(`/admin/groups/${id}`, { token }),
-  adminCreateGroup: (token, body) => request('/admin/groups', { method: 'POST', token, body }),
-  adminUpdateGroup: (token, id, body) => request(`/admin/groups/${id}`, { method: 'PATCH', token, body }),
-  adminArchiveGroup: (token, id) => request(`/admin/groups/${id}/archive`, { method: 'POST', token }),
-  adminUnarchiveGroup: (token, id) => request(`/admin/groups/${id}/unarchive`, { method: 'POST', token }),
-  adminAddStudentToGroup: (token, groupId, studentId) => request(`/admin/groups/${groupId}/students`, { method: 'POST', token, body: { studentId } }),
-  adminRemoveStudentFromGroup: (token, groupId, studentId) => request(`/admin/groups/${groupId}/students/${studentId}`, { method: 'DELETE', token }),
-
-  adminInvoices: (token, qs = '') => request(`/admin/payments/invoices${qs}`, { token }),
-  adminCreatePayment: (token, body) => request('/admin/payments', { method: 'POST', token, body }),
-  adminPayInvoice: (token, id, body) => request(`/admin/payments/invoices/${id}/pay`, { method: 'POST', token, body }),
-  adminRefundTransaction: (token, id, reason) => request(`/admin/payments/transactions/${id}/refund`, { method: 'POST', token, body: { reason } }),
-
-  adminSettings: (token) => request('/admin/settings', { token }),
-  adminUpdateSettings: (token, body) => request('/admin/settings', { method: 'PUT', token, body }),
 };
