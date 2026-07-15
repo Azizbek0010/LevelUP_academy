@@ -23,6 +23,7 @@
 - [x] K-MAIN: Platform dashboard: GET /api/main/dashboard
 - [x] K-MAIN: Billing: narxlar DBda (platform_pricing), GET/PUT /api/main/pricing
 - [x] K-MAIN: Partner freeze/activate (PATCH /partners/:id/status)
+- [x] K-MAIN: YANGI narx modeli (2026-07-16) — o'quvchi bucket tariflari (Free/Start/Standard/Pro/Business/Network), filiallar bepul; config/plans.js TIERS + computeBill({students}); eski filial+o'quvchi formula bekor; GET /api/main/pricing endi { tiers, currency }
 
 ## Backend — Super Admin (Karis)
 
@@ -36,6 +37,7 @@
 - [x] K-ADMIN: Students CRUD (add-student login_code+parol generatsiya, freeze, regenerate-password, soft-delete)
 - [x] K-ADMIN: Groups CRUD (archive, mentor biriktirish, students add/remove)
 - [x] K-ADMIN: Mentors CRUD (create/PATCH/freeze/DELETE guard bilan)
+- [x] K-ADMIN: Guruh jadvali (2026-07-16) — POST/PATCH /api/admin/groups { days[], startTime }; tugash vaqti backendda org dars davomiyligidan hisoblanadi; GET /api/admin/settings (davomiylik)
 
 ## Backend — Methodist (Karis)
 
@@ -67,6 +69,7 @@
 > Team Lead o'ziga qaytarib oldi). Zona: `modules/super`.
 
 - [x] K-SUPER-INT: GET + PATCH /api/super/organization — Settings (org profil) ✅ jonli tekshirildi (35586f6)
+- [x] K-SUPER-INT: Dars davomiyligi (2026-07-16) — organizations.lesson_duration_min + lessonDurationMin GET/PATCH /api/super/organization da
 - [ ] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa
 - [ ] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
 - [ ] K-SUPER-INT: GET /api/super/stats — Stats (KPI + grafik data, recharts)
@@ -132,6 +135,18 @@
 - [x] AB-SHARED: db/seeds (demo data, idempotent)
 - [x] AB-SHARED: Coin foundation: coins.changeCoins()
 
+## Backend — Narx / GTM (Karis) 🔥 YANGI (2026-07-16)
+
+> To'liq strategiya — PRICING.md (vault). Model: o'quvchi bucket tariflari, filiallar bepul, narx=sifat (kafolat).
+
+- [x] PRICE: Bucket tariflar backendda (config/plans.js TIERS, computeBill by students)
+- [ ] PRICE: Neon'da migratsiyalarni prognat (npm run migrate) — 1783700000000_org-lesson-duration + qolgan 6 tasi; aks holda guruh jadvali va mentor oyligi prodda 500
+- [ ] PRICE: render.yaml ga preDeployCommand: npm run migrate (migratsiya avtomatik yugursin)
+- [ ] PRICE: Tariflarni DB-editable qilish (Main Admin tahrirlaydi) — v2
+- [ ] FREEZE: Obunani muzlatish — 1 oy bepul, keyin (2-3-4...oy) pullik; backend logika + billing + status
+- [ ] WHITE-LABEL: Markazga o'z brendida sayt (bizning backend/storage) — pullik xizmat 4 990 000 dan (minimal, murakkab bo'lsa qimmatroq); shablon self-serve + to'liq kastom premium
+- ❌ REFERAL: kerak emas (qaror 2026-07-16)
+
 ---
 
 ## Frontend — Auth (Elyor)
@@ -139,8 +154,8 @@
 - [ ] AUTH: Login sahifalar (3 endpoint: main / staff / member) — elyor branchda bor, main ga merge kerak
 - [ ] AUTH: ProtectedRoute + RoleGuard
 - [ ] AUTH: Router setup by roles
-- [ ] AUTH: Redux store + authSlice
-- [ ] AUTH: Axios interceptor (auto-refresh)
+- [ ] AUTH: Redux authSlice — KERAK EMAS (useAuth() context yetarli, qaror 2026-07-15)
+- [ ] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise, credentials:'include') — 🔴 muhim, token endi 1 soat
 - [ ] AUTH: Socket.io client
 
 ## Frontend — Super Admin ✅ TUGADI
@@ -153,7 +168,8 @@
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
 - [x] SUPER (front): CRUD admins
 - [x] SUPER (front): Reports
-- [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — ⚠️ STATIK: backend /api/super/organization YO'Q → Abdulaziz ulaydi
+- [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
+- [ ] SUPER (front): 🆕 Dars davomiyligi sozlamasi — Settings da PATCH /api/super/organization lessonDurationMin (Karis o'zi qiladi)
 
 ## Frontend — Main Admin (Shohjahon) 🔥 YANGI — to'liq egasi
 
@@ -164,7 +180,7 @@
 - [ ] MAIN: Leads — ro'yxat / filtr / status o'zgartirish, OnboardModal (temp-parol), Qabul / Rad etish
 - [ ] MAIN: Organizations (hamkorlar) — ro'yxat / qidiruv, freeze / activate
 - [ ] MAIN: Org-detail sahifasi — hamkorning filiallari / adminlari / o'quvchilari / daromadi (endpoint Karis'dan kerak — backend integratsiya)
-- [ ] MAIN: Billing — narx redaktori (UZS) + hamkor hisob-fakturalari
+- [ ] MAIN (Shohjahon): Billing — GET /api/main/pricing endi { tiers, currency } (Free/Start/Standard/Pro/Business); sahifani yangi bucket tariflarga moslashtir (eski baseFirstBranch/perStudent YO'Q)
 - [ ] MAIN: Revenue — real tushum sahifasi (hozir zaglushka): hamkorlar kesimida + dinamika
 - [ ] MAIN: Settings — real platforma sozlamalari (hozir zaglushka)
 - [ ] MAIN: Google OAuth — jonli E2E login testi (Firebase levelup-1c059)
@@ -178,6 +194,7 @@
 - [ ] ADMIN: Dashboard (income + expenses = profit)
 - [ ] ADMIN: Students CRUD (xob integratsiyasi bor — reviewdan o'tkazish)
 - [ ] ADMIN: Groups CRUD
+- [ ] ADMIN (Odil): 🆕 Guruh formasi — mentor majburiy + kunlar (1-3-5/2-4-6 preset yoki boshqa kunlar galochka) + boshlanish vaqti + tugash vaqti AVTO (GET /api/admin/settings) → POST/PATCH { days, startTime }; kontrakt TEAM-TASKS §9.2
 - [ ] ADMIN: Payments UI (full/split modal; K-PAY chiqqach ulanadi)
 - [ ] ADMIN: Expenses CRUD
 - [ ] ADMIN: Reports
@@ -199,7 +216,7 @@
 - [ ] STUDENT: Videos
 - [ ] STUDENT: Leaderboard
 
-## Frontend — Parent (iface9808-sketch) 🔥 to'liq egasi
+## Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
 
 > Methodist'dan Parent panelga o'tkazildi. Backend tayyor (AB-PARENT: child overview + assertParentOwnsChild guard).
 > Panel: `frontend/member` (parent tomoni — login-kod + parol bilan kiradi).
