@@ -11,7 +11,7 @@ import { AppError } from '../../utils/AppError.js';
 import * as repo from './auth.repository.js';
 import { buildOtpEmail } from './otpEmail.js';
 
-const ACCESS_TTL = '15m';
+const ACCESS_TTL = '1h';
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 дней
 const OTP_TTL_SEC = 180; // 3 минуты
 const OTP_MAX_ATTEMPTS = 3;

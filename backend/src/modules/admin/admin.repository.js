@@ -413,6 +413,19 @@ export function findMentorInBranch(mentorId, branchId, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
+// длительность урока организации (её задаёт Super Admin) — по филиалу
+export function getOrgLessonDuration(branchId, client = pool) {
+  return client
+    .query(
+      `SELECT o.lesson_duration_min
+         FROM branches b
+         JOIN organizations o ON o.id = b.organization_id
+        WHERE b.id = $1`,
+      [branchId],
+    )
+    .then((r) => r.rows[0]?.lesson_duration_min ?? 60);
+}
+
 export function insertGroup(
   { branchId, mentorId, name, subject, monthlyPrice, schedule, room },
   client = pool,
