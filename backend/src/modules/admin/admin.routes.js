@@ -72,6 +72,7 @@ router.use('/reports', reportsRoutes);
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
 router.get('/dashboard', ctrl.dashboard);
+router.get('/settings', ctrl.settings);
 
 /**
  * @openapi

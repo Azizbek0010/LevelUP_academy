@@ -9,6 +9,11 @@ export const dashboard = asyncHandler(async (req, res) => {
   res.json(await service.dashboard(branchId(req)));
 });
 
+// ---------- настройки (длительность урока из организации, для формы группы) ----------
+export const settings = asyncHandler(async (req, res) => {
+  res.json(await service.getSettings(branchId(req)));
+});
+
 // ---------- расходы ----------
 export const createExpense = asyncHandler(async (req, res) => {
   res.status(201).json({ expense: await service.createExpense(req.scope, req.user.id, req.body) });

@@ -17,6 +17,8 @@ export const updateOrganizationSchema = z
         z.null(),
       ])
       .transform((v) => (v ? v : null)),
+    // длительность урока (минуты) — применяется ко всем группам организации
+    lessonDurationMin: z.coerce.number().int().min(10, 'Min 10 min').max(600, 'Max 600 min'),
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
