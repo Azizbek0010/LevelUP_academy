@@ -3,7 +3,7 @@
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/((?!login$).*)",
       "headers": [
         {
           "key": "X-Robots-Tag",
