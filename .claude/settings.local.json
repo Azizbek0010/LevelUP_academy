@@ -1,4 +1,19 @@
 {
+  "permissions": {
+    "allow": [
+      "PowerShell(head *)",
+      "PowerShell([System.IO.Directory]::GetDirectories\\(\"C:\\\\Users\\\\user\\\\educrm\\\\packages\"\\); [System.IO.Directory]::GetFiles\\(\"C:\\\\Users\\\\user\\\\educrm\\\\packages\"\\))",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\user\\\\educrm\\\\packages\\\\web\\\\src\" -Recurse)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(claude mcp *)",
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(Remove-Item \"C:\\\\Users\\\\user\\\\Desktop\\\\LevelUP_academy\\\\frontend\\\\main-admin\\\\src\\\\pages\\\\OrgDetail.jsx\")",
+      "Bash(Remove-Item \"C:\\\\Users\\\\user\\\\Desktop\\\\LevelUP_academy\\\\frontend\\\\main-admin\\\\src\\\\pages\\\\Revenue.jsx\")",
+      "Bash(Write-Host \"Deleted\")",
+      "Bash(node_modules/.bin/vite build *)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
