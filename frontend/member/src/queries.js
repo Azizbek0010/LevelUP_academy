@@ -31,6 +31,11 @@ export function useChatMessages(roomKey) {
   });
 }
 
+export function useNotifications() {
+  const { token } = useAuth();
+  return useAuthedQuery(['notifications'], () => api.notifications(token));
+}
+
 export function useInvalidate() {
   const qc = useQueryClient();
   return (...keys) => keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));

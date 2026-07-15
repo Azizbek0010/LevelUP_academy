@@ -11,6 +11,7 @@ import Grades from './pages/Grades.jsx';
 import Debt from './pages/Debt.jsx';
 import Chat from './pages/Chat.jsx';
 import Notifications from './pages/Notifications.jsx';
+import Profile from './pages/Profile.jsx';
 
 function Protected({ children }) {
   const { token } = useAuth();
@@ -66,6 +67,7 @@ export default function App() {
           <Route path="/debt" element={<Debt />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

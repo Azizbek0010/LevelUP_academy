@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
 import Avatar from './Avatar.jsx';
@@ -94,25 +94,20 @@ export default function Layout() {
       </nav>
 
       <div className="mt-auto p-4 border-t border-white/5">
-        <div className="flex items-center gap-3">
+        <NavLink
+          to="/profile"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-white/5 transition-colors group"
+        >
           <div className="relative">
             <Avatar name={`${user?.firstName} ${user?.lastName}`} size={38} />
             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-sidebar" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">{user?.firstName} {user?.lastName}</p>
-            <p className="text-[11px] opacity-40">Родитель</p>
+            <p className="text-[11px] opacity-40">Профиль →</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="btn btn-ghost btn-xs text-neutral-content/40 hover:text-error rounded-lg"
-            title="Выйти"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-            </svg>
-          </button>
-        </div>
+        </NavLink>
       </div>
     </div>
   );
