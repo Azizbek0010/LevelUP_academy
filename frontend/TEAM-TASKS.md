@@ -37,7 +37,6 @@
 | Elyor | Auth | Super Admin, Admin, Mentor, Methodist |
 | Said Islom | Super Admin (дашборд) | Auth, Admin, Mentor, Methodist |
 | Aziz | Super Admin (филиалы) | Auth, Admin, Mentor, Methodist |
-| sxvs | Super Admin (админы) | Auth, Admin, Mentor, Methodist |
 | Abduloh | Admin (студенты) | Auth, Super Admin, Mentor, Methodist |
 | Odil | Admin (группы) | Auth, Super Admin, Mentor, Methodist |
 | Hamidula | Admin (расходы) | Auth, Super Admin, Mentor, Methodist |
@@ -186,7 +185,7 @@ src/
 | Панель | Люди | Backend API | Канон-контракт |
 |--------|------|-------------|----------------|
 | **Auth** | Elyor | K-AUTH ✅ | §7 этого файла |
-| **Super Admin** | Said Islom, Aziz, sxvs | K-SUPER ✅ | §8 этого файла |
+| **Super Admin** | Said Islom, Aziz | K-SUPER ✅ | §8 этого файла |
 | **Admin** | Abduloh, Odil, Hamidula | K-ADMIN ✅ (платежи ⏳) | §9 этого файла |
 | **Mentor** | Sardor, Kozim, Alish | AB-MENTOR ✅ | §10 этого файла |
 | **Methodist** | Azizbek (Karis) | AB-METHODIST ✅ | §11 этого файла |
@@ -243,7 +242,7 @@ src/
 
 ---
 
-## 8. Super Admin — Said Islom, Aziz, sxvs
+## 8. Super Admin — Said Islom, Aziz
 
 **Панель:** Super Admin (владелец организации, видит ВСЕ филиалы)
 **Backend:** Karis, K-SUPER — ✅ готов
@@ -294,29 +293,6 @@ src/
 - [ ] Создание/редактирование через модалку (react-hook-form + zod)
 - [ ] Архивация/разархивация корректно прячет/возвращает кнопки мутаций
 - [ ] После мутаций — инвалидация кэша TanStack Query
-
-### 8.3 sxvs — Админы + Отчёты
-
-#### Страницы
-
-- **Admins** (`/superadmin/admins`): CRUD админов, email+пароль задаёт Super Admin вручную, выбор филиала, freeze
-- **Org Reports** (`/superadmin/reports`): выручка и долги по филиалам из `/api/super/dashboard`
-- **Settings** (`/superadmin/settings`): профиль организации — заглушка (эндпоинта пока нет)
-
-#### API
-
-- `POST /api/super/admins` — `{ firstName, lastName, email, password, branchId, phone? }` → `201`
-- `GET /api/super/admins` → `{ admins:[...] }`
-- `PATCH /api/super/admins/:id` — `{ firstName?, lastName?, branchId?, phone? }` (правка/перенос)
-- `PATCH /api/super/admins/:id/freeze` — `{ frozen:true|false }`
-
-#### Definition of Done
-
-- [ ] CRUD админов + привязка/перенос к филиалу + freeze
-- [ ] Отчёты рисуют графики по `/api/super/dashboard` (revenue пока 0 — EmptyState ок)
-- [ ] Пустые состояния и skeleton на месте
-
----
 
 ## 9. Admin — Abduloh, Odil, Hamidula
 
