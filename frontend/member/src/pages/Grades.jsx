@@ -4,11 +4,11 @@ import { useChild } from '../child-context.jsx';
 import { dateShort } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
-import { EmptyState, ErrorState } from '../components/ui.jsx';
+import { EmptyState, ErrorState, ProgressBar } from '../components/ui.jsx';
 
 const TABS = [
-  { key: 'homework', label: 'Домашние задания' },
-  { key: 'tests', label: 'Тесты' },
+  { key: 'homework', label: 'Домашние задания', icon: '📋' },
+  { key: 'tests', label: 'Тесты', icon: '📝' },
 ];
 
 export default function Grades() {
@@ -16,9 +16,7 @@ export default function Grades() {
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
   const [tab, setTab] = useState('homework');
 
-  if (!selectedChild) {
-    return <EmptyState icon="👶" title="Выберите ребёнка" />;
-  }
+  if (!selectedChild) return <EmptyState icon="👶" title="Выберите ребёнка" />;
 
   if (isLoading) {
     return (
@@ -38,6 +36,15 @@ export default function Grades() {
   const tests = d.grades?.tests || [];
   const list = tab === 'homework' ? hw : tests;
 
+  const avg =
+    list.length > 0
+      ? Math.round(list.reduce((s, g) => s + (g.score / g.maxScore) * 100, 0) / list.length)
+      : 0;
+
+  const best = list.length > 0
+    ? Math.max(...list.map((g) => Math.round((g.score / g.maxScore) * 100)))
+    : 0;
+
   return (
     <>
       <PageHeader
@@ -50,15 +57,33 @@ export default function Grades() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === t.key
-                ? 'bg-primary text-primary-content'
-                : 'text-base-content/60 hover:bg-base-200'
+                ? 'bg-primary text-primary-content shadow-sm'
+                : 'text-base-content/50 hover:bg-base-200'
             }`}
           >
+            <span className="mr-1.5">{t.icon}</span>
             {t.label}
           </button>
         ))}
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="card bg-base-100 p-4 text-center">
+          <p className="text-2xl font-extrabold">{list.length}</p>
+          <p className="text-[11px] opacity-40 mt-1">Всего</p>
+        </div>
+        <div className="card bg-base-100 p-4 text-center">
+          <p className="text-2xl font-extrabold" style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }}>
+            {avg}%
+          </p>
+          <p className="text-[11px] opacity-40 mt-1">Средний</p>
+        </div>
+        <div className="card bg-base-100 p-4 text-center">
+          <p className="text-2xl font-extrabold text-primary">{best}%</p>
+          <p className="text-[11px] opacity-40 mt-1">Лучший</p>
+        </div>
       </div>
 
       <div className="card bg-base-100">
@@ -70,47 +95,29 @@ export default function Grades() {
               message={tab === 'homework' ? 'Домашние задания ещё не проверены' : 'Тесты ещё не пройдены'}
             />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="table table-sm">
-                <thead>
-                  <tr>
-                    <th>Название</th>
-                    <th>Балл</th>
-                    <th>Процент</th>
-                    <th>Дата</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.map((g, i) => {
-                    const pct = g.maxScore > 0 ? Math.round((g.score / g.maxScore) * 100) : 0;
-                    const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
-                    return (
-                      <tr key={i}>
-                        <td className="text-sm font-medium">{g.title}</td>
-                        <td className="text-sm font-mono">
-                          {g.score}/{g.maxScore}
-                        </td>
-                        <td>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-1.5 bg-base-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full"
-                                style={{ width: `${pct}%`, background: color }}
-                              />
-                            </div>
-                            <span className="text-xs font-mono" style={{ color }}>
-                              {pct}%
-                            </span>
-                          </div>
-                        </td>
-                        <td className="text-sm opacity-60 whitespace-nowrap">
-                          {dateShort(g.gradedAt || g.finishedAt)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="space-y-2 mt-2">
+              {list.map((g, i) => {
+                const pct = g.maxScore > 0 ? Math.round((g.score / g.maxScore) * 100) : 0;
+                const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
+                return (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-base-200/30 hover:bg-base-200/60 transition-colors">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
+                      style={{ background: `${color}15`, color }}
+                    >
+                      {pct}%
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{g.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <ProgressBar value={pct} color={color} height={4} />
+                        <span className="text-[11px] font-mono opacity-50">{g.score}/{g.maxScore}</span>
+                      </div>
+                    </div>
+                    <span className="text-[11px] opacity-30 whitespace-nowrap">{dateShort(g.gradedAt || g.finishedAt)}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
