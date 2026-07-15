@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 16.07.2026 01:13 (UTC+5, Toshkent vaqti)
-> Statistika: 73/144 task tugallangan (50%)
+> Oxirgi yangilanish: 16.07.2026 01:21 (UTC+5, Toshkent vaqti)
+> Statistika: 74/144 task tugallangan (51%)
 
 ---
 
-## Progress: [##########..........] 50%
+## Progress: [##########..........] 51%
 
 ## Tugallangan vazifalar
 
@@ -95,6 +95,9 @@
 ### Backend — Narx / GTM (Karis) 🔥 YANGI (2026-07-16)
 - [x] PRICE: Bucket tariflar backendda (config/plans.js TIERS, computeBill by students)
 
+### Frontend — Auth (Elyor)
+- [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617)
+
 ### Frontend — Super Admin ✅ TUGADI
 - [x] SUPER (front): Dashboard (org income, branches, admins, students)
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
@@ -122,6 +125,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 37 task
+- Karis (Backend): 38 task
 - Abdulaziz (Backend): 34 task
-- Frontend jamoasi: 15 task
+- Frontend jamoasi: 16 task

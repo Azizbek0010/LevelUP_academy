@@ -155,7 +155,7 @@
 - [ ] AUTH: ProtectedRoute + RoleGuard
 - [ ] AUTH: Router setup by roles
 - [ ] AUTH: Redux authSlice — KERAK EMAS (useAuth() context yetarli, qaror 2026-07-15)
-- [ ] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise, credentials:'include') — 🔴 muhim, token endi 1 soat
+- [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617)
 - [ ] AUTH: Socket.io client
 
 ## Frontend — Super Admin ✅ TUGADI
