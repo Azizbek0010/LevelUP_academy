@@ -1,22 +1,44 @@
 import { useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
-
-const links = [
-  { to: '/landing/features', label: 'Возможности' },
-  { to: '/landing/roles', label: 'Роли' },
-  { to: '/landing/finance', label: 'Финансы' },
-  { to: '/landing/gamification', label: 'Мотивация' },
-];
+import { NavLink, Link, useLocation } from 'react-router-dom';
+import { canonicalPath, localizePath, useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 export default function Header() {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+  const t = useT();
+  const lang = useLang();
+  const lp = useLocalizePath();
+  const { pathname } = useLocation();
+
+  const links = [
+    { to: lp('/landing/features'), label: t.nav.features },
+    { to: lp('/landing/roles'), label: t.nav.roles },
+    { to: lp('/landing/finance'), label: t.nav.finance },
+    { to: lp('/landing/gamification'), label: t.nav.gamification },
+  ];
+
+  // Переключатель ведёт на ЭТУ ЖЕ страницу на другом языке, а не на главную:
+  // сбрасывать пользователя на главную при смене языка — потеря контекста.
+  const otherLang = lang === 'ru' ? 'uz' : 'ru';
+  const switchHref = localizePath(canonicalPath(pathname), otherLang);
+
+  const LangSwitch = ({ className = '' }) => (
+    <Link
+      to={switchHref}
+      className={`lang-switch ${className}`}
+      hrefLang={otherLang}
+      aria-label={t.lang.switchTo}
+      onClick={close}
+    >
+      {t.lang.switchTo}
+    </Link>
+  );
 
   return (
     <>
       <header className="header">
         <div className="container header__inner">
-          <Link to="/landing" className="header__logo" onClick={close}>
+          <Link to={lp('/landing')} className="header__logo" onClick={close}>
             <img src="/logo-mark.svg" alt="LevelUp Academy" />
             LevelUp Academy
           </Link>
@@ -33,14 +55,17 @@ export default function Header() {
               </NavLink>
             ))}
           </nav>
-          <Link to="/landing/contacts" className="btn btn--dark header__cta">
-            Войти
+
+          <LangSwitch />
+
+          <Link to={lp('/landing/contacts')} className="btn btn--dark header__cta">
+            {t.nav.login}
           </Link>
 
           {/* Мобильный бургер */}
           <button
             className={`burger${open ? ' burger--open' : ''}`}
-            aria-label="Меню"
+            aria-label={t.nav.menu}
             aria-expanded={open}
             onClick={() => setOpen(!open)}
           >
@@ -63,8 +88,8 @@ export default function Header() {
           <span>LevelUp Academy</span>
         </div>
         <nav className="drawer__nav">
-          <NavLink to="/landing" end onClick={close}>
-            Главная
+          <NavLink to={lp('/landing')} end onClick={close}>
+            {t.nav.home}
           </NavLink>
           {links.map((l) => (
             <NavLink
@@ -76,16 +101,17 @@ export default function Header() {
               {l.label}
             </NavLink>
           ))}
-          <NavLink to="/landing/contacts" onClick={close}>
-            Контакты
+          <NavLink to={lp('/landing/contacts')} onClick={close}>
+            {t.nav.contacts}
           </NavLink>
+          <LangSwitch className="drawer__lang" />
         </nav>
         <Link
-          to="/landing/contacts"
+          to={lp('/landing/contacts')}
           className="btn btn--accent drawer__cta"
           onClick={close}
         >
-          Войти
+          {t.nav.login}
         </Link>
       </aside>
     </>

@@ -8,6 +8,21 @@ import Roles from './pages/Roles.jsx';
 import Finance from './pages/Finance.jsx';
 import Gamification from './pages/Gamification.jsx';
 import Contacts from './pages/Contacts.jsx';
+import NotFound from './pages/NotFound.jsx';
+
+/**
+ * Канонические пути лендинга. Русская версия живёт на них как есть, узбекская — под
+ * префиксом /uz (см. src/i18n/index.js). Один список на оба языка: разойтись они не могут.
+ * Держать в синхроне с ROUTES в scripts/prerender.js и с public/sitemap.xml.
+ */
+export const PAGES = [
+  { path: '/landing', element: <Home /> },
+  { path: '/landing/features', element: <Features /> },
+  { path: '/landing/roles', element: <Roles /> },
+  { path: '/landing/finance', element: <Finance /> },
+  { path: '/landing/gamification', element: <Gamification /> },
+  { path: '/landing/contacts', element: <Contacts /> },
+];
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -23,15 +38,20 @@ export default function App() {
       <ScrollToTop />
       <Header />
       <Routes>
-        {/* Лендинг живёт на /landing — корень редиректит туда */}
+        {/* В проде корень редиректит Vercel (308). Здесь — для dev-сервера и для
+            прямого перехода внутри SPA. */}
         <Route path="/" element={<Navigate to="/landing" replace />} />
-        <Route path="/landing" element={<Home />} />
-        <Route path="/landing/features" element={<Features />} />
-        <Route path="/landing/roles" element={<Roles />} />
-        <Route path="/landing/finance" element={<Finance />} />
-        <Route path="/landing/gamification" element={<Gamification />} />
-        <Route path="/landing/contacts" element={<Contacts />} />
-        <Route path="*" element={<Navigate to="/landing" replace />} />
+        <Route path="/uz" element={<Navigate to="/uz/landing" replace />} />
+
+        {PAGES.map(({ path, element }) => (
+          <Route key={path} path={path} element={element} />
+        ))}
+        {PAGES.map(({ path, element }) => (
+          <Route key={`uz${path}`} path={`/uz${path}`} element={element} />
+        ))}
+        {/* Битый URL — это 404, а не повод молча увести на главную: редирект
+            делал из любого несуществующего адреса «живую» страницу (soft-404). */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />
     </>

@@ -80,7 +80,11 @@ export function setOrgOwner(orgId, userId, client = pool) {
   );
 }
 
-/** Список партнёров с числом филиалов и студентов (для дашборда/списка). */
+/**
+ * Список партнёров с числом филиалов/студентов и их доход/расход (для дашборда/списка).
+ * revenue/expenses — деньги партнёра (его студенты платят ему), не наш доход от партнёра.
+ * Money-таблицы (transactions, expenses) — чужая зона (Karis), здесь только SELECT.
+ */
 export function listPartners(client = pool) {
   return client
     .query(
@@ -88,7 +92,13 @@ export function listPartners(client = pool) {
               (SELECT count(*) FROM branches b
                  WHERE b.organization_id = o.id AND b.deleted_at IS NULL) AS branches,
               (SELECT count(*) FROM users u
-                 WHERE u.organization_id = o.id AND u.role = 'student' AND u.deleted_at IS NULL) AS students
+                 WHERE u.organization_id = o.id AND u.role = 'student' AND u.deleted_at IS NULL) AS students,
+              (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t
+                 JOIN branches b ON b.id = t.branch_id
+                WHERE b.organization_id = o.id AND t.status = 'completed') AS revenue,
+              (SELECT COALESCE(SUM(e.amount), 0) FROM expenses e
+                 JOIN branches b ON b.id = e.branch_id
+                WHERE b.organization_id = o.id AND e.deleted_at IS NULL) AS expenses
          FROM organizations o
         WHERE o.deleted_at IS NULL
         ORDER BY o.created_at DESC`,
