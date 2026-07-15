@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, TrendingUp,
   Wifi, CalendarCheck, ClipboardCheck, Coins, GraduationCap, Wallet, Receipt, UserCog,
-  UsersRound, Megaphone, AlarmClock, ShieldAlert, PieChart,
+  UsersRound, Megaphone, AlarmClock, ShieldAlert, PieChart, MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
@@ -28,6 +28,7 @@ const adminNav = [
   { to: '/students', label: 'Студенты', Icon: GraduationCap },
   { to: '/groups', label: 'Группы', Icon: Users },
   { to: '/mentors', label: 'Менторы', Icon: UserCog },
+  { to: '/chat', label: 'Чат', Icon: MessageSquare },
   { to: '/payments', label: 'Платежи', Icon: Wallet },
   { to: '/expenses', label: 'Расходы', Icon: Receipt },
   { to: '/reports', label: 'Отчёты', Icon: BarChart3 },
