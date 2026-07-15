@@ -1,7 +1,7 @@
 import argon2 from 'argon2';
 import { withTransaction } from '../../config/db.js';
 import { AppError } from '../../utils/AppError.js';
-import { computeBill } from '../../config/plans.js';
+import { computeBill, tierForStudents, TIERS } from '../../config/plans.js';
 import { genTempPassword } from '../auth/credentials.js';
 import * as repo from './main.repository.js';
 
@@ -55,11 +55,12 @@ export async function onboardPartner({ organizationName, domain, admin, leadId }
   });
 }
 
-function decoratePartner(row, pricing) {
+function decoratePartner(row) {
   const students = Number(row.students);
   const branches = Number(row.branches);
   const revenue = Number(row.revenue);
   const expenses = Number(row.expenses);
+  const tier = tierForStudents(students);
   return {
     id: row.id,
     name: row.name,
@@ -69,7 +70,8 @@ function decoratePartner(row, pricing) {
     createdAt: row.created_at,
     branches,
     students,
-    monthlyBill: computeBill(pricing, { students, branches }), // сколько партнёр платит нам (сумы)
+    tier: tier.label, // тариф по числу учеников (Free/Start/…)
+    monthlyBill: computeBill({ students }), // сколько партнёр платит нам (сумы), филиалы не влияют
     revenue, // доход партнёра (оплаты его студентов по всем филиалам)
     expenses, // расходы партнёра
     profit: revenue - expenses,
@@ -79,16 +81,18 @@ function decoratePartner(row, pricing) {
 // ---------- цены платформы ----------
 
 export function getPricing() {
-  return repo.getPricing();
+  // Тарифы теперь в config/plans.js (TIERS). Редактирование через БД — v2.
+  return { tiers: TIERS, currency: 'UZS' };
 }
 
-export async function updatePricing(fields) {
-  return repo.updatePricing(fields);
+export async function updatePricing() {
+  // Цены зашиты в config (TIERS) — правка через API отключена (v2: сделать DB-editable).
+  return getPricing();
 }
 
 export async function listPartners() {
-  const [rows, pricing] = await Promise.all([repo.listPartners(), repo.getPricing()]);
-  return rows.map((row) => decoratePartner(row, pricing));
+  const rows = await repo.listPartners();
+  return rows.map((row) => decoratePartner(row));
 }
 
 /** Платформенный дашборд: наш доход = сумма счетов партнёров; плюс сводная прибыль партнёров. */
@@ -114,9 +118,8 @@ export async function platformDashboard() {
       partnersProfit: 0,
     },
   );
-  const pricing = await repo.getPricing();
-  totals.currency = pricing?.currency ?? 'UZS';
-  return { totals, pricing, partners };
+  totals.currency = 'UZS';
+  return { totals, pricing: getPricing(), partners };
 }
 
 // ---------- управление партнёром ----------
