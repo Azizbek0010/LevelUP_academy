@@ -358,12 +358,22 @@ src/
 - **Group Detail** (`/admin/groups/:id`): состав, ментор, add/remove студента, бейдж «Архив»
 - **Reports** (`/admin/reports`): выручка/долги/прибыль из `/api/admin/dashboard`
 
+#### 🆕 Форма группы — расписание (день + время, бэкенд готов)
+
+При создании/правке группы:
+- **Ментор** — обязателен (селектор из `GET /api/admin/mentors`).
+- **Дни:** быстрые пресеты **1-3-5** (`["mon","wed","fri"]`) и **2-4-6** (`["tue","thu","sat"]`) + кнопка «другие дни» → галочки `mon..sun` (любой набор).
+- **Время начала** — админ вводит (напр. `15:00`).
+- **Конец урока — НЕ вводится**, показывается превью: возьми длительность из `GET /api/admin/settings` → `{ lessonDurationMin }` (её задаёт Super Admin), посчитай `start + duration` (напр. 15:00 + 80 = 16:20). Реальный конец всё равно считает бэкенд — превью только для UX.
+- Позже день/время/ментора можно менять тем же PATCH.
+
 #### API
 
-- `GET /api/admin/groups?page&limit` → `{ groups, meta }`
-- `POST /api/admin/groups` — `{ name, subject, mentorId, monthlyPrice, schedule?, room? }` → `201`
+- `GET /api/admin/settings` → `{ lessonDurationMin }` — длительность урока для превью конца
+- `GET /api/admin/groups?page&limit` → `{ groups, meta }` (в группе теперь `days[]`, `startTime`, `endTime` + `schedule[]`)
+- `POST /api/admin/groups` — `{ name, subject, mentorId, monthlyPrice, days:["mon","wed","fri"], startTime:"15:00", room? }` → `201`
 - `GET /api/admin/groups/:id` → `{ group }` (+ `students[]`)
-- `PATCH /api/admin/groups/:id`
+- `PATCH /api/admin/groups/:id` — те же поля, `days` и `startTime` слать **только вместе**
 - `POST /api/admin/groups/:id/archive` · `POST /api/admin/groups/:id/unarchive`
 - `POST /api/admin/groups/:id/students` `{ studentId }` · `DELETE /api/admin/groups/:id/students/:studentId`
 - `GET /api/admin/mentors` — менторы для селектора
@@ -371,6 +381,9 @@ src/
 #### Definition of Done
 
 - [ ] CRUD групп + archive/unarchive (archiveGuard 403 ловится глобальным toast)
+- [ ] 🆕 Форма группы: обязательный ментор + дни (пресеты 1-3-5 / 2-4-6 + «другие дни» галочки) + время начала
+- [ ] 🆕 Превью конца урока = `startTime` + `lessonDurationMin` (из `/api/admin/settings`), пересчёт вживую
+- [ ] 🆕 Правка группы: менять день/время/ментора (`days`+`startTime` вместе)
 - [ ] Group Detail: состав, ментор, add/remove студента
 - [ ] Отчёты по филиалу из `/api/admin/dashboard`
 
