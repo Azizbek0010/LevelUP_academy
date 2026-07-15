@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { api } from './api.js';
+import { api, setOnTokenRefreshed } from './api.js';
 
 const AuthCtx = createContext(null);
 
@@ -17,6 +17,19 @@ export function AuthProvider({ children }) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  }, []);
+
+  // Авто-refresh на 401 (из api.js) обновляет сессию здесь же, без ре-логина
+  useEffect(() => {
+    setOnTokenRefreshed((d) => {
+      if (d) {
+        setToken(d.accessToken);
+        setUser(d.user);
+      } else {
+        setToken(null);
+        setUser(null);
+      }
+    });
   }, []);
 
   const login = async (email, password) => {

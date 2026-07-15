@@ -121,7 +121,7 @@ function getMethodistMocks() {
   return { tt, topics, lessons, questions };
 }
 
-async function request(path, { method = 'GET', body, token } = {}) {
+async function rawRequest(path, { method = 'GET', body, token } = {}) {
   if (USE_MOCKS) {
     await delay();
     const mocks = getMethodistMocks();
@@ -806,6 +806,46 @@ async function request(path, { method = 'GET', body, token } = {}) {
     throw err;
   }
   return data;
+}
+
+// Пути, которым нельзя подсовывать авто-refresh (иначе цикл/логин ломается)
+const AUTH_PATHS = new Set([
+  '/auth/staff/login', '/auth/staff/google', '/auth/refresh', '/auth/logout',
+  '/auth/forgot-password', '/auth/reset-password',
+]);
+
+// Единый refreshPromise — параллельные 401 ждут один и тот же refresh, не долбят его по отдельности
+let refreshPromise = null;
+let onTokenRefreshed = null;
+export function setOnTokenRefreshed(cb) { onTokenRefreshed = cb; }
+
+function refreshOnce() {
+  if (!refreshPromise) {
+    refreshPromise = rawRequest('/auth/refresh', { method: 'POST' })
+      .then((d) => {
+        onTokenRefreshed?.(d);
+        return d.accessToken;
+      })
+      .catch((err) => {
+        onTokenRefreshed?.(null);
+        throw err;
+      })
+      .finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+}
+
+// Авто-refresh на 401: один раз пробуем обновить токен и повторить запрос
+async function request(path, opts = {}) {
+  try {
+    return await rawRequest(path, opts);
+  } catch (err) {
+    if (err.status === 401 && !AUTH_PATHS.has(path) && !opts._retried) {
+      const newToken = await refreshOnce();
+      return rawRequest(path, { ...opts, token: newToken, _retried: true });
+    }
+    throw err;
+  }
 }
 
 export const api = {
