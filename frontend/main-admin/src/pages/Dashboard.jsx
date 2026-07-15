@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Wallet, Building2, GraduationCap, Store } from 'lucide-react';
+import { Wallet, Building2, GraduationCap, Store, RefreshCw, ArrowRight } from 'lucide-react';
 import { fmt, dateShort, LEAD_STATUS } from '../format.js';
 import { useDashboard, useLeads } from '../queries.js';
 import PageHeader from '../components/PageHeader.jsx';
@@ -26,15 +26,35 @@ function Kpi({ Icon, tint, title, value, unit }) {
 }
 
 export default function Dashboard() {
-  const { data, isLoading, error } = useDashboard();
+  const { data, isLoading, error, refetch } = useDashboard();
   const { data: allLeads } = useLeads();
-  const leads = (allLeads || []).slice(0, 5);
+  const leads = (allLeads || []).filter((l) => l.status === 'new' || l.status === 'contacted').slice(0, 5);
+  const newLeadsCount = (allLeads || []).filter((l) => l.status === 'new').length;
 
-  if (error && error.status !== 401) return <div className="alert alert-error text-sm"><span>{error.message}</span></div>;
+  if (error && error.status !== 401) {
+    return (
+      <div className="alert alert-error text-sm flex items-center justify-between">
+        <span>{error.message}</span>
+        <button className="btn btn-sm btn-ghost gap-1" onClick={() => refetch()}>
+          <RefreshCw size={14} /> Повторить
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <PageHeader title="Дашборд платформы" subtitle="Обзор партнёров, дохода и заявок" />
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <PageHeader title="Дашборд платформы" subtitle="Обзор партнёров, дохода и заявок" />
+        <button
+          className="btn btn-ghost btn-sm gap-1.5 shrink-0 mt-1"
+          onClick={() => refetch()}
+          disabled={isLoading}
+        >
+          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+          Обновить
+        </button>
+      </div>
 
       {isLoading || !data ? (
         <>
@@ -45,20 +65,21 @@ export default function Dashboard() {
           </div>
         </>
       ) : (
-        <Loaded data={data} leads={leads} />
+        <Loaded data={data} leads={leads} newLeadsCount={newLeadsCount} />
       )}
     </div>
   );
 }
 
-function Loaded({ data, leads }) {
+function Loaded({ data, leads, newLeadsCount }) {
   const t = data.totals;
   const cur = t.currency;
-  const maxBill = Math.max(1, ...data.partners.map((p) => p.monthlyBill));
-  const topPartners = [...data.partners].sort((a, b) => b.monthlyBill - a.monthlyBill).slice(0, 6);
+  const maxBill = Math.max(1, ...data.partners.map((p) => p.monthlyBill || 0));
+  const topPartners = [...data.partners].sort((a, b) => (b.monthlyBill || 0) - (a.monthlyBill || 0)).slice(0, 6);
 
   return (
     <>
+      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi Icon={Wallet} tint={{ bg: '#E6F4D7', fg: '#3F6212' }} title="Наш доход / мес" value={fmt(t.ourMonthlyIncome)} unit={cur} />
         <Kpi Icon={Building2} tint={{ bg: '#E0F2FE', fg: '#075985' }} title="Партнёры" value={fmt(t.partners)} unit="учебных центров" />
@@ -67,23 +88,34 @@ function Loaded({ data, leads }) {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6 mt-6">
+        {/* Revenue by partner */}
         <div className="card bg-base-100 lg:col-span-2">
           <div className="card-body">
-            <h2 className="card-title text-base">Доход по партнёрам <span className="text-base-content/40 font-normal text-sm">({cur}/мес)</span></h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="card-title text-base">Доход по партнёрам <span className="text-base-content/40 font-normal text-sm">({cur}/мес)</span></h2>
+              <Link to="/revenue" className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+                Все <ArrowRight size={13} />
+              </Link>
+            </div>
             {topPartners.length === 0 ? (
               <p className="text-base-content/40 text-sm py-6 text-center">Пока нет данных</p>
             ) : (
-              <div className="space-y-3.5 mt-3">
+              <div className="space-y-3.5">
                 {topPartners.map((p) => (
                   <div key={p.id} className="flex items-center gap-3">
                     <Avatar name={p.name} size={30} />
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between text-sm mb-1 gap-2">
-                        <span className="truncate font-medium">{p.name}</span>
+                        <Link to={`/organizations/${p.id}`} className="truncate font-medium hover:text-primary transition-colors">
+                          {p.name}
+                        </Link>
                         <span className="font-bold tabular-nums">{fmt(p.monthlyBill)}</span>
                       </div>
                       <div className="h-2 rounded-full bg-base-200 overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{ width: `${Math.max(4, (p.monthlyBill / maxBill) * 100)}%` }} />
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${Math.max(4, ((p.monthlyBill || 0) / maxBill) * 100)}%`, background: '#C6FF34' }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -93,15 +125,21 @@ function Loaded({ data, leads }) {
           </div>
         </div>
 
+        {/* Latest active leads */}
         <div className="card bg-base-100">
           <div className="card-body">
-            <div className="flex items-center justify-between">
-              <h2 className="card-title text-base">Свежие заявки</h2>
-              <Link to="/leads" className="text-sm text-primary font-medium hover:underline">Все</Link>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="card-title text-base">Активные заявки</h2>
+              <Link to="/leads" className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+                {newLeadsCount > 0 && (
+                  <span className="badge badge-primary badge-xs mr-1">{newLeadsCount}</span>
+                )}
+                Все <ArrowRight size={13} />
+              </Link>
             </div>
             <div className="divide-y divide-base-200 -mb-2">
               {leads.length === 0 ? (
-                <p className="text-base-content/40 text-sm py-6 text-center">Заявок нет</p>
+                <p className="text-base-content/40 text-sm py-6 text-center">Активных заявок нет</p>
               ) : (
                 leads.map((l) => {
                   const s = LEAD_STATUS[l.status] || { label: l.status, cls: 'badge-ghost' };
@@ -121,6 +159,59 @@ function Loaded({ data, leads }) {
           </div>
         </div>
       </div>
+
+      {/* Partners summary table */}
+      {data.partners.length > 0 && (
+        <div className="card bg-base-100 mt-6">
+          <div className="card-body">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="card-title text-base">Партнёры</h2>
+              <Link to="/organizations" className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+                Все партнёры <ArrowRight size={13} />
+              </Link>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Учебный центр</th>
+                    <th className="text-right">Филиалы</th>
+                    <th className="text-right">Ученики</th>
+                    <th className="text-right">Счёт/мес</th>
+                    <th>Статус</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...data.partners].sort((a, b) => (b.monthlyBill || 0) - (a.monthlyBill || 0)).slice(0, 5).map((p) => {
+                    const statusMap = { active: 'badge-success', trial: 'badge-warning', frozen: 'badge-error' };
+                    const statusLabel = { active: 'Активен', trial: 'Триал', frozen: 'Заморожен' };
+                    return (
+                      <tr key={p.id} className="hover">
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <Avatar name={p.name} size={28} />
+                            <Link to={`/organizations/${p.id}`} className="font-medium hover:text-primary">
+                              {p.name}
+                            </Link>
+                          </div>
+                        </td>
+                        <td className="text-right">{fmt(p.branches)}</td>
+                        <td className="text-right">{fmt(p.students)}</td>
+                        <td className="text-right font-semibold">{fmt(p.monthlyBill)}</td>
+                        <td>
+                          <span className={`badge badge-sm ${statusMap[p.status] || 'badge-ghost'}`}>
+                            {statusLabel[p.status] || p.status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
