@@ -69,7 +69,7 @@ function Toggle({ checked, onChange, disabled }) {
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`w-11 h-6 rounded-full transition-all relative shrink-0 ${
-        checked ? 'bg-[#10B981]' : 'bg-base-300'
+        checked ? 'bg-[var(--green)]' : 'bg-[var(--border)]'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
     >
       <span
@@ -86,7 +86,7 @@ function Section({ title, icon: Icon, children }) {
   return (
     <div className="bg-[var(--surface)] rounded-[16px] border border-[var(--border)] p-5 space-y-4">
       <div className="flex items-center gap-2.5">
-        {Icon && <Icon size={18} className="text-base-content/40" />}
+        {Icon && <Icon size={18} className="text-[var(--text-muted)]" />}
         <h3 className="text-[14px] font-bold">{title}</h3>
       </div>
       {children}
@@ -100,8 +100,8 @@ function Field({ label, hint, children, horizontal }) {
   return (
     <div className={`gap-4 ${horizontal ? 'flex items-center justify-between' : 'space-y-1.5'}`}>
       <div className={horizontal ? '' : ''}>
-        <label className="text-[12px] font-semibold text-base-content/70">{label}</label>
-        {hint && <p className="text-[11px] text-base-content/40 mt-0.5">{hint}</p>}
+        <label className="text-[12px] font-semibold text-[var(--text-secondary)]">{label}</label>
+        {hint && <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{hint}</p>}
       </div>
       {children}
     </div>
@@ -138,7 +138,7 @@ function TabGeneral({ settings, onChange }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Телефон">
             <div className="relative">
-              <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30" />
+              <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
               <input
                 className={`${inputCls} pl-9`}
                 value={settings.branchPhone}
@@ -191,7 +191,7 @@ function TabAppearance({ settings, onChange }) {
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-[12px] font-semibold border transition-all ${
                   settings.theme === value
                     ? 'bg-[var(--green)] text-[#141B10] border-[var(--green)]'
-                    : 'bg-[var(--surface)] text-base-content/60 border-[var(--border)] hover:border-[var(--green)]'
+                    : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--green)]'
                 }`}
               >
                 <Icon size={14} />
@@ -352,7 +352,7 @@ function TabSecurity({ settings, onChange }) {
               <button
                 type="button"
                 onClick={() => setShowCurrentPw(!showCurrentPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/30 hover:text-base-content/60"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               >
                 {showCurrentPw ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
@@ -370,7 +370,7 @@ function TabSecurity({ settings, onChange }) {
               <button
                 type="button"
                 onClick={() => setShowNewPw(!showNewPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/30 hover:text-base-content/60"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               >
                 {showNewPw ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
@@ -509,7 +509,7 @@ function TabLocalization({ settings, onChange }) {
                 className={`px-4 py-2.5 rounded-[10px] text-[12px] font-semibold border transition-all ${
                   settings.language === value
                     ? 'bg-[var(--green)] text-[#141B10] border-[var(--green)]'
-                    : 'bg-[var(--surface)] text-base-content/60 border-[var(--border)] hover:border-[var(--green)]'
+                    : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--green)]'
                 }`}
               >
                 {label}
@@ -527,7 +527,7 @@ function TabLocalization({ settings, onChange }) {
                 className={`px-4 py-2.5 rounded-[10px] text-[12px] font-semibold border transition-all font-mono ${
                   settings.dateFormat === value
                     ? 'bg-[var(--green)] text-[#141B10] border-[var(--green)]'
-                    : 'bg-[var(--surface)] text-base-content/60 border-[var(--border)] hover:border-[var(--green)]'
+                    : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--green)]'
                 }`}
               >
                 {label}
@@ -558,7 +558,7 @@ function TabLocalization({ settings, onChange }) {
                 className={`px-4 py-2.5 rounded-[10px] text-[12px] font-semibold border transition-all ${
                   settings.firstDayOfWeek === value
                     ? 'bg-[var(--green)] text-[#141B10] border-[var(--green)]'
-                    : 'bg-[var(--surface)] text-base-content/60 border-[var(--border)] hover:border-[var(--green)]'
+                    : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--green)]'
                 }`}
               >
                 {label}
@@ -626,10 +626,10 @@ export default function AdminSettings() {
         <div className="mt-6 space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="bg-[var(--surface)] rounded-[16px] border border-[var(--border)] p-5 animate-pulse">
-              <div className="h-4 w-32 bg-base-300 rounded mb-4" />
+              <div className="h-4 w-32 bg-[var(--border)] rounded mb-4" />
               <div className="space-y-3">
-                <div className="h-10 bg-base-300 rounded-[10px]" />
-                <div className="h-10 bg-base-300 rounded-[10px]" />
+                <div className="h-10 bg-[var(--border)] rounded-[10px]" />
+                <div className="h-10 bg-[var(--border)] rounded-[10px]" />
               </div>
             </div>
           ))}
@@ -677,7 +677,7 @@ export default function AdminSettings() {
                 className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[10px] text-[12px] font-semibold transition-all whitespace-nowrap ${
                   activeTab === key
                     ? 'bg-[rgba(198,255,52,0.12)] text-[var(--text)]'
-                    : 'text-base-content/50 hover:text-base-content hover:bg-[var(--surface-hover)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
                 }`}
               >
                 <Icon size={15} className={activeTab === key ? 'text-[var(--green)]' : ''} />
