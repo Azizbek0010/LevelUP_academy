@@ -21,6 +21,14 @@ const SuperReminders = lazy(() => import('./pages/super/Reminders.jsx'));
 const SuperAudit = lazy(() => import('./pages/super/Audit.jsx'));
 const SuperAttendance = lazy(() => import('./pages/super/Attendance.jsx'));
 
+const MainDashboard = lazy(() => import('./pages/main/Dashboard.jsx'));
+const MainLeads = lazy(() => import('./pages/main/Leads.jsx'));
+const MainOrganizations = lazy(() => import('./pages/main/Organizations.jsx'));
+const MainOrgDetail = lazy(() => import('./pages/main/OrgDetail.jsx'));
+const MainBilling = lazy(() => import('./pages/main/Billing.jsx'));
+const MainRevenue = lazy(() => import('./pages/main/Revenue.jsx'));
+const MainSettings = lazy(() => import('./pages/main/Settings.jsx'));
+
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
 const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
 const AdminGroups = lazy(() => import('./pages/admin/Groups.jsx'));
@@ -103,6 +111,17 @@ export default function App() {
           <Route path="/announcements" element={<SW><SuperAnnouncements /></SW>} />
           <Route path="/reminders" element={<SW><SuperReminders /></SW>} />
           <Route path="/audit" element={<SW><SuperAudit /></SW>} />
+        </Route>
+
+        {/* Main Admin routes */}
+        <Route element={<RoleGuard allow={['mainadmin']} />}>
+          <Route path="/main" element={<SW><MainDashboard /></SW>} />
+          <Route path="/main/leads" element={<SW><MainLeads /></SW>} />
+          <Route path="/main/organizations" element={<SW><MainOrganizations /></SW>} />
+          <Route path="/main/organizations/:id" element={<SW><MainOrgDetail /></SW>} />
+          <Route path="/main/billing" element={<SW><MainBilling /></SW>} />
+          <Route path="/main/revenue" element={<SW><MainRevenue /></SW>} />
+          <Route path="/main/settings" element={<SW><MainSettings /></SW>} />
         </Route>
 
         {/* Methodist routes */}
