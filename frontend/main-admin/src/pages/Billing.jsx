@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Wallet, Building2, Users, Landmark, GitBranch, GraduationCap, Download } from 'lucide-react';
+import {
+  Wallet, Building2, Users, Landmark, GitBranch, GraduationCap, Download, Check, Sparkles,
+} from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { useDashboard, usePricing, useInvalidate } from '../queries.js';
@@ -8,10 +10,34 @@ import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../components/Skeleton.jsx';
 
 const FIELDS = [
-  { key: 'baseFirstBranch', label: 'Первый филиал', hint: 'базовая цена за 1 филиал', Icon: Landmark },
-  { key: 'perExtraBranch', label: 'Доп. филиал', hint: 'за каждый дополнительный филиал', Icon: GitBranch },
-  { key: 'perStudent', label: 'За ученика', hint: 'за каждого ученика в месяц', Icon: GraduationCap },
+  {
+    key: 'baseFirstBranch',
+    label: 'Первый филиал',
+    hint: 'базовая цена за 1-й филиал партнёра',
+    Icon: Landmark,
+    tint: { bg: '#ECFCCB', fg: '#365314' },
+    previewLabel: (v, cur) => `1 филиал = ${fmt(v)} ${cur}`,
+  },
+  {
+    key: 'perExtraBranch',
+    label: 'Доп. филиал',
+    hint: 'за каждый дополнительный филиал',
+    Icon: GitBranch,
+    tint: { bg: '#E0F2FE', fg: '#075985' },
+    previewLabel: (v, cur) => `+3 доп. филиала = ${fmt(v * 3)} ${cur}`,
+  },
+  {
+    key: 'perStudent',
+    label: 'За ученика',
+    hint: 'за каждого ученика в месяц',
+    Icon: GraduationCap,
+    tint: { bg: '#EDE9FE', fg: '#5B21B6' },
+    previewLabel: (v, cur) => `за 10 учеников = ${fmt(v * 10)} ${cur}`,
+  },
 ];
+
+// разрешаем только цифры при вводе текста
+const sanitize = (v) => String(v ?? '').replace(/[^\d]/g, '');
 
 function Kpi({ Icon, tint, title, value, unit, accent }) {
   return (
@@ -76,9 +102,9 @@ export default function Billing() {
     setBusy(true); setError(''); setSaved(false);
     try {
       await api.updatePricing(token, {
-        baseFirstBranch: Number(form.baseFirstBranch),
-        perExtraBranch: Number(form.perExtraBranch),
-        perStudent: Number(form.perStudent),
+        baseFirstBranch: Number(form.baseFirstBranch) || 0,
+        perExtraBranch: Number(form.perExtraBranch) || 0,
+        perStudent: Number(form.perStudent) || 0,
       });
       invalidate('pricing', 'dashboard');
       setSaved(true);
@@ -142,68 +168,107 @@ export default function Billing() {
             />
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-5">
-            <form onSubmit={save} className="card bg-base-100 shadow-sm border border-base-200/60">
-              <div className="card-body">
-                <h2 className="card-title text-base mb-1">Тарифы платформы</h2>
-                <p className="text-sm text-base-content/50 mb-4">Изменение тарифов повлияет на счёт всех партнёров немедленно</p>
-                <div className="space-y-4">
-                  {FIELDS.map((f) => (
-                    <label key={f.key} className="form-control">
-                      <span className="label-text mb-1 flex items-center gap-1.5">
-                        <f.Icon size={14} className="text-base-content/40" />
-                        {f.label}
-                      </span>
-                      <div className="join">
-                        <input
-                          type="number"
-                          min="0"
-                          className="input input-bordered join-item w-full"
-                          value={form[f.key] ?? ''}
-                          onChange={(e) => setForm((s) => ({ ...s, [f.key]: e.target.value }))}
-                        />
-                        <span className="btn btn-disabled join-item no-animation text-xs">{cur}</span>
-                      </div>
-                      <span className="text-xs opacity-50 mt-1">{f.hint}</span>
-                    </label>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3 mt-4">
-                  <button className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950" disabled={busy}>
-                    {busy ? <span className="loading loading-spinner loading-sm" /> : 'Сохранить тарифы'}
-                  </button>
-                  {saved && (
-                    <span className="text-success text-sm font-medium flex items-center gap-1">
-                      ✓ Сохранено
-                    </span>
-                  )}
-                </div>
+          {/* Pricing form — premium look */}
+          <form onSubmit={save} className="card bg-base-100 shadow-sm border border-base-200/60 overflow-hidden">
+            <div className="bg-gradient-to-r from-lime-100 via-lime-50 to-transparent px-6 py-5 border-b border-base-200 flex items-center gap-3">
+              <span className="w-11 h-11 rounded-xl bg-lime-400 text-lime-950 grid place-items-center shrink-0">
+                <Sparkles size={20} strokeWidth={2.4} />
+              </span>
+              <div>
+                <h2 className="font-extrabold text-lg leading-tight">Тарифы платформы</h2>
+                <p className="text-xs text-base-content/60 mt-0.5">Изменение цен применяется сразу ко всем партнёрам</p>
               </div>
-            </form>
+            </div>
 
-            <div className="card bg-base-100 shadow-sm border border-base-200/60">
-              <div className="card-body">
-                <h2 className="card-title text-base mb-1">Калькулятор счёта</h2>
-                <p className="text-sm text-base-content/50 mb-4">Предпросмотр расчёта по текущим тарифам</p>
-                <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="card-body">
+              <div className="grid md:grid-cols-3 gap-4">
+                {FIELDS.map((f) => {
+                  const val = form[f.key];
+                  const numeric = Number(val || 0);
+                  return (
+                    <div key={f.key} className="rounded-2xl border border-base-200 hover:border-lime-300 transition-colors p-4 bg-gradient-to-br from-base-100 to-base-100/60 flex flex-col">
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <span className="w-10 h-10 rounded-xl grid place-items-center shrink-0" style={{ background: f.tint.bg, color: f.tint.fg }}>
+                          <f.Icon size={18} strokeWidth={2.3} />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="font-bold text-sm truncate">{f.label}</div>
+                          <div className="text-[10.5px] text-base-content/50 truncate">{f.hint}</div>
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          className="input input-bordered w-full text-lg font-bold tracking-tight pr-14 focus:border-lime-400 focus:outline-lime-200"
+                          placeholder="0"
+                          value={val ?? ''}
+                          onChange={(e) => setForm((s) => ({ ...s, [f.key]: sanitize(e.target.value) }))}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-base-content/40 pointer-events-none">
+                          {cur}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 rounded-lg bg-lime-50 px-3 py-1.5 text-[11px] font-semibold text-lime-800 self-start">
+                        {f.previewLabel(numeric, cur)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-3 mt-5 pt-4 border-t border-base-200">
+                <button
+                  className={`btn border-0 text-lime-950 gap-2 px-6 transition-all ${
+                    saved ? 'bg-emerald-400 hover:bg-emerald-500' : 'bg-lime-400 hover:bg-lime-500 hover:shadow-lg'
+                  }`}
+                  disabled={busy}
+                >
+                  {busy ? (
+                    <span className="loading loading-spinner loading-sm" />
+                  ) : saved ? (
+                    <><Check size={16} strokeWidth={3} /> Сохранено!</>
+                  ) : (
+                    'Сохранить тарифы'
+                  )}
+                </button>
+                <span className="text-xs text-base-content/50">
+                  Тарифы применятся к следующему счёту всех партнёров
+                </span>
+              </div>
+            </div>
+          </form>
+
+          {/* Calculator */}
+          <div className="card bg-base-100 shadow-sm border border-base-200/60">
+            <div className="card-body">
+              <h2 className="card-title text-base mb-1">Калькулятор счёта</h2>
+              <p className="text-sm text-base-content/50 mb-4">Проверка тарифов на примере партнёра</p>
+              <div className="grid md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-2 gap-3">
                   <label className="form-control">
-                    <span className="label-text mb-1">Студентов</span>
+                    <span className="label-text mb-1 text-xs font-semibold text-base-content/60 uppercase tracking-wider">Студентов</span>
                     <input
-                      type="number"
-                      min="0"
-                      className="input input-bordered input-sm"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      className="input input-bordered"
                       value={previewStudents}
-                      onChange={(e) => setPreviewStudents(Number(e.target.value))}
+                      onChange={(e) => setPreviewStudents(Number(sanitize(e.target.value)) || 0)}
                     />
                   </label>
                   <label className="form-control">
-                    <span className="label-text mb-1">Филиалов</span>
+                    <span className="label-text mb-1 text-xs font-semibold text-base-content/60 uppercase tracking-wider">Филиалов</span>
                     <input
-                      type="number"
-                      min="1"
-                      className="input input-bordered input-sm"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      className="input input-bordered"
                       value={previewBranches}
-                      onChange={(e) => setPreviewBranches(Math.max(1, Number(e.target.value)))}
+                      onChange={(e) => setPreviewBranches(Math.max(1, Number(sanitize(e.target.value)) || 1))}
                     />
                   </label>
                 </div>

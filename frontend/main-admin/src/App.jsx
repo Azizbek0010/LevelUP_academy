@@ -12,6 +12,8 @@ import OrgDetail from './pages/OrgDetail.jsx';
 import Billing from './pages/Billing.jsx';
 import Revenue from './pages/Revenue.jsx';
 import Settings from './pages/Settings.jsx';
+import Announcements from './pages/Announcements.jsx';
+import Fines from './pages/Fines.jsx';
 
 function BootGate({ children }) {
   const { token, loading } = useAuth();
@@ -41,6 +43,8 @@ export default function App() {
           <Route path="/organizations" element={<Organizations />} />
           <Route path="/organizations/:id" element={<OrgDetail />} />
           <Route path="/billing" element={<Billing />} />
+          <Route path="/announcements" element={<Announcements />} />
+          <Route path="/fines" element={<Fines />} />
           <Route path="/revenue" element={<Revenue />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
