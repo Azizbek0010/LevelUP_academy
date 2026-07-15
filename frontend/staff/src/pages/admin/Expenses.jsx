@@ -1,19 +1,15 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
-  Plus, Trash2, Search, X, Eye, Pencil, MoreVertical,
-  Banknote, CalendarDays, BarChart3, Download,
-  ChevronDown, AlertTriangle, RefreshCw, SlidersHorizontal,
-  Receipt, TrendingUp, DollarSign, Clock,
+  Search, Plus, Trash2, DollarSign, CalendarDays, BarChart3,
+  RefreshCw, MoreVertical, Eye, Pencil, X, Banknote,
+  ReceiptPercent, ChevronDown, AlertTriangle, Download, SlidersHorizontal,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { money, dateShort } from '../../format.js';
+import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminExpenses } from '../../queries.js';
-import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
-
-// ─── Constants ───
 
 const CATEGORIES = ['All', 'Rent', 'Salary', 'Materials', 'Utility', 'Other'];
 const CATEGORY_COLORS = {
@@ -43,22 +39,31 @@ const SORT_OPTIONS = [
 
 const PAYMENT_METHODS = ['Naqt', 'Karta', "O'tkazma", 'Bank'];
 
-// ─── Helpers ───
+function formatCurrency(n) {
+  return Number(n || 0).toLocaleString('uz-UZ') + " so'm";
+}
 
-const formatCurrency = money;
+function formatDate(isoStr) {
+  if (!isoStr) return '—';
+  const d = new Date(isoStr);
+  return d.toLocaleDateString('ru-RU');
+}
+
+function getMonthName(date) {
+  return date.toLocaleDateString('ru-RU', { month: 'short' });
+}
 
 function getStatusFromExpense(e) {
   if (e.status) return e.status;
-  if (e.amount > 0 && e.spent_at) return 'paid';
+  if (e.amount > 0 && e.spentAt) return 'paid';
   return 'paid';
 }
 
 function getPaymentMethod(e) {
   if (e.paymentMethod) return e.paymentMethod;
-  const note = (e.note || '').toLowerCase();
-  return note.includes('karta') ? 'Karta'
-    : note.includes('naqt') ? 'Naqt'
-    : note.includes('bank') ? 'Bank'
+  return e.note?.toLowerCase().includes('karta') ? 'Karta'
+    : e.note?.toLowerCase().includes('naqt') ? 'Naqt'
+    : e.note?.toLowerCase().includes('bank') ? 'Bank'
     : '—';
 }
 
@@ -67,12 +72,11 @@ function getCreatedBy(e) {
 }
 
 // ─── Chart Tooltip ───
-
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload) return null;
   return (
-    <div className="bg-base-100 border border-base-300 rounded-xl px-3.5 py-2.5 text-xs shadow-lg">
-      <p className="font-bold mb-1">{label}</p>
+    <div className="glass-strong rounded-[12px] px-3.5 py-2.5 text-[11px] shadow-[0_8px_24px_var(--shadow-lg)]">
+      <p className="font-bold text-[var(--text)] mb-1.5 text-[12px]">{label}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ color: p.color }} className="tabular-nums font-semibold">{formatCurrency(p.value)}</p>
       ))}
@@ -81,7 +85,6 @@ function ChartTooltip({ active, payload, label }) {
 }
 
 // ─── Action Dropdown ───
-
 function ActionDropdown({ expense, onView, onEdit, onDelete }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -98,35 +101,35 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
     <div ref={ref} className="relative">
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-        className="btn btn-ghost btn-xs btn-square"
+        className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all duration-200"
       >
-        <MoreVertical size={15} />
+        <MoreVertical className="w-4 h-4" />
       </button>
       {open && (
         <div
-          className="absolute right-0 top-full mt-1 z-50 min-w-[160px] rounded-xl border border-base-300 bg-base-100 shadow-xl py-1.5"
+          className="absolute right-0 top-full mt-1 z-50 min-w-[170px] rounded-[12px] border border-[var(--border)] bg-[var(--surface)] shadow-[0_8px_24px_var(--shadow-lg)] py-1.5 animate-scale-in origin-top-right"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={() => { onView(expense); setOpen(false); }}
-            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors"
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
           >
-            <Eye size={14} />
+            <span className="w-5 h-5 flex items-center justify-center"><Eye className="w-4 h-4" /></span>
             Ko'rish
           </button>
           <button
             onClick={() => { onEdit(expense); setOpen(false); }}
-            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors"
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
           >
-            <Pencil size={14} />
+            <span className="w-5 h-5 flex items-center justify-center"><Pencil className="w-4 h-4" /></span>
             Tahrirlash
           </button>
-          <div className="border-t border-base-300 my-1" />
+          <div className="border-t border-[var(--border)] my-1" />
           <button
             onClick={() => { onDelete(expense); setOpen(false); }}
-            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-error hover:bg-error/10 transition-colors"
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-[var(--danger)] hover:bg-[rgba(232,84,62,0.08)] transition-colors"
           >
-            <Trash2 size={14} />
+            <span className="w-5 h-5 flex items-center justify-center"><Trash2 className="w-4 h-4" /></span>
             O'chirish
           </button>
         </div>
@@ -136,7 +139,6 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
 }
 
 // ─── Status Badge ───
-
 function StatusBadge({ status }) {
   const config = STATUS_MAP[status] || STATUS_MAP.paid;
   return (
@@ -144,20 +146,19 @@ function StatusBadge({ status }) {
       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap"
       style={{ background: config.bg, color: config.color }}
     >
-      <span className="w-1.5 h-1.5 rounded-full" style={{ background: config.dot }} />
+      <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: config.dot }} />
       {config.label}
     </span>
   );
 }
 
 // ─── Category Badge ───
-
 function CategoryBadge({ category }) {
   const color = CATEGORY_COLORS[category] || '#8FA283';
   const bg = CATEGORY_COLORS_LIGHT[category] || 'rgba(143,162,131,0.12)';
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[11px] font-semibold whitespace-nowrap"
       style={{ background: bg, color }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
@@ -166,117 +167,87 @@ function CategoryBadge({ category }) {
   );
 }
 
-// ─── Select Filter ───
-
-function SelectFilter({ value, onChange, options, placeholder }) {
-  return (
-    <div className="relative w-full sm:w-auto">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="select select-bordered select-sm w-full sm:w-[145px] text-xs pr-8"
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-      <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
-    </div>
-  );
-}
-
-// ─── Stat Card ───
-
-function StatCard({ title, value, icon: Icon, color, delta, deltaLabel }) {
-  return (
-    <div className="card bg-base-100 border border-base-200">
-      <div className="card-body p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/50">{title}</span>
-          <span className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${color}15` }}>
-            <Icon size={15} style={{ color }} />
-          </span>
-        </div>
-        <div className="text-xl font-extrabold tabular-nums">{value}</div>
-        {delta !== undefined && (
-          <div className="flex items-center gap-1 mt-1">
-            <TrendingUp
-              size={12}
-              className={delta >= 0 ? 'text-success' : 'text-error'}
-              style={{ transform: delta >= 0 ? 'rotate(0deg)' : 'rotate(180deg)' }}
-            />
-            <span className={`text-[10px] font-semibold ${delta >= 0 ? 'text-success' : 'text-error'}`}>
-              {delta >= 0 ? '+' : ''}{delta.toFixed(1)}%
-            </span>
-            {deltaLabel && <span className="text-[9px] text-base-content/40">{deltaLabel}</span>}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ═══════════════════════════════════════════
 //  Main Component
 // ═══════════════════════════════════════════
-
-export default function AdminExpenses() {
-  const { token } = useAuth();
-  const { data, isLoading, error, refetch } = useAdminExpenses();
-  const [search, setSearch] = useState('');
+export default function Expenses() {
+  const [expenses, setExpenses] = useState([]);
   const [filter, setFilter] = useState('All');
+  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewTarget, setViewTarget] = useState(null);
+  const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', paymentMethod: 'Naqt' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
-  // Modal states
-  const [form, setForm] = useState(null); // null | { ...form fields }
-  const [viewTarget, setViewTarget] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
+  const loadExpenses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Backend endpoint: GET /api/admin/expenses?limit=100
+      // Response shape: { expenses: [...], meta: { page, limit, total } }
+      const res = await api.get('/admin/expenses', { params: { limit: 100 } });
+      const data = res.data?.data || res.data || {};
+      setExpenses(data.expenses || []);
+    } catch (err) {
+      console.error('Failed to load expenses:', err);
+      setError(err.response?.data?.message || err.message || 'Xarajatlarni yuklashda xatolik');
+      setExpenses([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const raw = data?.data || data || {};
-  const expenses = raw.expenses || raw.items || (Array.isArray(raw) ? raw : []);
+  useEffect(() => { loadExpenses(); }, [loadExpenses]);
 
   // ─── Filtering & Sorting ───
-
   const filtered = useMemo(() => {
     let result = [...expenses];
 
     if (filter !== 'All') {
       result = result.filter((e) => e.category === filter);
     }
+
     if (statusFilter !== 'All') {
       result = result.filter((e) => getStatusFromExpense(e) === statusFilter.toLowerCase());
     }
+
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter((e) =>
-        (e.note || '').toLowerCase().includes(q) ||
-        (e.category || '').toLowerCase().includes(q) ||
-        (e.title || '').toLowerCase().includes(q)
-      );
+      result = result.filter((e) => {
+        const note = (e.note || '').toLowerCase();
+        const cat = (e.category || '').toLowerCase();
+        const title = (e.title || '').toLowerCase();
+        return note.includes(q) || cat.includes(q) || title.includes(q);
+      });
     }
+
     if (dateFrom) {
       const from = new Date(dateFrom);
-      result = result.filter((e) => e.spent_at && new Date(e.spent_at) >= from);
+      result = result.filter((e) => e.spentAt && new Date(e.spentAt) >= from);
     }
     if (dateTo) {
       const to = new Date(dateTo);
       to.setHours(23, 59, 59, 999);
-      result = result.filter((e) => e.spent_at && new Date(e.spent_at) <= to);
+      result = result.filter((e) => e.spentAt && new Date(e.spentAt) <= to);
     }
 
     result.sort((a, b) => {
       switch (sortBy) {
-        case 'oldest': return new Date(a.spent_at || 0) - new Date(b.spent_at || 0);
+        case 'oldest': return new Date(a.spentAt || 0) - new Date(b.spentAt || 0);
         case 'amount-high': return (b.amount || 0) - (a.amount || 0);
         case 'amount-low': return (a.amount || 0) - (b.amount || 0);
         case 'category': return (a.category || '').localeCompare(b.category || '');
-        default: return new Date(b.spent_at || 0) - new Date(a.spent_at || 0);
+        default: return new Date(b.spentAt || 0) - new Date(a.spentAt || 0);
       }
     });
 
@@ -284,55 +255,52 @@ export default function AdminExpenses() {
   }, [expenses, filter, search, statusFilter, dateFrom, dateTo, sortBy]);
 
   // ─── Statistics ───
-
   const stats = useMemo(() => {
-    const total = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+    const total = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
     const now = new Date();
     const thisMonthExpenses = expenses.filter((e) => {
-      if (!e.spent_at) return false;
-      const d = new Date(e.spent_at);
+      if (!e.spentAt) return false;
+      const d = new Date(e.spentAt);
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     });
-    const thisMonth = thisMonthExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+    const thisMonth = thisMonthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
 
-    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastMonthExpenses = expenses.filter((e) => {
-      if (!e.spent_at) return false;
-      const d = new Date(e.spent_at);
-      return d.getMonth() === lastMonthDate.getMonth() && d.getFullYear() === lastMonthDate.getFullYear();
+      if (!e.spentAt) return false;
+      const d = new Date(e.spentAt);
+      return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear();
     });
-    const lastMonthTotal = lastMonthExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+    const lastMonthTotal = lastMonthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
     const trend = lastMonthTotal > 0 ? ((thisMonth - lastMonthTotal) / lastMonthTotal) * 100 : 0;
 
-    const pending = expenses
+    const pendingAmount = expenses
       .filter((e) => getStatusFromExpense(e) === 'pending')
-      .reduce((sum, e) => sum + Number(e.amount || 0), 0);
-    const approved = expenses
+      .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+    const approvedAmount = expenses
       .filter((e) => getStatusFromExpense(e) === 'paid')
-      .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-    const avg = expenses.length > 0 ? Math.round(total / expenses.length) : 0;
+    const avgAmount = expenses.length > 0 ? Math.round(total / expenses.length) : 0;
 
-    return { total, thisMonth, pending, approved, avg, trend, count: expenses.length };
+    return { total, thisMonth, pendingAmount, approvedAmount, avgAmount, trend, count: expenses.length, thisMonthCount: thisMonthExpenses.length };
   }, [expenses]);
 
   // ─── Chart Data ───
-
-  const budgetData = useMemo(() =>
-    CATEGORIES.filter((c) => c !== 'All').map((cat) => ({
-      name: cat,
-      amount: expenses.filter((e) => e.category === cat).reduce((s, e) => s + Number(e.amount || 0), 0),
-      fill: CATEGORY_COLORS[cat],
-    })),
-  [expenses]);
+  const budgetData = useMemo(() => CATEGORIES.filter((c) => c !== 'All').map((cat) => ({
+    name: cat,
+    amount: expenses.filter((e) => e.category === cat).reduce((s, e) => s + (e.amount || 0), 0),
+    fill: CATEGORY_COLORS[cat],
+  })), [expenses]);
 
   const monthlyData = useMemo(() => {
     const months = {};
     expenses.forEach((e) => {
-      if (!e.spent_at) return;
-      const d = new Date(e.spent_at);
+      if (!e.spentAt) return;
+      const d = new Date(e.spentAt);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      months[key] = (months[key] || 0) + Number(e.amount || 0);
+      months[key] = (months[key] || 0) + (e.amount || 0);
     });
     return Object.entries(months)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -340,86 +308,97 @@ export default function AdminExpenses() {
       .map(([key, amount]) => {
         const [y, m] = key.split('-');
         const date = new Date(Number(y), Number(m) - 1);
-        return {
-          name: date.toLocaleDateString('ru-RU', { month: 'short' }),
-          amount,
-          fill: '#2ECC71',
-        };
+        return { name: getMonthName(date), amount, fill: 'var(--green)' };
       });
   }, [expenses]);
 
-  // ─── Handlers ───
+  // ─── Modal handlers ───
+  const openModal = () => {
+    const today = new Date().toISOString().split('T')[0];
+    setFormData({ category: 'Other', amount: '', spentAt: today, note: '', paymentMethod: 'Naqt' });
+    setError(null);
+    setModalOpen(true);
+  };
 
-  const openForm = (expense) => {
-    if (expense) {
-      setForm({
-        id: expense.id,
-        category: expense.category || 'Other',
-        amount: String(expense.amount || ''),
-        spentAt: expense.spent_at ? expense.spent_at.split('T')[0] : new Date().toISOString().split('T')[0],
-        note: expense.note || '',
-        paymentMethod: getPaymentMethod(expense) !== '—' ? getPaymentMethod(expense) : 'Naqt',
+  const openViewModal = (expense) => {
+    setViewTarget(expense);
+    setViewModalOpen(true);
+  };
+
+  const openEditModal = (expense) => {
+    setFormData({
+      category: expense.category || 'Other',
+      amount: String(expense.amount || ''),
+      spentAt: expense.spentAt ? expense.spentAt.split('T')[0] : new Date().toISOString().split('T')[0],
+      note: expense.note || '',
+      paymentMethod: getPaymentMethod(expense) !== '—' ? getPaymentMethod(expense) : 'Naqt',
+    });
+    setError(null);
+    setModalOpen(true);
+    // TODO: Backend has no PATCH/PUT /admin/expenses/:id endpoint.
+    // Saving the edit will call handleSave which calls createExpense (creates a new expense).
+    // To support editing, a PATCH /admin/expenses/:id endpoint needs to be added in backend/src/modules/admin/admin.routes.js
+    // and a corresponding updateExpense function in adminService.js:
+    //   export const updateExpense = (id, data) => api.patch(`/admin/expenses/${id}`, data).then((r) => r.data);
+  };
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      // Backend endpoint: POST /api/admin/expenses
+      // Request body: { category, amount, spentAt?, note? }
+      await api.post('/admin/expenses', {
+        category: formData.category,
+        amount: Number(formData.amount),
+        spentAt: formData.spentAt || undefined,
+        note: formData.note || undefined,
       });
-    } else {
-      setForm({
-        id: null,
-        category: 'Other',
-        amount: '',
-        spentAt: new Date().toISOString().split('T')[0],
-        note: '',
-        paymentMethod: 'Naqt',
-      });
+      setModalOpen(false);
+      await loadExpenses();
+    } catch (err) {
+      console.error('Create expense failed:', err);
+      setError(err.response?.data?.message || err.message || "Xarajat qo'shishda xatolik");
+    } finally {
+      setSaving(false);
     }
-    setErr('');
-  };
+  }, [formData, loadExpenses]);
 
-  const save = async () => {
-    setBusy(true); setErr('');
-    try {
-      await api.adminCreateExpense(token, {
-        category: form.category,
-        amount: Number(form.amount),
-        spentAt: form.spentAt || undefined,
-        note: form.note || undefined,
-      });
-      setForm(null);
-      refetch();
-    } catch (e) { setErr(e.message || 'Xatolik yuz berdi'); }
-    finally { setBusy(false); }
-  };
-
-  const del = async () => {
+  const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
-    setBusy(true); setErr('');
+    setSaving(true);
+    setError(null);
     try {
-      await api.adminDeleteExpense(token, deleteTarget.id);
+      // Backend endpoint: DELETE /api/admin/expenses/:id
+      await api.delete(`/admin/expenses/${deleteTarget.id}`);
       setDeleteTarget(null);
-      refetch();
-    } catch (e) { setErr(e.message || "O'chirishda xatolik"); }
-    finally { setBusy(false); }
-  };
+      await loadExpenses();
+    } catch (err) {
+      console.error('Delete expense failed:', err);
+      setError(err.response?.data?.message || err.message || "O'chirishda xatolik");
+    } finally {
+      setSaving(false);
+    }
+  }, [deleteTarget, loadExpenses]);
 
-  const handleExport = () => {
-    const csv = [
-      ['Kategoriya', 'Summa', 'Sana', 'Izoh', 'Status', "To'lov usuli"].join(','),
-      ...filtered.map((e) =>
-        [
-          e.category,
-          e.amount,
-          e.spent_at ? dateShort(e.spent_at) : '',
-          `"${(e.note || '').replace(/"/g, '""')}"`,
-          getStatusFromExpense(e),
-          getPaymentMethod(e),
-        ].join(',')
-      ),
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `xarajatlar_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
+  const handleExport = useCallback(() => {
+    setExporting(true);
+    setTimeout(() => {
+      const csv = [
+        ['Kategoriya', 'Summa', 'Sana', 'Izoh', 'Status', "To'lov usuli"].join(','),
+        ...filtered.map((e) =>
+          [e.category, e.amount, e.spentAt, `"${(e.note || '').replace(/"/g, '""')}"`, getStatusFromExpense(e), getPaymentMethod(e)].join(',')
+        ),
+      ].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `xarajatlar_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      setExporting(false);
+    }, 300);
+  }, [filtered]);
 
   const clearFilters = () => {
     setSearch('');
@@ -431,92 +410,214 @@ export default function AdminExpenses() {
   };
 
   const hasActiveFilters = search || filter !== 'All' || statusFilter !== 'All' || dateFrom || dateTo || sortBy !== 'newest';
-  const activeFilterCount = [filter !== 'All', statusFilter !== 'All', !!search, !!dateFrom, !!dateTo, sortBy !== 'newest'].filter(Boolean).length;
-  const getCategoryCount = (cat) => cat === 'All' ? expenses.length : expenses.filter((e) => e.category === cat).length;
-  const getStatusCount = (s) => s === 'All' ? expenses.length : expenses.filter((e) => getStatusFromExpense(e) === s.toLowerCase()).length;
-  const filteredTotal = filtered.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+  const getCategoryCount = (cat) =>
+    cat === 'All' ? expenses.length : expenses.filter((e) => e.category === cat).length;
+
+  const getStatusCount = (status) =>
+    status === 'All' ? expenses.length : expenses.filter((e) => getStatusFromExpense(e) === status.toLowerCase()).length;
+
+  const filteredTotal = useMemo(() => filtered.reduce((s, e) => s + (e.amount || 0), 0), [filtered]);
 
   // ═══════════════════════════════════════════
   //  Render
   // ═══════════════════════════════════════════
-
   return (
-    <div className="space-y-6 pb-8">
-      {/* ═══ Page Header ═══ */}
-      <PageHeader title="Xarajatlar" subtitle="Tashkilot xarajatlarini kuzatish, boshqarish va tahlil qilish">
-        <div className="flex items-center gap-2">
-          <button
-            className="btn btn-ghost btn-sm gap-1"
-            onClick={handleExport}
-            disabled={filtered.length === 0}
-          >
-            <Download size={15} />
-            Eksport
-          </button>
-          <button
-            className="btn btn-primary btn-sm gap-1"
-            onClick={() => openForm(null)}
-          >
-            <Plus size={16} />
-            Xarajat qo'shish
-          </button>
-        </div>
-      </PageHeader>
+    <div className="space-y-6 page-enter pb-8">
 
       {/* ═══ Error Banner ═══ */}
       {error && (
-        <div className="alert alert-error">
-          <AlertTriangle size={16} />
-          <span>Xatolik: {error.message}</span>
-          <button className="btn btn-ghost btn-xs" onClick={() => refetch()}>
-            <RefreshCw size={14} />
-          </button>
+        <div
+          className="flex items-center gap-3 px-5 py-4 rounded-[16px] text-[13px] font-semibold animate-slide-up"
+          style={{ background: 'rgba(232,84,62,0.10)', color: '#E8543E', border: '1px solid rgba(232,84,62,0.18)' }}
+        >
+          <div className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: 'rgba(232,84,62,0.12)' }}>
+            <AlertTriangle className="w-4 h-4" />
+          </div>
+          <span className="flex-1">{error}</span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => loadExpenses()}
+              className="flex items-center gap-1.5 px-3 h-7 rounded-[8px] text-[11px] font-semibold hover:bg-[rgba(232,84,62,0.12)] transition-all"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Qayta yuklash
+            </button>
+            <button onClick={() => setError(null)} className="w-7 h-7 rounded-[8px] flex items-center justify-center hover:bg-[rgba(232,84,62,0.1)] transition-all shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 
+      {/* ═══ Page Header ═══ */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-1.5">
+            <div className="w-1 h-7 rounded-full bg-[var(--green)]" />
+            <h1 className="text-[28px] font-extrabold text-[var(--text)] tracking-[-0.035em] leading-none">Xarajatlar</h1>
+          </div>
+          <p className="text-[13px] text-[var(--text-secondary)] ml-4">
+            Tashkilot xarajatlarini kuzatish, boshqarish va tahlil qilish
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button className="btn btn-ghost btn-sm gap-1.5" onClick={handleExport} disabled={exporting || filtered.length === 0}>
+            <Download className="w-4 h-4" />
+            {exporting ? 'Eksport...' : 'Eksport'}
+          </button>
+          <button className="btn btn-primary btn-sm gap-1.5" onClick={openModal}>
+            <Plus className="w-4 h-4" />
+            Xarajat qo'shish
+          </button>
+        </div>
+      </div>
+
       {/* ═══ Statistics Cards ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard title="Jami xarajatlar" value={formatCurrency(stats.total)} icon={Banknote} color="#E8543E" />
-        <StatCard
-          title="Bu oy"
-          value={formatCurrency(stats.thisMonth)}
-          icon={CalendarDays}
-          color="#F59E0B"
-          delta={stats.trend}
-          deltaLabel="o'tgan oyga nisbatan"
-        />
-        <StatCard title="Kutilmoqda" value={formatCurrency(stats.pending)} icon={Clock} color="#F59E0B" />
-        <StatCard title="Tasdiqlangan" value={formatCurrency(stats.approved)} icon={DollarSign} color="#2ECC71" />
-        <StatCard title="O'rtacha" value={formatCurrency(stats.avg)} icon={BarChart3} color="#3B82F6" />
+        {[
+          { title: 'Jami xarajatlar', value: formatCurrency(stats.total), icon: <Banknote className="w-5 h-5" />, color: '#E8543E', delay: 'stagger-1' },
+          { title: 'Bu oy', value: formatCurrency(stats.thisMonth), icon: <CalendarDays className="w-5 h-5" />, color: '#F59E0B', delta: stats.trend, deltaLabel: "o'tgan oyga nisbatan", delay: 'stagger-2' },
+          { title: 'Kutilmoqda', value: formatCurrency(stats.pendingAmount), icon: <ReceiptPercent className="w-5 h-5" />, color: '#F59E0B', delay: 'stagger-3' },
+          { title: 'Tasdiqlangan', value: formatCurrency(stats.approvedAmount), icon: <DollarSign className="w-5 h-5" />, color: '#2ECC71', delay: 'stagger-4' },
+          { title: "O'rtacha xarajat", value: formatCurrency(stats.avgAmount), icon: <BarChart3 className="w-5 h-5" />, color: '#3B82F6', delay: 'stagger-5' },
+        ].map((card, i) => (
+          <div key={i} className={`animate-fade-in ${card.delay}`}>
+            <div className="glass-strong rounded-[16px] p-4 card-hover-premium">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em]">{card.title}</span>
+                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: `${card.color}18`, color: card.color }}>
+                  {card.icon}
+                </div>
+              </div>
+              <div className="text-[20px] font-extrabold text-[var(--text)] tabular-nums leading-none">{card.value}</div>
+              {card.delta != null && (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`text-[11px] font-bold ${card.delta >= 0 ? 'text-[#2ECC71]' : 'text-[#E8543E]'}`}>
+                    {card.delta >= 0 ? '+' : ''}{card.delta.toFixed(1)}%
+                  </span>
+                  <span className="text-[10px] text-[var(--text-muted)]">{card.deltaLabel}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ═══ Filter Toolbar ═══ */}
-      <div className="card bg-base-100 border border-base-200">
-        <div className="card-body p-4 space-y-3">
-          {/* Search + Desktop filters */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <label className="input input-bordered input-sm flex items-center gap-2 flex-1 w-full sm:max-w-xs">
-              <Search size={14} className="opacity-50" />
-              <input
-                type="text"
-                className="grow text-xs"
-                placeholder="Xarajatlarni qidirish..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              {search && (
-                <button onClick={() => setSearch('')} className="opacity-50 hover:opacity-100">
-                  <X size={14} />
-                </button>
-              )}
-            </label>
+      <div className="glass-strong rounded-[20px] overflow-hidden card-hover-premium">
+        {/* Primary filter row */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4">
+          {/* Search */}
+          <div className="relative flex-1 w-full sm:max-w-xs">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
+            <input
+              placeholder="Xarajatlarni qidirish..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-10 pl-10 pr-4 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
-            {/* Desktop filters */}
-            <div className="hidden lg:flex items-center gap-2 flex-wrap">
+          {/* Desktop quick filters */}
+          <div className="hidden lg:flex items-center gap-2.5 flex-wrap">
+            <SelectFilter
+              value={filter}
+              onChange={setFilter}
+              options={CATEGORIES.map((cat) => ({ value: cat, label: `${cat} (${getCategoryCount(cat)})` }))}
+              placeholder="Kategoriya"
+            />
+            <SelectFilter
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={STATUSES.map((s) => ({
+                value: s,
+                label: s === 'All' ? 'Barcha status' : `${STATUS_MAP[s.toLowerCase()]?.label || s} (${getStatusCount(s)})`,
+              }))}
+              placeholder="Status"
+            />
+            <div className="relative">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all [color-scheme:dark] cursor-pointer"
+              />
+            </div>
+            <div className="relative">
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all [color-scheme:dark] cursor-pointer"
+              />
+            </div>
+            <SelectFilter
+              value={sortBy}
+              onChange={setSortBy}
+              options={SORT_OPTIONS}
+              placeholder="Saralash"
+            />
+          </div>
+
+          {/* Mobile filter toggle + clear */}
+          <div className="flex items-center gap-2 lg:hidden w-full sm:w-auto">
+            <button
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              className={`flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] border text-[12px] font-semibold transition-all ${
+                filtersExpanded || hasActiveFilters
+                  ? 'border-[var(--green)] text-[var(--green)] bg-[var(--green-bg)]'
+                  : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Filtrlar
+              {hasActiveFilters && (
+                <span className="w-5 h-5 rounded-full bg-[var(--green)] text-[#141B10] text-[9px] font-bold flex items-center justify-center">
+                  {[filter !== 'All', statusFilter !== 'All', !!search, !!dateFrom, !!dateTo, sortBy !== 'newest'].filter(Boolean).length}
+                </span>
+              )}
+            </button>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[12px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all"
+              >
+                <X className="w-3.5 h-3.5" />
+                Tozalash
+              </button>
+            )}
+          </div>
+
+          {/* Desktop clear filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="hidden lg:flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[12px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all shrink-0"
+            >
+              <X className="w-3.5 h-3.5" />
+              Tozalash
+            </button>
+          )}
+        </div>
+
+        {/* Mobile expanded filters */}
+        {filtersExpanded && (
+          <div className="px-4 pb-4 lg:hidden space-y-2.5 animate-slide-up">
+            <div className="grid grid-cols-2 gap-2.5">
               <SelectFilter
                 value={filter}
                 onChange={setFilter}
-                options={CATEGORIES.map((cat) => ({ value: cat, label: `${cat === 'All' ? 'Barcha' : cat} (${getCategoryCount(cat)})` }))}
+                options={CATEGORIES.map((cat) => ({ value: cat, label: `${cat} (${getCategoryCount(cat)})` }))}
+                placeholder="Kategoriya"
               />
               <SelectFilter
                 value={statusFilter}
@@ -525,105 +626,58 @@ export default function AdminExpenses() {
                   value: s,
                   label: s === 'All' ? 'Barcha status' : `${STATUS_MAP[s.toLowerCase()]?.label || s} (${getStatusCount(s)})`,
                 }))}
+                placeholder="Status"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="input input-bordered input-sm w-[135px]"
+                placeholder="Dan"
+                className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] [color-scheme:dark] transition-all"
               />
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="input input-bordered input-sm w-[135px]"
-              />
-              <SelectFilter
-                value={sortBy}
-                onChange={setSortBy}
-                options={SORT_OPTIONS}
+                placeholder="Gacha"
+                className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] [color-scheme:dark] transition-all"
               />
             </div>
+            <SelectFilter
+              value={sortBy}
+              onChange={setSortBy}
+              options={SORT_OPTIONS}
+              placeholder="Saralash"
+            />
+          </div>
+        )}
 
-            {/* Mobile filter toggle */}
-            <div className="flex items-center gap-2 lg:hidden w-full sm:w-auto">
+        {/* Category pills */}
+        <div className="flex items-center gap-1.5 flex-wrap px-4 pb-4">
+          <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-[0.08em] mr-0.5">Kategoriya:</span>
+          {CATEGORIES.map((cat) => {
+            const isActive = filter === cat;
+            const catColor = cat === 'All' ? 'var(--green)' : CATEGORY_COLORS[cat] || '#8FA283';
+            return (
               <button
-                onClick={() => setFiltersExpanded(!filtersExpanded)}
-                className={`btn btn-xs gap-1 ${hasActiveFilters ? 'btn-primary' : 'btn-ghost'}`}
+                key={cat}
+                onClick={() => setFilter(cat)}
+                className={`px-3 py-1.5 rounded-[10px] text-[11px] font-semibold transition-all duration-200 ${
+                  isActive
+                    ? 'text-[#141B10] shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+                }`}
+                style={{
+                  background: isActive ? catColor : 'var(--surface)',
+                  border: `1px solid ${isActive ? catColor : 'var(--border)'}`,
+                }}
               >
-                <SlidersHorizontal size={13} />
-                Filtrlar
-                {hasActiveFilters && (
-                  <span className="badge badge-xs badge-ghost">{activeFilterCount}</span>
-                )}
+                {cat}
               </button>
-              {hasActiveFilters && (
-                <button className="btn btn-ghost btn-xs gap-1" onClick={clearFilters}>
-                  <X size={13} />
-                  Tozalash
-                </button>
-              )}
-            </div>
-
-            {/* Desktop clear */}
-            {hasActiveFilters && (
-              <button className="hidden lg:flex btn btn-ghost btn-xs gap-1" onClick={clearFilters}>
-                <X size={13} />
-                Tozalash
-              </button>
-            )}
-          </div>
-
-          {/* Mobile expanded filters */}
-          {filtersExpanded && (
-            <div className="lg:hidden space-y-2.5">
-              <div className="grid grid-cols-2 gap-2.5">
-                <SelectFilter
-                  value={filter}
-                  onChange={setFilter}
-                  options={CATEGORIES.map((cat) => ({ value: cat, label: `${cat === 'All' ? 'Barcha' : cat} (${getCategoryCount(cat)})` }))}
-                />
-                <SelectFilter
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  options={STATUSES.map((s) => ({
-                    value: s,
-                    label: s === 'All' ? 'Barcha status' : `${STATUS_MAP[s.toLowerCase()]?.label || s} (${getStatusCount(s)})`,
-                  }))}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                  className="input input-bordered input-sm" />
-                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                  className="input input-bordered input-sm" />
-              </div>
-              <SelectFilter value={sortBy} onChange={setSortBy} options={SORT_OPTIONS} />
-            </div>
-          )}
-
-          {/* Category pills */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[9px] font-bold opacity-50 uppercase tracking-wider mr-1">Kategoriya:</span>
-            {CATEGORIES.map((cat) => {
-              const isActive = filter === cat;
-              const catColor = cat === 'All' ? '#2ECC71' : CATEGORY_COLORS[cat] || '#8FA283';
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setFilter(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
-                    isActive
-                      ? 'text-[#141B10] shadow-sm'
-                      : 'text-base-content/60 hover:text-base-content hover:bg-base-200'
-                  }`}
-                  style={isActive ? { background: catColor, borderColor: catColor } : {}}
-                >
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
+            );
+          })}
         </div>
       </div>
 
@@ -631,73 +685,123 @@ export default function AdminExpenses() {
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-5">
         {/* ═══ Left: Table ═══ */}
         <div className="min-w-0">
-          {isLoading && expenses.length === 0 ? (
-            <SkeletonTable cols={4} />
+          {loading && expenses.length === 0 ? (
+            <div className="glass-strong rounded-[20px] overflow-hidden">
+              <div className="p-5 border-b border-[var(--border)]">
+                <div className="flex gap-6">
+                  <div className="skeleton h-3 w-24 rounded-[6px]" />
+                  <div className="skeleton h-3 w-32 rounded-[6px]" />
+                  <div className="skeleton h-3 w-20 rounded-[6px]" />
+                  <div className="skeleton h-3 w-20 rounded-[6px]" />
+                  <div className="skeleton h-3 w-24 rounded-[6px]" />
+                  <div className="skeleton h-3 w-16 rounded-[6px]" />
+                </div>
+              </div>
+              <div className="p-5 space-y-5">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex gap-6">
+                    <div className="skeleton h-4 w-24 rounded-[6px]" />
+                    <div className="skeleton h-4 w-32 rounded-[6px]" />
+                    <div className="skeleton h-4 w-20 rounded-[6px]" />
+                    <div className="skeleton h-4 w-20 rounded-[6px]" />
+                    <div className="skeleton h-4 w-24 rounded-[6px]" />
+                    <div className="skeleton h-4 w-8 rounded-[6px]" />
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : filtered.length === 0 ? (
-            <div className="card bg-base-100 border border-base-200">
-              <div className="card-body items-center py-12">
-                <Receipt size={48} className="opacity-20 mb-3" />
-                <h3 className="font-bold text-lg">
+            <div className="glass-strong rounded-[20px]">
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                <div className="w-16 h-16 rounded-full bg-[var(--surface)] flex items-center justify-center mb-4">
+                  <Banknote className="w-8 h-8 text-[var(--text-muted)]" />
+                </div>
+                <h3 className="text-[15px] font-bold text-[var(--text)] mb-1.5">
                   {search || hasActiveFilters ? "Natija topilmadi" : "Hozircha xarajatlar yo'q"}
                 </h3>
-                <p className="text-sm text-base-content/50 mt-1">
-                  {search || hasActiveFilters
-                    ? "Boshqa qidiruv yoki filtr sozlamalarini sinab ko'ring"
-                    : "Birinchi xarajatni qo'shish orqali boshlang"
-                  }
+                <p className="text-[12px] text-[var(--text-secondary)] max-w-[280px] mb-5">
+                  {search || hasActiveFilters ? "Boshqa qidiruv yoki filtr sozlamalarini sinab ko'ring" : "Birinchi xarajatni qo'shish orqali boshlang"}
                 </p>
                 {!search && !hasActiveFilters && (
-                  <button className="btn btn-primary btn-sm gap-1 mt-4" onClick={() => openForm(null)}>
-                    <Plus size={15} /> Xarajat qo'shish
+                  <button className="btn btn-primary btn-sm gap-1.5" onClick={openModal}>
+                    <Plus className="w-4 h-4" />
+                    Xarajat qo'shish
                   </button>
+                )}
+                {!search && !hasActiveFilters && (
+                  <div className="mt-6 opacity-20">
+                    <svg width="140" height="100" viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="15" y="25" width="110" height="55" rx="10" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                      <line x1="15" y1="42" x2="125" y2="42" stroke="currentColor" strokeWidth="1.5" />
+                      <circle cx="45" cy="58" r="5" fill="currentColor" opacity="0.3" />
+                      <circle cx="70" cy="52" r="7" fill="currentColor" opacity="0.5" />
+                      <circle cx="95" cy="62" r="4" fill="currentColor" opacity="0.2" />
+                      <line x1="35" y1="72" x2="35" y2="82" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 3" />
+                      <line x1="70" y1="72" x2="70" y2="82" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 3" />
+                      <line x1="105" y1="72" x2="105" y2="82" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 3" />
+                    </svg>
+                  </div>
                 )}
               </div>
             </div>
           ) : (
-            <div className="card bg-base-100 border border-base-200">
+            <div className="glass-strong rounded-[20px] overflow-hidden">
+              {/* Table wrapper */}
               <div className="overflow-x-auto">
-                <table className="table table-sm">
+                <table className="w-full text-left">
                   <thead>
-                    <tr className="text-[10px] uppercase tracking-wider opacity-60">
-                      <th>Kategoriya</th>
-                      <th>Izoh</th>
-                      <th className="text-right">Summa</th>
-                      <th className="hidden sm:table-cell">To'lov usuli</th>
-                      <th>Sana</th>
-                      <th className="hidden md:table-cell">Status</th>
-                      <th></th>
+                    <tr className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--text-muted)] bg-[var(--surface)]">
+                      <th className="px-5 py-4">Kategoriya</th>
+                      <th className="px-5 py-4">Izoh</th>
+                      <th className="px-5 py-4 text-right">Summa</th>
+                      <th className="px-5 py-4">To'lov usuli</th>
+                      <th className="px-5 py-4">Sana</th>
+                      <th className="px-5 py-4">Status</th>
+                      <th className="px-5 py-4 hidden md:table-cell">Yaratgan</th>
+                      <th className="px-5 py-4 w-10"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((e) => (
-                      <tr key={e.id} className="hover">
-                        <td><CategoryBadge category={e.category} /></td>
-                        <td className="max-w-[180px]">
-                          <span className="truncate block text-sm" title={e.note || ''}>
-                            {e.note || <span className="opacity-40 italic">—</span>}
+                    {filtered.map((e, idx) => (
+                      <tr
+                        key={e.id}
+                        className="group border-t border-[var(--border)] text-[13px] transition-all duration-150 hover:bg-[var(--surface-hover)]"
+                        style={{ animationDelay: `${idx * 0.025}s` }}
+                      >
+                        <td className="px-5 py-4">
+                          <CategoryBadge category={e.category} />
+                        </td>
+                        <td className="px-5 py-4 max-w-[220px]">
+                          <span className="text-[var(--text)] font-medium truncate block" title={e.note || ''}>
+                            {e.note || <span className="text-[var(--text-muted)] italic">—</span>}
                           </span>
                         </td>
-                        <td className="text-right font-bold tabular-nums">{formatCurrency(e.amount)}</td>
-                        <td className="hidden sm:table-cell">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-base-200 border border-base-300">
+                        <td className="px-5 py-4 text-right font-bold text-[var(--text)] tabular-nums whitespace-nowrap text-[14px]">
+                          {formatCurrency(e.amount)}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-[11px] font-medium text-[var(--text-secondary)] bg-[var(--surface)] border border-[var(--border)]">
                             {getPaymentMethod(e)}
                           </span>
                         </td>
-                        <td className="text-sm text-base-content/60 whitespace-nowrap">
-                          <span className="flex items-center gap-1">
-                            <CalendarDays size={12} className="opacity-40" />
-                            {dateShort(e.spent_at || e.created_at)}
+                        <td className="px-5 py-4 text-[var(--text-secondary)] tabular-nums whitespace-nowrap text-[12px]">
+                          <span className="flex items-center gap-1.5">
+                            <CalendarDays className="w-3 h-3 text-[var(--text-muted)]" />
+                            {formatDate(e.spentAt)}
                           </span>
                         </td>
-                        <td className="hidden md:table-cell">
+                        <td className="px-5 py-4">
                           <StatusBadge status={getStatusFromExpense(e)} />
                         </td>
-                        <td className="text-right">
+                        <td className="px-5 py-4 text-[var(--text-secondary)] text-[12px] hidden md:table-cell">
+                          {getCreatedBy(e)}
+                        </td>
+                        <td className="px-5 py-4">
                           <ActionDropdown
                             expense={e}
-                            onView={setViewTarget}
-                            onEdit={openForm}
-                            onDelete={setDeleteTarget}
+                            onView={openViewModal}
+                            onEdit={openEditModal}
+                            onDelete={(exp) => { setDeleteTarget(exp); setError(null); }}
                           />
                         </td>
                       </tr>
@@ -705,18 +809,33 @@ export default function AdminExpenses() {
                   </tbody>
                 </table>
               </div>
-              <div className="flex items-center justify-between px-4 py-3 border-t border-base-200 bg-base-100/50">
-                <span className="text-xs text-base-content/50">
-                  {filtered.length} ta xarajat
-                  {filtered.length !== expenses.length && (
-                    <span className="opacity-60"> ({expenses.length} ta umumiy)</span>
-                  )}
-                </span>
+
+              {/* Table footer */}
+              <div className="flex items-center justify-between px-5 py-3.5 border-t border-[var(--border)] bg-[var(--surface)]">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider opacity-50">Jami:</span>
-                  <span className="text-sm font-extrabold tabular-nums">{formatCurrency(filteredTotal)}</span>
+                  <span className="text-[11px] text-[var(--text-muted)]">
+                    {filtered.length} ta xarajat
+                  </span>
+                  {filtered.length !== expenses.length && (
+                    <span className="text-[10px] text-[var(--text-muted)] opacity-60">
+                      ({expenses.length} ta umumiy)
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-[0.06em]">Jami:</span>
+                  <span className="text-[13px] font-extrabold text-[var(--text)] tabular-nums">
+                    {formatCurrency(filteredTotal)}
+                  </span>
                 </div>
               </div>
+            </div>
+          )}
+
+          {loading && expenses.length > 0 && (
+            <div className="flex items-center justify-center gap-2.5 py-4 text-[12px] text-[var(--text-muted)]">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Yangilanmoqda...
             </div>
           )}
         </div>
@@ -724,133 +843,145 @@ export default function AdminExpenses() {
         {/* ═══ Right: Chart Panel ═══ */}
         <div className="space-y-5">
           {/* Budget by Category */}
-          <div className="card bg-base-100 border border-base-200">
-            <div className="card-body p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold">Kategoriyalar bo'yicha</h3>
-                <span className="text-[9px] font-bold uppercase tracking-wider opacity-40">Byudjet</span>
-              </div>
-              <div className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={budgetData} layout="vertical" margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={50} />
-                    <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--surface-hover)' }} />
-                    <Bar dataKey="amount" radius={[0, 6, 6, 0]} barSize={18} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-4 pt-4 border-t border-base-200 space-y-2.5">
-                {budgetData.filter((item) => item.amount > 0).length === 0 ? (
-                  <p className="text-xs text-base-content/50 text-center py-2">Xarajat ma'lumotlari mavjud emas</p>
-                ) : (
-                  budgetData.filter((item) => item.amount > 0).map((item, i) => (
-                    <div key={i} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2.5">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: item.fill }} />
-                        <span className="text-base-content/70">{item.name}</span>
-                      </div>
-                      <span className="font-bold tabular-nums">{formatCurrency(item.amount)}</span>
+          <div className="glass-strong rounded-[20px] p-5 card-hover-premium">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[14px] font-bold text-[var(--text)]">Kategoriyalar bo'yicha</h3>
+              <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-[0.08em]">Byudjet</span>
+            </div>
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={budgetData} layout="vertical" margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={50} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--surface-hover)' }} />
+                  <Bar dataKey="amount" radius={[0, 6, 6, 0]} barSize={18} isAnimationActive={false} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-4 pt-4 border-t border-[var(--border)] space-y-2.5">
+              {budgetData.filter((item) => item.amount > 0).length === 0 ? (
+                <p className="text-[11px] text-[var(--text-muted)] text-center py-2">Xarajat ma'lumotlari mavjud emas</p>
+              ) : (
+                budgetData.filter((item) => item.amount > 0).map((item, i) => (
+                  <div key={i} className="flex items-center justify-between text-[11px] group/chart">
+                    <div className="flex items-center gap-2.5 flex-1">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: item.fill }} />
+                      <span className="text-[var(--text-secondary)] group-hover/chart:text-[var(--text)] transition-colors">{item.name}</span>
                     </div>
-                  ))
-                )}
-              </div>
+                    <span className="font-bold text-[var(--text)] tabular-nums">{formatCurrency(item.amount)}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           {/* Monthly Trend */}
-          <div className="card bg-base-100 border border-base-200">
-            <div className="card-body p-5">
-              <h3 className="text-sm font-bold mb-4">Oylik trend</h3>
-              {monthlyData.length === 0 ? (
-                <div className="h-[140px] flex items-center justify-center">
-                  <p className="text-xs text-base-content/50">Trend ma'lumotlari mavjud emas</p>
-                </div>
-              ) : (
-                <div className="h-[140px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-                      <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--surface-hover)' }} />
-                      <Bar dataKey="amount" radius={[5, 5, 0, 0]} barSize={28} fill="#2ECC71" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </div>
+          <div className="glass-strong rounded-[20px] p-5 card-hover-premium">
+            <h3 className="text-[14px] font-bold text-[var(--text)] mb-5">Oylik trend</h3>
+            {monthlyData.length === 0 ? (
+              <div className="h-[140px] flex items-center justify-center">
+                <p className="text-[11px] text-[var(--text-muted)]">Trend ma'lumotlari mavjud emas</p>
+              </div>
+            ) : (
+              <div className="h-[140px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--surface-hover)' }} />
+                    <Bar dataKey="amount" radius={[5, 5, 0, 0]} barSize={28} isAnimationActive={false} fill="var(--green)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* ═══ View Detail Modal ═══ */}
-      <dialog className={`modal ${viewTarget ? 'modal-open' : ''}`}>
-        <div className="modal-box">
-          <h3 className="font-bold text-lg mb-1">Xarajat tafsilotlari</h3>
+      <dialog className={`modal ${viewModalOpen ? 'modal-open' : ''}`}>
+        <div className="modal-box max-w-lg">
+          <form method="dialog">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"><X className="w-4 h-4" /></button>
+          </form>
+          <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajat tafsilotlari</h3>
           {viewTarget && (
-            <div className="space-y-4 mt-4">
-              <div className="flex items-center gap-3 pb-4 border-b border-base-200">
+            <div className="space-y-5">
+              <div className="flex items-center gap-3 pb-4 border-b border-[var(--border)]">
                 <CategoryBadge category={viewTarget.category} />
                 <StatusBadge status={getStatusFromExpense(viewTarget)} />
               </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-base-200">
-                  <span className="text-sm text-base-content/60">Summa</span>
-                  <span className="text-lg font-extrabold tabular-nums">{formatCurrency(viewTarget.amount)}</span>
+
+              <div className="space-y-0">
+                <div className="flex justify-between items-center py-3 border-b border-[var(--border)]">
+                  <span className="text-[12px] text-[var(--text-secondary)] font-medium">Summa</span>
+                  <span className="text-[18px] font-extrabold text-[var(--text)] tabular-nums">{formatCurrency(viewTarget.amount)}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-base-200">
-                  <span className="text-sm text-base-content/60">Sana</span>
-                  <span className="font-semibold">{dateShort(viewTarget.spent_at || viewTarget.created_at)}</span>
+                <div className="flex justify-between items-center py-3 border-b border-[var(--border)]">
+                  <span className="text-[12px] text-[var(--text-secondary)] font-medium">Sana</span>
+                  <span className="text-[13px] font-semibold text-[var(--text)]">{formatDate(viewTarget.spentAt)}</span>
                 </div>
                 {getPaymentMethod(viewTarget) !== '—' && (
-                  <div className="flex justify-between items-center py-2 border-b border-base-200">
-                    <span className="text-sm text-base-content/60">To'lov usuli</span>
-                    <span className="font-semibold">{getPaymentMethod(viewTarget)}</span>
+                  <div className="flex justify-between items-center py-3 border-b border-[var(--border)]">
+                    <span className="text-[12px] text-[var(--text-secondary)] font-medium">To'lov usuli</span>
+                    <span className="text-[13px] font-semibold text-[var(--text)]">{getPaymentMethod(viewTarget)}</span>
                   </div>
                 )}
                 {getCreatedBy(viewTarget) !== '—' && (
-                  <div className="flex justify-between items-center py-2 border-b border-base-200">
-                    <span className="text-sm text-base-content/60">Yaratgan</span>
-                    <span className="font-semibold">{getCreatedBy(viewTarget)}</span>
+                  <div className="flex justify-between items-center py-3 border-b border-[var(--border)]">
+                    <span className="text-[12px] text-[var(--text-secondary)] font-medium">Yaratgan</span>
+                    <span className="text-[13px] font-semibold text-[var(--text)]">{getCreatedBy(viewTarget)}</span>
                   </div>
                 )}
-                <div className="py-2">
-                  <span className="text-sm text-base-content/60 block mb-1">Izoh</span>
-                  <span className="text-sm">{viewTarget.note || <span className="italic opacity-50">Yo'q</span>}</span>
+                <div className="flex justify-between items-start py-3">
+                  <span className="text-[12px] text-[var(--text-secondary)] font-medium pt-0.5">Izoh</span>
+                  <span className="text-[13px] text-[var(--text)] text-right max-w-[250px] leading-relaxed">{viewTarget.note || <span className="text-[var(--text-muted)] italic">Yo'q</span>}</span>
                 </div>
               </div>
-              <div className="modal-action">
-                <button className="btn btn-ghost btn-sm" onClick={() => setViewTarget(null)}>Yopish</button>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--border)]">
+                <button className="btn btn-ghost btn-sm" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
+                  Yopish
+                </button>
+                <button className="btn btn-primary btn-sm gap-1.5" onClick={() => { setViewModalOpen(false); setViewTarget(null); openEditModal(viewTarget); }}>
+                  <Pencil className="w-4 h-4" />
+                  Tahrirlash
+                </button>
               </div>
             </div>
           )}
         </div>
-        <div className="modal-backdrop" onClick={() => setViewTarget(null)} />
+        <form method="dialog" className="modal-backdrop" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
+          <button>close</button>
+        </form>
       </dialog>
 
       {/* ═══ Add/Edit Modal ═══ */}
-      <dialog className={`modal ${form ? 'modal-open' : ''}`}>
-        <div className="modal-box">
-          <h3 className="font-bold text-lg mb-4">Xarajat qo'shish</h3>
-          {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
-          <div className="space-y-4">
-            {/* Category */}
+      <dialog className={`modal ${modalOpen ? 'modal-open' : ''}`}>
+        <div className="modal-box max-w-lg">
+          <form method="dialog">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving}><X className="w-4 h-4" /></button>
+          </form>
+          <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajat qo'shish</h3>
+          <div className="space-y-5">
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-base-content/60 mb-2 block">Kategoriya *</label>
+              <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">Kategoriya *</label>
               <div className="grid grid-cols-3 gap-2">
                 {CATEGORIES.filter((c) => c !== 'All').map((cat) => {
-                  const isActive = form?.category === cat;
+                  const isActive = formData.category === cat;
                   const catColor = CATEGORY_COLORS[cat] || '#8FA283';
                   return (
                     <button
                       key={cat}
                       type="button"
-                      onClick={() => setForm({ ...form, category: cat })}
-                      className={`px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
-                        isActive ? 'text-[#141B10] shadow-sm' : 'bg-base-200 text-base-content/70 hover:bg-base-300'
-                      }`}
-                      style={isActive ? { background: catColor, borderColor: catColor } : {}}
+                      onClick={() => setFormData({ ...formData, category: cat })}
+                      className="px-3 py-2.5 rounded-[12px] text-[12px] font-semibold border transition-all duration-200"
+                      style={{
+                        background: isActive ? catColor : 'var(--surface)',
+                        color: isActive ? '#141B10' : 'var(--text-secondary)',
+                        borderColor: isActive ? catColor : 'var(--border)',
+                      }}
                     >
                       {cat}
                     </button>
@@ -859,43 +990,42 @@ export default function AdminExpenses() {
               </div>
             </div>
 
-            {/* Amount + Date */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-base-content/60 mb-1.5 block">Summa *</label>
+                <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">Summa *</label>
                 <input
-                  className="input input-bordered w-full"
                   type="number"
-                  value={form?.amount || ''}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   placeholder="500000"
+                  className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-base-content/60 mb-1.5 block">Sana</label>
+                <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">Sana</label>
                 <input
-                  className="input input-bordered w-full"
                   type="date"
-                  value={form?.spentAt || ''}
-                  onChange={(e) => setForm({ ...form, spentAt: e.target.value })}
+                  value={formData.spentAt}
+                  onChange={(e) => setFormData({ ...formData, spentAt: e.target.value })}
+                  className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200 [color-scheme:dark]"
                 />
               </div>
             </div>
 
-            {/* Payment Method */}
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-base-content/60 mb-2 block">To'lov usuli</label>
+              <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">To'lov usuli</label>
               <div className="grid grid-cols-2 gap-2">
                 {PAYMENT_METHODS.map((method) => (
                   <button
                     key={method}
                     type="button"
-                    onClick={() => setForm({ ...form, paymentMethod: method })}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
-                      form?.paymentMethod === method
-                        ? 'bg-primary text-primary-content border-primary'
-                        : 'bg-base-200 text-base-content/70 hover:bg-base-300'
-                    }`}
+                    onClick={() => setFormData({ ...formData, paymentMethod: method })}
+                    className="px-4 py-2.5 rounded-[12px] text-[12px] font-semibold border transition-all duration-200"
+                    style={{
+                      background: formData.paymentMethod === method ? 'var(--green)' : 'var(--surface)',
+                      color: formData.paymentMethod === method ? '#141B10' : 'var(--text-secondary)',
+                      borderColor: formData.paymentMethod === method ? 'var(--green)' : 'var(--border)',
+                    }}
                   >
                     {method}
                   </button>
@@ -903,61 +1033,111 @@ export default function AdminExpenses() {
               </div>
             </div>
 
-            {/* Note */}
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-base-content/60 mb-1.5 block">Izoh</label>
-              <textarea
-                className="textarea textarea-bordered w-full"
-                value={form?.note || ''}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
+              <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">Izoh</label>
+              <input
+                value={formData.note}
+                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
                 placeholder="Xarajat haqida izoh"
-                rows={2}
+                className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
               />
             </div>
-          </div>
-          <div className="modal-action">
-            <button className="btn btn-ghost btn-sm" onClick={() => setForm(null)} disabled={busy}>Bekor qilish</button>
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={save}
-              disabled={busy || !form?.amount}
-            >
-              {busy && <span className="loading loading-spinner loading-xs" />}
-              Qo'shish
-            </button>
+
+            {error && (
+              <div
+                className="text-[12px] text-[var(--danger)] font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
+                style={{ background: 'rgba(232,84,62,0.08)', border: '1px solid rgba(232,84,62,0.15)' }}
+              >
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <button className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={saving}>Bekor qilish</button>
+              <button className="btn btn-primary btn-sm gap-1.5" onClick={handleSave} disabled={saving || !formData.amount}>
+                {saving ? (
+                  <span className="flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Saqlanmoqda...
+                  </span>
+                ) : "Qo'shish"}
+              </button>
+            </div>
           </div>
         </div>
-        <div className="modal-backdrop" onClick={() => { if (!busy) setForm(null); }} />
+        <form method="dialog" className="modal-backdrop" onClick={() => { if (!saving) setModalOpen(false); }}>
+          <button>close</button>
+        </form>
       </dialog>
 
       {/* ═══ Delete Confirmation Modal ═══ */}
       <dialog className={`modal ${deleteTarget ? 'modal-open' : ''}`}>
-        <div className="modal-box">
-          <h3 className="font-bold text-lg mb-2">Xarajatni o'chirish</h3>
-          <div className="flex items-start gap-4 mt-4">
-            <div className="w-11 h-11 rounded-xl bg-error/10 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-5 h-5 text-error" />
+        <div className="modal-box max-w-md">
+          <form method="dialog">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving}><X className="w-4 h-4" /></button>
+          </form>
+          <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajatni o'chirish</h3>
+          <div className="space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-[14px] bg-[rgba(232,84,62,0.12)] flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-[var(--danger)]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[14px] font-bold text-[var(--text)] mb-1.5">O'chirishni tasdiqlaysizmi?</p>
+                <p className="text-[12px] text-[var(--text-secondary)] leading-relaxed">
+                  <CategoryBadge category={deleteTarget?.category} />{' '}
+                  <span className="tabular-nums font-semibold text-[var(--text)]">{formatCurrency(deleteTarget?.amount)}</span>{' '}
+                  xarajatni o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-bold mb-1">O'chirishni tasdiqlaysizmi?</p>
-              <p className="text-sm text-base-content/60">
-                <CategoryBadge category={deleteTarget?.category} />{' '}
-                <span className="tabular-nums font-semibold">{formatCurrency(deleteTarget?.amount)}</span>{' '}
-                xarajatni o'chirishni xohlaysizmi?
-              </p>
+
+            {error && (
+              <div
+                className="text-[12px] text-[var(--danger)] font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
+                style={{ background: 'rgba(232,84,62,0.08)', border: '1px solid rgba(232,84,62,0.15)' }}
+              >
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-[var(--border)]">
+              <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Bekor qilish</button>
+              <button className="btn btn-error btn-sm gap-1.5 text-white" onClick={handleDelete} disabled={saving}>
+                {saving ? (
+                  <span className="flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    O'chirilmoqda...
+                  </span>
+                ) : "O'chirish"}
+              </button>
             </div>
-          </div>
-          {err && <div className="alert alert-error mt-3 py-2 text-sm">{err}</div>}
-          <div className="modal-action">
-            <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={busy}>Bekor qilish</button>
-            <button className="btn btn-error btn-sm" onClick={del} disabled={busy}>
-              {busy && <span className="loading loading-spinner loading-xs" />}
-              O'chirish
-            </button>
           </div>
         </div>
-        <div className="modal-backdrop" onClick={() => { if (!busy) setDeleteTarget(null); }} />
+        <form method="dialog" className="modal-backdrop" onClick={() => { if (!saving) setDeleteTarget(null); }}>
+          <button>close</button>
+        </form>
       </dialog>
+    </div>
+  );
+}
+
+// ─── Reusable Select Filter ───
+function SelectFilter({ value, onChange, options, placeholder }) {
+  return (
+    <div className="relative w-full sm:w-auto">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="appearance-none w-full sm:w-[145px] h-10 px-3.5 pr-9 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200 cursor-pointer"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
     </div>
   );
 }
