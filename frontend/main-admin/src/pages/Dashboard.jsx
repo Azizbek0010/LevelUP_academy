@@ -78,7 +78,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 // ---------- Modal component ----------
 function Modal({ open, onClose, title, subtitle, Icon, children, size = 'md' }) {
   if (!open) return null;
-  const w = size === 'lg' ? 'max-w-2xl' : size === 'xl' ? 'max-w-3xl' : 'max-w-lg';
+  const w = size === 'lg' ? 'max-w-2xl' : size === 'xl' ? 'max-w-3xl' : 'max-w-xl';
   return (
     <div className="modal modal-open modal-bottom sm:modal-middle">
       <div className={`modal-box ${w} p-0 overflow-hidden`}>
@@ -745,7 +745,7 @@ function PartnerModal({ p, totalIncome, cur, onClose, onToggle, busy }) {
   const s = ORG_STATUS[p.status] || { label: p.status, cls: 'badge-ghost' };
   const frozen = p.status === 'frozen';
   return (
-    <Modal open={true} onClose={onClose} title={p.name} subtitle={p.domain || 'домен не задан'} Icon={Building2} size="lg">
+    <Modal open={true} onClose={onClose} title={p.name} subtitle={p.domain || 'домен не задан'} Icon={Building2} size="xl">
       <div className="space-y-5">
         <div className="flex items-center gap-3">
           <Avatar name={p.name} size={56} />

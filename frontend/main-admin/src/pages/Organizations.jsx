@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Search, Building2, CheckCircle2, Clock, PauseCircle, UserPlus, ArrowRight,
   GraduationCap, Wallet, LayoutGrid, List, Play, Pause, Globe, TrendingUp,
-  Snowflake, AlertTriangle, X, Calendar, History, CreditCard, Activity,
+  Snowflake, AlertTriangle, X, Calendar, CheckCircle, RefreshCw,
+  Megaphone, Percent, StickyNote, FileText,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
@@ -222,20 +223,48 @@ function FreezeModal({ partner, onConfirm, onClose, busy }) {
   );
 }
 
-function DetailModal({ partner, cur, onClose, onFreezeRequest, onActivate, busy }) {
+function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onActivate, busy }) {
   const s = ORG_STATUS[partner.status] || { label: partner.status, cls: 'badge-ghost' };
   const StatusIcon = STATUS_ICON[partner.status];
   const frozen = partner.status === 'frozen';
   const meta = frozen ? readFreezeMeta(partner.id) : null;
 
-  const statusLabels = {
-    active: 'Активен',
-    trial: 'На пробном периоде',
-    frozen: 'Заморожен',
-  };
+  const [detailTab, setDetailTab] = useState('overview');
+  const [notes, setNotes] = useState('');
+
+  // Reset tab + load notes when partner changes
+  useEffect(() => {
+    setDetailTab('overview');
+    try {
+      setNotes(localStorage.getItem(`partner_notes_${partner.id}`) || '');
+    } catch {
+      setNotes('');
+    }
+  }, [partner.id]);
+
   const registrationLabel = new Date(partner.createdAt).toLocaleDateString('ru-RU', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
+  const daysOnPlatform = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(partner.createdAt).getTime()) / 86400000),
+  );
+  const share = totalIncome > 0 ? ((partner.monthlyBill / totalIncome) * 100).toFixed(1) : '0';
+  const sharePct = totalIncome > 0 ? Math.min(100, (partner.monthlyBill / totalIncome) * 100) : 0;
+  const studentsPerBranch = partner.branches > 0
+    ? (partner.students / partner.branches).toFixed(1)
+    : '0';
+
+  const onNotesChange = (val) => {
+    setNotes(val);
+    try {
+      localStorage.setItem(`partner_notes_${partner.id}`, val);
+    } catch {
+      /* ignore quota */
+    }
+  };
+
+  const onboardingDone = partner.status !== 'trial';
 
   return (
     <div className="modal modal-open modal-bottom sm:modal-middle">
@@ -271,80 +300,215 @@ function DetailModal({ partner, cur, onClose, onFreezeRequest, onActivate, busy 
           </button>
         </div>
 
-        <div className="px-6 py-5 max-h-[70vh] overflow-y-auto space-y-5">
-          {/* Metrics */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="text-center rounded-lg bg-base-200/40 p-3">
-              <div className="text-xs text-base-content/50">Филиалы</div>
-              <div className="font-extrabold text-lg tabular-nums">{fmt(partner.branches)}</div>
-            </div>
-            <div className="text-center rounded-lg bg-base-200/40 p-3">
-              <div className="text-xs text-base-content/50">Ученики</div>
-              <div className="font-extrabold text-lg tabular-nums">{fmt(partner.students)}</div>
-            </div>
-            <div className="text-center rounded-lg bg-lime-50 p-3">
-              <div className="text-xs text-lime-700/70">Счёт/мес</div>
-              <div className="font-extrabold text-lg tabular-nums text-lime-700">{fmt(partner.monthlyBill)}</div>
-            </div>
-          </div>
+        {/* Tabs */}
+        <div className="flex border-b border-base-200 px-6">
+          {[['overview','Обзор'],['onboarding','Онбординг'],['finance','Инвестиции']].map(([key,label]) => (
+            <button
+              key={key}
+              onClick={() => setDetailTab(key)}
+              className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors -mb-px ${
+                detailTab === key ? 'border-lime-500 text-lime-700' : 'border-transparent text-base-content/50 hover:text-base-content'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-          {/* History */}
-          <div>
-            <div className="text-xs font-semibold text-base-content/50 uppercase mb-2 flex items-center gap-1.5">
-              <History size={12} /> История взаимодействия
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2 rounded-lg p-2 bg-base-200/40">
-                <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
-                <span className="text-base-content/70">Онбординг:</span>
-                <span className="font-semibold ml-auto">{dateShort(partner.createdAt)}</span>
+        <div className="px-6 py-5 max-h-[60vh] overflow-y-auto space-y-5">
+          {/* ==== TAB: OVERVIEW ==== */}
+          {detailTab === 'overview' && (
+            <>
+              {/* Metrics */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center rounded-lg bg-base-200/40 p-3">
+                  <div className="text-xs text-base-content/50">Филиалы</div>
+                  <div className="font-extrabold text-lg tabular-nums">{fmt(partner.branches)}</div>
+                </div>
+                <div className="text-center rounded-lg bg-base-200/40 p-3">
+                  <div className="text-xs text-base-content/50">Ученики</div>
+                  <div className="font-extrabold text-lg tabular-nums">{fmt(partner.students)}</div>
+                </div>
+                <div className="text-center rounded-lg bg-lime-50 p-3">
+                  <div className="text-xs text-lime-700/70">Счёт/мес</div>
+                  <div className="font-extrabold text-lg tabular-nums text-lime-700">{fmt(partner.monthlyBill)}</div>
+                </div>
               </div>
-              <div className="flex items-center gap-2 rounded-lg p-2 bg-base-200/40">
-                <CreditCard size={14} className="text-blue-500 shrink-0" />
-                <span className="text-base-content/70">Первый платёж:</span>
-                <span className="font-semibold ml-auto">~{dateShort(partner.createdAt)}</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-lg p-2 bg-base-200/40">
-                <Activity size={14} className="text-lime-600 shrink-0" />
-                <span className="text-base-content/70">Статус:</span>
-                <span className="font-semibold ml-auto">{statusLabels[partner.status] || partner.status}</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Freeze meta */}
-          {frozen && meta && (
-            <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4">
-              <div className="text-xs font-semibold text-blue-700 uppercase mb-2 flex items-center gap-1.5">
-                <Snowflake size={12} /> Данные заморозки
+              {/* Share progress */}
+              <div>
+                <div className="flex justify-between text-xs text-base-content/50 mb-1.5">
+                  <span className="flex items-center gap-1">
+                    <Percent size={11} /> Доля в общем доходе
+                  </span>
+                  <span className="font-semibold tabular-nums">{share}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-base-200 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-lime-400 transition-all duration-700"
+                    style={{ width: `${sharePct}%` }}
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5 text-sm">
-                {meta.reason && (
-                  <div className="flex justify-between gap-3">
-                    <span className="text-base-content/60 shrink-0">Причина:</span>
-                    <span className="font-semibold text-right">{meta.reason}</span>
+
+              {/* Freeze meta shown in overview if frozen */}
+              {frozen && meta && (
+                <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4">
+                  <div className="text-xs font-semibold text-blue-700 uppercase mb-2 flex items-center gap-1.5">
+                    <Snowflake size={12} /> Данные заморозки
                   </div>
-                )}
-                {meta.frozenAt && (
-                  <div className="flex justify-between gap-3">
-                    <span className="text-base-content/60 shrink-0">Заморожен:</span>
-                    <span className="font-semibold">{new Date(meta.frozenAt).toLocaleDateString('ru-RU')}</span>
+                  <div className="space-y-1.5 text-sm">
+                    {meta.reason && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-base-content/60 shrink-0">Причина:</span>
+                        <span className="font-semibold text-right">{meta.reason}</span>
+                      </div>
+                    )}
+                    {meta.frozenAt && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-base-content/60 shrink-0">Заморожен:</span>
+                        <span className="font-semibold">{new Date(meta.frozenAt).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                    )}
+                    {meta.until && (
+                      <div className="flex justify-between gap-3">
+                        <span className="text-base-content/60 shrink-0">До:</span>
+                        <span className="font-semibold">{new Date(meta.until).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                    )}
                   </div>
-                )}
-                {meta.until && (
-                  <div className="flex justify-between gap-3">
-                    <span className="text-base-content/60 shrink-0">До:</span>
-                    <span className="font-semibold">{new Date(meta.until).toLocaleDateString('ru-RU')}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+                </div>
+              )}
+              {frozen && !meta && (
+                <div className="alert bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs">
+                  <AlertTriangle size={14} className="text-amber-500 shrink-0" />
+                  <span>Партнёр заморожен, но локальные данные о причине не найдены</span>
+                </div>
+              )}
+            </>
           )}
-          {frozen && !meta && (
-            <div className="alert bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs">
-              <AlertTriangle size={14} className="text-amber-500 shrink-0" />
-              <span>Партнёр заморожен, но локальные данные о причине не найдены</span>
-            </div>
+
+          {/* ==== TAB: ONBOARDING ==== */}
+          {detailTab === 'onboarding' && (
+            <>
+              <div>
+                <div className="text-xs font-semibold text-base-content/50 uppercase mb-3 flex items-center gap-1.5">
+                  <FileText size={12} /> Процесс онбординга
+                </div>
+                <div className="space-y-3">
+                  {/* Step 1 */}
+                  <div className="flex items-start gap-3">
+                    <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0 mt-0.5">
+                      <CheckCircle size={16} strokeWidth={2.4} />
+                    </span>
+                    <div className="flex-1 pt-1">
+                      <div className="font-semibold text-sm">Заявка принята</div>
+                      <div className="text-xs text-base-content/50 mt-0.5">{dateShort(partner.createdAt)}</div>
+                    </div>
+                  </div>
+                  {/* Step 2 */}
+                  <div className="flex items-start gap-3">
+                    <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0 mt-0.5">
+                      <CheckCircle size={16} strokeWidth={2.4} />
+                    </span>
+                    <div className="flex-1 pt-1">
+                      <div className="font-semibold text-sm">Партнёр создан</div>
+                      <div className="text-xs text-base-content/50 mt-0.5">{dateShort(partner.createdAt)}</div>
+                    </div>
+                  </div>
+                  {/* Step 3 */}
+                  <div className="flex items-start gap-3">
+                    <span className={`w-8 h-8 rounded-full grid place-items-center shrink-0 mt-0.5 ${
+                      onboardingDone
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {onboardingDone
+                        ? <CheckCircle size={16} strokeWidth={2.4} />
+                        : <RefreshCw size={15} strokeWidth={2.4} className="animate-spin" />
+                      }
+                    </span>
+                    <div className="flex-1 pt-1">
+                      <div className="font-semibold text-sm">
+                        {onboardingDone ? 'Онбординг завершён' : 'Онбординг в процессе'}
+                      </div>
+                      <div className="text-xs text-base-content/50 mt-0.5">
+                        {onboardingDone
+                          ? 'Партнёр активен на платформе'
+                          : 'Партнёр на пробном периоде — ждём активации'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-base-200">
+                <div className="text-xs font-semibold text-base-content/50 uppercase mb-3">Данные для связи</div>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    to="/announcements"
+                    className="btn btn-sm btn-outline gap-1.5"
+                    onClick={onClose}
+                  >
+                    <Megaphone size={14} /> Написать анонс
+                  </Link>
+                  <Link
+                    to={`/organizations/${partner.id}`}
+                    className="btn btn-sm btn-outline gap-1.5"
+                    onClick={onClose}
+                  >
+                    Открыть профиль <ArrowRight size={13} />
+                  </Link>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ==== TAB: FINANCE / INVEST ==== */}
+          {detailTab === 'finance' && (
+            <>
+              <div>
+                <div className="text-xs font-semibold text-base-content/50 uppercase mb-3 flex items-center gap-1.5">
+                  <Wallet size={12} /> Финансовый профиль
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                    <span className="text-base-content/60">Счёт / мес</span>
+                    <span className="font-bold text-lime-700 tabular-nums">
+                      {fmt(partner.monthlyBill)} {cur}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                    <span className="text-base-content/60">Доля платформы</span>
+                    <span className="font-bold tabular-nums">{share}%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                    <span className="text-base-content/60">Дней на платформе</span>
+                    <span className="font-bold tabular-nums">{daysOnPlatform}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                    <span className="text-base-content/60">Ученики на филиал</span>
+                    <span className="font-bold tabular-nums">{studentsPerBranch}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-base-200">
+                <div className="text-xs font-semibold text-base-content/50 uppercase mb-2 flex items-center gap-1.5">
+                  <StickyNote size={12} /> Заметки
+                </div>
+                <textarea
+                  value={notes}
+                  onChange={(e) => onNotesChange(e.target.value)}
+                  placeholder="Заметки о партнёре: причина инвестиции, история переговоров..."
+                  rows={5}
+                  className="textarea textarea-bordered w-full text-sm focus:border-lime-400 focus:outline-lime-200 resize-none"
+                />
+                <div className="text-[11px] text-base-content/40 mt-1">
+                  Сохраняется локально в браузере
+                </div>
+              </div>
+            </>
           )}
         </div>
 
@@ -670,6 +834,7 @@ export default function Organizations() {
         <DetailModal
           partner={detailPartner}
           cur={cur}
+          totalIncome={totals.income}
           onClose={() => setDetailPartner(null)}
           onFreezeRequest={(p) => setFreezeTarget(p)}
           onActivate={(p) => toggle(p)}
