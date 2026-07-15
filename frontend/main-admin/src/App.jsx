@@ -8,14 +8,16 @@ import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Leads from './pages/Leads.jsx';
 import Organizations from './pages/Organizations.jsx';
+import OrgDetail from './pages/OrgDetail.jsx';
 import Billing from './pages/Billing.jsx';
-import Placeholder from './pages/Placeholder.jsx';
+import Revenue from './pages/Revenue.jsx';
+import Settings from './pages/Settings.jsx';
+import Announcements from './pages/Announcements.jsx';
+import Fines from './pages/Fines.jsx';
 
-// Пока идёт восстановление сессии и первая загрузка данных — показываем сплэш с логотипом.
-// Дальше между страницами данные берутся из кэша (React Query), сплэша больше нет.
 function BootGate({ children }) {
   const { token, loading } = useAuth();
-  const { data } = useDashboard(); // префетч данных платформы + гейт
+  const { data } = useDashboard();
   const booted = useRef(false);
   if (data) booted.current = true;
 
@@ -35,30 +37,16 @@ export default function App() {
     <BootGate>
       <Routes>
         <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
-        <Route
-          element={
-            <Protected>
-              <Layout />
-            </Protected>
-          }
-        >
+        <Route element={<Protected><Layout /></Protected>}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/organizations" element={<Organizations />} />
+          <Route path="/organizations/:id" element={<OrgDetail />} />
           <Route path="/billing" element={<Billing />} />
-          <Route
-            path="/revenue"
-            element={
-              <Placeholder
-                title="Доход — отчёты"
-                note="Графики дохода во времени появятся, когда накопится история платежей (модуль K-ADMIN). Сейчас текущий срез дохода — на Дашборде и в Тарифах."
-              />
-            }
-          />
-          <Route
-            path="/settings"
-            element={<Placeholder title="Настройки" note="Профиль платформы и параметры — в разработке." />}
-          />
+          <Route path="/announcements" element={<Announcements />} />
+          <Route path="/fines" element={<Fines />} />
+          <Route path="/revenue" element={<Revenue />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

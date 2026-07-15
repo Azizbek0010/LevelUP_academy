@@ -27,3 +27,10 @@ export const ROLE_LABELS = {
   admin: 'Администратор',
   mentor: 'Ментор',
 };
+
+export const LEAD_STATUS = {
+  new: { label: 'Новая', cls: 'badge-info' },
+  contacted: { label: 'Связались', cls: 'badge-warning' },
+  onboarded: { label: 'Онбординг', cls: 'badge-success' },
+  rejected: { label: 'Отклонена', cls: 'badge-error' },
+};

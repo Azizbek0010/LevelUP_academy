@@ -100,4 +100,15 @@ export const api = {
   // pricing
   getPricing: (token) => request('/main/pricing', { token }),
   updatePricing: (token, body) => request('/main/pricing', { method: 'PUT', token, body }),
+
+  // main announcements
+  mainAnnouncements: (token) => request('/main/announcements', { token }),
+  mainCreateAnnouncement: (token, body) =>
+    request('/main/announcements', { method: 'POST', token, body }),
+  mainDeleteAnnouncement: (token, id) =>
+    request(`/main/announcements/${id}`, { method: 'DELETE', token }),
+
+  // profile update
+  updateProfile: (token, body) =>
+    request('/main/profile', { method: 'PATCH', token, body }),
 };

@@ -997,4 +997,17 @@ export const api = {
 
   adminSettings: (token) => request('/admin/settings', { token }),
   adminUpdateSettings: (token, body) => request('/admin/settings', { method: 'PUT', token, body }),
+
+  // -------- MAIN ADMIN --------
+  mainDashboard: (token) => request('/main/dashboard', { token }),
+  mainPartners: (token) => request('/main/partners', { token }),
+  mainSetPartnerStatus: (token, id, status) =>
+    request(`/main/partners/${id}/status`, { method: 'PATCH', token, body: { status } }),
+  mainOnboardPartner: (token, body) =>
+    request('/main/partners', { method: 'POST', token, body }),
+  mainLeads: (token) => request('/main/leads', { token }),
+  mainUpdateLead: (token, id, body) =>
+    request(`/main/leads/${id}`, { method: 'PATCH', token, body }),
+  mainGetPricing: (token) => request('/main/pricing', { token }),
+  mainUpdatePricing: (token, body) => request('/main/pricing', { method: 'PUT', token, body }),
 };

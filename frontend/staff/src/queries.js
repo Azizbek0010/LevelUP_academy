@@ -168,6 +168,22 @@ export function useMethodistAnalytics() {
   return useAuthedQuery(['methodist-analytics'], () => api.methodistDifficulty(token));
 }
 
+// -------- MAIN ADMIN --------
+export function useMainDashboard() {
+  const { token } = useAuth();
+  return useAuthedQuery(['main-dashboard'], () => api.mainDashboard(token));
+}
+
+export function useMainLeads() {
+  const { token } = useAuth();
+  return useAuthedQuery(['main-leads'], () => api.mainLeads(token), { select: (d) => d.leads });
+}
+
+export function useMainPricing() {
+  const { token } = useAuth();
+  return useAuthedQuery(['main-pricing'], () => api.mainGetPricing(token), { select: (d) => d.pricing });
+}
+
 // -------- INVALIDATE --------
 export function useInvalidate() {
   const qc = useQueryClient();
