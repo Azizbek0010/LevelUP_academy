@@ -924,11 +924,16 @@ async function request(path, { method = 'GET', body, token } = {}) {
       let expenses = JSON.parse(localStorage.getItem('mock_admin_expenses') || '[]');
       if (expenses.length === 0) {
         expenses = [
-          { id: 'e1', category: 'Ofis jihozlari', description: 'Kompyuter monitori', amount: 3200000, date: '2026-06-10T10:00:00Z', status: 'approved', createdBy: 'Demo Admin' },
-          { id: 'e2', category: 'Kommunal', description: 'Elektr energiyasi', amount: 450000, date: '2026-06-05T10:00:00Z', status: 'approved', createdBy: 'Demo Admin' },
-          { id: 'e3', category: 'O\'qituvchi maoshi', description: 'Ilhom Karimov — iyun', amount: 3500000, date: '2026-06-01T10:00:00Z', status: 'approved', createdBy: 'Demo Admin' },
-          { id: 'e4', category: 'Reklama', description: 'Instagram reklama', amount: 800000, date: '2026-06-15T10:00:00Z', status: 'pending', createdBy: 'Demo Admin' },
-          { id: 'e5', category: 'Ovqat', description: 'O\'quvchilar uchun çay', amount: 120000, date: '2026-06-12T10:00:00Z', status: 'approved', createdBy: 'Demo Admin' },
+          { id: 'e1', category: 'Rent', amount: 3200000, spentAt: '2026-06-10T10:00:00Z', note: 'Iyun oyi uchun ofis ijarasi', status: 'paid', paymentMethod: 'Bank', createdBy: 'Demo Admin' },
+          { id: 'e2', category: 'Utility', amount: 450000, spentAt: '2026-06-05T10:00:00Z', note: 'Elektr energiyasi uchun to\'lov', status: 'paid', paymentMethod: 'Karta', createdBy: 'Demo Admin' },
+          { id: 'e3', category: 'Salary', amount: 3500000, spentAt: '2026-06-01T10:00:00Z', note: 'Ilhom Karimov — iyun oy maoshi', status: 'paid', paymentMethod: "O'tkazma", createdBy: 'Demo Admin' },
+          { id: 'e4', category: 'Other', amount: 800000, spentAt: '2026-06-15T10:00:00Z', note: 'Instagram reklama kampaniyasi', status: 'pending', paymentMethod: 'Karta', createdBy: 'Demo Admin' },
+          { id: 'e5', category: 'Materials', amount: 120000, spentAt: '2026-06-12T10:00:00Z', note: 'O\'quvchilar uchun choy va gazak', status: 'paid', paymentMethod: 'Naqt', createdBy: 'Demo Admin' },
+          { id: 'e6', category: 'Salary', amount: 3200000, spentAt: '2026-06-01T10:00:00Z', note: 'Jasur Usmanov — iyun oy maoshi', status: 'paid', paymentMethod: "O'tkazma", createdBy: 'Demo Admin' },
+          { id: 'e7', category: 'Materials', amount: 250000, spentAt: '2026-05-20T10:00:00Z', note: 'Daftar, ruchka va qalam sotib olish', status: 'paid', paymentMethod: 'Naqt', createdBy: 'Demo Admin' },
+          { id: 'e8', category: 'Utility', amount: 380000, spentAt: '2026-05-05T10:00:00Z', note: 'Internet va telefon uchun to\'lov', status: 'paid', paymentMethod: 'Karta', createdBy: 'Demo Admin' },
+          { id: 'e9', category: 'Other', amount: 1500000, spentAt: '2026-05-15T10:00:00Z', note: 'Ofis ta\'mirlash — devor bo\'yash', status: 'paid', paymentMethod: 'Naqt', createdBy: 'Demo Admin' },
+          { id: 'e10', category: 'Rent', amount: 3200000, spentAt: '2026-05-01T10:00:00Z', note: 'May oyi uchun ofis ijarasi', status: 'paid', paymentMethod: 'Bank', createdBy: 'Demo Admin' },
         ];
         localStorage.setItem('mock_admin_expenses', JSON.stringify(expenses));
       }
@@ -939,11 +944,12 @@ async function request(path, { method = 'GET', body, token } = {}) {
       const expenses = JSON.parse(localStorage.getItem('mock_admin_expenses') || '[]');
       const newExpense = {
         id: `e-${Date.now()}`,
-        category: body.category,
-        description: body.description || '',
-        amount: body.amount,
-        date: new Date().toISOString(),
+        category: body.category || 'Other',
+        amount: body.amount || 0,
+        spentAt: body.spentAt || new Date().toISOString(),
+        note: body.note || '',
         status: 'pending',
+        paymentMethod: body.paymentMethod || 'Naqt',
         createdBy: 'Demo Admin',
       };
       expenses.push(newExpense);
@@ -1055,6 +1061,30 @@ async function request(path, { method = 'GET', body, token } = {}) {
       return { settings };
     }
 
+    // -------- CHAT --------
+    if (path.match(/^\/chat\/([^/]+)\/messages$/) && method === 'GET') {
+      const roomKey = path.split('/')[2];
+      // Generate deterministic mock messages per room key
+      const mockMessages = {
+        'global': [
+          { id: 'cm-1', chat_type: 'global', room_key: 'global', sender_id: 'mock-mentor-id-001', body: 'Assalomu alaykum, hammaga xush kelibsiz!', attachment_key: null, created_at: '2026-07-16T09:00:00Z', sender_first_name: 'Ilhom', sender_last_name: 'Karimov', sender_role: 'mentor' },
+          { id: 'cm-2', chat_type: 'global', room_key: 'global', sender_id: 'mock-admin-id-001', body: 'Va alaykum assalom! Bugun yangi guruhlar ro\'yxati tayyor.', attachment_key: null, created_at: '2026-07-16T09:05:00Z', sender_first_name: 'Demo', sender_last_name: 'Admin', sender_role: 'admin' },
+          { id: 'cm-3', chat_type: 'global', room_key: 'global', sender_id: 'mock-mentor-id-002', body: 'Frontend React guruhiga 3 ta yangi talaba qo\'shildi', attachment_key: null, created_at: '2026-07-16T09:10:00Z', sender_first_name: 'Jasur', sender_last_name: 'Usmanov', sender_role: 'mentor' },
+          { id: 'cm-4', chat_type: 'global', room_key: 'global', sender_id: 'mock-admin-id-001', body: 'Yaxshi, ularni ro\'yxatdan o\'tkazdingizmi?', attachment_key: null, created_at: '2026-07-16T09:12:00Z', sender_first_name: 'Demo', sender_last_name: 'Admin', sender_role: 'admin' },
+          { id: 'cm-5', chat_type: 'global', room_key: 'global', sender_id: 'mock-mentor-id-002', body: 'Ha, tayyor. To\'lov ham qilindi', attachment_key: null, created_at: '2026-07-16T09:15:00Z', sender_first_name: 'Jasur', sender_last_name: 'Usmanov', sender_role: 'mentor' },
+        ],
+      };
+      // For parent:1 through parent:6, generate per-contact messages
+      for (let i = 1; i <= 6; i++) {
+        mockMessages[`parent:${i}`] = [
+          { id: `pm-${i}-1`, chat_type: 'parent', room_key: `parent:${i}`, sender_id: `mock-contact-${i}`, body: 'Assalomu alaykum!', attachment_key: null, created_at: '2026-07-16T10:00:00Z', sender_first_name: 'Contact', sender_last_name: `${i}`, sender_role: 'student' },
+          { id: `pm-${i}-2`, chat_type: 'parent', room_key: `parent:${i}`, sender_id: 'mock-admin-id-001', body: 'Va alaykum assalom! Qanday yordam bera olaman?', attachment_key: null, created_at: '2026-07-16T10:01:00Z', sender_first_name: 'Demo', sender_last_name: 'Admin', sender_role: 'admin' },
+        ];
+      }
+      const messages = mockMessages[roomKey] || mockMessages['global'];
+      return { success: true, data: { messages, nextCursor: null } };
+    }
+
     // Fallback
     const err = new Error('Mock route not implemented: ' + path);
     err.status = 404;
@@ -1082,6 +1112,9 @@ async function request(path, { method = 'GET', body, token } = {}) {
 }
 
 export const api = {
+  // -------- GENERIC METHOD (used by Chat.jsx) --------
+  get: (path, config = {}) => request(path, { method: 'GET', token: config.token }).then((data) => ({ data })),
+
   // -------- AUTH (staff — admin/superadmin/mentor/methodist) --------
   loginStaff: (login, password) =>
     request('/auth/staff/login', { method: 'POST', body: { login, password } }),

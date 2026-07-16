@@ -1,12 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, BarChart3, Settings, LogOut, Menu, BookOpen, TrendingUp,
-  CalendarCheck, ClipboardCheck, Coins, GraduationCap, Wallet, Receipt, UserCog,
-  UsersRound, Megaphone, AlarmClock, ShieldAlert, PieChart, MessageSquare,
-  Building2, Search, Bell, Sun, Moon, ChevronLeft, ChevronRight, X,
-  LogIn, User as UserIcon, PanelLeftClose, PanelLeft,
+  Search, Bell, Sun, Moon, ChevronLeft, ChevronRight, X,
+  LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu,
 } from 'lucide-react';
+import {
+  HiOutlineSquares2X2, HiOutlineBuildingOffice2, HiOutlineUsers,
+  HiOutlineAcademicCap, HiOutlineUserGroup, HiOutlineCalendarDays,
+  HiOutlineChartBar, HiOutlineChartPie, HiOutlineMegaphone,
+  HiOutlineBellAlert, HiOutlineShieldExclamation, HiOutlineCog,
+  HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
+  HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
+  HiOutlineClipboardDocumentCheck, HiOutlineCurrencyDollar,
+} from 'react-icons/hi2';
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { disconnectSocket } from '../socket.js';
@@ -25,44 +31,44 @@ function useMediaQuery(query) {
 
 /* ──────────────────── NAV CONFIG ──────────────────── */
 const superNav = [
-  { to: '/',              label: 'Дашборд',       Icon: LayoutDashboard, end: true },
-  { to: '/branches',      label: 'Филиалы',        Icon: Building2 },
-  { to: '/admins',        label: 'Сотрудники',     Icon: Users },
-  { to: '/students',      label: 'Студенты',       Icon: GraduationCap,  soon: true },
-  { to: '/groups',        label: 'Группы',         Icon: UsersRound,     soon: true },
-  { to: '/attendance',    label: 'Посещаемость',   Icon: CalendarCheck,  soon: true },
-  { to: '/reports',       label: 'Аналитика',      Icon: BarChart3 },
-  { to: '/stats',         label: 'Статистика',     Icon: PieChart,       soon: true },
-  { to: '/announcements', label: 'Объявления',     Icon: Megaphone,      soon: true },
-  { to: '/reminders',     label: 'Напоминания',    Icon: AlarmClock,     soon: true },
-  { to: '/audit',         label: 'Аудит',          Icon: ShieldAlert,    soon: true },
-  { to: '/settings',      label: 'Настройки',      Icon: Settings },
+  { to: '/',              label: 'Дашборд',       Icon: HiOutlineSquares2X2, end: true },
+  { to: '/branches',      label: 'Филиалы',        Icon: HiOutlineBuildingOffice2 },
+  { to: '/admins',        label: 'Сотрудники',     Icon: HiOutlineUsers },
+  { to: '/students',      label: 'Студенты',       Icon: HiOutlineAcademicCap,  soon: true },
+  { to: '/groups',        label: 'Группы',         Icon: HiOutlineUserGroup,     soon: true },
+  { to: '/attendance',    label: 'Посещаемость',   Icon: HiOutlineCalendarDays,  soon: true },
+  { to: '/reports',       label: 'Аналитика',      Icon: HiOutlineChartBar },
+  { to: '/stats',         label: 'Статистика',     Icon: HiOutlineChartPie,       soon: true },
+  { to: '/announcements', label: 'Объявления',     Icon: HiOutlineMegaphone,      soon: true },
+  { to: '/reminders',     label: 'Напоминания',    Icon: HiOutlineBellAlert,      soon: true },
+  { to: '/audit',         label: 'Аудит',          Icon: HiOutlineShieldExclamation, soon: true },
+  { to: '/settings',      label: 'Настройки',      Icon: HiOutlineCog },
 ];
 
 const adminNav = [
-  { to: '/',          label: 'Дашборд',     Icon: LayoutDashboard, end: true },
-  { to: '/students',  label: 'Студенты',    Icon: GraduationCap },
-  { to: '/groups',    label: 'Группы',      Icon: Users },
-  { to: '/mentors',   label: 'Менторы',     Icon: UserCog },
-  { to: '/chat',      label: 'Чат',         Icon: MessageSquare },
-  { to: '/payments',  label: 'Платежи',     Icon: Wallet },
-  { to: '/expenses',  label: 'Расходы',     Icon: Receipt },
-  { to: '/reports',   label: 'Отчёты',      Icon: BarChart3 },
-  { to: '/settings',  label: 'Настройки',   Icon: Settings },
+  { to: '/',          label: 'Дашборд',     Icon: HiOutlineSquares2X2, end: true },
+  { to: '/students',  label: 'Студенты',    Icon: HiOutlineAcademicCap },
+  { to: '/groups',    label: 'Группы',      Icon: HiOutlineUsers },
+  { to: '/mentors',   label: 'Менторы',     Icon: HiOutlineUserCircle },
+  { to: '/chat',      label: 'Чат',         Icon: HiOutlineChatBubbleLeftRight },
+  { to: '/payments',  label: 'Платежи',     Icon: HiOutlineWallet },
+  { to: '/expenses',  label: 'Расходы',     Icon: HiOutlineReceiptPercent },
+  { to: '/reports',   label: 'Отчёты',      Icon: HiOutlineChartBar },
+  { to: '/settings',  label: 'Настройки',   Icon: HiOutlineCog },
 ];
 
 const mentorNav = [
-  { to: '/',           label: 'Дашборд',   Icon: LayoutDashboard, end: true },
-  { to: '/groups',     label: 'Группы',    Icon: Users },
-  { to: '/attendance', label: 'Davomat',   Icon: CalendarCheck },
-  { to: '/homework',   label: 'Домашки',   Icon: ClipboardCheck },
-  { to: '/coins',      label: 'Коины',     Icon: Coins },
+  { to: '/',           label: 'Дашборд',   Icon: HiOutlineSquares2X2, end: true },
+  { to: '/groups',     label: 'Группы',    Icon: HiOutlineUsers },
+  { to: '/attendance', label: 'Davomat',   Icon: HiOutlineCalendarDays },
+  { to: '/homework',   label: 'Домашки',   Icon: HiOutlineClipboardDocumentCheck },
+  { to: '/coins',      label: 'Коины',     Icon: HiOutlineCurrencyDollar },
 ];
 
 const methodistNav = [
-  { to: '/',                   label: 'Дашборд',     Icon: LayoutDashboard, end: true },
-  { to: '/methodist/types',    label: 'Типы обучения',Icon: BookOpen },
-  { to: '/methodist/analytics',label: 'Аналитика',   Icon: TrendingUp },
+  { to: '/',                   label: 'Дашборд',     Icon: HiOutlineSquares2X2, end: true },
+  { to: '/methodist/types',    label: 'Типы обучения',Icon: HiOutlineBookOpen },
+  { to: '/methodist/analytics',label: 'Аналитика',   Icon: HiOutlineArrowTrendingUp },
 ];
 
 const ROLE_NAV = {
