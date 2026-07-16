@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Snowflake, Sun, Trash2, KeyRound, Search, GraduationCap, UserCheck, UserX, Copy, Check } from 'lucide-react';
+import { Plus, Snowflake, Sun, Trash2, KeyRound, Search, GraduationCap, UserCheck, UserX, Copy, Check, Coins } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
@@ -15,7 +15,7 @@ const initials = (s) => {
   return ((f[0] || '') + (l[0] || '')).toUpperCase() || '?';
 };
 
-const emptyForm = { firstName: '', lastName: '', phone: '', parentPhone: '' };
+const emptyForm = { firstName: '', lastName: '', phone: '', parentPhone: '', age: '', gender: 'male', coins: 0, frozen: false };
 
 const STATUS_COLORS = {
   active: { bg: '#2ECC7115', text: '#2ECC71', label: 'Активен' },
@@ -79,6 +79,11 @@ function StudentCard({ s, onFreeze, onDelete, onRegen }) {
               </span>
             ) : null}
             {s.phone && <span>{s.phone}</span>}
+            {s.coins != null && s.coins > 0 && (
+              <span className="flex items-center gap-1 text-[var(--green)] font-semibold">
+                <Coins size={10} /> {s.coins}
+              </span>
+            )}
           </div>
 
           {groupNames.length > 0 && (
@@ -134,6 +139,9 @@ export default function AdminStudents() {
       const res = await api.adminCreateStudent(token, {
         firstName: form.firstName, lastName: form.lastName,
         phone: form.phone || undefined, parentPhone: form.parentPhone || undefined,
+        age: form.age ? Number(form.age) : undefined,
+        gender: form.gender || undefined,
+        coins: form.coins ? Number(form.coins) : undefined,
       });
       const r = res?.data || res;
       setForm(null);
@@ -223,10 +231,31 @@ export default function AdminStudents() {
             <h3 className="font-bold text-lg mb-4">Новый студент</h3>
             {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
             <div className="space-y-3">
-              <input className="input input-bordered w-full" placeholder="Имя" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
-              <input className="input input-bordered w-full" placeholder="Фамилия" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+              <div className="grid grid-cols-2 gap-3">
+                <input className="input input-bordered w-full" placeholder="Имя" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+                <input className="input input-bordered w-full" placeholder="Фамилия" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input className="input input-bordered w-full" type="number" placeholder="Возраст" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
+                <select className="select select-bordered w-full" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
+                  <option value="male">Мужской</option>
+                  <option value="female">Женский</option>
+                </select>
+              </div>
               <input className="input input-bordered w-full" placeholder="Телефон студента" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               <input className="input input-bordered w-full" placeholder="Телефон родителя (необязательно)" value={form.parentPhone} onChange={(e) => setForm({ ...form, parentPhone: e.target.value })} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Коины</label>
+                  <input className="input input-bordered w-full" type="number" min="0" value={form.coins} onChange={(e) => setForm({ ...form, coins: Number(e.target.value) })} />
+                </div>
+                <div className="flex items-end pb-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="checkbox checkbox-sm" checked={form.frozen} onChange={(e) => setForm({ ...form, frozen: e.target.checked })} />
+                    <span className="text-[13px] text-[var(--text)]">Заморожен</span>
+                  </label>
+                </div>
+              </div>
             </div>
             <div className="modal-action">
               <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>

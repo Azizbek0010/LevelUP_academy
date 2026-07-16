@@ -1,12 +1,12 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, TrendingUp,
-  Wifi, CalendarCheck, ClipboardCheck, Coins, GraduationCap, Wallet, Receipt, UserCog,
+  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, BookOpen, TrendingUp,
+  CalendarCheck, ClipboardCheck, Coins, GraduationCap, Wallet, Receipt, UserCog,
   UsersRound, Megaphone, AlarmClock, ShieldAlert, PieChart, MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
-import { useOnlineCount, disconnectSocket } from '../socket.js';
+import { disconnectSocket } from '../socket.js';
 
 const superNav = [
   { to: '/',             label: 'Дашборд',      Icon: LayoutDashboard, end: true },
@@ -104,10 +104,13 @@ function SidebarContent({ role }) {
 }
 
 export default function Layout() {
-  const { user, logout, token } = useAuth();
+  const { user, logout } = useAuth();
   const role = user?.role;
   const navigate = useNavigate();
-  const onlineCount = useOnlineCount(token);
+  const location = useLocation();
+
+  const FULL_PAGE_ROUTES = ['/chat'];
+  const isFullPage = FULL_PAGE_ROUTES.some(r => location.pathname.startsWith(r));
 
   const onLogout = async () => {
     disconnectSocket();
@@ -116,26 +119,14 @@ export default function Layout() {
   };
 
   return (
-    <div className="drawer lg:drawer-open min-h-screen bg-base-200">
+    <div className="drawer lg:drawer-open min-h-screen" style={{ background: 'var(--bg)' }}>
       <input id="nav-drawer" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content flex flex-col">
-        <header className="h-16 flex items-center gap-3 px-4 sm:px-6 bg-[#eef7e4] border-b border-base-300 sticky top-0 z-20">
+        <header className="h-16 flex items-center gap-3 px-4 sm:px-6 border-b sticky top-0 z-20" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
           <label htmlFor="nav-drawer" className="btn btn-ghost btn-sm lg:hidden px-2">
             <Menu size={20} />
           </label>
           <div className="flex-1" />
-          {/* Live online counter */}
-          <div className="flex items-center gap-1 text-xs text-base-content/60 mr-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
-            </span>
-            <Wifi size={13} />
-            <span>{onlineCount}</span>
-          </div>
-          <button className="btn btn-ghost btn-circle btn-sm">
-            <Bell size={18} />
-          </button>
           <div className="flex items-center gap-2">
             <div className="avatar placeholder">
               <div className="bg-sidebar text-neutral-content w-9 rounded-full">
@@ -153,7 +144,7 @@ export default function Layout() {
           </button>
         </header>
 
-        <main className="p-4 sm:p-7 max-w-6xl w-full mx-auto">
+        <main className={isFullPage ? 'flex-1 flex flex-col' : 'p-4 sm:p-7 max-w-6xl w-full mx-auto'}>
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>

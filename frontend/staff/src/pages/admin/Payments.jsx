@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Wallet, CreditCard, Banknote, Clock, CheckCircle2, AlertTriangle, AlertCircle, TrendingUp } from 'lucide-react';
+import { Wallet, CreditCard, Banknote, Clock, CheckCircle2, AlertTriangle, AlertCircle, TrendingUp, Search, Filter } from 'lucide-react';
 import { money, dateShort } from '../../format.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminInvoices } from '../../queries.js';
@@ -109,9 +109,27 @@ export default function AdminPayments() {
   const [method, setMethod] = useState('cash');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const raw = data?.data || data || {};
-  const rows = raw.invoices || (Array.isArray(raw) ? raw : []);
+  const allRows = raw.invoices || (Array.isArray(raw) ? raw : []);
+
+  const rows = useMemo(() => {
+    let filtered = allRows;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((inv) => {
+        const name = studentName(inv).toLowerCase();
+        const group = (inv.group?.name || '').toLowerCase();
+        return name.includes(q) || group.includes(q);
+      });
+    }
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((inv) => inv.status === statusFilter);
+    }
+    return filtered;
+  }, [allRows, searchQuery, statusFilter]);
 
   const stats = useMemo(() => {
     const total = rows.reduce((s, inv) => s + Number(inv.amount || inv.total_amount || 0), 0);
@@ -148,16 +166,62 @@ export default function AdminPayments() {
         <StatCard Icon={AlertTriangle} label="Просрочено" value={stats.overdue} color="#E8543E" gradient="linear-gradient(135deg,#E8543E,#C0392B)" delay="stagger-4" />
       </div>
 
+      {/* ═══ Search & Filters ═══ */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+          <input
+            type="text"
+            placeholder="Поиск по имени или группе..."
+            className="w-full h-10 pl-9 pr-4 rounded-xl text-[13px] font-medium bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          {[
+            { key: 'all', label: 'Все' },
+            { key: 'paid', label: 'Оплачен' },
+            { key: 'partial', label: 'Частично' },
+            { key: 'unpaid', label: 'Не оплачен' },
+            { key: 'overdue', label: 'Просрочен' },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setStatusFilter(key)}
+              className={`h-8 px-3 rounded-lg text-[12px] font-bold transition-all ${
+                statusFilter === key
+                  ? 'bg-[var(--accent)] text-black shadow-sm'
+                  : 'bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)] hover:border-[var(--accent)]/40'
+              }`}
+            >
+              {label}
+              {key !== 'all' && (
+                <span className="ml-1.5 text-[10px] opacity-70">
+                  {allRows.filter((inv) => inv.status === key).length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ═══ Invoice Cards ═══ */}
       {isLoading ? (
         <div className="mt-4"><SkeletonTable cols={6} /></div>
       ) : error ? (
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
-      ) : rows.length === 0 ? (
+      ) : allRows.length === 0 ? (
         <div className="glass-strong rounded-[20px] p-12 text-center animate-fade-in">
           <Wallet size={40} className="mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
           <p className="text-[14px] font-medium text-[var(--text-muted)]">Нет счетов</p>
           <p className="text-[12px] text-[var(--text-muted)] mt-1 opacity-60">Счета появятся здесь</p>
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="glass-strong rounded-[20px] p-8 text-center animate-fade-in">
+          <Search size={32} className="mx-auto mb-2 text-[var(--text-muted)] opacity-30" />
+          <p className="text-[13px] font-medium text-[var(--text-muted)]">Ничего не найдено</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1 opacity-60">Попробуйте изменить фильтры</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

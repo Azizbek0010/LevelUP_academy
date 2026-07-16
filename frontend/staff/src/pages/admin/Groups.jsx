@@ -8,7 +8,8 @@ import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 
 const isArchived = (g) => g.isArchived ?? g.is_archived ?? false;
-const emptyForm = { name: '', mentorId: '' };
+const MAX_STUDENTS = 15;
+const emptyForm = { name: '', mentorId: '', maxStudents: MAX_STUDENTS };
 
 /* ═══════════════ Stat Card ═══════════════ */
 function StatCard({ Icon, label, value, color, gradient, delay }) {
@@ -73,8 +74,24 @@ function GroupCard({ g, onArchive }) {
         )}
         <span className="flex items-center gap-1.5 text-[var(--text-secondary)]">
           <Users size={12} className="text-[var(--text-muted)]" />
-          {studentsCount} студентов
+          {studentsCount}/{MAX_STUDENTS} студентов
         </span>
+      </div>
+      {/* Capacity bar */}
+      <div className="mt-3">
+        <div className="h-1.5 rounded-full bg-[var(--surface)] overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              studentsCount >= MAX_STUDENTS ? 'bg-[var(--danger)]' :
+              studentsCount >= MAX_STUDENTS * 0.8 ? 'bg-[var(--warning)]' :
+              'bg-[var(--green)]'
+            }`}
+            style={{ width: `${Math.min((studentsCount / MAX_STUDENTS) * 100, 100)}%` }}
+          />
+        </div>
+        {studentsCount >= MAX_STUDENTS && (
+          <p className="text-[10px] text-[var(--danger)] mt-1 font-semibold">Группа заполнена</p>
+        )}
       </div>
     </div>
   );
@@ -162,6 +179,13 @@ export default function AdminGroups() {
                 <option value="">Ментор (необязательно)</option>
                 {mentors.map((m) => <option key={m.id} value={m.id}>{mentorName(m)}</option>)}
               </select>
+              <div>
+                <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Макс. студентов</label>
+                <input className="input input-bordered w-full" type="number" min="1" max="30" value={form.maxStudents} onChange={(e) => setForm({ ...form, maxStudents: Number(e.target.value) })} />
+                {form.maxStudents > MAX_STUDENTS && (
+                  <p className="text-[11px] text-[var(--warning)] mt-1">Стандарт — {MAX_STUDENTS} студентов</p>
+                )}
+              </div>
             </div>
             <div className="modal-action">
               <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>

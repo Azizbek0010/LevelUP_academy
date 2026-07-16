@@ -4,10 +4,14 @@ import {
   UserPlus, FolderPlus, CreditCard, FileText, ArrowUpRight, ArrowDownRight,
   BarChart3, Sparkles, Activity,
 } from 'lucide-react';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import { fmt, money } from '../../format.js';
 import { useAdminDashboard } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 /* ═══════════════ Premium KPI Card ═══════════════ */
 function KpiCard({ Icon, title, value, trend, trendLabel, color, gradient, delay }) {
@@ -95,6 +99,88 @@ function StatRow({ Icon, label, value, danger, accent }) {
   );
 }
 
+/* ═══════════════ Revenue Chart ═══════════════ */
+function RevenueChart({ totals, thisMonth }) {
+  const chartData = {
+    labels: ['Доход', 'Расход', 'Прибыль'],
+    datasets: [
+      {
+        label: 'Всего',
+        data: [totals.revenue || 0, totals.expenses || 0, totals.profit || 0],
+        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+        borderColor: '#22c55e',
+        borderWidth: 2,
+        borderRadius: 8,
+        barPercentage: 0.6,
+      },
+      {
+        label: 'Этот месяц',
+        data: [thisMonth.revenue || 0, thisMonth.expenses || 0, thisMonth.profit || 0],
+        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+        borderColor: '#3b82f6',
+        borderWidth: 2,
+        borderRadius: 8,
+        barPercentage: 0.6,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          padding: 16,
+          font: { size: 12, weight: '600' },
+          color: '#6b7a62',
+        },
+      },
+      tooltip: {
+        backgroundColor: '#1a1f16',
+        titleColor: '#e8efe2',
+        bodyColor: '#94a388',
+        borderColor: '#2d3628',
+        borderWidth: 1,
+        cornerRadius: 10,
+        padding: 12,
+        callbacks: {
+          label: (ctx) => `${ctx.dataset.label}: ${money(ctx.raw)}`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#6b7a62', font: { size: 12, weight: '600' } },
+      },
+      y: {
+        grid: { color: 'rgba(220, 229, 212, 0.3)' },
+        ticks: {
+          color: '#6b7a62',
+          font: { size: 11 },
+          callback: (v) => v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v,
+        },
+      },
+    },
+  };
+
+  return (
+    <div className="glass-strong rounded-[20px] p-5 card-hover-premium animate-fade-in stagger-3">
+      <div className="flex items-center gap-2.5 mb-5">
+        <div className="w-1 h-6 rounded-full bg-[#3B82F6]" />
+        <h2 className="text-[15px] font-extrabold text-[var(--text)] tracking-[-0.02em]">Финансы</h2>
+      </div>
+      <div className="h-[260px]">
+        <Bar data={chartData} options={options} />
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════ Main Dashboard ═══════════════ */
 export default function AdminDashboard() {
   const { data, isLoading, error } = useAdminDashboard();
@@ -162,6 +248,9 @@ export default function AdminDashboard() {
           delay="stagger-4"
         />
       </div>
+
+      {/* ═══ Revenue Chart ═══ */}
+      <RevenueChart totals={t} thisMonth={m} />
 
       {/* ═══ Branch Stats + Monthly Overview ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

@@ -681,6 +681,16 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
 
+  /* ── Load persisted theme on mount ── */
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('lu-theme');
+      if (saved && ['light', 'dark', 'system'].includes(saved)) {
+        setSettings((prev) => ({ ...prev, theme: saved }));
+      }
+    } catch {}
+  }, []);
+
   useEffect(() => {
     if (data) {
       const s = data.data || data.settings || data;
@@ -689,6 +699,25 @@ export default function AdminSettings() {
       }
     }
   }, [data]);
+
+  /* ── Theme toggle: apply to document.documentElement ── */
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings.theme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else if (settings.theme === 'light') {
+      root.classList.remove('dark');
+      root.classList.add('light');
+    } else {
+      // system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.toggle('dark', prefersDark);
+      root.classList.toggle('light', !prefersDark);
+    }
+    // persist to localStorage
+    try { localStorage.setItem('lu-theme', settings.theme); } catch {}
+  }, [settings.theme]);
 
   const update = (patch) => {
     setSettings((prev) => ({ ...prev, ...patch }));
