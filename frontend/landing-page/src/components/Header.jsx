@@ -14,6 +14,7 @@ export default function Header() {
     { to: lp('/landing/features'), label: t.nav.features },
     { to: lp('/landing/roles'), label: t.nav.roles },
     { to: lp('/landing/finance'), label: t.nav.finance },
+    { to: lp('/landing/pricing'), label: t.nav.pricing },
     { to: lp('/landing/gamification'), label: t.nav.gamification },
   ];
 
