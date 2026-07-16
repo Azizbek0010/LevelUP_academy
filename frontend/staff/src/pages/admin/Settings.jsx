@@ -2,40 +2,38 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminSettings, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
-import PageHeader from '../../components/PageHeader.jsx';
+import { SkeletonKpis } from '../../components/Skeleton.jsx';
 import {
   Building2, Palette, Bell, Shield, CreditCard, Globe,
   CheckCircle2, AlertCircle, Eye, EyeOff, Moon, Sun,
   MessageSquare, Mail, Smartphone, Clock, Coins,
-  FileText, Languages, MapPin, Phone, Save,
+  FileText, Languages, MapPin, Phone, Save, Sparkles,
+  KeyRound, Lock, Monitor, Zap, Globe2, Timer,
 } from 'lucide-react';
 
-/* ───────────────────── Tab definitions ───────────────────── */
+/* ═══════════════════ Tab definitions ═══════════════════ */
 
 const TABS = [
-  { key: 'general', label: 'Общие', icon: Building2 },
-  { key: 'appearance', label: 'Внешний вид', icon: Palette },
-  { key: 'notifications', label: 'Уведомления', icon: Bell },
-  { key: 'security', label: 'Безопасность', icon: Shield },
-  { key: 'finance', label: 'Финансы', icon: CreditCard },
-  { key: 'localization', label: 'Локализация', icon: Globe },
+  { key: 'general',       label: 'Общие',         icon: Building2,    color: '#3b82f6' },
+  { key: 'appearance',    label: 'Внешний вид',    icon: Palette,      color: '#8b5cf6' },
+  { key: 'notifications', label: 'Уведомления',    icon: Bell,         color: '#f59e0b' },
+  { key: 'security',      label: 'Безопасность',   icon: Shield,       color: '#ef4444' },
+  { key: 'finance',       label: 'Финансы',        icon: CreditCard,   color: '#22c55e' },
+  { key: 'localization',  label: 'Локализация',    icon: Globe,        color: '#06b6d4' },
 ];
 
-/* ───────────────────── Default settings ───────────────────── */
+/* ═══════════════════ Default settings ═══════════════════ */
 
 const DEFAULTS = {
-  // General
   branchName: '',
   branchAddress: '',
   branchPhone: '',
   branchEmail: '',
   branchWebsite: '',
-  // Appearance
   theme: 'light',
   accentColor: '#C6FF34',
   compactMode: false,
   showAvatars: true,
-  // Notifications
   notifyEmail: true,
   notifyTelegram: true,
   notifySms: false,
@@ -43,129 +41,242 @@ const DEFAULTS = {
   notifyNewStudents: true,
   notifyAttendance: true,
   notifyDailyReport: false,
-  // Security
   twoFactorEnabled: false,
   sessionTimeout: 30,
   allowMultipleSessions: true,
-  // Finance
   currency: 'UZS',
   currencySymbol: 'сўм',
   invoicePrefix: 'INV',
   autoGenerateInvoice: true,
   paymentGraceDays: 3,
-  // Localization
   language: 'ru',
   dateFormat: 'DD.MM.YYYY',
   timezone: 'Asia/Tashkent',
   firstDayOfWeek: 'monday',
 };
 
-/* ───────────────────── Toggle component ───────────────────── */
+/* ═══════════════════ Shared premium components ═══════════════════ */
 
-function Toggle({ checked, onChange, disabled }) {
+function SettingCard({ icon: Icon, title, subtitle, color, children, className = '' }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`w-11 h-6 rounded-full transition-all relative shrink-0 ${
-        checked ? 'bg-[#10B981]' : 'bg-base-300'
-      } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+    <div
+      className={`rounded-2xl border transition-all duration-300 ${className}`}
+      style={{
+        background: 'var(--glass-bg)',
+        borderColor: 'var(--glass-border)',
+        boxShadow: 'var(--shadow-sm)',
+      }}
     >
-      <span
-        className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
-        style={{ left: checked ? '22px' : '2px' }}
+      <div className="p-5 sm:p-6">
+        {(title || subtitle) && (
+          <div className="flex items-center gap-3 mb-5">
+            {Icon && (
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: `${color || '#22c55e'}15` }}
+              >
+                <Icon size={17} style={{ color: color || '#22c55e' }} />
+              </div>
+            )}
+            <div>
+              <h3 className="text-sm font-bold" style={{ color: 'var(--text)' }}>{title}</h3>
+              {subtitle && (
+                <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>
+              )}
+            </div>
+          </div>
+        )}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, hint, children }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-[13px] font-semibold" style={{ color: 'var(--text)' }}>
+        {label}
+      </label>
+      {children}
+      {hint && (
+        <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{hint}</p>
+      )}
+    </div>
+  );
+}
+
+function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#22c55e' }) {
+  return (
+    <div className="flex items-center justify-between py-2.5">
+      <div className="flex items-center gap-3 min-w-0">
+        {Icon && (
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-200"
+            style={{ background: checked ? `${color}15` : 'var(--surface-hover)' }}
+          >
+            <Icon size={15} style={{ color: checked ? color : 'var(--text-muted)' }} />
+          </div>
+        )}
+        <div className="min-w-0">
+          <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{label}</div>
+          {hint && <div className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{hint}</div>}
+        </div>
+      </div>
+      <button
+        onClick={() => onChange(!checked)}
+        className="relative w-11 h-6 rounded-full shrink-0 transition-all duration-300 ml-3"
+        style={{
+          background: checked ? color : 'var(--border)',
+          boxShadow: checked ? `0 0 12px ${color}40` : 'none',
+        }}
+      >
+        <span
+          className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300"
+          style={{
+            left: checked ? 22 : 2,
+            transform: checked ? 'scale(1)' : 'scale(0.85)',
+          }}
+        />
+      </button>
+    </div>
+  );
+}
+
+function PremiumInput({ value, onChange, placeholder, icon: Icon, type = 'text', disabled = false }) {
+  return (
+    <div
+      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+      style={{
+        background: 'var(--surface)',
+        borderColor: 'var(--border)',
+      }}
+    >
+      {Icon && <Icon size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />}
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        className="flex-1 bg-transparent outline-none text-[13px] min-w-0"
+        style={{ color: 'var(--text)' }}
       />
-    </button>
-  );
-}
-
-/* ───────────────────── Section card ───────────────────── */
-
-function Section({ title, icon: Icon, children }) {
-  return (
-    <div className="bg-[var(--surface)] rounded-[16px] border border-[var(--border)] p-5 space-y-4">
-      <div className="flex items-center gap-2.5">
-        {Icon && <Icon size={18} className="text-base-content/40" />}
-        <h3 className="text-[14px] font-bold">{title}</h3>
-      </div>
-      {children}
     </div>
   );
 }
 
-/* ───────────────────── Field row ───────────────────── */
-
-function Field({ label, hint, children, horizontal }) {
+function PremiumSelect({ value, onChange, children, icon: Icon }) {
   return (
-    <div className={`gap-4 ${horizontal ? 'flex items-center justify-between' : 'space-y-1.5'}`}>
-      <div className={horizontal ? '' : ''}>
-        <label className="text-[12px] font-semibold text-base-content/70">{label}</label>
-        {hint && <p className="text-[11px] text-base-content/40 mt-0.5">{hint}</p>}
-      </div>
-      {children}
+    <div
+      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+      style={{
+        background: 'var(--surface)',
+        borderColor: 'var(--border)',
+      }}
+    >
+      {Icon && <Icon size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />}
+      <select
+        value={value}
+        onChange={onChange}
+        className="flex-1 bg-transparent outline-none text-[13px] min-w-0 cursor-pointer appearance-none"
+        style={{ color: 'var(--text)' }}
+      >
+        {children}
+      </select>
     </div>
   );
 }
 
-/* ───────────────────── Input styles ───────────────────── */
+function OptionGroup({ options, value, onChange, columns = false }) {
+  return (
+    <div className={`flex gap-2 ${columns ? 'flex-wrap' : ''}`}>
+      {options.map(({ val, label, icon: Icon }) => (
+        <button
+          key={val}
+          onClick={() => onChange(val)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border transition-all duration-200"
+          style={{
+            background: value === val ? 'var(--green)' : 'var(--surface)',
+            color: value === val ? '#141B10' : 'var(--text-secondary)',
+            borderColor: value === val ? 'var(--green)' : 'var(--border)',
+            boxShadow: value === val ? '0 4px 12px var(--green-glow)' : 'none',
+          }}
+        >
+          {Icon && <Icon size={15} />}
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
-const inputCls = 'input input-bordered w-full text-[13px] h-10 hover:border-[var(--green)] focus:border-[var(--green)] transition-colors';
-const selectCls = 'select select-bordered w-full text-[13px] h-10 hover:border-[var(--green)] focus:border-[var(--green)] transition-colors';
+function Divider() {
+  return (
+    <div className="my-4" style={{ borderTop: '1px solid var(--border)' }} />
+  );
+}
 
 /* ═══════════════════ Tab: General ═══════════════════ */
 
 function TabGeneral({ settings, onChange }) {
   return (
-    <div className="space-y-4">
-      <Section title="Информация о филиале" icon={Building2}>
-        <Field label="Название филиала">
-          <input
-            className={inputCls}
-            value={settings.branchName}
-            onChange={(e) => onChange({ branchName: e.target.value })}
-            placeholder="LevelUp Academy — Downtown"
-          />
-        </Field>
-        <Field label="Адрес">
-          <input
-            className={inputCls}
-            value={settings.branchAddress}
-            onChange={(e) => onChange({ branchAddress: e.target.value })}
-            placeholder="Ташкент, ул. Амира Темура, 108"
-          />
-        </Field>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Телефон">
-            <div className="relative">
-              <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30" />
-              <input
-                className={`${inputCls} pl-9`}
+    <div className="space-y-5 animate-fade-in">
+      <SettingCard
+        icon={Building2}
+        title="Информация о филиале"
+        subtitle="Основные данные вашего учебного центра"
+        color="#3b82f6"
+      >
+        <div className="space-y-4">
+          <Field label="Название филиала">
+            <PremiumInput
+              value={settings.branchName}
+              onChange={(e) => onChange({ branchName: e.target.value })}
+              placeholder="LevelUp Academy — Downtown"
+              icon={Building2}
+            />
+          </Field>
+
+          <Field label="Адрес">
+            <PremiumInput
+              value={settings.branchAddress}
+              onChange={(e) => onChange({ branchAddress: e.target.value })}
+              placeholder="Ташкент, ул. Амира Темура, 108"
+              icon={MapPin}
+            />
+          </Field>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Телефон">
+              <PremiumInput
                 value={settings.branchPhone}
                 onChange={(e) => onChange({ branchPhone: e.target.value })}
                 placeholder="+998 90 123 45 67"
+                icon={Phone}
               />
-            </div>
-          </Field>
-          <Field label="Email">
-            <input
-              className={inputCls}
-              type="email"
-              value={settings.branchEmail}
-              onChange={(e) => onChange({ branchEmail: e.target.value })}
-              placeholder="info@levelup.uz"
+            </Field>
+            <Field label="Email">
+              <PremiumInput
+                value={settings.branchEmail}
+                onChange={(e) => onChange({ branchEmail: e.target.value })}
+                placeholder="info@levelup.uz"
+                icon={Mail}
+                type="email"
+              />
+            </Field>
+          </div>
+
+          <Field label="Веб-сайт" hint="URL сайта филиала (если есть)">
+            <PremiumInput
+              value={settings.branchWebsite}
+              onChange={(e) => onChange({ branchWebsite: e.target.value })}
+              placeholder="https://levelup.uz"
+              icon={Globe2}
             />
           </Field>
         </div>
-        <Field label="Веб-сайт" hint="URL сайта филиала (если есть)">
-          <input
-            className={inputCls}
-            value={settings.branchWebsite}
-            onChange={(e) => onChange({ branchWebsite: e.target.value })}
-            placeholder="https://levelup.uz"
-          />
-        </Field>
-      </Section>
+      </SettingCard>
     </div>
   );
 }
@@ -174,48 +285,83 @@ function TabGeneral({ settings, onChange }) {
 
 function TabAppearance({ settings, onChange }) {
   const themes = [
-    { value: 'light', label: 'Светлая', icon: Sun },
-    { value: 'dark', label: 'Тёмная', icon: Moon },
-    { value: 'system', label: 'Системная', icon: Smartphone },
+    { val: 'light',  label: 'Светлая', icon: Sun },
+    { val: 'dark',   label: 'Тёмная',  icon: Moon },
+    { val: 'system', label: 'Системная', icon: Monitor },
   ];
 
   return (
-    <div className="space-y-4">
-      <Section title="Тема оформления" icon={Palette}>
-        <Field label="Цветовая тема">
-          <div className="flex gap-3">
-            {themes.map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                onClick={() => onChange({ theme: value })}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-[12px] font-semibold border transition-all ${
-                  settings.theme === value
-                    ? 'bg-[var(--green)] text-[#141B10] border-[var(--green)]'
-                    : 'bg-[var(--surface)] text-base-content/60 border-[var(--border)] hover:border-[var(--green)]'
-                }`}
+    <div className="space-y-5 animate-fade-in">
+      <SettingCard
+        icon={Palette}
+        title="Тема оформления"
+        subtitle="Выберите вид интерфейса"
+        color="#8b5cf6"
+      >
+        <div className="grid grid-cols-3 gap-3">
+          {themes.map(({ val, label, icon: Icon }) => (
+            <button
+              key={val}
+              onClick={() => onChange({ theme: val })}
+              className="flex flex-col items-center gap-2.5 py-5 px-3 rounded-2xl border transition-all duration-300"
+              style={{
+                background: settings.theme === val
+                  ? 'linear-gradient(135deg, rgba(198,255,52,0.12), rgba(198,255,52,0.04))'
+                  : 'var(--surface)',
+                borderColor: settings.theme === val ? '#C6FF34' : 'var(--border)',
+                boxShadow: settings.theme === val ? '0 4px 20px var(--green-glow)' : 'var(--shadow-sm)',
+              }}
+            >
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300"
+                style={{
+                  background: settings.theme === val ? '#C6FF34' : 'var(--surface-hover)',
+                  color: settings.theme === val ? '#141B10' : 'var(--text-muted)',
+                  boxShadow: settings.theme === val ? '0 4px 12px var(--green-glow)' : 'none',
+                }}
               >
-                <Icon size={14} />
+                <Icon size={22} />
+              </div>
+              <span
+                className="text-[12px] font-bold"
+                style={{ color: settings.theme === val ? '#C6FF34' : 'var(--text-secondary)' }}
+              >
                 {label}
-              </button>
-            ))}
-          </div>
-        </Field>
-      </Section>
+              </span>
+              {settings.theme === val && (
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#C6FF34' }} />
+              )}
+            </button>
+          ))}
+        </div>
+      </SettingCard>
 
-      <Section title="Отображение" icon={Eye}>
-        <Field label="Компактный режим" hint="Уменьшить отступы для большего количества информации на экране" horizontal>
+      <SettingCard
+        icon={Sparkles}
+        title="Отображение"
+        subtitle="Настройте видимость элементов"
+        color="#ec4899"
+      >
+        <div className="space-y-1">
           <Toggle
             checked={settings.compactMode}
             onChange={(v) => onChange({ compactMode: v })}
+            label="Компактный режим"
+            hint="Уменьшить отступы для большего количества информации"
+            icon={Zap}
+            color="#f59e0b"
           />
-        </Field>
-        <Field label="Показывать аватары" hint="Отображать фотографии студентов и сотрудников" horizontal>
+          <Divider />
           <Toggle
             checked={settings.showAvatars}
             onChange={(v) => onChange({ showAvatars: v })}
+            label="Показывать аватары"
+            hint="Отображать фотографии студентов и сотрудников"
+            icon={Users}
+            color="#3b82f6"
           />
-        </Field>
-      </Section>
+        </div>
+      </SettingCard>
     </div>
   );
 }
@@ -223,55 +369,66 @@ function TabAppearance({ settings, onChange }) {
 /* ═══════════════════ Tab: Notifications ═══════════════════ */
 
 function TabNotifications({ settings, onChange }) {
-  return (
-    <div className="space-y-4">
-      <Section title="Каналы уведомлений" icon={Bell}>
-        <Field label="Email-уведомления" hint="Отправлять уведомления на email" horizontal>
-          <Toggle
-            checked={settings.notifyEmail}
-            onChange={(v) => onChange({ notifyEmail: v })}
-          />
-        </Field>
-        <Field label="Telegram-уведомления" hint="Через Telegram-бота" horizontal>
-          <Toggle
-            checked={settings.notifyTelegram}
-            onChange={(v) => onChange({ notifyTelegram: v })}
-          />
-        </Field>
-        <Field label="SMS-уведомления" hint="Только для критических событий" horizontal>
-          <Toggle
-            checked={settings.notifySms}
-            onChange={(v) => onChange({ notifySms: v })}
-          />
-        </Field>
-      </Section>
+  const channels = [
+    { key: 'notifyEmail',     label: 'Email-уведомления',   hint: 'Отправлять уведомления на email',      icon: Mail,          color: '#3b82f6' },
+    { key: 'notifyTelegram',  label: 'Telegram-уведомления', hint: 'Через Telegram-бота',                 icon: MessageSquare, color: '#22c55e' },
+    { key: 'notifySms',       label: 'SMS-уведомления',      hint: 'Только для критических событий',       icon: Smartphone,   color: '#f59e0b' },
+  ];
 
-      <Section title="События" icon={Mail}>
-        <Field label="Просроченные платежи" hint="Уведомлять о просроченных инвойсах" horizontal>
-          <Toggle
-            checked={settings.notifyOverduePayments}
-            onChange={(v) => onChange({ notifyOverduePayments: v })}
-          />
-        </Field>
-        <Field label="Новые студенты" hint="Уведомлять о регистрации новых студентов" horizontal>
-          <Toggle
-            checked={settings.notifyNewStudents}
-            onChange={(v) => onChange({ notifyNewStudents: v })}
-          />
-        </Field>
-        <Field label="Посещаемость" hint="Уведомлять о пропусках" horizontal>
-          <Toggle
-            checked={settings.notifyAttendance}
-            onChange={(v) => onChange({ notifyAttendance: v })}
-          />
-        </Field>
-        <Field label="Ежедневный отчёт" hint="Сводка за день в конце рабочего времени" horizontal>
-          <Toggle
-            checked={settings.notifyDailyReport}
-            onChange={(v) => onChange({ notifyDailyReport: v })}
-          />
-        </Field>
-      </Section>
+  const events = [
+    { key: 'notifyOverduePayments', label: 'Просроченные платежи', hint: 'Уведомлять о просроченных инвойсах', icon: Timer,         color: '#ef4444' },
+    { key: 'notifyNewStudents',     label: 'Новые студенты',       hint: 'Уведомлять о регистрации новых студентов', icon: Mail,     color: '#22c55e' },
+    { key: 'notifyAttendance',      label: 'Посещаемость',         hint: 'Уведомлять о пропусках',             icon: Clock,         color: '#f59e0b' },
+    { key: 'notifyDailyReport',     label: 'Ежедневный отчёт',     hint: 'Сводка за день в конце рабочего времени', icon: FileText, color: '#3b82f6' },
+  ];
+
+  return (
+    <div className="space-y-5 animate-fade-in">
+      <SettingCard
+        icon={Bell}
+        title="Каналы уведомлений"
+        subtitle="Выберите, куда отправлять уведомления"
+        color="#f59e0b"
+      >
+        <div className="space-y-1">
+          {channels.map(({ key, label, hint, icon, color }, i) => (
+            <div key={key}>
+              <Toggle
+                checked={settings[key]}
+                onChange={(v) => onChange({ [key]: v })}
+                label={label}
+                hint={hint}
+                icon={icon}
+                color={color}
+              />
+              {i < channels.length - 1 && <Divider />}
+            </div>
+          ))}
+        </div>
+      </SettingCard>
+
+      <SettingCard
+        icon={Zap}
+        title="События"
+        subtitle="Какие события отслеживать"
+        color="#06b6d4"
+      >
+        <div className="space-y-1">
+          {events.map(({ key, label, hint, icon, color }, i) => (
+            <div key={key}>
+              <Toggle
+                checked={settings[key]}
+                onChange={(v) => onChange({ [key]: v })}
+                label={label}
+                hint={hint}
+                icon={icon}
+                color={color}
+              />
+              {i < events.length - 1 && <Divider />}
+            </div>
+          ))}
+        </div>
+      </SettingCard>
     </div>
   );
 }
@@ -306,97 +463,174 @@ function TabSecurity({ settings, onChange }) {
   };
 
   return (
-    <div className="space-y-4">
-      <Section title="Двухфакторная аутентификация" icon={Shield}>
-        <Field label="2FA" hint="Дополнительный уровень защиты аккаунта" horizontal>
-          <Toggle
-            checked={settings.twoFactorEnabled}
-            onChange={(v) => onChange({ twoFactorEnabled: v })}
-          />
-        </Field>
-      </Section>
-
-      <Section title="Сессии" icon={Clock}>
-        <Field label="Тайм-аут сессии (минуты)" hint="Через сколько минут бездействия произойдёт автоматический выход">
-          <select
-            className={selectCls}
-            value={settings.sessionTimeout}
-            onChange={(e) => onChange({ sessionTimeout: Number(e.target.value) })}
+    <div className="space-y-5 animate-fade-in">
+      <SettingCard
+        icon={Shield}
+        title="Двухфакторная аутентификация"
+        subtitle="Дополнительный уровень защиты аккаунта"
+        color="#ef4444"
+      >
+        <Toggle
+          checked={settings.twoFactorEnabled}
+          onChange={(v) => onChange({ twoFactorEnabled: v })}
+          label="Включить 2FA"
+          hint="При входе потребуется код из приложения-аутентификатора"
+          icon={KeyRound}
+          color="#ef4444"
+        />
+        {settings.twoFactorEnabled && (
+          <div
+            className="mt-3 px-4 py-3 rounded-xl flex items-center gap-3"
+            style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)' }}
           >
-            <option value={15}>15 минут</option>
-            <option value={30}>30 минут</option>
-            <option value={60}>1 час</option>
-            <option value={120}>2 часа</option>
-            <option value={480}>8 часов</option>
-          </select>
-        </Field>
-        <Field label="Множественные сессии" hint="Разрешить вход с нескольких устройств одновременно" horizontal>
+            <CheckCircle2 size={16} style={{ color: '#22c55e' }} />
+            <span className="text-[12px] font-semibold" style={{ color: '#22c55e' }}>2FA активна</span>
+          </div>
+        )}
+      </SettingCard>
+
+      <SettingCard
+        icon={Clock}
+        title="Сессии"
+        subtitle="Управление активными сессиями"
+        color="#8b5cf6"
+      >
+        <div className="space-y-4">
+          <Field label="Тайм-аут сессии" hint="Через сколько минут бездействия произойдёт выход">
+            <PremiumSelect
+              value={settings.sessionTimeout}
+              onChange={(e) => onChange({ sessionTimeout: Number(e.target.value) })}
+              icon={Timer}
+            >
+              <option value={15}>15 минут</option>
+              <option value={30}>30 минут</option>
+              <option value={60}>1 час</option>
+              <option value={120}>2 часа</option>
+              <option value={480}>8 часов</option>
+            </PremiumSelect>
+          </Field>
+
+          <Divider />
+
           <Toggle
             checked={settings.allowMultipleSessions}
             onChange={(v) => onChange({ allowMultipleSessions: v })}
+            label="Множественные сессии"
+            hint="Разрешить вход с нескольких устройств одновременно"
+            icon={Monitor}
+            color="#8b5cf6"
           />
-        </Field>
-      </Section>
+        </div>
+      </SettingCard>
 
-      <Section title="Смена пароля" icon={Shield}>
-        <div className="space-y-3">
+      <SettingCard
+        icon={Lock}
+        title="Смена пароля"
+        subtitle="Обновите пароль для безопасности"
+        color="#f59e0b"
+      >
+        <div className="space-y-4 max-w-md">
           <Field label="Текущий пароль">
-            <div className="relative">
+            <div
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+              style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+            >
+              <KeyRound size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
               <input
-                className={`${inputCls} pr-10`}
                 type={showCurrentPw ? 'text' : 'password'}
                 value={pwFields.current}
                 onChange={(e) => setPwFields((p) => ({ ...p, current: e.target.value }))}
                 placeholder="Введите текущий пароль"
+                className="flex-1 bg-transparent outline-none text-[13px]"
+                style={{ color: 'var(--text)' }}
               />
               <button
                 type="button"
                 onClick={() => setShowCurrentPw(!showCurrentPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/30 hover:text-base-content/60"
+                className="shrink-0 transition-colors"
+                style={{ color: 'var(--text-muted)' }}
               >
-                {showCurrentPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                {showCurrentPw ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </Field>
-          <Field label="Новый пароль">
-            <div className="relative">
+
+          <Field label="Новый пароль" hint="Минимум 8 символов">
+            <div
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+              style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+            >
+              <Lock size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
               <input
-                className={`${inputCls} pr-10`}
                 type={showNewPw ? 'text' : 'password'}
                 value={pwFields.newPw}
                 onChange={(e) => setPwFields((p) => ({ ...p, newPw: e.target.value }))}
                 placeholder="Мин. 8 символов"
+                className="flex-1 bg-transparent outline-none text-[13px]"
+                style={{ color: 'var(--text)' }}
               />
               <button
                 type="button"
                 onClick={() => setShowNewPw(!showNewPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/30 hover:text-base-content/60"
+                className="shrink-0 transition-colors"
+                style={{ color: 'var(--text-muted)' }}
               >
-                {showNewPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                {showNewPw ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            {pwFields.newPw && pwFields.newPw.length < 8 && (
+              <p className="text-[11px] mt-1.5" style={{ color: 'var(--danger)' }}>
+                Минимум 8 символов
+              </p>
+            )}
           </Field>
+
           <Field label="Подтвердите пароль">
-            <input
-              className={inputCls}
-              type="password"
+            <PremiumInput
               value={pwFields.confirm}
               onChange={(e) => setPwFields((p) => ({ ...p, confirm: e.target.value }))}
               placeholder="Повторите новый пароль"
+              icon={Lock}
+              type="password"
             />
+            {pwFields.confirm && pwFields.newPw !== pwFields.confirm && (
+              <p className="text-[11px] mt-1.5" style={{ color: 'var(--danger)' }}>
+                Пароли не совпадают
+              </p>
+            )}
           </Field>
+
           {pwMsg === 'success' && (
-            <div className="flex items-center gap-2 text-[12px] text-[#2ECC71]">
-              <CheckCircle2 size={14} /> Пароль успешно изменён
+            <div
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-[12px] font-semibold animate-slide-up"
+              style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.2)' }}
+            >
+              <CheckCircle2 size={16} />
+              Пароль успешно изменён
             </div>
           )}
           {pwMsg === 'error' && (
-            <div className="flex items-center gap-2 text-[12px] text-[#E8543E]">
-              <AlertCircle size={14} /> {pwFields.newPw !== pwFields.confirm ? 'Пароли не совпадают' : 'Ошибка смены пароля'}
+            <div
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-[12px] font-semibold animate-slide-up"
+              style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)' }}
+            >
+              <AlertCircle size={16} />
+              {pwFields.newPw !== pwFields.confirm ? 'Пароли не совпадают' : 'Ошибка смены пароля'}
             </div>
           )}
+
           <button
-            className="btn btn-sm bg-[var(--green)] text-[#141B10] border-none hover:brightness-110"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200"
+            style={{
+              background: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
+                ? 'var(--surface-hover)' : 'var(--green)',
+              color: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
+                ? 'var(--text-muted)' : '#141B10',
+              cursor: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
+                ? 'not-allowed' : 'pointer',
+              boxShadow: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
+                ? 'none' : '0 4px 12px var(--green-glow)',
+            }}
             disabled={!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy}
             onClick={handlePasswordChange}
           >
@@ -404,7 +638,7 @@ function TabSecurity({ settings, onChange }) {
             Изменить пароль
           </button>
         </div>
-      </Section>
+      </SettingCard>
     </div>
   );
 }
@@ -413,60 +647,80 @@ function TabSecurity({ settings, onChange }) {
 
 function TabFinance({ settings, onChange }) {
   return (
-    <div className="space-y-4">
-      <Section title="Валюта" icon={Coins}>
+    <div className="space-y-5 animate-fade-in">
+      <SettingCard
+        icon={Coins}
+        title="Валюта"
+        subtitle="Настройки валюты и формата сумм"
+        color="#22c55e"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Валюта">
-            <select
-              className={selectCls}
+            <PremiumSelect
               value={settings.currency}
               onChange={(e) => onChange({ currency: e.target.value })}
+              icon={Coins}
             >
               <option value="UZS">UZS — Узбекский сум</option>
               <option value="USD">USD — Доллар США</option>
               <option value="RUB">RUB — Российский рубль</option>
-            </select>
+            </PremiumSelect>
           </Field>
           <Field label="Символ валюты">
-            <input
-              className={inputCls}
+            <PremiumInput
               value={settings.currencySymbol}
               onChange={(e) => onChange({ currencySymbol: e.target.value })}
               placeholder="сўм"
+              icon={Coins}
             />
           </Field>
         </div>
-      </Section>
+      </SettingCard>
 
-      <Section title="Инвойсы" icon={FileText}>
-        <Field label="Префикс инвойсов" hint="Добавляется перед номером (например, INV-001)">
-          <input
-            className={`${inputCls} max-w-[200px]`}
-            value={settings.invoicePrefix}
-            onChange={(e) => onChange({ invoicePrefix: e.target.value.toUpperCase() })}
-            placeholder="INV"
-          />
-        </Field>
-        <Field label="Автогенерация инвойсов" hint="Создавать инвойс автоматически при начале месяца" horizontal>
+      <SettingCard
+        icon={FileText}
+        title="Инвойсы"
+        subtitle="Настройки автоматической генерации счетов"
+        color="#3b82f6"
+      >
+        <div className="space-y-4">
+          <Field label="Префикс инвойсов" hint="Добавляется перед номером (например, INV-001)">
+            <PremiumInput
+              value={settings.invoicePrefix}
+              onChange={(e) => onChange({ invoicePrefix: e.target.value.toUpperCase() })}
+              placeholder="INV"
+              icon={FileText}
+            />
+          </Field>
+
+          <Divider />
+
           <Toggle
             checked={settings.autoGenerateInvoice}
             onChange={(v) => onChange({ autoGenerateInvoice: v })}
+            label="Автогенерация инвойсов"
+            hint="Создавать инвойс автоматически при начале месяца"
+            icon={Zap}
+            color="#22c55e"
           />
-        </Field>
-        <Field label="Льготный период (дни)" hint="Сколько дней давать на оплату после выставления счёта">
-          <select
-            className={`${selectCls} max-w-[200px]`}
-            value={settings.paymentGraceDays}
-            onChange={(e) => onChange({ paymentGraceDays: Number(e.target.value) })}
-          >
-            <option value={0}>Без льготного периода</option>
-            <option value={3}>3 дня</option>
-            <option value={5}>5 дней</option>
-            <option value={7}>7 дней</option>
-            <option value={14}>14 дней</option>
-          </select>
-        </Field>
-      </Section>
+
+          <Divider />
+
+          <Field label="Льготный период (дни)" hint="Сколько дней давать на оплату после выставления счёта">
+            <PremiumSelect
+              value={settings.paymentGraceDays}
+              onChange={(e) => onChange({ paymentGraceDays: Number(e.target.value) })}
+              icon={Timer}
+            >
+              <option value={0}>Без льготного периода</option>
+              <option value={3}>3 дня</option>
+              <option value={5}>5 дней</option>
+              <option value={7}>7 дней</option>
+              <option value={14}>14 дней</option>
+            </PremiumSelect>
+          </Field>
+        </div>
+      </SettingCard>
     </div>
   );
 }
@@ -475,98 +729,87 @@ function TabFinance({ settings, onChange }) {
 
 function TabLocalization({ settings, onChange }) {
   const languages = [
-    { value: 'ru', label: 'Русский' },
-    { value: 'uz', label: 'Ўзбекча' },
-    { value: 'en', label: 'English' },
+    { val: 'ru', label: 'Русский' },
+    { val: 'uz', label: 'Ўзбекча' },
+    { val: 'en', label: 'English' },
   ];
 
   const dateFormats = [
-    { value: 'DD.MM.YYYY', label: '31.12.2026' },
-    { value: 'MM/DD/YYYY', label: '12/31/2026' },
-    { value: 'YYYY-MM-DD', label: '2026-12-31' },
+    { val: 'DD.MM.YYYY', label: '31.12.2026' },
+    { val: 'MM/DD/YYYY', label: '12/31/2026' },
+    { val: 'YYYY-MM-DD', label: '2026-12-31' },
   ];
 
   const timezones = [
-    { value: 'Asia/Tashkent', label: 'Asia/Tashkent (UTC+5)' },
-    { value: 'Asia/Almaty', label: 'Asia/Almaty (UTC+6)' },
-    { value: 'Europe/Moscow', label: 'Europe/Moscow (UTC+3)' },
+    { val: 'Asia/Tashkent', label: 'Asia/Tashkent (UTC+5)' },
+    { val: 'Asia/Almaty',   label: 'Asia/Almaty (UTC+6)' },
+    { val: 'Europe/Moscow', label: 'Europe/Moscow (UTC+3)' },
   ];
 
   const weekDays = [
-    { value: 'monday', label: 'Понедельник' },
-    { value: 'sunday', label: 'Воскресенье' },
+    { val: 'monday',   label: 'Понедельник' },
+    { val: 'sunday',   label: 'Воскресенье' },
   ];
 
   return (
-    <div className="space-y-4">
-      <Section title="Язык и формат" icon={Languages}>
-        <Field label="Язык интерфейса">
-          <div className="flex gap-3">
-            {languages.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => onChange({ language: value })}
-                className={`px-4 py-2.5 rounded-[10px] text-[12px] font-semibold border transition-all ${
-                  settings.language === value
-                    ? 'bg-[var(--green)] text-[#141B10] border-[var(--green)]'
-                    : 'bg-[var(--surface)] text-base-content/60 border-[var(--border)] hover:border-[var(--green)]'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </Field>
+    <div className="space-y-5 animate-fade-in">
+      <SettingCard
+        icon={Languages}
+        title="Язык и формат"
+        subtitle="Язык интерфейса и форматы отображения"
+        color="#06b6d4"
+      >
+        <div className="space-y-5">
+          <Field label="Язык интерфейса">
+            <OptionGroup
+              options={languages}
+              value={settings.language}
+              onChange={(v) => onChange({ language: v })}
+            />
+          </Field>
 
-        <Field label="Формат даты">
-          <div className="flex gap-3">
-            {dateFormats.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => onChange({ dateFormat: value })}
-                className={`px-4 py-2.5 rounded-[10px] text-[12px] font-semibold border transition-all font-mono ${
-                  settings.dateFormat === value
-                    ? 'bg-[var(--green)] text-[#141B10] border-[var(--green)]'
-                    : 'bg-[var(--surface)] text-base-content/60 border-[var(--border)] hover:border-[var(--green)]'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </Field>
-      </Section>
+          <Divider />
 
-      <Section title="Региональные настройки" icon={MapPin}>
-        <Field label="Часовой пояс">
-          <select
-            className={`${selectCls} max-w-[320px]`}
-            value={settings.timezone}
-            onChange={(e) => onChange({ timezone: e.target.value })}
-          >
-            {timezones.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Первый день недели">
-          <div className="flex gap-3">
-            {weekDays.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => onChange({ firstDayOfWeek: value })}
-                className={`px-4 py-2.5 rounded-[10px] text-[12px] font-semibold border transition-all ${
-                  settings.firstDayOfWeek === value
-                    ? 'bg-[var(--green)] text-[#141B10] border-[var(--green)]'
-                    : 'bg-[var(--surface)] text-base-content/60 border-[var(--border)] hover:border-[var(--green)]'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </Field>
-      </Section>
+          <Field label="Формат даты">
+            <OptionGroup
+              options={dateFormats.map(d => ({ ...d, icon: null }))}
+              value={settings.dateFormat}
+              onChange={(v) => onChange({ dateFormat: v })}
+            />
+          </Field>
+        </div>
+      </SettingCard>
+
+      <SettingCard
+        icon={MapPin}
+        title="Региональные настройки"
+        subtitle="Часовой пояс и начало недели"
+        color="#8b5cf6"
+      >
+        <div className="space-y-5">
+          <Field label="Часовой пояс">
+            <PremiumSelect
+              value={settings.timezone}
+              onChange={(e) => onChange({ timezone: e.target.value })}
+              icon={Globe2}
+            >
+              {timezones.map(({ val, label }) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
+            </PremiumSelect>
+          </Field>
+
+          <Divider />
+
+          <Field label="Первый день недели">
+            <OptionGroup
+              options={weekDays}
+              value={settings.firstDayOfWeek}
+              onChange={(v) => onChange({ firstDayOfWeek: v })}
+            />
+          </Field>
+        </div>
+      </SettingCard>
     </div>
   );
 }
@@ -575,16 +818,25 @@ function TabLocalization({ settings, onChange }) {
 
 export default function AdminSettings() {
   const { token } = useAuth();
-  const { data, isLoading, error } = useAdminSettings();
+  const { data, isLoading } = useAdminSettings();
   const invalidate = useInvalidate();
 
   const [activeTab, setActiveTab] = useState('general');
   const [settings, setSettings] = useState(DEFAULTS);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState(''); // 'success' | 'error' | ''
+  const [saveMsg, setSaveMsg] = useState('');
 
-  /* Load settings from backend */
+  /* ── Load persisted theme on mount ── */
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('lu-theme');
+      if (saved && ['light', 'dark', 'system'].includes(saved)) {
+        setSettings((prev) => ({ ...prev, theme: saved }));
+      }
+    } catch {}
+  }, []);
+
   useEffect(() => {
     if (data) {
       const s = data.data || data.settings || data;
@@ -594,14 +846,27 @@ export default function AdminSettings() {
     }
   }, [data]);
 
-  /* Partial update */
+  /* ── Theme toggle: apply to document.documentElement ── */
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark');
+    if (settings.theme === 'dark') {
+      root.classList.add('dark');
+    } else if (settings.theme === 'light') {
+      root.classList.add('light');
+    } else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.add(prefersDark ? 'dark' : 'light');
+    }
+    try { localStorage.setItem('lu-theme', settings.theme); } catch {}
+  }, [settings.theme]);
+
   const update = (patch) => {
     setSettings((prev) => ({ ...prev, ...patch }));
     setDirty(true);
     setSaveMsg('');
   };
 
-  /* Save */
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -618,101 +883,148 @@ export default function AdminSettings() {
     }
   };
 
-  /* ── Loading state ── */
+  /* ── Loading ── */
   if (isLoading) {
     return (
-      <div>
-        <PageHeader title="Настройки" subtitle="Настройки филиала" />
-        <div className="mt-6 space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-[var(--surface)] rounded-[16px] border border-[var(--border)] p-5 animate-pulse">
-              <div className="h-4 w-32 bg-base-300 rounded mb-4" />
-              <div className="space-y-3">
-                <div className="h-10 bg-base-300 rounded-[10px]" />
-                <div className="h-10 bg-base-300 rounded-[10px]" />
-              </div>
-            </div>
-          ))}
+      <div className="animate-page-enter">
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-1 h-6 rounded-full" style={{ background: '#C6FF34' }} />
+            <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Настройки</h1>
+          </div>
+          <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Загрузка настроек...</p>
         </div>
+        <SkeletonKpis count={2} className="grid-cols-1 md:grid-cols-2" />
       </div>
     );
   }
 
-  /* ── Error state (allow editing anyway) ── */
-  const backendReady = !error;
-  if (error && error.status !== 401) {
-    // Settings backend not ready — still show form with defaults
-  }
+  const activeTabData = TABS.find((t) => t.key === activeTab);
 
   return (
-    <div>
-      <PageHeader title="Настройки" subtitle="Настройки филиала">
+    <div className="animate-page-enter">
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-1 h-6 rounded-full" style={{ background: '#C6FF34' }} />
+            <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Настройки</h1>
+          </div>
+          <p className="text-[13px] ml-4" style={{ color: 'var(--text-muted)' }}>
+            Управление параметрами филиала
+          </p>
+        </div>
+
+        {/* Save status */}
         <div className="flex items-center gap-3">
           {saveMsg === 'success' && (
-            <span className="flex items-center gap-1.5 text-[12px] text-[#2ECC71] font-semibold animate-fade-in">
-              <CheckCircle2 size={14} /> Сохранено
-            </span>
+            <div
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold animate-slide-up"
+              style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.2)' }}
+            >
+              <CheckCircle2 size={14} />
+              Сохранено
+            </div>
           )}
           {saveMsg === 'error' && (
-            <span className="flex items-center gap-1.5 text-[12px] text-[#E8543E] font-semibold animate-fade-in">
-              <AlertCircle size={14} /> Ошибка сохранения
-            </span>
-          )}
-          {!backendReady && (
-            <span className="flex items-center gap-1.5 text-[11px] text-[#F59E0B] font-semibold bg-[rgba(245,158,11,0.1)] px-2.5 py-1 rounded-full">
-              <AlertCircle size={12} /> Backend не подключён
-            </span>
+            <div
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold animate-slide-up"
+              style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)' }}
+            >
+              <AlertCircle size={14} />
+              Ошибка сохранения
+            </div>
           )}
         </div>
-      </PageHeader>
+      </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 mt-2">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* ── Sidebar tabs ── */}
         <div className="lg:w-[220px] shrink-0">
-          <div className="bg-[var(--surface)] rounded-[16px] border border-[var(--border)] p-2 flex lg:flex-col gap-1 overflow-x-auto">
-            {TABS.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[10px] text-[12px] font-semibold transition-all whitespace-nowrap ${
-                  activeTab === key
-                    ? 'bg-[rgba(198,255,52,0.12)] text-[var(--text)]'
-                    : 'text-base-content/50 hover:text-base-content hover:bg-[var(--surface-hover)]'
-                }`}
-              >
-                <Icon size={15} className={activeTab === key ? 'text-[var(--green)]' : ''} />
-                {label}
-              </button>
-            ))}
+          <div
+            className="rounded-2xl border p-2"
+            style={{
+              background: 'var(--glass-bg)',
+              borderColor: 'var(--glass-border)',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+          >
+            <div className="flex lg:flex-col gap-1 overflow-x-auto">
+              {TABS.map(({ key, label, icon: Icon, color }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-200 whitespace-nowrap"
+                  style={{
+                    background: activeTab === key ? `${color}12` : 'transparent',
+                    color: activeTab === key ? color : 'var(--text-muted)',
+                  }}
+                >
+                  <Icon size={16} className="shrink-0" />
+                  <span className="hidden lg:inline">{label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* ── Tab content ── */}
-        <div className="flex-1 min-w-0 space-y-4">
+        <div className="flex-1 min-w-0 pb-24">
           {activeTab === 'general' && <TabGeneral settings={settings} onChange={update} />}
           {activeTab === 'appearance' && <TabAppearance settings={settings} onChange={update} />}
           {activeTab === 'notifications' && <TabNotifications settings={settings} onChange={update} />}
           {activeTab === 'security' && <TabSecurity settings={settings} onChange={update} />}
           {activeTab === 'finance' && <TabFinance settings={settings} onChange={update} />}
           {activeTab === 'localization' && <TabLocalization settings={settings} onChange={update} />}
-
-          {/* ── Save button ── */}
-          <div className="flex justify-end pt-2 pb-8">
-            <button
-              className="btn btn-sm bg-[var(--green)] text-[#141B10] border-none hover:brightness-110 shadow-[0_4px_16px_rgba(198,255,52,0.25)] gap-2"
-              disabled={!dirty || saving}
-              onClick={handleSave}
-            >
-              {saving ? (
-                <span className="loading loading-spinner loading-xs" />
-              ) : (
-                <Save size={14} />
-              )}
-              Сохранить изменения
-            </button>
-          </div>
         </div>
       </div>
+
+      {/* ── Fixed save bar ── */}
+      {dirty && (
+        <div
+          className="fixed bottom-0 right-0 z-50 flex items-center gap-3 px-6 py-4 animate-slide-up"
+          style={{
+            left: 'var(--sidebar-width, 256px)',
+            background: 'var(--glass-bg)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderTop: '1px solid var(--glass-border)',
+            boxShadow: '0 -4px 24px rgba(0,0,0,0.1)',
+          }}
+        >
+          <span className="text-[12px] font-medium" style={{ color: 'var(--text-muted)' }}>
+            Есть несохранённые изменения
+          </span>
+          <div className="flex-1" />
+          <button
+            onClick={() => { setDirty(false); setSettings(DEFAULTS); }}
+            className="px-4 py-2 rounded-xl text-[13px] font-semibold transition-all duration-200"
+            style={{ color: 'var(--text-secondary)', background: 'var(--surface)' }}
+          >
+            Отменить
+          </button>
+          <button
+            className="flex items-center gap-2 px-5 py-2 rounded-xl text-[13px] font-bold transition-all duration-200"
+            style={{
+              background: '#C6FF34',
+              color: '#141B10',
+              boxShadow: '0 4px 12px var(--green-glow)',
+            }}
+            disabled={saving}
+            onClick={handleSave}
+          >
+            {saving ? (
+              <span className="loading loading-spinner loading-xs" />
+            ) : (
+              <Save size={15} />
+            )}
+            Сохранить
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+
+/* ── Import for toggle `Users` icon used in appearance tab ── */
+import { Users } from 'lucide-react';

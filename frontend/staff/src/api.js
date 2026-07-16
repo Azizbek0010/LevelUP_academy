@@ -639,6 +639,452 @@ async function request(path, { method = 'GET', body, token } = {}) {
       };
     }
 
+    // -------- ADMIN: Dashboard --------
+    if (path === '/admin/dashboard') {
+      return {
+        totals: {
+          totalStudents: 142,
+          activeStudents: 128,
+          frozenStudents: 14,
+          totalGroups: 8,
+          totalMentors: 6,
+          totalRevenue: 42500000,
+          totalExpenses: 8200000,
+          outstandingDebt: 3400000,
+          currency: 'UZS',
+        },
+        thisMonth: {
+          newStudents: 12,
+          revenue: 6800000,
+          expenses: 1500000,
+          payments: 23,
+        },
+        recentActivity: [
+          { id: 'a1', type: 'payment', message: 'O\'zbekov Sardor — 850,000 UZS', time: '2 soat oldin' },
+          { id: 'a2', type: 'student', message: 'Yangi talaba: Karimova Nilufar', time: '5 soat oldin' },
+          { id: 'a3', type: 'expense', message: 'Xarajat: Ofis jihozlari — 320,000 UZS', time: 'Kecha' },
+          { id: 'a4', type: 'group', message: 'Frontend React guruhiga 3 ta talaba qo\'shildi', time: '2 kun oldin' },
+        ],
+      };
+    }
+
+    // -------- ADMIN: Students --------
+    if (path === '/admin/students' && method === 'GET') {
+      let students = JSON.parse(localStorage.getItem('mock_admin_students') || '[]');
+      if (students.length === 0) {
+        students = [
+          { id: 'st-1', firstName: 'Sardor', lastName: 'O\'zbekov', phone: '+998901112233', status: 'active', balance: 1250000, coins: 340, groupName: 'Frontend React', mentorName: 'Ilhom Karimov', createdAt: '2026-01-15T10:00:00Z', loginCode: 'demostud' },
+          { id: 'st-2', firstName: 'Nilufar', lastName: 'Karimova', phone: '+998902223344', status: 'active', balance: 850000, coins: 210, groupName: 'Python Bootcamp', mentorName: 'Jasur Usmanov', createdAt: '2026-01-20T11:00:00Z', loginCode: 'nilufar1' },
+          { id: 'st-3', firstName: 'Botir', lastName: 'Hasanov', phone: '+998903334455', status: 'active', balance: 2100000, coins: 520, groupName: 'Frontend React', mentorName: 'Ilhom Karimov', createdAt: '2026-02-01T09:00:00Z', loginCode: 'botir12' },
+          { id: 'st-4', firstName: 'Gulnora', lastName: 'Rahimova', phone: '+998904445566', status: 'frozen', balance: 450000, coins: 80, groupName: 'Python Bootcamp', mentorName: 'Jasur Usmanov', createdAt: '2026-02-10T08:30:00Z', loginCode: 'gulno4' },
+          { id: 'st-5', firstName: 'Javlon', lastName: 'Abdullayev', phone: '+998905556677', status: 'active', balance: 980000, coins: 175, groupName: 'UI/UX Design', mentorName: 'Malika Sharipova', createdAt: '2026-02-15T14:00:00Z', loginCode: 'javlon5' },
+          { id: 'st-6', firstName: 'Dilshod', lastName: 'Tursunov', phone: '+998906667788', status: 'active', balance: 1560000, coins: 290, groupName: 'Frontend React', mentorName: 'Ilhom Karimov', createdAt: '2026-03-01T10:00:00Z', loginCode: 'dilsh6' },
+          { id: 'st-7', firstName: 'Malika', lastName: 'Nazarova', phone: '+998907778899', status: 'active', balance: 720000, coins: 145, groupName: 'Backend Node.js', mentorName: 'Sardor Rakhimov', createdAt: '2026-03-05T11:30:00Z', loginCode: 'malik7' },
+          { id: 'st-8', firstName: 'Otabek', lastName: 'Mirzayev', phone: '+998908889900', status: 'active', balance: 1890000, coins: 410, groupName: 'UI/UX Design', mentorName: 'Malika Sharipova', createdAt: '2026-03-10T09:00:00Z', loginCode: 'otab8' },
+          { id: 'st-9', firstName: 'Shahzoda', lastName: 'Ismoilova', phone: '+998909990011', status: 'active', balance: 630000, coins: 95, groupName: 'Python Bootcamp', mentorName: 'Jasur Usmanov', createdAt: '2026-03-15T10:00:00Z', loginCode: 'shahz9' },
+          { id: 'st-10', firstName: 'Sardor', lastName: 'Jumaev', phone: '+998901112200', status: 'active', balance: 1340000, coins: 260, groupName: 'Backend Node.js', mentorName: 'Sardor Rakhimov', createdAt: '2026-03-20T12:00:00Z', loginCode: 'sard10' },
+          { id: 'st-11', firstName: 'Nodira', lastName: 'Karimova', phone: '+998902223300', status: 'active', balance: 890000, coins: 180, groupName: 'Frontend React', mentorName: 'Ilhom Karimov', createdAt: '2026-04-01T08:00:00Z', loginCode: 'nodir11' },
+          { id: 'st-12', firstName: 'Akbar', lastName: 'Sultanov', phone: '+998903334400', status: 'active', balance: 1120000, coins: 225, groupName: 'UI/UX Design', mentorName: 'Malika Sharipova', createdAt: '2026-04-05T10:00:00Z', loginCode: 'akbar12' },
+        ];
+        localStorage.setItem('mock_admin_students', JSON.stringify(students));
+      }
+      return { students, total: students.length };
+    }
+
+    if (path === '/admin/students' && method === 'POST') {
+      const students = JSON.parse(localStorage.getItem('mock_admin_students') || '[]');
+      const newStudent = {
+        id: `st-${Date.now()}`,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        phone: body.phone || '',
+        status: 'active',
+        balance: 0,
+        coins: 0,
+        groupName: body.groupName || '',
+        mentorName: body.mentorName || '',
+        createdAt: new Date().toISOString(),
+        loginCode: `user${Math.floor(1000 + Math.random() * 9000)}`,
+      };
+      students.push(newStudent);
+      localStorage.setItem('mock_admin_students', JSON.stringify(students));
+      return { student: newStudent };
+    }
+
+    if (path.match(/^\/admin\/students\/([^/]+)$/) && method === 'GET') {
+      const id = path.split('/')[3];
+      const students = JSON.parse(localStorage.getItem('mock_admin_students') || '[]');
+      const student = students.find(s => s.id === id);
+      if (!student) { const err = new Error('Талаба не найден'); err.status = 404; throw err; }
+      return {
+        student: {
+          ...student,
+          groups: [{ id: 'g1', name: student.groupName, subject: 'Frontend' }],
+          payments: [
+            { id: 'p1', amount: 850000, date: '2026-06-01T10:00:00Z', type: 'cash', status: 'paid' },
+            { id: 'p2', amount: 500000, date: '2026-05-01T10:00:00Z', type: 'card', status: 'paid' },
+          ],
+        },
+      };
+    }
+
+    if (path.match(/^\/admin\/students\/([^/]+)$/) && method === 'PATCH') {
+      const id = path.split('/')[3];
+      const students = JSON.parse(localStorage.getItem('mock_admin_students') || '[]');
+      const idx = students.findIndex(s => s.id === id);
+      if (idx === -1) { const err = new Error('Талаба не найден'); err.status = 404; throw err; }
+      students[idx] = { ...students[idx], ...body };
+      localStorage.setItem('mock_admin_students', JSON.stringify(students));
+      return { student: students[idx] };
+    }
+
+    if (path.match(/^\/admin\/students\/([^/]+)$/) && method === 'DELETE') {
+      const id = path.split('/')[3];
+      let students = JSON.parse(localStorage.getItem('mock_admin_students') || '[]');
+      students = students.filter(s => s.id !== id);
+      localStorage.setItem('mock_admin_students', JSON.stringify(students));
+      return { success: true };
+    }
+
+    if (path.match(/^\/admin\/students\/([^/]+)\/freeze$/)) {
+      const id = path.split('/')[3];
+      const students = JSON.parse(localStorage.getItem('mock_admin_students') || '[]');
+      const idx = students.findIndex(s => s.id === id);
+      if (idx === -1) { const err = new Error('Талаба не найден'); err.status = 404; throw err; }
+      students[idx].status = body.frozen ? 'frozen' : 'active';
+      localStorage.setItem('mock_admin_students', JSON.stringify(students));
+      return { student: students[idx] };
+    }
+
+    if (path.match(/^\/admin\/students\/([^/]+)\/regenerate-password$/)) {
+      const id = path.split('/')[3];
+      const students = JSON.parse(localStorage.getItem('mock_admin_students') || '[]');
+      const idx = students.findIndex(s => s.id === id);
+      if (idx === -1) { const err = new Error('Талаба не найден'); err.status = 404; throw err; }
+      students[idx].loginCode = `new${Math.floor(1000 + Math.random() * 9000)}`;
+      localStorage.setItem('mock_admin_students', JSON.stringify(students));
+      return { success: true, loginCode: students[idx].loginCode };
+    }
+
+    // -------- ADMIN: Groups --------
+    if (path === '/admin/groups' && method === 'GET') {
+      let groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
+      if (groups.length === 0) {
+        groups = [
+          { id: 'g1', name: 'Frontend React', subject: 'Frontend', mentorName: 'Ilhom Karimov', studentCount: 18, maxStudents: 20, schedule: 'Dush-Jum 09:00-11:00', monthlyPrice: 850000, status: 'active', createdAt: '2026-01-10T10:00:00Z' },
+          { id: 'g2', name: 'Python Bootcamp', subject: 'Backend', mentorName: 'Jasur Usmanov', studentCount: 14, maxStudents: 15, schedule: 'Dush-Jum 11:00-13:00', monthlyPrice: 750000, status: 'active', createdAt: '2026-01-15T10:00:00Z' },
+          { id: 'g3', name: 'UI/UX Design', subject: 'Design', mentorName: 'Malika Sharipova', studentCount: 12, maxStudents: 15, schedule: 'Sesh-Pay 14:00-16:00', monthlyPrice: 700000, status: 'active', createdAt: '2026-02-01T10:00:00Z' },
+          { id: 'g4', name: 'Backend Node.js', subject: 'Backend', mentorName: 'Sardor Rakhimov', studentCount: 16, maxStudents: 20, schedule: 'Dush-Jum 14:00-16:00', monthlyPrice: 900000, status: 'active', createdAt: '2026-02-10T10:00:00Z' },
+          { id: 'g5', name: 'Mobile Flutter', subject: 'Mobile', mentorName: 'Ilhom Karimov', studentCount: 10, maxStudents: 15, schedule: 'Sesh-Shan 10:00-12:00', monthlyPrice: 800000, status: 'active', createdAt: '2026-03-01T10:00:00Z' },
+          { id: 'g6', name: 'English Basic', subject: 'Language', mentorName: 'Dilnoza Karimova', studentCount: 20, maxStudents: 20, schedule: 'Dush-Jum 09:00-10:30', monthlyPrice: 500000, status: 'archived', createdAt: '2026-01-20T10:00:00Z' },
+        ];
+        localStorage.setItem('mock_admin_groups', JSON.stringify(groups));
+      }
+      return { groups, total: groups.length };
+    }
+
+    if (path === '/admin/groups' && method === 'POST') {
+      const groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
+      const newGroup = {
+        id: `g-${Date.now()}`,
+        name: body.name,
+        subject: body.subject || '',
+        mentorName: body.mentorName || '',
+        studentCount: 0,
+        maxStudents: body.maxStudents || 15,
+        schedule: body.schedule || '',
+        monthlyPrice: body.monthlyPrice || 0,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+      };
+      groups.push(newGroup);
+      localStorage.setItem('mock_admin_groups', JSON.stringify(groups));
+      return { group: newGroup };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)$/) && method === 'GET') {
+      const id = path.split('/')[3];
+      const groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
+      const group = groups.find(g => g.id === id);
+      if (!group) { const err = new Error('Группа не найдена'); err.status = 404; throw err; }
+      return {
+        group: {
+          ...group,
+          students: [
+            { id: 'st-1', firstName: 'Sardor', lastName: 'O\'zbekov', phone: '+998901112233' },
+            { id: 'st-3', firstName: 'Botir', lastName: 'Hasanov', phone: '+998903334455' },
+            { id: 'st-6', firstName: 'Dilshod', lastName: 'Tursunov', phone: '+998906667788' },
+          ],
+        },
+      };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)$/) && method === 'PATCH') {
+      const id = path.split('/')[3];
+      const groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
+      const idx = groups.findIndex(g => g.id === id);
+      if (idx === -1) { const err = new Error('Группа не найдена'); err.status = 404; throw err; }
+      groups[idx] = { ...groups[idx], ...body };
+      localStorage.setItem('mock_admin_groups', JSON.stringify(groups));
+      return { group: groups[idx] };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)\/archive$/) && method === 'POST') {
+      const id = path.split('/')[3];
+      const groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
+      const idx = groups.findIndex(g => g.id === id);
+      if (idx === -1) { const err = new Error('Группа не найдена'); err.status = 404; throw err; }
+      groups[idx].status = 'archived';
+      localStorage.setItem('mock_admin_groups', JSON.stringify(groups));
+      return { group: groups[idx] };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)\/unarchive$/) && method === 'POST') {
+      const id = path.split('/')[3];
+      const groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
+      const idx = groups.findIndex(g => g.id === id);
+      if (idx === -1) { const err = new Error('Группа не найдена'); err.status = 404; throw err; }
+      groups[idx].status = 'active';
+      localStorage.setItem('mock_admin_groups', JSON.stringify(groups));
+      return { group: groups[idx] };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)\/students$/) && method === 'POST') {
+      return { success: true };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)\/students\/([^/]+)$/) && method === 'DELETE') {
+      return { success: true };
+    }
+
+    // -------- ADMIN: Mentors --------
+    if (path === '/admin/mentors' && method === 'GET') {
+      let mentors = JSON.parse(localStorage.getItem('mock_admin_mentors') || '[]');
+      if (mentors.length === 0) {
+        mentors = [
+          { id: 'm1', firstName: 'Ilhom', lastName: 'Karimov', email: 'ilhom@levelup.local', phone: '+998901112233', status: 'active', groups: ['Frontend React', 'Mobile Flutter'], salary: 3500000, createdAt: '2026-01-05T10:00:00Z' },
+          { id: 'm2', firstName: 'Jasur', lastName: 'Usmanov', email: 'jasur@levelup.local', phone: '+998902223344', status: 'active', groups: ['Python Bootcamp'], salary: 3000000, createdAt: '2026-01-10T10:00:00Z' },
+          { id: 'm3', firstName: 'Malika', lastName: 'Sharipova', email: 'malika@levelup.local', phone: '+998903334455', status: 'active', groups: ['UI/UX Design'], salary: 3200000, createdAt: '2026-02-01T10:00:00Z' },
+          { id: 'm4', firstName: 'Sardor', lastName: 'Rakhimov', email: 'sardor@levelup.local', phone: '+998904445566', status: 'active', groups: ['Backend Node.js'], salary: 3400000, createdAt: '2026-02-10T10:00:00Z' },
+          { id: 'm5', firstName: 'Dilnoza', lastName: 'Karimova', email: 'dilnoza@levelup.local', phone: '+998905556677', status: 'frozen', groups: ['English Basic'], salary: 2800000, createdAt: '2026-03-01T10:00:00Z' },
+        ];
+        localStorage.setItem('mock_admin_mentors', JSON.stringify(mentors));
+      }
+      return { mentors, total: mentors.length };
+    }
+
+    if (path === '/admin/mentors' && method === 'POST') {
+      const mentors = JSON.parse(localStorage.getItem('mock_admin_mentors') || '[]');
+      const newMentor = {
+        id: `m-${Date.now()}`,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        email: body.email || '',
+        phone: body.phone || '',
+        status: 'active',
+        groups: [],
+        salary: body.salary || 0,
+        createdAt: new Date().toISOString(),
+      };
+      mentors.push(newMentor);
+      localStorage.setItem('mock_admin_mentors', JSON.stringify(mentors));
+      return { mentor: newMentor };
+    }
+
+    if (path.match(/^\/admin\/mentors\/([^/]+)$/) && method === 'PATCH') {
+      const id = path.split('/')[3];
+      const mentors = JSON.parse(localStorage.getItem('mock_admin_mentors') || '[]');
+      const idx = mentors.findIndex(m => m.id === id);
+      if (idx === -1) { const err = new Error('Ментор не найден'); err.status = 404; throw err; }
+      mentors[idx] = { ...mentors[idx], ...body };
+      localStorage.setItem('mock_admin_mentors', JSON.stringify(mentors));
+      return { mentor: mentors[idx] };
+    }
+
+    if (path.match(/^\/admin\/mentors\/([^/]+)$/) && method === 'DELETE') {
+      const id = path.split('/')[3];
+      let mentors = JSON.parse(localStorage.getItem('mock_admin_mentors') || '[]');
+      mentors = mentors.filter(m => m.id !== id);
+      localStorage.setItem('mock_admin_mentors', JSON.stringify(mentors));
+      return { success: true };
+    }
+
+    if (path.match(/^\/admin\/mentors\/([^/]+)\/freeze$/)) {
+      const id = path.split('/')[3];
+      const mentors = JSON.parse(localStorage.getItem('mock_admin_mentors') || '[]');
+      const idx = mentors.findIndex(m => m.id === id);
+      if (idx === -1) { const err = new Error('Ментор не найден'); err.status = 404; throw err; }
+      mentors[idx].status = body.frozen ? 'frozen' : 'active';
+      localStorage.setItem('mock_admin_mentors', JSON.stringify(mentors));
+      return { mentor: mentors[idx] };
+    }
+
+    // -------- ADMIN: Expenses --------
+    if (path === '/admin/expenses' && method === 'GET') {
+      let expenses = JSON.parse(localStorage.getItem('mock_admin_expenses') || '[]');
+      if (expenses.length === 0) {
+        expenses = [
+          { id: 'e1', category: 'Rent', amount: 3200000, spentAt: '2026-06-10T10:00:00Z', note: 'Iyun oyi uchun ofis ijarasi', status: 'paid', paymentMethod: 'Bank', createdBy: 'Demo Admin' },
+          { id: 'e2', category: 'Utility', amount: 450000, spentAt: '2026-06-05T10:00:00Z', note: 'Elektr energiyasi uchun to\'lov', status: 'paid', paymentMethod: 'Karta', createdBy: 'Demo Admin' },
+          { id: 'e3', category: 'Salary', amount: 3500000, spentAt: '2026-06-01T10:00:00Z', note: 'Ilhom Karimov — iyun oy maoshi', status: 'paid', paymentMethod: "O'tkazma", createdBy: 'Demo Admin' },
+          { id: 'e4', category: 'Other', amount: 800000, spentAt: '2026-06-15T10:00:00Z', note: 'Instagram reklama kampaniyasi', status: 'pending', paymentMethod: 'Karta', createdBy: 'Demo Admin' },
+          { id: 'e5', category: 'Materials', amount: 120000, spentAt: '2026-06-12T10:00:00Z', note: 'O\'quvchilar uchun choy va gazak', status: 'paid', paymentMethod: 'Naqt', createdBy: 'Demo Admin' },
+          { id: 'e6', category: 'Salary', amount: 3200000, spentAt: '2026-06-01T10:00:00Z', note: 'Jasur Usmanov — iyun oy maoshi', status: 'paid', paymentMethod: "O'tkazma", createdBy: 'Demo Admin' },
+          { id: 'e7', category: 'Materials', amount: 250000, spentAt: '2026-05-20T10:00:00Z', note: 'Daftar, ruchka va qalam sotib olish', status: 'paid', paymentMethod: 'Naqt', createdBy: 'Demo Admin' },
+          { id: 'e8', category: 'Utility', amount: 380000, spentAt: '2026-05-05T10:00:00Z', note: 'Internet va telefon uchun to\'lov', status: 'paid', paymentMethod: 'Karta', createdBy: 'Demo Admin' },
+          { id: 'e9', category: 'Other', amount: 1500000, spentAt: '2026-05-15T10:00:00Z', note: 'Ofis ta\'mirlash — devor bo\'yash', status: 'paid', paymentMethod: 'Naqt', createdBy: 'Demo Admin' },
+          { id: 'e10', category: 'Rent', amount: 3200000, spentAt: '2026-05-01T10:00:00Z', note: 'May oyi uchun ofis ijarasi', status: 'paid', paymentMethod: 'Bank', createdBy: 'Demo Admin' },
+        ];
+        localStorage.setItem('mock_admin_expenses', JSON.stringify(expenses));
+      }
+      return { expenses, total: expenses.length };
+    }
+
+    if (path === '/admin/expenses' && method === 'POST') {
+      const expenses = JSON.parse(localStorage.getItem('mock_admin_expenses') || '[]');
+      const newExpense = {
+        id: `e-${Date.now()}`,
+        category: body.category || 'Other',
+        amount: body.amount || 0,
+        spentAt: body.spentAt || new Date().toISOString(),
+        note: body.note || '',
+        status: 'pending',
+        paymentMethod: body.paymentMethod || 'Naqt',
+        createdBy: 'Demo Admin',
+      };
+      expenses.push(newExpense);
+      localStorage.setItem('mock_admin_expenses', JSON.stringify(expenses));
+      return { expense: newExpense };
+    }
+
+    if (path.match(/^\/admin\/expenses\/([^/]+)$/) && method === 'DELETE') {
+      const id = path.split('/')[3];
+      let expenses = JSON.parse(localStorage.getItem('mock_admin_expenses') || '[]');
+      expenses = expenses.filter(e => e.id !== id);
+      localStorage.setItem('mock_admin_expenses', JSON.stringify(expenses));
+      return { success: true };
+    }
+
+    // -------- ADMIN: Payments/Invoices --------
+    if (path === '/admin/payments/invoices' && method === 'GET') {
+      let invoices = JSON.parse(localStorage.getItem('mock_admin_invoices') || '[]');
+      if (invoices.length === 0) {
+        invoices = [
+          { id: 'inv-1', studentName: 'Sardor O\'zbekov', groupName: 'Frontend React', amount: 850000, paidAmount: 850000, status: 'paid', dueDate: '2026-06-01T00:00:00Z', paidAt: '2026-06-01T10:00:00Z', paymentMethod: 'cash' },
+          { id: 'inv-2', studentName: 'Nilufar Karimova', groupName: 'Python Bootcamp', amount: 750000, paidAmount: 0, status: 'pending', dueDate: '2026-07-01T00:00:00Z', paidAt: null, paymentMethod: null },
+          { id: 'inv-3', studentName: 'Botir Hasanov', groupName: 'Frontend React', amount: 850000, paidAmount: 500000, status: 'partial', dueDate: '2026-07-01T00:00:00Z', paidAt: '2026-06-28T14:00:00Z', paymentMethod: 'card' },
+          { id: 'inv-4', studentName: 'Gulnora Rahimova', groupName: 'Python Bootcamp', amount: 750000, paidAmount: 750000, status: 'paid', dueDate: '2026-06-01T00:00:00Z', paidAt: '2026-05-30T11:00:00Z', paymentMethod: 'cash' },
+          { id: 'inv-5', studentName: 'Javlon Abdullayev', groupName: 'UI/UX Design', amount: 700000, paidAmount: 0, status: 'overdue', dueDate: '2026-06-01T00:00:00Z', paidAt: null, paymentMethod: null },
+          { id: 'inv-6', studentName: 'Dilshod Tursunov', groupName: 'Frontend React', amount: 850000, paidAmount: 850000, status: 'paid', dueDate: '2026-07-01T00:00:00Z', paidAt: '2026-06-29T09:00:00Z', paymentMethod: 'card' },
+        ];
+        localStorage.setItem('mock_admin_invoices', JSON.stringify(invoices));
+      }
+      return { invoices, total: invoices.length };
+    }
+
+    if (path.match(/^\/admin\/payments\/invoices\/([^/]+)\/pay$/) && method === 'POST') {
+      const id = path.split('/')[4];
+      const invoices = JSON.parse(localStorage.getItem('mock_admin_invoices') || '[]');
+      const idx = invoices.findIndex(i => i.id === id);
+      if (idx === -1) { const err = new Error('Invoice не найден'); err.status = 404; throw err; }
+      invoices[idx].paidAmount += body.amount || 0;
+      invoices[idx].status = invoices[idx].paidAmount >= invoices[idx].amount ? 'paid' : 'partial';
+      invoices[idx].paidAt = new Date().toISOString();
+      invoices[idx].paymentMethod = body.method || 'cash';
+      localStorage.setItem('mock_admin_invoices', JSON.stringify(invoices));
+      return { invoice: invoices[idx] };
+    }
+
+    if (path.match(/^\/admin\/payments\/transactions\/([^/]+)\/refund$/) && method === 'POST') {
+      return { success: true, message: 'Возврат выполнен' };
+    }
+
+    if (path.match(/^\/admin\/payments\/transactions\/([^/]+)\/void$/) && method === 'POST') {
+      return { success: true, message: 'Транзакция аннулирована' };
+    }
+
+    // -------- ADMIN: Reports --------
+    if (path === '/admin/reports' && method === 'GET') {
+      return {
+        revenue: {
+          total: 42500000,
+          thisMonth: 6800000,
+          lastMonth: 5900000,
+          currency: 'UZS',
+        },
+        groups: [
+          { name: 'Frontend React', students: 18, revenue: 15300000 },
+          { name: 'Python Bootcamp', students: 14, revenue: 10500000 },
+          { name: 'UI/UX Design', students: 12, revenue: 8400000 },
+          { name: 'Backend Node.js', students: 16, revenue: 14400000 },
+          { name: 'Mobile Flutter', students: 10, revenue: 8000000 },
+        ],
+        monthly: [
+          { month: 'Yanvar', revenue: 3200000 },
+          { month: 'Fevral', revenue: 4100000 },
+          { month: 'Mart', revenue: 5200000 },
+          { month: 'Aprel', revenue: 5800000 },
+          { month: 'May', revenue: 5900000 },
+          { month: 'Iyun', revenue: 6800000 },
+        ],
+        debts: [
+          { studentName: 'Javlon Abdullayev', amount: 700000, overdueDays: 45 },
+          { studentName: 'Shahzoda Ismoilova', amount: 350000, overdueDays: 15 },
+        ],
+      };
+    }
+
+    // -------- ADMIN: Settings --------
+    if (path === '/admin/settings' && method === 'GET') {
+      let settings = JSON.parse(localStorage.getItem('mock_admin_settings') || 'null');
+      if (!settings) {
+        settings = {
+          branchName: 'Downtown Academy',
+          address: '123 Main St, Central District',
+          phone: '+998901234567',
+          email: 'admin@levelup.uz',
+          currency: 'UZS',
+          timezone: 'Asia/Tashkent',
+          language: 'uz',
+          notifications: { email: true, sms: false, telegram: true },
+          theme: 'system',
+        };
+        localStorage.setItem('mock_admin_settings', JSON.stringify(settings));
+      }
+      return { settings };
+    }
+
+    if (path === '/admin/settings' && method === 'PATCH') {
+      let settings = JSON.parse(localStorage.getItem('mock_admin_settings') || '{}');
+      settings = { ...settings, ...body };
+      localStorage.setItem('mock_admin_settings', JSON.stringify(settings));
+      return { settings };
+    }
+
+    // -------- CHAT --------
+    if (path.match(/^\/chat\/([^/]+)\/messages$/) && method === 'GET') {
+      const roomKey = path.split('/')[2];
+      // Generate deterministic mock messages per room key
+      const mockMessages = {
+        'global': [
+          { id: 'cm-1', chat_type: 'global', room_key: 'global', sender_id: 'mock-mentor-id-001', body: 'Assalomu alaykum, hammaga xush kelibsiz!', attachment_key: null, created_at: '2026-07-16T09:00:00Z', sender_first_name: 'Ilhom', sender_last_name: 'Karimov', sender_role: 'mentor' },
+          { id: 'cm-2', chat_type: 'global', room_key: 'global', sender_id: 'mock-admin-id-001', body: 'Va alaykum assalom! Bugun yangi guruhlar ro\'yxati tayyor.', attachment_key: null, created_at: '2026-07-16T09:05:00Z', sender_first_name: 'Demo', sender_last_name: 'Admin', sender_role: 'admin' },
+          { id: 'cm-3', chat_type: 'global', room_key: 'global', sender_id: 'mock-mentor-id-002', body: 'Frontend React guruhiga 3 ta yangi talaba qo\'shildi', attachment_key: null, created_at: '2026-07-16T09:10:00Z', sender_first_name: 'Jasur', sender_last_name: 'Usmanov', sender_role: 'mentor' },
+          { id: 'cm-4', chat_type: 'global', room_key: 'global', sender_id: 'mock-admin-id-001', body: 'Yaxshi, ularni ro\'yxatdan o\'tkazdingizmi?', attachment_key: null, created_at: '2026-07-16T09:12:00Z', sender_first_name: 'Demo', sender_last_name: 'Admin', sender_role: 'admin' },
+          { id: 'cm-5', chat_type: 'global', room_key: 'global', sender_id: 'mock-mentor-id-002', body: 'Ha, tayyor. To\'lov ham qilindi', attachment_key: null, created_at: '2026-07-16T09:15:00Z', sender_first_name: 'Jasur', sender_last_name: 'Usmanov', sender_role: 'mentor' },
+        ],
+      };
+      // For parent:1 through parent:6, generate per-contact messages
+      for (let i = 1; i <= 6; i++) {
+        mockMessages[`parent:${i}`] = [
+          { id: `pm-${i}-1`, chat_type: 'parent', room_key: `parent:${i}`, sender_id: `mock-contact-${i}`, body: 'Assalomu alaykum!', attachment_key: null, created_at: '2026-07-16T10:00:00Z', sender_first_name: 'Contact', sender_last_name: `${i}`, sender_role: 'student' },
+          { id: `pm-${i}-2`, chat_type: 'parent', room_key: `parent:${i}`, sender_id: 'mock-admin-id-001', body: 'Va alaykum assalom! Qanday yordam bera olaman?', attachment_key: null, created_at: '2026-07-16T10:01:00Z', sender_first_name: 'Demo', sender_last_name: 'Admin', sender_role: 'admin' },
+        ];
+      }
+      const messages = mockMessages[roomKey] || mockMessages['global'];
+      return { success: true, data: { messages, nextCursor: null } };
+    }
+
     // Fallback
     const err = new Error('Mock route not implemented: ' + path);
     err.status = 404;
@@ -666,6 +1112,9 @@ async function request(path, { method = 'GET', body, token } = {}) {
 }
 
 export const api = {
+  // -------- GENERIC METHOD (used by Chat.jsx) --------
+  get: (path, config = {}) => request(path, { method: 'GET', token: config.token }).then((data) => ({ data })),
+
   // -------- AUTH (staff — admin/superadmin/mentor/methodist) --------
   loginStaff: (login, password) =>
     request('/auth/staff/login', { method: 'POST', body: { login, password } }),
@@ -674,6 +1123,52 @@ export const api = {
   googleLogin: (idToken) => request('/auth/staff/google', { method: 'POST', body: { idToken } }),
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
   resetPassword: (body) => request('/auth/reset-password', { method: 'POST', body }),
+
+  // -------- ADMIN (branch admin panel) --------
+  adminDashboard: (token) => request('/admin/dashboard', { token }),
+  adminSettings: (token) => request('/admin/settings', { token }),
+  adminUpdateSettings: (token, body) => request('/admin/settings', { method: 'PATCH', token, body }),
+  adminExpenses: (token, qs = '') => request(`/admin/expenses${qs}`, { token }),
+  adminCreateExpense: (token, body) => request('/admin/expenses', { method: 'POST', token, body }),
+  adminDeleteExpense: (token, id) => request(`/admin/expenses/${id}`, { method: 'DELETE', token }),
+  adminStudents: (token, qs = '') => request(`/admin/students${qs}`, { token }),
+  adminCreateStudent: (token, body) => request('/admin/students', { method: 'POST', token, body }),
+  adminStudentDetail: (token, id) => request(`/admin/students/${id}`, { token }),
+  adminUpdateStudent: (token, id, body) => request(`/admin/students/${id}`, { method: 'PATCH', token, body }),
+  adminFreezeStudent: (token, id, frozen) => request(`/admin/students/${id}/freeze`, { method: 'POST', token, body: { frozen } }),
+  adminDeleteStudent: (token, id) => request(`/admin/students/${id}`, { method: 'DELETE', token }),
+  adminGroups: (token, qs = '') => request(`/admin/groups${qs}`, { token }),
+  adminCreateGroup: (token, body) => request('/admin/groups', { method: 'POST', token, body }),
+  adminGroupDetail: (token, id) => request(`/admin/groups/${id}`, { token }),
+  adminUpdateGroup: (token, id, body) => request(`/admin/groups/${id}`, { method: 'PATCH', token, body }),
+  adminArchiveGroup: (token, id) => request(`/admin/groups/${id}/archive`, { method: 'POST', token }),
+  adminUnarchiveGroup: (token, id) => request(`/admin/groups/${id}/unarchive`, { method: 'POST', token }),
+  adminMentors: (token) => request('/admin/mentors', { token }),
+  adminCreateMentor: (token, body) => request('/admin/mentors', { method: 'POST', token, body }),
+  adminUpdateMentor: (token, id, body) => request(`/admin/mentors/${id}`, { method: 'PATCH', token, body }),
+  adminFreezeMentor: (token, id, frozen) => request(`/admin/mentors/${id}/freeze`, { method: 'POST', token, body: { frozen } }),
+  adminDeleteMentor: (token, id) => request(`/admin/mentors/${id}`, { method: 'DELETE', token }),
+  adminRegenStudentPassword: (token, id) => request(`/admin/students/${id}/regenerate-password`, { method: 'POST', token }),
+
+  // -------- ADMIN: Groups — add/remove students --------
+  adminAddStudentToGroup: (token, groupId, studentId) =>
+    request(`/admin/groups/${groupId}/students`, { method: 'POST', token, body: { studentId } }),
+  adminRemoveStudentFromGroup: (token, groupId, studentId) =>
+    request(`/admin/groups/${groupId}/students/${studentId}`, { method: 'DELETE', token }),
+
+  // -------- ADMIN: Payments (invoices) --------
+  adminInvoices: (token, qs = '') => request(`/admin/payments/invoices${qs}`, { token }),
+  adminPayInvoice: (token, invoiceId, body) =>
+    request(`/admin/payments/invoices/${invoiceId}/pay`, { method: 'POST', token, body }),
+
+  // -------- ADMIN: Payments (refund / void) --------
+  adminRefundTransaction: (token, transactionId, body) =>
+    request(`/admin/payments/transactions/${transactionId}/refund`, { method: 'POST', token, body }),
+  adminVoidTransaction: (token, transactionId, body) =>
+    request(`/admin/payments/transactions/${transactionId}/void`, { method: 'POST', token, body }),
+
+  // -------- ADMIN: Reports --------
+  adminReports: (token, qs = '') => request(`/admin/reports${qs}`, { token }),
 
   // -------- SUPER ADMIN --------
   superDashboard: (token) => request('/super/dashboard', { token }),

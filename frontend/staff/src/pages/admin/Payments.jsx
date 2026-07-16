@@ -121,16 +121,7 @@ export default function AdminPayments() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const limit = 15;
-
-  const qs = `?page=${page}&limit=${limit}${statusFilter !== 'all' ? `&status=${statusFilter}` : ''}`;
-
-  const { data, isLoading, error, refetch } = useAdminInvoices(qs);
-
-  const raw = data?.data || data || {};
-  const rows = raw.invoices || [];
-  const meta = raw.meta || {};
-
-  const totalPages = meta.totalPages || Math.ceil((meta.total || rows.length) / limit) || 1;
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Pay modal state — split payment
   const [pay, setPay] = useState(null);
@@ -138,13 +129,36 @@ export default function AdminPayments() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
+  const qs = `?page=${page}&limit=${limit}${statusFilter !== 'all' ? `&status=${statusFilter}` : ''}`;
+
+  const { data, isLoading, error, refetch } = useAdminInvoices(qs);
+
+  const raw = data?.data || data || {};
+  const allRows = raw.invoices || [];
+  const meta = raw.meta || {};
+  const totalPages = meta.totalPages || Math.ceil((meta.total || allRows.length) / limit) || 1;
+
+  // Client-side search filtering
+  const rows = useMemo(() => {
+    let filtered = allRows;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((inv) => {
+        const name = (inv.student || '').toLowerCase();
+        const group = (inv.group || '').toLowerCase();
+        return name.includes(q) || group.includes(q);
+      });
+    }
+    return filtered;
+  }, [allRows, searchQuery]);
+
   const stats = useMemo(() => {
-    const total = rows.reduce((s, inv) => s + Number(inv.totalAmount || inv.amount || 0), 0);
-    const paid = rows.filter((inv) => inv.status === 'paid').length;
-    const waiting = rows.filter((inv) => inv.status === 'pending' || inv.status === 'partially_paid').length;
-    const overdue = rows.filter((inv) => inv.status === 'overdue').length;
+    const total = allRows.reduce((s, inv) => s + Number(inv.totalAmount || inv.amount || 0), 0);
+    const paid = allRows.filter((inv) => inv.status === 'paid').length;
+    const waiting = allRows.filter((inv) => inv.status === 'pending' || inv.status === 'partially_paid').length;
+    const overdue = allRows.filter((inv) => inv.status === 'overdue').length;
     return { total, paid, waiting, overdue };
-  }, [rows]);
+  }, [allRows]);
 
   const openPay = (inv) => {
     const remaining = Number(inv.totalAmount || inv.amount || 0) - Number(inv.paidAmount || inv.paid_amount || 0);
@@ -191,34 +205,55 @@ export default function AdminPayments() {
   };
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader title="Платежи" subtitle="Счета и оплаты (наличные + карта)">
-        {rows.length > 0 && (
-          <span className="text-sm text-base-content/40 tabular-nums">
-            {meta.total || rows.length} счетов
+        {allRows.length > 0 && (
+          <span className="text-sm text-[var(--text-muted)] tabular-nums">
+            {meta.total || allRows.length} счетов
           </span>
         )}
       </PageHeader>
 
+      {/* ═══ Search & Filters ═══ */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+          <input
+            type="text"
+            placeholder="Поиск по имени или группе..."
+            className="w-full h-10 pl-9 pr-4 rounded-xl text-[13px] font-medium bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          {STATUS_LIST.map((s) => (
+            <button
+              key={s}
+              onClick={() => { setStatusFilter(s); setPage(1); }}
+              className={`h-8 px-3 rounded-lg text-[12px] font-bold transition-all ${
+                statusFilter === s
+                  ? 'bg-[var(--accent)] text-black shadow-sm'
+                  : 'bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)] hover:border-[var(--accent)]/40'
+              }`}
+            >
+              {STATUS_LABELS[s]}
+              {s !== 'all' && (
+                <span className="ml-1.5 text-[10px] opacity-70">
+                  {allRows.filter((inv) => inv.status === s).length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ═══ Stats ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard Icon={TrendingUp} label="Всего счетов" value={rows.length} color="#3B82F6" gradient="linear-gradient(135deg,#3B82F6,#2980B9)" delay="stagger-1" />
+        <StatCard Icon={TrendingUp} label="Всего счетов" value={allRows.length} color="#3B82F6" gradient="linear-gradient(135deg,#3B82F6,#2980B9)" delay="stagger-1" />
         <StatCard Icon={CheckCircle2} label="Оплачено" value={stats.paid} color="#2ECC71" gradient="linear-gradient(135deg,#2ECC71,#27AE60)" delay="stagger-2" />
         <StatCard Icon={Clock} label="Ожидает" value={stats.waiting} color="#F59E0B" gradient="linear-gradient(135deg,#F59E0B,#E67E22)" delay="stagger-3" />
         <StatCard Icon={AlertTriangle} label="Просрочено" value={stats.overdue} color="#E8543E" gradient="linear-gradient(135deg,#E8543E,#C0392B)" delay="stagger-4" />
-      </div>
-
-      {/* ═══ Status Filter Tabs ═══ */}
-      <div className="flex flex-wrap gap-2">
-        {STATUS_LIST.map((s) => (
-          <button
-            key={s}
-            className={`btn btn-sm ${statusFilter === s ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => { setStatusFilter(s); setPage(1); }}
-          >
-            {STATUS_LABELS[s]}
-          </button>
-        ))}
       </div>
 
       {/* ═══ Invoice List ═══ */}
@@ -226,11 +261,17 @@ export default function AdminPayments() {
         <div className="mt-4"><SkeletonTable cols={6} /></div>
       ) : error ? (
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
-      ) : rows.length === 0 ? (
+      ) : allRows.length === 0 ? (
         <div className="glass-strong rounded-[20px] p-12 text-center animate-fade-in mt-4">
           <Wallet size={40} className="mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
           <p className="text-[14px] font-medium text-[var(--text-muted)]">Нет счетов</p>
           <p className="text-[12px] text-[var(--text-muted)] mt-1 opacity-60">Счета появятся здесь</p>
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="glass-strong rounded-[20px] p-8 text-center animate-fade-in mt-4">
+          <Search size={32} className="mx-auto mb-2 text-[var(--text-muted)] opacity-30" />
+          <p className="text-[13px] font-medium text-[var(--text-muted)]">Ничего не найдено</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1 opacity-60">Попробуйте изменить фильтры</p>
         </div>
       ) : (
         <>
@@ -243,7 +284,7 @@ export default function AdminPayments() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
-              <span className="text-sm text-base-content/40 tabular-nums">
+              <span className="text-sm text-[var(--text-muted)] tabular-nums">
                 Страница {meta.page || page} из {totalPages}
               </span>
               <div className="flex gap-2">

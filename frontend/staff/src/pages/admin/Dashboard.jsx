@@ -1,13 +1,19 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Wallet, TriangleAlert, Receipt, TrendingUp, Users, GraduationCap, Clock,
   UserPlus, FolderPlus, CreditCard, FileText, ArrowUpRight, ArrowDownRight,
-  BarChart3, Sparkles, Activity,
+  BarChart3, Sparkles, Activity, Zap, Star,
 } from 'lucide-react';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import { fmt, money } from '../../format.js';
 import { useAdminDashboard } from '../../queries.js';
+import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 /* ═══════════════ Premium KPI Card ═══════════════ */
 function KpiCard({ Icon, title, value, trend, trendLabel, color, gradient, delay }) {
@@ -95,9 +101,101 @@ function StatRow({ Icon, label, value, danger, accent }) {
   );
 }
 
+/* ═══════════════ Revenue Chart ═══════════════ */
+function RevenueChart({ totals, thisMonth }) {
+  const chartData = {
+    labels: ['Доход', 'Расход', 'Прибыль'],
+    datasets: [
+      {
+        label: 'Всего',
+        data: [totals.revenue || 0, totals.expenses || 0, totals.profit || 0],
+        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+        borderColor: '#22c55e',
+        borderWidth: 2,
+        borderRadius: 8,
+        barPercentage: 0.6,
+      },
+      {
+        label: 'Этот месяц',
+        data: [thisMonth.revenue || 0, thisMonth.expenses || 0, thisMonth.profit || 0],
+        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+        borderColor: '#3b82f6',
+        borderWidth: 2,
+        borderRadius: 8,
+        barPercentage: 0.6,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          padding: 16,
+          font: { size: 12, weight: '600' },
+          color: '#6b7a62',
+        },
+      },
+      tooltip: {
+        backgroundColor: '#1a1f16',
+        titleColor: '#e8efe2',
+        bodyColor: '#94a388',
+        borderColor: '#2d3628',
+        borderWidth: 1,
+        cornerRadius: 10,
+        padding: 12,
+        callbacks: {
+          label: (ctx) => `${ctx.dataset.label}: ${money(ctx.raw)}`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#6b7a62', font: { size: 12, weight: '600' } },
+      },
+      y: {
+        grid: { color: 'rgba(220, 229, 212, 0.3)' },
+        ticks: {
+          color: '#6b7a62',
+          font: { size: 11 },
+          callback: (v) => v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v,
+        },
+      },
+    },
+  };
+
+  return (
+    <div className="glass-strong rounded-[20px] p-5 card-hover-premium animate-fade-in stagger-3">
+      <div className="flex items-center gap-2.5 mb-5">
+        <div className="w-1 h-6 rounded-full bg-[#3B82F6]" />
+        <h2 className="text-[15px] font-extrabold text-[var(--text)] tracking-[-0.02em]">Финансы</h2>
+      </div>
+      <div className="h-[260px]">
+        <Bar data={chartData} options={options} />
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════ Main Dashboard ═══════════════ */
 export default function AdminDashboard() {
   const { data, isLoading, error } = useAdminDashboard();
+  const { user } = useAuth();
+
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 6) return { text: 'Тунлар хайрли', emoji: '🌙' };
+    if (h < 12) return { text: 'Эрталаб хайрли', emoji: '☀️' };
+    if (h < 17) return { text: 'Кунда хайрли', emoji: '🌤' };
+    if (h < 21) return { text: 'Кеча хайрли', emoji: '🌅' };
+    return { text: 'Тунлар хайрли', emoji: '🌙' };
+  }, []);
 
   if (isLoading) {
     return (
@@ -124,8 +222,30 @@ export default function AdminDashboard() {
   const m = raw.thisMonth || {};
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader title="Дашборд" subtitle="Филиал: доход, расход, студенты, группы" />
+
+      {/* ═══ Welcome Banner ═══ */}
+      <div className="glass-strong rounded-[20px] p-6 relative overflow-hidden animate-fade-in">
+        <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-15" style={{ background: 'linear-gradient(135deg, #C6FF34, #22c55e)' }} />
+        <div className="relative flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ background: 'var(--green-bg)' }}>
+            {greeting.emoji}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-extrabold" style={{ color: 'var(--text)' }}>
+              {greeting.text}, {user?.firstName || 'Администратор'}!
+            </h2>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+              Сегодня {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}. Вот обзор вашего филиала.
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl shrink-0" style={{ background: 'var(--green-bg)', border: '1px solid rgba(198,255,52,0.15)' }}>
+            <Zap size={16} style={{ color: '#C6FF34' }} />
+            <span className="text-xs font-bold" style={{ color: '#C6FF34' }}>Всё активно</span>
+          </div>
+        </div>
+      </div>
 
       {/* ═══ KPI Cards ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -162,6 +282,9 @@ export default function AdminDashboard() {
           delay="stagger-4"
         />
       </div>
+
+      {/* ═══ Revenue Chart ═══ */}
+      <RevenueChart totals={t} thisMonth={m} />
 
       {/* ═══ Branch Stats + Monthly Overview ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

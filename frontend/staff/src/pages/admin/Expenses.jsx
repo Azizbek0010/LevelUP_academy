@@ -189,14 +189,15 @@ export default function Expenses() {
   const [exporting, setExporting] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
+  const { token } = useAuth();
+
   const loadExpenses = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Backend endpoint: GET /api/admin/expenses?limit=100
-      // Response shape: { expenses: [...], meta: { page, limit, total } }
-      const res = await api.get('/admin/expenses', { params: { limit: 100 } });
-      const data = res.data?.data || res.data || {};
+      // Uses api.adminExpenses(token) from api.js → proper named method
+      const res = await api.adminExpenses(token);
+      const data = res.data?.data || res.data || res || {};
       setExpenses(data.expenses || []);
     } catch (err) {
       console.error('Failed to load expenses:', err);
@@ -205,7 +206,7 @@ export default function Expenses() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => { loadExpenses(); }, [loadExpenses]);
 
@@ -346,9 +347,8 @@ export default function Expenses() {
     setSaving(true);
     setError(null);
     try {
-      // Backend endpoint: POST /api/admin/expenses
-      // Request body: { category, amount, spentAt?, note? }
-      await api.post('/admin/expenses', {
+      // Uses api.adminCreateExpense(token, body) from api.js
+      await api.adminCreateExpense(token, {
         category: formData.category,
         amount: Number(formData.amount),
         spentAt: formData.spentAt || undefined,
@@ -362,15 +362,15 @@ export default function Expenses() {
     } finally {
       setSaving(false);
     }
-  }, [formData, loadExpenses]);
+  }, [formData, loadExpenses, token]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     setSaving(true);
     setError(null);
     try {
-      // Backend endpoint: DELETE /api/admin/expenses/:id
-      await api.delete(`/admin/expenses/${deleteTarget.id}`);
+      // Uses api.adminDeleteExpense(token, id) from api.js
+      await api.adminDeleteExpense(token, deleteTarget.id);
       setDeleteTarget(null);
       await loadExpenses();
     } catch (err) {
@@ -379,7 +379,7 @@ export default function Expenses() {
     } finally {
       setSaving(false);
     }
-  }, [deleteTarget, loadExpenses]);
+  }, [deleteTarget, loadExpenses, token]);
 
   const handleExport = useCallback(() => {
     setExporting(true);

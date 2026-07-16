@@ -600,7 +600,7 @@ export default function Chat() {
   //  Render
   // ═══════════════════════════════════════════
   return (
-    <div className="glass-strong rounded-[20px] overflow-hidden flex h-[calc(100vh-240px)] min-h-[500px] animate-fade-in">
+    <div className="glass-strong rounded-[20px] overflow-hidden flex flex-1 min-h-0 animate-fade-in">
       {/* ───── Left Panel — Contacts ───── */}
       <div
         className={`w-[300px] shrink-0 border-r border-[var(--border)] flex flex-col bg-[var(--surface)]/30
