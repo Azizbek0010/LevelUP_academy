@@ -132,7 +132,7 @@ function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#22c55e' 
         }}
       >
         <span
-          className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300"
+           className="absolute top-0.5 w-5 h-5 rounded-full bg-[var(--surface)] shadow-md transition-all duration-300"
           style={{
             left: checked ? 22 : 2,
             transform: checked ? 'scale(1)' : 'scale(0.85)',

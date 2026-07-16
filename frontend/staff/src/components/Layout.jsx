@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Search, Bell, Sun, Moon, ChevronLeft, ChevronRight, X,
+  Bell, Sun, Moon, ChevronLeft, ChevronRight, X,
   LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu,
 } from 'lucide-react';
 import {
@@ -128,23 +128,6 @@ function Sidebar({ role, collapsed, onToggle }) {
         )}
       </div>
 
-      {/* Role badge */}
-      {!collapsed && (
-        <div className="px-4 pt-4 pb-2 animate-fade-in">
-          <div
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider"
-            style={{
-              background: `${ROLE_COLORS[role] || '#6b7280'}18`,
-              color: ROLE_COLORS[role] || '#6b7280',
-              border: `1px solid ${ROLE_COLORS[role] || '#6b7280'}25`,
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: ROLE_COLORS[role] }} />
-            {ROLE_TITLE[role] || 'Панель'}
-          </div>
-        </div>
-      )}
-
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
         {nav.map(({ to, label, Icon, end, soon }, i) => {
@@ -235,7 +218,6 @@ function Header({ sidebarWidth, onMobileToggle }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const role = user?.role;
-  const [searchFocused, setSearchFocused] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('lu-theme') || 'system');
   const userMenuRef = useRef(null);
@@ -295,29 +277,6 @@ function Header({ sidebarWidth, onMobileToggle }) {
 
       {/* Spacer */}
       <div className="flex-1" />
-
-      {/* Search bar (desktop) */}
-      <div className="hidden md:flex items-center relative">
-        <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-all duration-200"
-          style={{
-            background: searchFocused ? 'var(--surface)' : 'var(--bg)',
-            border: `1px solid ${searchFocused ? 'var(--green)' : 'var(--border)'}`,
-            width: searchFocused ? 280 : 200,
-            boxShadow: searchFocused ? '0 0 0 3px rgba(198, 255, 52, 0.1)' : 'none',
-          }}
-        >
-          <Search size={14} style={{ color: 'var(--text-muted)' }} />
-          <input
-            type="text"
-            placeholder="Qidirish..."
-            className="bg-transparent outline-none text-sm w-full"
-            style={{ color: 'var(--text)' }}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-          />
-        </div>
-      </div>
 
       {/* Theme toggle */}
       <button
