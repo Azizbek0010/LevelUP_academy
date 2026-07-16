@@ -789,9 +789,9 @@ export default {
 
   seo: {
     home: {
-      title: "LevelUp Academy — o'quv markazi uchun CRM",
+      title: "O'quv markazi uchun CRM — o'quvchilar hisobi | LevelUp",
       description:
-        "O'quv markazi uchun CRM: to'lovlar va split-to'lovlar, davomat, imtihonlar, motivatsiya va Telegram bildirishnomalari bitta tizimda. Birinchi hafta — bepul.",
+        "O'quvchilar hisobi dasturi: to'lovlar va qarzlar, davomat va elektron jurnal, testlar, motivatsiya, Telegram bildirishnomalari bitta CRM'da. Birinchi hafta bepul.",
     },
     features: {
       title: 'Imkoniyatlar — 12+ CRM moduli | LevelUp Academy',
@@ -804,9 +804,9 @@ export default {
         "SuperAdmin, Admin, Mentor, Ota-ona va O'quvchi — har bir rolning o'z kabineti. Ruxsatni serverdagi RBAC hal qiladi: ortiqchasini hech kim ko'rmaydi.",
     },
     finance: {
-      title: "Markaz moliyasi va to'lovlari | LevelUp Academy",
+      title: "O'quvchilar to'lovi va qarzlar hisobi | LevelUp Academy",
       description:
-        "Naqd va karta bilan split-to'lovlar, invoyslar, bulutdagi cheklar, qarz nazorati va tushum bo'yicha jonli hisobotlar. O'quv markazi puli — bir tiyingacha.",
+        "O'quvchilar to'lovi va qarzlari hisobi: naqd va karta split-to'lovlar, invoyslar, bulutdagi cheklar va jonli tushum hisobotlari. Markaz moliyasi — bir tiyingacha.",
     },
     pricing: {
       title: "Tariflar va narxlar — o'quv markazi uchun CRM | LevelUp",
