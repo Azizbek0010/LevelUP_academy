@@ -22,6 +22,11 @@ const PAGES = [
   '/landing/roles',
   '/landing/finance',
   '/landing/pricing',
+  '/landing/for-language-school',
+  '/landing/blog',
+  '/landing/blog/excel-to-crm',
+  '/landing/blog/student-debts',
+  '/landing/blog/attendance-automation',
   '/landing/gamification',
   '/landing/contacts',
 ];

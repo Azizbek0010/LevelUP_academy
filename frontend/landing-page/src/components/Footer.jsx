@@ -19,6 +19,9 @@ export default function Footer() {
             <Link to={lp('/landing/roles')}>{t.nav.roles}</Link>
             <Link to={lp('/landing/finance')}>{t.nav.finance}</Link>
             <Link to={lp('/landing/gamification')}>{t.nav.gamification}</Link>
+            <Link to={lp('/landing/pricing')}>{t.nav.pricing}</Link>
+            <Link to={lp('/landing/for-language-school')}>{t.nav.langSchool}</Link>
+            <Link to={lp('/landing/blog')}>{t.nav.blog}</Link>
           </div>
           <div className="footer__col">
             <h4>{t.footer.navigation}</h4>

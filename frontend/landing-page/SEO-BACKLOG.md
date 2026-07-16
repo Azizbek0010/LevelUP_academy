@@ -25,6 +25,8 @@
 | staff и member: индексируется ТОЛЬКО `/login` (чтобы пользователь находил вход через Google), остальное `noindex` | `staff/`, `member/` (robots + vercel.json + index.html + sitemap) | 15.07 |
 | Узбекская версия `/uz` — i18n, hreflang, 12 prerendered страниц | `src/i18n/`, `App.jsx` | 14–15.07 |
 | **Страница тарифов** `/landing/pricing` (+`/uz/...`) — реальные цены, Offer/AggregateOffer + FAQPage schema.org, акцент на гарантии | `pages/Pricing.jsx`, `i18n/`, sitemap | 16.07 |
+| **Ниша «для языковой школы»** `/landing/for-language-school` (+`/uz/...`) — FAQPage + Breadcrumb, ссылка из футера + на тарифы (не orphan) | `pages/ForLanguageSchool.jsx`, `i18n/`, `Footer.jsx`, sitemap | 16.07 |
+| **IndexNow** (Яндекс+Bing): ключ-файл + `scripts/indexnow.js` (URL из sitemap) → `npm run indexnow`. ⚠️ пинг после того как деплой встанет | `public/<key>.txt`, `scripts/indexnow.js` | 16.07 |
 | GSC: sitemap отправлен, GA4 связан, prerender подтверждён (Google видит текст) | — | 15.07 |
 | Bing: сайт добавлен (импорт из GSC), sitemap отправлен | — | 15.07 |
 | **Yandex Webmaster: сайт подтверждён** (DNS TXT в Cloudflare) + meta-тег в коде как доп. сигнал | `index.html` (meta), Cloudflare DNS | 16.07 |
@@ -41,24 +43,28 @@
 - [x] ~~**Страница тарифов** (`/landing/pricing` + `/uz/...`)~~ — ✅ 16.07. Реальные цены получены
       (фикс по бакету учеников, совпадает с `backend/config/plans.js` TIERS), Offer/AggregateOffer +
       FAQPage schema.org, акцент на гарантии (возврат 30 дней, бэкап, запуск за неделю). Блокер снят.
-- [ ] **Ниша «для языковой школы»** (`/landing/for-language-school` + `/uz/...`). Запрос
-      «программа для языковой школы» / «til markazi uchun dastur». Крупнейший и наименее
-      конкурентный сегмент в UZ; узбекская версия — шанс в топ быстрее русской. Цены не нужны.
+- [x] ~~**Ниша «для языковой школы»** (`/landing/for-language-school` + `/uz/...`)~~ — ✅ 16.07.
+      Запрос «программа для языковой школы» / «til markazi uchun dastur». Полный SEO-каркас +
+      FAQPage, ссылка из футера (sitewide) и на тарифы. Верифицировано: build + браузер (гидратация чистая).
 
 ### P2 — следом
 
-- [ ] **Шлифовка on-page** главной и `/landing/finance` под точные запросы («программа для
-      учёта учеников», «электронный журнал», «o'quvchilar hisobi dasturi»). Правки только в
-      seo-блоках `i18n/ru.js` и `i18n/uz.js`. URL не менять — уже в индексе.
+- [x] ~~**Шлифовка on-page** главной и `/landing/finance`~~ — ✅ 16.07. title/description
+      главной и finance (ru+uz) переписаны под точные запросы: «программа для учёта учеников»,
+      «электронный журнал», «учёт оплат/долгов учеников», «o'quvchilar hisobi dasturi»,
+      «elektron jurnal». URL не тронуты, title ≤60. Правки только в seo-блоках `i18n`.
 - [ ] **Ниша «для курсов и репетиторов»** (+ `/uz/...`). «CRM для курсов», «репетиторский центр».
 - [ ] **Страница «CRM вместо Excel»** — запрос миграции, высокое намерение сменить инструмент.
       На `/landing/finance` уже есть таблица «до/после» — развернуть в отдельную страницу.
 
 ### P3 — длинный хвост + топливо для AI-поиска
 
-- [ ] **Блог / база знаний**, 2–3 стартовые статьи (ru + uz): «как перейти с Excel на CRM»,
-      «как не терять деньги на долгах учеников», «как автоматизировать посещаемость».
-      Информационные запросы + именно такие тексты цитируют ChatGPT/Perplexity.
+- [x] ~~**Блог / база знаний**, 3 стартовые статьи (ru + uz)~~ — ✅ 16.07.
+      `/landing/blog` (индекс) + `excel-to-crm`, `student-debts`, `attendance-automation`.
+      Каждая: `BlogPosting` + `BreadcrumbList` JSON-LD, тело в prerender (видно AI без JS),
+      ссылка из футера. Инфраструктура блога (индекс + шаблон статьи по `:slug`) готова —
+      новые статьи добавляются одним ключом в `i18n .blog.articles` + путь в prerender/sitemap.
+      Verify: build (24 URL) + браузер (гидратация чистая, ru+uz).
 
 > При добавлении любой страницы — чеклист в [SEO.md](./SEO.md) §«Adding a page»
 > (i18n ru+uz → App.jsx PAGES → prerender ROUTES → sitemap обе версии + hreflang).
