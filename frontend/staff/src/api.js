@@ -1155,6 +1155,31 @@ export const api = {
   // -------- GENERIC METHOD (used by Chat.jsx) --------
   get: (path, config = {}) => request(path, { method: 'GET', token: config.token }).then((data) => ({ data })),
 
+  // -------- MENTOR: Groups --------
+  mentorGroups: (token) => request('/mentor/groups', { token }),
+  mentorGroupStudents: (token, groupId) => request(`/mentor/groups/${groupId}/students`, { token }),
+
+  // -------- MENTOR: Attendance --------
+  mentorAttendance: (token, groupId, params) => {
+    const query = params.date
+      ? `?date=${params.date}`
+      : `?from=${params.from}&to=${params.to}`;
+    return request(`/mentor/attendance/groups/${groupId}${query}`, { token });
+  },
+  mentorMarkAttendance: (token, groupId, body) =>
+    request(`/mentor/attendance/groups/${groupId}`, { method: 'POST', token, body }),
+
+  // -------- MENTOR: Homework (view + grade only) --------
+  mentorHomeworkList: (token, groupId) => request(`/mentor/homework/groups/${groupId}`, { token }),
+  mentorHomeworkSubmissions: (token, homeworkId) =>
+    request(`/mentor/homework/${homeworkId}/submissions`, { token }),
+  mentorGradeSubmission: (token, submissionId, body) =>
+    request(`/mentor/homework/submissions/${submissionId}/grade`, { method: 'POST', token, body }),
+
+  // -------- MENTOR: Coins --------
+  mentorGrantCoins: (token, body) => request('/mentor/coins', { method: 'POST', token, body }),
+  mentorCoinHistory: (token, studentId) => request(`/mentor/coins/students/${studentId}`, { token }),
+
   // -------- AUTH (staff — admin/superadmin/mentor/methodist) --------
   loginStaff: (login, password) =>
     request('/auth/staff/login', { method: 'POST', body: { login, password } }),

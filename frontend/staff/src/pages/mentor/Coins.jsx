@@ -33,12 +33,12 @@ export default function MentorCoins() {
   const students = rosterData?.data || [];
 
   const { data: historyData } = useMentorCoinHistory(selectedStudentId);
-  const coinHistory = historyData?.data?.history || historyData?.data || [];
+  const coinHistory = historyData?.data?.items || historyData?.data?.history || [];
 
   const filteredStudents = students.filter((s) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return (s.first_name + ' ' + s.last_name).toLowerCase().includes(q);
+    return (s.firstName + ' ' + s.lastName).toLowerCase().includes(q);
   });
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
@@ -121,12 +121,12 @@ export default function MentorCoins() {
                         selectedStudentId === s.id ? 'bg-primary text-primary-content' : 'hover:bg-base-200'
                       }`}
                     >
-                      <StudentAvatar name={`${s.first_name} ${s.last_name}`} />
+                      <StudentAvatar name={`${s.firstName} ${s.lastName}`} />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{s.first_name} {s.last_name}</div>
+                        <div className="text-sm font-medium truncate">{s.firstName} {s.lastName}</div>
                       </div>
                       <div className={`text-sm font-bold ${selectedStudentId === s.id ? 'text-primary-content' : 'text-base-content'}`}>
-                        {s.coin_balance ?? 0} 🪙
+                        {s.coinBalance ?? 0} 🪙
                       </div>
                     </button>
                   ))}
@@ -142,11 +142,11 @@ export default function MentorCoins() {
               <div className="card bg-base-100">
                 <div className="card-body p-5">
                   <div className="flex items-center gap-3 mb-4">
-                    <StudentAvatar name={`${selectedStudent.first_name} ${selectedStudent.last_name}`} />
+                    <StudentAvatar name={`${selectedStudent.firstName} ${selectedStudent.lastName}`} />
                     <div>
-                      <h3 className="font-bold">{selectedStudent.first_name} {selectedStudent.last_name}</h3>
+                      <h3 className="font-bold">{selectedStudent.firstName} {selectedStudent.lastName}</h3>
                       <p className="text-sm text-base-content/50">
-                        Balans: <span className="font-bold text-base-content">{selectedStudent.coin_balance ?? 0} 🪙</span>
+                        Balans: <span className="font-bold text-base-content">{selectedStudent.coinBalance ?? 0} 🪙</span>
                       </p>
                     </div>
                   </div>

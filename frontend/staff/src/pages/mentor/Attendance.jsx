@@ -55,9 +55,17 @@ export default function MentorAttendance() {
         fullMap[`${s.id}_${dateKey}`] = null;
       });
     });
-    // Override with existing attendance from API
+    // Override with existing attendance from API.
+    // Бэкенд отдаёт lesson_date как timestamp — берём локальные части даты (YYYY-MM-DD),
+    // чтобы ключ совпал с сеткой (иначе метки не находятся).
     attendance.forEach((a) => {
-      const key = `${a.student_id}_${a.date}`;
+      const raw = a.lesson_date || a.date;
+      let dateKey = raw;
+      if (raw) {
+        const d = new Date(raw);
+        dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }
+      const key = `${a.student_id}_${dateKey}`;
       if (fullMap[key] !== undefined) fullMap[key] = a.status;
     });
     setAttendanceMap(fullMap);
@@ -220,10 +228,10 @@ export default function MentorAttendance() {
                     <td className="sticky left-0 bg-base-100 z-10 px-4 py-2.5">
                       <div className="flex items-center gap-2.5">
                         <span className="w-8 h-8 rounded-full bg-primary/20 text-primary-content grid place-items-center text-xs font-bold shrink-0">
-                          {s.first_name?.[0]}{s.last_name?.[0]}
+                          {s.firstName?.[0]}{s.lastName?.[0]}
                         </span>
                         <div>
-                          <div className="text-[13px] font-medium">{s.first_name} {s.last_name}</div>
+                          <div className="text-[13px] font-medium">{s.firstName} {s.lastName}</div>
                           {s.status !== 'active' && (
                             <span className="text-[10px] text-danger font-medium">
                               {s.status === 'frozen' ? 'Muzlatilgan' : s.status}
