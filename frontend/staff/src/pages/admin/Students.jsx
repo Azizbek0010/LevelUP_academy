@@ -209,7 +209,7 @@ export default function AdminStudents() {
           </div>
         </div>
         {/* Status filter tabs */}
-        <div className="hidden sm:flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="hidden sm:flex items-center gap-1 p-1 rounded-[12px]" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           {[
             { key: 'all', label: 'Все', count: rows.length },
             { key: 'active', label: 'Активные', count: activeCount },
@@ -218,7 +218,7 @@ export default function AdminStudents() {
             <button
               key={f.key}
               onClick={() => setStatusFilter(f.key)}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200"
+              className="px-3 py-1.5 rounded-[12px] text-[11px] font-bold transition-all duration-200"
               style={{
                 background: statusFilter === f.key ? 'var(--green-bg)' : 'transparent',
                 color: statusFilter === f.key ? 'var(--green)' : 'var(--text-muted)',
@@ -229,17 +229,17 @@ export default function AdminStudents() {
           ))}
         </div>
         {/* View toggle */}
-        <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-1 p-1 rounded-[12px]" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <button
             onClick={() => setViewMode('card')}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+            className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
             style={{ background: viewMode === 'card' ? 'var(--green-bg)' : 'transparent', color: viewMode === 'card' ? 'var(--green)' : 'var(--text-muted)' }}
           >
             <LayoutGrid size={14} />
           </button>
           <button
             onClick={() => setViewMode('table')}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+            className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
             style={{ background: viewMode === 'table' ? 'var(--green-bg)' : 'transparent', color: viewMode === 'table' ? 'var(--green)' : 'var(--text-muted)' }}
           >
             <List size={14} />
@@ -329,14 +329,14 @@ export default function AdminStudents() {
                     </td>
                     <td>
                       <div className="flex items-center gap-1">
-                        <button className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] transition-all" title="Сбросить пароль" onClick={() => onRegen(s)}>
+                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] transition-all" title="Сбросить пароль" onClick={() => onRegen(s)}>
                           <KeyRound size={12} />
                         </button>
-                        <button className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] transition-all"
+                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] transition-all"
                           title={s.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => onFreeze(s)}>
                           {s.status === 'frozen' ? <Sun size={12} /> : <Snowflake size={12} />}
                         </button>
-                        <button className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger-light)] hover:text-[var(--danger)] transition-all" title="Удалить" onClick={() => onDelete(s)}>
+                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger-light)] hover:text-[var(--danger)] transition-all" title="Удалить" onClick={() => onDelete(s)}>
                           <Trash2 size={12} />
                         </button>
                       </div>

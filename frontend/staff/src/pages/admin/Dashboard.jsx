@@ -4,6 +4,7 @@ import {
   Wallet, TriangleAlert, Receipt, TrendingUp, Users, GraduationCap, Clock,
   UserPlus, FolderPlus, CreditCard, FileText, ArrowUpRight, ArrowDownRight,
   BarChart3, Sparkles, Activity, Zap, Star,
+  Sun, Moon, CloudSun, Sunrise,
 } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
@@ -190,11 +191,11 @@ export default function AdminDashboard() {
 
   const greeting = useMemo(() => {
     const h = new Date().getHours();
-    if (h < 6) return { text: 'Тунлар хайрли', emoji: '🌙' };
-    if (h < 12) return { text: 'Эрталаб хайрли', emoji: '☀️' };
-    if (h < 17) return { text: 'Кунда хайрли', emoji: '🌤' };
-    if (h < 21) return { text: 'Кеча хайрли', emoji: '🌅' };
-    return { text: 'Тунлар хайрли', emoji: '🌙' };
+    if (h < 6) return { text: 'Тунлар хайрли', icon: <Moon size={24} /> };
+    if (h < 12) return { text: 'Эрталаб хайрли', icon: <Sun size={24} /> };
+    if (h < 17) return { text: 'Кунда хайрли', icon: <CloudSun size={24} /> };
+    if (h < 21) return { text: 'Кеча хайрли', icon: <Sunrise size={24} /> };
+    return { text: 'Тунлар хайрли', icon: <Moon size={24} /> };
   }, []);
 
   if (isLoading) {
@@ -229,8 +230,8 @@ export default function AdminDashboard() {
       <div className="glass-strong rounded-[20px] p-6 relative overflow-hidden animate-fade-in">
         <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-15" style={{ background: 'linear-gradient(135deg, #C6FF34, #22c55e)' }} />
         <div className="relative flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ background: 'var(--green-bg)' }}>
-            {greeting.emoji}
+          <div className="w-14 h-14 rounded-[16px] flex items-center justify-center text-2xl shrink-0" style={{ background: 'var(--green-bg)' }}>
+            {greeting.icon}
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-extrabold" style={{ color: 'var(--text)' }}>
