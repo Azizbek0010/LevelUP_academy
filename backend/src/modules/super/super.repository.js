@@ -338,7 +338,7 @@ export function setMethodistStatus(id, orgId, status, client = pool) {
 export function getOrganization(orgId, client = pool) {
   return client
     .query(
-      `SELECT id, name, domain, status, plan, created_at
+      `SELECT id, name, domain, status, plan, lesson_duration_min, created_at
          FROM organizations
         WHERE id = $1 AND deleted_at IS NULL`,
       [orgId],
@@ -350,7 +350,11 @@ export function updateOrganization(orgId, fields, client = pool) {
   const cols = [];
   const vals = [];
   let i = 1;
-  for (const [key, col] of [['name', 'name'], ['domain', 'domain']]) {
+  for (const [key, col] of [
+    ['name', 'name'],
+    ['domain', 'domain'],
+    ['lessonDurationMin', 'lesson_duration_min'],
+  ]) {
     if (fields[key] !== undefined) {
       cols.push(`${col} = $${i++}`);
       vals.push(fields[key]);
@@ -362,7 +366,7 @@ export function updateOrganization(orgId, fields, client = pool) {
     .query(
       `UPDATE organizations SET ${cols.join(', ')}, updated_at = now()
         WHERE id = $${i} AND deleted_at IS NULL
-        RETURNING id, name, domain, status, plan, created_at`,
+        RETURNING id, name, domain, status, plan, lesson_duration_min, created_at`,
       vals,
     )
     .then((r) => r.rows[0] ?? null);

@@ -359,11 +359,32 @@ function mapMentor(m) {
 
 // ==================== ГРУППЫ ====================
 
+// start ("15:00") + длительность (мин) → end ("16:20"). Оборачивается на 24ч.
+function addMinutes(hhmm, minutes) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const total = (((h * 60 + m + minutes) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+// Вариант B: admin даёт дни + время начала, конец считает бэкенд из
+// длительности урока организации (её задаёт Super Admin).
+async function buildSchedule(branchId, days, startTime) {
+  const durationMin = await repo.getOrgLessonDuration(branchId);
+  const end = addMinutes(startTime, durationMin);
+  return days.map((day) => ({ day, start: startTime, end }));
+}
+
 export async function createGroup(branchId, body) {
   const mentor = await repo.findMentorInBranch(body.mentorId, branchId);
   if (!mentor) throw new AppError(404, 'Mentor not found in your branch');
-  const row = await repo.insertGroup({ branchId, ...body });
+  const schedule = await buildSchedule(branchId, body.days, body.startTime);
+  const { days, startTime, ...rest } = body;
+  const row = await repo.insertGroup({ branchId, ...rest, schedule });
   return mapGroup(row);
+}
+
+export async function getSettings(branchId) {
+  return { lessonDurationMin: await repo.getOrgLessonDuration(branchId) };
 }
 
 export async function listGroups(branchId, query) {
@@ -415,7 +436,11 @@ export async function updateGroup(branchId, id, body) {
     const mentor = await repo.findMentorInBranch(body.mentorId, branchId);
     if (!mentor) throw new AppError(404, 'Mentor not found in your branch');
   }
-  const row = await repo.updateGroup(id, branchId, body);
+  const { days, startTime, ...patch } = body;
+  if (days !== undefined && startTime !== undefined) {
+    patch.schedule = await buildSchedule(branchId, days, startTime);
+  }
+  const row = await repo.updateGroup(id, branchId, patch);
   return mapGroup(row);
 }
 
@@ -443,12 +468,17 @@ export async function removeGroupStudent(branchId, groupId, studentId) {
 }
 
 function mapGroup(g) {
+  const schedule = g.schedule ?? [];
   return {
     id: g.id,
     name: g.name,
     subject: g.subject,
     monthlyPrice: Number(g.monthly_price),
-    schedule: g.schedule,
+    schedule,
+    // производные поля для фронта: дни группы + единое время начала/конца
+    days: schedule.map((s) => s.day),
+    startTime: schedule[0]?.start ?? null,
+    endTime: schedule[0]?.end ?? null,
     room: g.room,
     isArchived: g.is_archived,
     createdAt: g.created_at,

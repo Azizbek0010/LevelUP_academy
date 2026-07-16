@@ -37,7 +37,6 @@
 | Elyor | Auth | Super Admin, Admin, Mentor, Methodist |
 | Said Islom | Super Admin (дашборд) | Auth, Admin, Mentor, Methodist |
 | Aziz | Super Admin (филиалы) | Auth, Admin, Mentor, Methodist |
-| sxvs | Super Admin (админы) | Auth, Admin, Mentor, Methodist |
 | Abduloh | Admin (студенты) | Auth, Super Admin, Mentor, Methodist |
 | Odil | Admin (группы) | Auth, Super Admin, Mentor, Methodist |
 | Hamidula | Admin (расходы) | Auth, Super Admin, Mentor, Methodist |
@@ -186,7 +185,7 @@ src/
 | Панель | Люди | Backend API | Канон-контракт |
 |--------|------|-------------|----------------|
 | **Auth** | Elyor | K-AUTH ✅ | §7 этого файла |
-| **Super Admin** | Said Islom, Aziz, sxvs | K-SUPER ✅ | §8 этого файла |
+| **Super Admin** | **Karis** (доводит/стилизует, закрыто для остальных) | K-SUPER ✅ | §8 этого файла |
 | **Admin** | Abduloh, Odil, Hamidula | K-ADMIN ✅ (платежи ⏳) | §9 этого файла |
 | **Mentor** | Sardor, Kozim, Alish | AB-MENTOR ✅ | §10 этого файла |
 | **Methodist** | Azizbek (Karis) | AB-METHODIST ✅ | §11 этого файла |
@@ -199,6 +198,12 @@ src/
 
 **Панель:** Auth (общая для всех ролей)
 **Backend:** Karis, K-AUTH — ✅ готов
+
+### 🆕 Открытые задачи (подтверждено Karis, 2026-07-15)
+
+- [ ] **Login-страницы (main/staff/member)** — доделать и запушить в свою ветку `elyor`; в `main` НЕ мержить сам → Karis вливает через `save-zone`.
+- [ ] **Auto-refresh `401 → refresh → retry`** — 🔴 важно: сейчас auth рефрешит токен только при загрузке страницы, интерцептора на 401 нет. Добавить в `api.js` (единый `refreshPromise`, `credentials:'include'`). Access-токен теперь живёт 1 час.
+- [ ] **Redux authSlice — НЕ нужен.** `useAuth()` context для auth достаточно; Redux только позже, если понадобится для socket/общего UI. Пока продолжать на context.
 
 ### Задачи
 
@@ -243,7 +248,9 @@ src/
 
 ---
 
-## 8. Super Admin — Said Islom, Aziz, sxvs
+## 8. Super Admin — Karis
+
+> 🔒 **Панель Super Admin — задача Karis.** Shohjahon её собрал (богатые страницы), Karis доводит/стилизует и закрывает. **Остальным не трогать** (Said Islom, Aziz переведены в Methodist). Разделы 8.1–8.2 ниже — исторический API-контракт, теперь под Karis.
 
 **Панель:** Super Admin (владелец организации, видит ВСЕ филиалы)
 **Backend:** Karis, K-SUPER — ✅ готов
@@ -295,29 +302,6 @@ src/
 - [ ] Архивация/разархивация корректно прячет/возвращает кнопки мутаций
 - [ ] После мутаций — инвалидация кэша TanStack Query
 
-### 8.3 sxvs — Админы + Отчёты
-
-#### Страницы
-
-- **Admins** (`/superadmin/admins`): CRUD админов, email+пароль задаёт Super Admin вручную, выбор филиала, freeze
-- **Org Reports** (`/superadmin/reports`): выручка и долги по филиалам из `/api/super/dashboard`
-- **Settings** (`/superadmin/settings`): профиль организации — заглушка (эндпоинта пока нет)
-
-#### API
-
-- `POST /api/super/admins` — `{ firstName, lastName, email, password, branchId, phone? }` → `201`
-- `GET /api/super/admins` → `{ admins:[...] }`
-- `PATCH /api/super/admins/:id` — `{ firstName?, lastName?, branchId?, phone? }` (правка/перенос)
-- `PATCH /api/super/admins/:id/freeze` — `{ frozen:true|false }`
-
-#### Definition of Done
-
-- [ ] CRUD админов + привязка/перенос к филиалу + freeze
-- [ ] Отчёты рисуют графики по `/api/super/dashboard` (revenue пока 0 — EmptyState ок)
-- [ ] Пустые состояния и skeleton на месте
-
----
-
 ## 9. Admin — Abduloh, Odil, Hamidula
 
 **Панель:** Admin (один филиал: финансы, студенты, группы)
@@ -358,12 +342,22 @@ src/
 - **Group Detail** (`/admin/groups/:id`): состав, ментор, add/remove студента, бейдж «Архив»
 - **Reports** (`/admin/reports`): выручка/долги/прибыль из `/api/admin/dashboard`
 
+#### 🆕 Форма группы — расписание (день + время, бэкенд готов)
+
+При создании/правке группы:
+- **Ментор** — обязателен (селектор из `GET /api/admin/mentors`).
+- **Дни:** быстрые пресеты **1-3-5** (`["mon","wed","fri"]`) и **2-4-6** (`["tue","thu","sat"]`) + кнопка «другие дни» → галочки `mon..sun` (любой набор).
+- **Время начала** — админ вводит (напр. `15:00`).
+- **Конец урока — НЕ вводится**, показывается превью: возьми длительность из `GET /api/admin/settings` → `{ lessonDurationMin }` (её задаёт Super Admin), посчитай `start + duration` (напр. 15:00 + 80 = 16:20). Реальный конец всё равно считает бэкенд — превью только для UX.
+- Позже день/время/ментора можно менять тем же PATCH.
+
 #### API
 
-- `GET /api/admin/groups?page&limit` → `{ groups, meta }`
-- `POST /api/admin/groups` — `{ name, subject, mentorId, monthlyPrice, schedule?, room? }` → `201`
+- `GET /api/admin/settings` → `{ lessonDurationMin }` — длительность урока для превью конца
+- `GET /api/admin/groups?page&limit` → `{ groups, meta }` (в группе теперь `days[]`, `startTime`, `endTime` + `schedule[]`)
+- `POST /api/admin/groups` — `{ name, subject, mentorId, monthlyPrice, days:["mon","wed","fri"], startTime:"15:00", room? }` → `201`
 - `GET /api/admin/groups/:id` → `{ group }` (+ `students[]`)
-- `PATCH /api/admin/groups/:id`
+- `PATCH /api/admin/groups/:id` — те же поля, `days` и `startTime` слать **только вместе**
 - `POST /api/admin/groups/:id/archive` · `POST /api/admin/groups/:id/unarchive`
 - `POST /api/admin/groups/:id/students` `{ studentId }` · `DELETE /api/admin/groups/:id/students/:studentId`
 - `GET /api/admin/mentors` — менторы для селектора
@@ -371,6 +365,9 @@ src/
 #### Definition of Done
 
 - [ ] CRUD групп + archive/unarchive (archiveGuard 403 ловится глобальным toast)
+- [ ] 🆕 Форма группы: обязательный ментор + дни (пресеты 1-3-5 / 2-4-6 + «другие дни» галочки) + время начала
+- [ ] 🆕 Превью конца урока = `startTime` + `lessonDurationMin` (из `/api/admin/settings`), пересчёт вживую
+- [ ] 🆕 Правка группы: менять день/время/ментора (`days`+`startTime` вместе)
 - [ ] Group Detail: состав, ментор, add/remove студента
 - [ ] Отчёты по филиалу из `/api/admin/dashboard`
 
