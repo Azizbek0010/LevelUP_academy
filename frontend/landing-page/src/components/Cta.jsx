@@ -1,21 +1,22 @@
 import { Link } from 'react-router-dom';
 import Icon from './Icon.jsx';
+import { useLocalizePath, useT } from '../i18n/index.js';
 
-export default function Cta({
-  title = 'Готовы навести порядок в центре?',
-  text = 'Подключите LevelUp Academy и перенесите платежи, учёбу и мотивацию в одну систему уже сегодня.',
-}) {
+export default function Cta({ title, text }) {
+  const t = useT();
+  const lp = useLocalizePath();
+
   return (
     <section className="cta">
       <div className="container">
-        <h2>{title}</h2>
-        <p>{text}</p>
-        <Link to="/landing/contacts" className="btn btn--dark btn--lg">
-          Связаться с нами
+        <h2>{title ?? t.cta.defaultTitle}</h2>
+        <p>{text ?? t.cta.defaultText}</p>
+        <Link to={lp('/landing/contacts')} className="btn btn--dark btn--lg">
+          {t.cta.button}
         </Link>
         <div className="trial-note trial-note--cta">
           <Icon name="check" size={16} />
-          Первая неделя — бесплатно, без карты и обязательств
+          {t.common.trial}
         </div>
       </div>
     </section>

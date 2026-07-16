@@ -1,18 +1,26 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, TrendingUp, Wifi, CalendarCheck, ClipboardCheck, Coins,
-  GraduationCap, Wallet, Receipt, UserCog,
+  LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, TrendingUp,
+  Wifi, CalendarCheck, ClipboardCheck, Coins, GraduationCap, Wallet, Receipt, UserCog,
+  UsersRound, Megaphone, AlarmClock, ShieldAlert, PieChart,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { useOnlineCount, disconnectSocket } from '../socket.js';
 
 const superNav = [
-  { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
-  { to: '/branches', label: 'Филиалы', Icon: Building2 },
-  { to: '/admins', label: 'Админы', Icon: Users },
-  { to: '/reports', label: 'Аналитика', Icon: BarChart3 },
-  { to: '/settings', label: 'Настройки', Icon: Settings },
+  { to: '/',             label: 'Дашборд',      Icon: LayoutDashboard, end: true },
+  { to: '/branches',     label: 'Филиалы',       Icon: Building2 },
+  { to: '/admins',       label: 'Сотрудники',    Icon: Users },
+  { to: '/students',     label: 'Студенты',      Icon: GraduationCap,  soon: true },
+  { to: '/groups',       label: 'Группы',        Icon: UsersRound,     soon: true },
+  { to: '/attendance',   label: 'Посещаемость',  Icon: CalendarCheck,  soon: true },
+  { to: '/reports',      label: 'Аналитика',     Icon: BarChart3 },
+  { to: '/stats',        label: 'Статистика',    Icon: PieChart,       soon: true },
+  { to: '/announcements',label: 'Объявления',    Icon: Megaphone,      soon: true },
+  { to: '/reminders',    label: 'Напоминания',   Icon: AlarmClock,     soon: true },
+  { to: '/audit',        label: 'Аудит',         Icon: ShieldAlert,    soon: true },
+  { to: '/settings',     label: 'Настройки',     Icon: Settings },
 ];
 
 const adminNav = [
@@ -65,7 +73,7 @@ function SidebarContent({ role }) {
         </div>
       </div>
       <nav className="flex-1 px-3 space-y-1 mt-2">
-        {nav.map(({ to, label, Icon, end }) => (
+        {nav.map(({ to, label, Icon, end, soon }) => (
           <NavLink
             key={to}
             to={to}
@@ -74,12 +82,19 @@ function SidebarContent({ role }) {
               `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-colors ${
                 isActive
                   ? 'bg-primary text-primary-content font-semibold shadow'
+                  : soon
+                  ? 'text-neutral-content/35 hover:text-neutral-content/55'
                   : 'text-neutral-content/75 hover:bg-white/10 hover:text-neutral-content'
               }`
             }
           >
             <Icon size={18} strokeWidth={2} />
-            {label}
+            <span className="flex-1">{label}</span>
+            {soon && (
+              <span className="text-[9px] bg-warning/20 text-warning/80 px-1.5 py-0.5 rounded font-bold tracking-wide uppercase">
+                скоро
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

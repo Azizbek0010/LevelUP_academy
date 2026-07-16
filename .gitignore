@@ -25,3 +25,7 @@ Thumbs.db
 nul
 NUL
 Nul
+
+# tooling junk
+.playwright-mcp/
+**/.vite/

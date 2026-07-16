@@ -1,7 +1,13 @@
 User-agent: *
 Allow: /
 
-# AI / LLM crawlers — explicitly welcome (GEO / AI search)
+# AI / LLM crawlers — explicitly welcome (GEO / AEO).
+# Two kinds, and both matter:
+#   *Bot, *-Extended   — training / index crawlers
+#   *-User, *SearchBot — live fetch when a user asks the assistant something.
+#                        This is the one that produces the citation.
+
+# OpenAI
 User-agent: GPTBot
 Allow: /
 
@@ -11,22 +17,45 @@ Allow: /
 User-agent: ChatGPT-User
 Allow: /
 
+# Anthropic (Claude-Web is retired — superseded by the three below)
 User-agent: ClaudeBot
 Allow: /
 
-User-agent: Claude-Web
+User-agent: Claude-User
 Allow: /
 
+User-agent: Claude-SearchBot
+Allow: /
+
+# Perplexity
 User-agent: PerplexityBot
 Allow: /
 
+User-agent: Perplexity-User
+Allow: /
+
+# Google — AI Overviews / Gemini grounding
 User-agent: Google-Extended
+Allow: /
+
+# Apple Intelligence
+User-agent: Applebot
 Allow: /
 
 User-agent: Applebot-Extended
 Allow: /
 
+# Meta AI
+User-agent: meta-externalagent
+Allow: /
+
+# Amazon
+User-agent: Amazonbot
+Allow: /
+
+# Common Crawl — feeds many LLM training sets
 User-agent: CCBot
 Allow: /
 
+# Plain-language summary for LLMs: https://levelup-academy.uz/llms.txt
 Sitemap: https://levelup-academy.uz/sitemap.xml

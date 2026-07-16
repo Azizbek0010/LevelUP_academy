@@ -127,3 +127,11 @@ export const listGroupsQuery = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
 });
+
+// ---------- объявления ----------
+// Без groupId — рассылка всем активным студентам/родителям филиала.
+export const createAnnouncementSchema = z.object({
+  title: z.string().trim().min(1).max(160),
+  message: z.string().trim().min(1).max(2000),
+  groupId: z.string().uuid('Invalid groupId').optional(),
+});
