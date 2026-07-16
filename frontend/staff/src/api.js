@@ -699,6 +699,27 @@ export const api = {
   adminUpdateMentor: (token, id, body) => request(`/admin/mentors/${id}`, { method: 'PATCH', token, body }),
   adminFreezeMentor: (token, id, frozen) => request(`/admin/mentors/${id}/freeze`, { method: 'POST', token, body: { frozen } }),
   adminDeleteMentor: (token, id) => request(`/admin/mentors/${id}`, { method: 'DELETE', token }),
+  adminRegenStudentPassword: (token, id) => request(`/admin/students/${id}/regenerate-password`, { method: 'POST', token }),
+
+  // -------- ADMIN: Groups — add/remove students --------
+  adminAddStudentToGroup: (token, groupId, studentId) =>
+    request(`/admin/groups/${groupId}/students`, { method: 'POST', token, body: { studentId } }),
+  adminRemoveStudentFromGroup: (token, groupId, studentId) =>
+    request(`/admin/groups/${groupId}/students/${studentId}`, { method: 'DELETE', token }),
+
+  // -------- ADMIN: Payments (invoices) --------
+  adminInvoices: (token, qs = '') => request(`/admin/payments/invoices${qs}`, { token }),
+  adminPayInvoice: (token, invoiceId, body) =>
+    request(`/admin/payments/invoices/${invoiceId}/pay`, { method: 'POST', token, body }),
+
+  // -------- ADMIN: Payments (refund / void) --------
+  adminRefundTransaction: (token, transactionId, body) =>
+    request(`/admin/payments/transactions/${transactionId}/refund`, { method: 'POST', token, body }),
+  adminVoidTransaction: (token, transactionId, body) =>
+    request(`/admin/payments/transactions/${transactionId}/void`, { method: 'POST', token, body }),
+
+  // -------- ADMIN: Reports --------
+  adminReports: (token, qs = '') => request(`/admin/reports${qs}`, { token }),
 
   // -------- SUPER ADMIN --------
   superDashboard: (token) => request('/super/dashboard', { token }),
