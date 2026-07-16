@@ -21,6 +21,7 @@ const PAGES = [
   '/landing/features',
   '/landing/roles',
   '/landing/finance',
+  '/landing/pricing',
   '/landing/gamification',
   '/landing/contacts',
 ];

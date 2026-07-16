@@ -12,6 +12,7 @@ export default {
     features: 'Imkoniyatlar',
     roles: 'Rollar',
     finance: 'Moliya',
+    pricing: 'Tariflar',
     gamification: 'Motivatsiya',
     contacts: 'Aloqa',
     home: 'Bosh sahifa',
@@ -468,6 +469,109 @@ export default {
     ctaText: "Ariza qoldiring — LevelUp Academy to'lovlar va qarzdorlarni qanday yuritishini tushuntiramiz.",
   },
 
+  pricing: {
+    badge: 'Tariflar',
+    h1: 'Markazdagi tartib uchun halol narx',
+    lead: "Narx faol o'quvchilar soniga qarab belgilanadi — filiallar cheksiz kiradi. Har bir filial uchun qo'shimcha to'lov va yashirin foizlar yo'q.",
+    positioning:
+      "Biz eng arzon CRM emasmiz — va bo'lishga urinmaymiz ham. Narx — bu sifat: xavfsiz to'lovlar, har kunlik zaxira nusxa va bir haftada ishga tushirish. Markazingiz ishonchliligi uchun ikki marta to'lamaysiz.",
+
+    plansHead: "Tariflar — o'quvchilar soniga qarab",
+    plansLead:
+      "Faol o'quvchilar soniga mos tarifni tanlang. O'sib ketsangiz — keyingisiga o'tasiz, tarix saqlanadi.",
+    free: 'Bepul',
+    negotiable: 'Kelishuv asosida',
+    per: "so'm/oyiga",
+    popular: 'Ommabop',
+    cardCta: 'Ariza qoldirish',
+    plans: [
+      { id: 'free', name: 'Free', amount: 0, range: "0–30 o'quvchi" },
+      { id: 'start', name: 'Start', amount: 199000, range: "31–100 o'quvchi" },
+      { id: 'standard', name: 'Standard', amount: 349000, range: "101–300 o'quvchi", popular: true },
+      { id: 'pro', name: 'Pro', amount: 599000, range: "301–600 o'quvchi" },
+      { id: 'business', name: 'Business', amount: 799000, range: "601–1000 o'quvchi" },
+      { id: 'network', name: 'Network', amount: null, range: "1000+ o'quvchi" },
+    ],
+    perksHead: 'Har bir tarifga kiradi',
+    perks: [
+      'Filiallar cheksiz kiradi',
+      "Yillik to'lov — 15% chegirma",
+      "Birinchi hafta bepul, to'liq kirish",
+    ],
+
+    trialHead: 'Birinchi hafta — bepul',
+    trialLead: "Hammasini jonli sinab ko'ring — xavfsiz va kartasiz.",
+    trial: [
+      {
+        icon: 'check',
+        title: "To'liq funksiya",
+        text: "Barcha modullar cheklovsiz: to'lovlar, davomat, testlar, koinlar, chatlar va hisobotlar — pullik tarifdek.",
+      },
+      {
+        icon: 'shield',
+        title: 'Karta kerak emas',
+        text: "Kartani biriktirish va avto-yechishlar yo'q. Hafta tugaydi — hech narsa o'zi yechilmaydi.",
+      },
+    ],
+
+    guaranteeHead: 'Bizning kafolatlarimiz',
+    guaranteeLead: "Xavfni o'z zimmamizga olamiz — sizga faqat natija qoladi.",
+    guarantee: [
+      {
+        icon: 'refresh',
+        title: '30 kun ichida qaytarish',
+        text: "Yoqmadimi? 30 kun ichida to'lovni 100% qaytaramiz — hech qanday shartsiz.",
+      },
+      {
+        icon: 'shield',
+        title: "Ma'lumot yo'qolmaydi",
+        text: "Har kuni barcha ma'lumotlaringizning zaxira nusxasi. To'lovlar, baholar va o'quvchilar tarixi xavfsiz.",
+      },
+      {
+        icon: 'rocket',
+        title: 'Bir haftada ishga tushirish',
+        text: "Markazingizni 7 kunda sozlab ishga tushiramiz. Ulgurmasak — keyingi oy bepul.",
+      },
+    ],
+
+    extraHead: "Markaz uchun o'z brendingizda sayt",
+    extraText:
+      "Markazingizga o'z firma uslubida alohida sayt va dizayn qilib beramiz — bizning platformamizda. Alohida xizmat: markaz vazifalariga qarab individual kelishiladi.",
+    extraCta: 'Sayt haqida gaplashish',
+
+    faqHead: 'Narx haqida savollar',
+    faq: [
+      {
+        q: 'LevelUp Academy narxi qancha?',
+        a: "Narx faqat faol o'quvchilar soniga bog'liq: Free (30 tagacha) — bepul, Start (31–100) — 199 000 so'm/oyiga, Standard (101–300) — 349 000, Pro (301–600) — 599 000, Business (601–1000) — 799 000. 1000 dan ortiq o'quvchi — kelishuv asosida.",
+      },
+      {
+        q: "Filiallar soni narxga ta'sir qiladimi?",
+        a: "Yo'q. Filiallar har bir tarifga cheksiz kiradi — siz har bir filial uchun emas, faqat faol o'quvchilar soni uchun to'laysiz.",
+      },
+      {
+        q: 'Bepul davr bormi?',
+        a: "Ha, birinchi hafta to'liq funksiya bilan va cheklovsiz bepul. Karta kerak emas, avto-yechishlar yo'q.",
+      },
+      {
+        q: "Yillik to'lovda chegirma bormi?",
+        a: "Ha, yillik to'lovda tarif summasidan 15% chegirma qo'llaniladi.",
+      },
+      {
+        q: "Tizim to'g'ri kelmasa-chi?",
+        a: "Qaytarish kafolati amal qiladi: 30 kun ichida to'lovni 100% qaytaramiz, hech qanday shartsiz.",
+      },
+      {
+        q: "Ma'lumotlarimiz nima bo'ladi?",
+        a: "Biz har kuni zaxira nusxa olamiz. To'lovlar, baholar, davomat va o'quvchilar tarixi yo'qolmaydi — arxiv yozuvlari ham hisobotlar uchun ochiq qoladi.",
+      },
+    ],
+
+    ctaTitle: 'Tarifingizni hisoblashga tayyormisiz?',
+    ctaText:
+      "Ariza qoldiring — markazingiz hajmiga mos tarifni tanlaymiz va birinchi haftani bepul ulaymiz.",
+  },
+
   gamification: {
     badge: 'Motivatsiya',
     h1: "O'quvchilar zerikib o'tirmaydi, musobaqalashadi",
@@ -613,6 +717,11 @@ export default {
       title: "Markaz moliyasi va to'lovlari | LevelUp Academy",
       description:
         "Naqd va karta bilan split-to'lovlar, invoyslar, bulutdagi cheklar, qarz nazorati va tushum bo'yicha jonli hisobotlar. O'quv markazi puli — bir tiyingacha.",
+    },
+    pricing: {
+      title: "Tariflar va narxlar — o'quv markazi uchun CRM | LevelUp",
+      description:
+        "LevelUp Academy narxlari: 30 o'quvchigacha bepul, keyin 199 000 so'm/oyidan. Narx o'quvchilar soniga qarab, filiallar cheksiz kiradi, birinchi hafta bepul.",
     },
     gamification: {
       title: 'Motivatsiya va geymifikatsiya | LevelUp Academy',

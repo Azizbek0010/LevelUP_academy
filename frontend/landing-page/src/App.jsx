@@ -6,6 +6,7 @@ import Home from './pages/Home.jsx';
 import Features from './pages/Features.jsx';
 import Roles from './pages/Roles.jsx';
 import Finance from './pages/Finance.jsx';
+import Pricing from './pages/Pricing.jsx';
 import Gamification from './pages/Gamification.jsx';
 import Contacts from './pages/Contacts.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -20,6 +21,7 @@ export const PAGES = [
   { path: '/landing/features', element: <Features /> },
   { path: '/landing/roles', element: <Roles /> },
   { path: '/landing/finance', element: <Finance /> },
+  { path: '/landing/pricing', element: <Pricing /> },
   { path: '/landing/gamification', element: <Gamification /> },
   { path: '/landing/contacts', element: <Contacts /> },
 ];

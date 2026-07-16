@@ -7,7 +7,7 @@
 - **Search Console:** domain-property `sc-domain:levelup-academy.uz` (владельцы: thermidorplus@gmail.com, amangeldiev.azizbek.010@gmail.com)
 - **GA4:** `G-RWCK0B6TXP` (ресурс `levelup-1c059 / 544460142`), связан с GSC
 - **Bing Webmaster:** импортирован из GSC, sitemap отправлен
-- Обновлено: 2026-07-15
+- Обновлено: 2026-07-16
 
 ---
 
@@ -22,6 +22,7 @@
 | `noindex` на всех приватных панелях (main-admin, student) + API | панели + `backend/src/app.js` | 14.07 |
 | staff и member: индексируется ТОЛЬКО `/login` (чтобы пользователь находил вход через Google), остальное `noindex` | `staff/`, `member/` (robots + vercel.json + index.html + sitemap) | 15.07 |
 | Узбекская версия `/uz` — i18n, hreflang, 12 prerendered страниц | `src/i18n/`, `App.jsx` | 14–15.07 |
+| **Страница тарифов** `/landing/pricing` (+`/uz/...`) — реальные цены, Offer/AggregateOffer + FAQPage schema.org, акцент на гарантии | `pages/Pricing.jsx`, `i18n/`, sitemap | 16.07 |
 | GSC: sitemap отправлен, GA4 связан, prerender подтверждён (Google видит текст) | — | 15.07 |
 | Bing: сайт добавлен (импорт из GSC), sitemap отправлен | — | 15.07 |
 
@@ -34,10 +35,9 @@
 
 ### P1 — брать первым
 
-- [ ] **Страница тарифов** (`/landing/pricing` + `/uz/...`). Запрос «сколько стоит / narxi» —
-      частый, коммерческий, низкая конкуренция. Offer-разметка schema.org (её читают AI).
-      **Блокер: нужны реальные цены** — модель (за филиал / за ученика / фикс), тарифы,
-      что входит в бесплатную неделю.
+- [x] ~~**Страница тарифов** (`/landing/pricing` + `/uz/...`)~~ — ✅ 16.07. Реальные цены получены
+      (фикс по бакету учеников, совпадает с `backend/config/plans.js` TIERS), Offer/AggregateOffer +
+      FAQPage schema.org, акцент на гарантии (возврат 30 дней, бэкап, запуск за неделю). Блокер снят.
 - [ ] **Ниша «для языковой школы»** (`/landing/for-language-school` + `/uz/...`). Запрос
       «программа для языковой школы» / «til markazi uchun dastur». Крупнейший и наименее
       конкурентный сегмент в UZ; узбекская версия — шанс в топ быстрее русской. Цены не нужны.
@@ -71,6 +71,8 @@
       Нужен реальный handle.
 - [ ] **GSC: запросить индексацию 6 узбекских URL** (`/uz/landing`, `.../features`, `.../roles`,
       `.../finance`, `.../gamification`, `.../contacts`). Ручное действие в браузере.
+- [ ] **GSC: запросить индексацию 2 URL тарифов** (`/landing/pricing`, `/uz/landing/pricing`)
+      после деплоя. Приоритетные — коммерческий запрос «сколько стоит / narxi».
 - [ ] **После деплоя staff/member: проверить, что индексируется ТОЛЬКО `/login`.**
       `curl -sI https://staff.levelup-academy.uz/login` → НЕТ `X-Robots-Tag`;
       `curl -sI https://staff.levelup-academy.uz/` → ЕСТЬ `X-Robots-Tag: noindex`.
@@ -102,9 +104,9 @@
 
 ## ⛅ Ждём входных данных от Abdulaziz
 
-- **Цены/тарифы** — разблокирует страницу тарифов (P1).
+- ~~**Цены/тарифы**~~ — ✅ получены 16.07, страница тарифов сделана.
 - **Telegram-handle** — для футера.
-- **Носитель узбекского** — вычитать `i18n/uz.js`.
+- **Носитель узбекского** — вычитать `i18n/uz.js` (теперь и блок `pricing`).
 
 ---
 
