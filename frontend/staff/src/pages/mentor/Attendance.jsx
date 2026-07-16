@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Check, X, Plus, CalendarCheck, Users, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, X, Plus, CalendarCheck, Users, Search, Coins, Star } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader.jsx';
 import { useMentorGroups, useMentorGroupStudents, useMentorAttendance } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
@@ -91,7 +92,9 @@ export default function MentorAttendance() {
   const { data: groupsData } = useMentorGroups();
   const groups = groupsData?.data || [];
 
-  const [selectedGroupId, setSelectedGroupId] = useState(groups[0]?.id || '');
+  const [searchParams] = useSearchParams();
+  const urlGroupId = searchParams.get('groupId');
+  const [selectedGroupId, setSelectedGroupId] = useState(urlGroupId || groups[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
   const { data: rosterData } = useMentorGroupStudents(selectedGroupId);
   const students = rosterData?.data || [];
@@ -103,12 +106,18 @@ export default function MentorAttendance() {
   const [month, setMonth] = useState(now.getMonth());
   const [saving, setSaving] = useState(false);
 
-  // Generate 14 days for the calendar
+  // Generate 14 days for the calendar — start from today if viewing current month, else from 1st
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const DAYS = Array.from({ length: Math.min(14, daysInMonth) }, (_, i) => i + 1);
+  const startDay = (year === now.getFullYear() && month === now.getMonth()) ? now.getDate() : 1;
+  const DAYS = Array.from({ length: Math.min(14, daysInMonth - startDay + 1) }, (_, i) => startDay + i);
 
   // Attendance data keyed by student_id + date
   const [attendanceMap, setAttendanceMap] = useState({});
+
+  // Coin modal state
+  const [coinStudent, setCoinStudent] = useState(null);
+  const [coinAmount, setCoinAmount] = useState('');
+  const [coinSaving, setCoinSaving] = useState(false);
 
   // Load attendance for the date range
   const from = `${year}-${String(month + 1).padStart(2, '0')}-01`;
@@ -120,6 +129,33 @@ export default function MentorAttendance() {
   const filteredGroups = groups.filter((g) =>
     g.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Sort groups by lesson_time: future lessons first (soonest first), then past lessons, then no-time groups
+  const sortedGroups = [...filteredGroups].sort((a, b) => {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const aTime = a.lesson_time;
+    const bTime = b.lesson_time;
+
+    // No lesson_time → go to bottom
+    if (!aTime && !bTime) return 0;
+    if (!aTime) return 1;
+    if (!bTime) return -1;
+
+    const aMinutes = parseInt(aTime.split(':')[0]) * 60 + parseInt(aTime.split(':')[1]);
+    const bMinutes = parseInt(bTime.split(':')[0]) * 60 + parseInt(bTime.split(':')[1]);
+
+    const aIsFuture = aMinutes > currentMinutes;
+    const bIsFuture = bMinutes > currentMinutes;
+
+    // Future lessons first
+    if (aIsFuture && !bIsFuture) return -1;
+    if (!aIsFuture && bIsFuture) return 1;
+
+    // Both future or both past → sort by time ascending
+    return aMinutes - bMinutes;
+  });
 
   // Update selectedGroupId when groups first load
   useEffect(() => {
@@ -250,7 +286,7 @@ export default function MentorAttendance() {
         <div className="flex flex-col lg:flex-row min-h-[500px]">
           {/* ─── LEFT: Groups sidebar ─── */}
           <GroupSidebar
-            groups={filteredGroups}
+            groups={sortedGroups}
             selectedGroupId={selectedGroupId}
             onSelectGroup={setSelectedGroupId}
             searchQuery={searchQuery}
@@ -284,7 +320,40 @@ export default function MentorAttendance() {
                     <button className="btn btn-ghost btn-xs btn-square" onClick={nextMonth}>
                       <ChevronRight size={15} />
                     </button>
+                    {(month !== now.getMonth() || year !== now.getFullYear()) && (
+                      <button
+                        className="btn btn-primary btn-xs ml-2"
+                        onClick={() => { setMonth(now.getMonth()); setYear(now.getFullYear()); }}
+                      >
+                        Bugun
+                      </button>
+                    )}
                   </div>
+                </div>
+
+                {/* Quick actions */}
+                <div className="shrink-0 px-5 py-2 border-b border-base-200 flex items-center justify-between bg-base-100/60">
+                  <div className="text-xs text-base-content/50">
+                    {students.length} o'quvchi
+                  </div>
+                  {DAYS.includes(now.getDate()) && (
+                    <button
+                      className="btn btn-ghost btn-xs gap-1.5 text-success"
+                      onClick={() => {
+                        const todayDate = now.getDate();
+                        setAttendanceMap((prev) => {
+                          const next = { ...prev };
+                          students.forEach((s) => {
+                            const key = `${s.id}_${year}-${String(month + 1).padStart(2, '0')}-${String(todayDate).padStart(2, '0')}`;
+                            next[key] = 'present';
+                          });
+                          return next;
+                        });
+                      }}
+                    >
+                      <Check size={12} /> Hammasini keldi qilish
+                    </button>
+                  )}
                 </div>
 
                 {/* Attendance table */}
@@ -337,6 +406,16 @@ export default function MentorAttendance() {
                                     </span>
                                   )}
                                 </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="text-[11px] font-semibold text-amber-500">{s.coin_balance ?? 0}</span>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setCoinStudent(s); setCoinAmount(''); }}
+                                    className="w-6 h-6 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-600 grid place-items-center transition-colors"
+                                    title="Coin berish"
+                                  >
+                                    <Coins size={12} />
+                                  </button>
+                                </div>
                               </div>
                             </td>
                             {DAYS.map((d) => {
@@ -371,6 +450,134 @@ export default function MentorAttendance() {
                       {saving ? <span className="loading loading-spinner loading-sm" /> : <Check size={16} />}
                       Saqlash
                     </button>
+                  </div>
+                )}
+
+                {/* Coin modal */}
+                {coinStudent && (
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+                    onClick={() => setCoinStudent(null)}
+                  >
+                    <div
+                      className="bg-base-100 rounded-2xl shadow-xl p-5 w-72 mx-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className="w-9 h-9 rounded-full bg-amber-100 text-amber-600 grid place-items-center text-sm font-bold">
+                          <Coins size={18} />
+                        </span>
+                        <div>
+                          <h3 className="font-bold text-sm">{coinStudent.first_name} {coinStudent.last_name}</h3>
+                          <p className="text-xs text-base-content/50">Balans: <span className="font-semibold text-amber-500">{coinStudent.coin_balance ?? 0} 🪙</span></p>
+                        </div>
+                      </div>
+
+                      {/* Qo'shish tugmalari */}
+                      <p className="text-xs font-semibold text-green-600 mb-2">Qo'shish</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[5, 10, 15, 20, 25, 30].map((val) => (
+                          <button
+                            key={val}
+                            className="btn btn-sm bg-green-50 hover:bg-green-100 text-green-700 border-green-200 gap-0"
+                            disabled={coinSaving}
+                            onClick={async () => {
+                              setCoinSaving(true);
+                              try {
+                                await api.mentorGrantCoins(token, {
+                                  studentId: coinStudent.id,
+                                  amount: val,
+                                  reason: 'Coin',
+                                });
+                                qc.invalidateQueries({ queryKey: ['mentor-group-students', selectedGroupId] });
+                                setCoinStudent(null);
+                              } catch (err) {
+                                alert(err.message || 'Xatolik yuz berdi');
+                              } finally {
+                                setCoinSaving(false);
+                              }
+                            }}
+                          >
+                            +{val}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* O'rtada yozish inputi */}
+                      <div className="my-3 flex items-center gap-2">
+                        <input
+                          type="number"
+                          className="input input-bordered input-sm flex-1 text-center"
+                          placeholder="Miqdor"
+                          value={coinAmount}
+                          onChange={(e) => setCoinAmount(e.target.value)}
+                          autoFocus
+                        />
+                        <button
+                          className="btn btn-sm btn-primary gap-1"
+                          disabled={coinSaving || !coinAmount}
+                          onClick={async () => {
+                            const val = Number(coinAmount);
+                            if (!val || isNaN(val)) return;
+                            setCoinSaving(true);
+                            try {
+                              await api.mentorGrantCoins(token, {
+                                studentId: coinStudent.id,
+                                amount: val,
+                                reason: 'Coin',
+                              });
+                              qc.invalidateQueries({ queryKey: ['mentor-group-students', selectedGroupId] });
+                              setCoinStudent(null);
+                            } catch (err) {
+                              alert(err.message || 'Xatolik yuz berdi');
+                            } finally {
+                              setCoinSaving(false);
+                            }
+                          }}
+                        >
+                          <Star size={13} /> Berish
+                        </button>
+                      </div>
+
+                      {/* Ayirish tugmalari */}
+                      <p className="text-xs font-semibold text-red-600 mb-2">Ayirish</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[5, 10, 15, 20, 25, 30].map((val) => (
+                          <button
+                            key={val}
+                            className="btn btn-sm bg-red-50 hover:bg-red-100 text-red-700 border-red-200 gap-0"
+                            disabled={coinSaving}
+                            onClick={async () => {
+                              setCoinSaving(true);
+                              try {
+                                await api.mentorGrantCoins(token, {
+                                  studentId: coinStudent.id,
+                                  amount: -val,
+                                  reason: 'Coin',
+                                });
+                                qc.invalidateQueries({ queryKey: ['mentor-group-students', selectedGroupId] });
+                                setCoinStudent(null);
+                              } catch (err) {
+                                alert(err.message || 'Xatolik yuz berdi');
+                              } finally {
+                                setCoinSaving(false);
+                              }
+                            }}
+                          >
+                            -{val}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="mt-4">
+                        <button
+                          className="btn btn-sm w-full"
+                          onClick={() => setCoinStudent(null)}
+                        >
+                          Bekor qilish
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </>

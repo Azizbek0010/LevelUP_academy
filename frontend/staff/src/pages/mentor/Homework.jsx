@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ClipboardCheck, Search, ChevronRight, Star, FileText } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader.jsx';
 import { useMentorGroups, useMentorHomeworkList, useMentorHomeworkSubmissions } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
@@ -21,7 +22,9 @@ export default function MentorHomework() {
   const { data: groupsData } = useMentorGroups();
   const groups = groupsData?.data || [];
 
-  const [selectedGroupId, setSelectedGroupId] = useState(groups[0]?.id || '');
+  const [searchParams] = useSearchParams();
+  const urlGroupId = searchParams.get('groupId');
+  const [selectedGroupId, setSelectedGroupId] = useState(urlGroupId || groups[0]?.id || '');
   const [selectedHwId, setSelectedHwId] = useState(null);
   const [gradingId, setGradingId] = useState(null);
   const [gradeScore, setGradeScore] = useState('');

@@ -3,7 +3,7 @@
 // USE_MOCKS = true — эмуляция на localStorage для разработки без бэкенда.
 
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
-const USE_MOCKS = true; // true = mock (backend kerak emas), false = real backend
+const USE_MOCKS = false; // true = mock (backend kerak emas), false = real backend
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -654,9 +654,9 @@ async function request(path, { method = 'GET', body, token } = {}) {
       return {
         success: true,
         data: [
-          { id: 'g-1', name: 'Frontend React N13', subject: 'Veb-development', monthly_price: 800000, students_count: 15 },
-          { id: 'g-2', name: 'Python Bootcamp', subject: 'Programming', monthly_price: 900000, students_count: 12 },
-          { id: 'g-3', name: 'English Advanced', subject: 'English', monthly_price: 600000, students_count: 10 },
+          { id: 'g-1', name: 'Frontend React N13', subject: 'Veb-development', lesson_time: '14:00', monthly_price: 800000, students_count: 15 },
+          { id: 'g-2', name: 'Python Bootcamp', subject: 'Programming', lesson_time: '18:00', monthly_price: 900000, students_count: 12 },
+          { id: 'g-3', name: 'English Advanced', subject: 'English', lesson_time: '19:00', monthly_price: 600000, students_count: 10 },
         ],
       };
     }
