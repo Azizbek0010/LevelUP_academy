@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Snowflake, Sun, Trash2, KeyRound, Search, GraduationCap, UserCheck, UserX, Copy, Check, Coins } from 'lucide-react';
+import { Plus, Snowflake, Sun, Trash2, KeyRound, Search, GraduationCap, UserCheck, UserX, Copy, Check, Coins, LayoutGrid, List, Filter } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
@@ -119,6 +119,8 @@ function StudentCard({ s, onFreeze, onDelete, onRegen }) {
 export default function AdminStudents() {
   const { token } = useAuth();
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState('card'); // 'card' | 'table'
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'frozen'
   const qs = search ? `?search=${encodeURIComponent(search)}` : '';
   const { data, isLoading, error, refetch } = useAdminStudents(qs);
   const [form, setForm] = useState(null);
@@ -132,6 +134,7 @@ export default function AdminStudents() {
 
   const activeCount = rows.filter((s) => s.status !== 'frozen').length;
   const frozenCount = rows.filter((s) => s.status === 'frozen').length;
+  const filteredRows = statusFilter === 'all' ? rows : rows.filter(s => s.status === statusFilter);
 
   const create = async () => {
     setBusy(true); setErr('');
@@ -191,17 +194,56 @@ export default function AdminStudents() {
         <StatCard Icon={UserX} label="Заморожены" value={frozenCount} color="#E8543E" gradient="linear-gradient(135deg,#E8543E,#C0392B)" delay="stagger-3" />
       </div>
 
-      {/* ═══ Search ═══ */}
-      <div className="glass-strong rounded-[16px] p-1 animate-fade-in stagger-3">
-        <div className="flex items-center gap-2 px-4 py-2.5">
-          <Search size={16} className="text-[var(--text-muted)] shrink-0" />
-          <input
-            type="text"
-            className="flex-1 bg-transparent outline-none text-[13px] text-[var(--text)] placeholder:text-[var(--text-muted)]"
-            placeholder="Поиск по имени, фамилии или телефону…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      {/* ═══ Search + View Toggle ═══ */}
+      <div className="flex items-center gap-3 animate-fade-in stagger-3">
+        <div className="glass-strong rounded-[16px] p-1 flex-1">
+          <div className="flex items-center gap-2 px-4 py-2.5">
+            <Search size={16} className="text-[var(--text-muted)] shrink-0" />
+            <input
+              type="text"
+              className="flex-1 bg-transparent outline-none text-[13px] text-[var(--text)] placeholder:text-[var(--text-muted)]"
+              placeholder="Поиск по имени, фамилии или телефону…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+        {/* Status filter tabs */}
+        <div className="hidden sm:flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          {[
+            { key: 'all', label: 'Все', count: rows.length },
+            { key: 'active', label: 'Активные', count: activeCount },
+            { key: 'frozen', label: 'Заморожены', count: frozenCount },
+          ].map(f => (
+            <button
+              key={f.key}
+              onClick={() => setStatusFilter(f.key)}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200"
+              style={{
+                background: statusFilter === f.key ? 'var(--green-bg)' : 'transparent',
+                color: statusFilter === f.key ? 'var(--green)' : 'var(--text-muted)',
+              }}
+            >
+              {f.label} ({f.count})
+            </button>
+          ))}
+        </div>
+        {/* View toggle */}
+        <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <button
+            onClick={() => setViewMode('card')}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+            style={{ background: viewMode === 'card' ? 'var(--green-bg)' : 'transparent', color: viewMode === 'card' ? 'var(--green)' : 'var(--text-muted)' }}
+          >
+            <LayoutGrid size={14} />
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+            style={{ background: viewMode === 'table' ? 'var(--green-bg)' : 'transparent', color: viewMode === 'table' ? 'var(--green)' : 'var(--text-muted)' }}
+          >
+            <List size={14} />
+          </button>
         </div>
       </div>
 
@@ -210,17 +252,100 @@ export default function AdminStudents() {
         <div className="mt-4"><SkeletonTable cols={5} /></div>
       ) : error ? (
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
-      ) : rows.length === 0 ? (
+      ) : filteredRows.length === 0 ? (
         <div className="glass-strong rounded-[20px] p-12 text-center animate-fade-in">
-          <GraduationCap size={40} className="mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
-          <p className="text-[14px] font-medium text-[var(--text-muted)]">Нет студентов</p>
-          <p className="text-[12px] text-[var(--text-muted)] mt-1 opacity-60">Добавьте первого студента</p>
+          <GraduationCap size={48} className="mx-auto mb-4 text-[var(--text-muted)] opacity-20" />
+          <p className="text-[15px] font-bold text-[var(--text-secondary)]">Нет студентов</p>
+          <p className="text-[12px] text-[var(--text-muted)] mt-1.5">
+            {search ? 'Попробуйте изменить запрос' : 'Добавьте первого студента'}
+          </p>
+          {!search && (
+            <button className="btn btn-primary btn-sm mt-4 gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
+              <Plus size={14} /> Добавить
+            </button>
+          )}
         </div>
-      ) : (
+      ) : viewMode === 'card' ? (
+        /* Card view */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {rows.map((s) => (
+          {filteredRows.map((s) => (
             <StudentCard key={s.id} s={s} onFreeze={toggleFreeze} onDelete={del} onRegen={regen} />
           ))}
+        </div>
+      ) : (
+        /* Table view */
+        <div className="glass-strong rounded-[16px] overflow-hidden animate-fade-in">
+          <div className="overflow-x-auto">
+            <table className="table w-full text-[13px]">
+              <thead>
+                <tr>
+                  <th>Студент</th>
+                  <th>Код</th>
+                  <th>Телефон</th>
+                  <th>Группы</th>
+                  <th>Коины</th>
+                  <th>Статус</th>
+                  <th className="w-24"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.map(s => (
+                  <tr key={s.id} className="hover:bg-[var(--surface-hover)]">
+                    <td>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                          style={{ background: `${(STATUS_COLORS[s.status] || STATUS_COLORS.active).text}15`, color: (STATUS_COLORS[s.status] || STATUS_COLORS.active).text }}>
+                          {initials(s)}
+                        </div>
+                        <span className="font-semibold text-[var(--text)]">{fullName(s)}</span>
+                      </div>
+                    </td>
+                    <td className="font-mono text-[var(--text-secondary)]">{s.login_code || s.loginCode || '—'}</td>
+                    <td className="text-[var(--text-muted)]">{s.phone || '—'}</td>
+                    <td>
+                      <div className="flex flex-wrap gap-1">
+                        {(s.groups || []).slice(0, 2).map((g, i) => (
+                          <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-[var(--green-bg)] text-[var(--green)]">
+                            {g.name}
+                          </span>
+                        ))}
+                        {(s.groups || []).length > 2 && (
+                          <span className="text-[9px] text-[var(--text-muted)]">+{(s.groups || []).length - 2}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      {s.coins != null && s.coins > 0 ? (
+                        <span className="flex items-center gap-1 text-[var(--green)] font-semibold text-[12px]">
+                          <Coins size={11} /> {s.coins}
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
+                        style={{ background: (STATUS_COLORS[s.status] || STATUS_COLORS.active).bg, color: (STATUS_COLORS[s.status] || STATUS_COLORS.active).text }}>
+                        {(STATUS_COLORS[s.status] || STATUS_COLORS.active).label}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-1">
+                        <button className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] transition-all" title="Сбросить пароль" onClick={() => onRegen(s)}>
+                          <KeyRound size={12} />
+                        </button>
+                        <button className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] transition-all"
+                          title={s.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => onFreeze(s)}>
+                          {s.status === 'frozen' ? <Sun size={12} /> : <Snowflake size={12} />}
+                        </button>
+                        <button className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger-light)] hover:text-[var(--danger)] transition-all" title="Удалить" onClick={() => onDelete(s)}>
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

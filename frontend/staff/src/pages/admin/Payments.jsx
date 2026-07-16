@@ -155,7 +155,7 @@ export default function AdminPayments() {
   };
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader title="Платежи" subtitle="Счета и оплаты (наличные + карта)" />
 
       {/* ═══ Stats ═══ */}

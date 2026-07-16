@@ -1,13 +1,15 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Wallet, TriangleAlert, Receipt, TrendingUp, Users, GraduationCap, Clock,
   UserPlus, FolderPlus, CreditCard, FileText, ArrowUpRight, ArrowDownRight,
-  BarChart3, Sparkles, Activity,
+  BarChart3, Sparkles, Activity, Zap, Star,
 } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { fmt, money } from '../../format.js';
 import { useAdminDashboard } from '../../queries.js';
+import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
 
@@ -184,6 +186,16 @@ function RevenueChart({ totals, thisMonth }) {
 /* ═══════════════ Main Dashboard ═══════════════ */
 export default function AdminDashboard() {
   const { data, isLoading, error } = useAdminDashboard();
+  const { user } = useAuth();
+
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 6) return { text: 'Тунлар хайрли', emoji: '🌙' };
+    if (h < 12) return { text: 'Эрталаб хайрли', emoji: '☀️' };
+    if (h < 17) return { text: 'Кунда хайрли', emoji: '🌤' };
+    if (h < 21) return { text: 'Кеча хайрли', emoji: '🌅' };
+    return { text: 'Тунлар хайрли', emoji: '🌙' };
+  }, []);
 
   if (isLoading) {
     return (
@@ -210,8 +222,30 @@ export default function AdminDashboard() {
   const m = raw.thisMonth || {};
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader title="Дашборд" subtitle="Филиал: доход, расход, студенты, группы" />
+
+      {/* ═══ Welcome Banner ═══ */}
+      <div className="glass-strong rounded-[20px] p-6 relative overflow-hidden animate-fade-in">
+        <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-15" style={{ background: 'linear-gradient(135deg, #C6FF34, #22c55e)' }} />
+        <div className="relative flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ background: 'var(--green-bg)' }}>
+            {greeting.emoji}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-extrabold" style={{ color: 'var(--text)' }}>
+              {greeting.text}, {user?.firstName || 'Администратор'}!
+            </h2>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+              Сегодня {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}. Вот обзор вашего филиала.
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl shrink-0" style={{ background: 'var(--green-bg)', border: '1px solid rgba(198,255,52,0.15)' }}>
+            <Zap size={16} style={{ color: '#C6FF34' }} />
+            <span className="text-xs font-bold" style={{ color: '#C6FF34' }}>Всё активно</span>
+          </div>
+        </div>
+      </div>
 
       {/* ═══ KPI Cards ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
