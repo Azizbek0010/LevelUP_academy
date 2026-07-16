@@ -59,9 +59,12 @@
 
 ### P3 — длинный хвост + топливо для AI-поиска
 
-- [ ] **Блог / база знаний**, 2–3 стартовые статьи (ru + uz): «как перейти с Excel на CRM»,
-      «как не терять деньги на долгах учеников», «как автоматизировать посещаемость».
-      Информационные запросы + именно такие тексты цитируют ChatGPT/Perplexity.
+- [x] ~~**Блог / база знаний**, 3 стартовые статьи (ru + uz)~~ — ✅ 16.07.
+      `/landing/blog` (индекс) + `excel-to-crm`, `student-debts`, `attendance-automation`.
+      Каждая: `BlogPosting` + `BreadcrumbList` JSON-LD, тело в prerender (видно AI без JS),
+      ссылка из футера. Инфраструктура блога (индекс + шаблон статьи по `:slug`) готова —
+      новые статьи добавляются одним ключом в `i18n .blog.articles` + путь в prerender/sitemap.
+      Verify: build (24 URL) + браузер (гидратация чистая, ru+uz).
 
 > При добавлении любой страницы — чеклист в [SEO.md](./SEO.md) §«Adding a page»
 > (i18n ru+uz → App.jsx PAGES → prerender ROUTES → sitemap обе версии + hreflang).

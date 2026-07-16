@@ -14,6 +14,7 @@ export default {
     finance: 'Moliya',
     pricing: 'Tariflar',
     langSchool: 'Til markazlariga',
+    blog: 'Bilimlar bazasi',
     gamification: 'Motivatsiya',
     contacts: 'Aloqa',
     home: 'Bosh sahifa',
@@ -662,6 +663,118 @@ export default {
       "Ariza qoldiring — LevelUp Academy til markazida guruhlar, to'lovlar va motivatsiyani qanday yuritishini ko'rsatamiz. Birinchi hafta bepul.",
   },
 
+  blog: {
+    badge: 'Bilimlar bazasi',
+    h1: "O'quv markazi uchun bilimlar bazasi",
+    lead: "Markazning hisobi, moliyasi va davomatida qanday tartib o'rnatish — quruq gapsiz, CRM tajribasiga asoslanib. O'qing va joriy eting.",
+    readMore: "O'qish",
+    minutesLabel: 'daq',
+    backToBlog: '← Bilimlar bazasiga',
+    tocLabel: 'Chop etilgan',
+    articles: {
+      'excel-to-crm': {
+        title: "Excel'dan o'quv markazi uchun CRM'ga qanday o'tish kerak",
+        seoTitle: "Excel'dan CRM'ga o'tish — o'quv markazi | LevelUp",
+        seoDescription:
+          "O'quv markazining Excel'dan CRM'ga bosqichma-bosqich o'tishi: nimani ko'chirish (o'quvchilar, guruhlar, to'lovlar, qarzlar), hech narsani yo'qotmaslik va nimadan boshlash. Migratsiya cheklisti.",
+        excerpt:
+          "Jadvallar ikkinchi yuz o'quvchida buziladi. CRM'ga nimani ko'chirish, hech narsani yo'qotmaslik va nimadan boshlashni ko'rib chiqamiz.",
+        date: '2026-07-16',
+        reading: 6,
+        body: [
+          { type: 'p', text: "Excel va Google Jadvallar o'quvchilar kam bo'lguncha ishlaydi. Lekin markaz o'sishi bilan jadvallar xatolar manbaiga aylanadi: raqamlar mos kelmaydi, qarzlar yo'qoladi, o'quvchi tarixi esa o'chirilgan qator bilan birga yo'qoladi. CRM'ga qanday o'tish va hech narsani yo'qotmaslikni ko'rib chiqamiz." },
+          { type: 'h2', text: 'Excel qayerda qiynay boshlaydi' },
+          { type: 'ul', items: [
+            "Dublikatlar va nomuvofiqlik: bir xil ma'lumot turli fayllarda farq qiladi.",
+            "Qarzlar faqat qo'lda ko'rinadi — ular haqida oy oxirida bilasiz.",
+            "O'quvchi qatorini o'chirdingiz — to'lov va baholar tarixini yo'qotdingiz.",
+            "Kirish huquqlari yo'q: fayli bor har kim hammasini ko'radi.",
+            "Ota-onalarga kelmaslik va qarz haqida avto-bildirishnoma yo'q.",
+          ] },
+          { type: 'h2', text: "CRM'ga birinchi navbatda nimani ko'chirish" },
+          { type: 'ul', items: [
+            "O'quvchilar va guruhlar (daraja, mentor va narx bilan).",
+            'Mentorlar va dars jadvali.',
+            "Joriy to'lovlar va, eng muhimi, ochiq qarzlar.",
+            "Kamida joriy davr uchun davomat tarixi.",
+          ] },
+          { type: 'h2', text: "Qanday o'tish va hech narsani yo'qotmaslik" },
+          { type: 'p', text: "Hammasini birdan ko'chirmang va Excel'ni birinchi kuni tashlamang. Eng xavfsiz yo'l — bir-ikki hafta parallel ishlatish: ma'lumotni CRM'ga kiritasiz va jadval bilan solishtirasiz, hammasi mos kelishiga ishonch hosil qilguncha." },
+          { type: 'ul', items: [
+            'Filiallar va guruhlarni yarating.',
+            "Faol o'quvchilarni ko'chiring va guruhlarga taqsimlang.",
+            "Ochiq qarzlarni kiriting — shunda haqiqiy manzarani darhol ko'rasiz.",
+            "Ota-onalarni bir martalik Telegram-kod bilan ulang.",
+            "Bir hafta Excel bilan parallel yuriting va tushum hamda qarzlarni solishtiring.",
+          ] },
+          { type: 'h2', text: 'Nimadan boshlash' },
+          { type: 'p', text: "Bitta guruhdan boshlang: uni yarating, bir-ikki to'lov qabul qiling, davomatni belgilang — va jadvaldagi bilan solishtiring. LevelUp Academy'da birinchi hafta bepul va kartasiz, shuning uchun migratsiyani xavfsiz sinab ko'rish mumkin." },
+        ],
+      },
+      'student-debts': {
+        title: "O'quvchilar qarzida pulni qanday yo'qotmaslik kerak",
+        seoTitle: "O'quvchilar qarzida pulni yo'qotmaslik | LevelUp",
+        seoDescription:
+          "O'quvchilar qarzi nega sezilmay o'sadi va uni qanday nazorat qilish: qarzdorlarning avtomatik ro'yxati, Telegram'da ota-onaga eslatma va tarixni yo'qotmasdan muzlatish.",
+        excerpt:
+          "O'quv markazida qarzlar jimgina yig'iladi va oy oxirida chiqadi. Ularni qanday ko'rinadigan qilish va nizosiz pulni qaytarish.",
+        date: '2026-07-16',
+        reading: 5,
+        body: [
+          { type: 'p', text: "Darslar uchun qarz kamdan-kam birdan paydo bo'ladi — u asta-sekin yig'iladi va summa allaqachon katta, ota-ona bilan suhbat esa yoqimsiz bo'lganda seziladi. Muammo ota-onalarda emas, qarz o'z vaqtida ko'rinmasligida. Buni qanday tuzatishni ko'ramiz." },
+          { type: 'h2', text: "Qarzlar nega sezilmay o'sadi" },
+          { type: 'ul', items: [
+            "«Oylik» to'lovni unutish oson — markazga ham, ota-onaga ham.",
+            "Jadvalda qarz o'zi hisoblanmaydi: kimdir raqamlarni qo'lda yig'ishi kerak.",
+            "Qarz hisoblanmaguncha o'quvchi qatnayveradi — summa o'sadi.",
+            "Eslatish noqulay: administrator pulni «undirishni» xohlamaydi.",
+          ] },
+          { type: 'h2', text: "Qarzni ko'rinadigan qiling" },
+          { type: 'p', text: "Asosiy qoida: qarz oy oxirida emas, hisob chiqarilgan paytda avtomatik hisoblanishi kerak. Shunda qarzdor ro'yxatda darhol paydo bo'ladi va siz summa kichik ekan reaksiya qilasiz." },
+          { type: 'ul', items: [
+            "Qarzdorlar ro'yxati o'zi yangilanadi — panelda ko'rinadi.",
+            "Ota-ona qarzni o'z kabinetida administratorsiz ko'radi.",
+            "Qarz haqida bildirishnoma Telegram'ga avtomatik ketadi.",
+          ] },
+          { type: 'h2', text: 'Nizosiz pulni qaytaring' },
+          { type: 'p', text: "Qarzlarning aksariyati birinchi eslatmadanoq yopiladi — agar u o'z vaqtida va shaxsiy tanbeh emas, tizimdan kelsa. Agar o'quvchi vaqtincha kelmasa, uni muzlatish mumkin: qarz o'smay qoladi, to'lovlar tarixi esa to'liq saqlanadi." },
+          { type: 'h2', text: 'Xulosa' },
+          { type: 'p', text: "Qarzlar — qattiqqo'llik emas, o'z vaqtidalik haqida. Markaz qarzdorni qarz paydo bo'lgan kuni ko'rsa, pul deyarli har doim qaytadi. LevelUp Academy'da bu darhol ishlaydi: birinchi haftani bepul sinab ko'ring." },
+        ],
+      },
+      'attendance-automation': {
+        title: "O'quv markazida davomatni qanday avtomatlashtirish kerak",
+        seoTitle: 'Markazda davomatni avtomatlashtirish (davomat) | LevelUp',
+        seoDescription:
+          "Davomatni qog'ozda yuritishni to'xtatish: bir daqiqada elektron davomat jurnali, Telegram'da ota-onaga kelmaslik haqida avto-bildirishnoma va admin uchun hisobotlar.",
+        excerpt:
+          "Qog'oz davomat jurnali vaqtni o'g'irlaydi va kelmaslikdan qutqarmaydi. Davomatni elektron ko'rinishga o'tkazish va ota-onalarni o'zingiz xabardor qilish.",
+        date: '2026-07-16',
+        reading: 5,
+        body: [
+          { type: 'p', text: "Davomat — mentorning vaqtini yeydigan va qog'ozda yuritilganda natijaga deyarli ta'sir qilmaydigan rutina. Ota-ona kelmaslik haqida kech biladi, administrator esa — o'quvchi tashlab ketish arafasida bo'lgandagina. Elektron jurnal buni o'zgartiradi." },
+          { type: 'h2', text: 'Qog\'oz jurnal nima bilan yomon' },
+          { type: 'ul', items: [
+            "Ma'lumot mentorning daftarida qoladi — administrator ko'rmaydi.",
+            "Ota-ona kelmaslik haqida kechqurun biladi yoki umuman bilmaydi.",
+            "Tarix yo'q: kim muntazam qoldirishini aniqlab bo'lmaydi.",
+            "Davomatni to'lovlar bilan qo'lda solishtirish deyarli imkonsiz.",
+          ] },
+          { type: 'h2', text: 'Elektron davomat qanday ishlaydi' },
+          { type: 'p', text: "Mentor guruhni to'g'ridan-to'g'ri telefondan bir daqiqada belgilaydi. Qolganini tizim qiladi: ota-ona bola darsda bo'lganini darhol ko'radi, kelmaslik esa administratorsiz Telegram'ga bildirishnoma bo'lib ketadi." },
+          { type: 'ul', items: [
+            "Guruhni bir necha bosishda, qog'ozsiz belgilash.",
+            "Kelmaslik haqida ota-onaga o'sha zahoti avto-bildirishnoma.",
+            "Davomat tarixi — kim muntazam qoldirishi ko'rinadi.",
+            "Ma'lumot to'lovlar va filial hisobotlari bilan bog'langan.",
+          ] },
+          { type: 'h2', text: 'Bu markazga nima beradi' },
+          { type: 'p', text: "Ota-onalar xotirjam, chunki xabardor. Administrator kim tashlab ketish arafasida ekanini oldindan ko'radi — va o'quvchini ushlab qolishga ulguradi. Mentor esa jurnalga o'n daqiqa emas, bir daqiqa sarflaydi. LevelUp Academy'da elektron davomatni birinchi hafta bepul sinash mumkin." },
+        ],
+      },
+    },
+  },
+
   gamification: {
     badge: 'Motivatsiya',
     h1: "O'quvchilar zerikib o'tirmaydi, musobaqalashadi",
@@ -817,6 +930,11 @@ export default {
       title: "Til markazi uchun CRM — guruhlar, to'lovlar | LevelUp",
       description:
         "Til o'quv markazi uchun CRM: darajali guruhlar, davomat, uy vazifalari, testlar, to'lovlar va o'quvchilar motivatsiyasi bitta tizimda. Birinchi hafta bepul.",
+    },
+    blog: {
+      title: "O'quv markazi uchun bilimlar bazasi | LevelUp Academy",
+      description:
+        "O'quv markazida tartib o'rnatish haqida maqolalar: Excel'dan CRM'ga o'tish, o'quvchilar qarzini nazorat qilish va davomatni avtomatlashtirish.",
     },
     gamification: {
       title: 'Motivatsiya va geymifikatsiya | LevelUp Academy',
