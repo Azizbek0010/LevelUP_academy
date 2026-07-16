@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Wallet, CreditCard, Banknote, Clock, CheckCircle2, AlertTriangle, AlertCircle, TrendingUp } from 'lucide-react';
+import {
+  Wallet, CreditCard, Banknote, Clock, CheckCircle2, AlertTriangle, AlertCircle,
+  TrendingUp, Search, ChevronLeft, ChevronRight, Plus, X,
+} from 'lucide-react';
 import { money, dateShort } from '../../format.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminInvoices } from '../../queries.js';
@@ -7,14 +10,24 @@ import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 
+// Backend statuslari: pending, partially_paid, paid, overdue, cancelled
 const STATUS = {
   paid: { label: 'Оплачен', bg: '#2ECC7115', text: '#2ECC71', icon: CheckCircle2 },
-  partial: { label: 'Частично', bg: '#F59E0B15', text: '#F59E0B', icon: Clock },
-  unpaid: { label: 'Не оплачен', bg: '#6B728015', text: '#6B7280', icon: AlertCircle },
+  partially_paid: { label: 'Частично', bg: '#F59E0B15', text: '#F59E0B', icon: Clock },
+  pending: { label: 'Ожидает', bg: '#6B728015', text: '#6B7280', icon: AlertCircle },
   overdue: { label: 'Просрочен', bg: '#E8543E15', text: '#E8543E', icon: AlertTriangle },
+  cancelled: { label: 'Отменён', bg: '#6B728008', text: '#6B7280', icon: AlertCircle },
 };
 
-const studentName = (inv) => `${inv.student?.firstName || inv.student?.first_name || ''} ${inv.student?.lastName || inv.student?.last_name || ''}`.trim() || '—';
+const STATUS_LIST = ['all', 'pending', 'partially_paid', 'paid', 'overdue', 'cancelled'];
+const STATUS_LABELS = {
+  all: 'Все',
+  pending: 'Ожидает',
+  partially_paid: 'Частично',
+  paid: 'Оплачен',
+  overdue: 'Просрочен',
+  cancelled: 'Отменён',
+};
 
 /* ═══════════════ Stat Card ═══════════════ */
 function StatCard({ Icon, label, value, color, gradient, delay }) {
@@ -39,10 +52,10 @@ function StatCard({ Icon, label, value, color, gradient, delay }) {
 
 /* ═══════════════ Invoice Card ═══════════════ */
 function InvoiceCard({ inv, onPay }) {
-  const st = STATUS[inv.status] || STATUS.unpaid;
+  const st = STATUS[inv.status] || STATUS.pending;
   const StIcon = st.icon;
-  const total = Number(inv.amount || inv.total_amount || 0);
-  const paid = Number(inv.paid_amount || 0);
+  const total = Number(inv.totalAmount || inv.amount || 0);
+  const paid = Number(inv.paidAmount || inv.paid_amount || 0);
   const remaining = total - paid;
   const paidPercent = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
 
@@ -50,8 +63,8 @@ function InvoiceCard({ inv, onPay }) {
     <div className="glass-strong rounded-[16px] p-5 card-hover-premium group">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="text-[14px] font-bold text-[var(--text)]">{studentName(inv)}</h3>
-          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{inv.group?.name || '—'}</p>
+          <h3 className="text-[14px] font-bold text-[var(--text)]">{inv.student || '—'}</h3>
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{inv.group || '—'}</p>
         </div>
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
           style={{ background: st.bg, color: st.text }}>
@@ -84,9 +97,9 @@ function InvoiceCard({ inv, onPay }) {
 
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
-          <Clock size={10} /> Срок: {dateShort(inv.due_date)}
+          <Clock size={10} /> Срок: {dateShort(inv.dueDate || inv.due_date)}
         </span>
-        {inv.status !== 'paid' && (
+        {inv.status !== 'paid' && inv.status !== 'cancelled' && (
           <button
             className="h-7 px-3 rounded-[8px] flex items-center gap-1 text-[11px] font-bold text-white transition-all hover:opacity-90 active:scale-95"
             style={{ background: 'var(--green)' }}
@@ -103,109 +116,222 @@ function InvoiceCard({ inv, onPay }) {
 /* ═══════════════ Main Payments ═══════════════ */
 export default function AdminPayments() {
   const { token } = useAuth();
-  const { data, isLoading, error, refetch } = useAdminInvoices();
+
+  // Filter & pagination state
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const limit = 15;
+
+  const qs = `?page=${page}&limit=${limit}${statusFilter !== 'all' ? `&status=${statusFilter}` : ''}`;
+
+  const { data, isLoading, error, refetch } = useAdminInvoices(qs);
+
+  const raw = data?.data || data || {};
+  const rows = raw.invoices || [];
+  const meta = raw.meta || {};
+
+  const totalPages = meta.totalPages || Math.ceil((meta.total || rows.length) / limit) || 1;
+
+  // Pay modal state — split payment
   const [pay, setPay] = useState(null);
-  const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState('cash');
+  const [parts, setParts] = useState([{ method: 'cash', amount: '' }]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  const raw = data?.data || data || {};
-  const rows = raw.invoices || (Array.isArray(raw) ? raw : []);
-
   const stats = useMemo(() => {
-    const total = rows.reduce((s, inv) => s + Number(inv.amount || inv.total_amount || 0), 0);
+    const total = rows.reduce((s, inv) => s + Number(inv.totalAmount || inv.amount || 0), 0);
     const paid = rows.filter((inv) => inv.status === 'paid').length;
-    const unpaid = rows.filter((inv) => inv.status !== 'paid').length;
+    const waiting = rows.filter((inv) => inv.status === 'pending' || inv.status === 'partially_paid').length;
     const overdue = rows.filter((inv) => inv.status === 'overdue').length;
-    return { total, paid, unpaid, overdue };
+    return { total, paid, waiting, overdue };
   }, [rows]);
 
   const openPay = (inv) => {
+    const remaining = Number(inv.totalAmount || inv.amount || 0) - Number(inv.paidAmount || inv.paid_amount || 0);
     setPay(inv);
-    setAmount(String((inv.amount || inv.total_amount || 0) - (inv.paid_amount || 0)));
-    setMethod('cash');
+    setParts([{ method: 'cash', amount: String(remaining) }]);
     setErr('');
   };
+
+  const addPart = () => {
+    if (parts.length >= 5) return;
+    setParts([...parts, { method: 'card', amount: '' }]);
+  };
+
+  const removePart = (i) => {
+    if (parts.length <= 1) return;
+    setParts(parts.filter((_, idx) => idx !== i));
+  };
+
+  const updatePart = (i, field, value) => {
+    const updated = [...parts];
+    updated[i] = { ...updated[i], [field]: value };
+    setParts(updated);
+  };
+
+  const partsSum = parts.reduce((s, p) => s + Number(p.amount || 0), 0);
+
   const submitPay = async () => {
-    setBusy(true); setErr('');
+    setBusy(true);
+    setErr('');
     try {
-      await api.adminPayInvoice(token, pay.id, { amount: Number(amount), method });
-      setPay(null); refetch();
-    } catch (e) { setErr(e.message || 'Ошибка'); }
-    finally { setBusy(false); }
+      await api.adminPayInvoice(token, pay.id, {
+        parts: parts.map((p) => ({
+          method: p.method,
+          amount: Number(p.amount),
+        })),
+      });
+      setPay(null);
+      refetch();
+    } catch (e) {
+      setErr(e.message || 'Ошибка');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <div className="space-y-6 pb-8">
-      <PageHeader title="Платежи" subtitle="Счета и оплаты (наличные + карта)" />
+      <PageHeader title="Платежи" subtitle="Счета и оплаты (наличные + карта)">
+        {rows.length > 0 && (
+          <span className="text-sm text-base-content/40 tabular-nums">
+            {meta.total || rows.length} счетов
+          </span>
+        )}
+      </PageHeader>
 
       {/* ═══ Stats ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard Icon={TrendingUp} label="Всего счетов" value={rows.length} color="#3B82F6" gradient="linear-gradient(135deg,#3B82F6,#2980B9)" delay="stagger-1" />
         <StatCard Icon={CheckCircle2} label="Оплачено" value={stats.paid} color="#2ECC71" gradient="linear-gradient(135deg,#2ECC71,#27AE60)" delay="stagger-2" />
-        <StatCard Icon={Clock} label="Ожидает" value={stats.unpaid} color="#F59E0B" gradient="linear-gradient(135deg,#F59E0B,#E67E22)" delay="stagger-3" />
+        <StatCard Icon={Clock} label="Ожидает" value={stats.waiting} color="#F59E0B" gradient="linear-gradient(135deg,#F59E0B,#E67E22)" delay="stagger-3" />
         <StatCard Icon={AlertTriangle} label="Просрочено" value={stats.overdue} color="#E8543E" gradient="linear-gradient(135deg,#E8543E,#C0392B)" delay="stagger-4" />
       </div>
 
-      {/* ═══ Invoice Cards ═══ */}
+      {/* ═══ Status Filter Tabs ═══ */}
+      <div className="flex flex-wrap gap-2">
+        {STATUS_LIST.map((s) => (
+          <button
+            key={s}
+            className={`btn btn-sm ${statusFilter === s ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => { setStatusFilter(s); setPage(1); }}
+          >
+            {STATUS_LABELS[s]}
+          </button>
+        ))}
+      </div>
+
+      {/* ═══ Invoice List ═══ */}
       {isLoading ? (
         <div className="mt-4"><SkeletonTable cols={6} /></div>
       ) : error ? (
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
       ) : rows.length === 0 ? (
-        <div className="glass-strong rounded-[20px] p-12 text-center animate-fade-in">
+        <div className="glass-strong rounded-[20px] p-12 text-center animate-fade-in mt-4">
           <Wallet size={40} className="mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
           <p className="text-[14px] font-medium text-[var(--text-muted)]">Нет счетов</p>
           <p className="text-[12px] text-[var(--text-muted)] mt-1 opacity-60">Счета появятся здесь</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {rows.map((inv) => (
-            <InvoiceCard key={inv.id} inv={inv} onPay={openPay} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {rows.map((inv) => (
+              <InvoiceCard key={inv.id} inv={inv} onPay={openPay} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <span className="text-sm text-base-content/40 tabular-nums">
+                Страница {meta.page || page} из {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={(meta.page || page) <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={(meta.page || page) >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      {/* ═══ Payment Modal ═══ */}
+      {/* ═══ Payment Modal — Split Payment ═══ */}
       {pay && (
         <dialog className="modal modal-open">
           <div className="modal-box glass-strong border border-[var(--border)]">
             <h3 className="font-bold text-lg mb-1">Приём оплаты</h3>
-            <p className="text-sm text-[var(--text-muted)] mb-4">{studentName(pay)} · {pay.group?.name || '—'}</p>
+            <p className="text-sm text-[var(--text-muted)] mb-4">
+              {pay.student} · {pay.group || '—'}
+            </p>
+            <p className="text-xs text-[var(--text-muted)] mb-3">
+              Счёт: {dateShort(pay.dueDate || pay.due_date)} · Остаток: {money(Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0))}
+            </p>
+
             {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
-            <div className="space-y-4">
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5 block">Сумма</label>
-                <input
-                  className="input input-bordered w-full"
-                  type="number"
-                  placeholder="Сумма"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5 block">Способ оплаты</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    className={`flex items-center justify-center gap-2 py-3 rounded-[12px] border-2 transition-all font-semibold text-[13px] ${method === 'cash' ? 'border-[var(--green)] bg-[var(--green-bg)] text-[var(--green)]' : 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--green)]/40'}`}
-                    onClick={() => setMethod('cash')}
+
+            {/* Split Payment Parts */}
+            <div className="space-y-2">
+              {parts.map((part, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <select
+                    className="select select-bordered select-sm w-[120px]"
+                    value={part.method}
+                    onChange={(e) => updatePart(i, 'method', e.target.value)}
                   >
-                    <Banknote size={18} /> Наличные
-                  </button>
-                  <button
-                    className={`flex items-center justify-center gap-2 py-3 rounded-[12px] border-2 transition-all font-semibold text-[13px] ${method === 'card' ? 'border-[var(--green)] bg-[var(--green-bg)] text-[var(--green)]' : 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:border-[var(--green)]/40'}`}
-                    onClick={() => setMethod('card')}
-                  >
-                    <CreditCard size={18} /> Карта
-                  </button>
+                    <option value="cash">Наличные</option>
+                    <option value="card">Карта</option>
+                    <option value="transfer">Перевод</option>
+                  </select>
+                  <input
+                    className="input input-bordered input-sm flex-1"
+                    type="number"
+                    placeholder="Сумма"
+                    value={part.amount}
+                    onChange={(e) => updatePart(i, 'amount', e.target.value)}
+                  />
+                  {parts.length > 1 && (
+                    <button className="btn btn-ghost btn-xs text-error" onClick={() => removePart(i)}>
+                      <X size={14} />
+                    </button>
+                  )}
                 </div>
-              </div>
+              ))}
             </div>
+
+            {parts.length < 5 && (
+              <button className="btn btn-ghost btn-xs mt-2 gap-1" onClick={addPart}>
+                <Plus size={12} /> Добавить часть (сплит)
+              </button>
+            )}
+
+            {parts.length > 1 && (
+              <p className="text-xs text-[var(--text-muted)] mt-2 tabular-nums">
+                Итого: {money(partsSum)}
+                {partsSum > Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0) && (
+                  <span className="text-error ml-1">· Превышает остаток!</span>
+                )}
+              </p>
+            )}
+
             <div className="modal-action">
               <button className="btn btn-ghost" onClick={() => setPay(null)} disabled={busy}>Отмена</button>
-              <button className="btn btn-primary" onClick={submitPay} disabled={busy || !amount || Number(amount) <= 0}>
+              <button
+                className="btn btn-primary"
+                onClick={submitPay}
+                disabled={busy || parts.some((p) => !p.amount || Number(p.amount) <= 0) || partsSum > Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0)}
+              >
                 {busy && <span className="loading loading-spinner loading-xs" />} Принять
               </button>
             </div>

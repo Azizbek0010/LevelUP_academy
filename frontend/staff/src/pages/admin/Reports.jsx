@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
 import {
-  BarChart3, PieChart as PieIcon, TrendingUp, Users, AlertTriangle, DollarSign,
-  ArrowUpRight, ArrowDownRight, Activity,
+  BarChart3, TrendingUp, Users, AlertTriangle, DollarSign,
+  ArrowUpRight, ArrowDownRight, Activity, Calendar, Filter,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import { money, fmt } from '../../format.js';
+import { useAuth } from '../../auth.jsx';
 import { useAdminReports } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
@@ -57,7 +58,16 @@ function CustomTooltip({ active, payload, label }) {
 
 /* ═══════════════ Main Reports ═══════════════ */
 export default function AdminReports() {
-  const { data, isLoading, error } = useAdminReports();
+  const { token } = useAuth();
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+
+  // Build query string for backend period filter
+  const qs = from || to
+    ? `?${from ? `from=${encodeURIComponent(from)}` : ''}${from && to ? '&' : ''}${to ? `to=${encodeURIComponent(to)}` : ''}`
+    : '';
+
+  const { data, isLoading, error } = useAdminReports(qs);
 
   const raw = data?.data || data || {};
   const byGroup = raw.byGroup || raw.groups || [];
@@ -106,6 +116,39 @@ export default function AdminReports() {
     <div className="space-y-6 pb-8">
       <PageHeader title="Отчёты" subtitle="Выручка и долги по группам" />
 
+      {/* Period Filter */}
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-secondary)]">
+          <Filter size={14} /> Период:
+        </span>
+        <label className="input input-bordered input-sm flex items-center gap-2">
+          <Calendar size={14} className="opacity-50" />
+          <input
+            type="date"
+            className="grow"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            placeholder="От"
+          />
+        </label>
+        <span className="text-xs text-[var(--text-muted)]">—</span>
+        <label className="input input-bordered input-sm flex items-center gap-2">
+          <Calendar size={14} className="opacity-50" />
+          <input
+            type="date"
+            className="grow"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            placeholder="До"
+          />
+        </label>
+        {(from || to) && (
+          <button className="btn btn-ghost btn-xs" onClick={() => { setFrom(''); setTo(''); }}>
+            Сбросить
+          </button>
+        )}
+      </div>
+
       {/* ═══ KPI Cards ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard Icon={TrendingUp} title="Общая выручка" value={money(totalRevenue)} color="#2ECC71" gradient="linear-gradient(135deg,#2ECC71,#27AE60)" delay="stagger-1" />
@@ -148,7 +191,7 @@ export default function AdminReports() {
           </div>
           {pieData.length === 0 ? (
             <div className="flex items-center justify-center h-48 text-[13px] text-[var(--text-muted)]">
-              <PieIcon size={16} className="mr-2 opacity-40" /> Нет данных
+              <Activity size={16} className="mr-2 opacity-40" /> Нет данных
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
