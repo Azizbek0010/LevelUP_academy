@@ -8,6 +8,8 @@ import { useTrainingTypes, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
+import TrainingTypeIcon from '../../components/TrainingTypeIcon.jsx';
+
 
 const schema = z.object({
   name: z.string().trim().min(1, 'Название обязательно').max(160),
@@ -90,7 +92,7 @@ export default function TrainingTypes() {
               <div className="card-body p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="text-2xl">{tt.icon || '📚'}</div>
+                    <TrainingTypeIcon name={tt.name} icon={tt.icon} className="w-10 h-10" />
                     <div>
                       <Link to={`/methodist/types/${tt.id}/topics`}
                         className="font-bold text-[#1D2417] hover:underline text-base block"
