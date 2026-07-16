@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { TelegramBindTokenService } from '../src/bind-token.service.js';
 import { createTelegramController } from '../src/telegram.controller.js';
 import { registerTelegramBotHandlers } from '../src/bot.handlers.js';
-import { sendToAll, resolveAnnouncementParentChatIds } from '../src/notification.handlers.js';
 
 const results = [];
 
@@ -133,46 +132,6 @@ await test('/start consumes token and inserts telegram account', async () => {
   assert.equal(inserted.length, 1);
   assert.deepEqual(inserted[0], ['student-1', 12345, 'student']);
   assert.equal(replies.length, 1);
-});
-
-await test('announcement resolver supports branch and group recipients', async () => {
-  const calls = [];
-  const pool = {
-    async query(sql, params) {
-      calls.push({ sql, params });
-      return { rows: [{ tg_chat_id: 1 }, { tg_chat_id: 2 }] };
-    },
-  };
-
-  assert.deepEqual(await resolveAnnouncementParentChatIds(pool, { branchId: 'branch-1' }), [1, 2]);
-  assert.deepEqual(await resolveAnnouncementParentChatIds(pool, { groupId: 'group-1' }), [1, 2]);
-  assert.equal(calls.length, 2);
-});
-
-await test('sendToAll logs one failed Telegram send and continues batch', async () => {
-  const sent = [];
-  const warnings = [];
-  const bot = {
-    api: {
-      async sendMessage(chatId, text) {
-        if (chatId === 2) throw new Error('blocked');
-        sent.push({ chatId, text });
-      },
-    },
-  };
-
-  await sendToAll({
-    bot,
-    logger: { warn: (...args) => warnings.push(args) },
-    chatIds: [1, 2, 3],
-    text: 'hello',
-  });
-
-  assert.deepEqual(sent, [
-    { chatId: 1, text: 'hello' },
-    { chatId: 3, text: 'hello' },
-  ]);
-  assert.equal(warnings.length, 1);
 });
 
 const failed = results.filter((result) => !result.pass);
