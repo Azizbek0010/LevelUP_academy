@@ -4,6 +4,11 @@
  * Не имеет доступа к финансовой информации.
  */
 export const up = (pgm) => {
+  // Новое значение enum нельзя использовать в той же транзакции, где оно добавлено
+  // (Postgres 55P04). node-pg-migrate по умолчанию оборачивает весь прогон в одну
+  // транзакцию, поэтому следующая миграция (chk_users_branch_scope с 'methodist')
+  // падала. noTransaction() коммитит ADD VALUE отдельно — значение доступно дальше.
+  pgm.noTransaction();
   pgm.sql(`ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'methodist'`);
 };
 
