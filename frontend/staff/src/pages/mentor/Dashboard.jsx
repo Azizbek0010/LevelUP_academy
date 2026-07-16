@@ -26,7 +26,7 @@ export default function MentorDashboard() {
   const { data: groupsData, isLoading } = useMentorGroups();
   const groups = groupsData?.data || [];
 
-  const totalStudents = groups.reduce((sum, g) => sum + (g.students_count || g.students?.length || 0), 0);
+  const totalStudents = groups.reduce((sum, g) => sum + (g.students || 0), 0);
   const totalHomework = groups.reduce((sum, g) => sum + (g.homework_count || 0), 0);
 
   return (
@@ -71,7 +71,7 @@ export default function MentorDashboard() {
                   </div>
                   <div className="flex items-center gap-4 mt-3 text-xs text-base-content/60">
                     <span className="flex items-center gap-1">
-                      <Users size={13} /> {g.students_count || g.students?.length || 0} o'quvchi
+                      <Users size={13} /> {g.students || 0} o'quvchi
                     </span>
                     {g.monthly_price && (
                       <span className="font-semibold text-base-content/80">

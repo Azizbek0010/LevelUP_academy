@@ -3,7 +3,7 @@
 // USE_MOCKS = true — эмуляция на localStorage для разработки без бэкенда.
 
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
-const USE_MOCKS = false; // true = mock (backend kerak emas), false = real backend
+const USE_MOCKS = true; // true = mock (backend kerak emas), false = real backend
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 

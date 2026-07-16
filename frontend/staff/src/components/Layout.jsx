@@ -37,10 +37,10 @@ const adminNav = [
 
 const mentorNav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
-  { to: '/groups', label: 'Группы', Icon: Users },
   { to: '/attendance', label: 'Davomat', Icon: CalendarCheck },
   { to: '/homework', label: 'Домашки', Icon: ClipboardCheck },
   { to: '/coins', label: 'Коины', Icon: Coins },
+  { to: '/chat', label: 'Чат', Icon: MessageSquare },
 ];
 
 const methodistNav = [
