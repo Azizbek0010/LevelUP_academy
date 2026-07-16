@@ -20,8 +20,8 @@ body {
 }
 
 .table thead th {
-  background: #eef7e4;
-  color: #46543a;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -31,7 +31,7 @@ body {
   transition: background-color 0.12s ease;
 }
 .table tbody tr:hover {
-  background: #f6faef;
+  background: var(--surface-hover);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -121,6 +121,29 @@ body {
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.50);
 
   --sidebar-hover: rgba(198, 255, 52, 0.06);
+
+  /* DaisyUI overrides — force DaisyUI to respect our dark surface tokens */
+  --b1: 26 31 22;      /* base-100 = #1a1f16 (our --surface) */
+  --b2: 35 42 32;      /* base-200 = #232a20 (our --surface-hover) */
+  --b3: 45 54 40;      /* base-300 = #2d3628 (our --border) */
+  --bc: 232 239 226;   /* base-content = #e8efe2 (our --text) */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DAISYUI COMPONENT OVERRIDES — force theme-aware backgrounds
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Modal box — always use our surface token */
+.modal-box {
+  background: var(--surface) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Modal backdrop — softer overlay */
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(4px);
 }
 
 /* ═══════════════════════════════════════════════════════════════

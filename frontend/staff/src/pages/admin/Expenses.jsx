@@ -903,7 +903,7 @@ export default function Expenses() {
       {viewModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box glass-strong max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}><X className="w-4 h-4" /></button>
           <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajat tafsilotlari</h3>
           {viewTarget && (
@@ -959,7 +959,7 @@ export default function Expenses() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setModalOpen(false); }}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box glass-strong max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setModalOpen(false)}><X className="w-4 h-4" /></button>
           <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajat qo'shish</h3>
           <div className="space-y-5">
@@ -1071,7 +1071,7 @@ export default function Expenses() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setDeleteTarget(null); }}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box max-w-md relative z-10" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box glass-strong max-w-md relative z-10" onClick={(e) => e.stopPropagation()}>
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setDeleteTarget(null)}><X className="w-4 h-4" /></button>
           <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajatni o'chirish</h3>
           <div className="space-y-5">
