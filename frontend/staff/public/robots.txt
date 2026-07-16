@@ -1,11 +1,14 @@
-# LevelUp Academy — Staff panel (private CRM).
-# Every route is behind authentication. Nothing here is public content.
-# Indexing is disallowed for all crawlers, including AI/LLM crawlers.
+# LevelUp Academy — Staff panel.
+# Only the login page is public. Everything behind it is a private, auth-gated CRM.
+# Search engines may crawl /login (so staff can find where to sign in) and the JS/CSS
+# it needs to render — nothing else.
 
 User-agent: *
+Allow: /login
+Allow: /assets/
 Disallow: /
 
-# AI / LLM crawlers — explicit, so they cannot fall back on a permissive default.
+# AI / LLM crawlers — no login form to index for them, keep fully out.
 User-agent: GPTBot
 Disallow: /
 
@@ -45,4 +48,4 @@ Disallow: /
 User-agent: meta-externalagent
 Disallow: /
 
-# No sitemap: this app has no indexable URLs.
+Sitemap: https://staff.levelup-academy.uz/sitemap.xml

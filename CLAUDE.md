@@ -233,7 +233,7 @@ LevelUp-Academy/
 | **Karis** (@Azizbek2603) — **Team Lead**, владелец репо | Backend: Auth, Main Admin, Super Admin, Admin, Billing, платежи | **ВСЁ**: видит и правит любые файлы (frontend + backend), коммитит прямо в `main` |
 | **Abdulaziz** (@YakubovAbdulaziz) | Backend: Mentor, Student, Parent, Инфраструктура + **SEO (полный)** | Своя backend-зона; **как `abdulazizSEO`** — SEO-правки в любых файлах обеих зон. (Super Admin backend-интеграция возвращена Karis'у.) |
 | **Bilol** | Telegram-бот | только `backend/src/modules/telegram/` + воркеры уведомлений |
-| **iface9808-sketch** (GitHub) | Parent фронт (переведён из Methodist) | только `frontend/member` (parent) |
+| **Kama** (TG @Azizovcf, git: iface9808-sketch) | Parent фронт (переведён из Methodist) | только `frontend/member` (parent) |
 | **Elyor** (@Elyor2011) | Auth фронт, каркас SPA | только auth-часть фронта |
 | **Shohjahon** | Main Admin фронт (завершил Super Admin → переведён на Main Admin) | только `frontend/main-admin` |
 | **Said Islom** | Methodist фронт (переведён из Super Admin — панель завершена) | только `frontend/staff` (methodist) |
