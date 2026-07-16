@@ -7,6 +7,8 @@
 - **Search Console:** domain-property `sc-domain:levelup-academy.uz` (владельцы: thermidorplus@gmail.com, amangeldiev.azizbek.010@gmail.com)
 - **GA4:** `G-RWCK0B6TXP` (ресурс `levelup-1c059 / 544460142`), связан с GSC
 - **Bing Webmaster:** импортирован из GSC, sitemap отправлен
+- **Yandex Webmaster:** сайт `https://levelup-academy.uz` подтверждён через DNS TXT (`yandex-verification: 3fad9273b6b005db`, Cloudflare). ⚠️ meta/HTML-file методы НЕ работают: корень `/` отдаёт 308→`/landing`, а `cleanUrls` режет `.html` — Яндексу нужен 200 на главной. Только DNS.
+- **DNS:** Cloudflare (NS `jobs/elle.ns.cloudflare.com`); там TXT для Google + Yandex + SPF
 - Обновлено: 2026-07-16
 
 ---
@@ -25,6 +27,7 @@
 | **Страница тарифов** `/landing/pricing` (+`/uz/...`) — реальные цены, Offer/AggregateOffer + FAQPage schema.org, акцент на гарантии | `pages/Pricing.jsx`, `i18n/`, sitemap | 16.07 |
 | GSC: sitemap отправлен, GA4 связан, prerender подтверждён (Google видит текст) | — | 15.07 |
 | Bing: сайт добавлен (импорт из GSC), sitemap отправлен | — | 15.07 |
+| **Yandex Webmaster: сайт подтверждён** (DNS TXT в Cloudflare) + meta-тег в коде как доп. сигнал | `index.html` (meta), Cloudflare DNS | 16.07 |
 
 ---
 
@@ -73,6 +76,12 @@
       `.../finance`, `.../gamification`, `.../contacts`). Ручное действие в браузере.
 - [ ] **GSC: запросить индексацию 2 URL тарифов** (`/landing/pricing`, `/uz/landing/pricing`)
       после деплоя. Приоритетные — коммерческий запрос «сколько стоит / narxi».
+- [ ] **Yandex: отправить sitemap** `https://levelup-academy.uz/sitemap.xml`
+      (Вебмастер → Индексирование → Файлы Sitemap). Ручное действие.
+- [ ] **Yandex: указать регион «Узбекистан»** (Вебмастер → Информация о сайте → Региональность) —
+      важно для гео-ранжирования в UZ.
+- [ ] **IndexNow** (мгновенная индексация Яндекс + Bing, без Вебмастера): ключ-файл в `public/`
+      + пинг всех URL sitemap. Код-задача, целиком в SEO-зоне — можно сделать в любой момент.
 - [ ] **После деплоя staff/member: проверить, что индексируется ТОЛЬКО `/login`.**
       `curl -sI https://staff.levelup-academy.uz/login` → НЕТ `X-Robots-Tag`;
       `curl -sI https://staff.levelup-academy.uz/` → ЕСТЬ `X-Robots-Tag: noindex`.
