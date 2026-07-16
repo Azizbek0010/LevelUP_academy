@@ -13,6 +13,7 @@ export default {
     roles: 'Rollar',
     finance: 'Moliya',
     pricing: 'Tariflar',
+    langSchool: 'Til markazlariga',
     gamification: 'Motivatsiya',
     contacts: 'Aloqa',
     home: 'Bosh sahifa',
@@ -572,6 +573,95 @@ export default {
       "Ariza qoldiring — markazingiz hajmiga mos tarifni tanlaymiz va birinchi haftani bepul ulaymiz.",
   },
 
+  langSchool: {
+    badge: 'Til markazlari uchun',
+    h1: 'Til markazi uchun CRM',
+    lead: "Darajali guruhlar, davomat, uy vazifalari, to'lovlar va o'quvchilar motivatsiyasi — bitta tizimda. LevelUp Academy til markazini to'liq yuritadi: o'quvchini yozishdan tushum hisobotigacha.",
+    intro:
+      "Ingliz tili, IELTS/CEFR, koreys, arab, rus tili — LevelUp Academy fanga bog'liq emas. Bu til asosiy yo'nalish bo'lgan o'quv markazi uchun tizim: ichida hech qanday «dasturlash» yo'q.",
+    pricingLink: "Tariflarni ko'rish",
+
+    fitHead: 'Til markaziga moslangan',
+    fitLead: "Til markazlari qo'lda qiladigan ishlar bu yerda o'zi ishlaydi.",
+    fit: [
+      {
+        icon: 'calendar',
+        title: 'Darajali guruhlar',
+        text: "A1–C1, boshlang'ich va davom etuvchi, IELTS va suhbat guruhlari — har biri mentor, jadval va narxi bilan. O'quvchi yuqori darajaga o'tsa, tarixi qoladi.",
+      },
+      {
+        icon: 'check',
+        title: 'Davomat',
+        text: "Mentor davomatni bir daqiqada belgilaydi. Ota-ona bola darsda bo'lganini ko'radi, kelmaslik esa darhol Telegram'ga uchadi — administrator qo'ng'iroq qilmaydi.",
+      },
+      {
+        icon: 'book',
+        title: 'Uy vazifalari',
+        text: "Fayl va deadline bilan uy vazifalari: esse, speaking uchun audio, grammatika. Fayllar telefondan yuklanadi, topshirilgani uchun o'quvchi koin oladi.",
+      },
+      {
+        icon: 'clock',
+        title: 'Testlar va imtihonlar',
+        text: "Server taymerli test konstruktori: lug'at, grammatika, sinov IELTS/CEFR. Deadline'dan keyin topshirish yopiladi — javoblarni soxtalashtirib bo'lmaydi.",
+      },
+      {
+        icon: 'coin',
+        title: "To'lovlar va qarzlar",
+        text: "Kurs uchun yoki oylik, naqd va karta, split-to'lov. To'lanmadi — o'quvchi avtomatik qarzdorlar ro'yxatida, qarz darhol ko'rinadi.",
+      },
+      {
+        icon: 'star',
+        title: "Til o'rganishga motivatsiya",
+        text: "Baho, davomat va topshirilgan vazifalar uchun koinlar, mukofotlar do'koni va reytinglar. Bolalar tilni majburan emas, qiziqish bilan o'rganadi.",
+      },
+    ],
+
+    howHead: 'Yozishdan hisobotgacha',
+    howLead: 'LevelUp Academy bilan til markazining bir kuni.',
+    how: [
+      {
+        title: "O'quvchini yozdik",
+        text: "Administrator o'quvchini kiritdi, daraja bo'yicha guruhga qo'shdi va kurs uchun to'lovni qabul qildi. Ota-ona kirish va Telegram bildirishnomalarini oldi.",
+      },
+      {
+        title: 'Darslarni yuritamiz',
+        text: "Mentor davomatni belgilaydi, uy vazifasi va testlar beradi, speaking'dagi faollik uchun koin qo'shadi. Ota-onalar progressni real vaqtda ko'radi.",
+      },
+      {
+        title: "Natijani ko'ramiz",
+        text: "Tushum, qarzlar va davomat — panelda. Qaysi o'quvchi kelmasliklar sabab tashlab ketish arafasida ekani kurs oxirida emas, oldindan ko'rinadi.",
+      },
+    ],
+
+    faqHead: "Ko'p beriladigan savollar",
+    faq: [
+      {
+        q: 'LevelUp Academy til maktabiga to\'g\'ri keladimi?',
+        a: "Ha. Bu har qanday yo'nalishdagi o'quv markazi uchun CRM: ingliz, IELTS, koreys, arab, rus tili. Darajali guruhlar, davomat, uy vazifalari, testlar, to'lovlar va motivatsiya — barchasi til markazi vazifalariga mos. Ichida aniq fanga bog'langan narsa yo'q.",
+      },
+      {
+        q: 'Darajali guruhlar (A1–C1, IELTS) yuritish mumkinmi?',
+        a: "Ha. Har bir guruh — o'z mentori, darajasi, jadvali va narxi bilan. O'quvchi keyingi darajaga o'tsa, davomat, baho va to'lovlar tarixi saqlanadi.",
+      },
+      {
+        q: 'Ota-onalar baho va kelmaslik haqida qanday biladi?',
+        a: "Telegram orqali. Ota-ona bir martalik kod bilan akkauntini bog'laydi va bildirishnoma oladi: kelmaslik, baho, qarz. Ilova o'rnatish shart emas.",
+      },
+      {
+        q: 'Til maktabining nechta filialini ulash mumkin?',
+        a: "Cheklovsiz. Har bir filial izolyatsiya qilingan, rahbar esa butun tarmoqni ko'radi: filiallar bo'yicha tushum, davomat va qarzlarni solishtiradi.",
+      },
+      {
+        q: 'Til maktabi uchun narxi qancha?',
+        a: "Narx faol o'quvchilar soniga qarab, filiallar cheksiz kiradi. Birinchi hafta — bepul, kartasiz. Batafsil — tariflar sahifasida.",
+      },
+    ],
+
+    ctaTitle: "Til markazida tartib o'rnatamizmi?",
+    ctaText:
+      "Ariza qoldiring — LevelUp Academy til markazida guruhlar, to'lovlar va motivatsiyani qanday yuritishini ko'rsatamiz. Birinchi hafta bepul.",
+  },
+
   gamification: {
     badge: 'Motivatsiya',
     h1: "O'quvchilar zerikib o'tirmaydi, musobaqalashadi",
@@ -722,6 +812,11 @@ export default {
       title: "Tariflar va narxlar — o'quv markazi uchun CRM | LevelUp",
       description:
         "LevelUp Academy narxlari: 30 o'quvchigacha bepul, keyin 199 000 so'm/oyidan. Narx o'quvchilar soniga qarab, filiallar cheksiz kiradi, birinchi hafta bepul.",
+    },
+    langSchool: {
+      title: "Til markazi uchun CRM — guruhlar, to'lovlar | LevelUp",
+      description:
+        "Til o'quv markazi uchun CRM: darajali guruhlar, davomat, uy vazifalari, testlar, to'lovlar va o'quvchilar motivatsiyasi bitta tizimda. Birinchi hafta bepul.",
     },
     gamification: {
       title: 'Motivatsiya va geymifikatsiya | LevelUp Academy',

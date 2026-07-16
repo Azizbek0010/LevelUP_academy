@@ -22,6 +22,7 @@ const PAGES = [
   '/landing/roles',
   '/landing/finance',
   '/landing/pricing',
+  '/landing/for-language-school',
   '/landing/gamification',
   '/landing/contacts',
 ];
