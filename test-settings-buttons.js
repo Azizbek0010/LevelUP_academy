@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 
-const BASE = 'http://localhost:5174';
+const BASE = 'http://localhost:5176';
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -14,40 +14,66 @@ const BASE = 'http://localhost:5174';
   function fail(name, reason) { failed++; console.log(`  ❌ ${name}: ${reason}`); }
 
   try {
-    // ═══ Bypass login via localStorage ═══
-    console.log('\n═══ BYPASS LOGIN ═══');
-    await page.goto(`${BASE}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    // ═══ REAL LOGIN ═══
+    console.log('\n═══ LOGIN ═══');
+    await page.goto(`${BASE}/login`, { waitUntil: 'networkidle', timeout: 20000 });
     await page.waitForTimeout(1000);
 
-    // Inject auth into localStorage
-    await page.evaluate(() => {
-      localStorage.setItem('staff_access_token', 'test-token-bypass');
-      localStorage.setItem('staff_user', JSON.stringify({
-        id: 1, email: 'admin.demo@levelup.local', role: 'admin',
-        firstName: 'Admin', lastName: 'Demo'
-      }));
-    });
-    ok('Auth tokens injected into localStorage');
+    // Fill email
+    const emailInput = await page.$('input[placeholder*="mail"], input[type="email"]');
+    if (emailInput) {
+      await emailInput.fill('hp8187081014laptop@gmail.com');
+      ok('Email filled');
+    } else {
+      fail('Email input', 'not found');
+    }
 
-    // Navigate to settings
-    await page.goto(`${BASE}/settings`, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    await page.waitForTimeout(3000);
+    // Fill password
+    const pwInput = await page.$('input[type="password"], input[placeholder*="•"]');
+    if (pwInput) {
+      await pwInput.fill('ChangeMe123!');
+      ok('Password filled');
+    } else {
+      fail('Password input', 'not found');
+    }
 
-    // Check page
+    // Click login
+    const loginBtn = await page.$('button:has-text("Войти"):not([disabled])');
+    if (loginBtn) {
+      await loginBtn.click();
+      await page.waitForTimeout(4000);
+      ok('Login button clicked');
+    } else {
+      fail('Login button', 'not found');
+    }
+
+    // Check redirect
     const url = page.url();
-    console.log(`  📍 Current URL: ${url}`);
+    console.log(`  📍 URL after login: ${url}`);
+    if (!url.includes('/login')) {
+      ok(`Logged in → redirected to ${url}`);
+    } else {
+      fail('Login failed', `still on ${url} — trying to continue anyway`);
+    }
 
+    // Navigate to settings via sidebar click (direct URL doesn't work)
+    const settingsLink = await page.locator('a[href*="settings"], a:has-text("Настройки")').first();
+    if (settingsLink) {
+      await settingsLink.click();
+      await page.waitForTimeout(3000);
+      ok('Navigated to Settings via sidebar');
+    } else {
+      fail('Settings link', 'not found in sidebar');
+    }
+
+    // Check page loaded
     const bodyText = await page.textContent('body');
-    const hasSettings = bodyText.includes('Настройки');
+    const hasSettings = bodyText.includes('Настройки филиала');
     if (hasSettings) {
       ok('Settings page loaded');
     } else {
-      // Check what page we're on
-      const title = bodyText.substring(0, 200);
-      fail('Settings page', `page shows: "${title}"`);
-      // Try screenshot to debug
-      await page.screenshot({ path: 'C:/Users/user/OneDrive/Desktop/LevelUP_academy/debug-login.png', fullPage: true });
-      console.log('  📸 Screenshot saved: debug-login.png');
+      fail('Settings page', `page shows: "${bodyText.substring(0, 150)}"`);
+      await page.screenshot({ path: 'C:/Users/user/OneDrive/Desktop/LevelUP_academy/screenshots/debug-settings-nav.png', fullPage: true });
     }
 
     // ═══ TAB NAVIGATION ═══
