@@ -8,6 +8,7 @@ import Roles from './pages/Roles.jsx';
 import Finance from './pages/Finance.jsx';
 import Pricing from './pages/Pricing.jsx';
 import ForLanguageSchool from './pages/ForLanguageSchool.jsx';
+import ForCourses from './pages/ForCourses.jsx';
 import Blog from './pages/Blog.jsx';
 import BlogArticle from './pages/BlogArticle.jsx';
 import Gamification from './pages/Gamification.jsx';
@@ -28,6 +29,7 @@ export const PAGES = [
   { path: '/landing/finance', element: <Finance /> },
   { path: '/landing/pricing', element: <Pricing /> },
   { path: '/landing/for-language-school', element: <ForLanguageSchool /> },
+  { path: '/landing/for-courses', element: <ForCourses /> },
   { path: '/landing/blog', element: <Blog /> },
   { path: '/landing/blog/:slug', element: <BlogArticle /> },
   { path: '/landing/gamification', element: <Gamification /> },
