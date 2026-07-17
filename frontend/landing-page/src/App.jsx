@@ -6,9 +6,14 @@ import Home from './pages/Home.jsx';
 import Features from './pages/Features.jsx';
 import Roles from './pages/Roles.jsx';
 import Finance from './pages/Finance.jsx';
+import Pricing from './pages/Pricing.jsx';
+import ForLanguageSchool from './pages/ForLanguageSchool.jsx';
+import Blog from './pages/Blog.jsx';
+import BlogArticle from './pages/BlogArticle.jsx';
 import Gamification from './pages/Gamification.jsx';
 import Contacts from './pages/Contacts.jsx';
 import NotFound from './pages/NotFound.jsx';
+import { trackPageView } from './lib/analytics.js';
 
 /**
  * Канонические пути лендинга. Русская версия живёт на них как есть, узбекская — под
@@ -20,6 +25,10 @@ export const PAGES = [
   { path: '/landing/features', element: <Features /> },
   { path: '/landing/roles', element: <Roles /> },
   { path: '/landing/finance', element: <Finance /> },
+  { path: '/landing/pricing', element: <Pricing /> },
+  { path: '/landing/for-language-school', element: <ForLanguageSchool /> },
+  { path: '/landing/blog', element: <Blog /> },
+  { path: '/landing/blog/:slug', element: <BlogArticle /> },
   { path: '/landing/gamification', element: <Gamification /> },
   { path: '/landing/contacts', element: <Contacts /> },
 ];
@@ -28,6 +37,11 @@ function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Fire after the route's useSeo effect has set document.title (child effects
+    // run before this parent effect, but title is set in the page effect which
+    // runs first for the new route only after paint on some paths — defer to be safe).
+    const id = setTimeout(() => trackPageView(pathname), 0);
+    return () => clearTimeout(id);
   }, [pathname]);
   return null;
 }

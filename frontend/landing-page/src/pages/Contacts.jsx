@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Icon from '../components/Icon.jsx';
 import { breadcrumb, useSeo } from '../lib/seo.js';
+import { trackEvent } from '../lib/analytics.js';
 import { useLang, useT } from '../i18n/index.js';
 
 // в dev — vite-прокси на :4000; в prod задаётся VITE_API_URL
@@ -59,6 +60,11 @@ export default function Contacts() {
         return;
       }
       setStatus('sent');
+      // GA4 conversion: mark this as a lead in Analytics (set as a key event in GA4).
+      trackEvent('generate_lead', {
+        method: 'landing_form',
+        center_size: centerSize || undefined,
+      });
     } catch {
       setError(c.form.errorNetwork);
       setStatus('error');
