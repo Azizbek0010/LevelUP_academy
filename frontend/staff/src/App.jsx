@@ -26,6 +26,7 @@ const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
 const AdminGroups = lazy(() => import('./pages/admin/Groups.jsx'));
 const AdminGroupDetail = lazy(() => import('./pages/admin/GroupDetail.jsx'));
 const AdminPayments = lazy(() => import('./pages/admin/Payments.jsx'));
+const AdminStudentDetail = lazy(() => import('./pages/admin/StudentDetail.jsx'));
 const AdminExpenses = lazy(() => import('./pages/admin/Expenses.jsx'));
 const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'));
 const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
@@ -91,6 +92,7 @@ export default function App() {
         <Route element={<RoleGuard allow={['admin']} />}>
           <Route path="/groups/:id" element={<SW><AdminGroupDetail /></SW>} />
           <Route path="/payments" element={<SW><AdminPayments /></SW>} />
+          <Route path="/students/:id" element={<SW><AdminStudentDetail /></SW>} />
           <Route path="/expenses" element={<SW><AdminExpenses /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
           <Route path="/chat" element={<SW><AdminChat /></SW>} />
