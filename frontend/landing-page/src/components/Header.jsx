@@ -40,7 +40,7 @@ export default function Header() {
       <header className="header">
         <div className="container header__inner">
           <Link to={lp('/landing')} className="header__logo" onClick={close}>
-            <img src="/logo-mark.svg" alt="LevelUp Academy" />
+            <img src="/logo-mark.svg" alt="LevelUp Academy" width="30" height="30" />
             LevelUp Academy
           </Link>
 
@@ -85,7 +85,7 @@ export default function Header() {
       />
       <aside className={`drawer${open ? ' drawer--open' : ''}`}>
         <div className="drawer__head">
-          <img src="/logo-mark.svg" alt="" />
+          <img src="/logo-mark.svg" alt="" width="28" height="28" />
           <span>LevelUp Academy</span>
         </div>
         <nav className="drawer__nav">

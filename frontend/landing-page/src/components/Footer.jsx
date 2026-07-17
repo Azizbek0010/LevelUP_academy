@@ -10,7 +10,7 @@ export default function Footer() {
       <div className="container">
         <div className="footer__grid">
           <div className="footer__brand">
-            <img src="/logo-white.svg" alt="LevelUp Academy" />
+            <img src="/logo-white.svg" alt="LevelUp Academy" width="168" height="30" />
             <p>{t.footer.tagline}</p>
           </div>
           <div className="footer__col">

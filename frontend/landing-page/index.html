@@ -11,6 +11,10 @@
          Yandex's exact-URL file check. Same code across all verification methods. -->
     <meta name="yandex-verification" content="3fad9273b6b005db" />
 
+    <!-- Warm up the GA connection early (DNS + TLS) so the async tag loads faster. -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="preconnect" href="https://www.google-analytics.com" crossorigin />
+
     <!-- Google Analytics (GA4) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RWCK0B6TXP"></script>
     <script>
