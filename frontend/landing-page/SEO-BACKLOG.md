@@ -7,7 +7,9 @@
 - **Search Console:** domain-property `sc-domain:levelup-academy.uz` (владельцы: thermidorplus@gmail.com, amangeldiev.azizbek.010@gmail.com)
 - **GA4:** `G-RWCK0B6TXP` (ресурс `levelup-1c059 / 544460142`), связан с GSC
 - **Bing Webmaster:** импортирован из GSC, sitemap отправлен
-- Обновлено: 2026-07-15
+- **Yandex Webmaster:** сайт `https://levelup-academy.uz` подтверждён через DNS TXT (`yandex-verification: 3fad9273b6b005db`, Cloudflare). ⚠️ meta/HTML-file методы НЕ работают: корень `/` отдаёт 308→`/landing`, а `cleanUrls` режет `.html` — Яндексу нужен 200 на главной. Только DNS.
+- **DNS:** Cloudflare (NS `jobs/elle.ns.cloudflare.com`); там TXT для Google + Yandex + SPF
+- Обновлено: 2026-07-16
 
 ---
 
@@ -22,8 +24,15 @@
 | `noindex` на всех приватных панелях (main-admin, student) + API | панели + `backend/src/app.js` | 14.07 |
 | staff и member: индексируется ТОЛЬКО `/login` (чтобы пользователь находил вход через Google), остальное `noindex` | `staff/`, `member/` (robots + vercel.json + index.html + sitemap) | 15.07 |
 | Узбекская версия `/uz` — i18n, hreflang, 12 prerendered страниц | `src/i18n/`, `App.jsx` | 14–15.07 |
+| **Страница тарифов** `/landing/pricing` (+`/uz/...`) — реальные цены, Offer/AggregateOffer + FAQPage schema.org, акцент на гарантии | `pages/Pricing.jsx`, `i18n/`, sitemap | 16.07 |
+| **Ниша «для языковой школы»** `/landing/for-language-school` (+`/uz/...`) — FAQPage + Breadcrumb, ссылка из футера + на тарифы (не orphan) | `pages/ForLanguageSchool.jsx`, `i18n/`, `Footer.jsx`, sitemap | 16.07 |
+| **IndexNow** (Яндекс+Bing): ключ-файл + `scripts/indexnow.js` (URL из sitemap) → `npm run indexnow`. Пинг 24 URL отправлен (202) | `public/<key>.txt`, `scripts/indexnow.js` | 16.07 |
+| **GA4 SPA-трекинг**: `send_page_view:false` + ручной `page_view` на каждый роут (верный path+title, без задвоения) + конверсия `generate_lead` на отправку формы | `lib/analytics.js`, `App.jsx`, `Contacts.jsx`, `index.html` | 17.07 |
+| **Page speed**: аудит + preconnect к GA, `width/height` на логотипах (CLS). Шрифт уже ленивый (unicode-range, subsets не качаются), `font-display:swap`, рендер-картинок нет. Замер (локально): LCP 336мс, CLS 0 | `index.html`, `Header.jsx`, `Footer.jsx` | 17.07 |
+| **A11y / семантика**: аудит (alt, aria, 1×h1/стр, label — уже были ок) + добавлено skip-to-content (WCAG 2.4.1) и `aria-label` на 2 `<nav>` | `App.jsx`, `Header.jsx`, `i18n/`, `index.css` | 17.07 |
 | GSC: sitemap отправлен, GA4 связан, prerender подтверждён (Google видит текст) | — | 15.07 |
 | Bing: сайт добавлен (импорт из GSC), sitemap отправлен | — | 15.07 |
+| **Yandex Webmaster: сайт подтверждён** (DNS TXT в Cloudflare) + meta-тег в коде как доп. сигнал | `index.html` (meta), Cloudflare DNS | 16.07 |
 
 ---
 
@@ -34,28 +43,33 @@
 
 ### P1 — брать первым
 
-- [ ] **Страница тарифов** (`/landing/pricing` + `/uz/...`). Запрос «сколько стоит / narxi» —
-      частый, коммерческий, низкая конкуренция. Offer-разметка schema.org (её читают AI).
-      **Блокер: нужны реальные цены** — модель (за филиал / за ученика / фикс), тарифы,
-      что входит в бесплатную неделю.
-- [ ] **Ниша «для языковой школы»** (`/landing/for-language-school` + `/uz/...`). Запрос
-      «программа для языковой школы» / «til markazi uchun dastur». Крупнейший и наименее
-      конкурентный сегмент в UZ; узбекская версия — шанс в топ быстрее русской. Цены не нужны.
+- [x] ~~**Страница тарифов** (`/landing/pricing` + `/uz/...`)~~ — ✅ 16.07. Реальные цены получены
+      (фикс по бакету учеников, совпадает с `backend/config/plans.js` TIERS), Offer/AggregateOffer +
+      FAQPage schema.org, акцент на гарантии (возврат 30 дней, бэкап, запуск за неделю). Блокер снят.
+- [x] ~~**Ниша «для языковой школы»** (`/landing/for-language-school` + `/uz/...`)~~ — ✅ 16.07.
+      Запрос «программа для языковой школы» / «til markazi uchun dastur». Полный SEO-каркас +
+      FAQPage, ссылка из футера (sitewide) и на тарифы. Верифицировано: build + браузер (гидратация чистая).
 
 ### P2 — следом
 
-- [ ] **Шлифовка on-page** главной и `/landing/finance` под точные запросы («программа для
-      учёта учеников», «электронный журнал», «o'quvchilar hisobi dasturi»). Правки только в
-      seo-блоках `i18n/ru.js` и `i18n/uz.js`. URL не менять — уже в индексе.
-- [ ] **Ниша «для курсов и репетиторов»** (+ `/uz/...`). «CRM для курсов», «репетиторский центр».
+- [x] ~~**Шлифовка on-page** главной и `/landing/finance`~~ — ✅ 16.07. title/description
+      главной и finance (ru+uz) переписаны под точные запросы: «программа для учёта учеников»,
+      «электронный журнал», «учёт оплат/долгов учеников», «o'quvchilar hisobi dasturi»,
+      «elektron jurnal». URL не тронуты, title ≤60. Правки только в seo-блоках `i18n`.
+- [x] ~~**Ниша «для курсов и репетиторов»** `/landing/for-courses` (+`/uz/...`)~~ — ✅ 17.07.
+      «CRM для курсов», «репетиторский центр», «kurslar uchun CRM». FAQPage + Breadcrumb,
+      ссылка из футера + на тарифы. Verify: build (sitemap 26 URL) + браузер (гидратация чистая, ru+uz).
 - [ ] **Страница «CRM вместо Excel»** — запрос миграции, высокое намерение сменить инструмент.
       На `/landing/finance` уже есть таблица «до/после» — развернуть в отдельную страницу.
 
 ### P3 — длинный хвост + топливо для AI-поиска
 
-- [ ] **Блог / база знаний**, 2–3 стартовые статьи (ru + uz): «как перейти с Excel на CRM»,
-      «как не терять деньги на долгах учеников», «как автоматизировать посещаемость».
-      Информационные запросы + именно такие тексты цитируют ChatGPT/Perplexity.
+- [x] ~~**Блог / база знаний**, 3 стартовые статьи (ru + uz)~~ — ✅ 16.07.
+      `/landing/blog` (индекс) + `excel-to-crm`, `student-debts`, `attendance-automation`.
+      Каждая: `BlogPosting` + `BreadcrumbList` JSON-LD, тело в prerender (видно AI без JS),
+      ссылка из футера. Инфраструктура блога (индекс + шаблон статьи по `:slug`) готова —
+      новые статьи добавляются одним ключом в `i18n .blog.articles` + путь в prerender/sitemap.
+      Verify: build (24 URL) + браузер (гидратация чистая, ru+uz).
 
 > При добавлении любой страницы — чеклист в [SEO.md](./SEO.md) §«Adding a page»
 > (i18n ru+uz → App.jsx PAGES → prerender ROUTES → sitemap обе версии + hreflang).
@@ -71,6 +85,14 @@
       Нужен реальный handle.
 - [ ] **GSC: запросить индексацию 6 узбекских URL** (`/uz/landing`, `.../features`, `.../roles`,
       `.../finance`, `.../gamification`, `.../contacts`). Ручное действие в браузере.
+- [ ] **GSC: запросить индексацию 2 URL тарифов** (`/landing/pricing`, `/uz/landing/pricing`)
+      после деплоя. Приоритетные — коммерческий запрос «сколько стоит / narxi».
+- [ ] **Yandex: отправить sitemap** `https://levelup-academy.uz/sitemap.xml`
+      (Вебмастер → Индексирование → Файлы Sitemap). Ручное действие.
+- [ ] **Yandex: указать регион «Узбекистан»** (Вебмастер → Информация о сайте → Региональность) —
+      важно для гео-ранжирования в UZ.
+- [ ] **IndexNow** (мгновенная индексация Яндекс + Bing, без Вебмастера): ключ-файл в `public/`
+      + пинг всех URL sitemap. Код-задача, целиком в SEO-зоне — можно сделать в любой момент.
 - [ ] **После деплоя staff/member: проверить, что индексируется ТОЛЬКО `/login`.**
       `curl -sI https://staff.levelup-academy.uz/login` → НЕТ `X-Robots-Tag`;
       `curl -sI https://staff.levelup-academy.uz/` → ЕСТЬ `X-Robots-Tag: noindex`.
@@ -102,9 +124,9 @@
 
 ## ⛅ Ждём входных данных от Abdulaziz
 
-- **Цены/тарифы** — разблокирует страницу тарифов (P1).
+- ~~**Цены/тарифы**~~ — ✅ получены 16.07, страница тарифов сделана.
 - **Telegram-handle** — для футера.
-- **Носитель узбекского** — вычитать `i18n/uz.js`.
+- **Носитель узбекского** — вычитать `i18n/uz.js` (теперь и блок `pricing`).
 
 ---
 

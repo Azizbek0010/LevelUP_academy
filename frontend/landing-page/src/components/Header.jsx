@@ -14,6 +14,7 @@ export default function Header() {
     { to: lp('/landing/features'), label: t.nav.features },
     { to: lp('/landing/roles'), label: t.nav.roles },
     { to: lp('/landing/finance'), label: t.nav.finance },
+    { to: lp('/landing/pricing'), label: t.nav.pricing },
     { to: lp('/landing/gamification'), label: t.nav.gamification },
   ];
 
@@ -39,12 +40,12 @@ export default function Header() {
       <header className="header">
         <div className="container header__inner">
           <Link to={lp('/landing')} className="header__logo" onClick={close}>
-            <img src="/logo-mark.svg" alt="LevelUp Academy" />
+            <img src="/logo-mark.svg" alt="LevelUp Academy" width="30" height="30" />
             LevelUp Academy
           </Link>
 
           {/* Десктоп-навигация */}
-          <nav className="nav">
+          <nav className="nav" aria-label={t.nav.primaryLabel}>
             {links.map((l) => (
               <NavLink
                 key={l.to}
@@ -84,10 +85,10 @@ export default function Header() {
       />
       <aside className={`drawer${open ? ' drawer--open' : ''}`}>
         <div className="drawer__head">
-          <img src="/logo-mark.svg" alt="" />
+          <img src="/logo-mark.svg" alt="" width="28" height="28" />
           <span>LevelUp Academy</span>
         </div>
-        <nav className="drawer__nav">
+        <nav className="drawer__nav" aria-label={t.nav.mobileLabel}>
           <NavLink to={lp('/landing')} end onClick={close}>
             {t.nav.home}
           </NavLink>

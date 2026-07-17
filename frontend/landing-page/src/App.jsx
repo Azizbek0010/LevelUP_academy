@@ -6,9 +6,16 @@ import Home from './pages/Home.jsx';
 import Features from './pages/Features.jsx';
 import Roles from './pages/Roles.jsx';
 import Finance from './pages/Finance.jsx';
+import Pricing from './pages/Pricing.jsx';
+import ForLanguageSchool from './pages/ForLanguageSchool.jsx';
+import ForCourses from './pages/ForCourses.jsx';
+import Blog from './pages/Blog.jsx';
+import BlogArticle from './pages/BlogArticle.jsx';
 import Gamification from './pages/Gamification.jsx';
 import Contacts from './pages/Contacts.jsx';
 import NotFound from './pages/NotFound.jsx';
+import { trackPageView } from './lib/analytics.js';
+import { useT } from './i18n/index.js';
 
 /**
  * Канонические пути лендинга. Русская версия живёт на них как есть, узбекская — под
@@ -20,6 +27,11 @@ export const PAGES = [
   { path: '/landing/features', element: <Features /> },
   { path: '/landing/roles', element: <Roles /> },
   { path: '/landing/finance', element: <Finance /> },
+  { path: '/landing/pricing', element: <Pricing /> },
+  { path: '/landing/for-language-school', element: <ForLanguageSchool /> },
+  { path: '/landing/for-courses', element: <ForCourses /> },
+  { path: '/landing/blog', element: <Blog /> },
+  { path: '/landing/blog/:slug', element: <BlogArticle /> },
   { path: '/landing/gamification', element: <Gamification /> },
   { path: '/landing/contacts', element: <Contacts /> },
 ];
@@ -28,15 +40,27 @@ function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Fire after the route's useSeo effect has set document.title (child effects
+    // run before this parent effect, but title is set in the page effect which
+    // runs first for the new route only after paint on some paths — defer to be safe).
+    const id = setTimeout(() => trackPageView(pathname), 0);
+    return () => clearTimeout(id);
   }, [pathname]);
   return null;
 }
 
 export default function App() {
+  const t = useT();
   return (
     <>
       <ScrollToTop />
+      <a href="#main-content" className="skip-link">
+        {t.nav.skipToContent}
+      </a>
       <Header />
+      {/* Skip-link focus target. A <div>, not <main>: each page renders its own
+          <main> landmark, and nesting <main> would be invalid. */}
+      <div id="main-content" tabIndex={-1}>
       <Routes>
         {/* В проде корень редиректит Vercel (308). Здесь — для dev-сервера и для
             прямого перехода внутри SPA. */}
@@ -53,6 +77,7 @@ export default function App() {
             делал из любого несуществующего адреса «живую» страницу (soft-404). */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </div>
       <Footer />
     </>
   );
