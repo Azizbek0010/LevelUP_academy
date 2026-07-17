@@ -104,12 +104,12 @@ export function useMentorGroupStudents(groupId) {
   });
 }
 
-export function useMentorAttendance(groupId, date) {
+export function useMentorAttendance(groupId, params) {
   const { token } = useAuth();
   return useAuthedQuery(
-    ['mentor-attendance', groupId, date],
-    () => api.mentorAttendance(token, groupId, { date }),
-    { enabled: !!groupId && !!date },
+    ['mentor-attendance', groupId, params],
+    () => api.mentorAttendance(token, groupId, params),
+    { enabled: !!groupId && !!params },
   );
 }
 

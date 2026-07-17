@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users, BarChart3, Settings, LogOut, Menu, Bell, BookOpen, TrendingUp,
-  Wifi, CalendarCheck, ClipboardCheck, Coins, GraduationCap, Wallet, Receipt, UserCog,
+  Wifi, CalendarCheck, GraduationCap, Wallet, Receipt, UserCog,
   UsersRound, Megaphone, AlarmClock, ShieldAlert, PieChart, MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
@@ -37,10 +37,7 @@ const adminNav = [
 
 const mentorNav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
-  { to: '/attendance', label: 'Davomat', Icon: CalendarCheck },
-  { to: '/homework', label: 'Домашки', Icon: ClipboardCheck },
-  { to: '/coins', label: 'Коины', Icon: Coins },
-  { to: '/chat', label: 'Чат', Icon: MessageSquare },
+  { to: '/attendance', label: 'Guruhlarim', Icon: CalendarCheck },
 ];
 
 const methodistNav = [

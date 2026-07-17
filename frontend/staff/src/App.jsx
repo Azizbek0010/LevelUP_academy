@@ -35,8 +35,6 @@ const AdminSettings = lazy(() => import('./pages/admin/Settings.jsx'));
 const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
 
 const MentorAttendance = lazy(() => import('./pages/mentor/Attendance.jsx'));
-const MentorHomework = lazy(() => import('./pages/mentor/Homework.jsx'));
-const MentorCoins = lazy(() => import('./pages/mentor/Coins.jsx'));
 const MentorChat = lazy(() => import('./pages/mentor/Chat.jsx'));
 
 const MethodistDashboard = lazy(() => import('./pages/methodist/Dashboard.jsx'));
@@ -84,10 +82,6 @@ export default function App() {
         <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
         <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: MentorAttendance }} /></SW>} />
         <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents }} /></SW>} />
-
-        {/* Mentor routes */}
-        <Route path="/homework" element={<SW><MentorHomework /></SW>} />
-        <Route path="/coins" element={<SW><MentorCoins /></SW>} />
 
         {/* Admin routes */}
         <Route element={<RoleGuard allow={['admin']} />}>
