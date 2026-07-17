@@ -45,7 +45,7 @@ export default function Header() {
           </Link>
 
           {/* Десктоп-навигация */}
-          <nav className="nav">
+          <nav className="nav" aria-label={t.nav.primaryLabel}>
             {links.map((l) => (
               <NavLink
                 key={l.to}
@@ -88,7 +88,7 @@ export default function Header() {
           <img src="/logo-mark.svg" alt="" width="28" height="28" />
           <span>LevelUp Academy</span>
         </div>
-        <nav className="drawer__nav">
+        <nav className="drawer__nav" aria-label={t.nav.mobileLabel}>
           <NavLink to={lp('/landing')} end onClick={close}>
             {t.nav.home}
           </NavLink>

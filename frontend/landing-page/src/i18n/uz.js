@@ -20,6 +20,9 @@ export default {
     home: 'Bosh sahifa',
     login: 'Kirish',
     menu: 'Menyu',
+    skipToContent: "Asosiy kontentga o'tish",
+    primaryLabel: 'Asosiy navigatsiya',
+    mobileLabel: 'Mobil menyu',
   },
 
   common: {

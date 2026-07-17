@@ -14,6 +14,7 @@ import Gamification from './pages/Gamification.jsx';
 import Contacts from './pages/Contacts.jsx';
 import NotFound from './pages/NotFound.jsx';
 import { trackPageView } from './lib/analytics.js';
+import { useT } from './i18n/index.js';
 
 /**
  * Канонические пути лендинга. Русская версия живёт на них как есть, узбекская — под
@@ -47,10 +48,17 @@ function ScrollToTop() {
 }
 
 export default function App() {
+  const t = useT();
   return (
     <>
       <ScrollToTop />
+      <a href="#main-content" className="skip-link">
+        {t.nav.skipToContent}
+      </a>
       <Header />
+      {/* Skip-link focus target. A <div>, not <main>: each page renders its own
+          <main> landmark, and nesting <main> would be invalid. */}
+      <div id="main-content" tabIndex={-1}>
       <Routes>
         {/* В проде корень редиректит Vercel (308). Здесь — для dev-сервера и для
             прямого перехода внутри SPA. */}
@@ -67,6 +75,7 @@ export default function App() {
             делал из любого несуществующего адреса «живую» страницу (soft-404). */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </div>
       <Footer />
     </>
   );

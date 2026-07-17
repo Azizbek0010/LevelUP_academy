@@ -29,6 +29,7 @@
 | **IndexNow** (Яндекс+Bing): ключ-файл + `scripts/indexnow.js` (URL из sitemap) → `npm run indexnow`. Пинг 24 URL отправлен (202) | `public/<key>.txt`, `scripts/indexnow.js` | 16.07 |
 | **GA4 SPA-трекинг**: `send_page_view:false` + ручной `page_view` на каждый роут (верный path+title, без задвоения) + конверсия `generate_lead` на отправку формы | `lib/analytics.js`, `App.jsx`, `Contacts.jsx`, `index.html` | 17.07 |
 | **Page speed**: аудит + preconnect к GA, `width/height` на логотипах (CLS). Шрифт уже ленивый (unicode-range, subsets не качаются), `font-display:swap`, рендер-картинок нет. Замер (локально): LCP 336мс, CLS 0 | `index.html`, `Header.jsx`, `Footer.jsx` | 17.07 |
+| **A11y / семантика**: аудит (alt, aria, 1×h1/стр, label — уже были ок) + добавлено skip-to-content (WCAG 2.4.1) и `aria-label` на 2 `<nav>` | `App.jsx`, `Header.jsx`, `i18n/`, `index.css` | 17.07 |
 | GSC: sitemap отправлен, GA4 связан, prerender подтверждён (Google видит текст) | — | 15.07 |
 | Bing: сайт добавлен (импорт из GSC), sitemap отправлен | — | 15.07 |
 | **Yandex Webmaster: сайт подтверждён** (DNS TXT в Cloudflare) + meta-тег в коде как доп. сигнал | `index.html` (meta), Cloudflare DNS | 16.07 |

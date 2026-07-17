@@ -18,6 +18,9 @@ export default {
     home: 'Главная',
     login: 'Войти',
     menu: 'Меню',
+    skipToContent: 'Перейти к содержимому',
+    primaryLabel: 'Основная навигация',
+    mobileLabel: 'Мобильное меню',
   },
 
   common: {
