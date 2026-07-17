@@ -17,7 +17,9 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-RWCK0B6TXP');
+      // SPA: automatic page_view fires only on the first load. We disable it here
+      // and emit every page_view manually from the router (src/lib/analytics.js).
+      gtag('config', 'G-RWCK0B6TXP', { send_page_view: false });
     </script>
 
     <!--

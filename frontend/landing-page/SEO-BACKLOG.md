@@ -26,7 +26,8 @@
 | Узбекская версия `/uz` — i18n, hreflang, 12 prerendered страниц | `src/i18n/`, `App.jsx` | 14–15.07 |
 | **Страница тарифов** `/landing/pricing` (+`/uz/...`) — реальные цены, Offer/AggregateOffer + FAQPage schema.org, акцент на гарантии | `pages/Pricing.jsx`, `i18n/`, sitemap | 16.07 |
 | **Ниша «для языковой школы»** `/landing/for-language-school` (+`/uz/...`) — FAQPage + Breadcrumb, ссылка из футера + на тарифы (не orphan) | `pages/ForLanguageSchool.jsx`, `i18n/`, `Footer.jsx`, sitemap | 16.07 |
-| **IndexNow** (Яндекс+Bing): ключ-файл + `scripts/indexnow.js` (URL из sitemap) → `npm run indexnow`. ⚠️ пинг после того как деплой встанет | `public/<key>.txt`, `scripts/indexnow.js` | 16.07 |
+| **IndexNow** (Яндекс+Bing): ключ-файл + `scripts/indexnow.js` (URL из sitemap) → `npm run indexnow`. Пинг 24 URL отправлен (202) | `public/<key>.txt`, `scripts/indexnow.js` | 16.07 |
+| **GA4 SPA-трекинг**: `send_page_view:false` + ручной `page_view` на каждый роут (верный path+title, без задвоения) + конверсия `generate_lead` на отправку формы | `lib/analytics.js`, `App.jsx`, `Contacts.jsx`, `index.html` | 17.07 |
 | GSC: sitemap отправлен, GA4 связан, prerender подтверждён (Google видит текст) | — | 15.07 |
 | Bing: сайт добавлен (импорт из GSC), sitemap отправлен | — | 15.07 |
 | **Yandex Webmaster: сайт подтверждён** (DNS TXT в Cloudflare) + meta-тег в коде как доп. сигнал | `index.html` (meta), Cloudflare DNS | 16.07 |
