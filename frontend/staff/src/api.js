@@ -1131,6 +1131,120 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       };
     }
 
+    // -------- ADMIN: Group Attendance --------
+    if (path.match(/^\/admin\/groups\/([^/]+)\/attendance$/) && method === 'GET') {
+      const groupId = path.split('/')[3];
+      const date = queryParams.date || new Date().toISOString().slice(0, 10);
+      const storageKey = `mock_attendance_${groupId}_${date}`;
+      let records = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      if (records.length === 0) {
+        const groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
+        const group = groups.find(g => g.id === groupId);
+        const students = JSON.parse(localStorage.getItem('mock_admin_students') || '[]');
+        // Generate attendance for group students
+        const groupStudents = group?.students || [
+          { id: 'st-1', firstName: 'Sardor', lastName: "O'zbekov" },
+          { id: 'st-3', firstName: 'Botir', lastName: 'Hasanov' },
+          { id: 'st-6', firstName: 'Dilshod', lastName: 'Tursunov' },
+        ];
+        records = groupStudents.map((s, i) => ({
+          id: `att-${groupId}-${date}-${i}`,
+          studentId: s.id,
+          studentName: [s.firstName, s.lastName].filter(Boolean).join(' ') || s.name || `Student ${i + 1}`,
+          status: i % 3 === 0 ? 'absent' : i % 5 === 0 ? 'late' : 'present',
+          date,
+          createdAt: new Date().toISOString(),
+        }));
+        localStorage.setItem(storageKey, JSON.stringify(records));
+      }
+      return { records, date };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)\/attendance$/) && method === 'POST') {
+      const groupId = path.split('/')[3];
+      const date = body.date || new Date().toISOString().slice(0, 10);
+      const storageKey = `mock_attendance_${groupId}_${date}`;
+      const records = body.records || [];
+      const saved = records.map((r, i) => ({
+        id: `att-${groupId}-${date}-${i}`,
+        studentId: r.studentId,
+        studentName: r.studentName || `Student ${i + 1}`,
+        status: r.status,
+        date,
+        createdAt: new Date().toISOString(),
+      }));
+      localStorage.setItem(storageKey, JSON.stringify(saved));
+      return { records: saved };
+    }
+
+    // -------- ADMIN: Group Homework --------
+    if (path.match(/^\/admin\/groups\/([^/]+)\/homework$/) && method === 'GET') {
+      const groupId = path.split('/')[3];
+      let homework = JSON.parse(localStorage.getItem(`mock_homework_${groupId}`) || '[]');
+      if (homework.length === 0) {
+        homework = [
+          { id: 'hw-1', groupId, title: 'Flexbox Layout', description: 'Savollar 1-10 ni yeching', dueDate: '2026-07-20T23:59:00Z', status: 'active', createdAt: '2026-07-15T10:00:00Z', submissions: 8, totalStudents: 18 },
+          { id: 'hw-2', groupId, title: 'CSS Grid Mastery', description: 'Responsive layout yarating', dueDate: '2026-07-25T23:59:00Z', status: 'active', createdAt: '2026-07-16T10:00:00Z', submissions: 3, totalStudents: 18 },
+          { id: 'hw-3', groupId, title: 'React Hooks', description: 'useState va useEffect amaliyot', dueDate: '2026-07-10T23:59:00Z', status: 'completed', createdAt: '2026-07-05T10:00:00Z', submissions: 15, totalStudents: 18 },
+        ];
+        localStorage.setItem(`mock_homework_${groupId}`, JSON.stringify(homework));
+      }
+      return { homework, total: homework.length };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)\/homework$/) && method === 'POST') {
+      const groupId = path.split('/')[3];
+      const homework = JSON.parse(localStorage.getItem(`mock_homework_${groupId}`) || '[]');
+      const newHw = {
+        id: `hw-${Date.now()}`,
+        groupId,
+        title: body.title,
+        description: body.description || '',
+        dueDate: body.dueDate || new Date(Date.now() + 7 * 86400000).toISOString(),
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        submissions: 0,
+        totalStudents: 18,
+      };
+      homework.push(newHw);
+      localStorage.setItem(`mock_homework_${groupId}`, JSON.stringify(homework));
+      return { homework: newHw };
+    }
+
+    // -------- ADMIN: Group Feedback --------
+    if (path.match(/^\/admin\/groups\/([^/]+)\/feedback$/) && method === 'GET') {
+      const groupId = path.split('/')[3];
+      let feedback = JSON.parse(localStorage.getItem(`mock_feedback_${groupId}`) || '[]');
+      if (feedback.length === 0) {
+        feedback = [
+          { id: 'fb-1', groupId, studentId: 'st-1', studentName: "Sardor O'zbekov", type: 'student', content: "Darslar juda yaxshi o'tadi. Mentor tushuntirishni yaxshi biladi.", rating: 5, createdAt: '2026-07-14T10:00:00Z' },
+          { id: 'fb-2', groupId, studentId: 'st-3', studentName: 'Botir Hasanov', type: 'student', content: 'Homeworklari juda foydali. Lekin ko\'proq amaliyot bo\'lsa yaxshi bo\'lardi.', rating: 4, createdAt: '2026-07-15T10:00:00Z' },
+          { id: 'fb-3', groupId, studentId: null, studentName: "Ilhom Karimov", type: 'teacher', content: 'Guruh juda faol. Ba\'zi talabalar ko\'proq e\'tibor talab qiladi.', rating: 4, createdAt: '2026-07-16T10:00:00Z' },
+          { id: 'fb-4', groupId, studentId: 'st-6', studentName: 'Dilshod Tursunov', type: 'student', content: "Guruh atmosferasi juda yaxshi. O'rganishga ishtiyoqim oshdi!", rating: 5, createdAt: '2026-07-17T10:00:00Z' },
+        ];
+        localStorage.setItem(`mock_feedback_${groupId}`, JSON.stringify(feedback));
+      }
+      return { feedback, total: feedback.length };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)\/feedback$/) && method === 'POST') {
+      const groupId = path.split('/')[3];
+      const feedback = JSON.parse(localStorage.getItem(`mock_feedback_${groupId}`) || '[]');
+      const newFb = {
+        id: `fb-${Date.now()}`,
+        groupId,
+        studentId: body.studentId || null,
+        studentName: body.studentName || 'Anonymous',
+        type: body.type || 'student',
+        content: body.content,
+        rating: body.rating || 5,
+        createdAt: new Date().toISOString(),
+      };
+      feedback.push(newFb);
+      localStorage.setItem(`mock_feedback_${groupId}`, JSON.stringify(feedback));
+      return { feedback: newFb };
+    }
+
     // -------- ADMIN: Settings --------
     if (path === '/admin/settings' && method === 'GET') {
       let settings = JSON.parse(localStorage.getItem('mock_admin_settings') || 'null');
@@ -1318,6 +1432,24 @@ export const api = {
     request(`/admin/groups/${groupId}/students`, { method: 'POST', token, body: { studentId } }),
   adminRemoveStudentFromGroup: (token, groupId, studentId) =>
     request(`/admin/groups/${groupId}/students/${studentId}`, { method: 'DELETE', token }),
+
+  // -------- ADMIN: Group Attendance --------
+  adminGroupAttendance: (token, groupId, date) =>
+    request(`/admin/groups/${groupId}/attendance?date=${date}`, { token }),
+  adminMarkGroupAttendance: (token, groupId, body) =>
+    request(`/admin/groups/${groupId}/attendance`, { method: 'POST', token, body }),
+
+  // -------- ADMIN: Group Homework --------
+  adminGroupHomework: (token, groupId) =>
+    request(`/admin/groups/${groupId}/homework`, { token }),
+  adminCreateGroupHomework: (token, groupId, body) =>
+    request(`/admin/groups/${groupId}/homework`, { method: 'POST', token, body }),
+
+  // -------- ADMIN: Group Feedback --------
+  adminGroupFeedback: (token, groupId) =>
+    request(`/admin/groups/${groupId}/feedback`, { token }),
+  adminCreateGroupFeedback: (token, groupId, body) =>
+    request(`/admin/groups/${groupId}/feedback`, { method: 'POST', token, body }),
 
   // -------- ADMIN: Payments (invoices) --------
   adminInvoices: (token, qs = '') => request(`/admin/payments/invoices${qs}`, { token }),

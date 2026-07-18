@@ -91,6 +91,33 @@ export function useAdminReports(qs = '') {
   return useAuthedQuery(['admin-reports', qs], () => api.adminReports(token, qs));
 }
 
+export function useAdminGroupAttendance(groupId, date) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['admin-group-attendance', groupId, date],
+    () => api.adminGroupAttendance(token, groupId, date),
+    { enabled: !!groupId && !!date },
+  );
+}
+
+export function useAdminGroupHomework(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['admin-group-homework', groupId],
+    () => api.adminGroupHomework(token, groupId),
+    { enabled: !!groupId },
+  );
+}
+
+export function useAdminGroupFeedback(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['admin-group-feedback', groupId],
+    () => api.adminGroupFeedback(token, groupId),
+    { enabled: !!groupId },
+  );
+}
+
 export function useAdminSettings() {
   const { token } = useAuth();
   return useAuthedQuery(['admin-settings'], () => api.adminSettings(token), { retry: false });
