@@ -138,62 +138,267 @@ html.dark {
   --sc: 232 239 226;   /* secondary-content */
   --a: 163 230 53;     /* accent */
   --ac: 22 33 15;      /* accent-content */
+  --b1-deco: 26 31 22;
+  --b2-deco: 35 42 32;
+  --b3-deco: 45 54 40;
 }
 
 /* ═══════════════════════════════════════════════════════════════
    DAISYUI COMPONENT OVERRIDES — force theme-aware backgrounds
    ═══════════════════════════════════════════════════════════════ */
 
-/* Modal box — always use our surface token */
+/* Modal backdrop — MUST be full screen, no gaps */
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(4px);
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
 .modal-box {
   background: var(--surface) !important;
   border: 1px solid var(--glass-border) !important;
   box-shadow: var(--shadow-lg) !important;
 }
-
-/* Modal backdrop — softer overlay */
-.modal-backdrop {
-  background: rgba(0, 0, 0, 0.4) !important;
-  backdrop-filter: blur(4px);
+.modal {
+  position: fixed !important;
+  inset: 0 !important;
+  padding: 0 !important;
 }
 
-/* Force DaisyUI components to use our dark tokens */
+/* ═══════════════════════════════════════════════════════════════
+   DAISYUI COMPONENT — COMPREHENSIVE dark overrides
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Inputs, textareas, selects */
 html.dark .input,
 html.dark .textarea,
 html.dark .select,
 html.dark .input-bordered,
 html.dark .textarea-bordered,
-html.dark .select-bordered {
+html.dark .select-bordered,
+html.dark .input-ghost,
+html.dark .file-input,
+html.dark .file-input-bordered {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+html.dark .input::placeholder,
+html.dark .textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Buttons */
+html.dark .btn {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+html.dark .btn-primary {
+  background-color: var(--green) !important;
+  border-color: var(--green) !important;
+  color: #111 !important;
+}
+html.dark .btn-ghost {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+}
+html.dark .btn-ghost:hover {
+  background: var(--surface-hover) !important;
+  color: var(--text) !important;
+}
+html.dark .btn-link {
+  color: var(--green) !important;
+}
+html.dark .btn-sm {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+html.dark .btn-sm:hover {
+  background-color: var(--surface-hover) !important;
+  color: var(--text) !important;
+}
+
+/* Card backgrounds */
+html.dark .card {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+html.dark .card-body {
+  color: var(--text) !important;
+}
+html.dark .card-title {
+  color: var(--text) !important;
+}
+
+/* Tables */
+html.dark .table {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+}
+html.dark .table thead th {
+  background: var(--surface-hover) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+}
+html.dark .table tbody tr {
+  border-color: var(--border) !important;
+}
+html.dark .table tbody tr:hover {
+  background: var(--surface-hover) !important;
+}
+html.dark .table td {
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* Dividers */
+html.dark .divider {
+  color: var(--text-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Badges */
+html.dark .badge {
+  border-color: var(--border) !important;
+}
+html.dark .badge-neutral {
+  background-color: var(--surface-hover) !important;
+  color: var(--text-secondary) !important;
+}
+html.dark .badge-ghost {
+  background-color: var(--surface-hover) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+}
+
+/* Alerts */
+html.dark .alert {
+  border-color: var(--border) !important;
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+/* Tabs */
+html.dark .tabs {
+  border-color: var(--border) !important;
+}
+html.dark .tab {
+  color: var(--text-muted) !important;
+}
+html.dark .tab-active,
+html.dark .tab[aria-selected="true"] {
+  color: var(--green) !important;
+  border-color: var(--green) !important;
+}
+
+/* Dropdown / popover */
+html.dark .dropdown-content,
+html.dark .popover {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Menu items */
+html.dark .menu li > * {
+  color: var(--text-secondary) !important;
+}
+html.dark .menu li > *:hover {
+  background: var(--surface-hover) !important;
+  color: var(--text) !important;
+}
+html.dark .menu-title {
+  color: var(--text-muted) !important;
+}
+
+/* Steps */
+html.dark .step {
+  color: var(--text-muted) !important;
+}
+html.dark .step-primary,
+html.dark .step[data-content]::before {
+  border-color: var(--green) !important;
+}
+
+/* Progress */
+html.dark .progress {
+  background-color: var(--surface-hover) !important;
+}
+
+/* Stat boxes */
+html.dark .stat {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+}
+html.dark .stat-title {
+  color: var(--text-secondary) !important;
+}
+html.dark .stat-value {
+  color: var(--text) !important;
+}
+html.dark .stat-desc {
+  color: var(--text-muted) !important;
+}
+
+/* Breadcrumbs */
+html.dark .breadcrumbs li {
+  color: var(--text-muted) !important;
+}
+html.dark .breadcrumbs li > * {
+  color: var(--text-secondary) !important;
+}
+
+/* Textarea, select, details */
+html.dark textarea,
+html.dark select {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+html.dark details,
+html.dark details[open] {
   background-color: var(--surface) !important;
   border-color: var(--border) !important;
   color: var(--text) !important;
 }
 
-html.dark .btn-ghost {
-  background: transparent !important;
-  color: var(--text-secondary) !important;
-}
-
-html.dark .btn-ghost:hover {
-  background: var(--surface-hover) !important;
+/* Collapse */
+html.dark .collapse {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
   color: var(--text) !important;
 }
 
-html.dark .divider {
-  color: var(--text-muted) !important;
+/* Drawer */
+html.dark .drawer-content,
+html.dark .drawer-side {
+  background-color: transparent !important;
+}
+html.dark .drawer-overlay {
+  background-color: rgba(0,0,0,0.5) !important;
 }
 
-html.dark .table thead th {
-  background: var(--surface-hover) !important;
+/* Hero */
+html.dark .hero {
+  background-color: var(--surface) !important;
+}
+
+/* Footer */
+html.dark .footer {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
   color: var(--text-secondary) !important;
 }
 
-html.dark .table tbody tr:hover {
-  background: var(--surface-hover) !important;
-}
-
-html.dark .badge {
-  border-color: var(--border) !important;
+/* Hover effects for all interactive elements */
+html.dark .hover\:\*:bg-base-200:hover,
+html.dark *:hover {
+  /* prevent white flash on hover */
 }
 
 /* Remove ALL background color artifacts — force transparent on body, html, root */
@@ -202,13 +407,6 @@ body,
 #root,
 #root > div {
   background-color: transparent !important;
-}
-
-/* Alert overrides for dark */
-html.dark .alert {
-  border-color: var(--border) !important;
-  background-color: var(--surface) !important;
-  color: var(--text) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════

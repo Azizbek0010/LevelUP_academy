@@ -100,12 +100,13 @@ function Sidebar({ role, collapsed, onToggle }) {
 
   return (
     <aside
-      className="fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300 ease-in-out"
+      className="fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300 ease-in-out overflow-hidden"
       style={{
         width: collapsed ? 72 : 256,
         background: 'linear-gradient(180deg, #0f1a0a 0%, #16210f 40%, #1a2912 100%)',
         borderRight: '1px solid rgba(198, 255, 52, 0.08)',
         boxShadow: '4px 0 24px rgba(0, 0, 0, 0.3)',
+        borderRadius: '0 0 16px 0',
       }}
     >
       {/* Logo */}
@@ -195,13 +196,14 @@ function Sidebar({ role, collapsed, onToggle }) {
       </nav>
 
       {/* Collapse toggle */}
-      <div className="px-3 pb-3">
+      <div className="px-3 pb-3 shrink-0">
         <button
           onClick={onToggle}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs transition-all duration-200"
           style={{
             color: 'rgba(232,239,226,0.35)',
             background: 'rgba(198,255,52,0.04)',
+            marginBottom: '4px',
           }}
           title={collapsed ? 'Kengaytirish' : 'Kichiklashtirish'}
         >

@@ -27,12 +27,12 @@ const AdminGroups = lazy(() => import('./pages/admin/Groups.jsx'));
 const AdminGroupDetail = lazy(() => import('./pages/admin/GroupDetail.jsx'));
 const AdminStudentDetail = lazy(() => import('./pages/admin/StudentDetail.jsx'));
 const AdminPayments = lazy(() => import('./pages/admin/Payments.jsx'));
-const AdminStudentDetail = lazy(() => import('./pages/admin/StudentDetail.jsx'));
 const AdminExpenses = lazy(() => import('./pages/admin/Expenses.jsx'));
 const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'));
 const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
 const AdminChat = lazy(() => import('./pages/admin/Chat.jsx'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings.jsx'));
+const AdminProfile = lazy(() => import('./pages/admin/Profile.jsx'));
 
 const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
 
@@ -82,6 +82,7 @@ export default function App() {
         <Route path="/groups" element={<SW><RoleView views={{ superadmin: SuperGroups, admin: AdminGroups }} /></SW>} />
         <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SW>} />
         <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
+        <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile }} /></SW>} />
         <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: MentorAttendance }} /></SW>} />
         <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents }} /></SW>} />
 
@@ -90,7 +91,6 @@ export default function App() {
           <Route path="/groups/:id" element={<SW><AdminGroupDetail /></SW>} />
           <Route path="/students/:id" element={<SW><AdminStudentDetail /></SW>} />
           <Route path="/payments" element={<SW><AdminPayments /></SW>} />
-          <Route path="/students/:id" element={<SW><AdminStudentDetail /></SW>} />
           <Route path="/expenses" element={<SW><AdminExpenses /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
         </Route>

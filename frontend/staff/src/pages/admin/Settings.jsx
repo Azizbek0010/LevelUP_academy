@@ -1025,6 +1025,3 @@ export default function AdminSettings() {
     </div>
   );
 }
-
-/* ── Import for toggle `Users` icon used in appearance tab ── */
-import { Users } from 'lucide-react';

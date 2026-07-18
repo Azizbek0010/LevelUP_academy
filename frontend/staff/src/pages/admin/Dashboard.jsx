@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Wallet, TriangleAlert, Receipt, TrendingUp, Users, GraduationCap, Clock,
@@ -104,6 +104,18 @@ function StatRow({ Icon, label, value, danger, accent }) {
 
 /* ═══════════════ Revenue Chart ═══════════════ */
 function RevenueChart({ totals, thisMonth }) {
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  useEffect(() => {
+    const obs = new MutationObserver(() => setIsDark(document.documentElement.classList.contains('dark')));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+
+  const tickColor = isDark ? '#94a388' : '#6b7a62';
+  const gridColor = isDark ? 'rgba(45, 54, 40, 0.4)' : 'rgba(220, 229, 212, 0.3)';
+  const tooltipBg = isDark ? '#1a1f16' : '#1a1f16';
+  const tooltipBorder = isDark ? '#2d3628' : '#2d3628';
+
   const chartData = {
     labels: ['Доход', 'Расход', 'Прибыль'],
     datasets: [
@@ -139,14 +151,14 @@ function RevenueChart({ totals, thisMonth }) {
           pointStyle: 'circle',
           padding: 16,
           font: { size: 12, weight: '600' },
-          color: '#6b7a62',
+          color: tickColor,
         },
       },
       tooltip: {
-        backgroundColor: '#1a1f16',
-        titleColor: '#e8efe2',
-        bodyColor: '#94a388',
-        borderColor: '#2d3628',
+        backgroundColor: tooltipBg,
+        titleColor: isDark ? '#e8efe2' : '#e8efe2',
+        bodyColor: isDark ? '#94a388' : '#94a388',
+        borderColor: tooltipBorder,
         borderWidth: 1,
         cornerRadius: 10,
         padding: 12,
@@ -158,12 +170,12 @@ function RevenueChart({ totals, thisMonth }) {
     scales: {
       x: {
         grid: { display: false },
-        ticks: { color: '#6b7a62', font: { size: 12, weight: '600' } },
+        ticks: { color: tickColor, font: { size: 12, weight: '600' } },
       },
       y: {
-        grid: { color: 'rgba(220, 229, 212, 0.3)' },
+        grid: { color: gridColor },
         ticks: {
-          color: '#6b7a62',
+          color: tickColor,
           font: { size: 11 },
           callback: (v) => v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v,
         },
@@ -230,7 +242,7 @@ export default function AdminDashboard() {
       <div className="glass-strong rounded-[20px] p-6 relative overflow-hidden animate-fade-in">
         <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-15" style={{ background: 'linear-gradient(135deg, #C6FF34, #22c55e)' }} />
         <div className="relative flex items-center gap-4">
-          <div className="w-14 h-14 rounded-[16px] flex items-center justify-center text-2xl shrink-0" style={{ background: 'var(--green-bg)' }}>
+          <div className="w-14 h-14 rounded-[16px] flex items-center justify-center text-2xl shrink-0" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>
             {greeting.icon}
           </div>
           <div className="flex-1 min-w-0">
