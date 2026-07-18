@@ -7,6 +7,7 @@ import testsRoutes from './tests/tests.routes.js';
 import salaryRoutes from './salary/salary.routes.js';
 import coinsRoutes from './coins/coins.routes.js';
 import groupsRoutes from './groups/groups.routes.js';
+import studentsRoutes from './students/students.routes.js';
 
 /**
  * Агрегатор mentor-домена (AB-MENTOR). Подключается основным приложением
@@ -25,5 +26,6 @@ router.use('/tests', testsRoutes);
 router.use('/salary', salaryRoutes);
 router.use('/coins', coinsRoutes);
 router.use('/groups', groupsRoutes);
+router.use('/students', studentsRoutes);
 
 export default router;

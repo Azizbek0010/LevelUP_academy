@@ -40,6 +40,7 @@ const MentorGroups = lazy(() => import('./pages/mentor/Groups.jsx'));
 const MentorGroupWorkspace = lazy(() => import('./pages/mentor/group/GroupWorkspace.jsx'));
 const MentorProfile = lazy(() => import('./pages/mentor/Profile.jsx'));
 const MentorStudents = lazy(() => import('./pages/mentor/Students.jsx'));
+const MentorStudentDetail = lazy(() => import('./pages/mentor/StudentDetail.jsx'));
 
 const MethodistDashboard = lazy(() => import('./pages/methodist/Dashboard.jsx'));
 const TrainingTypes = lazy(() => import('./pages/methodist/TrainingTypes.jsx'));
@@ -105,8 +106,14 @@ export default function App() {
         <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents, mentor: MentorStudents }} /></SW>} />
 
         {/* Admin routes */}
+        {/* Карточка ученика: у админа своя, у ментора — статистика по его
+            предмету. RoleView так же не пускает чужие роли, как RoleGuard. */}
+        <Route
+          path="/students/:id"
+          element={<SW><RoleView views={{ admin: AdminStudentDetail, mentor: MentorStudentDetail }} /></SW>}
+        />
+
         <Route element={<RoleGuard allow={['admin']} />}>
-          <Route path="/students/:id" element={<SW><AdminStudentDetail /></SW>} />
           <Route path="/payments" element={<SW><AdminPayments /></SW>} />
           <Route path="/expenses" element={<SW><AdminExpenses /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />

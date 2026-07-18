@@ -87,6 +87,116 @@ function mockGroupStudents(groupId) {
   return own;
 }
 
+/* Статистика ученика — та же форма, что отдаёт GET /api/mentor/students/:id/stats.
+   Числа выводятся из номера ученика, поэтому у разных людей картина разная, но
+   у одного и того же она не скачет между открытиями. */
+function mockStudentStats(studentId) {
+  const n = Number(String(studentId).replace(/\D/g, '')) || 7;
+  const base = mockStudent(n);
+  const groups = MOCK_MENTOR_GROUPS.filter((_, i) => (n + i) % 3 !== 0).slice(0, 2);
+
+  const present = 12 + (n % 9);
+  const absent = n % 5;
+  const late = n % 3;
+  const attTotal = present + absent + late;
+
+  const HW_TITLES = [
+    'Present Simple — mashqlar', 'Past Tense — yozma ish', 'Future Forms',
+    'Reading: Unit 4', 'Vocabulary 100 ta so\'z', 'Listening practice',
+    'Essay: My city', 'Phrasal verbs',
+  ];
+  const homework = HW_TITLES.map((title, i) => {
+    const roll = (n + i * 3) % 5;
+    const state = roll === 0 ? 'missed' : roll === 1 ? 'submitted' : 'graded';
+    const maxScore = 10;
+    return {
+      id: `hw-${n}-${i}`,
+      title,
+      groupName: groups[i % groups.length]?.name ?? 'English B1',
+      deadline: new Date(Date.now() - (8 - i) * 86400000).toISOString(),
+      maxScore,
+      coinReward: 5,
+      state,
+      score: state === 'graded' ? 5 + ((n + i) % 6) : null,
+      submittedAt: state === 'missed' ? null : new Date(Date.now() - (8 - i) * 86400000).toISOString(),
+    };
+  });
+  const graded = homework.filter((h) => h.score !== null);
+  const done = homework.filter((h) => h.state !== 'missed' && h.state !== 'pending');
+
+  const TEST_TITLES = ['Grammar Test', 'Vocabulary Test', 'Midterm Exam', 'Listening Test'];
+  const tests = TEST_TITLES.map((title, i) => {
+    const taken = (n + i) % 4 !== 0;
+    const maxScore = 10;
+    const score = taken ? 4 + ((n + i * 2) % 7) : null;
+    return {
+      id: `test-${n}-${i}`,
+      title,
+      groupName: groups[i % groups.length]?.name ?? 'English B1',
+      maxScore,
+      score,
+      percent: taken ? Math.round((score / maxScore) * 100) : null,
+      finishedAt: taken ? new Date(Date.now() - (6 - i) * 86400000).toISOString() : null,
+    };
+  });
+  const taken = tests.filter((t) => t.finishedAt);
+
+  const round = (v) => Math.round(v);
+  return {
+    student: {
+      id: studentId,
+      firstName: base.firstName,
+      lastName: base.lastName,
+      phone: base.phone,
+      email: null,
+      status: base.status,
+      loginCode: base.student_code,
+      coinBalance: base.coinBalance,
+      joinedAt: '2026-02-10T09:00:00Z',
+    },
+    groups,
+    attendance: {
+      present, absent, late, excused: 0, total: attTotal,
+      rate: round(((present + late) / attTotal) * 100),
+    },
+    recentAttendance: Array.from({ length: 10 }, (_, i) => ({
+      date: new Date(Date.now() - (i + 1) * 2 * 86400000).toISOString().slice(0, 10),
+      status: (n + i) % 7 === 0 ? 'absent' : (n + i) % 5 === 0 ? 'late' : 'present',
+      groupName: groups[0]?.name ?? 'English B1',
+    })),
+    homework: {
+      total: homework.length,
+      done: done.length,
+      missed: homework.filter((h) => h.state === 'missed').length,
+      pending: 0,
+      graded: graded.length,
+      avgPercent: graded.length
+        ? round(graded.reduce((s, h) => s + (h.score / h.maxScore) * 100, 0) / graded.length)
+        : null,
+      completionRate: round((done.length / homework.length) * 100),
+      items: homework,
+    },
+    tests: {
+      total: tests.length,
+      taken: taken.length,
+      avgPercent: taken.length
+        ? round(taken.reduce((s, t) => s + t.percent, 0) / taken.length)
+        : null,
+      items: tests,
+    },
+    coins: {
+      balance: base.coinBalance,
+      earned: base.coinBalance + 40,
+      spent: 40,
+      recent: [
+        { id: 'c1', amount: 10, reason: 'Uy vazifasi', refType: 'homework', createdAt: new Date(Date.now() - 86400000).toISOString() },
+        { id: 'c2', amount: 5, reason: 'Dars faolligi', refType: null, createdAt: new Date(Date.now() - 3 * 86400000).toISOString() },
+        { id: 'c3', amount: -20, reason: "Do'kondan xarid", refType: 'shop_order', createdAt: new Date(Date.now() - 6 * 86400000).toISOString() },
+      ],
+    },
+  };
+}
+
 // -------- Super Admin mock helpers --------
 const getMockData = () => {
   let branches = JSON.parse(localStorage.getItem('mock_branches'));
@@ -1641,6 +1751,12 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       return { success: true, data: { lessonDate, records: body.records } };
     }
 
+    // -------- MENTOR: статистика ученика --------
+    const statsMatch = path.match(/^\/mentor\/students\/([^/]+)\/stats$/);
+    if (statsMatch && method === 'GET') {
+      return { success: true, data: mockStudentStats(statsMatch[1]) };
+    }
+
     const groupStudentsMatch = path.match(/^\/mentor\/groups\/([^/]+)\/students$/);
     if (groupStudentsMatch && method === 'GET') {
       return { success: true, data: mockGroupStudents(groupStudentsMatch[1]) };
@@ -1775,6 +1891,12 @@ export const api = {
   // пароль меняется через forgot-password с кодом на почту.
   me: (token) => request('/users/me', { token }),
   updateMe: (token, body) => request('/users/me', { method: 'PATCH', token, body }),
+
+  // -------- MENTOR: Students --------
+  // Одна сводка вместо тридцати запросов: собрать её на клиенте значило бы
+  // тянуть submissions по каждому ДЗ и results по каждому тесту.
+  mentorStudentStats: (token, studentId) =>
+    request(`/mentor/students/${studentId}/stats`, { token }),
 
   // -------- MENTOR: Groups --------
   mentorGroups: (token) => request('/mentor/groups', { token }),

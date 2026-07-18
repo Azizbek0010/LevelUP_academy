@@ -183,6 +183,15 @@ export function useMentorTestResults(testId) {
   });
 }
 
+export function useMentorStudentStats(studentId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['mentor-student-stats', studentId],
+    () => api.mentorStudentStats(token, studentId),
+    { enabled: !!studentId },
+  );
+}
+
 // -------- PROFILE --------
 export function useMe() {
   const { token } = useAuth();

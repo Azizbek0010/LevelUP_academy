@@ -178,12 +178,16 @@ export default function MentorStudents() {
                   {filtered.map((s) => {
                     const st = STATUS[s.status] || STATUS.active;
                     return (
-                      <tr key={s.id}>
+                      <tr key={s.id} className="hover">
                         <td>
-                          <div className="flex items-center gap-3">
+                          {/* Ссылка на всю ячейку с именем: попасть в неё проще,
+                              чем в подчёркнутый текст, а строка целиком
+                              кликабельной быть не может — внутри свои ссылки
+                              на группы. */}
+                          <Link to={`/students/${s.id}`} className="flex items-center gap-3 group">
                             <Avatar name={`${s.firstName} ${s.lastName}`} size={36} />
                             <div className="min-w-0">
-                              <div className="font-semibold text-sm truncate">
+                              <div className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
                                 {s.firstName} {s.lastName}
                               </div>
                               {s.student_code && (
@@ -192,7 +196,7 @@ export default function MentorStudents() {
                                 </div>
                               )}
                             </div>
-                          </div>
+                          </Link>
                         </td>
                         <td>
                           <div className="flex flex-wrap gap-1">
