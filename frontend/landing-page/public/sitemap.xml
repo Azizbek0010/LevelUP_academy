@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>
 <!--
   Canonical URLs only. The site root (/) is a 308 redirect to /landing and is
   deliberately absent: a sitemap lists destinations, not redirects.
