@@ -548,7 +548,13 @@ export default function Layout() {
         className="transition-all duration-300 pt-16 min-h-screen"
         style={{ marginLeft: sidebarWidth }}
       >
-        <div className={isFullPage ? 'flex-1 flex flex-col h-[calc(100vh-64px)]' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto'}>
+        {/* Полноэкранные страницы (мессенджер) считают высоту от вьюпорта.
+            Было `h-[calc(100vh-64px)]` без overflow-hidden: высота совпадала с
+            экраном ровно впритык, и стоило появиться горизонтальной полосе
+            прокрутки (~17px) — нижний край, а с ним поле ввода, уезжал под
+            границу окна. `dvh` вдобавок учитывает выезжающие панели браузера
+            на мобильных, где `vh` заведомо больше видимой области. */}
+        <div className={isFullPage ? 'flex-1 flex flex-col h-[calc(100dvh-4rem)] overflow-hidden' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto'}>
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>

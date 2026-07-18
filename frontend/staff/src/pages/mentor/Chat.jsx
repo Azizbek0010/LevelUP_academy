@@ -335,11 +335,16 @@ export default function MentorChat() {
         </div>
       )}
 
-      <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-[360px_1fr]">
+      {/* overflow-hidden обязателен: без него строка грида растёт под контент
+          и выдавливает поле ввода за нижний край экрана. */}
+      <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-[360px_1fr]">
 
         {/* ═══════════ Список собеседников ═══════════ */}
+        {/* min-w-0 / min-h-0: у элемента грида это по умолчанию `auto`, то есть
+            он отказывается сжиматься меньше своего содержимого. Одно длинное
+            слово в сообщении или в имени — и колонка распирает страницу вбок. */}
         <aside
-          className={`border-r border-base-200 min-h-0 flex-col bg-base-100 ${
+          className={`border-r border-base-200 min-w-0 min-h-0 flex-col bg-base-100 ${
             activeId ? 'hidden md:flex' : 'flex'
           }`}
         >
@@ -439,7 +444,7 @@ export default function MentorChat() {
 
         {/* ═══════════ Переписка ═══════════ */}
         <section
-          className={`min-h-0 flex-col bg-base-200/25 ${activeId ? 'flex' : 'hidden md:flex'}`}
+          className={`min-w-0 min-h-0 flex-col bg-base-200/25 ${activeId ? 'flex' : 'hidden md:flex'}`}
         >
           {/* Шапка диалога */}
           <header className="shrink-0 px-3 sm:px-4 py-2.5 border-b border-base-200 bg-base-100 flex items-center gap-3 min-h-[3.5rem]">
