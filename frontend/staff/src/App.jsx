@@ -38,6 +38,7 @@ const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
 
 const MentorAttendance = lazy(() => import('./pages/mentor/Attendance.jsx'));
 const MentorChat = lazy(() => import('./pages/mentor/Chat.jsx'));
+const MentorTests = lazy(() => import('./pages/mentor/Tests.jsx'));
 
 const MethodistDashboard = lazy(() => import('./pages/methodist/Dashboard.jsx'));
 const TrainingTypes = lazy(() => import('./pages/methodist/TrainingTypes.jsx'));
@@ -84,6 +85,7 @@ export default function App() {
         <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
         <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile }} /></SW>} />
         <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: MentorAttendance }} /></SW>} />
+        <Route path="/tests" element={<SW><RoleView views={{ mentor: MentorTests }} /></SW>} />
         <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents }} /></SW>} />
 
         {/* Admin routes */}

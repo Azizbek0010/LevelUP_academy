@@ -6,6 +6,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useMentorGroups, useMentorGroupStudents, useMentorAttendance } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
+import { useAttendanceLive } from '../../socket.js';
 
 /* ─── Toast notification ─── */
 function Toast({ message, type = 'success', visible, onClose }) {
@@ -214,25 +215,28 @@ export default function MentorAttendance() {
   const [toast, setToast] = useState(null);
   const closeToast = useCallback(() => setToast(null), []);
   const { data: groupsData } = useMentorGroups();
-  const groups = groupsData?.data || [];
+  // тоже в зависимостях эффекта ниже — держим ссылку стабильной
+  const groups = useMemo(() => groupsData?.data || [], [groupsData]);
 
   const [searchParams] = useSearchParams();
   const urlGroupId = searchParams.get('groupId');
   const [selectedGroupId, setSelectedGroupId] = useState(urlGroupId || groups[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
   const { data: rosterData } = useMentorGroupStudents(selectedGroupId);
-  const rawStudents = rosterData?.data || [];
-  // Backend returns camelCase (firstName, lastName, coinBalance), frontend uses snake_case
-  // useMemo — students array reference must stay stable to prevent useEffect loops
+  // Backend returns camelCase (firstName, lastName, coinBalance), frontend uses snake_case.
+  // Зависимость — САМ rosterData (стабилен из react-query), а не `rosterData?.data || []`:
+  // литерал `[]` создаётся заново на каждый рендер, из-за чего useMemo пересчитывался
+  // всегда, students получал новую ссылку, и эффект на строке ниже (setAttendanceMap)
+  // уходил в бесконечный цикл «Maximum update depth exceeded».
   const students = useMemo(
     () =>
-      rawStudents.map((s) => ({
+      (rosterData?.data || []).map((s) => ({
         ...s,
         first_name: s.first_name ?? s.firstName,
         last_name: s.last_name ?? s.lastName,
         coin_balance: s.coin_balance ?? s.coinBalance ?? 0,
       })),
-    [rawStudents],
+    [rosterData],
   );
 
   // Month navigation
@@ -259,7 +263,16 @@ export default function MentorAttendance() {
   const from = `${year}-${String(month + 1).padStart(2, '0')}-01`;
   const to = `${year}-${String(month + 1).padStart(2, '0')}-${String(DAYS[DAYS.length - 1]).padStart(2, '0')}`;
   const { data: attendanceData } = useMentorAttendance(selectedGroupId, { from, to });
-  const attendance = attendanceData?.data || [];
+  // Тот же случай, что и со students: ссылка обязана быть стабильной — этот массив
+  // стоит в зависимостях эффекта, который вызывает setAttendanceMap.
+  const attendance = useMemo(() => attendanceData?.data || [], [attendanceData]);
+
+  // Live: журнал этой группы отметили в другом месте (второй ментор, админ) —
+  // перечитываем данные вместо ручного слияния, источник правды остаётся один.
+  useAttendanceLive(token, selectedGroupId, useCallback(() => {
+    qc.invalidateQueries({ queryKey: ['mentor-attendance'] });
+    qc.invalidateQueries({ queryKey: ['mentor-group-students', selectedGroupId] });
+  }, [qc, selectedGroupId]));
 
   // Filter groups by search
   const filteredGroups = groups.filter((g) =>
