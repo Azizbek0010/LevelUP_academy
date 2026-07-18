@@ -61,6 +61,11 @@ export function useAdminStudents(qs = '') {
   return useAuthedQuery(['admin-students', qs], () => api.adminStudents(token, qs));
 }
 
+export function useAdminStudentDetail(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-student', id], () => api.adminStudentDetail(token, id), { enabled: !!id });
+}
+
 export function useAdminGroups(qs = '') {
   const { token } = useAuth();
   return useAuthedQuery(['admin-groups', qs], () => api.adminGroups(token, qs));
@@ -89,6 +94,36 @@ export function useAdminReports(qs = '') {
 export function useAdminSettings() {
   const { token } = useAuth();
   return useAuthedQuery(['admin-settings'], () => api.adminSettings(token), { retry: false });
+}
+
+// -------- ADMIN: Group Attendance --------
+export function useAdminGroupAttendance(groupId, date) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['admin-group-attendance', groupId, date],
+    () => api.adminGroupAttendance(token, groupId, date),
+    { enabled: !!groupId && !!date }
+  );
+}
+
+// -------- ADMIN: Group Homework --------
+export function useAdminGroupHomework(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['admin-group-homework', groupId],
+    () => api.adminGroupHomework(token, groupId),
+    { enabled: !!groupId }
+  );
+}
+
+// -------- ADMIN: Group Feedback --------
+export function useAdminGroupFeedback(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['admin-group-feedback', groupId],
+    () => api.adminGroupFeedback(token, groupId),
+    { enabled: !!groupId }
+  );
 }
 
 // -------- MENTOR --------

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Snowflake, Sun, Trash2, KeyRound, Search, GraduationCap, UserCheck, UserX, Copy, Check, Coins, LayoutGrid, List, Filter } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudents } from '../../queries.js';
@@ -49,12 +50,12 @@ function StatCard({ Icon, label, value, color, gradient, delay }) {
 }
 
 /* ═══════════════ Student Card ═══════════════ */
-function StudentCard({ s, onFreeze, onDelete, onRegen }) {
+function StudentCard({ s, onFreeze, onDelete, onRegen, onNavigate }) {
   const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
   const groupNames = (s.groups || []).map((g) => g.name).filter(Boolean);
 
   return (
-    <div className="glass-strong rounded-[16px] p-4 card-hover-premium group">
+    <div className="glass-strong rounded-[16px] p-4 card-hover-premium group cursor-pointer" onClick={() => onNavigate?.(s.id)}>
       <div className="flex items-start gap-3.5">
         {/* Avatar */}
         <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 text-[14px] font-extrabold transition-transform duration-300 group-hover:scale-105"
@@ -98,7 +99,7 @@ function StudentCard({ s, onFreeze, onDelete, onRegen }) {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
           <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-all" title="Сбросить пароль" onClick={() => onRegen(s)}>
             <KeyRound size={14} />
           </button>
@@ -118,6 +119,7 @@ function StudentCard({ s, onFreeze, onDelete, onRegen }) {
 /* ═══════════════ Main Students ═══════════════ */
 export default function AdminStudents() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState('card'); // 'card' | 'table'
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'frozen'
@@ -269,7 +271,7 @@ export default function AdminStudents() {
         /* Card view */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filteredRows.map((s) => (
-            <StudentCard key={s.id} s={s} onFreeze={toggleFreeze} onDelete={del} onRegen={regen} />
+            <StudentCard key={s.id} s={s} onFreeze={toggleFreeze} onDelete={del} onRegen={regen} onNavigate={(id) => navigate(`/students/${id}`)} />
           ))}
         </div>
       ) : (
@@ -290,7 +292,7 @@ export default function AdminStudents() {
               </thead>
               <tbody>
                 {filteredRows.map(s => (
-                  <tr key={s.id} className="hover:bg-[var(--surface-hover)]">
+                  <tr key={s.id} className="hover:bg-[var(--surface-hover)] cursor-pointer" onClick={() => navigate(`/students/${s.id}`)}>
                     <td>
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
@@ -328,15 +330,15 @@ export default function AdminStudents() {
                       </span>
                     </td>
                     <td>
-                      <div className="flex items-center gap-1">
-                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] transition-all" title="Сбросить пароль" onClick={() => onRegen(s)}>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] transition-all" title="Сбросить пароль" onClick={() => regen(s)}>
                           <KeyRound size={12} />
                         </button>
                         <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] transition-all"
-                          title={s.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => onFreeze(s)}>
+                          title={s.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => toggleFreeze(s)}>
                           {s.status === 'frozen' ? <Sun size={12} /> : <Snowflake size={12} />}
                         </button>
-                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger-light)] hover:text-[var(--danger)] transition-all" title="Удалить" onClick={() => onDelete(s)}>
+                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger-light)] hover:text-[var(--danger)] transition-all" title="Удалить" onClick={() => del(s)}>
                           <Trash2 size={12} />
                         </button>
                       </div>

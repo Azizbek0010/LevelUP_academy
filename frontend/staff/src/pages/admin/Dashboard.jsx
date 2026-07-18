@@ -201,7 +201,7 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Дашборд" subtitle="Филиал: доход, расход, студенты, группы" />
+        <PageHeader title="Дашборд" />
         <div className="mt-6">
           <SkeletonKpis />
         </div>
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
   if (error) {
     return (
       <div>
-        <PageHeader title="Дашборд" subtitle="Филиал: доход, расход, студенты, группы" />
+        <PageHeader title="Дашборд" />
         <div className="alert alert-error mt-6">Ошибка загрузки: {error.message}</div>
       </div>
     );
@@ -224,7 +224,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title="Дашборд" subtitle="Филиал: доход, расход, студенты, группы" />
+      <PageHeader title="Дашборд" />
 
       {/* ═══ Welcome Banner ═══ */}
       <div className="glass-strong rounded-[20px] p-6 relative overflow-hidden animate-fade-in">

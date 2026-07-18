@@ -86,7 +86,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DARK THEME
+   DARK THEME — uses html.dark[data-theme] to beat DaisyUI specificity
    ═══════════════════════════════════════════════════════════════ */
 .dark {
   --green: #C6FF34;
@@ -121,12 +121,23 @@ body {
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.50);
 
   --sidebar-hover: rgba(198, 255, 52, 0.06);
+}
 
-  /* DaisyUI overrides — force DaisyUI to respect our dark surface tokens */
+/* DaisyUI dark overrides — higher specificity than [data-theme="levelup"] */
+html.dark[data-theme="levelup"],
+html.dark {
   --b1: 26 31 22;      /* base-100 = #1a1f16 (our --surface) */
   --b2: 35 42 32;      /* base-200 = #232a20 (our --surface-hover) */
   --b3: 45 54 40;      /* base-300 = #2d3628 (our --border) */
   --bc: 232 239 226;   /* base-content = #e8efe2 (our --text) */
+  --n: 45 54 40;       /* neutral = #2d3628 */
+  --nc: 232 239 226;   /* neutral-content */
+  --p: 198 255 52;     /* primary = lime */
+  --pc: 22 33 15;      /* primary-content */
+  --s: 22 33 15;       /* secondary = sidebar dark */
+  --sc: 232 239 226;   /* secondary-content */
+  --a: 163 230 53;     /* accent */
+  --ac: 22 33 15;      /* accent-content */
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -146,6 +157,60 @@ body {
   backdrop-filter: blur(4px);
 }
 
+/* Force DaisyUI components to use our dark tokens */
+html.dark .input,
+html.dark .textarea,
+html.dark .select,
+html.dark .input-bordered,
+html.dark .textarea-bordered,
+html.dark .select-bordered {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .btn-ghost {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .btn-ghost:hover {
+  background: var(--surface-hover) !important;
+  color: var(--text) !important;
+}
+
+html.dark .divider {
+  color: var(--text-muted) !important;
+}
+
+html.dark .table thead th {
+  background: var(--surface-hover) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .table tbody tr:hover {
+  background: var(--surface-hover) !important;
+}
+
+html.dark .badge {
+  border-color: var(--border) !important;
+}
+
+/* Remove ALL background color artifacts — force transparent on body, html, root */
+html,
+body,
+#root,
+#root > div {
+  background-color: transparent !important;
+}
+
+/* Alert overrides for dark */
+html.dark .alert {
+  border-color: var(--border) !important;
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    GLASS MORPHISM
    ═══════════════════════════════════════════════════════════════ */
@@ -156,14 +221,11 @@ body {
   border: 1px solid var(--glass-border);
 }
 .glass-strong {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow);
-}
-.dark .glass-strong {
-  background: rgba(26, 31, 22, 0.88);
 }
 
 /* ═══════════════════════════════════════════════════════════════
