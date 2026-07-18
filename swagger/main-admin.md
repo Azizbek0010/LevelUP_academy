@@ -23,11 +23,14 @@ Our platform revenue = sum of each partner's computed monthly bill.
     - `currency`: string (optional) _e.g. "UZS"_
   - `pricing` (optional):
     - **PlatformPricing**:
-      - `baseFirstBranch`: number (optional)
-      - `perExtraBranch`: number (optional)
-      - `perStudent`: number (optional)
+      - `tiers` (optional):
+        - _array of:_
+          - `id`: string (optional) _e.g. "standard"_
+          - `label`: string (optional) _e.g. "Standard"_
+          - `minStudents`: integer (optional) _e.g. 101_
+          - `maxStudents`: integer (optional) — null = no upper bound (Network tier) _e.g. 300_
+          - `price`: integer (optional) — UZS/month. null = negotiated individually (Network tier) _e.g. 349000_
       - `currency`: string (optional) _e.g. "UZS"_
-      - `updatedAt`: string (date-time) (optional)
   - `partners` (optional):
     - _array of:_
       - **PartnerSummary**:
@@ -370,11 +373,14 @@ Get current platform pricing (per-partner billing formula, in UZS)
 - **200** — Current pricing
   - `pricing` (optional):
     - **PlatformPricing**:
-      - `baseFirstBranch`: number (optional)
-      - `perExtraBranch`: number (optional)
-      - `perStudent`: number (optional)
+      - `tiers` (optional):
+        - _array of:_
+          - `id`: string (optional) _e.g. "standard"_
+          - `label`: string (optional) _e.g. "Standard"_
+          - `minStudents`: integer (optional) _e.g. 101_
+          - `maxStudents`: integer (optional) — null = no upper bound (Network tier) _e.g. 300_
+          - `price`: integer (optional) — UZS/month. null = negotiated individually (Network tier) _e.g. 349000_
       - `currency`: string (optional) _e.g. "UZS"_
-      - `updatedAt`: string (date-time) (optional)
 
 - **401** — Missing/invalid/expired bearer token
   - **ErrorResponse**:
@@ -402,20 +408,21 @@ Update platform pricing (partial — at least one field required)
 
 **Request body:**
 - **UpdatePricingRequest**:
-  - `baseFirstBranch`: integer (optional)
-  - `perExtraBranch`: integer (optional)
-  - `perStudent`: integer (optional)
+  - _(free-form object)_
 
 **Responses:**
 
 - **200** — Updated pricing
   - `pricing` (optional):
     - **PlatformPricing**:
-      - `baseFirstBranch`: number (optional)
-      - `perExtraBranch`: number (optional)
-      - `perStudent`: number (optional)
+      - `tiers` (optional):
+        - _array of:_
+          - `id`: string (optional) _e.g. "standard"_
+          - `label`: string (optional) _e.g. "Standard"_
+          - `minStudents`: integer (optional) _e.g. 101_
+          - `maxStudents`: integer (optional) — null = no upper bound (Network tier) _e.g. 300_
+          - `price`: integer (optional) — UZS/month. null = negotiated individually (Network tier) _e.g. 349000_
       - `currency`: string (optional) _e.g. "UZS"_
-      - `updatedAt`: string (date-time) (optional)
 
 - **401** — Missing/invalid/expired bearer token
   - **ErrorResponse**:

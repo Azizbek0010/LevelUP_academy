@@ -73,7 +73,17 @@
 
 - [ ] BUG-PROD-MOCKS 🔥 KRITIK: `frontend/{staff,student,member}/.env.production` da `VITE_USE_MOCKS=false` YO'Q. Kod `VITE_USE_MOCKS !== 'false'` → undefined bo'lsa MOCK YONIQ. `.env` gitignore'da (faqat lokal), Vercel'da faqat `.env.production` bor → **prodda panellar soxta localStorage datasini ko'rsatyapti**. Tuzatish: uchala `.env.production` ga `VITE_USE_MOCKS=false` qo'shish
 - [ ] BUG-STACK 🔥: `render.yaml` da NODE_ENV o'rnatilmagan, `config/env.js` default `'development'` → `errorHandler.js:19` prodda `err.stack` qaytaryapti (api.levelup-academy.uz da jonli ko'rildi). Tuzatish: render.yaml ga NODE_ENV=production
-- [ ] BUG-BILLING: `main-admin/src/pages/Billing.jsx` hali ESKI narx modelida (`baseFirstBranch`/`perStudent`), backend 2026-07-16 dan `{ tiers, currency }` qaytaradi → sahifa buzilgan. Egasi: Shohjahon (pastda MAIN bo'limida ham bor)
+- [ ] BUG-BILLING: `main-admin/src/pages/Billing.jsx` hali ESKI narx modelida (`baseFirstBranch`/`perStudent`), backend 2026-07-16 dan `{ tiers, currency }` qaytaradi → sahifa buzilgan. Egasi: Shohjahon (pastda MAIN bo'limida ham bor).
+      SABABI TOPILDI: swagger `PlatformPricing` sxemasi ham eski modelda qolgan edi — Shohjahon hujjatga qarab qurgan. Sxema 2026-07-18 da tuzatildi (tiers), endi front ni ham moslashtirish kerak
+
+## Swagger / API hujjatlari (Karis) ✅ 2026-07-18
+
+- [x] DOCS: Barcha route'lar auditi — 158 route topildi, 139 tasi hujjatlashtirilgan edi, 19 tasi YO'Q edi (16 super + 2 admin + 1 telegram)
+- [x] DOCS: 19 ta yetishmagan @openapi bloki yozildi → **qamrov 100%** (158/158, spec 158 operatsiya beradi)
+- [x] DOCS: Yangi komponentlar — `Organization`, `UpdateOrganizationRequest`, `NotImplemented` (501 javobi)
+- [x] DOCS: `PlatformPricing` sxemasi eski narx modelidan yangi TIERS ga ko'chirildi (BUG-BILLING sababi)
+- [x] DOCS: Zaglushka endpointlar hujjatda ochiq belgilandi (⚠️ STUB / 501) — front ularga ulanmasin
+- [x] DOCS: swagger/*.md qayta generatsiya (139 → 158 endpoint, yangi telegram.md)
 
 ## Backend — V1 qolganlari (Abdulaziz) ✅ (kod: d57dff5)
 
@@ -94,9 +104,9 @@
 - [x] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa (repository listOrgStudents: ILIKE search + LIMIT/OFFSET)
 - [x] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
 - [ ] K-SUPER-INT: GET /api/super/stats — Stats (KPI + grafik data, recharts) ⚠️ YAGONA QOLGANI: route YO'Q, front Stats.jsx ham statik (api chaqirmaydi)
-- [x] K-SUPER-INT: GET/POST/DELETE /api/super/announcements — Announcements
-- [x] K-SUPER-INT: GET /api/super/reminders (+resend/delete) — Reminders
-- [x] K-SUPER-INT: GET /api/super/audit — Audit log
+- [ ] K-SUPER-INT: GET/POST/DELETE /api/super/announcements — Announcements ⚠️ ZAGLUSHKA: jadval YO'Q, GET bo'sh ro'yxat qaytaradi, POST/DELETE = 501. Migratsiya + notificationQueue kerak
+- [ ] K-SUPER-INT: GET /api/super/reminders (+resend/delete) — Reminders ⚠️ ZAGLUSHKA: xuddi shunday (GET bo'sh, resend/delete = 501)
+- [ ] K-SUPER-INT: GET /api/super/audit — Audit log ⚠️ ZAGLUSHKA: audit jadvali yo'q, doim { items: [], total: 0 }
 - [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
 - [ ] K-SUPER-INT: har bir sahifa E2E — real superadmin login → real data
 

@@ -63,6 +63,12 @@ export const components = {
       description: 'Conflict with current state (e.g. already fired / not fired)',
       content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
     },
+    NotImplemented: {
+      description:
+        'Endpoint is a stub — the feature has no DB table/migration yet. ' +
+        'The route exists so the front-end can render, but it always fails. Do not wire UI to it.',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+    },
   },
 
   schemas: {
@@ -212,24 +218,86 @@ export const components = {
         },
       },
     },
+    Organization: {
+      type: 'object',
+      description:
+        'Partner organization profile (Super Admin → Settings). `plan` is derived at read time ' +
+        'from the org tier via config/plans.js — it is not a stored column.',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        name: { type: 'string' },
+        domain: { type: 'string', nullable: true, example: 'levelup' },
+        status: { type: 'string', example: 'active' },
+        lessonDurationMin: {
+          type: 'integer',
+          nullable: true,
+          description:
+            'Lesson length in minutes, applied to every group of the org. Group end time is ' +
+            'computed from it on the backend.',
+          example: 90,
+        },
+        createdAt: { type: 'string', format: 'date-time' },
+        plan: {
+          type: 'object',
+          properties: {
+            branchLimit: { type: 'integer', nullable: true },
+            diskSpace: { type: 'string', example: '500 ГБ' },
+          },
+        },
+      },
+    },
+    UpdateOrganizationRequest: {
+      type: 'object',
+      description: 'Partial — at least one field required.',
+      properties: {
+        name: { type: 'string', minLength: 2, maxLength: 160 },
+        domain: {
+          type: 'string',
+          nullable: true,
+          description: 'Lowercased. Empty string or null clears it. Must be unique (409 otherwise).',
+        },
+        lessonDurationMin: { type: 'integer', minimum: 10, maximum: 600 },
+      },
+    },
     PlatformPricing: {
       type: 'object',
+      description:
+        'Student-bucket tiers (model changed 2026-07-16). Branches are free — the old ' +
+        'baseFirstBranch/perExtraBranch/perStudent fields NO LONGER EXIST. ' +
+        'Price is a flat fee decided by the active student count. Source: config/plans.js.',
       properties: {
-        baseFirstBranch: { type: 'number' },
-        perExtraBranch: { type: 'number' },
-        perStudent: { type: 'number' },
+        tiers: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'standard' },
+              label: { type: 'string', example: 'Standard' },
+              minStudents: { type: 'integer', example: 101 },
+              maxStudents: {
+                type: 'integer',
+                nullable: true,
+                description: 'null = no upper bound (Network tier)',
+                example: 300,
+              },
+              price: {
+                type: 'integer',
+                nullable: true,
+                description: 'UZS/month. null = negotiated individually (Network tier)',
+                example: 349000,
+              },
+            },
+          },
+        },
         currency: { type: 'string', example: 'UZS' },
-        updatedAt: { type: 'string', format: 'date-time' },
       },
     },
     UpdatePricingRequest: {
       type: 'object',
-      description: 'Partial — at least one field required. All amounts in UZS, integers ≥ 0.',
-      properties: {
-        baseFirstBranch: { type: 'integer', minimum: 0 },
-        perExtraBranch: { type: 'integer', minimum: 0 },
-        perStudent: { type: 'integer', minimum: 0 },
-      },
+      description:
+        'DEPRECATED — tiers are hard-coded in config/plans.js, so PUT is a no-op that simply ' +
+        'echoes the current tiers back. Making them DB-editable is a v2 task.',
+      properties: {},
     },
     PartnerSummary: {
       type: 'object',

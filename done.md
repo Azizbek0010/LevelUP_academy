@@ -1,7 +1,7 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 18.07.2026 13:25 (UTC+5, Toshkent vaqti)
-> Statistika: 111/159 task tugallangan (69%)
+> Oxirgi yangilanish: 18.07.2026 13:35 (UTC+5, Toshkent vaqti)
+> Statistika: 114/165 task tugallangan (69%)
 
 ---
 
@@ -53,6 +53,14 @@
 - [x] K-PAY: Payments modul: oylik avto-hisoblash (billing.worker, 1-sana, muddat 5-sana) + invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + ad-hoc to'lov + refund/void + chek S3 ga; commit dan KEYIN notificationQueue ('payment.received'/'payment.due'/'payment.refunded'); total_debt + invoice.status qayta hisob. To'lamasa (5-sanadan keyin, invoice='overdue') — student panelga umuman data qaytmaydi (paymentGate, 402). NASIYA YO'Q
 - [x] K-PAY: Branch reports: filial bo'yicha tushum va qarzlar (guruhlar kesimida) — GET /api/admin/reports
 
+### Swagger / API hujjatlari (Karis) ✅ 2026-07-18
+- [x] DOCS: Barcha route'lar auditi — 158 route topildi, 139 tasi hujjatlashtirilgan edi, 19 tasi YO'Q edi (16 super + 2 admin + 1 telegram)
+- [x] DOCS: 19 ta yetishmagan @openapi bloki yozildi → **qamrov 100%** (158/158, spec 158 operatsiya beradi)
+- [x] DOCS: Yangi komponentlar — `Organization`, `UpdateOrganizationRequest`, `NotImplemented` (501 javobi)
+- [x] DOCS: `PlatformPricing` sxemasi eski narx modelidan yangi TIERS ga ko'chirildi (BUG-BILLING sababi)
+- [x] DOCS: Zaglushka endpointlar hujjatda ochiq belgilandi (⚠️ STUB / 501) — front ularga ulanmasin
+- [x] DOCS: swagger/*.md qayta generatsiya (139 → 158 endpoint, yangi telegram.md)
+
 ### Backend — V1 qolganlari (Abdulaziz) ✅ (kod: d57dff5)
 - [x] AB-V1: POST /api/admin/announcements -> notificationQueue (Bilol TG-boti uchun e'lonlar)
 - [x] AB-V1: due-soon worker (to'lov muddatidan N kun oldin ota-onaga eslatma, payment.due_soon)
@@ -64,9 +72,6 @@
 - [x] K-SUPER-INT: Dars davomiyligi (2026-07-16) — organizations.lesson_duration_min + lessonDurationMin GET/PATCH /api/super/organization da
 - [x] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa (repository listOrgStudents: ILIKE search + LIMIT/OFFSET)
 - [x] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
-- [x] K-SUPER-INT: GET/POST/DELETE /api/super/announcements — Announcements
-- [x] K-SUPER-INT: GET /api/super/reminders (+resend/delete) — Reminders
-- [x] K-SUPER-INT: GET /api/super/audit — Audit log
 - [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
 
 ### Backend — Infrastructure (Abdulaziz) ✅
@@ -172,6 +177,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 61 task
+- Karis (Backend): 64 task
 - Abdulaziz (Backend): 48 task
 - Frontend jamoasi: 41 task
