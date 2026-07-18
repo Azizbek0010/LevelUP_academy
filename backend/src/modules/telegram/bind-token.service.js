@@ -37,4 +37,3 @@ export class TelegramBindTokenService {
     throw new Error('Failed to allocate a unique Telegram bind token');
   }
 }
-

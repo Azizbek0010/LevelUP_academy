@@ -133,6 +133,20 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     const queryParams = Object.fromEntries(new URLSearchParams(queryString));
     path = qIndex >= 0 ? path.slice(0, qIndex) : path;
 
+    // -------- LESSON FILE UPLOAD MOCK --------
+    const uploadUrlMatch = path.match(/^\/methodist\/lessons\/([^/]+)\/upload-url/);
+    if (uploadUrlMatch) {
+      const url = new URL(path, 'http://localhost');
+      const filename = url.searchParams.get('filename') || 'file.pdf';
+      return {
+        success: true,
+        data: {
+          uploadUrl: 'mock://skip',
+          fileKey: `lessons/${uploadUrlMatch[1]}/${filename}`,
+        },
+      };
+    }
+
     // -------- AUTH --------
     if (path === '/auth/staff/login') {
       const { login, password } = body;
@@ -1659,6 +1673,8 @@ export const api = {
   methodistUpdateLesson: (token, id, body) => request(`/methodist/lessons/${id}`, { method: 'PATCH', token, body }),
   methodistArchiveLesson: (token, id) => request(`/methodist/lessons/${id}/archive`, { method: 'POST', token }),
   methodistCopyLesson: (token, id, targetTopicId) => request(`/methodist/lessons/${id}/copy`, { method: 'POST', token, body: { targetTopicId } }),
+  methodistLessonUploadUrl: (token, id, filename, contentType) =>
+    request(`/methodist/lessons/${id}/upload-url?filename=${filename}&contentType=${contentType}`, { token }),
 
   methodistQuestions: (token, lessonId) => request(`/methodist/lessons/${lessonId}/questions`, { token }),
   methodistCreateQuestion: (token, body) => request('/methodist/questions', { method: 'POST', token, body }),
@@ -1683,3 +1699,14 @@ export const api = {
   mainGetPricing: (token) => request('/main/pricing', { token }),
   mainUpdatePricing: (token, body) => request('/main/pricing', { method: 'PUT', token, body }),
 };
+
+/** PUT файла напрямую в S3/MinIO по presigned URL (в mock-режиме URL 'mock://skip' — пропускаем). */
+export async function uploadToPresignedUrl(uploadUrl, file) {
+  if (uploadUrl.startsWith('mock://')) return;
+  const res = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    body: file,
+  });
+  if (!res.ok) throw new Error(`Не удалось загрузить файл (HTTP ${res.status})`);
+}

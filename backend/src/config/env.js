@@ -30,6 +30,7 @@ const schema = z.object({
   SMS_API_TOKEN: z.string().optional().or(z.literal('')),
 
   TELEGRAM_BOT_TOKEN: z.string().optional().or(z.literal('')),
+  TELEGRAM_BOT_USERNAME: z.string().optional().or(z.literal('')),
 
   // Google/Firebase вход: Web client ID (из Firebase → Auth → Google → Web SDK).
   // Публичное значение. Пусто → /api/auth/google отдаёт 503.

@@ -20,6 +20,7 @@ import {
   updateQuestionSchema,
   createQuestionsBatchSchema,
   copyLessonSchema,
+  lessonUploadUrlQuery,
 } from './content.schemas.js';
 import * as ctrl from './methodist.controller.js';
 
@@ -405,6 +406,13 @@ router.get('/topics/:topicId/lessons', validate({ params: idParam }), ctrl.listL
  */
 router.get('/lessons/:id', validate({ params: idParam }), ctrl.getLesson);
 router.patch('/lessons/:id', validate({ params: idParam, body: updateLessonSchema }), ctrl.updateLesson);
+
+// Presigned S3 upload url for a lesson's practical-task attachment
+router.get(
+  '/lessons/:id/upload-url',
+  validate({ params: idParam, query: lessonUploadUrlQuery }),
+  ctrl.getLessonUploadUrl,
+);
 
 /**
  * @openapi
