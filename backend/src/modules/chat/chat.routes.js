@@ -67,4 +67,71 @@ const router = Router();
  */
 router.get('/:roomKey/messages', authenticate, requireRoomAccess, ctrl.getMessages);
 
+/**
+ * @openapi
+ * /api/chat/contacts:
+ *   get:
+ *     tags: [Chat]
+ *     summary: Parents this staff member may privately message
+ *     description: >
+ *       Contact list for private `dm:<staffId>:<parentId>` conversations, with
+ *       the last message and unread count per room. Scope mirrors the send-time
+ *       check exactly: a mentor sees parents whose child is in one of their own
+ *       groups, an admin — parents of their branch, a superadmin — parents of
+ *       their organization. Other roles get an empty list. Staff never see each
+ *       other's conversations, so this list is per-user by construction.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Contact list (most recent conversation first)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/ChatContact' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ */
+router.get('/contacts', authenticate, ctrl.getContacts);
+
+/**
+ * @openapi
+ * /api/chat/{roomKey}/read:
+ *   post:
+ *     tags: [Chat]
+ *     summary: Mark incoming messages of a room as read
+ *     description: >
+ *       Marks every message in the room not sent by the caller as read. Room
+ *       access is enforced by the same `requireRoomAccess` rules as history.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: roomKey
+ *         in: path
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Number of messages marked read
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     updated: { type: integer, example: 3 }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403:
+ *         description: No access to this room
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ */
+router.post('/:roomKey/read', authenticate, requireRoomAccess, ctrl.markRead);
+
 export default router;

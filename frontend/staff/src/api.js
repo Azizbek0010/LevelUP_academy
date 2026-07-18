@@ -9,6 +9,10 @@ const USE_MOCKS =
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Живого сокета в мок-режиме нет — страницам с realtime (чат, davomat) нужно
+// знать об этом, чтобы не ждать ack от несуществующего сервера.
+export const USING_MOCKS = USE_MOCKS;
+
 // -------- Super Admin mock helpers --------
 const getMockData = () => {
   let branches = JSON.parse(localStorage.getItem('mock_branches'));
@@ -1410,7 +1414,8 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
 
     // -------- CHAT --------
     if (path.match(/^\/chat\/([^/]+)\/messages$/) && method === 'GET') {
-      const roomKey = path.split('/')[2];
+      // ключ приходит URL-кодированным (в `dm:<staff>:<parent>` есть двоеточия)
+      const roomKey = decodeURIComponent(path.split('/')[2]);
       // Generate deterministic mock messages per room key
       const mockMessages = {
         'global': [
@@ -1428,8 +1433,140 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
           { id: `pm-${i}-2`, chat_type: 'parent', room_key: `parent:${i}`, sender_id: 'mock-admin-id-001', body: 'Va alaykum assalom! Qanday yordam bera olaman?', attachment_key: null, created_at: '2026-07-16T10:01:00Z', sender_first_name: 'Demo', sender_last_name: 'Admin', sender_role: 'admin' },
         ];
       }
+      // личные диалоги `dm:<staffId>:<parentId>` — своя переписка на каждого родителя
+      const dmSeed = {
+        'dm:mock-me:parent-uuid-1': [
+          { body: 'Assalomu alaykum, Aziza bugun darsga kelmadi', from: 'parent', at: '2026-07-18T09:30:00Z' },
+          { body: 'Va alaykum assalom. Sababi bormi?', from: 'me', at: '2026-07-18T09:35:00Z' },
+          { body: 'Kasal bo\'lib qoldi, ertaga keladi', from: 'parent', at: '2026-07-18T09:38:00Z' },
+          { body: 'Rahmat, tushundim', from: 'parent', at: '2026-07-18T09:40:00Z' },
+        ],
+        'dm:mock-me:parent-uuid-2': [
+          { body: 'Bekzod uyga vazifani bajardimi?', from: 'parent', at: '2026-07-17T15:00:00Z' },
+          { body: 'Ha, to\'liq bajardi. 9/10 ball', from: 'me', at: '2026-07-17T15:05:00Z' },
+          { body: 'Ertaga darsga keladi', from: 'parent', at: '2026-07-17T15:10:00Z' },
+        ],
+      };
+      if (dmSeed[roomKey]) {
+        // Реальный бэкенд отдаёт историю НОВЫМИ СВЕРХУ (ORDER BY created_at DESC),
+        // и фронт на это рассчитывает — мок обязан повторять тот же порядок.
+        const messages = [...dmSeed[roomKey]].reverse().map((m, i) => ({
+          id: `${roomKey}-${i}`,
+          chat_type: 'direct',
+          room_key: roomKey,
+          sender_id: m.from === 'me' ? 'mock-me' : roomKey.split(':')[2],
+          body: m.body,
+          attachment_key: null,
+          created_at: m.at,
+          sender_first_name: m.from === 'me' ? 'Siz' : 'Ota-ona',
+          sender_last_name: '',
+          sender_role: m.from === 'me' ? 'mentor' : 'parent',
+        }));
+        return { success: true, data: { messages, nextCursor: null } };
+      }
+      if (roomKey.startsWith('dm:')) {
+        return { success: true, data: { messages: [], nextCursor: null } };
+      }
+
       const messages = mockMessages[roomKey] || mockMessages['global'];
       return { success: true, data: { messages, nextCursor: null } };
+    }
+
+    // -------- CHAT: контакты и «прочитано» --------
+    // Личный диалог = комната `dm:<staffId>:<parentId>`; здесь staffId фиксируем
+    // как mock-me, чтобы ключи в списке и в истории совпадали.
+    if (path === '/chat/contacts' && method === 'GET') {
+      const contacts = [
+        { id: 'parent-uuid-1', first_name: 'Dilnoza', last_name: 'Rahimova', avatar_key: null,
+          child_names: 'Aziza Rahimova', room_key: 'dm:mock-me:parent-uuid-1',
+          last_message: 'Rahmat, tushundim', last_message_at: '2026-07-18T09:40:00Z', unread_count: 2 },
+        { id: 'parent-uuid-2', first_name: 'Sherzod', last_name: 'Toshmatov', avatar_key: null,
+          child_names: 'Bekzod Toshmatov', room_key: 'dm:mock-me:parent-uuid-2',
+          last_message: 'Ertaga darsga keladi', last_message_at: '2026-07-17T15:10:00Z', unread_count: 0 },
+        { id: 'parent-uuid-3', first_name: 'Nodira', last_name: 'Yusupova', avatar_key: null,
+          child_names: 'Malika Yusupova, Sardor Yusupov', room_key: 'dm:mock-me:parent-uuid-3',
+          last_message: null, last_message_at: null, unread_count: 0 },
+      ];
+      return { success: true, data: contacts };
+    }
+
+    if (path.match(/^\/chat\/([^/]+)\/read$/) && method === 'POST') {
+      return { success: true, data: { updated: 0 } };
+    }
+
+    // -------- MENTOR: Groups --------
+    // Мока не было вовсе: в мок-режиме у ментора список групп приходил пустым,
+    // из-за чего Davomat/Koinlar/Testlar нечем было открыть.
+    if (path === '/mentor/groups' && method === 'GET') {
+      return { success: true, data: [
+        { id: 'group-uuid-1', name: 'English B1', subject: 'Ingliz tili',
+          schedule: [{ day: 'mon', start: '14:00', end: '16:00' },
+                     { day: 'wed', start: '14:00', end: '16:00' }] },
+        { id: 'group-uuid-2', name: 'Frontend Basics', subject: 'Dasturlash',
+          schedule: [{ day: 'tue', start: '10:00', end: '12:00' }] },
+      ] };
+    }
+
+    const groupStudentsMatch = path.match(/^\/mentor\/groups\/([^/]+)\/students$/);
+    if (groupStudentsMatch && method === 'GET') {
+      return { success: true, data: [
+        { id: 'stu-1', firstName: 'Aziza', lastName: 'Rahimova', coinBalance: 120 },
+        { id: 'stu-2', firstName: 'Bekzod', lastName: 'Toshmatov', coinBalance: 85 },
+        { id: 'stu-3', firstName: 'Malika', lastName: 'Yusupova', coinBalance: 210 },
+      ] };
+    }
+
+    // -------- MENTOR: Tests --------
+    // Сид и чтение — через один хелпер: иначе первый же POST затирал бы
+    // начальные тесты пустым массивом.
+    const seedMentorTests = (groupId) => {
+      const key = `mock_mentor_tests_${groupId}`;
+      const stored = JSON.parse(localStorage.getItem(key) || 'null');
+      if (stored) return stored;
+      return [
+        { id: 'test-uuid-1', group_id: groupId, title: 'Present Simple — nazorat',
+          duration_min: 20, coin_reward: 10, starts_at: null, ends_at: null,
+          questions: [
+            { q: 'She ___ to school every day.', options: ['go', 'goes', 'going'], correct: 1 },
+            { q: 'They ___ football on Sundays.', options: ['plays', 'play', 'played'], correct: 1 },
+          ],
+          created_at: '2026-07-15T10:00:00Z' },
+      ];
+    };
+
+    const testsGroupMatch = path.match(/^\/mentor\/tests\/groups\/([^/]+)$/);
+    if (testsGroupMatch && method === 'GET') {
+      return { success: true, data: seedMentorTests(testsGroupMatch[1]) };
+    }
+
+    if (testsGroupMatch && method === 'POST') {
+      const key = `mock_mentor_tests_${testsGroupMatch[1]}`;
+      const tests = seedMentorTests(testsGroupMatch[1]);
+      const created = {
+        id: `test-uuid-${Date.now()}`,
+        group_id: testsGroupMatch[1],
+        title: body.title,
+        duration_min: body.durationMin,
+        coin_reward: body.coinReward ?? 0,
+        starts_at: body.startsAt ?? null,
+        ends_at: body.endsAt ?? null,
+        questions: body.questions,
+        created_at: new Date().toISOString(),
+      };
+      localStorage.setItem(key, JSON.stringify([created, ...tests]));
+      return { success: true, data: created };
+    }
+
+    const testResultsMatch = path.match(/^\/mentor\/tests\/([^/]+)\/results$/);
+    if (testResultsMatch && method === 'GET') {
+      return { success: true, data: [
+        { student_id: 'stu-1', first_name: 'Aziza', last_name: 'Rahimova', score: 8, max_score: 10,
+          finished_at: '2026-07-16T11:20:00Z' },
+        { student_id: 'stu-2', first_name: 'Bekzod', last_name: 'Toshmatov', score: 5, max_score: 10,
+          finished_at: '2026-07-16T11:35:00Z' },
+        { student_id: 'stu-3', first_name: 'Malika', last_name: 'Yusupova', score: null, max_score: 10,
+          finished_at: null },
+      ] };
     }
 
     // Fallback
@@ -1526,6 +1663,26 @@ export const api = {
   // -------- MENTOR: Coins --------
   mentorGrantCoins: (token, body) => request('/mentor/coins', { method: 'POST', token, body }),
   mentorCoinHistory: (token, studentId) => request(`/mentor/coins/students/${studentId}`, { token }),
+
+  // -------- MENTOR: Tests --------
+  // body: { title, questions: [{ q, options[], correct }], durationMin, startsAt?, endsAt?, coinReward }
+  mentorCreateTest: (token, groupId, body) =>
+    request(`/mentor/tests/groups/${groupId}`, { method: 'POST', token, body }),
+  mentorTests: (token, groupId) => request(`/mentor/tests/groups/${groupId}`, { token }),
+  mentorTestResults: (token, testId) => request(`/mentor/tests/${testId}/results`, { token }),
+
+  // -------- CHAT (личные диалоги staff ↔ parent) --------
+  // Комната — пара `dm:<staffId>:<parentId>`; отправка идёт через socket, не сюда.
+  chatContacts: (token) => request('/chat/contacts', { token }),
+  chatHistory: (token, roomKey, params = {}) => {
+    const qs = new URLSearchParams();
+    if (params.limit) qs.set('limit', params.limit);
+    if (params.cursor) qs.set('cursor', params.cursor);
+    const query = qs.toString() ? `?${qs}` : '';
+    return request(`/chat/${encodeURIComponent(roomKey)}/messages${query}`, { token });
+  },
+  chatMarkRead: (token, roomKey) =>
+    request(`/chat/${encodeURIComponent(roomKey)}/read`, { method: 'POST', token }),
 
   // -------- AUTH (staff — admin/superadmin/mentor/methodist) --------
   loginStaff: (login, password) =>

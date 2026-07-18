@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 16.07.2026 01:21 (UTC+5, Toshkent vaqti)
-> Statistika: 74/144 task tugallangan (51%)
+> Oxirgi yangilanish: 18.07.2026 17:12 (UTC+5, Toshkent vaqti)
+> Statistika: 116/165 task tugallangan (70%)
 
 ---
 
-## Progress: [##########..........] 51%
+## Progress: [##############......] 70%
 
 ## Tugallangan vazifalar
 
@@ -40,10 +40,26 @@
 
 ### Backend — Methodist (Karis)
 - [x] K-METHODIST: Training types, topics, lessons CRUD + analytics (modules/methodist)
+- [x] K-METHODIST: Dars media (2026-07-18) — migratsiya 1783800000000 (video_url + file_key) + GET /api/methodist/lessons/:id/upload-url (presigned S3) + updateLesson videoUrl/fileKey qabul qiladi
+
+### Backend — Xodimlar intizomi (Karis) ✅ 2026-07-18 (MVP1, main da)
+- [x] K-DISC: shtraf (summa + sabab, avto-yechish YO'Q) + qora (ishdan bo'shatish, status='fired', withTransaction)
+- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): superadmin→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
+- [x] K-DISC: Ustav (org_charters, erkin matn, upsert, barcha xodimlarga ko'rinadi)
+- [x] K-DISC: Endpointlar — super PUT/GET /charter, POST/GET /penalties, POST /staff/:id/reactivate; admin GET /charter, POST/GET /penalties; shared GET /users/me/penalties, /users/me/charter
+- [x] K-DISC: Swagger — Discipline tegi, 10 endpoint, swagger/*.md qayta generatsiya (139 endpoint)
 
 ### Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
 - [x] K-PAY: Payments modul: oylik avto-hisoblash (billing.worker, 1-sana, muddat 5-sana) + invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + ad-hoc to'lov + refund/void + chek S3 ga; commit dan KEYIN notificationQueue ('payment.received'/'payment.due'/'payment.refunded'); total_debt + invoice.status qayta hisob. To'lamasa (5-sanadan keyin, invoice='overdue') — student panelga umuman data qaytmaydi (paymentGate, 402). NASIYA YO'Q
 - [x] K-PAY: Branch reports: filial bo'yicha tushum va qarzlar (guruhlar kesimida) — GET /api/admin/reports
+
+### Swagger / API hujjatlari (Karis) ✅ 2026-07-18
+- [x] DOCS: Barcha route'lar auditi — 158 route topildi, 139 tasi hujjatlashtirilgan edi, 19 tasi YO'Q edi (16 super + 2 admin + 1 telegram)
+- [x] DOCS: 19 ta yetishmagan @openapi bloki yozildi → **qamrov 100%** (158/158, spec 158 operatsiya beradi)
+- [x] DOCS: Yangi komponentlar — `Organization`, `UpdateOrganizationRequest`, `NotImplemented` (501 javobi)
+- [x] DOCS: `PlatformPricing` sxemasi eski narx modelidan yangi TIERS ga ko'chirildi (BUG-BILLING sababi)
+- [x] DOCS: Zaglushka endpointlar hujjatda ochiq belgilandi (⚠️ STUB / 501) — front ularga ulanmasin
+- [x] DOCS: swagger/*.md qayta generatsiya (139 → 158 endpoint, yangi telegram.md)
 
 ### Backend — V1 qolganlari (Abdulaziz) ✅ (kod: d57dff5)
 - [x] AB-V1: POST /api/admin/announcements -> notificationQueue (Bilol TG-boti uchun e'lonlar)
@@ -54,6 +70,9 @@
 ### Backend — Super Admin Integratsiya (Karis) 🔥 hozirgi fokus
 - [x] K-SUPER-INT: GET + PATCH /api/super/organization — Settings (org profil) ✅ jonli tekshirildi (35586f6)
 - [x] K-SUPER-INT: Dars davomiyligi (2026-07-16) — organizations.lesson_duration_min + lessonDurationMin GET/PATCH /api/super/organization da
+- [x] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa (repository listOrgStudents: ILIKE search + LIMIT/OFFSET)
+- [x] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
+- [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
 
 ### Backend — Infrastructure (Abdulaziz) ✅
 - [x] AB-INFRA: Scaffold + structure + deps + docker-compose
@@ -105,10 +124,45 @@
 - [x] SUPER (front): Reports
 - [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
 
+### Frontend — Main Admin (Shohjahon) 🔥 YANGI — to'liq egasi
+- [x] MAIN: Dashboard — KPI + grafiklar (Dashboard.jsx, 805 qator)
+- [x] MAIN: Leads — ro'yxat / filtr / status o'zgartirish, OnboardModal (temp-parol), Qabul / Rad etish
+- [x] MAIN: Organizations (hamkorlar) — ro'yxat / qidiruv, freeze / activate (855 qator)
+- [x] MAIN: Org-detail sahifasi — OrgDetail.jsx qurilgan
+
+### Frontend — Admin (Abduloh, Odil, Hamidula)
+- [x] ADMIN: rey/xob admin_page ishini staff strukturasiga ko'chirish (alohida Vite-app EMAS — staff ichida sahifalar; merge REVIEW dan keyin)
+- [x] ADMIN: Dashboard (income + expenses = profit) — Dashboard.jsx, api ga ulangan
+- [x] ADMIN: Students CRUD (xob integratsiyasi bor — reviewdan o'tkazish) — Students.jsx + StudentDetail.jsx
+- [x] ADMIN: Groups CRUD — Groups.jsx + GroupDetail.jsx ⚠️ GroupDetail 6 endpointni mock'dan oladi (K-INT ga qara)
+- [x] ADMIN: Payments UI (full/split modal; K-PAY chiqqach ulanadi) — Payments.jsx (775 qator)
+- [x] ADMIN: Expenses CRUD — Expenses.jsx + PDF eksport (Abduloh, jspdf)
+- [x] ADMIN: Reports — Reports.jsx, GET /api/admin/reports ga ulangan
+
 ### Frontend — Mentor (Sardor, Kozim, Alish)
 - [x] MENTOR: Dashboard (groups, upcoming lessons)
+- [x] MENTOR: Attendance journal — Attendance.jsx (726 qator, api ga ulangan)
 - [x] MENTOR: Homework (check, grades)
+- [x] MENTOR: Tests (create, results) — Tests.jsx + konstruktor + natijalar (2026-07-18)
 - [x] MENTOR: Coins (assign/deduct)
+- [x] MENTOR: Chat — shaxsiy dm: xonalar, Socket.io + tarix, faqat xodim va ota-ona ko‘radi (2026-07-18)
+
+### Frontend — Student (Abdulaziz)
+- [x] STUDENT: Home (coins, groups, deadlines)
+- [x] STUDENT: Tests — Tests.jsx + TestTake.jsx (timer/scoring)
+- [x] STUDENT: Homework
+- [x] STUDENT: Shop
+- [x] STUDENT: Videos
+- [x] STUDENT: Leaderboard
+
+### Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
+- [x] PARENT: Child overview — Dashboard.jsx (useParentOverview hook)
+- [x] PARENT: Bir nechta farzand — child-context.jsx (bolalar orasida almashtirish)
+- [x] PARENT: Davomat detali — Attendance.jsx
+- [x] PARENT: Baholar / uy vazifa natijalari — Grades.jsx
+- [x] PARENT: To'lov / qarz — Debt.jsx
+- [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ⚠️ Socket.io realtime ulanishi tekshirilmagan
+- [x] PARENT: Bildirishnomalar — Notifications.jsx
 
 ### Frontend — Landing Page ✅
 - [x] LANDING: Home, Features, Roles, Finance, Gamification, Contacts
@@ -125,6 +179,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 38 task
-- Abdulaziz (Backend): 34 task
-- Frontend jamoasi: 16 task
+- Karis (Backend): 64 task
+- Abdulaziz (Backend): 50 task
+- Frontend jamoasi: 43 task

@@ -4,6 +4,62 @@ Branch admin: dashboard, expenses, students, mentors, groups
 
 [← back to index](./README.md)
 
+### POST `/api/admin/announcements`
+Broadcast an announcement to students of the branch (or one group)
+
+Resolves the recipients (all active students of the branch, or only the given group), then enqueues `announcement.created` on the notification queue — delivery is handled asynchronously by the Telegram bot worker, never inline.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** admin (own branch only)
+
+**Request body:**
+- `title`: string **(required)**
+- `message`: string **(required)**
+- `groupId`: string (uuid) (optional) — Omit to send to every active student of the branch
+
+**Responses:**
+
+- **201** — Queued for delivery
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
 ### GET `/api/admin/dashboard`
 Branch dashboard — revenue, expenses, profit, debt, student/group counts
 
@@ -1042,6 +1098,38 @@ Freeze or unfreeze a mentor account
     - `message`: string (optional) _e.g. "Validation failed"_
     - `details` (optional):
       - _(free-form object)_
+
+---
+
+### GET `/api/admin/settings`
+Branch-visible org settings (lesson duration)
+
+Read-only for admins — the value is owned by the organization and is edited by the Super Admin (PATCH /api/super/organization). The group form uses it to compute the lesson end time from the chosen start time.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** admin (own branch only)
+
+**Responses:**
+
+- **200** — Settings
+  - `lessonDurationMin`: integer (optional) _e.g. 90_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
 
 ---
 

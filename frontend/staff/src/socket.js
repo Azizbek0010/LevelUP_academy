@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
+import { USING_MOCKS } from './api.js';
 
 let socket = null;
 let currentToken = null;
@@ -71,4 +72,40 @@ export function useOnlineCount(token) {
   }, [token]);
 
   return count;
+}
+
+/**
+ * Live-обновления журнала davomat по группе.
+ *
+ * Подписка серверная (`attendance:subscribe` → комната группы), поэтому её
+ * НУЖНО повторять после каждого reconnect: socket.io при разрыве теряет все
+ * комнаты, и без повторного subscribe страница молча перестала бы обновляться.
+ *
+ * `onUpdate` держим в ref — иначе новая ссылка на колбэк при каждом рендере
+ * пересоздавала бы подписку.
+ */
+export function useAttendanceLive(token, groupId, onUpdate) {
+  const cbRef = useRef(onUpdate);
+  cbRef.current = onUpdate;
+
+  useEffect(() => {
+    if (!token || !groupId || USING_MOCKS) return undefined;
+
+    const s = getSocket(token);
+    const subscribe = () => s.emit('attendance:subscribe', { groupId });
+
+    if (s.connected) subscribe();
+    s.on('connect', subscribe); // и при первом connect, и после каждого реконнекта
+
+    const handler = (payload) => {
+      if (payload?.groupId === groupId) cbRef.current?.(payload);
+    };
+    s.on('attendance:updated', handler);
+
+    return () => {
+      s.off('attendance:updated', handler);
+      s.off('connect', subscribe);
+      s.emit('attendance:unsubscribe', { groupId });
+    };
+  }, [token, groupId]);
 }

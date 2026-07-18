@@ -12,6 +12,7 @@ import {
   HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
   HiOutlineClipboardDocumentCheck, HiOutlineCurrencyDollar,
+  HiOutlineDocumentText,
 } from 'react-icons/hi2';
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
@@ -62,7 +63,9 @@ const mentorNav = [
   { to: '/groups',     label: 'Группы',    Icon: HiOutlineUsers },
   { to: '/attendance', label: 'Davomat',   Icon: HiOutlineCalendarDays },
   { to: '/homework',   label: 'Домашки',   Icon: HiOutlineClipboardDocumentCheck },
+  { to: '/tests',      label: 'Тесты',     Icon: HiOutlineDocumentText },
   { to: '/coins',      label: 'Коины',     Icon: HiOutlineCurrencyDollar },
+  { to: '/chat',       label: 'Xabarlar',  Icon: HiOutlineChatBubbleLeftRight },
 ];
 
 const methodistNav = [

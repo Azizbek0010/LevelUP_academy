@@ -169,6 +169,33 @@ export function useMentorCoinHistory(studentId) {
   });
 }
 
+export function useMentorTests(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(['mentor-tests', groupId], () => api.mentorTests(token, groupId), {
+    enabled: !!groupId,
+  });
+}
+
+export function useMentorTestResults(testId) {
+  const { token } = useAuth();
+  return useAuthedQuery(['mentor-test-results', testId], () => api.mentorTestResults(token, testId), {
+    enabled: !!testId,
+  });
+}
+
+// -------- CHAT --------
+export function useChatContacts() {
+  const { token } = useAuth();
+  return useAuthedQuery(['chat-contacts'], () => api.chatContacts(token));
+}
+
+export function useChatHistory(roomKey) {
+  const { token } = useAuth();
+  return useAuthedQuery(['chat-history', roomKey], () => api.chatHistory(token, roomKey), {
+    enabled: !!roomKey,
+  });
+}
+
 // -------- METHODIST CONTENT --------
 export function useTrainingTypes() {
   const { token } = useAuth();

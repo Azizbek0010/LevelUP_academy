@@ -69,30 +69,445 @@ router.use(authenticate, authorize('superadmin'));
  */
 router.get('/dashboard', ctrl.dashboard);
 
-// --- организация (профиль партнёра, Settings) ---
+/**
+ * @openapi
+ * /api/super/organization:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: Organization profile (Settings page)
+ *     description: >
+ *       Returns the partner organization profile. `plan` is derived from the
+ *       organization's tier (see `config/plans.js`), it is not stored per-row.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Organization profile
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Organization' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *   patch:
+ *     tags: [Super Admin]
+ *     summary: Update organization profile (name / domain / lesson duration)
+ *     description: >
+ *       Partial update — at least one field is required. `lessonDurationMin`
+ *       applies to every group of the organization: group end time is computed
+ *       from it on the backend (see POST/PATCH /api/admin/groups).
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/UpdateOrganizationRequest' }
+ *     responses:
+ *       200:
+ *         description: Updated organization profile
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Organization' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
 router.get('/organization', ctrl.getOrganization);
 router.patch('/organization', validate({ body: updateOrganizationSchema }), ctrl.updateOrganization);
 
-// --- студенты организации (Super Students) ---
+/**
+ * @openapi
+ * /api/super/students:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: List students across the whole organization (paginated)
+ *     description: >
+ *       Search matches first name, last name or phone (ILIKE). Scope is the
+ *       caller's organization — students of every branch are included.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *         description: Substring match on first name / last name / phone
+ *       - in: query
+ *         name: frozen
+ *         schema: { type: string, enum: ['true', 'false'] }
+ *         description: Filter by frozen status; omit for all
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, minimum: 1, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+ *     responses:
+ *       200:
+ *         description: Paginated students
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 students:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string, format: uuid }
+ *                       firstName: { type: string }
+ *                       lastName: { type: string }
+ *                       phone: { type: string, nullable: true }
+ *                       status: { type: string }
+ *                       frozen: { type: boolean }
+ *                       branchName: { type: string, nullable: true }
+ *                       createdAt: { type: string, format: date-time }
+ *                 total: { type: integer }
+ *                 page: { type: integer }
+ *                 pageCount: { type: integer }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
 router.get('/students', ctrl.listStudents);
+
+/**
+ * @openapi
+ * /api/super/students/{id}:
+ *   delete:
+ *     tags: [Super Admin]
+ *     summary: Soft-delete a student of the organization
+ *     description: Sets `deleted_at`; the row is kept for finance history.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties: { id: { type: string, format: uuid } }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
 router.delete('/students/:id', validate({ params: idParam }), ctrl.deleteStudent);
 
-// --- группы организации (Super Groups) ---
+/**
+ * @openapi
+ * /api/super/groups:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: List groups across the whole organization
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Groups of every branch
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 groups:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string, format: uuid }
+ *                       name: { type: string }
+ *                       subject: { type: string, nullable: true }
+ *                       monthlyPrice: { type: number }
+ *                       schedule: { type: object, nullable: true }
+ *                       lessonDays:
+ *                         type: object
+ *                         nullable: true
+ *                         description: Alias of `schedule`, kept for the front-end
+ *                       room: { type: string, nullable: true }
+ *                       isArchived: { type: boolean }
+ *                       branchName: { type: string, nullable: true }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
 router.get('/groups', ctrl.listGroups);
+
+/**
+ * @openapi
+ * /api/super/groups/{id}/archive:
+ *   post:
+ *     tags: [Super Admin]
+ *     summary: Archive a group (read-only, mutations return 403 afterwards)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Archived
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 group:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string, format: uuid }
+ *                     isArchived: { type: boolean, example: true }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
 router.post('/groups/:id/archive', validate({ params: idParam }), ctrl.archiveGroup);
+
+/**
+ * @openapi
+ * /api/super/groups/{id}/unarchive:
+ *   post:
+ *     tags: [Super Admin]
+ *     summary: Unarchive a group
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Unarchived
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 group:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string, format: uuid }
+ *                     isArchived: { type: boolean, example: false }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
 router.post('/groups/:id/unarchive', validate({ params: idParam }), ctrl.unarchiveGroup);
+
+/**
+ * @openapi
+ * /api/super/groups/{id}:
+ *   delete:
+ *     tags: [Super Admin]
+ *     summary: Soft-delete a group of the organization
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties: { id: { type: string, format: uuid } }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
 router.delete('/groups/:id', validate({ params: idParam }), ctrl.deleteGroup);
 
-// --- посещаемость (Super Attendance) ---
+/**
+ * @openapi
+ * /api/super/attendance:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: Attendance across the organization (optional group/date filter)
+ *     description: >
+ *       `records` and `lessons` are the same array (`lessons` is a front-end
+ *       alias). `totals` counts each status over the returned records.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: groupId
+ *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: date
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: Attendance records
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 records:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string, format: uuid }
+ *                       groupId: { type: string, format: uuid }
+ *                       groupName: { type: string }
+ *                       studentId: { type: string, format: uuid }
+ *                       firstName: { type: string }
+ *                       lastName: { type: string }
+ *                       date: { type: string, format: date }
+ *                       status: { type: string, enum: [present, absent, late, excused] }
+ *                 lessons:
+ *                   type: array
+ *                   description: Alias of `records`
+ *                   items: { type: object }
+ *                 totals:
+ *                   type: object
+ *                   properties:
+ *                     present: { type: integer }
+ *                     absent: { type: integer }
+ *                     late: { type: integer }
+ *                     excused: { type: integer }
+ *                 total: { type: integer }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
 router.get('/attendance', ctrl.attendance);
 
-// --- announcements / reminders / audit (таблиц нет → GET пусто, мутации 501) ---
+/**
+ * @openapi
+ * /api/super/announcements:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: "⚠️ STUB — always returns an empty list"
+ *     description: >
+ *       NOT IMPLEMENTED. There is no announcements table in the schema yet.
+ *       The endpoint exists only so the Announcements page can render its
+ *       EmptyState. Real implementation = migration + notificationQueue.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Always empty
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 announcements: { type: array, items: { type: object }, example: [] }
+ *                 items: { type: array, items: { type: object }, example: [] }
+ *                 total: { type: integer, example: 0 }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *   post:
+ *     tags: [Super Admin]
+ *     summary: "⚠️ NOT IMPLEMENTED — always 501"
+ *     description: Needs an announcements table + migration. Do not wire the UI to this yet.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       501: { $ref: '#/components/responses/NotImplemented' }
+ */
 router.get('/announcements', ctrl.listAnnouncements);
 router.post('/announcements', ctrl.notImplemented);
+
+/**
+ * @openapi
+ * /api/super/announcements/{id}:
+ *   delete:
+ *     tags: [Super Admin]
+ *     summary: "⚠️ NOT IMPLEMENTED — always 501"
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       501: { $ref: '#/components/responses/NotImplemented' }
+ */
 router.delete('/announcements/:id', ctrl.notImplemented);
+
+/**
+ * @openapi
+ * /api/super/reminders:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: "⚠️ STUB — always returns an empty list"
+ *     description: NOT IMPLEMENTED. No reminders table yet; returns an empty list so the page renders.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Always empty
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 reminders: { type: array, items: { type: object }, example: [] }
+ *                 items: { type: array, items: { type: object }, example: [] }
+ *                 total: { type: integer, example: 0 }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
 router.get('/reminders', ctrl.listReminders);
+
+/**
+ * @openapi
+ * /api/super/reminders/{id}/resend:
+ *   post:
+ *     tags: [Super Admin]
+ *     summary: "⚠️ NOT IMPLEMENTED — always 501"
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       501: { $ref: '#/components/responses/NotImplemented' }
+ */
 router.post('/reminders/:id/resend', ctrl.notImplemented);
+
+/**
+ * @openapi
+ * /api/super/reminders/{id}:
+ *   delete:
+ *     tags: [Super Admin]
+ *     summary: "⚠️ NOT IMPLEMENTED — always 501"
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       501: { $ref: '#/components/responses/NotImplemented' }
+ */
 router.delete('/reminders/:id', ctrl.notImplemented);
+
+/**
+ * @openapi
+ * /api/super/audit:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: "⚠️ STUB — always returns an empty list"
+ *     description: NOT IMPLEMENTED. No audit-log table yet; returns an empty list so the page renders.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Always empty
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items: { type: array, items: { type: object }, example: [] }
+ *                 total: { type: integer, example: 0 }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
 router.get('/audit', ctrl.listAudit);
 
 /**
