@@ -207,7 +207,12 @@ export default function MentorChat() {
   const totalUnread = contacts.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
 
   return (
-    <div>
+    // Маршрут /chat в Layout помечен как full-page (FULL_PAGE_ROUTES), поэтому
+    // контейнер не даёт ни отступов, ни max-width — это сделано под админский
+    // чат во всю ширину. Наша страница выглядит как обычная (заголовок + карточка),
+    // из-за чего карточка прилипала к сайдбару слева и к краю окна справа.
+    // Повторяем здесь те же отступы, что Layout даёт обычным страницам.
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
       <PageHeader
         title="Xabarlar"
         subtitle="O'quvchilarning ota-onalari bilan shaxsiy yozishmalar"
