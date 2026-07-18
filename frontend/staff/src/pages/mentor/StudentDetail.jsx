@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, CalendarCheck, FileText, ClipboardCheck, Coins,
-  Check, X, Clock, AlertTriangle, TrendingUp, UserX,
+  ArrowLeft, CalendarCheck, FileText, ClipboardCheck, Coins, LayoutGrid,
+  Check, X, Clock, AlertTriangle, UserX,
+  ArrowUpRight, ArrowDownRight, ThumbsUp, AlertCircle,
 } from 'lucide-react';
-
 import {
-  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend,
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement,
+  Filler, Tooltip, Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -14,106 +15,43 @@ import { useMentorStudentStats } from '../../queries.js';
 import Avatar from '../../components/Avatar.jsx';
 import { EmptyState } from './_ui.jsx';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
-
-/* Цвета серий взяты из валидированной категориальной палитры и проверены
-   скриптом на нашей белой подложке: все три проходят полосу светлоты, порог
-   цветности, разделение при дальтонизме и контраст ≥3:1.
-   Порядок здесь — не украшение: сочетание зелёный+оранжевый рядом провалило
-   проверку на протанопию (ΔE 3.2), между ними обязан стоять синий. */
-const SERIES = [
-  { key: 'attendanceRate', label: 'Davomat', color: '#008300' },
-  { key: 'homeworkAvg', label: 'Uy vazifasi', color: '#2a78d6' },
-  { key: 'testAvg', label: 'Testlar', color: '#eb6834' },
-];
-
-const MONTH_SHORT = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
-
-function TrendChart({ trend }) {
-  const labels = trend.map((t) => {
-    const [, m] = t.month.split('-');
-    return MONTH_SHORT[Number(m) - 1] ?? t.month;
-  });
-
-  const data = {
-    labels,
-    datasets: SERIES.map((s) => ({
-      label: s.label,
-      data: trend.map((t) => t[s.key]),
-      borderColor: s.color,
-      backgroundColor: s.color,
-      borderWidth: 2,          // тонкая линия: данные, а не декорация
-      pointRadius: 4,          // 8px в диаметре — минимальная попадаемая точка
-      pointHoverRadius: 6,
-      pointBackgroundColor: '#ffffff',
-      pointBorderWidth: 2,
-      tension: 0.3,
-      spanGaps: false,         // месяц без данных рвёт линию, а не обнуляет её
-    })),
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },   // наведение на месяц, а не на точку
-    scales: {
-      // Одна ось: все три серии в процентах, второй шкале взяться неоткуда
-      y: {
-        min: 0,
-        max: 100,
-        ticks: { stepSize: 25, color: '#7d8c73', font: { size: 11 }, callback: (v) => `${v}%` },
-        grid: { color: 'rgba(29,36,23,0.06)' },   // сетка отступает на задний план
-        border: { display: false },
-      },
-      x: {
-        // offset даёт поля по краям: без него крайние точки садятся прямо на
-        // рамку и выглядят обрезанными, особенно когда соседний месяц пустой
-        // и точка остаётся стоять одна.
-        offset: true,
-        ticks: { color: '#7d8c73', font: { size: 11 } },
-        grid: { display: false },
-        border: { color: '#dce5d4' },
-      },
-    },
-    plugins: {
-      legend: {
-        position: 'top',
-        align: 'end',
-        labels: {
-          usePointStyle: true,
-          pointStyle: 'circle',
-          boxWidth: 8,
-          padding: 16,
-          color: '#5c6b53',        // подписи — текстовым цветом, не цветом серии
-          font: { size: 12 },
-        },
-      },
-      tooltip: {
-        backgroundColor: '#1D2417',
-        padding: 10,
-        cornerRadius: 8,
-        titleFont: { size: 12 },
-        bodyFont: { size: 12 },
-        displayColors: true,
-        usePointStyle: true,
-        callbacks: {
-          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y === null ? "ma'lumot yo'q" : `${ctx.parsed.y}%`}`,
-        },
-      },
-    },
-  };
-
-  return <Line data={data} options={options} />;
-}
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 /**
- * Карточка ученика для ментора: посещаемость, домашние задания, тесты, коины.
+ * Карточка ученика: один блок статистики с четырьмя разделами.
  *
- * Главный вопрос, ради которого её открывают, — «что он сделал, а что нет».
- * Поэтому список домашних заданий показывает ВСЕ задания группы, включая те,
- * которых ученик не сдавал, и по умолчанию открыт на фильтре «не сдал»:
- * сделанное само о себе не напомнит, а пропущенное требует реакции.
+ * Разделы — кнопки, а не всё сразу на одном экране: у ментора четыре разных
+ * вопроса («как в целом», «как ходит», «как пишет тесты», «как с домашкой»),
+ * и каждый требует своего набора цифр. Показывать все четыре одновременно —
+ * значит заставлять искать нужное среди ненужного.
+ *
+ * Разбор по темам строится на названиях работ: связи домашки с темами
+ * методиста в схеме нет (у homework только title и group_id), поэтому «тема» —
+ * это конкретное задание или тест.
  */
+
+/* Цвета серий — из валидированной категориальной палитры, проверены скриптом
+   на белой подложке: полоса светлоты, порог цветности, разделение при
+   дальтонизме и контраст ≥3:1 проходят все четыре.
+   Порядок не косметика: зелёный рядом с оранжевым провалил протанопию
+   (ΔE 3.2), между ними обязан стоять другой тон. */
+const SERIES = {
+  attendance: '#008300',
+  homework: '#2a78d6',
+  grade: '#4a3aa7',
+  tests: '#eb6834',
+};
+
+/* Статусная палитра — фиксированная, не смешивается с сериями. Жёлтый на белом
+   даёт меньше 3:1, поэтому всегда идёт с числом или подписью рядом, а не несёт
+   смысл в одиночку. */
+const STATUS = {
+  good: '#0ca30c',
+  warning: '#fab219',
+  critical: '#d03b3b',
+};
+
+const MONTH_SHORT = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
 
 const HW_STATE = {
   graded:    { label: 'Baholangan', cls: 'bg-success/10 text-success border-success/25', Icon: Check },
@@ -130,87 +68,198 @@ const ATT_STATE = {
   excused: { label: 'Sababli', cls: 'bg-info/15 text-info' },
 };
 
-/** Крупная метрика. `tone` красит только цифру — по ней и читают строку. */
-function Metric({ icon: Icon, label, value, suffix, hint, tone = 'default' }) {
-  const toneCls = {
-    default: 'text-base-content',
-    good: 'text-success',
-    warn: 'text-warning',
-    bad: 'text-error',
-  }[tone];
-
-  return (
-    <div className="card bg-base-100 p-4">
-      <div className="flex items-center gap-2.5">
-        <span className="w-8 h-8 rounded-lg grid place-items-center bg-primary/10 text-primary shrink-0">
-          <Icon size={16} />
-        </span>
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
-          {label}
-        </span>
-      </div>
-      <div className={`text-3xl font-extrabold mt-3 leading-none tabular-nums ${toneCls}`}>
-        {value ?? '—'}
-        {value !== null && value !== undefined && suffix && (
-          <span className="text-lg font-bold ml-0.5">{suffix}</span>
-        )}
-      </div>
-      {hint && <div className="text-xs text-base-content/45 mt-1">{hint}</div>}
-    </div>
-  );
-}
-
-/* Полоса из сегментов вместо круговой диаграммы: доли читаются подряд, а
-   подписи стоят рядом с цветом, а не в отдельной легенде. */
-function SegmentBar({ segments, total }) {
-  if (!total) return <div className="h-2.5 rounded-full bg-base-200" />;
-  return (
-    <div className="flex h-2.5 rounded-full overflow-hidden bg-base-200">
-      {segments.filter((s) => s.value > 0).map((s) => (
-        <div
-          key={s.key}
-          className={s.cls}
-          style={{ width: `${(s.value / total) * 100}%` }}
-          title={`${s.label}: ${s.value}`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function Panel({ title, icon: Icon, action, children }) {
-  return (
-    <section className="card bg-base-100">
-      <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-base-200 flex-wrap">
-        <h2 className="text-sm font-bold flex items-center gap-2">
-          <Icon size={15} className="text-primary" /> {title}
-        </h2>
-        {action}
-      </header>
-      {children}
-    </section>
-  );
-}
-
 const fmtDate = (iso) =>
   iso ? new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' }) : '—';
+
+/** Порог, по которому процент превращается в оценку состояния. */
+const bandOf = (v) => (v === null ? 'none' : v >= 80 ? 'good' : v >= 60 ? 'warning' : 'critical');
+const bandColor = (v) => (v === null || v === undefined ? '#c3c2b7' : STATUS[bandOf(v)]);
+
+/* ── Кольцевой индикатор ──────────────────────────────────────────────────
+   Это метр (доля от предела), а не круговая диаграмма из двух долек.
+   Незаполненная дуга — прозрачный шаг того же цвета, а не серый: состояние
+   тогда читается по всему кольцу, а не только по закрашенной части. */
+function Ring({ value, label, sub, size = 108 }) {
+  const stroke = 9;
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const shown = value ?? 0;
+  const color = bandColor(value);
+
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="-rotate-90">
+          <circle
+            cx={size / 2} cy={size / 2} r={r}
+            fill="none" stroke={color} strokeOpacity="0.15" strokeWidth={stroke}
+          />
+          <circle
+            cx={size / 2} cy={size / 2} r={r}
+            fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference * (1 - shown / 100)}
+            style={{ transition: 'stroke-dashoffset .6s ease' }}
+          />
+        </svg>
+        <div className="absolute inset-0 grid place-items-center">
+          {/* Пропорциональные цифры: tabular-nums на таком кегле делает число рыхлым */}
+          <span className="text-[22px] font-extrabold leading-none">
+            {value ?? '—'}
+            {value !== null && value !== undefined && (
+              <span className="text-xs font-bold text-base-content/40">%</span>
+            )}
+          </span>
+        </div>
+      </div>
+      <div className="text-sm font-semibold mt-2.5">{label}</div>
+      <div className="text-[11px] text-base-content/45">{sub}</div>
+    </div>
+  );
+}
+
+/* ── График динамики ──────────────────────────────────────────────────────
+   Заливка только когда серия одна. Три полупрозрачные заливки на общем полотне
+   накладываются друг на друга и дают мутное серое пятно, в котором не разобрать
+   ни одной из них, — проверено на живой странице. Для нескольких серий остаются
+   чистые линии. */
+function TrendArea({ points, series, height = 240 }) {
+  const single = series.length === 1;
+
+  const data = {
+    labels: points.map((p) => p.label),
+    datasets: series.map((s) => ({
+      label: s.label,
+      data: points.map((p) => p[s.key] ?? null),
+      borderColor: s.color,
+      borderWidth: 2,
+      tension: 0.4,
+      spanGaps: false,      // месяц без данных рвёт линию, а не роняет её в ноль
+      fill: single,
+      backgroundColor: (ctx) => {
+        if (!single) return 'transparent';
+        const { chart } = ctx;
+        if (!chart.chartArea) return 'transparent';
+        const g = chart.ctx.createLinearGradient(0, chart.chartArea.top, 0, chart.chartArea.bottom);
+        g.addColorStop(0, `${s.color}38`);
+        g.addColorStop(1, `${s.color}00`);
+        return g;
+      },
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      pointBackgroundColor: '#ffffff',
+      pointBorderColor: s.color,
+      pointBorderWidth: 2,
+    })),
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    scales: {
+      // Одна ось: все серии в процентах. Вторая шкала была бы подлогом.
+      y: {
+        min: 0, max: 100,
+        ticks: { stepSize: 25, color: '#7d8c73', font: { size: 11 }, callback: (v) => `${v}%` },
+        grid: { color: 'rgba(29,36,23,0.06)' },
+        border: { display: false },
+      },
+      x: {
+        offset: true,   // поля по краям: иначе крайняя точка садится на рамку
+        ticks: { color: '#7d8c73', font: { size: 11 } },
+        grid: { display: false },
+        border: { color: '#dce5d4' },
+      },
+    },
+    plugins: {
+      legend: series.length > 1 ? {
+        position: 'top', align: 'end',
+        labels: {
+          usePointStyle: true, pointStyle: 'circle', boxWidth: 8, padding: 16,
+          color: '#5c6b53', font: { size: 12 },   // подписи текстовым цветом, не цветом серии
+        },
+      } : { display: false },     // одна серия — её называет заголовок раздела
+      tooltip: {
+        backgroundColor: '#1D2417', padding: 10, cornerRadius: 8,
+        usePointStyle: true,
+        callbacks: {
+          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y === null ? "ma'lumot yo'q" : `${ctx.parsed.y}%`}`,
+        },
+      },
+    },
+  };
+
+  return <div style={{ height }}><Line data={data} options={options} /></div>;
+}
+
+/** Строка «работа — результат» с полосой: длину сравнивать легче, чем числа. */
+function TopicRow({ title, meta, percent }) {
+  const color = bandColor(percent);
+  return (
+    <li className="flex items-center gap-3 px-4 py-2.5">
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium truncate">{title}</div>
+        {meta && <div className="text-[11px] text-base-content/45 truncate">{meta}</div>}
+      </div>
+      <div className="w-20 h-1.5 rounded-full bg-base-200 overflow-hidden shrink-0 hidden sm:block">
+        <div className="h-full rounded-full" style={{ width: `${percent}%`, background: color }} />
+      </div>
+      <span className="text-sm font-bold w-11 text-right shrink-0" style={{ color }}>
+        {percent}%
+      </span>
+    </li>
+  );
+}
+
+/** Изменение к прошлому месяцу с данными. Направление важнее величины. */
+function Delta({ points, field }) {
+  const known = points.map((p) => p[field]).filter((v) => v !== null && v !== undefined);
+  if (known.length < 2) return null;
+  const diff = known[known.length - 1] - known[known.length - 2];
+  if (diff === 0) return <span className="text-[11px] text-base-content/40">o'zgarishsiz</span>;
+  const up = diff > 0;
+  return (
+    <span className={`text-[11px] font-bold flex items-center gap-0.5 ${up ? 'text-success' : 'text-error'}`}>
+      {up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+      {up ? '+' : ''}{diff}%
+      <span className="font-medium text-base-content/40 ml-0.5">o'tgan oyga</span>
+    </span>
+  );
+}
 
 export default function MentorStudentDetail() {
   const { id } = useParams();
   const { data, isLoading, error } = useMentorStudentStats(id);
   const stats = data?.data ?? null;
 
-  // Открываем на «не сдал»: ради этого списка карточку и открывают.
+  const [tab, setTab] = useState('umumiy');
   const [hwFilter, setHwFilter] = useState('missed');
+
+  /* Разбор по работам: всё оценённое — домашки и тесты — приводим к процентам
+     и сортируем. Сильные и слабые стороны — один список с двух концов,
+     поэтому считаем его один раз. */
+  const topics = useMemo(() => {
+    if (!stats) return [];
+    const fromHw = stats.homework.items
+      .filter((h) => h.score !== null)
+      .map((h) => ({
+        id: `hw-${h.id}`,
+        title: h.title,
+        kind: 'Uy vazifasi',
+        percent: Math.round((h.score / (h.maxScore || 100)) * 100),
+      }));
+    const fromTests = stats.tests.items
+      .filter((t) => t.percent !== null)
+      .map((t) => ({ id: `t-${t.id}`, title: t.title, kind: 'Test', percent: t.percent }));
+    return [...fromHw, ...fromTests].sort((a, b) => b.percent - a.percent);
+  }, [stats]);
 
   if (isLoading) {
     return (
       <div className="space-y-5">
         <div className="skeleton h-28 w-full rounded-2xl" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-28 rounded-2xl" />)}
-        </div>
-        <div className="skeleton h-72 w-full rounded-2xl" />
+        <div className="skeleton h-[520px] w-full rounded-2xl" />
       </div>
     );
   }
@@ -229,16 +278,32 @@ export default function MentorStudentDetail() {
   }
 
   const { student, groups, attendance, recentAttendance, homework, tests, coins, trend } = stats;
-  const hasTrend = (trend ?? []).some(
-    (t) => t.attendanceRate !== null || t.homeworkAvg !== null || t.testAvg !== null,
-  );
   const fullName = `${student.firstName} ${student.lastName}`.trim();
+
+  const points = (trend ?? []).map((t) => {
+    const [, m] = t.month.split('-');
+    return {
+      label: MONTH_SHORT[Number(m) - 1] ?? t.month,
+      attendanceRate: t.attendanceRate,
+      homeworkRate: t.homeworkRate,
+      homeworkAvg: t.homeworkAvg,
+      testAvg: t.testAvg,
+    };
+  });
+
+  const strong = topics.slice(0, 4);
+  const weak = [...topics].reverse().slice(0, 4).filter((t) => t.percent < 80);
 
   const hwFiltered = hwFilter === 'all'
     ? homework.items
-    : homework.items.filter((h) => (hwFilter === 'missed'
-      ? h.state === 'missed'
-      : h.state !== 'missed'));
+    : homework.items.filter((h) => (hwFilter === 'missed' ? h.state === 'missed' : h.state !== 'missed'));
+
+  const TABS = [
+    { key: 'umumiy', label: 'Umumiy', Icon: LayoutGrid },
+    { key: 'davomat', label: 'Davomat', Icon: CalendarCheck },
+    { key: 'testlar', label: 'Testlar', Icon: ClipboardCheck },
+    { key: 'vazifa', label: 'Uyga vazifa', Icon: FileText },
+  ];
 
   return (
     <div className="space-y-5">
@@ -246,7 +311,7 @@ export default function MentorStudentDetail() {
         <ArrowLeft size={15} /> Barcha o'quvchilar
       </Link>
 
-      {/* ═════ Шапка ═════ */}
+      {/* ═════ Шапка ученика ═════ */}
       <section className="card bg-base-100 p-5">
         <div className="flex items-start gap-4 flex-wrap">
           <Avatar name={fullName} size={64} />
@@ -275,164 +340,231 @@ export default function MentorStudentDetail() {
             <div className="text-[11px] uppercase tracking-wider text-base-content/45 font-semibold">
               Koinlar
             </div>
-            <div className="text-2xl font-extrabold text-warning tabular-nums flex items-center gap-1.5 justify-end">
+            <div className="text-2xl font-extrabold text-warning flex items-center gap-1.5 justify-end">
               <Coins size={18} /> {coins.balance}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ═════ Метрики ═════ */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Metric
-          icon={CalendarCheck}
-          label="Davomat"
-          value={attendance.rate}
-          suffix="%"
-          hint={`${attendance.present + attendance.late} / ${attendance.total} darsda`}
-          tone={attendance.rate === null ? 'default' : attendance.rate >= 85 ? 'good' : attendance.rate >= 65 ? 'warn' : 'bad'}
-        />
-        <Metric
-          icon={FileText}
-          label="Uy vazifasi"
-          value={homework.completionRate}
-          suffix="%"
-          hint={`${homework.done} / ${homework.total} topshirgan`}
-          tone={homework.completionRate === null ? 'default' : homework.completionRate >= 85 ? 'good' : homework.completionRate >= 60 ? 'warn' : 'bad'}
-        />
-        <Metric
-          icon={TrendingUp}
-          label="O'rtacha baho"
-          value={homework.avgPercent}
-          suffix="%"
-          hint={`${homework.graded} ta baholangan`}
-          tone={homework.avgPercent === null ? 'default' : homework.avgPercent >= 80 ? 'good' : homework.avgPercent >= 60 ? 'warn' : 'bad'}
-        />
-        <Metric
-          icon={ClipboardCheck}
-          label="Testlar"
-          value={tests.avgPercent}
-          suffix="%"
-          hint={`${tests.taken} / ${tests.total} ishlagan`}
-          tone={tests.avgPercent === null ? 'default' : tests.avgPercent >= 80 ? 'good' : tests.avgPercent >= 60 ? 'warn' : 'bad'}
-        />
-      </div>
-
-      {/* Тревожная строка — если пропусков много, это должно бросаться в глаза
-          раньше, чем ментор начнёт листать списки. */}
-      {homework.missed > 0 && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-error/25 bg-error/5">
-          <AlertTriangle size={18} className="text-error shrink-0" />
-          <span className="text-sm">
-            <b className="text-error">{homework.missed} ta uy vazifasi topshirilmagan</b>
-            <span className="text-base-content/60"> — quyida ro'yxati bor</span>
-          </span>
-        </div>
-      )}
-
-      {/* ═════ Динамика ═════
-          Метрики выше отвечают «как сейчас», график — «куда движется».
-          Одно без другого врёт: 75% могут быть падением с 95% или подъёмом с 50%. */}
-      {hasTrend && (
-        <Panel title="Dinamika — oxirgi 6 oy" icon={TrendingUp}>
-          <div className="p-4">
-            <div className="h-[260px]">
-              <TrendChart trend={trend} />
-            </div>
-            <p className="text-[11px] text-base-content/40 mt-3">
-              Chiziq uzilgan joyda — o'sha oyda ma'lumot yo'q (dars yoki topshiriq bo'lmagan).
-            </p>
-          </div>
-        </Panel>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
-        {/* ═════ Домашние задания ═════ */}
-        <div className="lg:col-span-2">
-          <Panel
-            title="Uy vazifalari"
-            icon={FileText}
-            action={
-              <div role="tablist" className="flex gap-1 bg-base-200/70 p-0.5 rounded-lg">
-                {[
-                  { key: 'missed', label: `Topshirmagan (${homework.missed})` },
-                  { key: 'done', label: `Topshirgan (${homework.done})` },
-                  { key: 'all', label: 'Barchasi' },
-                ].map((t) => (
-                  <button
-                    key={t.key}
-                    role="tab"
-                    aria-selected={hwFilter === t.key}
-                    onClick={() => setHwFilter(t.key)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
-                      hwFilter === t.key
-                        ? 'bg-base-100 text-base-content shadow-sm'
-                        : 'text-base-content/50 hover:text-base-content'
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            }
-          >
-            {hwFiltered.length === 0 ? (
-              <EmptyState
-                icon={hwFilter === 'missed' ? Check : FileText}
-                title={
-                  hwFilter === 'missed'
-                    ? "Barcha vazifalar topshirilgan"
-                    : "Bu bo'limda vazifa yo'q"
-                }
-                hint={hwFilter === 'missed' ? "Qarzdorlik yo'q." : undefined}
-              />
-            ) : (
-              <ul className="divide-y divide-base-200">
-                {hwFiltered.map((h) => {
-                  const st = HW_STATE[h.state] ?? HW_STATE.pending;
-                  const percent = h.score !== null ? Math.round((h.score / (h.maxScore || 100)) * 100) : null;
-                  return (
-                    <li key={h.id} className="flex items-center gap-3 px-4 py-3">
-                      <span className={`w-8 h-8 rounded-lg grid place-items-center shrink-0 border ${st.cls}`}>
-                        <st.Icon size={15} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold truncate">{h.title}</div>
-                        <div className="text-[11px] text-base-content/45 truncate">
-                          {h.groupName} · {fmtDate(h.deadline)} gacha
-                        </div>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        {percent !== null ? (
-                          <>
-                            <div className="text-sm font-bold tabular-nums">
-                              {h.score}<span className="text-base-content/40">/{h.maxScore}</span>
-                            </div>
-                            <div className={`text-[11px] font-semibold ${
-                              percent >= 80 ? 'text-success' : percent >= 60 ? 'text-warning' : 'text-error'
-                            }`}>
-                              {percent}%
-                            </div>
-                          </>
-                        ) : (
-                          <span className={`text-[11px] font-semibold px-2 py-1 rounded-md border ${st.cls}`}>
-                            {st.label}
-                          </span>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+      {/* ═════ Единый блок статистики ═════ */}
+      <section className="card bg-base-100 overflow-hidden">
+        <header className="px-4 sm:px-5 pt-4 border-b border-base-200">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+            <h2 className="font-bold">Statistika</h2>
+            {homework.missed > 0 && (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-error">
+                <AlertTriangle size={14} /> {homework.missed} ta vazifa topshirilmagan
+              </span>
             )}
-          </Panel>
+          </div>
 
-          <div className="mt-5">
-            <Panel title="Testlar" icon={ClipboardCheck}>
-              {tests.items.length === 0 ? (
-                <EmptyState icon={ClipboardCheck} title="Test topshirilmagan" />
+          {/* Разделы. Подчёркивание активного, а не заливка: вкладки живут в
+              шапке белой карточки, и заливка спорила бы с её фоном. */}
+          <nav role="tablist" className="flex gap-1 overflow-x-auto -mb-px">
+            {TABS.map(({ key, label, Icon }) => {
+              const active = tab === key;
+              return (
+                <button
+                  key={key}
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setTab(key)}
+                  className={`flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                    active
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-base-content/50 hover:text-base-content'
+                  }`}
+                >
+                  <Icon size={15} /> {label}
+                </button>
+              );
+            })}
+          </nav>
+        </header>
+
+        {/* ─────────── Umumiy ─────────── */}
+        {tab === 'umumiy' && (
+          <div className="p-4 sm:p-5 space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Ring
+                value={attendance.rate}
+                label="Davomat"
+                sub={`${attendance.present + attendance.late} / ${attendance.total} darsda`}
+              />
+              <Ring
+                value={homework.completionRate}
+                label="Uy vazifasi"
+                sub={`${homework.done} / ${homework.total} topshirgan`}
+              />
+              <Ring
+                value={tests.avgPercent}
+                label="Testlar"
+                sub={`${tests.taken} / ${tests.total} ishlagan`}
+              />
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold mb-1">Oxirgi 6 oy</h3>
+              <TrendArea
+                points={points}
+                series={[
+                  { key: 'attendanceRate', label: 'Davomat', color: SERIES.attendance },
+                  { key: 'homeworkAvg', label: "O'rtacha baho", color: SERIES.grade },
+                  { key: 'testAvg', label: 'Testlar', color: SERIES.tests },
+                ]}
+              />
+              <p className="text-[11px] text-base-content/40 mt-2">
+                Chiziq uzilgan oyda ma'lumot yo'q — dars yoki topshiriq bo'lmagan.
+              </p>
+            </div>
+
+            {/* Сильные и слабые работы — ради этого карточку и открывают */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="rounded-xl border border-base-200 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-success/5 border-b border-base-200">
+                  <ThumbsUp size={14} className="text-success" />
+                  <span className="text-sm font-bold">Yaxshi o'zlashtirgan</span>
+                </div>
+                {strong.length === 0 ? (
+                  <p className="px-4 py-6 text-sm text-base-content/45 text-center">
+                    Baholangan ish yo'q
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-base-200">
+                    {strong.map((t) => (
+                      <TopicRow key={t.id} title={t.title} meta={t.kind} percent={t.percent} />
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-base-200 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-error/5 border-b border-base-200">
+                  <AlertCircle size={14} className="text-error" />
+                  <span className="text-sm font-bold">Qiyinchilik bor</span>
+                </div>
+                {weak.length === 0 ? (
+                  <p className="px-4 py-6 text-sm text-base-content/45 text-center">
+                    Zaif mavzu yo'q — barcha ishlar 80% dan yuqori
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-base-200">
+                    {weak.map((t) => (
+                      <TopicRow key={t.id} title={t.title} meta={t.kind} percent={t.percent} />
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─────────── Davomat ─────────── */}
+        {tab === 'davomat' && (
+          <div className="p-4 sm:p-5 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 items-center">
+              <Ring
+                value={attendance.rate}
+                label="Davomat"
+                sub={`${attendance.total} ta dars`}
+                size={124}
+              />
+              <div>
+                <div className="flex h-3 rounded-full overflow-hidden bg-base-200">
+                  {[
+                    { v: attendance.present, c: STATUS.good },
+                    { v: attendance.late, c: STATUS.warning },
+                    { v: attendance.absent, c: STATUS.critical },
+                    { v: attendance.excused, c: SERIES.homework },
+                  ].filter((s) => s.v > 0).map((s, i) => (
+                    <div key={i} style={{ width: `${(s.v / attendance.total) * 100}%`, background: s.c }} />
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                  {[
+                    { label: 'Keldi', value: attendance.present, c: STATUS.good },
+                    { label: 'Kechikdi', value: attendance.late, c: STATUS.warning },
+                    { label: 'Kelmadi', value: attendance.absent, c: STATUS.critical },
+                    { label: 'Sababli', value: attendance.excused, c: SERIES.homework },
+                  ].map((s) => (
+                    <div key={s.label} className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.c }} />
+                      <div>
+                        <div className="text-lg font-extrabold leading-none">{s.value}</div>
+                        <div className="text-[11px] text-base-content/45">{s.label}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-sm font-bold">Oylar bo'yicha</h3>
+                <Delta points={points} field="attendanceRate" />
+              </div>
+              <TrendArea
+                points={points}
+                series={[{ key: 'attendanceRate', label: 'Davomat', color: SERIES.attendance }]}
+                height={200}
+              />
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold mb-2">Oxirgi darslar</h3>
+              {recentAttendance.length === 0 ? (
+                <EmptyState icon={CalendarCheck} title="Davomat belgilanmagan" />
               ) : (
-                <ul className="divide-y divide-base-200">
+                <ul className="divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
+                  {recentAttendance.slice(0, 8).map((a, i) => {
+                    const st = ATT_STATE[a.status] ?? ATT_STATE.present;
+                    return (
+                      <li key={`${a.date}-${i}`} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                        <span className="text-sm">{fmtDate(a.date)}</span>
+                        <span className="text-[11px] text-base-content/45 truncate flex-1">{a.groupName}</span>
+                        <span className={`text-[11px] font-semibold px-2 py-1 rounded-md ${st.cls}`}>
+                          {st.label}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─────────── Testlar ─────────── */}
+        {tab === 'testlar' && (
+          <div className="p-4 sm:p-5 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 items-center">
+              <Ring
+                value={tests.avgPercent}
+                label="O'rtacha natija"
+                sub={`${tests.taken} / ${tests.total} ishlagan`}
+                size={124}
+              />
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-sm font-bold">Oylar bo'yicha</h3>
+                  <Delta points={points} field="testAvg" />
+                </div>
+                <TrendArea
+                  points={points}
+                  series={[{ key: 'testAvg', label: 'Testlar', color: SERIES.tests }]}
+                  height={180}
+                />
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold mb-2">Barcha testlar</h3>
+              {tests.items.length === 0 ? (
+                <EmptyState icon={ClipboardCheck} title="Test yo'q" />
+              ) : (
+                <ul className="divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
                   {tests.items.map((t) => (
                     <li key={t.id} className="flex items-center gap-3 px-4 py-3">
                       <div className="min-w-0 flex-1">
@@ -442,24 +574,20 @@ export default function MentorStudentDetail() {
                         </div>
                       </div>
                       {t.finishedAt ? (
-                        <div className="flex items-center gap-3 shrink-0">
-                          {/* Полоса результата: 40 подряд идущих процентов
-                              глазом не сравнить, длину — можно. */}
-                          <div className="hidden sm:block w-24 h-1.5 rounded-full bg-base-200 overflow-hidden">
+                        <>
+                          <div className="hidden sm:block w-24 h-1.5 rounded-full bg-base-200 overflow-hidden shrink-0">
                             <div
-                              className={`h-full ${t.percent >= 80 ? 'bg-success' : t.percent >= 60 ? 'bg-warning' : 'bg-error'}`}
-                              style={{ width: `${t.percent}%` }}
+                              className="h-full rounded-full"
+                              style={{ width: `${t.percent}%`, background: bandColor(t.percent) }}
                             />
                           </div>
-                          <span className="text-sm font-bold tabular-nums w-20 text-right">
+                          <span className="text-sm font-bold w-20 text-right shrink-0">
                             {t.score}/{t.maxScore}
-                            <span className={`ml-1.5 text-[11px] ${
-                              t.percent >= 80 ? 'text-success' : t.percent >= 60 ? 'text-warning' : 'text-error'
-                            }`}>
+                            <span className="ml-1.5 text-[11px]" style={{ color: bandColor(t.percent) }}>
                               {t.percent}%
                             </span>
                           </span>
-                        </div>
+                        </>
                       ) : (
                         <span className="text-[11px] font-semibold px-2 py-1 rounded-md border border-base-300 text-base-content/45 shrink-0">
                           Ishlamagan
@@ -469,92 +597,101 @@ export default function MentorStudentDetail() {
                   ))}
                 </ul>
               )}
-            </Panel>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* ═════ Правая колонка ═════ */}
-        <div className="space-y-5">
-          <Panel title="Davomat" icon={CalendarCheck}>
-            <div className="p-4">
-              <SegmentBar
-                total={attendance.total}
-                segments={[
-                  { key: 'present', value: attendance.present, cls: 'bg-success', label: 'Keldi' },
-                  { key: 'late', value: attendance.late, cls: 'bg-warning', label: 'Kechikdi' },
-                  { key: 'absent', value: attendance.absent, cls: 'bg-error', label: 'Kelmadi' },
-                  { key: 'excused', value: attendance.excused, cls: 'bg-info', label: 'Sababli' },
-                ]}
+        {/* ─────────── Uyga vazifa ─────────── */}
+        {tab === 'vazifa' && (
+          <div className="p-4 sm:p-5 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 items-center">
+              <Ring
+                value={homework.completionRate}
+                label="Topshirgan"
+                sub={`${homework.done} / ${homework.total} ta`}
+                size={124}
               />
-              <div className="grid grid-cols-3 gap-2 mt-4 text-center">
-                {[
-                  { label: 'Keldi', value: attendance.present, cls: 'text-success' },
-                  { label: 'Kechikdi', value: attendance.late, cls: 'text-warning' },
-                  { label: 'Kelmadi', value: attendance.absent, cls: 'text-error' },
-                ].map((s) => (
-                  <div key={s.label}>
-                    <div className={`text-lg font-extrabold tabular-nums ${s.cls}`}>{s.value}</div>
-                    <div className="text-[11px] text-base-content/45">{s.label}</div>
-                  </div>
-                ))}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-sm font-bold">O'rtacha baho — oylar bo'yicha</h3>
+                  <Delta points={points} field="homeworkAvg" />
+                </div>
+                <TrendArea
+                  points={points}
+                  series={[{ key: 'homeworkAvg', label: "O'rtacha baho", color: SERIES.grade }]}
+                  height={180}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+                <h3 className="text-sm font-bold">Vazifalar</h3>
+                <div role="tablist" className="flex gap-1 bg-base-200/70 p-0.5 rounded-lg">
+                  {[
+                    { key: 'missed', label: `Topshirmagan (${homework.missed})` },
+                    { key: 'done', label: `Topshirgan (${homework.done})` },
+                    { key: 'all', label: 'Barchasi' },
+                  ].map((t) => (
+                    <button
+                      key={t.key}
+                      role="tab"
+                      aria-selected={hwFilter === t.key}
+                      onClick={() => setHwFilter(t.key)}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
+                        hwFilter === t.key
+                          ? 'bg-base-100 text-base-content shadow-sm'
+                          : 'text-base-content/50 hover:text-base-content'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {recentAttendance.length > 0 && (
-                <>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/40 mt-5 mb-2">
-                    Oxirgi darslar
-                  </div>
-                  <ul className="space-y-1">
-                    {recentAttendance.slice(0, 6).map((a, i) => {
-                      const st = ATT_STATE[a.status] ?? ATT_STATE.present;
-                      return (
-                        <li key={`${a.date}-${i}`} className="flex items-center justify-between gap-2 text-xs">
-                          <span className="text-base-content/55">{fmtDate(a.date)}</span>
-                          <span className={`px-2 py-0.5 rounded-md font-semibold ${st.cls}`}>
+              {hwFiltered.length === 0 ? (
+                <EmptyState
+                  icon={hwFilter === 'missed' ? Check : FileText}
+                  title={hwFilter === 'missed' ? 'Barcha vazifalar topshirilgan' : "Vazifa yo'q"}
+                />
+              ) : (
+                <ul className="divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
+                  {hwFiltered.map((h) => {
+                    const st = HW_STATE[h.state] ?? HW_STATE.pending;
+                    const percent = h.score !== null ? Math.round((h.score / (h.maxScore || 100)) * 100) : null;
+                    return (
+                      <li key={h.id} className="flex items-center gap-3 px-4 py-3">
+                        <span className={`w-8 h-8 rounded-lg grid place-items-center shrink-0 border ${st.cls}`}>
+                          <st.Icon size={15} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold truncate">{h.title}</div>
+                          <div className="text-[11px] text-base-content/45 truncate">
+                            {h.groupName} · {fmtDate(h.deadline)} gacha
+                          </div>
+                        </div>
+                        {percent !== null ? (
+                          <span className="text-sm font-bold text-right shrink-0">
+                            {h.score}<span className="text-base-content/40">/{h.maxScore}</span>
+                            <span className="ml-1.5 text-[11px]" style={{ color: bandColor(percent) }}>
+                              {percent}%
+                            </span>
+                          </span>
+                        ) : (
+                          <span className={`text-[11px] font-semibold px-2 py-1 rounded-md border shrink-0 ${st.cls}`}>
                             {st.label}
                           </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </>
-              )}
-            </div>
-          </Panel>
-
-          <Panel title="Koinlar" icon={Coins}>
-            <div className="p-4">
-              <div className="flex gap-3">
-                <div className="flex-1 rounded-lg bg-success/10 px-3 py-2">
-                  <div className="text-[11px] text-base-content/50">Olgan</div>
-                  <div className="text-lg font-extrabold text-success tabular-nums">
-                    +{coins.earned}
-                  </div>
-                </div>
-                <div className="flex-1 rounded-lg bg-base-200 px-3 py-2">
-                  <div className="text-[11px] text-base-content/50">Sarflagan</div>
-                  <div className="text-lg font-extrabold tabular-nums">−{coins.spent}</div>
-                </div>
-              </div>
-
-              {coins.recent.length > 0 && (
-                <ul className="divide-y divide-base-200 mt-3">
-                  {coins.recent.slice(0, 5).map((c) => (
-                    <li key={c.id} className="flex items-center justify-between gap-2 py-2">
-                      <span className="text-xs truncate">{c.reason}</span>
-                      <span className={`text-xs font-bold tabular-nums shrink-0 ${
-                        c.amount > 0 ? 'text-success' : 'text-error'
-                      }`}>
-                        {c.amount > 0 ? '+' : ''}{c.amount}
-                      </span>
-                    </li>
-                  ))}
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
-          </Panel>
-        </div>
-      </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

@@ -31,7 +31,7 @@ export async function getStudentStats(studentId, mentorId) {
 
   const [
     groups, attRows, recentAtt, hwRows, testRows, coins, coinLog,
-    attMonths, hwMonths, testMonths,
+    attMonths, hwMonths, testMonths, hwDoneMonths,
   ] = await Promise.all([
     repo.listStudentGroups(studentId, mentorId),
     repo.attendanceSummary(studentId, mentorId),
@@ -43,6 +43,7 @@ export async function getStudentStats(studentId, mentorId) {
     repo.attendanceByMonth(studentId, mentorId),
     repo.homeworkByMonth(studentId, mentorId),
     repo.testsByMonth(studentId, mentorId),
+    repo.homeworkDoneByMonth(studentId, mentorId),
   ]);
 
   // ---- посещаемость ----
@@ -99,9 +100,11 @@ export async function getStudentStats(studentId, mentorId) {
     const att = attMonths.find((r) => r.month === key);
     const hw = hwMonths.find((r) => r.month === key);
     const tst = testMonths.find((r) => r.month === key);
+    const hwDone = hwDoneMonths.find((r) => r.month === key);
     months.push({
       month: key,
       attendanceRate: att ? pct(att.attended, att.total) : null,
+      homeworkRate: hwDone ? pct(hwDone.done, hwDone.total) : null,
       homeworkAvg: hw ? hw.avg_percent : null,
       testAvg: tst ? tst.avg_percent : null,
       lessons: att ? att.total : 0,

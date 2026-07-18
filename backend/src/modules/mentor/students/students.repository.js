@@ -158,6 +158,26 @@ export function homeworkByMonth(studentId, mentorId, client = pool) {
     .then((r) => r.rows);
 }
 
+/** Доля сданных ДЗ по месяцам: все задания месяца против сданных. */
+export function homeworkDoneByMonth(studentId, mentorId, client = pool) {
+  return client
+    .query(
+      `SELECT to_char(date_trunc('month', h.deadline), 'YYYY-MM') AS month,
+              count(*)::int AS total,
+              count(s.id)::int AS done
+         FROM homework h
+         JOIN groups g          ON g.id = h.group_id AND g.mentor_id = $2
+         JOIN group_students gs ON gs.group_id = g.id
+                               AND gs.student_id = $1 AND gs.left_at IS NULL
+         LEFT JOIN homework_submissions s ON s.homework_id = h.id AND s.student_id = $1
+        WHERE h.deleted_at IS NULL AND g.deleted_at IS NULL
+          AND h.deadline >= ${MONTHS_BACK}
+        GROUP BY 1 ORDER BY 1`,
+      [studentId, mentorId],
+    )
+    .then((r) => r.rows);
+}
+
 /** Средний процент за тесты по месяцам — только завершённые попытки. */
 export function testsByMonth(studentId, mentorId, client = pool) {
   return client
