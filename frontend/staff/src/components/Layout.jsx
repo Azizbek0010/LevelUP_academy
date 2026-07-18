@@ -128,23 +128,6 @@ function Sidebar({ role, collapsed, onToggle }) {
         )}
       </div>
 
-      {/* Role badge */}
-      {!collapsed && (
-        <div className="px-4 pt-4 pb-2 animate-fade-in">
-          <div
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider"
-            style={{
-              background: `${ROLE_COLORS[role] || '#6b7280'}18`,
-              color: ROLE_COLORS[role] || '#6b7280',
-              border: `1px solid ${ROLE_COLORS[role] || '#6b7280'}25`,
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: ROLE_COLORS[role] }} />
-            {ROLE_TITLE[role] || 'Панель'}
-          </div>
-        </div>
-      )}
-
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
         {nav.map(({ to, label, Icon, end, soon }, i) => {

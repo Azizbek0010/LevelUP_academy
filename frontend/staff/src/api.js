@@ -127,6 +127,11 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
   if (USE_MOCKS) {
     await delay();
     const mocks = getMethodistMocks();
+    // Query stringni saqlab qolib, keyin path dan ajratamiz
+    const qIndex = path.indexOf('?');
+    const queryString = qIndex >= 0 ? path.slice(qIndex + 1) : '';
+    const queryParams = Object.fromEntries(new URLSearchParams(queryString));
+    path = qIndex >= 0 ? path.slice(0, qIndex) : path;
 
     // -------- AUTH --------
     if (path === '/auth/staff/login') {
@@ -970,16 +975,47 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       let invoices = JSON.parse(localStorage.getItem('mock_admin_invoices') || '[]');
       if (invoices.length === 0) {
         invoices = [
-          { id: 'inv-1', studentName: 'Sardor O\'zbekov', groupName: 'Frontend React', amount: 850000, paidAmount: 850000, status: 'paid', dueDate: '2026-06-01T00:00:00Z', paidAt: '2026-06-01T10:00:00Z', paymentMethod: 'cash' },
-          { id: 'inv-2', studentName: 'Nilufar Karimova', groupName: 'Python Bootcamp', amount: 750000, paidAmount: 0, status: 'pending', dueDate: '2026-07-01T00:00:00Z', paidAt: null, paymentMethod: null },
-          { id: 'inv-3', studentName: 'Botir Hasanov', groupName: 'Frontend React', amount: 850000, paidAmount: 500000, status: 'partial', dueDate: '2026-07-01T00:00:00Z', paidAt: '2026-06-28T14:00:00Z', paymentMethod: 'card' },
-          { id: 'inv-4', studentName: 'Gulnora Rahimova', groupName: 'Python Bootcamp', amount: 750000, paidAmount: 750000, status: 'paid', dueDate: '2026-06-01T00:00:00Z', paidAt: '2026-05-30T11:00:00Z', paymentMethod: 'cash' },
-          { id: 'inv-5', studentName: 'Javlon Abdullayev', groupName: 'UI/UX Design', amount: 700000, paidAmount: 0, status: 'overdue', dueDate: '2026-06-01T00:00:00Z', paidAt: null, paymentMethod: null },
-          { id: 'inv-6', studentName: 'Dilshod Tursunov', groupName: 'Frontend React', amount: 850000, paidAmount: 850000, status: 'paid', dueDate: '2026-07-01T00:00:00Z', paidAt: '2026-06-29T09:00:00Z', paymentMethod: 'card' },
+          { id: 'inv-1', studentName: 'Sardor O\'zbekov', groupName: 'Frontend React', student: 'Sardor O\'zbekov', group: 'Frontend React', studentId: 'st-1', amount: 850000, paidAmount: 850000, status: 'paid', dueDate: '2026-06-01T00:00:00Z', paidAt: '2026-06-01T10:00:00Z', paymentMethod: 'cash' },
+          { id: 'inv-2', studentName: 'Nilufar Karimova', groupName: 'Python Bootcamp', student: 'Nilufar Karimova', group: 'Python Bootcamp', studentId: 'st-2', amount: 750000, paidAmount: 0, status: 'pending', dueDate: '2026-07-01T00:00:00Z', paidAt: null, paymentMethod: null },
+          { id: 'inv-3', studentName: 'Botir Hasanov', groupName: 'Frontend React', student: 'Botir Hasanov', group: 'Frontend React', studentId: 'st-3', amount: 850000, paidAmount: 500000, status: 'partially_paid', dueDate: '2026-07-01T00:00:00Z', paidAt: '2026-06-28T14:00:00Z', paymentMethod: 'card' },
+          { id: 'inv-4', studentName: 'Gulnora Rahimova', groupName: 'Python Bootcamp', student: 'Gulnora Rahimova', group: 'Python Bootcamp', studentId: 'st-4', amount: 750000, paidAmount: 750000, status: 'paid', dueDate: '2026-06-01T00:00:00Z', paidAt: '2026-05-30T11:00:00Z', paymentMethod: 'cash' },
+          { id: 'inv-5', studentName: 'Javlon Abdullayev', groupName: 'UI/UX Design', student: 'Javlon Abdullayev', group: 'UI/UX Design', studentId: 'st-5', amount: 700000, paidAmount: 0, status: 'overdue', dueDate: '2026-06-01T00:00:00Z', paidAt: null, paymentMethod: null },
+          { id: 'inv-6', studentName: 'Dilshod Tursunov', groupName: 'Frontend React', student: 'Dilshod Tursunov', group: 'Frontend React', studentId: 'st-6', amount: 850000, paidAmount: 850000, status: 'paid', dueDate: '2026-07-01T00:00:00Z', paidAt: '2026-06-29T09:00:00Z', paymentMethod: 'card' },
         ];
         localStorage.setItem('mock_admin_invoices', JSON.stringify(invoices));
+      } else {
+        // Migrate old data: qadimgi ma'lumotlarga student, group, studentId qo'shish
+        let changed = false;
+        const studentMap = {
+          'Sardor O\'zbekov': { id: 'st-1', group: 'Frontend React' },
+          'Nilufar Karimova': { id: 'st-2', group: 'Python Bootcamp' },
+          'Botir Hasanov': { id: 'st-3', group: 'Frontend React' },
+          'Gulnora Rahimova': { id: 'st-4', group: 'Python Bootcamp' },
+          'Javlon Abdullayev': { id: 'st-5', group: 'UI/UX Design' },
+          'Dilshod Tursunov': { id: 'st-6', group: 'Frontend React' },
+        };
+        invoices = invoices.map((inv) => {
+          const u = { ...inv };
+          if (!u.student) u.student = u.studentName || '';
+          if (!u.group) u.group = u.groupName || '';
+          if (!u.studentId) {
+            const match = studentMap[u.studentName || u.student];
+            if (match) {
+              u.studentId = match.id;
+              if (!u.group) u.group = match.group;
+              changed = true;
+            }
+          }
+          return u;
+        });
+        if (changed) localStorage.setItem('mock_admin_invoices', JSON.stringify(invoices));
       }
-      return { invoices, total: invoices.length };
+      // Filter by status if query param present
+      if (queryParams.status && queryParams.status !== 'all') {
+        invoices = invoices.filter((inv) => inv.status === queryParams.status);
+      }
+      const total = invoices.length;
+      return { invoices, total };
     }
 
     if (path.match(/^\/admin\/payments\/invoices\/([^/]+)\/pay$/) && method === 'POST') {
@@ -987,10 +1023,14 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       const invoices = JSON.parse(localStorage.getItem('mock_admin_invoices') || '[]');
       const idx = invoices.findIndex(i => i.id === id);
       if (idx === -1) { const err = new Error('Invoice не найден'); err.status = 404; throw err; }
-      invoices[idx].paidAmount += body.amount || 0;
-      invoices[idx].status = invoices[idx].paidAmount >= invoices[idx].amount ? 'paid' : 'partial';
+      // Handle split payment parts
+      const paidAmount = body.parts
+        ? body.parts.reduce((sum, p) => sum + Number(p.amount || 0), 0)
+        : Number(body.amount || 0);
+      invoices[idx].paidAmount = (invoices[idx].paidAmount || 0) + paidAmount;
+      invoices[idx].status = invoices[idx].paidAmount >= invoices[idx].amount ? 'paid' : 'partially_paid';
       invoices[idx].paidAt = new Date().toISOString();
-      invoices[idx].paymentMethod = body.method || 'cash';
+      invoices[idx].paymentMethod = body.parts?.[0]?.method || body.method || 'cash';
       localStorage.setItem('mock_admin_invoices', JSON.stringify(invoices));
       return { invoice: invoices[idx] };
     }
@@ -1001,6 +1041,63 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
 
     if (path.match(/^\/admin\/payments\/transactions\/([^/]+)\/void$/) && method === 'POST') {
       return { success: true, message: 'Транзакция аннулирована' };
+    }
+
+    // -------- ADMIN: Payments (ad-hoc) --------
+    if (path === '/admin/payments' && method === 'POST') {
+      const invoices = JSON.parse(localStorage.getItem('mock_admin_invoices') || '[]');
+      const students = JSON.parse(localStorage.getItem('mock_admin_students') || '[]');
+      const txId = 'tx-' + Date.now();
+      const invId = 'inv-' + Date.now();
+      // Look up student by ID to get full name
+      const foundStudent = students.find((s) => s.id === body.studentId);
+      const fullName = foundStudent
+        ? [foundStudent.firstName, foundStudent.lastName].filter(Boolean).join(' ')
+        : body.studentName || 'Новый студент';
+      const group = foundStudent?.groupName || body.groupName || '—';
+      const paidSum = body.parts.reduce((s, p) => s + Number(p.amount), 0);
+      const totalAmt = Number(body.totalAmount) || paidSum;
+      const newInv = {
+        id: invId,
+        studentName: fullName,
+        student: fullName,
+        studentId: body.studentId || foundStudent?.id || null,
+        groupName: group,
+        group: group,
+        amount: totalAmt,
+        paidAmount: paidSum,
+        status: paidSum >= totalAmt ? 'paid' : 'partially_paid',
+        dueDate: new Date().toISOString(),
+        paidAt: new Date().toISOString(),
+        paymentMethod: body.parts?.[0]?.method || 'cash',
+      };
+      invoices.unshift(newInv);
+      localStorage.setItem('mock_admin_invoices', JSON.stringify(invoices));
+      return {
+        invoice: newInv,
+        transactions: body.parts.map((p, i) => ({
+          id: txId + '-' + i,
+          invoiceId: invId,
+          method: p.method,
+          status: 'completed',
+          amount: Number(p.amount),
+          receiptKey: null,
+          splitBatchId: body.parts.length > 1 ? 'batch-' + Date.now() : null,
+          createdAt: new Date().toISOString(),
+        })),
+      };
+    }
+
+    // -------- ADMIN: Payments (receipt upload) --------
+    if (path.match(/^\/admin\/payments\/transactions\/([^/]+)\/receipt-upload-url$/) && method === 'GET') {
+      return {
+        uploadUrl: 'https://mock-s3.uz/uploads/' + path.split('/')[4] + '/' + Date.now(),
+        receiptKey: 'receipts/' + path.split('/')[4] + '/' + Date.now() + '.jpg',
+      };
+    }
+
+    if (path.match(/^\/admin\/payments\/transactions\/([^/]+)\/receipt$/) && method === 'PATCH') {
+      return { id: path.split('/')[4], receiptKey: body.receiptKey };
     }
 
     // -------- ADMIN: Reports --------
@@ -1232,6 +1329,14 @@ export const api = {
     request(`/admin/payments/transactions/${transactionId}/refund`, { method: 'POST', token, body }),
   adminVoidTransaction: (token, transactionId, body) =>
     request(`/admin/payments/transactions/${transactionId}/void`, { method: 'POST', token, body }),
+
+  // -------- ADMIN: Payments (ad-hoc, receipt) --------
+  adminAdHocPayment: (token, body) =>
+    request('/admin/payments', { method: 'POST', token, body }),
+  adminReceiptUploadUrl: (token, transactionId, filename, contentType) =>
+    request(`/admin/payments/transactions/${transactionId}/receipt-upload-url?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(contentType)}`, { token }),
+  adminAttachReceipt: (token, transactionId, receiptKey) =>
+    request(`/admin/payments/transactions/${transactionId}/receipt`, { method: 'PATCH', token, body: { receiptKey } }),
 
   // -------- ADMIN: Reports --------
   adminReports: (token, qs = '') => request(`/admin/reports${qs}`, { token }),
