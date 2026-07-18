@@ -381,24 +381,91 @@ export default function Expenses() {
     }
   }, [deleteTarget, loadExpenses, token]);
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     setExporting(true);
-    setTimeout(() => {
-      const csv = [
-        ['Kategoriya', 'Summa', 'Sana', 'Izoh', 'Status', "To'lov usuli"].join(','),
-        ...filtered.map((e) =>
-          [e.category, e.amount, e.spentAt, `"${(e.note || '').replace(/"/g, '""')}"`, getStatusFromExpense(e), getPaymentMethod(e)].join(',')
-        ),
-      ].join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `xarajatlar_${new Date().toISOString().split('T')[0]}.csv`;
-      link.click();
-      URL.revokeObjectURL(link.href);
+    try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const dateStr = new Date().toLocaleDateString('ru-RU');
+
+      // Header
+      doc.setFontSize(16);
+      doc.setTextColor(30, 30, 30);
+      doc.text('Xarajatlar hisoboti', 14, 18);
+      doc.setFontSize(9);
+      doc.setTextColor(120, 120, 120);
+      doc.text(`Sana: ${dateStr}  |  Jami: ${formatCurrency(filteredTotal)}  |  Soni: ${filtered.length}`, 14, 25);
+
+      // Table
+      const statusLabel = (s) => {
+        const m = { paid: "To'langan", pending: 'Kutilmoqda', rejected: 'Rad etilgan', cancelled: 'Bekor qilingan' };
+        return m[s?.toLowerCase()] || s || '—';
+      };
+
+      autoTable.default(doc, {
+        startY: 30,
+        head: [['#', 'Kategoriya', "Summa (so'm)", 'Sana', 'Izoh', 'Status', "To'lov usuli"]],
+        body: filtered.map((e, i) => [
+          i + 1,
+          e.category || '—',
+          Number(e.amount || 0).toLocaleString('uz-UZ'),
+          e.spentAt ? new Date(e.spentAt).toLocaleDateString('ru-RU') : '—',
+          e.note || '—',
+          statusLabel(getStatusFromExpense(e)),
+          getPaymentMethod(e),
+        ]),
+        foot: [['', 'JAMI', formatCurrency(filteredTotal), '', '', '', '']],
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+          textColor: [30, 30, 30],
+          lineColor: [220, 229, 212],
+          lineWidth: 0.3,
+        },
+        headStyles: {
+          fillColor: [67, 137, 62],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 8,
+        },
+        footStyles: {
+          fillColor: [245, 248, 241],
+          textColor: [30, 30, 30],
+          fontStyle: 'bold',
+          fontSize: 8,
+        },
+        alternateRowStyles: { fillColor: [248, 251, 245] },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 32, halign: 'right' },
+          3: { cellWidth: 22, halign: 'center' },
+          4: { cellWidth: 'auto' },
+          5: { cellWidth: 26, halign: 'center' },
+          6: { cellWidth: 24, halign: 'center' },
+        },
+        margin: { left: 14, right: 14 },
+        didDrawPage: (data) => {
+          // Footer on every page
+          const pageH = doc.internal.pageSize.getHeight();
+          doc.setFontSize(7);
+          doc.setTextColor(160, 160, 160);
+          doc.text(`LevelUp Academy  |  Sahifa ${doc.internal.getCurrentPageInfo().pageNumber}`, pageW / 2, pageH - 8, { align: 'center' });
+        },
+      });
+
+      doc.save(`xarajatlar_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+      console.error('PDF export error:', err);
+    } finally {
       setExporting(false);
-    }, 300);
-  }, [filtered]);
+    }
+  }, [filtered, filteredTotal]);
 
   const clearFilters = () => {
     setSearch('');
