@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Search, Bell, ChevronLeft, ChevronRight, ChevronDown, X,
   LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu, Wifi,
@@ -204,25 +204,29 @@ function Sidebar({ role, collapsed, onToggle, onExpandSidebar = () => {} }) {
         borderRadius: '0 0 16px 0',
       }}
     >
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 shrink-0" style={{ borderBottom: '1px solid rgba(198, 255, 52, 0.06)' }}>
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-black text-sm"
-          style={{
-            background: 'linear-gradient(135deg, #C6FF34 0%, #a8e02c 100%)',
-            color: '#0f1a0a',
-            boxShadow: '0 0 20px rgba(198, 255, 52, 0.3)',
-          }}
-        >
-          L
-        </div>
-        {!collapsed && (
-          <div className="animate-fade-in">
-            <div className="text-sm font-bold tracking-tight" style={{ color: '#C6FF34' }}>LevelUP</div>
-            <div className="text-[10px] tracking-widest uppercase" style={{ color: 'rgba(198,255,52,0.4)' }}>Academy</div>
-          </div>
+      {/* Логотип.
+          Раньше здесь был самодельный градиентный квадрат с буквой «L» и текст
+          «LevelUP / Academy», набранный вручную — фирменный знак (незамкнутое
+          кольцо-прогресс) в панели не появлялся вообще, хотя лежит готовым в
+          public/ и уже используется на логине и сплэше.
+          Развёрнутый сайдбар — выворотка целиком (тот же файл, что на тёмной
+          панели логина), свёрнутый — только лаймовый знак. */}
+      <Link
+        to="/"
+        className="flex items-center gap-3 px-4 h-16 shrink-0 transition-opacity hover:opacity-85"
+        style={{ borderBottom: '1px solid rgba(198, 255, 52, 0.06)' }}
+        aria-label="LevelUp Academy — bosh sahifa"
+      >
+        {collapsed ? (
+          <img src="/logo-mark.svg" alt="" className="w-9 h-9 shrink-0" />
+        ) : (
+          <img
+            src="/logo-white.svg"
+            alt="LevelUp Academy"
+            className="h-7 w-auto animate-fade-in"
+          />
         )}
-      </div>
+      </Link>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
