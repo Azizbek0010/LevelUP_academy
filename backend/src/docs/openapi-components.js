@@ -1231,6 +1231,28 @@ export const components = {
       },
     },
 
+    ChatContact: {
+      type: 'object',
+      description:
+        'A parent the caller may privately message, plus that conversation’s preview. '
+        + '`room_key` is the private pair room `dm:<staffId>:<parentId>` — it is never shared with other staff.',
+      properties: {
+        id: { type: 'string', format: 'uuid', description: 'Parent user id' },
+        first_name: { type: 'string' },
+        last_name: { type: 'string' },
+        avatar_key: { type: 'string', nullable: true },
+        child_names: {
+          type: 'string',
+          nullable: true,
+          description: 'Comma-separated children of this parent (context for the staff member)',
+        },
+        room_key: { type: 'string', example: 'dm:3fa85f64-…:9c1b2d34-…' },
+        last_message: { type: 'string', nullable: true },
+        last_message_at: { type: 'string', format: 'date-time', nullable: true },
+        unread_count: { type: 'integer', example: 2 },
+      },
+    },
+
     // ---------- users ----------
     UserProfile: {
       type: 'object',

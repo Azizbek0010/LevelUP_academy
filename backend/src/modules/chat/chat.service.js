@@ -21,6 +21,11 @@ export async function saveMessage({ chatType, roomKey, senderId, branchId, body,
   });
 }
 
+/** Прочитано: доступ к комнате уже проверен middleware'ом requireRoomAccess. */
+export async function markRoomRead(roomKey, readerId) {
+  return chatRepository.markRoomRead(roomKey, readerId);
+}
+
 export async function getRoomHistory(roomKey, { limit, before }) {
   const messages = await chatRepository.findByRoom(roomKey, { limit, before });
   return {
