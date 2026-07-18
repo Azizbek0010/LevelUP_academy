@@ -1,4 +1,5 @@
 import { AppError } from '../../utils/AppError.js';
+import { buildObjectKey, getUploadUrl as getS3UploadUrl } from '../../config/s3.js';
 import * as repo from './content.repository.js';
 
 // ==================== ТИПЫ ОБУЧЕНИЯ ====================
@@ -70,6 +71,20 @@ export async function updateLesson(id, orgId, payload) {
 
 export async function archiveLesson(id, orgId) {
   await repo.archiveLesson(id, orgId);
+}
+
+/**
+ * Presigned S3 PUT url for a lesson's practical-task attachment.
+ * Verifies the lesson belongs to the caller's organization first, then
+ * returns { uploadUrl, fileKey } — the client PUTs the file to uploadUrl
+ * and saves the key via updateLesson({ fileKey }).
+ */
+export async function getLessonUploadUrl(lessonId, orgId, { filename, contentType }) {
+  const lesson = await repo.findLessonInOrg(lessonId, orgId);
+  if (!lesson) throw new AppError(404, 'Lesson not found');
+  const fileKey = buildObjectKey(`lessons/${lessonId}`, filename);
+  const uploadUrl = await getS3UploadUrl(fileKey, contentType);
+  return { uploadUrl, fileKey };
 }
 
 /** Копировать урок (тест/практику) в другую тему со всеми вопросами. */
