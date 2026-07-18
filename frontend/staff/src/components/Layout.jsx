@@ -188,19 +188,32 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
 }
 
 /* ──────────────────── SIDEBAR ──────────────────── */
-function Sidebar({ role, collapsed, onToggle, onExpandSidebar = () => {} }) {
+function Sidebar({
+  role,
+  collapsed,          // визуальное состояние: свёрнут ли сейчас
+  pinned,             // закреплён ли открытым (осознанный выбор пользователя)
+  onToggle,
+  onExpandSidebar = () => {},
+  hoverProps = {},    // обработчики наведения — только у десктопного экземпляра
+  overlaying = false, // раскрыт наведением поверх контента
+}) {
   const nav = ROLE_NAV[role] || [];
   const { user } = useAuth();
   const location = useLocation();
 
   return (
     <aside
-      className="fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300 ease-in-out overflow-hidden"
+      {...hoverProps}
+      className="fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-200 ease-out overflow-hidden"
       style={{
         width: collapsed ? 72 : 256,
         background: 'linear-gradient(180deg, #0f1a0a 0%, #16210f 40%, #1a2912 100%)',
         borderRight: '1px solid rgba(198, 255, 52, 0.08)',
-        boxShadow: '4px 0 24px rgba(0, 0, 0, 0.3)',
+        // Когда панель выехала поверх страницы, тень должна быть заметнее:
+        // иначе не читается, что это слой над контентом, а не раздвинувшая его колонка.
+        boxShadow: overlaying
+          ? '8px 0 32px rgba(0, 0, 0, 0.45)'
+          : '4px 0 24px rgba(0, 0, 0, 0.3)',
         borderRadius: '0 0 16px 0',
       }}
     >
@@ -304,7 +317,9 @@ function Sidebar({ role, collapsed, onToggle, onExpandSidebar = () => {} }) {
         })}
       </nav>
 
-      {/* Collapse toggle */}
+      {/* Кнопка теперь управляет не «свёрнут/развёрнут», а «закреплён ли
+          открытым». Панель и так раскрывается на наведении — кнопка нужна,
+          чтобы зафиксировать её и не гонять мышь к краю каждый раз. */}
       <div className="px-3 pb-3 shrink-0">
         <button
           onClick={onToggle}
@@ -314,10 +329,15 @@ function Sidebar({ role, collapsed, onToggle, onExpandSidebar = () => {} }) {
             background: 'rgba(198,255,52,0.04)',
             marginBottom: '4px',
           }}
-          title={collapsed ? 'Kengaytirish' : 'Kichiklashtirish'}
+          title={pinned ? 'Panelni yig\'ish' : 'Panelni ochiq qoldirish'}
+          aria-pressed={pinned}
         >
-          {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
-          {!collapsed && <span className="font-medium">Yig'ish</span>}
+          {pinned ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
+          {!collapsed && (
+            <span className="font-medium">
+              {pinned ? "Yig'ish" : 'Mahkamlash'}
+            </span>
+          )}
         </button>
       </div>
     </aside>
@@ -506,6 +526,40 @@ export default function Layout() {
   const FULL_PAGE_ROUTES = ['/chat'];
   const isFullPage = FULL_PAGE_ROUTES.some(r => location.pathname.startsWith(r));
 
+  /* ── Раскрытие по наведению ──────────────────────────────────────────────
+     `collapsed` — закреплённое состояние, выбор пользователя, он же лежит в
+     localStorage. Наведение его НЕ меняет: панель лишь временно выезжает.
+
+     Ключевое решение — выезжает она ПОВЕРХ страницы, а не раздвигает её.
+     Отступ контента считается от закреплённого состояния (`collapsed`), а не
+     от того, что видно сейчас. Иначе каждое случайное движение мыши к левому
+     краю сдвигало бы весь текст на 184px и обратно — читать во время этого
+     невозможно.
+
+     Только для мыши: на сенсорных экранах события наведения либо не приходят
+     вовсе, либо «залипают» после тапа — панель осталась бы раскрытой навсегда. */
+  const canHover = useMediaQuery('(hover: hover) and (pointer: fine)');
+  const [hoverOpen, setHoverOpen] = useState(false);
+  const hoverTimer = useRef(null);
+
+  const expandedByHover = canHover && collapsed && hoverOpen;
+  const visuallyCollapsed = collapsed && !expandedByHover;
+
+  const openOnHover = () => {
+    if (!canHover || !collapsed) return;
+    clearTimeout(hoverTimer.current);
+    // Небольшая задержка: без неё панель распахивается от любого пересечения
+    // курсором левого края — например, по пути к кнопке «назад» браузера.
+    hoverTimer.current = setTimeout(() => setHoverOpen(true), 120);
+  };
+
+  const closeOnLeave = () => {
+    clearTimeout(hoverTimer.current);
+    setHoverOpen(false);
+  };
+
+  useEffect(() => () => clearTimeout(hoverTimer.current), []);
+
   const sidebarWidth = isDesktop ? (collapsed ? 72 : 256) : 0;
 
   // Persist collapse
@@ -524,9 +578,21 @@ export default function Layout() {
       {isDesktop && (
         <Sidebar
           role={role}
-          collapsed={collapsed}
-          onToggle={() => setCollapsed(!collapsed)}
+          collapsed={visuallyCollapsed}
+          pinned={!collapsed}
+          overlaying={expandedByHover}
+          onToggle={() => { setCollapsed(!collapsed); setHoverOpen(false); }}
           onExpandSidebar={() => setCollapsed(false)}
+          hoverProps={{
+            onMouseEnter: openOnHover,
+            onMouseLeave: closeOnLeave,
+            // Клавиатура наведения не знает: без этого пользователь, идущий по
+            // меню табом, водил бы фокус по невидимым подписям свёрнутой панели.
+            onFocusCapture: () => collapsed && setHoverOpen(true),
+            onBlurCapture: (e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) closeOnLeave();
+            },
+          }}
         />
       )}
 
@@ -535,7 +601,7 @@ export default function Layout() {
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <div className="relative h-full animate-slide-right">
-            <Sidebar role={role} collapsed={false} onToggle={() => setMobileOpen(false)} />
+            <Sidebar role={role} collapsed={false} pinned onToggle={() => setMobileOpen(false)} />
           </div>
         </div>
       )}
