@@ -7,14 +7,14 @@ import {
   TbDeviceMobile, 
   TbPalette, 
   TbTerminal,
-  TbBookOpen
+  TbBook
 } from 'react-icons/tb';
 
 export default function TrainingTypeIcon({ name = '', icon = '', className = 'w-12 h-12 text-xl' }) {
   const normName = name.toLowerCase();
   const normIcon = (icon || '').toLowerCase();
 
-  let IconComponent = TbBookOpen;
+  let IconComponent = TbBook;
   let bgClass = 'bg-[#F0F5E9]';
   let colorClass = 'text-[#5E6E52]';
   let isEmoji = false;
