@@ -15,6 +15,7 @@ import {
   HiOutlineDocumentText,
 } from 'react-icons/hi2';
 import { useAuth } from '../auth.jsx';
+import Avatar from './Avatar.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { disconnectSocket } from '../socket.js';
 import { useMentorGroups, useChatContacts } from '../queries.js';
@@ -353,6 +354,20 @@ function Sidebar({
    действительно существует и требует реакции: непрочитанные сообщения от
    родителей. Цифра на значке — их настоящее количество, а не константа.
    Появится таблица notifications — сюда добавится второй источник. */
+/** «14:30» сегодня, «Kecha» вчера, дальше — дата. Как в списке чата. */
+function formatWhen(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const today = new Date();
+  if (d.toDateString() === today.toDateString()) {
+    return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  }
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'Kecha';
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
+}
+
 function Notifications() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -385,23 +400,19 @@ function Notifications() {
 
   return (
     <div className="relative" ref={ref}>
+      {/* Круглая ghost-кнопка вместо квадрата с рамкой: в ряду с аватаром
+          пользователя рамка выглядела чужеродной деталью. */}
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={total > 0 ? `Bildirishnomalar: ${total} ta yangi` : 'Bildirishnomalar'}
         aria-expanded={open}
-        className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
-        style={{
-          color: open ? 'var(--green)' : 'var(--text-secondary)',
-          background: open ? 'var(--green-bg)' : 'var(--bg)',
-          border: `1px solid ${open ? 'var(--green)' : 'var(--border)'}`,
-        }}
+        className={`relative w-10 h-10 rounded-full grid place-items-center transition-colors ${
+          open ? 'bg-primary/10 text-primary' : 'text-base-content/60 hover:bg-base-200'
+        }`}
       >
-        <Bell size={16} />
+        <Bell size={18} />
         {total > 0 && (
-          <span
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold tabular-nums"
-            style={{ background: '#dc2626', color: '#fff', border: '2px solid var(--surface)' }}
-          >
+          <span className="absolute top-1 right-1 min-w-[17px] h-[17px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold tabular-nums bg-error text-white ring-2 ring-base-100">
             {total > 9 ? '9+' : total}
           </span>
         )}
@@ -415,80 +426,81 @@ function Notifications() {
              кнопки, уезжала левым краем за экран (замер: left = -26px).
              Там она растягивается по ширине окна с отступами, на sm+ —
              обычный выпадающий список под колокольчиком. */
-          className="fixed sm:absolute left-3 right-3 top-[4.25rem] sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[320px] rounded-xl overflow-hidden animate-scale-in z-50"
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            boxShadow: 'var(--shadow-lg)',
-          }}
+          className="popover-surface fixed sm:absolute left-3 right-3 top-[4.25rem] sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[360px] overflow-hidden animate-scale-in z-50"
         >
-          <div
-            className="flex items-center justify-between px-4 py-3"
-            style={{ borderBottom: '1px solid var(--border)' }}
-          >
-            <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>
-              Bildirishnomalar
-            </span>
-            {total > 0 && <span className="badge badge-primary badge-sm">{total}</span>}
-          </div>
+          <header className="flex items-center justify-between gap-2 px-4 py-3.5 border-b border-base-200">
+            <h2 className="text-[15px] font-bold">Bildirishnomalar</h2>
+            {total > 0 && (
+              <span className="text-[11px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5 tabular-nums">
+                {total} yangi
+              </span>
+            )}
+          </header>
 
-          <div className="max-h-[320px] overflow-y-auto">
+          <div className="max-h-[min(60vh,380px)] overflow-y-auto">
             {!hasChat || unread.length === 0 ? (
-              <div className="px-4 py-10 text-center">
-                <span
-                  className="w-12 h-12 rounded-2xl grid place-items-center mx-auto mb-3"
-                  style={{ background: 'var(--surface-hover)', color: 'var(--text-muted)' }}
-                >
-                  <Bell size={20} />
+              <div className="px-6 py-12 text-center">
+                <span className="w-14 h-14 rounded-2xl grid place-items-center mx-auto mb-3 bg-base-200 text-base-content/30">
+                  <Bell size={22} />
                 </span>
-                <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-sm font-semibold text-base-content/70">
                   Yangi bildirishnoma yo'q
                 </p>
-                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                <p className="text-xs mt-1 text-base-content/45 max-w-[220px] mx-auto">
                   O'qilmagan xabarlar shu yerda ko'rinadi.
                 </p>
               </div>
             ) : (
-              unread.map((c) => {
-                const name = `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim();
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => openChat(c.id)}
-                    className="w-full text-left px-4 py-3 flex items-start gap-3 transition-colors"
-                    style={{ borderBottom: '1px solid var(--border)' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-hover)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    <span className="w-9 h-9 rounded-full bg-primary/15 text-primary grid place-items-center font-bold text-sm shrink-0">
-                      {(name[0] || '?').toUpperCase()}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
-                          {name}
+              <ul className="divide-y divide-base-200">
+                {unread.map((c) => {
+                  const name = `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim();
+                  return (
+                    <li key={c.id}>
+                      <button
+                        onClick={() => openChat(c.id)}
+                        className="group w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-base-200/60 transition-colors"
+                      >
+                        <span className="relative shrink-0">
+                          <Avatar name={name} size={40} />
+                          {/* Точка непрочитанного на аватаре — статус читается
+                              раньше, чем взгляд доходит до счётчика справа. */}
+                          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-primary border-2 border-base-100" />
                         </span>
-                        <span className="badge badge-primary badge-sm shrink-0 tabular-nums">
-                          {c.unread_count}
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-baseline justify-between gap-2">
+                            <span className="text-sm font-bold truncate">{name}</span>
+                            <span className="text-[10px] text-base-content/40 shrink-0 tabular-nums">
+                              {formatWhen(c.last_message_at)}
+                            </span>
+                          </span>
+                          {c.child_names && (
+                            <span className="block text-[11px] text-base-content/45 truncate">
+                              {c.child_names}
+                            </span>
+                          )}
+                          <span className="flex items-center justify-between gap-2 mt-0.5">
+                            <span className="text-xs text-base-content/60 truncate">
+                              {c.last_message || 'Yangi xabar'}
+                            </span>
+                            <span className="badge badge-primary badge-sm shrink-0 tabular-nums">
+                              {c.unread_count}
+                            </span>
+                          </span>
                         </span>
-                      </span>
-                      <span className="block text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                        {c.last_message || 'Yangi xabar'}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
 
           {unread.length > 0 && (
             <button
               onClick={() => openChat(null)}
-              className="w-full px-4 py-2.5 text-sm font-semibold transition-colors"
-              style={{ color: 'var(--green)', background: 'var(--surface-hover)' }}
+              className="w-full px-4 py-3 text-sm font-semibold text-primary border-t border-base-200 hover:bg-base-200/60 transition-colors flex items-center justify-center gap-1.5"
             >
-              Barcha xabarlar
+              Barcha xabarlar <ChevronRight size={14} />
             </button>
           )}
         </div>
@@ -548,79 +560,84 @@ function Header({ sidebarWidth, onMobileToggle }) {
 
       <Notifications />
 
-      {/* Divider */}
-      <div className="w-px h-8 hidden sm:block" style={{ background: 'var(--border)' }} />
+      {/* Разделительная палка убрана: колокольчик и профиль теперь один ряд
+          однотипных элементов, разделять их нечем и незачем. */}
 
       {/* User profile */}
       <div className="relative" ref={userMenuRef}>
         <button
           onClick={() => setShowUserMenu(!showUserMenu)}
-          className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-xl transition-all duration-200 hover:scale-[1.02]"
-          style={{
-            background: showUserMenu ? 'var(--surface-hover)' : 'transparent',
-            border: `1px solid ${showUserMenu ? 'var(--border)' : 'transparent'}`,
-          }}
+          aria-expanded={showUserMenu}
+          aria-label="Akkaunt menyusi"
+          /* Было hover:scale — от наведения дёргался весь блок вместе с
+             текстом. Подсветка фона спокойнее и не сдвигает соседей. */
+          className={`flex items-center gap-2.5 p-1 sm:pr-3 rounded-full transition-colors ${
+            showUserMenu ? 'bg-base-200' : 'hover:bg-base-200/70'
+          }`}
         >
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
-            style={{
-              background: `linear-gradient(135deg, ${ROLE_COLORS[role] || '#6b7280'}, ${ROLE_COLORS[role] || '#6b7280'}cc)`,
-              color: '#fff',
-            }}
-          >
-            {user?.firstName?.[0] ?? 'U'}
-          </div>
-          <div className="hidden sm:block text-left leading-tight">
-            <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+          <Avatar name={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`} size={36} />
+          <span className="hidden sm:block text-left leading-tight">
+            <span className="block text-sm font-bold">
               {user?.firstName} {user?.lastName}
-            </div>
-            <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+            </span>
+            <span className="block text-[11px] text-base-content/45">
               {ROLE_TITLE[role] || role}
-            </div>
-          </div>
+            </span>
+          </span>
+          <ChevronDown
+            size={14}
+            className={`hidden sm:block text-base-content/35 transition-transform ${
+              showUserMenu ? 'rotate-180' : ''
+            }`}
+          />
         </button>
 
-        {/* Dropdown */}
+        {/* Меню аккаунта.
+            Ховеры теперь классами Tailwind, а не onMouseEnter/onMouseLeave с
+            ручной подменой style: JS-обработчики не знают про :focus-visible,
+            поэтому при навигации с клавиатуры пункты никак не подсвечивались. */}
         {showUserMenu && (
           <div
-            className="absolute right-0 top-full mt-2 w-52 rounded-xl py-2 animate-scale-in z-50"
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              boxShadow: 'var(--shadow-lg)',
-            }}
+            role="menu"
+            className="popover-surface fixed sm:absolute left-3 right-3 top-[4.25rem] sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-64 overflow-hidden animate-scale-in z-50"
           >
-            <div className="px-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
-              <div className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
-                {user?.firstName} {user?.lastName}
+            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-base-200">
+              <Avatar name={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`} size={44} />
+              <div className="min-w-0">
+                <div className="text-sm font-bold truncate">
+                  {user?.firstName} {user?.lastName}
+                </div>
+                <div className="text-[11px] text-base-content/50 truncate">{user?.email}</div>
+                <span className="inline-block mt-1 text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5">
+                  {ROLE_TITLE[role] || role}
+                </span>
               </div>
-              <div className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }}>
-                {user?.email}
-              </div>
-              <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>{ROLE_TITLE[role]}</div>
             </div>
-            {/* Вело на /settings, а такого маршрута у ментора и методиста нет —
-                RoleView молча выкидывал их на дашборд. Профиль есть у всех. */}
-            <button
-              onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-              style={{ color: 'var(--text-secondary)' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-hover)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <UserIcon size={14} />
-              Профиль
-            </button>
-            <button
-              onClick={onLogout}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-              style={{ color: 'var(--danger)' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--danger-light)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <LogOut size={14} />
-              Выйти из аккаунта
-            </button>
+
+            <div className="p-1.5">
+              {/* Вело на /settings, а такого маршрута у ментора и методиста нет —
+                  RoleView молча выкидывал их на дашборд. Профиль есть у всех. */}
+              <button
+                role="menuitem"
+                onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/75 hover:bg-base-200 hover:text-base-content transition-colors"
+              >
+                <span className="w-7 h-7 rounded-lg bg-base-200 grid place-items-center shrink-0">
+                  <UserIcon size={14} />
+                </span>
+                Profil va sozlamalar
+              </button>
+              <button
+                role="menuitem"
+                onClick={onLogout}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-error hover:bg-error/10 transition-colors"
+              >
+                <span className="w-7 h-7 rounded-lg bg-error/10 grid place-items-center shrink-0">
+                  <LogOut size={14} />
+                </span>
+                Chiqish
+              </button>
+            </div>
           </div>
         )}
       </div>
