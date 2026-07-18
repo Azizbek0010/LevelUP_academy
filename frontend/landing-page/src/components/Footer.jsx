@@ -33,7 +33,7 @@ export default function Footer() {
           <div className="footer__col">
             <h4>{t.footer.contact}</h4>
             <Link to={lp('/landing/contacts')}>{t.footer.writeUs}</Link>
-            <a href="https://t.me/" target="_blank" rel="noreferrer">
+            <a href="https://t.me/levelupacademycrm" target="_blank" rel="noreferrer">
               Telegram
             </a>
           </div>
