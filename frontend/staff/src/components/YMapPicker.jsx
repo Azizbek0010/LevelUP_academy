@@ -158,7 +158,7 @@ export default function YMapPicker({ value, onChange, height = 260 }) {
     <div className="relative rounded-xl overflow-hidden border border-base-300" style={{ height }}>
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center bg-base-200 z-10">
-          <span className="loading loading-spinner loading-md text-primary" />
+          <span className="loading loading-spinner loading-md text-base-content/40" />
         </div>
       )}
       <div ref={containerRef} className="w-full h-full" />
