@@ -1,6 +1,6 @@
 // Все запросы идут на /api (dev-прокси Vite → http://localhost:4000).
 // VITE_API_URL — боевой бэкенд (Render) для production build.
-// USE_MOCKS = true — эмуляция на localStorage для разработки без бэкенда.
+// USE_MOCKS = false — real backend; true = mock (localStorage) для разработки без бэкенда.
 
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
 const USE_MOCKS = false; // true = mock (backend kerak emas), false = real backend

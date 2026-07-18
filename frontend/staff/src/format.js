@@ -26,4 +26,5 @@ export const ROLE_LABELS = {
   superadmin: 'Super Admin',
   admin: 'Администратор',
   mentor: 'Ментор',
+  methodist: 'Методист',
 };
