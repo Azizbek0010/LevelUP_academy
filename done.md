@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 18.07.2026 13:35 (UTC+5, Toshkent vaqti)
-> Statistika: 114/165 task tugallangan (69%)
+> Oxirgi yangilanish: 18.07.2026 17:12 (UTC+5, Toshkent vaqti)
+> Statistika: 116/165 task tugallangan (70%)
 
 ---
 
-## Progress: [#############.......] 69%
+## Progress: [##############......] 70%
 
 ## Tugallangan vazifalar
 
@@ -143,7 +143,9 @@
 - [x] MENTOR: Dashboard (groups, upcoming lessons)
 - [x] MENTOR: Attendance journal — Attendance.jsx (726 qator, api ga ulangan)
 - [x] MENTOR: Homework (check, grades)
+- [x] MENTOR: Tests (create, results) — Tests.jsx + konstruktor + natijalar (2026-07-18)
 - [x] MENTOR: Coins (assign/deduct)
+- [x] MENTOR: Chat — shaxsiy dm: xonalar, Socket.io + tarix, faqat xodim va ota-ona ko‘radi (2026-07-18)
 
 ### Frontend — Student (Abdulaziz)
 - [x] STUDENT: Home (coins, groups, deadlines)
@@ -178,5 +180,5 @@
 ## Jamoa boyicha
 
 - Karis (Backend): 64 task
-- Abdulaziz (Backend): 48 task
-- Frontend jamoasi: 41 task
+- Abdulaziz (Backend): 50 task
+- Frontend jamoasi: 43 task

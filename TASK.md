@@ -235,9 +235,9 @@
 - [x] MENTOR: Dashboard (groups, upcoming lessons)
 - [x] MENTOR: Attendance journal — Attendance.jsx (726 qator, api ga ulangan)
 - [x] MENTOR: Homework (check, grades)
-- [ ] MENTOR: Tests (create, results) ⚠️ mentor/ da Tests.jsx sahifasi UMUMAN YO'Q
+- [x] MENTOR: Tests (create, results) — Tests.jsx + konstruktor + natijalar (2026-07-18)
 - [x] MENTOR: Coins (assign/deduct)
-- [ ] MENTOR: Chat — mentor/Chat.jsx statik (api import qilmaydi, Socket.io ulanmagan)
+- [x] MENTOR: Chat — shaxsiy dm: xonalar, Socket.io + tarix, faqat xodim va ota-ona ko‘radi (2026-07-18)
 
 ## Frontend — Student (Abdulaziz)
 
