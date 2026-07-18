@@ -13,6 +13,80 @@ const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 // знать об этом, чтобы не ждать ack от несуществующего сервера.
 export const USING_MOCKS = USE_MOCKS;
 
+/* -------- Mentor mock helpers --------
+   Было две группы и один и тот же список из трёх учеников, который отдавался
+   для любой группы: на дашборде «O'quvchilar» показывал 0 (у групп не было
+   поля students), а журнал и коины во всех группах выглядели одинаково.
+   Теперь у каждой группы свой состав, свой размер и своё расписание. */
+const MOCK_MENTOR_GROUPS = [
+  {
+    id: 'group-uuid-1', name: 'English B1', subject: 'Ingliz tili', students: 12,
+    schedule: [{ day: 'mon', start: '14:00', end: '16:00' },
+               { day: 'wed', start: '14:00', end: '16:00' }],
+  },
+  {
+    id: 'group-uuid-2', name: 'Frontend Basics', subject: 'Dasturlash', students: 9,
+    schedule: [{ day: 'tue', start: '10:00', end: '12:00' },
+               { day: 'thu', start: '10:00', end: '12:00' }],
+  },
+  {
+    id: 'group-uuid-3', name: 'IELTS Intensive', subject: 'Ingliz tili', students: 7,
+    schedule: [{ day: 'mon', start: '18:00', end: '20:00' },
+               { day: 'fri', start: '18:00', end: '20:00' }],
+  },
+  {
+    id: 'group-uuid-4', name: 'English A2', subject: 'Ingliz tili', students: 14,
+    schedule: [{ day: 'tue', start: '16:00', end: '18:00' },
+               { day: 'sat', start: '11:00', end: '13:00' }],
+  },
+  {
+    id: 'group-uuid-5', name: 'Speaking Club', subject: 'Ingliz tili', students: 6,
+    schedule: [{ day: 'sat', start: '15:00', end: '16:30' }],
+  },
+];
+
+const UZ_FIRST = [
+  'Aziza', 'Bekzod', 'Malika', 'Sardor', 'Nodira', 'Javohir', 'Zilola', 'Otabek',
+  'Gulnora', 'Doston', 'Shahzoda', 'Ulugbek', 'Kamola', 'Aziz', 'Nilufar',
+  'Jasur', 'Dilnoza', 'Temur', 'Sevara', 'Akmal',
+];
+const UZ_LAST = [
+  'Rahimova', 'Toshmatov', 'Yusupova', 'Karimov', 'Ismoilova', 'Aliyev',
+  'Nazarova', 'Mirzayev', 'Sattorova', 'Ergashev', 'Qodirova', 'Xolmatov',
+];
+
+/** Один ученик по сквозному номеру — номер и есть его личность. */
+function mockStudent(n) {
+  return {
+    id: `stu-${n}`,
+    firstName: UZ_FIRST[n % UZ_FIRST.length],
+    lastName: UZ_LAST[(n * 5 + 1) % UZ_LAST.length],
+    phone: `+9989${String(10000000 + n * 137).slice(0, 8)}`,
+    status: n % 13 === 0 ? 'frozen' : 'active',
+    coinBalance: ((n * 37) % 40) * 5 + 20,
+    student_code: `stu${String(1000 + n)}`,
+  };
+}
+
+/* Состав группы: стабильный и не пересекающийся с соседями.
+   Номера сквозные — смещение группы равно сумме размеров предыдущих. Первый
+   вариант считал смещение как index*7, диапазоны накладывались, и разные
+   ученики получали одинаковые имя, телефон и student_code: в общем списке
+   это выглядело дублями. */
+function mockGroupStudents(groupId) {
+  const idx = MOCK_MENTOR_GROUPS.findIndex((g) => g.id === groupId);
+  if (idx < 0) return [];
+  const offset = MOCK_MENTOR_GROUPS.slice(0, idx).reduce((s, g) => s + g.students, 0);
+  const own = Array.from({ length: MOCK_MENTOR_GROUPS[idx].students }, (_, i) =>
+    mockStudent(offset + i + 1));
+
+  // Speaking Club — разговорный клуб: пара ребят ходит туда из English B1.
+  // Это ещё и проверка того, что общий список склеивает такого ученика в одну
+  // строку с двумя группами, а не показывает его дважды.
+  if (groupId === 'group-uuid-5') return [mockStudent(1), mockStudent(2), ...own.slice(2)];
+  return own;
+}
+
 // -------- Super Admin mock helpers --------
 const getMockData = () => {
   let branches = JSON.parse(localStorage.getItem('mock_branches'));
@@ -1498,13 +1572,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     // Мока не было вовсе: в мок-режиме у ментора список групп приходил пустым,
     // из-за чего Davomat/Koinlar/Testlar нечем было открыть.
     if (path === '/mentor/groups' && method === 'GET') {
-      return { success: true, data: [
-        { id: 'group-uuid-1', name: 'English B1', subject: 'Ingliz tili',
-          schedule: [{ day: 'mon', start: '14:00', end: '16:00' },
-                     { day: 'wed', start: '14:00', end: '16:00' }] },
-        { id: 'group-uuid-2', name: 'Frontend Basics', subject: 'Dasturlash',
-          schedule: [{ day: 'tue', start: '10:00', end: '12:00' }] },
-      ] };
+      return { success: true, data: MOCK_MENTOR_GROUPS };
     }
 
     // -------- PROFILE --------
@@ -1575,11 +1643,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
 
     const groupStudentsMatch = path.match(/^\/mentor\/groups\/([^/]+)\/students$/);
     if (groupStudentsMatch && method === 'GET') {
-      return { success: true, data: [
-        { id: 'stu-1', firstName: 'Aziza', lastName: 'Rahimova', coinBalance: 120 },
-        { id: 'stu-2', firstName: 'Bekzod', lastName: 'Toshmatov', coinBalance: 85 },
-        { id: 'stu-3', firstName: 'Malika', lastName: 'Yusupova', coinBalance: 210 },
-      ] };
+      return { success: true, data: mockGroupStudents(groupStudentsMatch[1]) };
     }
 
     // -------- MENTOR: Tests --------

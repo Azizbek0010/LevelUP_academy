@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  BookOpen, Users, CalendarDays, Bell, ArrowRight, CheckCircle2,
+  BookOpen, Users, CalendarDays, Bell, ArrowRight,
 } from 'lucide-react';
 import { useMentorGroups, useMentorAttendance } from '../../queries.js';
-import PageHeader from '../../components/PageHeader.jsx';
 import { Panel, EmptyState, RowSkeleton } from './_ui.jsx';
 
 const LESSON_MINUTES = 60;
@@ -20,27 +19,38 @@ function toMinutes(t) {
   return h * 60 + m;
 }
 
-/* KPI — одна форма для всех четырёх, без пастельных «конфетти» разных оттенков.
+/* KPI — одна форма для всех, без пастельных «конфетти» разных оттенков.
    Раньше каждая плитка красилась в свой случайный цвет (голубой/фиолетовый/
    зелёный/жёлтый), из-за чего цвет ничего не означал. Теперь акцент один —
-   брендовый, а различает плитки иконка и подпись. */
-function Kpi({ Icon, title, value, unit }) {
-  return (
-    <div className="card bg-base-100 card-hover-premium">
-      <div className="p-4">
-        <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-primary/10 text-primary">
-            <Icon size={16} strokeWidth={2.2} />
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
-            {title}
-          </span>
-        </div>
-        <div className="text-3xl font-extrabold mt-3 leading-none tabular-nums">{value}</div>
-        {unit && <div className="text-xs text-base-content/45 mt-1">{unit}</div>}
+   брендовый, а различает плитки иконка и подпись.
+
+   С `to` плитка становится ссылкой: та, что ведёт куда-то, обязана это
+   показывать — стрелкой и подсветкой на наведении. */
+function Kpi({ Icon, title, value, unit, to }) {
+  const body = (
+    <div className="p-4">
+      <div className="flex items-center gap-2.5">
+        <span className="w-8 h-8 rounded-lg grid place-items-center shrink-0 bg-primary/10 text-primary">
+          <Icon size={16} strokeWidth={2.2} />
+        </span>
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
+          {title}
+        </span>
+        {to && <ArrowRight size={14} className="ml-auto text-base-content/25 shrink-0" />}
       </div>
+      <div className="text-3xl font-extrabold mt-3 leading-none tabular-nums">{value}</div>
+      {unit && <div className="text-xs text-base-content/45 mt-1">{unit}</div>}
     </div>
   );
+
+  if (to) {
+    return (
+      <Link to={to} className="card bg-base-100 card-hover-premium hover:border-primary/40 block">
+        {body}
+      </Link>
+    );
+  }
+  return <div className="card bg-base-100 card-hover-premium">{body}</div>;
 }
 
 export default function MentorDashboard() {
@@ -75,9 +85,9 @@ export default function MentorDashboard() {
   const showBanner = activeGroup && !attendanceTaken;
 
   return (
+    /* Заголовка «Mentor paneli» нет намеренно: он повторял пункт меню, под
+       которым пользователь только что кликнул, и занимал первый экран. */
     <div>
-      <PageHeader title="Mentor paneli" subtitle="Mening guruhlarim va bugungi darslar" />
-
       {/* Идёт урок, а журнал не отмечен — единственное место, где ментору
           действительно нужно действие прямо сейчас. Раньше баннер ещё и
           пульсировал целиком (animate-pulse на всём блоке), включая текст:
@@ -114,18 +124,15 @@ export default function MentorDashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Kpi Icon={BookOpen} title="Guruhlar" value={groups.length} unit="faol" />
-          <Kpi Icon={Users} title="O'quvchilar" value={totalStudents} unit="jami" />
+        /* Плитку «O'tgan darslar» убрали: сколько занятий уже прошло, видно
+           в ленте ниже по метке «Tugagan» — цифра дублировала её и ничего
+           не решала. */
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Kpi Icon={BookOpen} title="Guruhlar" value={groups.length} unit="faol" to="/groups" />
+          <Kpi Icon={Users} title="O'quvchilar" value={totalStudents} unit="jami" to="/students" />
           {/* Было жёстко «—»: плитка занимала место и ничего не сообщала.
               Считаем реальное число занятий с расписанием на сегодня. */}
           <Kpi Icon={CalendarDays} title="Bugungi darslar" value={lessons.length} unit="jadval bo'yicha" />
-          <Kpi
-            Icon={CheckCircle2}
-            title="O'tgan darslar"
-            value={lessons.filter((l) => l.min + LESSON_MINUTES <= currentMinutes).length}
-            unit="bugun"
-          />
         </div>
       )}
 
