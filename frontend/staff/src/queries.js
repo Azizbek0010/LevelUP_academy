@@ -183,6 +183,15 @@ export function useMentorTestResults(testId) {
   });
 }
 
+export function useMentorGroupStats(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['mentor-group-stats', groupId],
+    () => api.mentorGroupStats(token, groupId),
+    { enabled: !!groupId },
+  );
+}
+
 export function useMentorStudentStats(studentId) {
   const { token } = useAuth();
   return useAuthedQuery(

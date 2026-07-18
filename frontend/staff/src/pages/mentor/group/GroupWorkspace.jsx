@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import {
-  CalendarDays, FileText, Coins, Users, Clock, BookOpen, ArrowLeft,
+  CalendarDays, FileText, Coins, Users, Clock, BookOpen, ArrowLeft, BarChart3,
 } from 'lucide-react';
 
 import { useMentorGroups, useMentorGroupStudents } from '../../../queries.js';
@@ -10,6 +10,7 @@ import { EmptyState } from '../_ui.jsx';
 const AttendanceTab = lazy(() => import('./AttendanceTab.jsx'));
 const TestsTab = lazy(() => import('./TestsTab.jsx'));
 const CoinsTab = lazy(() => import('./CoinsTab.jsx'));
+const StatsTab = lazy(() => import('./StatsTab.jsx'));
 
 /**
  * Рабочее место ментора — ОДНА группа целиком.
@@ -27,6 +28,8 @@ const TABS = [
   { key: 'davomat', label: 'Davomat', Icon: CalendarDays, Component: AttendanceTab },
   { key: 'testlar', label: 'Testlar', Icon: FileText, Component: TestsTab },
   { key: 'koinlar', label: 'Koinlar', Icon: Coins, Component: CoinsTab },
+  // Сравнение учеников между собой: кто тянет, кто отстаёт
+  { key: 'statistika', label: 'Statistika', Icon: BarChart3, Component: StatsTab },
 ];
 
 function getLessonTime(g) {

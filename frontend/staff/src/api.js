@@ -87,6 +87,72 @@ function mockGroupStudents(groupId) {
   return own;
 }
 
+/* Статистика группы — форма ответа GET /api/mentor/groups/:id/stats.
+   Показатели выводятся из номера ученика, поэтому список получается с разбросом:
+   сильные, средние и отстающие — иначе сравнивать было бы нечего. */
+function mockGroupStats(groupId) {
+  const group = MOCK_MENTOR_GROUPS.find((g) => g.id === groupId) ?? MOCK_MENTOR_GROUPS[0];
+  const roster = mockGroupStudents(group.id);
+
+  const students = roster.map((s, i) => {
+    const n = Number(String(s.id).replace(/\D/g, '')) || i + 1;
+    const attendanceRate = 55 + ((n * 7) % 46);
+    const homeworkTotal = 8;
+    const homeworkDone = Math.min(homeworkTotal, 3 + ((n * 3) % 6));
+    const homeworkAvg = 45 + ((n * 11) % 56);
+    const testsTotal = 4;
+    const testsTaken = Math.min(testsTotal, 1 + (n % 4));
+    const testAvg = 40 + ((n * 13) % 61);
+    const item = {
+      id: s.id,
+      firstName: s.firstName,
+      lastName: s.lastName,
+      status: s.status,
+      coinBalance: s.coinBalance,
+      attendanceRate,
+      lessons: 18,
+      homeworkDone,
+      homeworkTotal,
+      homeworkRate: Math.round((homeworkDone / homeworkTotal) * 100),
+      homeworkAvg,
+      testsTaken,
+      testsTotal,
+      testAvg,
+    };
+    const parts = [item.attendanceRate, item.homeworkRate, item.homeworkAvg, item.testAvg];
+    return { ...item, overall: Math.round(parts.reduce((a, b) => a + b, 0) / parts.length) };
+  }).sort((a, b) => b.overall - a.overall);
+
+  const BANDS = [
+    { key: 'weak', label: '0–59%', from: 0, to: 59 },
+    { key: 'mid', label: '60–79%', from: 60, to: 79 },
+    { key: 'good', label: '80–89%', from: 80, to: 89 },
+    { key: 'top', label: '90–100%', from: 90, to: 100 },
+  ];
+  const distribution = BANDS.map((b) => {
+    const count = students.filter((s) => s.overall >= b.from && s.overall <= b.to).length;
+    return { ...b, count, percent: Math.round((count / students.length) * 100) };
+  });
+
+  const avg = (key) => Math.round(
+    students.reduce((s, r) => s + (r[key] ?? 0), 0) / students.length,
+  );
+
+  return {
+    group: { id: group.id, name: group.name, subject: group.subject },
+    summary: {
+      students: students.length,
+      attendanceRate: avg('attendanceRate'),
+      homeworkRate: avg('homeworkRate'),
+      homeworkAvg: avg('homeworkAvg'),
+      testAvg: avg('testAvg'),
+      overall: avg('overall'),
+    },
+    distribution,
+    students,
+  };
+}
+
 /* Статистика ученика — та же форма, что отдаёт GET /api/mentor/students/:id/stats.
    Числа выводятся из номера ученика, поэтому у разных людей картина разная, но
    у одного и того же она не скачет между открытиями. */
@@ -1777,6 +1843,11 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       return { success: true, data: mockStudentStats(statsMatch[1]) };
     }
 
+    const groupStatsMatch = path.match(/^\/mentor\/groups\/([^/]+)\/stats$/);
+    if (groupStatsMatch && method === 'GET') {
+      return { success: true, data: mockGroupStats(groupStatsMatch[1]) };
+    }
+
     const groupStudentsMatch = path.match(/^\/mentor\/groups\/([^/]+)\/students$/);
     if (groupStudentsMatch && method === 'GET') {
       return { success: true, data: mockGroupStudents(groupStudentsMatch[1]) };
@@ -1921,6 +1992,7 @@ export const api = {
   // -------- MENTOR: Groups --------
   mentorGroups: (token) => request('/mentor/groups', { token }),
   mentorGroupStudents: (token, groupId) => request(`/mentor/groups/${groupId}/students`, { token }),
+  mentorGroupStats: (token, groupId) => request(`/mentor/groups/${groupId}/stats`, { token }),
 
   // -------- MENTOR: Attendance --------
   mentorAttendance: (token, groupId, params) => {
