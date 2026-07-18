@@ -53,15 +53,51 @@ const MOCK_OVERVIEW = {
   },
   grades: {
     homework: [
-      { title: 'Домашнее задание #5', score: 88, maxScore: 100, gradedAt: '2026-07-14T10:00:00.000Z' },
-      { title: 'Домашнее задание #4', score: 92, maxScore: 100, gradedAt: '2026-07-10T10:00:00.000Z' },
-      { title: 'Домашнее задание #3', score: 75, maxScore: 100, gradedAt: '2026-07-06T10:00:00.000Z' },
-      { title: 'Домашнее задание #2', score: 95, maxScore: 100, gradedAt: '2026-07-02T10:00:00.000Z' },
+      { id: 'hw-001', title: 'Домашнее задание #5', score: 88, maxScore: 100, gradedAt: '2026-07-14T10:00:00.000Z', groupName: 'Математика A', description: 'Решить задачи на квадратные уравнения (стр. 45, №№ 12-18). Показать все решения с проверкой.' },
+      { id: 'hw-002', title: 'Домашнее задание #4', score: 92, maxScore: 100, gradedAt: '2026-07-10T10:00:00.000Z', groupName: 'Английский B', description: 'Написать эссе на тему "My Future Profession" (200-250 слов). Использовать CONDITIONAL SECOND TYPE минимум 3 раза.' },
+      { id: 'hw-003', title: 'Домашнее задание #3', score: 75, maxScore: 100, gradedAt: '2026-07-06T10:00:00.000Z', groupName: 'Математика A', description: 'Выполнить упражнения на систему линейных уравнений (стр. 38, №№ 5-10). Составить уравнения по условию задачи.' },
+      { id: 'hw-004', title: 'Домашнее задание #2', score: 95, maxScore: 100, gradedAt: '2026-07-02T10:00:00.000Z', groupName: 'Информатика', description: 'Написать программу на Python: сортировка массива методом пузырька. Добавить комментарии к каждому шагу.' },
     ],
     tests: [
-      { title: 'Тест по алгебре', score: 8, maxScore: 10, finishedAt: '2026-07-13T14:00:00.000Z' },
-      { title: 'Тест по геометрии', score: 6, maxScore: 10, finishedAt: '2026-07-08T14:00:00.000Z' },
-      { title: 'Тест по лексике', score: 9, maxScore: 10, finishedAt: '2026-07-05T14:00:00.000Z' },
+      { id: 'test-001', title: 'Тест по алгебре', score: 8, maxScore: 10, finishedAt: '2026-07-13T14:00:00.000Z', groupName: 'Математика A', durationMin: 30,
+        questions: [
+          { q: 'Решите: x² - 5x + 6 = 0', options: ['x=2, x=3', 'x=1, x=6', 'x=-2, x=-3', 'x=0, x=5'], correct: 0, studentAnswer: 0 },
+          { q: 'Дискриминант уравнения 2x² + 3x - 5 = 0 равен:', options: ['49', '25', '1', '9'], correct: 0, studentAnswer: 0 },
+          { q: 'Какое число является корнем x² = 16?', options: ['4', '-4', '±4', '8'], correct: 2, studentAnswer: 0 },
+          { q: 'Сумма корней уравнения x² - 7x + 12 = 0 равна:', options: ['7', '12', '-7', '19'], correct: 0, studentAnswer: 0 },
+          { q: 'Произведение корней уравнения x² - 5x + 6 = 0:', options: ['5', '6', '11', '-6'], correct: 1, studentAnswer: 0 },
+          { q: 'Решите: x² + 2x - 8 = 0', options: ['x=2, x=-4', 'x=-2, x=4', 'x=1, x=-8', 'x=8, x=-1'], correct: 0, studentAnswer: 0 },
+          { q: 'При каком значении k уравнение x² + kx + 9 = 0 имеет один корень?', options: ['k=6', 'k=-6', 'k=±6', 'k=9'], correct: 2, studentAnswer: 1 },
+          { q: 'Решите неравенство: x² - 4 > 0', options: ['x > 2', 'x < -2 или x > 2', '-2 < x < 2', 'x ≠ ±2'], correct: 1, studentAnswer: 1 },
+          { q: 'Корни уравнения 3x² - 12x + 9 = 0:', options: ['x=1, x=3', 'x=2, x=6', 'x=3, x=9', 'x=0, x=4'], correct: 0, studentAnswer: 0 },
+          { q: 'Дискриминант: x² - 6x + 9 = 0', options: ['0', '36', '9', '12'], correct: 0, studentAnswer: 0 },
+        ]},
+      { id: 'test-002', title: 'Тест по геометрии', score: 6, maxScore: 10, finishedAt: '2026-07-08T14:00:00.000Z', groupName: 'Математика A', durationMin: 25,
+        questions: [
+          { q: 'Площадь треугольника с основанием 10 и высотой 6:', options: ['30', '60', '16', '24'], correct: 0, studentAnswer: 0 },
+          { q: 'Пифагорова теорема для прямоугольного треугольника:', options: ['a² + b² = c²', 'a + b = c', 'a² - b² = c²', '2a + 2b = c'], correct: 0, studentAnswer: 0 },
+          { q: 'Сумма углов треугольника равна:', options: ['90°', '180°', '270°', '360°'], correct: 1, studentAnswer: 1 },
+          { q: 'Гипотенуза прямоугольного треугольника со сторонами 3 и 4:', options: ['5', '7', '12', '25'], correct: 0, studentAnswer: 2 },
+          { q: 'Площадь круга с радиусом 5 (π ≈ 3.14):', options: ['78.5', '31.4', '15.7', '157'], correct: 0, studentAnswer: 0 },
+          { q: 'Длина окружности с радиусом 3:', options: ['6π', '3π', '9π', '12π'], correct: 0, studentAnswer: 1 },
+          { q: 'Вид равнобедренного треугольника:', options: ['2 стороны равны', 'Все стороны равны', 'Все углы равны', 'Нет особых свойств'], correct: 0, studentAnswer: 0 },
+          { q: 'Площадь ромба с диагоналями 6 и 8:', options: ['24', '48', '14', '7'], correct: 0, studentAnswer: 2 },
+          { q: 'В прямоугольнике диагонали:', options: ['Равны', 'Перпендикулярны', 'Не равны', 'Равны и перпендикулярны'], correct: 0, studentAnswer: 1 },
+          { q: 'Площадь параллелограмма: основание 12, высота 5:', options: ['60', '34', '17', '120'], correct: 0, studentAnswer: 0 },
+        ]},
+      { id: 'test-003', title: 'Тест по лексике', score: 9, maxScore: 10, finishedAt: '2026-07-05T14:00:00.000Z', groupName: 'Английский B', durationMin: 20,
+        questions: [
+          { q: '"Achieve" means:', options: ['To reach a goal', 'To give up', 'To sleep', 'To eat'], correct: 0, studentAnswer: 0 },
+          { q: 'Choose the correct form: "She ___ to school every day."', options: ['goes', 'go', 'going', 'gone'], correct: 0, studentAnswer: 0 },
+          { q: '"Diligent" is closest in meaning to:', options: ['Hard-working', 'Lazy', 'Angry', 'Happy'], correct: 0, studentAnswer: 0 },
+          { q: '"I wish I ___ a bird."', options: ['were', 'was', 'am', 'be'], correct: 0, studentAnswer: 0 },
+          { q: 'Plural of "child":', options: ['children', 'childs', 'childes', 'childern'], correct: 0, studentAnswer: 0 },
+          { q: '"Despite the rain, we ___ went out."', options: ['still', 'already', 'yet', 'ever'], correct: 0, studentAnswer: 1 },
+          { q: '"She has been studying ___ 3 hours."', options: ['for', 'since', 'from', 'during'], correct: 0, studentAnswer: 0 },
+          { q: '"If I ___ rich, I would travel the world."', options: ['were', 'am', 'will be', 'be'], correct: 0, studentAnswer: 0 },
+          { q: '"The book is ___ the table."', options: ['on', 'in', 'at', 'by'], correct: 0, studentAnswer: 0 },
+          { q: '"He asked me where ___."', options: ['I lived', 'did I live', 'I live', 'do I live'], correct: 0, studentAnswer: 0 },
+        ]},
     ],
   },
 };
@@ -212,6 +248,37 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
     return { data: MOCK_OVERVIEW };
   }
 
+  // HOMEWORK DETAIL
+  if (path.startsWith('/parent/homework/')) {
+    const hwId = path.split('/').pop();
+    const hw = MOCK_OVERVIEW.grades.homework.find((h) => h.id === hwId);
+    if (!hw) { const e = new Error('Not found'); e.status = 404; throw e; }
+    const mistakes = hw.score < hw.maxScore ? [
+      { question: 'Задание 3', studentAnswer: 'Неправильная формулировка ответа', correctAnswer: 'Требуется пересмотреть решение', comment: 'Проверь знаки при подстановке' },
+    ] : [];
+    return { data: { ...hw, mistakes, comment: hw.score >= 90 ? 'Отличная работа!' : hw.score >= 75 ? 'Хорошо, но есть замечания' : 'Нужно повторить материал' } };
+  }
+
+  // TEST DETAIL
+  if (path.startsWith('/parent/tests/')) {
+    const testId = path.split('/').pop();
+    const test = MOCK_OVERVIEW.grades.tests.find((t) => t.id === testId);
+    if (!test) { const e = new Error('Not found'); e.status = 404; throw e; }
+    const wrongAnswers = test.questions.filter((q) => q.studentAnswer !== q.correct).map((q, i) => ({
+      question: q.q,
+      studentAnswer: q.options[q.studentAnswer],
+      correctAnswer: q.options[q.correct],
+      isCorrect: false,
+    }));
+    const correctAnswers = test.questions.filter((q) => q.studentAnswer === q.correct).map((q) => ({
+      question: q.q,
+      studentAnswer: q.options[q.studentAnswer],
+      correctAnswer: q.options[q.correct],
+      isCorrect: true,
+    }));
+    return { data: { ...test, wrongAnswers, correctAnswers, totalQuestions: test.questions.length, correctCount: correctAnswers.length, wrongCount: wrongAnswers.length } };
+  }
+
   // CHAT — match both encoded and non-encoded
   if (path === '/chat/global/messages' || path === '/chat/global%2Fmessages') {
     return { data: { messages: MOCK_CHAT_MESSAGES.global, nextCursor: null } };
@@ -314,6 +381,8 @@ export const api = {
 
   parentChildren: (token) => request('/parent/children', { token }),
   parentOverview: (token, childId) => request(`/parent/children/${childId}/overview`, { token }),
+  parentHomeworkDetail: (token, homeworkId) => request(`/parent/homework/${homeworkId}`, { token }),
+  parentTestDetail: (token, testId) => request(`/parent/tests/${testId}`, { token }),
 
   chatMessages: (token, roomKey) =>
     request(`/chat/${encodeURIComponent(roomKey)}/messages`, { token }),

@@ -6,6 +6,7 @@ import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressBar } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
+import GradeDetail from '../components/GradeDetail.jsx';
 
 const TABS = [
   { key: 'homework', label: 'Домашние задания', icon: 'document-text' },
@@ -16,6 +17,7 @@ export default function Grades() {
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
   const [tab, setTab] = useState('homework');
+  const [detail, setDetail] = useState(null);
 
   if (!selectedChild) return <EmptyState icon="user-circle" title="Выберите ребёнка" />;
 
@@ -109,8 +111,13 @@ export default function Grades() {
               {list.map((g, i) => {
                 const pct = g.maxScore > 0 ? Math.round((g.score / g.maxScore) * 100) : 0;
                 const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
+                const itemId = g.id || `${tab}-${i}`;
                 return (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-base-200/30 hover:bg-base-200/60 transition-all duration-200 group">
+                  <button
+                    key={itemId}
+                    onClick={() => setDetail({ type: tab === 'homework' ? 'hw' : 'test', id: g.id })}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-base-200/30 hover:bg-base-200/60 transition-all duration-200 group text-left cursor-pointer"
+                  >
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-transform group-hover:scale-105"
                       style={{ background: `${color}15`, color }}
@@ -124,14 +131,25 @@ export default function Grades() {
                         <span className="text-[11px] font-mono opacity-50">{g.score}/{g.maxScore}</span>
                       </div>
                     </div>
-                    <span className="text-[11px] opacity-30 whitespace-nowrap">{dateShort(g.gradedAt || g.finishedAt)}</span>
-                  </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] opacity-30 whitespace-nowrap">{dateShort(g.gradedAt || g.finishedAt)}</span>
+                      <Icon name="chevron-right" className="w-4 h-4 opacity-20 group-hover:opacity-50 transition-opacity" />
+                    </div>
+                  </button>
                 );
               })}
             </div>
           )}
         </div>
       </div>
+
+      {detail && (
+        <GradeDetail
+          type={detail.type}
+          id={detail.id}
+          onClose={() => setDetail(null)}
+        />
+      )}
     </>
   );
 }
