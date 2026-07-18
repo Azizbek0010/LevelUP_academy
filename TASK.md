@@ -42,6 +42,20 @@
 ## Backend — Methodist (Karis)
 
 - [x] K-METHODIST: Training types, topics, lessons CRUD + analytics (modules/methodist)
+- [x] K-METHODIST: Dars media (2026-07-18) — migratsiya 1783800000000 (video_url + file_key) + GET /api/methodist/lessons/:id/upload-url (presigned S3) + updateLesson videoUrl/fileKey qabul qiladi
+
+## Backend — Xodimlar intizomi (Karis) ✅ 2026-07-18 (MVP1, main da)
+
+> Modul `backend/src/modules/discipline/`. Migratsiyalar: 1783810000000 (user_status += 'fired'),
+> 1783820000000 (staff_penalties), 1783830000000 (org_charters).
+
+- [x] K-DISC: shtraf (summa + sabab, avto-yechish YO'Q) + qora (ishdan bo'shatish, status='fired', withTransaction)
+- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): superadmin→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
+- [x] K-DISC: Ustav (org_charters, erkin matn, upsert, barcha xodimlarga ko'rinadi)
+- [x] K-DISC: Endpointlar — super PUT/GET /charter, POST/GET /penalties, POST /staff/:id/reactivate; admin GET /charter, POST/GET /penalties; shared GET /users/me/penalties, /users/me/charter
+- [x] K-DISC: Swagger — Discipline tegi, 10 endpoint, swagger/*.md qayta generatsiya (139 endpoint)
+- [ ] K-DISC: FRONT — shtraf/ustav formalari super+admin panellarida, ko'rish mentor/methodist da (kontrakt tayyor, front jamoasiga)
+- [ ] K-DISC: runtime tekshiruv — hali BD da yugurtirilmagan (npm run migrate + jonli test)
 
 ## Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
 
@@ -53,6 +67,13 @@
 > Backend kod tayyor (barcha panellar). Endi asosiy ish — frontend panellarni backend bilan ulash.
 
 - [ ] K-INT: Frontend ↔ backend integratsiya (SUPER ADMIN'dan tashqari — u Abdulaziz'da) — main-admin org-detail endpoint (Shohjahon uchun), endpoint kontraktlar, CORS/cookie, jonli E2E qolgan panellar bo'yicha
+- [ ] K-INT: admin GroupDetail — 6 endpoint YO'Q, front (Abduloh) chaqiryapti: GET/POST /admin/groups/:id/{attendance,homework,feedback}. Qaror kerak: attendance/homework mentor jadvallaridan reuse (yagona manba), feedback — YANGI migratsiya + CRUD
+
+## 🔴 BUGLAR / BLOKERLAR (Karis) — 2026-07-18 tekshiruvida topildi
+
+- [ ] BUG-PROD-MOCKS 🔥 KRITIK: `frontend/{staff,student,member}/.env.production` da `VITE_USE_MOCKS=false` YO'Q. Kod `VITE_USE_MOCKS !== 'false'` → undefined bo'lsa MOCK YONIQ. `.env` gitignore'da (faqat lokal), Vercel'da faqat `.env.production` bor → **prodda panellar soxta localStorage datasini ko'rsatyapti**. Tuzatish: uchala `.env.production` ga `VITE_USE_MOCKS=false` qo'shish
+- [ ] BUG-STACK 🔥: `render.yaml` da NODE_ENV o'rnatilmagan, `config/env.js` default `'development'` → `errorHandler.js:19` prodda `err.stack` qaytaryapti (api.levelup-academy.uz da jonli ko'rildi). Tuzatish: render.yaml ga NODE_ENV=production
+- [ ] BUG-BILLING: `main-admin/src/pages/Billing.jsx` hali ESKI narx modelida (`baseFirstBranch`/`perStudent`), backend 2026-07-16 dan `{ tiers, currency }` qaytaradi → sahifa buzilgan. Egasi: Shohjahon (pastda MAIN bo'limida ham bor)
 
 ## Backend — V1 qolganlari (Abdulaziz) ✅ (kod: d57dff5)
 
@@ -70,13 +91,13 @@
 
 - [x] K-SUPER-INT: GET + PATCH /api/super/organization — Settings (org profil) ✅ jonli tekshirildi (35586f6)
 - [x] K-SUPER-INT: Dars davomiyligi (2026-07-16) — organizations.lesson_duration_min + lessonDurationMin GET/PATCH /api/super/organization da
-- [ ] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa
-- [ ] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
-- [ ] K-SUPER-INT: GET /api/super/stats — Stats (KPI + grafik data, recharts)
-- [ ] K-SUPER-INT: GET/POST/DELETE /api/super/announcements — Announcements
-- [ ] K-SUPER-INT: GET /api/super/reminders (+resend/delete) — Reminders
-- [ ] K-SUPER-INT: GET /api/super/audit — Audit log
-- [ ] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
+- [x] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa (repository listOrgStudents: ILIKE search + LIMIT/OFFSET)
+- [x] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
+- [ ] K-SUPER-INT: GET /api/super/stats — Stats (KPI + grafik data, recharts) ⚠️ YAGONA QOLGANI: route YO'Q, front Stats.jsx ham statik (api chaqirmaydi)
+- [x] K-SUPER-INT: GET/POST/DELETE /api/super/announcements — Announcements
+- [x] K-SUPER-INT: GET /api/super/reminders (+resend/delete) — Reminders
+- [x] K-SUPER-INT: GET /api/super/audit — Audit log
+- [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
 - [ ] K-SUPER-INT: har bir sahifa E2E — real superadmin login → real data
 
 ## SEO — Landing + platforma (Abdulaziz / abdulazizSEO) 🔥 full
@@ -176,12 +197,12 @@
 > Shohjahon Super Admin panelini to'liq tugatdi → endi Main Admin paneli (`frontend/main-admin`) uning zonasi.
 > Hamma kerakli ish shu yerda. Baza tayyor (Karis qurgan), Shohjahon egalik qiladi va yakunlaydi.
 
-- [ ] MAIN: Dashboard — KPI (bizning daromad / hamkorlar / o'quvchilar / filiallar) + grafiklar (hamkorlar bo'yicha daromad, yangi arizalar)
-- [ ] MAIN: Leads — ro'yxat / filtr / status o'zgartirish, OnboardModal (temp-parol), Qabul / Rad etish
-- [ ] MAIN: Organizations (hamkorlar) — ro'yxat / qidiruv, freeze / activate
-- [ ] MAIN: Org-detail sahifasi — hamkorning filiallari / adminlari / o'quvchilari / daromadi (endpoint Karis'dan kerak — backend integratsiya)
-- [ ] MAIN (Shohjahon): Billing — GET /api/main/pricing endi { tiers, currency } (Free/Start/Standard/Pro/Business); sahifani yangi bucket tariflarga moslashtir (eski baseFirstBranch/perStudent YO'Q)
-- [ ] MAIN: Revenue — real tushum sahifasi (hozir zaglushka): hamkorlar kesimida + dinamika
+- [x] MAIN: Dashboard — KPI + grafiklar (Dashboard.jsx, 805 qator)
+- [x] MAIN: Leads — ro'yxat / filtr / status o'zgartirish, OnboardModal (temp-parol), Qabul / Rad etish
+- [x] MAIN: Organizations (hamkorlar) — ro'yxat / qidiruv, freeze / activate (855 qator)
+- [x] MAIN: Org-detail sahifasi — OrgDetail.jsx qurilgan
+- [ ] MAIN (Shohjahon) 🔴: Billing — sahifa hali ESKI modelda (`baseFirstBranch`/`perStudent`), backend `{ tiers, currency }` qaytaradi → SAHIFA BUZILGAN, shoshilinch (BUG-BILLING)
+- [ ] MAIN: Revenue — Revenue.jsx bor (454 qator) lekin api chaqiruvi deyarli yo'q, real tushumga ulanmagan
 - [ ] MAIN: Settings — real platforma sozlamalari (hozir zaglushka)
 - [ ] MAIN: Google OAuth — jonli E2E login testi (Firebase levelup-1c059)
 - [ ] MAIN: Forgot-password — sikl polish
@@ -190,44 +211,50 @@
 
 ## Frontend — Admin (Abduloh, Odil, Hamidula)
 
-- [ ] ADMIN: rey/xob admin_page ishini staff strukturasiga ko'chirish (alohida Vite-app EMAS — staff ichida sahifalar; merge REVIEW dan keyin)
-- [ ] ADMIN: Dashboard (income + expenses = profit)
-- [ ] ADMIN: Students CRUD (xob integratsiyasi bor — reviewdan o'tkazish)
-- [ ] ADMIN: Groups CRUD
+- [x] ADMIN: rey/xob admin_page ishini staff strukturasiga ko'chirish (alohida Vite-app EMAS — staff ichida sahifalar; merge REVIEW dan keyin)
+- [x] ADMIN: Dashboard (income + expenses = profit) — Dashboard.jsx, api ga ulangan
+- [x] ADMIN: Students CRUD (xob integratsiyasi bor — reviewdan o'tkazish) — Students.jsx + StudentDetail.jsx
+- [x] ADMIN: Groups CRUD — Groups.jsx + GroupDetail.jsx ⚠️ GroupDetail 6 endpointni mock'dan oladi (K-INT ga qara)
 - [ ] ADMIN (Odil): 🆕 Guruh formasi — mentor majburiy + kunlar (1-3-5/2-4-6 preset yoki boshqa kunlar galochka) + boshlanish vaqti + tugash vaqti AVTO (GET /api/admin/settings) → POST/PATCH { days, startTime }; kontrakt TEAM-TASKS §9.2
-- [ ] ADMIN: Payments UI (full/split modal; K-PAY chiqqach ulanadi)
-- [ ] ADMIN: Expenses CRUD
-- [ ] ADMIN: Reports
+- [x] ADMIN: Payments UI (full/split modal; K-PAY chiqqach ulanadi) — Payments.jsx (775 qator)
+- [x] ADMIN: Expenses CRUD — Expenses.jsx + PDF eksport (Abduloh, jspdf)
+- [x] ADMIN: Reports — Reports.jsx, GET /api/admin/reports ga ulangan
 
 ## Frontend — Mentor (Sardor, Kozim, Alish)
 
 - [x] MENTOR: Dashboard (groups, upcoming lessons)
-- [ ] MENTOR: Attendance journal
+- [x] MENTOR: Attendance journal — Attendance.jsx (726 qator, api ga ulangan)
 - [x] MENTOR: Homework (check, grades)
-- [ ] MENTOR: Tests (create, results)
+- [ ] MENTOR: Tests (create, results) ⚠️ mentor/ da Tests.jsx sahifasi UMUMAN YO'Q
 - [x] MENTOR: Coins (assign/deduct)
+- [ ] MENTOR: Chat — mentor/Chat.jsx statik (api import qilmaydi, Socket.io ulanmagan)
 
 ## Frontend — Student (Abdulaziz)
 
-- [ ] STUDENT: Home (coins, groups, deadlines)
-- [ ] STUDENT: Tests
-- [ ] STUDENT: Homework
-- [ ] STUDENT: Shop
-- [ ] STUDENT: Videos
-- [ ] STUDENT: Leaderboard
+> ⚠️ Barcha sahifalar QURILGAN va api kontraktiga ulangan, LEKIN mock rejimida ishlaydi
+> (BUG-PROD-MOCKS ga qara). Jonli E2E qilinmagan.
+
+- [x] STUDENT: Home (coins, groups, deadlines)
+- [x] STUDENT: Tests — Tests.jsx + TestTake.jsx (timer/scoring)
+- [x] STUDENT: Homework
+- [x] STUDENT: Shop
+- [x] STUDENT: Videos
+- [x] STUDENT: Leaderboard
+- [ ] STUDENT: jonli E2E — VITE_USE_MOCKS=false bilan real backend'da tekshirish
 
 ## Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
 
 > Methodist'dan Parent panelga o'tkazildi. Backend tayyor (AB-PARENT: child overview + assertParentOwnsChild guard).
 > Panel: `frontend/member` (parent tomoni — login-kod + parol bilan kiradi).
 
-- [ ] PARENT: Child overview — coins, qarz, reyting, guruhlar, davomat, baholar
-- [ ] PARENT: Bir nechta farzand — bolalar orasida almashtirish (agar bir nechta bo'lsa)
-- [ ] PARENT: Davomat detali — farzandning davomat tarixi
-- [ ] PARENT: Baholar / uy vazifa natijalari
-- [ ] PARENT: To'lov / qarz — farzandning invoice va qarzi
-- [ ] PARENT: Chat — mentor / admin bilan realtime (Socket.io)
-- [ ] PARENT: Bildirishnomalar
+- [x] PARENT: Child overview — Dashboard.jsx (useParentOverview hook)
+- [x] PARENT: Bir nechta farzand — child-context.jsx (bolalar orasida almashtirish)
+- [x] PARENT: Davomat detali — Attendance.jsx
+- [x] PARENT: Baholar / uy vazifa natijalari — Grades.jsx
+- [x] PARENT: To'lov / qarz — Debt.jsx
+- [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ⚠️ Socket.io realtime ulanishi tekshirilmagan
+- [x] PARENT: Bildirishnomalar — Notifications.jsx
+- [ ] PARENT: jonli E2E — mock o'chirilgan holda real parent login bilan tekshirish
 - [ ] PARENT: Design-system — laym #C6FF34, Manrope, 3 holat (Skeleton/Empty/Error), responsive 1280/768/375, TanStack Query
 
 ## Frontend — Landing Page ✅
