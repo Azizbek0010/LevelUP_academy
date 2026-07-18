@@ -64,11 +64,25 @@ export default function MentorChat() {
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState('');
 
-  const bottomRef = useRef(null);
+  const messagesRef = useRef(null);
   const socketRef = useRef(null);
 
+  // На широком экране список и переписка видны одновременно, на узком — по
+  // очереди (мастер-детейл).
+  const [isWide, setIsWide] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = (e) => setIsWide(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
   const { data: contactsData, isLoading: contactsLoading } = useChatContacts();
-  const contacts = contactsData?.data ?? [];
+  // Ссылка обязана быть стабильной: этот массив стоит в зависимостях эффекта
+  // авто-выбора ниже, а `?? []` создавал бы новый массив на каждый рендер.
+  const contacts = useMemo(() => contactsData?.data ?? [], [contactsData]);
 
   const activeContact = contacts.find((c) => c.id === activeId) ?? null;
   const roomKey = activeContact?.room_key ?? null;
@@ -110,6 +124,14 @@ export default function MentorChat() {
     };
   }, [token, qc]);
 
+  // На широком экране сразу открываем первый диалог: иначе правая половина —
+  // пустая заглушка без поля ввода, и страница выглядит так, будто писать негде.
+  // На узком не трогаем: там сначала список, это осознанный мастер-детейл.
+  useEffect(() => {
+    if (!isWide || activeId || contacts.length === 0) return;
+    setActiveId(contacts[0].id);
+  }, [isWide, activeId, contacts]);
+
   // --- отметить прочитанным при открытии диалога ---
   useEffect(() => {
     if (!roomKey || !token) return;
@@ -118,9 +140,13 @@ export default function MentorChat() {
       .catch(() => {}); // не критично: счётчик непрочитанных — не данные
   }, [roomKey, token, qc]);
 
+  // Прокручиваем САМ контейнер сообщений, а не через scrollIntoView: тот тянет
+  // за собой всех родителей, из-за чего карточка уезжала вверх и шапка диалога
+  // с полем поиска оказывались обрезанными.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
+    const box = messagesRef.current;
+    if (box) box.scrollTop = box.scrollHeight;
+  }, [messages.length, roomKey]);
 
   const filtered = contacts.filter((c) => {
     if (!search.trim()) return true;
@@ -203,11 +229,16 @@ export default function MentorChat() {
       )}
 
       <div className="card bg-base-100 overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 h-[calc(100vh-19rem)] min-h-[26rem]">
+        {/* Высота подобрана так, чтобы поле ввода помещалось на коротких экранах
+            (ноутбук 1366×768 при масштабе Windows 125% даёт ~600px по высоте).
+            Прежние 19rem запаса и min-h 26rem вместе перекрывали видимую область,
+            и футер с полем ввода оказывался ниже сгиба — выглядело так, будто
+            писать негде. dvh вместо vh — из-за адресной строки на мобильных. */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 h-[calc(100dvh-17rem)] min-h-[20rem]">
 
           {/* ---------- Список собеседников ---------- */}
           <aside
-            className={`md:col-span-1 border-r border-base-200 flex-col ${
+            className={`md:col-span-1 border-r border-base-200 min-h-0 flex-col ${
               activeId ? 'hidden md:flex' : 'flex'
             }`}
           >
@@ -224,6 +255,13 @@ export default function MentorChat() {
               {totalUnread > 0 && (
                 <p className="text-[11px] text-base-content/50 mt-2">
                   {totalUnread} ta o'qilmagan xabar
+                </p>
+              )}
+              {/* На узком экране правая панель скрыта, поэтому подсказка «выберите
+                  собеседника» оттуда не видна — дублируем её здесь. */}
+              {!isWide && contacts.length > 0 && (
+                <p className="text-[11px] text-base-content/50 mt-2 md:hidden">
+                  Yozish uchun ota-onani tanlang
                 </p>
               )}
             </div>
@@ -285,7 +323,7 @@ export default function MentorChat() {
 
           {/* ---------- Переписка ---------- */}
           <section
-            className={`md:col-span-2 lg:col-span-3 flex-col ${
+            className={`md:col-span-2 lg:col-span-3 min-h-0 flex-col ${
               activeId ? 'flex' : 'hidden md:flex'
             }`}
           >
@@ -323,7 +361,11 @@ export default function MentorChat() {
                   </span>
                 </header>
 
-                <div className="flex-1 overflow-y-auto px-4 py-4 bg-base-200/30">
+                {/* min-h-0 обязателен: у флекс-элемента min-height по умолчанию
+                    `auto`, поэтому лента сообщений отказывалась сжиматься и
+                    выдавливала футер с полем ввода за границу карточки, где его
+                    срезал overflow-hidden. */}
+                <div ref={messagesRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 bg-base-200/30">
                   {historyLoading ? (
                     <div className="space-y-3">
                       {[0, 1, 2].map((i) => (
@@ -379,7 +421,6 @@ export default function MentorChat() {
                       );
                     })
                   )}
-                  <div ref={bottomRef} />
                 </div>
 
                 {error && (
