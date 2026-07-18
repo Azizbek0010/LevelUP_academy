@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Mail, Phone, Building2, CalendarDays, ShieldCheck, KeyRound,
-  Check, AlertCircle, LogOut, BookOpen, Users,
+  Check, AlertCircle, LogOut, BookOpen, Users, Plus, X, Lock, Award,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +38,103 @@ function InfoRow({ icon: Icon, label, value }) {
   );
 }
 
+/* Грейд. Ментор его только видит: назначает админ, и это должно быть понятно
+   из самой карточки, а не выясняться после неудачной попытки сохранить. */
+const GRADES = {
+  junior: { label: 'Junior', cls: 'bg-info/10 text-info border-info/25' },
+  middle: { label: 'Middle', cls: 'bg-warning/10 text-warning border-warning/25' },
+  senior: { label: 'Senior', cls: 'bg-success/10 text-success border-success/25' },
+};
+
+function GradeBadge({ grade }) {
+  const g = GRADES[grade];
+  if (!g) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-base-300 text-base-content/45">
+        Daraja belgilanmagan
+      </span>
+    );
+  }
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg border ${g.cls}`}>
+      <Award size={12} /> {g.label}
+    </span>
+  );
+}
+
+/* Навыки тегами. Ввод по Enter или запятой: перечисляя список, человек
+   печатает запятые машинально, и терять на них ввод — раздражает. */
+function SkillsInput({ value, onChange, max = 20 }) {
+  const [draft, setDraft] = useState('');
+
+  const add = (raw) => {
+    const skill = raw.trim().replace(/,$/, '').trim();
+    if (!skill) return;
+    if (skill.length > 40) return;
+    if (value.length >= max) return;
+    // регистр не должен плодить «React» и «react» — бэкенд такое отклонит
+    if (value.some((s) => s.toLowerCase() === skill.toLowerCase())) { setDraft(''); return; }
+    onChange([...value, skill]);
+    setDraft('');
+  };
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-2.5">
+        {value.length === 0 && (
+          <span className="text-xs text-base-content/40 py-1">Hali ko'nikma qo'shilmagan</span>
+        )}
+        {value.map((s) => (
+          <span
+            key={s}
+            className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium"
+          >
+            {s}
+            <button
+              onClick={() => onChange(value.filter((x) => x !== s))}
+              className="w-5 h-5 rounded grid place-items-center hover:bg-primary/20 transition-colors"
+              aria-label={`${s} — o'chirish`}
+            >
+              <X size={12} />
+            </button>
+          </span>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          className="input input-bordered input-sm flex-1"
+          placeholder="Masalan: IELTS, Grammar..."
+          value={draft}
+          maxLength={40}
+          disabled={value.length >= max}
+          onChange={(e) => {
+            if (e.target.value.endsWith(',')) add(e.target.value);
+            else setDraft(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); add(draft); }
+            // Backspace в пустом поле убирает последний тег — привычный жест
+            if (e.key === 'Backspace' && !draft && value.length) {
+              onChange(value.slice(0, -1));
+            }
+          }}
+        />
+        <button
+          className="btn btn-sm btn-outline gap-1"
+          onClick={() => add(draft)}
+          disabled={!draft.trim() || value.length >= max}
+        >
+          <Plus size={14} /> Qo'shish
+        </button>
+      </div>
+      <div className="text-[11px] text-base-content/40 mt-1.5">
+        {value.length}/{max} · Enter yoki vergul bilan qo'shiladi
+      </div>
+    </div>
+  );
+}
+
 function Stat({ icon: Icon, value, label }) {
   return (
     <div className="flex-1 text-center px-2">
@@ -63,6 +160,8 @@ export default function MentorProfile() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [bio, setBio] = useState('');
+  const [skills, setSkills] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -74,12 +173,18 @@ export default function MentorProfile() {
     setFirstName(me.firstName ?? '');
     setLastName(me.lastName ?? '');
     setEmail(me.email ?? '');
+    setBio(me.bio ?? '');
+    setSkills(me.skills ?? []);
   }, [me]);
 
+  const skillsChanged = me
+    && JSON.stringify(skills) !== JSON.stringify(me.skills ?? []);
   const dirty = me && (
     firstName !== (me.firstName ?? '')
     || lastName !== (me.lastName ?? '')
     || email !== (me.email ?? '')
+    || bio !== (me.bio ?? '')
+    || skillsChanged
   );
 
   const validate = () => {
@@ -100,10 +205,13 @@ export default function MentorProfile() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
+        bio: bio.trim(),
+        skills,
       };
       await api.updateMe(token, patch);
       qc.invalidateQueries({ queryKey: ['me'] });
-      patchUser(patch);   // чтобы имя в шапке сменилось сразу, а не после перелогина
+      // В шапке живут только имя и почта — bio/skills туда не идут.
+      patchUser({ firstName: patch.firstName, lastName: patch.lastName, email: patch.email });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
@@ -118,6 +226,8 @@ export default function MentorProfile() {
     setFirstName(me.firstName ?? '');
     setLastName(me.lastName ?? '');
     setEmail(me.email ?? '');
+    setBio(me.bio ?? '');
+    setSkills(me.skills ?? []);
     setError('');
   };
 
@@ -154,14 +264,26 @@ export default function MentorProfile() {
                   ? <span className="skeleton inline-block h-5 w-36 align-middle" />
                   : fullName}
               </h2>
-              <div className="flex items-center gap-2 mt-1.5">
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="badge badge-primary badge-sm gap-1">
                   <ShieldCheck size={11} /> Mentor
                 </span>
-                {me?.branchName && (
-                  <span className="text-xs text-base-content/45 truncate">{me.branchName}</span>
-                )}
+                <GradeBadge grade={me?.grade} />
               </div>
+              {me?.skills?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {me.skills.slice(0, 6).map((s) => (
+                    <span key={s} className="text-[11px] font-medium px-2 py-1 rounded-md bg-base-200 text-base-content/70">
+                      {s}
+                    </span>
+                  ))}
+                  {me.skills.length > 6 && (
+                    <span className="text-[11px] px-2 py-1 text-base-content/45">
+                      +{me.skills.length - 6}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Показатели: профиль без единой цифры выглядит анкетой,
@@ -226,6 +348,56 @@ export default function MentorProfile() {
                   Shu email bilan tizimga kirasiz, parolni tiklash kodi ham shu manzilga keladi.
                 </span>
               </label>
+
+              {/* ── Профессиональная часть ── */}
+              <div className="sm:col-span-2 border-t border-base-200 pt-4 mt-1">
+                <h3 className="text-sm font-bold">Kasbiy ma'lumotlar</h3>
+                <p className="text-xs text-base-content/45 mt-0.5">
+                  Bu ma'lumotlar ota-onalar sizni tanishi uchun ko'rsatiladi.
+                </p>
+              </div>
+
+              <label className="form-control sm:col-span-2">
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">
+                  O'zingiz haqingizda
+                </span>
+                <textarea
+                  className="textarea textarea-bordered min-h-[104px] leading-relaxed"
+                  placeholder="Tajribangiz, o'qitish uslubingiz, yutuqlaringiz..."
+                  value={bio}
+                  maxLength={1000}
+                  onChange={(e) => { setBio(e.target.value); setError(''); }}
+                  disabled={isLoading}
+                />
+                <span className="text-[11px] text-base-content/40 mt-1.5 text-right tabular-nums">
+                  {bio.length}/1000
+                </span>
+              </label>
+
+              <div className="form-control sm:col-span-2">
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">
+                  Ko'nikmalar
+                </span>
+                <SkillsInput
+                  value={skills}
+                  onChange={(next) => { setSkills(next); setError(''); }}
+                />
+              </div>
+
+              {/* Грейд — только чтение. Показываем прямо в форме и объясняем
+                  почему: поле, которое нельзя изменить, без объяснения
+                  выглядит сломанным. */}
+              <div className="form-control sm:col-span-2">
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5 flex items-center gap-1.5">
+                  <Lock size={11} /> Daraja
+                </span>
+                <div className="flex items-center gap-3 flex-wrap px-3.5 py-3 rounded-lg bg-base-200/50 border border-base-200">
+                  <GradeBadge grade={me?.grade} />
+                  <span className="text-xs text-base-content/50">
+                    Darajani administrator belgilaydi — uni o'zingiz o'zgartira olmaysiz.
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Панель действий прижата к низу карточки полосой-разделителем.

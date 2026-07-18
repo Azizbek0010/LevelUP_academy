@@ -79,7 +79,10 @@ export const freezeMentor = asyncHandler(async (req, res) => {
 });
 
 export const updateMentor = asyncHandler(async (req, res) => {
-  res.json({ mentor: await service.updateMentor(branchId(req), req.params.id, req.body) });
+  // req.user.id — кто присвоил грейд, пишется в mentor_profiles.grade_set_by
+  res.json({
+    mentor: await service.updateMentor(branchId(req), req.params.id, req.body, req.user.id),
+  });
 });
 
 export const deleteMentor = asyncHandler(async (req, res) => {

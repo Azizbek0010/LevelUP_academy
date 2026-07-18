@@ -1508,31 +1508,33 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     }
 
     // -------- PROFILE --------
+    // grade сюда НЕ пишется: на бэкенде PATCH /users/me его срезает схемой,
+    // ставит только админ. Мок повторяет это правило, иначе фронт можно было
+    // бы «проверить» на поведении, которого в бою нет.
+    const DEFAULT_ME = {
+      id: 'mentor-demo-id',
+      firstName: 'Demo',
+      lastName: 'Mentor',
+      email: 'mentor.demo@levelup.local',
+      phone: '+998 90 123 45 67',
+      role: 'mentor',
+      branchName: 'Chilonzor filiali',
+      createdAt: '2026-02-01T09:00:00Z',
+      bio: "5 yildan beri ingliz tili o'qitaman. IELTS 8.0. Darslarni suhbat asosida olib boraman.",
+      skills: ['Ingliz tili', 'IELTS', 'Speaking', 'Grammar'],
+      grade: 'middle',
+      gradeSetAt: '2026-06-01T10:00:00Z',
+    };
+
     if (path === '/users/me' && method === 'GET') {
       const saved = JSON.parse(localStorage.getItem('mock_me') || 'null');
-      return {
-        success: true,
-        data: saved || {
-          id: 'mentor-demo-id',
-          firstName: 'Demo',
-          lastName: 'Mentor',
-          email: 'mentor.demo@levelup.local',
-          phone: '+998 90 123 45 67',
-          role: 'mentor',
-          branchName: 'Chilonzor filiali',
-          createdAt: '2026-02-01T09:00:00Z',
-        },
-      };
+      return { success: true, data: saved || DEFAULT_ME };
     }
 
     if (path === '/users/me' && method === 'PATCH') {
-      const current = JSON.parse(localStorage.getItem('mock_me') || 'null') || {
-        id: 'mentor-demo-id', firstName: 'Demo', lastName: 'Mentor',
-        email: 'mentor.demo@levelup.local', phone: '+998 90 123 45 67',
-        role: 'mentor', branchName: 'Chilonzor filiali',
-        createdAt: '2026-02-01T09:00:00Z',
-      };
-      const next = { ...current, ...body };
+      const current = JSON.parse(localStorage.getItem('mock_me') || 'null') || DEFAULT_ME;
+      const { grade, ...allowed } = body;   // grade игнорируем — как на бэкенде
+      const next = { ...current, ...allowed };
       localStorage.setItem('mock_me', JSON.stringify(next));
       return { success: true, data: next };
     }
