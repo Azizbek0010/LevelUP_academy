@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Archive, ArchiveRestore, ChevronRight, Users, User, FolderOpen } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, Archive, ArchiveRestore, ChevronRight, Users, User, FolderOpen, Search, LayoutGrid, List } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminGroups, useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
@@ -8,7 +8,8 @@ import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 
 const isArchived = (g) => g.isArchived ?? g.is_archived ?? false;
-const emptyForm = { name: '', mentorId: '' };
+const MAX_STUDENTS = 15;
+const emptyForm = { name: '', mentorId: '', maxStudents: MAX_STUDENTS };
 
 /* ═══════════════ Stat Card ═══════════════ */
 function StatCard({ Icon, label, value, color, gradient, delay }) {
@@ -73,8 +74,24 @@ function GroupCard({ g, onArchive }) {
         )}
         <span className="flex items-center gap-1.5 text-[var(--text-secondary)]">
           <Users size={12} className="text-[var(--text-muted)]" />
-          {studentsCount} студентов
+          {studentsCount}/{MAX_STUDENTS} студентов
         </span>
+      </div>
+      {/* Capacity bar */}
+      <div className="mt-3">
+        <div className="h-1.5 rounded-full bg-[var(--surface)] overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              studentsCount >= MAX_STUDENTS ? 'bg-[var(--danger)]' :
+              studentsCount >= MAX_STUDENTS * 0.8 ? 'bg-[var(--warning)]' :
+              'bg-[var(--green)]'
+            }`}
+            style={{ width: `${Math.min((studentsCount / MAX_STUDENTS) * 100, 100)}%` }}
+          />
+        </div>
+        {studentsCount >= MAX_STUDENTS && (
+          <p className="text-[10px] text-[var(--danger)] mt-1 font-semibold">Группа заполнена</p>
+        )}
       </div>
     </div>
   );
@@ -83,11 +100,14 @@ function GroupCard({ g, onArchive }) {
 /* ═══════════════ Main Groups ═══════════════ */
 export default function AdminGroups() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useAdminGroups();
   const { data: mentorsData } = useAdminMentors();
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState('card');
 
   const raw = data?.data || data || {};
   const rows = raw.groups || (Array.isArray(raw) ? raw : []);
@@ -97,6 +117,9 @@ export default function AdminGroups() {
   const activeGroups = rows.filter((g) => !isArchived(g)).length;
   const archivedGroups = rows.filter((g) => isArchived(g)).length;
   const totalStudents = rows.reduce((s, g) => s + Number(g.studentsCount ?? g.students_count ?? g.students?.length ?? 0), 0);
+  const filteredRows = search
+    ? rows.filter(g => g.name?.toLowerCase().includes(search.toLowerCase()) || g.mentor?.name?.toLowerCase().includes(search.toLowerCase()))
+    : rows;
 
   const create = async () => {
     setBusy(true); setErr('');
@@ -131,22 +154,120 @@ export default function AdminGroups() {
         <StatCard Icon={Archive} label="В архиве" value={archivedGroups} color="#F59E0B" gradient="linear-gradient(135deg,#F59E0B,#E67E22)" delay="stagger-3" />
       </div>
 
-      {/* ═══ Group Cards ═══ */}
+      {/* ═══ Search + View Toggle ═══ */}
+      {rows.length > 0 && (
+        <div className="flex items-center gap-3 animate-fade-in stagger-3">
+          <div className="glass-strong rounded-[16px] p-1 flex-1">
+            <div className="flex items-center gap-2 px-4 py-2.5">
+              <Search size={16} className="text-[var(--text-muted)] shrink-0" />
+              <input
+                type="text"
+                className="flex-1 bg-transparent outline-none text-[13px] text-[var(--text)] placeholder:text-[var(--text-muted)]"
+                placeholder="Поиск по названию или ментору…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+          {/* View toggle */}
+          <div className="flex items-center gap-1 p-1 rounded-[12px]" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <button
+              onClick={() => setViewMode('card')}
+              className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
+              style={{ background: viewMode === 'card' ? 'var(--green-bg)' : 'transparent', color: viewMode === 'card' ? 'var(--green)' : 'var(--text-muted)' }}
+            >
+              <LayoutGrid size={14} />
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
+              style={{ background: viewMode === 'table' ? 'var(--green-bg)' : 'transparent', color: viewMode === 'table' ? 'var(--green)' : 'var(--text-muted)' }}
+            >
+              <List size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Group List ═══ */}
       {isLoading ? (
         <div className="mt-4"><SkeletonTable cols={4} /></div>
       ) : error ? (
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
-      ) : rows.length === 0 ? (
+      ) : filteredRows.length === 0 ? (
         <div className="glass-strong rounded-[20px] p-12 text-center animate-fade-in">
-          <FolderOpen size={40} className="mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
-          <p className="text-[14px] font-medium text-[var(--text-muted)]">Нет групп</p>
-          <p className="text-[12px] text-[var(--text-muted)] mt-1 opacity-60">Создайте первую учебную группу</p>
+          <FolderOpen size={48} className="mx-auto mb-4 text-[var(--text-muted)] opacity-20" />
+          <p className="text-[15px] font-bold text-[var(--text-secondary)]">Нет групп</p>
+          <p className="text-[12px] text-[var(--text-muted)] mt-1.5">
+            {search ? 'Попробуйте изменить запрос' : 'Создайте первую учебную группу'}
+          </p>
+          {!search && (
+            <button className="btn btn-primary btn-sm mt-4 gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
+              <Plus size={14} /> Создать
+            </button>
+          )}
         </div>
-      ) : (
+      ) : viewMode === 'card' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {rows.map((g) => (
+          {filteredRows.map((g) => (
             <GroupCard key={g.id} g={g} onArchive={toggleArchive} />
           ))}
+        </div>
+      ) : (
+        /* Table view */
+        <div className="glass-strong rounded-[16px] overflow-hidden animate-fade-in">
+          <div className="overflow-x-auto">
+            <table className="table w-full text-[13px]">
+              <thead>
+                <tr>
+                  <th>Название</th>
+                  <th>Ментор</th>
+                  <th>Студенты</th>
+                  <th>Статус</th>
+                  <th className="w-20"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.map((g) => {
+                  const archived = isArchived(g);
+                  const count = g.studentsCount ?? g.students_count ?? (g.students?.length ?? 0);
+                  return (
+                    <tr key={g.id} className="hover:bg-[var(--surface-hover)] cursor-pointer" onClick={() => navigate(`/groups/${g.id}`)}>
+                      <td>
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 ${archived ? 'bg-[var(--surface)] text-[var(--text-muted)]' : 'bg-[var(--green-bg)] text-[var(--green)]'}`}>
+                            <FolderOpen size={14} />
+                          </div>
+                          <span className="font-semibold text-[var(--text)]">{g.name}</span>
+                        </div>
+                      </td>
+                      <td className="text-[var(--text-secondary)]">{g.mentor?.name || g.mentorName || '—'}</td>
+                      <td>
+                        <span className="font-semibold">{count}</span>
+                        <span className="text-[var(--text-muted)]"> / {MAX_STUDENTS}</span>
+                      </td>
+                      <td>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${archived ? 'bg-[var(--surface)] text-[var(--text-muted)]' : 'bg-[#2ECC7115] text-[#2ECC71]'}`}>
+                          {archived ? 'Архив' : 'Активна'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="w-7 h-7 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-all"
+                            title={archived ? 'Вернуть из архива' : 'В архив'}
+                            onClick={() => toggleArchive(g)}
+                          >
+                            {archived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -162,6 +283,13 @@ export default function AdminGroups() {
                 <option value="">Ментор (необязательно)</option>
                 {mentors.map((m) => <option key={m.id} value={m.id}>{mentorName(m)}</option>)}
               </select>
+              <div>
+                <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Макс. студентов</label>
+                <input className="input input-bordered w-full" type="number" min="1" max="30" value={form.maxStudents} onChange={(e) => setForm({ ...form, maxStudents: Number(e.target.value) })} />
+                {form.maxStudents > MAX_STUDENTS && (
+                  <p className="text-[11px] text-[var(--warning)] mt-1">Стандарт — {MAX_STUDENTS} студентов</p>
+                )}
+              </div>
             </div>
             <div className="modal-action">
               <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>

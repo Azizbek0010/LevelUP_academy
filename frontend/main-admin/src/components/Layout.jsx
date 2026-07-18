@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, Inbox, Building2, CreditCard, TrendingUp, Settings, LogOut, Menu,
+  Megaphone, AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 
@@ -8,6 +9,8 @@ const nav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
   { to: '/leads', label: 'Заявки', Icon: Inbox },
   { to: '/organizations', label: 'Партнёры', Icon: Building2 },
+  { to: '/announcements', label: 'Анонсы', Icon: Megaphone },
+  { to: '/fines', label: 'Штрафы', Icon: AlertTriangle },
   { to: '/billing', label: 'Тарифы', Icon: CreditCard },
   { to: '/revenue', label: 'Доход', Icon: TrendingUp },
   { to: '/settings', label: 'Настройки', Icon: Settings },

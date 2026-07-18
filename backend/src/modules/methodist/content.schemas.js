@@ -35,6 +35,7 @@ export const createLessonSchema = z.object({
   description: z.string().trim().max(4000).optional(),
   instruction: z.string().trim().max(2000).optional(),
   coinReward: z.coerce.number().int().min(0).default(0),
+  videoUrl: z.string().trim().url('Некорректная ссылка').max(2000).or(z.literal('')).optional(),
 });
 
 export const updateLessonSchema = z.object({
@@ -42,6 +43,14 @@ export const updateLessonSchema = z.object({
   description: z.string().trim().max(4000).optional(),
   instruction: z.string().trim().max(2000).optional(),
   coinReward: z.coerce.number().int().min(0).optional(),
+  videoUrl: z.string().trim().url('Некорректная ссылка').max(2000).or(z.literal('')).optional(),
+  fileKey: z.string().trim().max(500).or(z.literal('')).optional(),
+});
+
+// Presigned upload for a lesson's practical-task attachment
+export const lessonUploadUrlQuery = z.object({
+  filename: z.string().trim().min(1).max(255),
+  contentType: z.string().trim().max(150).optional(),
 });
 
 // ---------- Вопросы (A/B/C/D) ----------

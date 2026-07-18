@@ -137,6 +137,13 @@ export const archiveLesson = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+// GET /lessons/:id/upload-url?filename=&contentType= — presigned S3 PUT for attachment
+export const getLessonUploadUrl = asyncHandler(async (req, res) => {
+  const { filename, contentType } = req.query;
+  const data = await contentService.getLessonUploadUrl(req.params.id, orgId(req), { filename, contentType });
+  res.json({ success: true, data });
+});
+
 export const copyLesson = asyncHandler(async (req, res) => {
   const item = await contentService.copyLesson(req.params.id, orgId(req), req.user.id, req.body.targetTopicId);
   res.status(201).json({ success: true, data: item });

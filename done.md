@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 12.07.2026 01:21 (UTC+5, Toshkent vaqti)
-> Statistika: 63/98 task tugallangan (64%)
+> Oxirgi yangilanish: 16.07.2026 01:21 (UTC+5, Toshkent vaqti)
+> Statistika: 74/144 task tugallangan (51%)
 
 ---
 
-## Progress: [############........] 64%
+## Progress: [##########..........] 51%
 
 ## Tugallangan vazifalar
 
@@ -24,6 +24,7 @@
 - [x] K-MAIN: Platform dashboard: GET /api/main/dashboard
 - [x] K-MAIN: Billing: narxlar DBda (platform_pricing), GET/PUT /api/main/pricing
 - [x] K-MAIN: Partner freeze/activate (PATCH /partners/:id/status)
+- [x] K-MAIN: YANGI narx modeli (2026-07-16) — o'quvchi bucket tariflari (Free/Start/Standard/Pro/Business/Network), filiallar bepul; config/plans.js TIERS + computeBill({students}); eski filial+o'quvchi formula bekor; GET /api/main/pricing endi { tiers, currency }
 
 ### Backend — Super Admin (Karis)
 - [x] K-SUPER: Organization dashboard (GET /api/super/dashboard: totals + branch breakdown)
@@ -35,6 +36,7 @@
 - [x] K-ADMIN: Students CRUD (add-student login_code+parol generatsiya, freeze, regenerate-password, soft-delete)
 - [x] K-ADMIN: Groups CRUD (archive, mentor biriktirish, students add/remove)
 - [x] K-ADMIN: Mentors CRUD (create/PATCH/freeze/DELETE guard bilan)
+- [x] K-ADMIN: Guruh jadvali (2026-07-16) — POST/PATCH /api/admin/groups { days[], startTime }; tugash vaqti backendda org dars davomiyligidan hisoblanadi; GET /api/admin/settings (davomiylik)
 
 ### Backend — Methodist (Karis)
 - [x] K-METHODIST: Training types, topics, lessons CRUD + analytics (modules/methodist)
@@ -42,6 +44,16 @@
 ### Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
 - [x] K-PAY: Payments modul: oylik avto-hisoblash (billing.worker, 1-sana, muddat 5-sana) + invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + ad-hoc to'lov + refund/void + chek S3 ga; commit dan KEYIN notificationQueue ('payment.received'/'payment.due'/'payment.refunded'); total_debt + invoice.status qayta hisob. To'lamasa (5-sanadan keyin, invoice='overdue') — student panelga umuman data qaytmaydi (paymentGate, 402). NASIYA YO'Q
 - [x] K-PAY: Branch reports: filial bo'yicha tushum va qarzlar (guruhlar kesimida) — GET /api/admin/reports
+
+### Backend — V1 qolganlari (Abdulaziz) ✅ (kod: d57dff5)
+- [x] AB-V1: POST /api/admin/announcements -> notificationQueue (Bilol TG-boti uchun e'lonlar)
+- [x] AB-V1: due-soon worker (to'lov muddatidan N kun oldin ota-onaga eslatma, payment.due_soon)
+- [x] AB-V1: Partner profit main dashboardda (income - expenses; pul jadvallariga faqat SELECT)
+- [x] AB-V1: Integration testlar: payments full/split + auth flow (login -> refresh -> reuse-detect -> OTP)
+
+### Backend — Super Admin Integratsiya (Karis) 🔥 hozirgi fokus
+- [x] K-SUPER-INT: GET + PATCH /api/super/organization — Settings (org profil) ✅ jonli tekshirildi (35586f6)
+- [x] K-SUPER-INT: Dars davomiyligi (2026-07-16) — organizations.lesson_duration_min + lessonDurationMin GET/PATCH /api/super/organization da
 
 ### Backend — Infrastructure (Abdulaziz) ✅
 - [x] AB-INFRA: Scaffold + structure + deps + docker-compose
@@ -80,11 +92,18 @@
 - [x] AB-SHARED: db/seeds (demo data, idempotent)
 - [x] AB-SHARED: Coin foundation: coins.changeCoins()
 
-### Frontend — Super Admin (Said Islom, Aziz, sxvs)
-- [x] SUPER: Dashboard (org income, branches, admins, students)
-- [x] SUPER: CRUD branches (Branches -> BranchDetail)
-- [x] SUPER: CRUD admins
-- [x] SUPER: Reports
+### Backend — Narx / GTM (Karis) 🔥 YANGI (2026-07-16)
+- [x] PRICE: Bucket tariflar backendda (config/plans.js TIERS, computeBill by students)
+
+### Frontend — Auth (Elyor)
+- [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617)
+
+### Frontend — Super Admin ✅ TUGADI
+- [x] SUPER (front): Dashboard (org income, branches, admins, students)
+- [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
+- [x] SUPER (front): CRUD admins
+- [x] SUPER (front): Reports
+- [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
 
 ### Frontend — Mentor (Sardor, Kozim, Alish)
 - [x] MENTOR: Dashboard (groups, upcoming lessons)
@@ -95,7 +114,7 @@
 - [x] LANDING: Home, Features, Roles, Finance, Gamification, Contacts
 - [x] LANDING: Header, Footer, CTA
 
-### Frontend — Methodist (Karis) ✅
+### Frontend — Methodist (Said Islom, Aziz — Super Admin'dan o'tkazildi) ✅ karkas
 - [x] METHODIST: Training Types (CRUD)
 - [x] METHODIST: Topics (CRUD)
 - [x] METHODIST: Lessons (CRUD + LessonEditor)
@@ -106,6 +125,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 31 task
-- Abdulaziz (Backend): 30 task
-- Frontend jamoasi: 14 task
+- Karis (Backend): 38 task
+- Abdulaziz (Backend): 34 task
+- Frontend jamoasi: 16 task

@@ -28,9 +28,10 @@ Multi-tenant Educational CRM backend for LevelUp Academy. Roles: main_admin, sup
 - [Student](./student.md) — Student's own home dashboard, homework, tests, videos, leaderboard _(11 endpoints)_
 - [Student Shop](./student-shop.md) — Coin shop: browse/purchase (student), manage items (admin/mentor) _(5 endpoints)_
 - [Parent](./parent.md) — Parent's read-only view of their children _(2 endpoints)_
-- [Methodist](./methodist.md) — Organization-wide content authoring (training types/topics/lessons/questions) + analytics _(22 endpoints)_
+- [Methodist](./methodist.md) — Organization-wide content authoring (training types/topics/lessons/questions) + analytics _(23 endpoints)_
 - [Chat](./chat.md) — Realtime chat REST history (sending is via Socket.io, not REST) _(1 endpoint)_
 - [Coins](./coins.md) — Student's own coin balance + history _(1 endpoint)_
 - [Users](./users.md) — Cross-role profile endpoints (own profile, scoped user lookups) _(4 endpoints)_
+- [Discipline](./discipline.md) — Дисциплина сотрудников: штрафы (shtraf) + увольнение (qora) + устав организации _(10 endpoints)_
 
-**Total: 128 endpoints across 20 modules.**
+**Total: 139 endpoints across 21 modules.**

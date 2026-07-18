@@ -15,6 +15,12 @@ import {
   updateOrganizationSchema,
 } from './super.schemas.js';
 import * as ctrl from './super.controller.js';
+import * as discipline from '../discipline/discipline.controller.js';
+import {
+  issuePenaltySchema,
+  upsertCharterSchema,
+  listPenaltiesQuery,
+} from '../discipline/discipline.schemas.js';
 
 const router = Router();
 
@@ -526,5 +532,136 @@ router.patch('/methodists/:id', validate({ params: idParam, body: updateMethodis
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.patch('/methodists/:id/freeze', validate({ params: idParam, body: freezeMethodistSchema }), ctrl.freezeMethodist);
+
+// ==================== ДИСЦИПЛИНА (устав + штрафы/qora) ====================
+
+/**
+ * @openapi
+ * /api/super/charter:
+ *   get:
+ *     tags: [Discipline]
+ *     summary: Get organization charter (устав)
+ *     description: Если устав ещё не создан — возвращается пустой шаблон.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Charter
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Charter' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *   put:
+ *     tags: [Discipline]
+ *     summary: Create/update organization charter (Super Admin only)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/UpsertCharterRequest' }
+ *     responses:
+ *       200:
+ *         description: Saved charter
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Charter' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get('/charter', discipline.getCharter);
+router.put('/charter', validate({ body: upsertCharterSchema }), discipline.upsertCharter);
+
+/**
+ * @openapi
+ * /api/super/penalties:
+ *   get:
+ *     tags: [Discipline]
+ *     summary: List penalties in the organization
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: targetUserId
+ *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: type
+ *         schema: { type: string, enum: [shtraf, qora] }
+ *     responses:
+ *       200:
+ *         description: Penalty list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { type: array, items: { $ref: '#/components/schemas/Penalty' } }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *   post:
+ *     tags: [Discipline]
+ *     summary: Issue a penalty (shtraf) or fire (qora) a staff member
+ *     description: >
+ *       Super Admin → admin / mentor / methodist (и shtraf, и qora).
+ *       qora ставит целевому status=fired (атомарно).
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/IssuePenaltyRequest' }
+ *     responses:
+ *       201:
+ *         description: Penalty created
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/IssuePenaltyResponse' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get('/penalties', validate({ query: listPenaltiesQuery }), discipline.listPenalties);
+router.post('/penalties', validate({ body: issuePenaltySchema }), discipline.issuePenalty);
+
+/**
+ * @openapi
+ * /api/super/staff/{id}/reactivate:
+ *   post:
+ *     tags: [Discipline]
+ *     summary: Reactivate a fired staff member (qora → active)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     responses:
+ *       200:
+ *         description: Reactivated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string, format: uuid }
+ *                     status: { type: string, example: active }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
+ */
+router.post('/staff/:id/reactivate', validate({ params: idParam }), discipline.reactivateStaff);
 
 export default router;

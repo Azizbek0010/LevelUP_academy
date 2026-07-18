@@ -146,13 +146,13 @@ export function archiveTopic(id, orgId, db = pool) {
 }
 
 // ==================== УРОКИ ====================
-export function insertLesson({ topicId, createdBy, title, lessonType, description, instruction, coinReward }, db = pool) {
+export function insertLesson({ topicId, createdBy, title, lessonType, description, instruction, coinReward, videoUrl, fileKey }, db = pool) {
   return db
     .query(
-      `INSERT INTO methodology_lessons (topic_id, created_by, title, lesson_type, description, instruction, coin_reward)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, title, lesson_type, description, instruction, coin_reward, sort_order, created_at`,
-      [topicId, createdBy, title, lessonType, description ?? null, instruction ?? null, coinReward ?? 0],
+      `INSERT INTO methodology_lessons (topic_id, created_by, title, lesson_type, description, instruction, coin_reward, video_url, file_key)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id, title, lesson_type, description, instruction, coin_reward, video_url, file_key, sort_order, created_at`,
+      [topicId, createdBy, title, lessonType, description ?? null, instruction ?? null, coinReward ?? 0, videoUrl || null, fileKey || null],
     )
     .then((r) => r.rows[0]);
 }
@@ -160,7 +160,7 @@ export function insertLesson({ topicId, createdBy, title, lessonType, descriptio
 export function listLessons(topicId, db = pool) {
   return db
     .query(
-      `SELECT l.id, l.title, l.lesson_type, l.description, l.instruction, l.coin_reward, l.sort_order, l.created_at,
+      `SELECT l.id, l.title, l.lesson_type, l.description, l.instruction, l.coin_reward, l.video_url, l.file_key, l.sort_order, l.created_at,
               (SELECT count(*)::int FROM methodology_questions q WHERE q.lesson_id = l.id) AS questions_count
          FROM methodology_lessons l
         WHERE l.topic_id = $1 AND l.deleted_at IS NULL
@@ -187,7 +187,7 @@ export function findLessonInOrg(lessonId, orgId, db = pool) {
 export function findLessonWithQuestions(lessonId, orgId, db = pool) {
   return db
     .query(
-      `SELECT l.id, l.title, l.lesson_type, l.description, l.instruction, l.coin_reward, l.sort_order, l.created_at,
+      `SELECT l.id, l.title, l.lesson_type, l.description, l.instruction, l.coin_reward, l.video_url, l.file_key, l.sort_order, l.created_at,
               COALESCE(
                 json_agg(
                   json_build_object(
@@ -225,10 +225,12 @@ export function updateLesson(id, orgId, fields, db = pool) {
     ['description', 'description'],
     ['instruction', 'instruction'],
     ['coinReward', 'coin_reward'],
+    ['videoUrl', 'video_url'],
+    ['fileKey', 'file_key'],
   ]) {
     if (fields[key] !== undefined) {
       cols.push(`${col} = $${i++}`);
-      vals.push(fields[key]);
+      vals.push(fields[key] === '' ? null : fields[key]);
     }
   }
   if (cols.length === 0) return null;
@@ -241,7 +243,7 @@ export function updateLesson(id, orgId, fields, db = pool) {
           JOIN training_types tt ON tt.id = t.training_type_id
           WHERE tt.organization_id = $${i}
         ) AND deleted_at IS NULL
-        RETURNING id, title, lesson_type, description, instruction, coin_reward, sort_order`,
+        RETURNING id, title, lesson_type, description, instruction, coin_reward, video_url, file_key, sort_order`,
       vals,
     )
     .then((r) => r.rows[0] ?? null);

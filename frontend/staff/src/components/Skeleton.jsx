@@ -2,7 +2,7 @@ export function SkeletonKpis({ count = 4, className = 'grid-cols-2 lg:grid-cols-
   return (
     <div className={`grid gap-4 ${className}`}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="card bg-base-100"><div className="card-body p-5 gap-3">
+        <div key={i} className="card" style={{ background: 'var(--surface)' }}><div className="card-body p-5 gap-3">
           <div className="flex items-center gap-3">
             <div className="skeleton w-10 h-10 rounded-xl" />
             <div className="skeleton h-3 w-20" />
@@ -17,7 +17,7 @@ export function SkeletonKpis({ count = 4, className = 'grid-cols-2 lg:grid-cols-
 
 export function SkeletonTable({ rows = 5, cols = 5 }) {
   return (
-    <div className="card bg-base-100"><div className="card-body">
+    <div className="card" style={{ background: 'var(--surface)' }}><div className="card-body">
       <div className="skeleton h-4 w-40 mb-3" />
       <div className="space-y-3">
         {Array.from({ length: rows }).map((_, r) => (

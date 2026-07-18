@@ -61,6 +61,11 @@ export function useAdminStudents(qs = '') {
   return useAuthedQuery(['admin-students', qs], () => api.adminStudents(token, qs));
 }
 
+export function useAdminStudentDetail(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-student', id], () => api.adminStudentDetail(token, id), { enabled: !!id });
+}
+
 export function useAdminGroups(qs = '') {
   const { token } = useAuth();
   return useAuthedQuery(['admin-groups', qs], () => api.adminGroups(token, qs));
@@ -86,6 +91,33 @@ export function useAdminReports(qs = '') {
   return useAuthedQuery(['admin-reports', qs], () => api.adminReports(token, qs));
 }
 
+export function useAdminGroupAttendance(groupId, date) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['admin-group-attendance', groupId, date],
+    () => api.adminGroupAttendance(token, groupId, date),
+    { enabled: !!groupId && !!date },
+  );
+}
+
+export function useAdminGroupHomework(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['admin-group-homework', groupId],
+    () => api.adminGroupHomework(token, groupId),
+    { enabled: !!groupId },
+  );
+}
+
+export function useAdminGroupFeedback(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['admin-group-feedback', groupId],
+    () => api.adminGroupFeedback(token, groupId),
+    { enabled: !!groupId },
+  );
+}
+
 export function useAdminSettings() {
   const { token } = useAuth();
   return useAuthedQuery(['admin-settings'], () => api.adminSettings(token), { retry: false });
@@ -104,12 +136,13 @@ export function useMentorGroupStudents(groupId) {
   });
 }
 
-export function useMentorAttendance(groupId, date) {
+export function useMentorAttendance(groupId, params) {
   const { token } = useAuth();
+  // params: { date } ИЛИ { from, to } — прокидываем как есть (api.mentorAttendance сам выберет ветку)
   return useAuthedQuery(
-    ['mentor-attendance', groupId, date],
-    () => api.mentorAttendance(token, groupId, { date }),
-    { enabled: !!groupId && !!date },
+    ['mentor-attendance', groupId, params],
+    () => api.mentorAttendance(token, groupId, params),
+    { enabled: !!groupId && !!params && (!!params.date || (!!params.from && !!params.to)) },
   );
 }
 
@@ -166,6 +199,22 @@ export function useQuestions(lessonId) {
 export function useMethodistAnalytics() {
   const { token } = useAuth();
   return useAuthedQuery(['methodist-analytics'], () => api.methodistDifficulty(token));
+}
+
+// -------- MAIN ADMIN --------
+export function useMainDashboard() {
+  const { token } = useAuth();
+  return useAuthedQuery(['main-dashboard'], () => api.mainDashboard(token));
+}
+
+export function useMainLeads() {
+  const { token } = useAuth();
+  return useAuthedQuery(['main-leads'], () => api.mainLeads(token), { select: (d) => d.leads });
+}
+
+export function useMainPricing() {
+  const { token } = useAuth();
+  return useAuthedQuery(['main-pricing'], () => api.mainGetPricing(token), { select: (d) => d.pricing });
 }
 
 // -------- INVALIDATE --------

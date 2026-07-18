@@ -189,14 +189,15 @@ export default function Expenses() {
   const [exporting, setExporting] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
+  const { token } = useAuth();
+
   const loadExpenses = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Backend endpoint: GET /api/admin/expenses?limit=100
-      // Response shape: { expenses: [...], meta: { page, limit, total } }
-      const res = await api.get('/admin/expenses', { params: { limit: 100 } });
-      const data = res.data?.data || res.data || {};
+      // Uses api.adminExpenses(token) from api.js → proper named method
+      const res = await api.adminExpenses(token);
+      const data = res.data?.data || res.data || res || {};
       setExpenses(data.expenses || []);
     } catch (err) {
       console.error('Failed to load expenses:', err);
@@ -205,7 +206,7 @@ export default function Expenses() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => { loadExpenses(); }, [loadExpenses]);
 
@@ -346,9 +347,8 @@ export default function Expenses() {
     setSaving(true);
     setError(null);
     try {
-      // Backend endpoint: POST /api/admin/expenses
-      // Request body: { category, amount, spentAt?, note? }
-      await api.post('/admin/expenses', {
+      // Uses api.adminCreateExpense(token, body) from api.js
+      await api.adminCreateExpense(token, {
         category: formData.category,
         amount: Number(formData.amount),
         spentAt: formData.spentAt || undefined,
@@ -362,15 +362,15 @@ export default function Expenses() {
     } finally {
       setSaving(false);
     }
-  }, [formData, loadExpenses]);
+  }, [formData, loadExpenses, token]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     setSaving(true);
     setError(null);
     try {
-      // Backend endpoint: DELETE /api/admin/expenses/:id
-      await api.delete(`/admin/expenses/${deleteTarget.id}`);
+      // Uses api.adminDeleteExpense(token, id) from api.js
+      await api.adminDeleteExpense(token, deleteTarget.id);
       setDeleteTarget(null);
       await loadExpenses();
     } catch (err) {
@@ -379,7 +379,7 @@ export default function Expenses() {
     } finally {
       setSaving(false);
     }
-  }, [deleteTarget, loadExpenses]);
+  }, [deleteTarget, loadExpenses, token]);
 
   const handleExport = useCallback(() => {
     setExporting(true);
@@ -900,11 +900,11 @@ export default function Expenses() {
       </div>
 
       {/* ═══ View Detail Modal ═══ */}
-      <dialog className={`modal ${viewModalOpen ? 'modal-open' : ''}`}>
-        <div className="modal-box max-w-lg">
-          <form method="dialog">
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"><X className="w-4 h-4" /></button>
-          </form>
+      {viewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="modal-box glass-strong max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}><X className="w-4 h-4" /></button>
           <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajat tafsilotlari</h3>
           {viewTarget && (
             <div className="space-y-5">
@@ -952,17 +952,15 @@ export default function Expenses() {
             </div>
           )}
         </div>
-        <form method="dialog" className="modal-backdrop" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
-          <button>close</button>
-        </form>
-      </dialog>
+        </div>
+      )}
 
       {/* ═══ Add/Edit Modal ═══ */}
-      <dialog className={`modal ${modalOpen ? 'modal-open' : ''}`}>
-        <div className="modal-box max-w-lg">
-          <form method="dialog">
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving}><X className="w-4 h-4" /></button>
-          </form>
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setModalOpen(false); }}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="modal-box glass-strong max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setModalOpen(false)}><X className="w-4 h-4" /></button>
           <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajat qo'shish</h3>
           <div className="space-y-5">
             <div>
@@ -1066,17 +1064,15 @@ export default function Expenses() {
             </div>
           </div>
         </div>
-        <form method="dialog" className="modal-backdrop" onClick={() => { if (!saving) setModalOpen(false); }}>
-          <button>close</button>
-        </form>
-      </dialog>
+        </div>
+      )}
 
       {/* ═══ Delete Confirmation Modal ═══ */}
-      <dialog className={`modal ${deleteTarget ? 'modal-open' : ''}`}>
-        <div className="modal-box max-w-md">
-          <form method="dialog">
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving}><X className="w-4 h-4" /></button>
-          </form>
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setDeleteTarget(null); }}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="modal-box glass-strong max-w-md relative z-10" onClick={(e) => e.stopPropagation()}>
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setDeleteTarget(null)}><X className="w-4 h-4" /></button>
           <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajatni o'chirish</h3>
           <div className="space-y-5">
             <div className="flex items-start gap-4">
@@ -1116,10 +1112,8 @@ export default function Expenses() {
             </div>
           </div>
         </div>
-        <form method="dialog" className="modal-backdrop" onClick={() => { if (!saving) setDeleteTarget(null); }}>
-          <button>close</button>
-        </form>
-      </dialog>
+        </div>
+      )}
     </div>
   );
 }

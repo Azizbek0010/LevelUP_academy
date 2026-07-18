@@ -10,7 +10,7 @@ export default function Footer() {
       <div className="container">
         <div className="footer__grid">
           <div className="footer__brand">
-            <img src="/logo-white.svg" alt="LevelUp Academy" />
+            <img src="/logo-white.svg" alt="LevelUp Academy" width="168" height="30" />
             <p>{t.footer.tagline}</p>
           </div>
           <div className="footer__col">
@@ -21,6 +21,7 @@ export default function Footer() {
             <Link to={lp('/landing/gamification')}>{t.nav.gamification}</Link>
             <Link to={lp('/landing/pricing')}>{t.nav.pricing}</Link>
             <Link to={lp('/landing/for-language-school')}>{t.nav.langSchool}</Link>
+            <Link to={lp('/landing/for-courses')}>{t.nav.courses}</Link>
             <Link to={lp('/landing/blog')}>{t.nav.blog}</Link>
           </div>
           <div className="footer__col">

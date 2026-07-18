@@ -20,8 +20,8 @@ body {
 }
 
 .table thead th {
-  background: #eef7e4;
-  color: #46543a;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -31,49 +31,404 @@ body {
   transition: background-color 0.12s ease;
 }
 .table tbody tr:hover {
-  background: #f6faef;
+  background: var(--surface-hover);
 }
 
-/* ─── Custom properties (used by Chat, Expenses, Settings) ─── */
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS — Light theme (default)
+   ═══════════════════════════════════════════════════════════════ */
 :root {
+  /* Brand */
   --green: #C6FF34;
   --green-dark: #a8e02c;
-  --border: #dce5d4;
+  --green-bg: rgba(198, 255, 52, 0.12);
+  --green-glow: rgba(198, 255, 52, 0.25);
+
+  /* Surfaces */
   --surface: #ffffff;
   --surface-hover: #f6faef;
   --bg: #f5f8f1;
+  --accent: #16210f;
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(220, 229, 212, 0.6);
+  --glass: rgba(255, 255, 255, 0.72);
+
+  /* Borders */
+  --border: #dce5d4;
+
+  /* Text */
   --text: #1D2417;
   --text-secondary: #6b7a62;
+  --text-muted: #94a388;
+
+  /* Status */
   --danger: #ef4444;
   --danger-light: #fef2f2;
   --success: #22c55e;
   --success-light: #f0fdf4;
-  --glass: rgba(255, 255, 255, 0.72);
-  --accent: #16210f;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+
+  /* Shadows */
   --shadow-sm: 0 1px 2px rgba(29, 36, 23, 0.06);
-  --shadow-md: 0 4px 12px rgba(29, 36, 23, 0.08);
+  --shadow: 0 4px 12px rgba(29, 36, 23, 0.08);
   --shadow-lg: 0 8px 24px rgba(29, 36, 23, 0.12);
+
+  /* Border radius */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
+
+  /* Sidebar */
+  --sidebar-hover: rgba(198, 255, 52, 0.08);
 }
 
-/* ─── Glass morphism ─── */
+/* ═══════════════════════════════════════════════════════════════
+   DARK THEME — uses html.dark[data-theme] to beat DaisyUI specificity
+   ═══════════════════════════════════════════════════════════════ */
+.dark {
+  --green: #C6FF34;
+  --green-dark: #a8e02c;
+  --green-bg: rgba(198, 255, 52, 0.10);
+  --green-glow: rgba(198, 255, 52, 0.20);
+
+  --surface: #1a1f16;
+  --surface-hover: #232a20;
+  --bg: #111610;
+  --accent: #C6FF34;
+
+  --glass-bg: rgba(26, 31, 22, 0.88);
+  --glass-border: rgba(60, 72, 52, 0.5);
+  --glass: rgba(26, 31, 22, 0.88);
+
+  --border: #2d3628;
+
+  --text: #e8efe2;
+  --text-secondary: #94a388;
+  --text-muted: #6b7a62;
+
+  --danger: #f87171;
+  --danger-light: rgba(248, 113, 113, 0.12);
+  --success: #4ade80;
+  --success-light: rgba(74, 222, 128, 0.12);
+  --warning: #fbbf24;
+  --info: #60a5fa;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.50);
+
+  --sidebar-hover: rgba(198, 255, 52, 0.06);
+}
+
+/* DaisyUI dark overrides — higher specificity than [data-theme="levelup"] */
+html.dark[data-theme="levelup"],
+html.dark {
+  --b1: 26 31 22;      /* base-100 = #1a1f16 (our --surface) */
+  --b2: 35 42 32;      /* base-200 = #232a20 (our --surface-hover) */
+  --b3: 45 54 40;      /* base-300 = #2d3628 (our --border) */
+  --bc: 232 239 226;   /* base-content = #e8efe2 (our --text) */
+  --n: 45 54 40;       /* neutral = #2d3628 */
+  --nc: 232 239 226;   /* neutral-content */
+  --p: 198 255 52;     /* primary = lime */
+  --pc: 22 33 15;      /* primary-content */
+  --s: 22 33 15;       /* secondary = sidebar dark */
+  --sc: 232 239 226;   /* secondary-content */
+  --a: 163 230 53;     /* accent */
+  --ac: 22 33 15;      /* accent-content */
+  --b1-deco: 26 31 22;
+  --b2-deco: 35 42 32;
+  --b3-deco: 45 54 40;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DAISYUI COMPONENT OVERRIDES — force theme-aware backgrounds
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Modal backdrop — MUST be full screen, no gaps */
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(4px);
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+.modal-box {
+  background: var(--surface) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+.modal {
+  position: fixed !important;
+  inset: 0 !important;
+  padding: 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DAISYUI COMPONENT — COMPREHENSIVE dark overrides
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Inputs, textareas, selects */
+html.dark .input,
+html.dark .textarea,
+html.dark .select,
+html.dark .input-bordered,
+html.dark .textarea-bordered,
+html.dark .select-bordered,
+html.dark .input-ghost,
+html.dark .file-input,
+html.dark .file-input-bordered {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+html.dark .input::placeholder,
+html.dark .textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Buttons */
+html.dark .btn {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+html.dark .btn-primary {
+  background-color: var(--green) !important;
+  border-color: var(--green) !important;
+  color: #111 !important;
+}
+html.dark .btn-ghost {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+}
+html.dark .btn-ghost:hover {
+  background: var(--surface-hover) !important;
+  color: var(--text) !important;
+}
+html.dark .btn-link {
+  color: var(--green) !important;
+}
+html.dark .btn-sm {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+html.dark .btn-sm:hover {
+  background-color: var(--surface-hover) !important;
+  color: var(--text) !important;
+}
+
+/* Card backgrounds */
+html.dark .card {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+html.dark .card-body {
+  color: var(--text) !important;
+}
+html.dark .card-title {
+  color: var(--text) !important;
+}
+
+/* Tables */
+html.dark .table {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+}
+html.dark .table thead th {
+  background: var(--surface-hover) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+}
+html.dark .table tbody tr {
+  border-color: var(--border) !important;
+}
+html.dark .table tbody tr:hover {
+  background: var(--surface-hover) !important;
+}
+html.dark .table td {
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* Dividers */
+html.dark .divider {
+  color: var(--text-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Badges */
+html.dark .badge {
+  border-color: var(--border) !important;
+}
+html.dark .badge-neutral {
+  background-color: var(--surface-hover) !important;
+  color: var(--text-secondary) !important;
+}
+html.dark .badge-ghost {
+  background-color: var(--surface-hover) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+}
+
+/* Alerts */
+html.dark .alert {
+  border-color: var(--border) !important;
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+/* Tabs */
+html.dark .tabs {
+  border-color: var(--border) !important;
+}
+html.dark .tab {
+  color: var(--text-muted) !important;
+}
+html.dark .tab-active,
+html.dark .tab[aria-selected="true"] {
+  color: var(--green) !important;
+  border-color: var(--green) !important;
+}
+
+/* Dropdown / popover */
+html.dark .dropdown-content,
+html.dark .popover {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Menu items */
+html.dark .menu li > * {
+  color: var(--text-secondary) !important;
+}
+html.dark .menu li > *:hover {
+  background: var(--surface-hover) !important;
+  color: var(--text) !important;
+}
+html.dark .menu-title {
+  color: var(--text-muted) !important;
+}
+
+/* Steps */
+html.dark .step {
+  color: var(--text-muted) !important;
+}
+html.dark .step-primary,
+html.dark .step[data-content]::before {
+  border-color: var(--green) !important;
+}
+
+/* Progress */
+html.dark .progress {
+  background-color: var(--surface-hover) !important;
+}
+
+/* Stat boxes */
+html.dark .stat {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+}
+html.dark .stat-title {
+  color: var(--text-secondary) !important;
+}
+html.dark .stat-value {
+  color: var(--text) !important;
+}
+html.dark .stat-desc {
+  color: var(--text-muted) !important;
+}
+
+/* Breadcrumbs */
+html.dark .breadcrumbs li {
+  color: var(--text-muted) !important;
+}
+html.dark .breadcrumbs li > * {
+  color: var(--text-secondary) !important;
+}
+
+/* Textarea, select, details */
+html.dark textarea,
+html.dark select {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+html.dark details,
+html.dark details[open] {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* Collapse */
+html.dark .collapse {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* Drawer */
+html.dark .drawer-content,
+html.dark .drawer-side {
+  background-color: transparent !important;
+}
+html.dark .drawer-overlay {
+  background-color: rgba(0,0,0,0.5) !important;
+}
+
+/* Hero */
+html.dark .hero {
+  background-color: var(--surface) !important;
+}
+
+/* Footer */
+html.dark .footer {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Hover effects for all interactive elements */
+html.dark .hover\:\*:bg-base-200:hover,
+html.dark *:hover {
+  /* prevent white flash on hover */
+}
+
+/* Remove ALL background color artifacts — force transparent on body, html, root */
+html,
+body,
+#root,
+#root > div {
+  background-color: transparent !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GLASS MORPHISM
+   ═══════════════════════════════════════════════════════════════ */
 .glass {
-  background: var(--glass);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-border);
 }
 .glass-strong {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(220, 229, 212, 0.6);
-  box-shadow: 0 4px 16px rgba(29, 36, 23, 0.06);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow);
 }
 
-/* ─── Keyframe animations ─── */
+/* ═══════════════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+   ═══════════════════════════════════════════════════════════════ */
 @keyframes fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -82,9 +437,29 @@ body {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-6px); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(198, 255, 52, 0); }
+  50%      { box-shadow: 0 0 12px 4px rgba(198, 255, 52, 0.18); }
 }
 
 .animate-fade-in {
@@ -96,15 +471,96 @@ body {
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
+.animate-page-enter {
+  animation: page-enter 0.4s ease-out both;
+}
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out both;
+}
+.animate-slide-right {
+  animation: slide-right 0.35s ease-out both;
+}
+.animate-glow-pulse {
+  animation: glow-pulse 2.5s ease-in-out infinite;
+}
 
-/* Staggered entrance for lists */
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.10s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.20s; }
-.stagger-5 { animation-delay: 0.25s; }
-.stagger-6 { animation-delay: 0.30s; }
+/* ═══════════════════════════════════════════════════════════════
+   STAGGER ENTRANCE — lists & card grids
+   ═══════════════════════════════════════════════════════════════ */
+.stagger-1  { animation-delay: 0.05s; }
+.stagger-2  { animation-delay: 0.10s; }
+.stagger-3  { animation-delay: 0.15s; }
+.stagger-4  { animation-delay: 0.20s; }
+.stagger-5  { animation-delay: 0.25s; }
+.stagger-6  { animation-delay: 0.30s; }
+.stagger-7  { animation-delay: 0.35s; }
+.stagger-8  { animation-delay: 0.40s; }
+.stagger-9  { animation-delay: 0.45s; }
+.stagger-10 { animation-delay: 0.50s; }
+.stagger-11 { animation-delay: 0.55s; }
+.stagger-12 { animation-delay: 0.60s; }
 
+/* ═══════════════════════════════════════════════════════════════
+   CARD HOVER PREMIUM — shared hover effect for stat cards
+   ═══════════════════════════════════════════════════════════════ */
+.card-hover-premium {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Tabular nums for money & KPI numbers */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Skeleton shimmer gradient */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    var(--surface-hover) 50%,
+    var(--surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Skeleton pulse */
+.skeleton-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+/* Green glow ring for focused/active elements */
+.glow-ring {
+  box-shadow: 0 0 0 3px rgba(198, 255, 52, 0.3);
+}
+
+/* Pulsing dot indicator (online status) */
+.pulse-dot {
+  position: relative;
+}
+.pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: glow-pulse 2s ease-in-out infinite;
+  z-index: -1;
+}
+
+/* Overflow scroll */
 .overflow-x-auto {
   scrollbar-width: thin;
 }

@@ -14,12 +14,16 @@ export default {
     finance: 'Moliya',
     pricing: 'Tariflar',
     langSchool: 'Til markazlariga',
+    courses: 'Kurs va repetitorlarga',
     blog: 'Bilimlar bazasi',
     gamification: 'Motivatsiya',
     contacts: 'Aloqa',
     home: 'Bosh sahifa',
     login: 'Kirish',
     menu: 'Menyu',
+    skipToContent: "Asosiy kontentga o'tish",
+    primaryLabel: 'Asosiy navigatsiya',
+    mobileLabel: 'Mobil menyu',
   },
 
   common: {
@@ -663,6 +667,95 @@ export default {
       "Ariza qoldiring — LevelUp Academy til markazida guruhlar, to'lovlar va motivatsiyani qanday yuritishini ko'rsatamiz. Birinchi hafta bepul.",
   },
 
+  courses: {
+    badge: 'Kurslar va repetitorlar uchun',
+    h1: 'Kurslar va repetitorlik markazi uchun CRM',
+    lead: "Guruh va yakkama-yakka darslar, davomat, uy vazifalari, kurs uchun to'lovlar va motivatsiya — bitta tizimda. Oqim kurslariga ham, repetitorlarga ham mos.",
+    intro:
+      "IT va dasturlash, dizayn, imtihonga tayyorgarlik, maktab fanlari — LevelUp Academy yo'nalishga bog'liq emas. Katta oqimlarni ham, yakka repetitorlikni ham yuritadi.",
+    pricingLink: "Tariflarni ko'rish",
+
+    fitHead: 'Kurs va repetitorlikka moslangan',
+    fitLead: "Administrator va repetitorning vaqtini oladigan ishlar bu yerda avtomatlashtirilgan.",
+    fit: [
+      {
+        icon: 'calendar',
+        title: 'Guruh va yakkama-yakka',
+        text: "Oqim kurslari guruhlar bilan va yakkama-yakka darslar — har biri mentor, jadval va narxi bilan. O'quvchi modulni tugatsa yoki boshqa repetitorga o'tsa, tarix saqlanadi.",
+      },
+      {
+        icon: 'check',
+        title: 'Davomat',
+        text: "Mentor davomatni bir daqiqada belgilaydi. Ota-ona yoki o'quvchining o'zi kelmaslikni ko'radi, bildirishnoma esa darhol Telegram'ga ketadi.",
+      },
+      {
+        icon: 'book',
+        title: 'Uy vazifalari va loyihalar',
+        text: "Fayl va deadline bilan uy vazifalari va loyihalar. Fayllar telefondan yuklanadi, topshirilgani uchun o'quvchi koin oladi.",
+      },
+      {
+        icon: 'clock',
+        title: 'Testlar va imtihonlar',
+        text: "Server taymerli test konstruktori: oraliq, yakuniy, sinov. Deadline'dan keyin topshirish yopiladi — javoblarni soxtalashtirib bo'lmaydi.",
+      },
+      {
+        icon: 'coin',
+        title: "Kurs uchun to'lov va qarzlar",
+        text: "Kurs, modul yoki oylik uchun to'lov, naqd va karta, split-to'lov. To'lanmadi — o'quvchi avtomatik qarzdorlar ro'yxatida.",
+      },
+      {
+        icon: 'star',
+        title: "O'qishni tugatishga motivatsiya",
+        text: "Baho, davomat va topshirilgan vazifalar uchun koinlar, mukofotlar do'koni va reytinglar. Kursni yarmida kamroq tashlab ketishadi.",
+      },
+    ],
+
+    howHead: 'Yozishdan natijagacha',
+    howLead: 'LevelUp Academy bilan kursning bir oqimi.',
+    how: [
+      {
+        title: "Kursga yozdik",
+        text: "Administrator o'quvchini guruhga yoki repetitorga kiritdi va kurs uchun to'lovni qabul qildi. O'quvchi va ota-ona kirish va Telegram bildirishnomalarini oldi.",
+      },
+      {
+        title: 'Darslarni yuritamiz',
+        text: "Mentor davomatni belgilaydi, uy vazifasi va testlar beradi, faollik uchun koin qo'shadi. Progress real vaqtda ko'rinadi.",
+      },
+      {
+        title: "Natijani ko'ramiz",
+        text: "Tushum, qarzlar va davomat — panelda. Kim kelmasliklar sabab kursni tashlab ketish xavfida ekani oldindan ko'rinadi.",
+      },
+    ],
+
+    faqHead: "Ko'p beriladigan savollar",
+    faq: [
+      {
+        q: "LevelUp Academy kurslar va repetitorlarga to'g'ri keladimi?",
+        a: "Ha. Bu har qanday yo'nalishdagi o'quv markazi uchun CRM: IT-kurslar, dizayn, imtihonga tayyorgarlik, repetitorlik. Guruh va yakkama-yakka darslar, davomat, uy vazifalari, testlar, to'lovlar va motivatsiya — barchasi kurs va repetitorlik markazi vazifalariga mos.",
+      },
+      {
+        q: 'Guruh va yakkama-yakka darslarni ham yuritish mumkinmi?',
+        a: "Ha. Guruh yoki yakkama-yakka dars — har birining o'z mentori, jadvali va narxi bor. Guruh va repetitorlar o'rtasida o'tishda o'quvchi tarixi saqlanadi.",
+      },
+      {
+        q: "Kurs yoki modullar uchun to'lovni qanday qabul qilish mumkin?",
+        a: "Butun kurs, modul yoki oylik uchun — naqd, karta yoki split-to'lov. Qarzlar avtomatik hisoblanadi, qarzdorlar darhol ko'rinadi.",
+      },
+      {
+        q: 'Nechta kurs filialini ulash mumkin?',
+        a: "Cheklovsiz. Har bir filial izolyatsiya qilingan, rahbar esa butun tarmoqni ko'radi: filiallar bo'yicha tushum, davomat va qarzlar.",
+      },
+      {
+        q: 'Kurslar uchun narxi qancha?',
+        a: "Narx faol o'quvchilar soniga qarab, filiallar cheksiz kiradi. Birinchi hafta — bepul, kartasiz. Batafsil — tariflar sahifasida.",
+      },
+    ],
+
+    ctaTitle: "Kursingizda tartib o'rnatamizmi?",
+    ctaText:
+      "Ariza qoldiring — LevelUp Academy kurslar va repetitorlikda guruhlar, to'lovlar va motivatsiyani qanday yuritishini ko'rsatamiz. Birinchi hafta bepul.",
+  },
+
   blog: {
     badge: 'Bilimlar bazasi',
     h1: "O'quv markazi uchun bilimlar bazasi",
@@ -930,6 +1023,11 @@ export default {
       title: "Til markazi uchun CRM — guruhlar, to'lovlar | LevelUp",
       description:
         "Til o'quv markazi uchun CRM: darajali guruhlar, davomat, uy vazifalari, testlar, to'lovlar va o'quvchilar motivatsiyasi bitta tizimda. Birinchi hafta bepul.",
+    },
+    courses: {
+      title: "Kurslar va repetitorlar uchun CRM | LevelUp Academy",
+      description:
+        "Kurslar va repetitorlik markazi uchun CRM: guruh va yakkama-yakka darslar, davomat, uy vazifalari, testlar, kurs uchun to'lovlar va motivatsiya. Birinchi hafta bepul.",
     },
     blog: {
       title: "O'quv markazi uchun bilimlar bazasi | LevelUp Academy",

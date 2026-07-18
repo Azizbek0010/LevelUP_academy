@@ -38,7 +38,7 @@ export default function MentorGroups() {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
-      (s.first_name + ' ' + s.last_name).toLowerCase().includes(q) ||
+      (s.firstName + ' ' + s.lastName).toLowerCase().includes(q) ||
       s.phone?.includes(q)
     );
   });
@@ -80,7 +80,7 @@ export default function MentorGroups() {
                     >
                       <div className="text-sm font-medium">{g.name}</div>
                       <div className={`text-[11px] mt-0.5 ${selectedGroupId === g.id ? 'text-primary-content/70' : 'text-base-content/50'}`}>
-                        {g.subject} · {g.students?.length || 0} o'quvchi
+                        {g.subject} · {g.students ?? 0} o'quvchi
                       </div>
                     </button>
                   ))}
@@ -140,9 +140,9 @@ export default function MentorGroups() {
                               <tr key={s.id} className="hover">
                                 <td>
                                   <div className="flex items-center gap-3">
-                                    <StudentAvatar name={`${s.first_name} ${s.last_name}`} />
+                                    <StudentAvatar name={`${s.firstName} ${s.lastName}`} />
                                     <div>
-                                      <div className="font-medium text-sm">{s.first_name} {s.last_name}</div>
+                                      <div className="font-medium text-sm">{s.firstName} {s.lastName}</div>
                                       {s.student_code && (
                                         <div className="text-[11px] text-base-content/40">ID: {s.student_code}</div>
                                       )}
@@ -154,7 +154,7 @@ export default function MentorGroups() {
                                   <span className={`badge ${st.cls} text-[11px]`}>{st.label}</span>
                                 </td>
                                 <td className="text-sm font-semibold">
-                                  {s.coin_balance ?? '—'}
+                                  {s.coinBalance ?? '—'}
                                 </td>
                               </tr>
                             );

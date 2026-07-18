@@ -15,6 +15,8 @@ import { logger } from '../../config/logger.js';
 const DEMO_ORG_NAME = 'Demo Learning Center';
 const DEMO_SUPERADMIN_PHONE = '+998901111111';
 const DEMO_MENTOR_EMAIL = 'mentor.demo@levelup.local';
+const DEMO_ADMIN_EMAIL = 'admin.demo@levelup.local';
+const DEMO_ADMIN_PHONE = '+998902222222';
 // фиксированные демо-креды student/parent (в реале генерятся при заведении ученика)
 const DEMO_STUDENTS = [
   { code: 'demostu1', pass: '111111', firstName: 'Ali', lastName: 'Valiyev' },
@@ -102,6 +104,13 @@ async function seed() {
         password_hash: adminHash,
       });
 
+      // admin (email)
+      const adminId = await ensureUser(client, { by: 'email', value: DEMO_ADMIN_EMAIL }, {
+        organization_id: orgId, branch_id: branchId, role: 'admin',
+        first_name: 'Demo', last_name: 'Admin', email: DEMO_ADMIN_EMAIL,
+        phone: DEMO_ADMIN_PHONE, password_hash: adminHash,
+      });
+
       // студенты (логин-код + пароль) + профили
       const studentIds = [];
       for (const s of DEMO_STUDENTS) {
@@ -145,7 +154,7 @@ async function seed() {
         );
       }
 
-      logger.info({ orgId, branchId, mentorId, groupId, students: studentIds.length },
+      logger.info({ orgId, branchId, mentorId, adminId, groupId, students: studentIds.length },
         'Demo dev data seeded');
     }
 
@@ -153,8 +162,9 @@ async function seed() {
     logger.info({ mainAdminId: mainAdmin.id }, 'Seed completed');
     logger.info(
       { students: DEMO_STUDENTS.map((s) => ({ login: s.code, pass: s.pass })),
-        parentLogin: DEMO_PARENT.code, parentPass: DEMO_PARENT.pass },
-      'Demo student/parent creds (dev only)',
+        parentLogin: DEMO_PARENT.code, parentPass: DEMO_PARENT.pass,
+        adminLogin: DEMO_ADMIN_EMAIL, adminPass: env.SEED_MAIN_ADMIN_PASSWORD },
+      'Demo student/parent/admin creds (dev only)',
     );
   } catch (err) {
     await client.query('ROLLBACK');

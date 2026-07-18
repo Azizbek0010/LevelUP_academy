@@ -23,6 +23,7 @@ const PAGES = [
   '/landing/finance',
   '/landing/pricing',
   '/landing/for-language-school',
+  '/landing/for-courses',
   '/landing/blog',
   '/landing/blog/excel-to-crm',
   '/landing/blog/student-debts',

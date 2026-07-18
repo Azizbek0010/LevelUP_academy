@@ -1,6 +1,8 @@
 import { BookOpen, Layers, FileQuestion, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTrainingTypes, useMethodistAnalytics } from '../../queries.js';
+import TrainingTypeIcon from '../../components/TrainingTypeIcon.jsx';
+
 
 export default function MethodistDashboard() {
   const { data: types } = useTrainingTypes();
@@ -79,7 +81,7 @@ export default function MethodistDashboard() {
                 <Link key={tt.id} to={`/methodist/types/${tt.id}/topics`}
                   className="block p-4 bg-[#F6FBEA] rounded-xl border border-[#E6EDD8] hover:bg-[#EEF7DE] transition-colors"
                 >
-                  <div className="text-xl mb-1">{tt.icon || '📚'}</div>
+                  <TrainingTypeIcon name={tt.name} icon={tt.icon} className="w-10 h-10 mb-2" />
                   <div className="font-semibold">{tt.name}</div>
                   <div className="text-xs opacity-50">{tt.topics_count || 0} тем</div>
                 </Link>
