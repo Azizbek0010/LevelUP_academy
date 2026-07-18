@@ -7,7 +7,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMentorGroupStudents, useMentorAttendance } from '../../../queries.js';
 import { useAuth } from '../../../auth.jsx';
 import { api } from '../../../api.js';
-import { useAttendanceLive } from '../../../socket.js';
+import { useAttendanceLive, markAttendanceSocket } from '../../../socket.js';
+import { USING_MOCKS } from '../../../api.js';
 import { Avatar, EmptyState } from '../_ui.jsx';
 
 /**
@@ -173,10 +174,33 @@ export default function AttendanceTab({ groupId, group }) {
   const { data: attendanceData } = useMentorAttendance(groupId, { from, to });
   const attendance = useMemo(() => attendanceData?.data || [], [attendanceData]);
 
-  // Журнал могли отметить в другом месте (второй ментор, админ) — перечитываем
-  // данные, а не сливаем руками: источник правды остаётся один.
-  useAttendanceLive(token, groupId, useCallback(() => {
-    qc.invalidateQueries({ queryKey: ['mentor-attendance'] });
+  /* Живые обновления: журнал этой группы отметили в другом месте — второй
+     ментор, админ или тот же ментор со второго устройства.
+
+     Событие уже несёт сохранённые записи, поэтому применяем их прямо в
+     таблицу. Раньше здесь стоял invalidateQueries: событие приходило С
+     ДАННЫМИ, а клиент всё равно шёл за теми же данными по HTTP — лишний круг
+     и заметная пауза между «коллега отметил» и «я это увидел». */
+  useAttendanceLive(token, groupId, useCallback((payload) => {
+    const incoming = payload?.records ?? [];
+    if (incoming.length === 0) return;
+
+    const patch = {};
+    incoming.forEach((r) => {
+      const raw = r.lesson_date ?? r.date ?? payload.lessonDate;
+      if (!raw) return;
+      // lesson_date из Postgres приходит ISO-строкой с временем — берём дату
+      const dayKey = String(raw).slice(0, 10);
+      patch[`${r.student_id ?? r.studentId}_${dayKey}`] = r.status;
+    });
+    if (Object.keys(patch).length === 0) return;
+
+    const next = { ...mapRef.current, ...patch };
+    mapRef.current = next;
+    setAttendanceMap(next);
+
+    // Балансы коинов событие не несёт — за ними запрос всё ещё нужен,
+    // но только за ними.
     qc.invalidateQueries({ queryKey: ['mentor-group-students', groupId] });
   }, [qc, groupId]));
 
@@ -215,9 +239,20 @@ export default function AttendanceTab({ groupId, group }) {
     try {
       for (const [lessonDate, byStudent] of batch) {
         const records = [...byStudent].map(([studentId, status]) => ({ studentId, status }));
-        await api.mentorMarkAttendance(token, groupId, { lessonDate, records });
+
+        /* Основной канал — сокет: соединение уже открыто, отметка уходит одним
+           кадром, и тем же действием сервер рассылает её остальным.
+           HTTP остаётся запасным путём. Ментор отмечает журнал во время урока —
+           потерять отметку из-за оборванного вебсокета недопустимо, поэтому
+           «полностью на сокете» здесь означает «сокет первым», а не «только
+           сокет и будь что будет». */
+        try {
+          if (USING_MOCKS) throw new Error('mocks');   // в мок-режиме сокет-сервера нет
+          await markAttendanceSocket(token, { groupId, lessonDate, records });
+        } catch (socketErr) {
+          await api.mentorMarkAttendance(token, groupId, { lessonDate, records });
+        }
       }
-      qc.invalidateQueries({ queryKey: ['mentor-attendance'] });
       setSaveState('saved');
       // Через пару секунд гасим отметку — постоянная «Saqlandi» превращается
       // в фоновый шум и перестаёт значить что-либо.

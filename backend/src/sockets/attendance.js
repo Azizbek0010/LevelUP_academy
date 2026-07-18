@@ -1,16 +1,23 @@
 import { pool } from '../config/db.js';
+import * as attendanceService from '../modules/mentor/attendance/attendance.service.js';
+import { markAttendanceBodySchema, listAttendanceQuerySchema } from '../modules/mentor/attendance/attendance.schemas.js';
 
 /**
- * Live-обновления davomat по группе.
+ * Журнал davomat целиком поверх Socket.IO: чтение, запись и живые обновления
+ * идут одним каналом.
  *
- * Ментор отмечает посещаемость обычным POST /api/mentor/attendance/groups/:id —
- * сервис после записи шлёт событие в комнату группы (см. attendance.service.js),
- * и открытый журнал у второго ментора той же группы или у админа филиала
- * обновляется без перезагрузки.
+ * Почему не только уведомления, как было раньше: ментор отмечает журнал во
+ * время урока, десятками кликов подряд. Каждый HTTP-запрос — это новое
+ * рукопожатие и заголовки ради двух полей; постоянное соединение уже открыто,
+ * и по нему то же самое уходит одним кадром. Плюс исчезает круг «сохранили по
+ * HTTP → пришло событие → перезапросили по HTTP»: ответ и рассылка происходят
+ * в одном месте.
  *
- * Подписка — только на свои группы: право проверяется SQL-запросом при
- * `attendance:subscribe`, роли самой по себе недостаточно (иначе повторили бы
- * ошибку старого чата, где хватало быть «сотрудником»).
+ * REST-эндпоинты при этом остались и никуда не денутся — это запасной путь для
+ * клиента, у которого сокет не поднялся, и точка входа для интеграций.
+ *
+ * Права проверяются в каждом обработчике, а не только при подписке: сокет
+ * живёт долго, роль и состав групп за это время могут измениться.
  */
 export const attendanceRoom = (groupId) => `attendance:${groupId}`;
 
@@ -35,6 +42,25 @@ async function canWatchGroup(user, groupId) {
   return false;
 }
 
+/**
+ * Обёртка обработчика: ack всегда получает ответ ровно один раз, а исключение
+ * не роняет соединение. Без неё любая ошибка в обработчике оставляла бы клиента
+ * ждать ack до таймаута, а журнал — в состоянии «не сохранено, но почему —
+ * непонятно».
+ */
+function handler(fn) {
+  return async (payload, ack) => {
+    if (typeof ack !== 'function') return;   // без ack отвечать некуда
+    try {
+      ack({ ok: true, ...(await fn(payload ?? {})) });
+    } catch (err) {
+      // zod кидает ZodError с массивом issues — отдаём первое сообщение
+      const message = err?.issues?.[0]?.message ?? err.message ?? 'Internal error';
+      ack({ ok: false, error: message, status: err.statusCode ?? 400 });
+    }
+  };
+}
+
 export function registerAttendance(io, socket) {
   const { user } = socket;
 
@@ -52,4 +78,42 @@ export function registerAttendance(io, socket) {
     if (UUID_RE.test(String(groupId ?? ''))) socket.leave(attendanceRoom(groupId));
     ack?.({ ok: true });
   });
+
+  /**
+   * Чтение журнала. Тело валидируется той же схемой, что и REST-запрос:
+   * два входа в одну функцию не должны расходиться в том, что считают
+   * допустимым.
+   */
+  socket.on('attendance:fetch', handler(async ({ groupId, ...query }) => {
+    if (!UUID_RE.test(String(groupId ?? ''))) throw new Error('Invalid groupId');
+    const parsed = listAttendanceQuerySchema.parse(query);
+
+    const records = await attendanceService.getGroupAttendance({
+      mentorId: user.id,
+      groupId,
+      ...parsed,
+    });
+    return { records };
+  }));
+
+  /**
+   * Запись отметок. Права и запись — в том же сервисе, что обслуживает REST:
+   * дублировать проверку доступа во втором месте значит однажды поправить
+   * только одно из них.
+   *
+   * Рассылку в комнату делает сам сервис, поэтому здесь её нет — иначе
+   * подписчики получили бы событие дважды.
+   */
+  socket.on('attendance:mark', handler(async ({ groupId, ...body }) => {
+    if (!UUID_RE.test(String(groupId ?? ''))) throw new Error('Invalid groupId');
+    const parsed = markAttendanceBodySchema.parse(body);
+
+    const records = await attendanceService.markAttendance({
+      mentorId: user.id,
+      groupId,
+      lessonDate: parsed.lessonDate,
+      records: parsed.records,
+    });
+    return { records, lessonDate: parsed.lessonDate };
+  }));
 }
