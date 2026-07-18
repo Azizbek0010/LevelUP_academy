@@ -35,14 +35,25 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DESIGN TOKENS — Light theme (default)
+   LIGHT MODE — override DaisyUI primary to match calmer green
+   (tailwind.config.js sets primary to neon lime for dark mode;
+    here we calm it down for light backgrounds)
    ═══════════════════════════════════════════════════════════════ */
+html[data-theme="levelup"],
 :root {
-  /* Brand */
-  --green: #C6FF34;
-  --green-dark: #a8e02c;
-  --green-bg: rgba(198, 255, 52, 0.12);
-  --green-glow: rgba(198, 255, 52, 0.25);
+  --p: 67 137 62;        /* primary = #43893E (calmer green) */
+  --pc: 255 255 255;     /* primary-content = white */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+    DESIGN TOKENS — Light theme (default)
+    ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* Brand — calm forest green for light mode (neon kept for dark) */
+  --green: #43893E;
+  --green-dark: #3a7835;
+  --green-bg: rgba(67, 137, 62, 0.10);
+  --green-glow: rgba(67, 137, 62, 0.18);
 
   /* Surfaces */
   --surface: #ffffff;
@@ -82,7 +93,7 @@ body {
   --radius-lg: 16px;
 
   /* Sidebar */
-  --sidebar-hover: rgba(198, 255, 52, 0.08);
+  --sidebar-hover: rgba(67, 137, 62, 0.08);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -407,6 +418,36 @@ body,
 #root,
 #root > div {
   background-color: transparent !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DARK MODE — force dark backgrounds on hardcoded light classes
+   Catches bg-white, bg-base-100, bg-base-200 from any page
+   (methodist, mentor, etc.) without touching their source files.
+   ═══════════════════════════════════════════════════════════════ */
+html.dark .bg-white,
+html.dark .bg-base-100,
+html.dark [style*="background-color: white"],
+html.dark [style*="background-color: #fff"],
+html.dark [style*="background-color: #ffffff"] {
+  background-color: var(--surface) !important;
+}
+html.dark .bg-base-200 {
+  background-color: var(--surface-hover) !important;
+}
+html.dark .bg-base-300 {
+  background-color: var(--border) !important;
+}
+/* Also catch border-[#E6EDD8] hardcoded borders */
+html.dark [class*="border-[#E6EDD8]"],
+html.dark [class*="border-[#dce5d4]"],
+html.dark [class*="border-[#f6faef]"] {
+  border-color: var(--border) !important;
+}
+/* Hardcoded text colors */
+html.dark [class*="text-[#1D2417]"],
+html.dark [class*="text-[#1d2417]"] {
+  color: var(--text) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════
