@@ -862,6 +862,128 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       return { success: true };
     }
 
+    // -------- ADMIN: Group Attendance (mock — backend yok) --------
+    if (path.match(/^\/admin\/groups\/([^/]+)\/attendance/) && method === 'GET') {
+      const groupId = path.split('/')[3];
+      const urlParams = new URL(path, 'http://localhost').searchParams;
+      const date = urlParams.get('date') || new Date().toISOString().slice(0, 10);
+      const storageKey = `mock_attendance_${groupId}`;
+      const allRecords = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const dayRecords = allRecords.filter(r => r.lessonDate === date || r.lesson_date === date);
+      // Guruh student'larini olish
+      const groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
+      const group = groups.find(g => g.id === groupId);
+      const studentCount = group?.studentCount || 0;
+      // Agar bu kun uchun yozuvlar yo'q bo'lsa — avtomatik bo'sh generatsiya
+      if (dayRecords.length === 0 && studentCount > 0) {
+        const students = [];
+        for (let i = 1; i <= studentCount; i++) {
+          students.push({
+            id: `att-${groupId}-${date}-${i}`,
+            groupId,
+            studentId: `st-${i}`,
+            studentName: ['Sardor O\'zbekov', 'Botir Hasanov', 'Dilshod Tursunov', 'Jamshid Karimov', 'Oybek Rustamov', 'Asilbek Normatov', 'Shohruz Alimov', 'Davron Mirzayev', 'Sarvar Abdullayev', 'Nodir Toshmatov', 'Zafar Sobirov', 'Ilhom Yunusov', 'Bekzod Hamroyev', 'Sherzod Ergashev', 'Kamoliddin Raxmatov', 'Akbar Tulkinov', 'Mansur Jumayev', 'Timur Abduraimov', 'Davlatbek Sindarov', 'Otabek Mahkamov'][i - 1] || `O'quvchi ${i}`,
+            lessonDate: date,
+            status: null,
+            comment: null,
+          });
+        }
+        return { data: students };
+      }
+      return { data: dayRecords };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)\/attendance/) && method === 'POST') {
+      const groupId = path.split('/')[3];
+      const storageKey = `mock_attendance_${groupId}`;
+      const allRecords = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      // body.records ni saqlash
+      const newRecords = (body.records || []).map((r, i) => ({
+        id: `att-${groupId}-${body.lessonDate || body.lesson_date}-${r.studentId || i}`,
+        groupId,
+        studentId: r.studentId,
+        studentName: r.studentName || r.studentId,
+        lessonDate: body.lessonDate || body.lesson_date,
+        status: r.status,
+        comment: r.comment || null,
+      }));
+      // Eski yozuvlarni yangilash / qo'shish
+      const otherRecords = allRecords.filter(r => r.lessonDate !== (body.lessonDate || body.lesson_date));
+      localStorage.setItem(storageKey, JSON.stringify([...otherRecords, ...newRecords]));
+      return { data: newRecords };
+    }
+
+    // -------- ADMIN: Group Homework (mock) --------
+    if (path.match(/^\/admin\/groups\/([^/]+)\/homework/) && method === 'GET') {
+      const groupId = path.split('/')[3];
+      const storageKey = `mock_homework_${groupId}`;
+      let hw = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      if (hw.length === 0) {
+        hw = [
+          { id: 'hw-1', groupId, title: 'Flexbox Layout vazifasi', description: 'CSS Flexbox yordamida responsive layout yasang', dueDate: '2026-07-20', status: 'active', submissions: 12, totalStudents: 18, createdAt: '2026-07-14T10:00:00Z' },
+          { id: 'hw-2', groupId, title: 'JavaScript DOM manipulation', description: 'DOM elementlari bilan ishlash', dueDate: '2026-07-15', status: 'completed', submissions: 18, totalStudents: 18, createdAt: '2026-07-10T10:00:00Z' },
+          { id: 'hw-3', groupId, title: 'React Hooks practice', description: 'useState, useEffect, useRef amaliyot', dueDate: '2026-07-25', status: 'active', submissions: 5, totalStudents: 18, createdAt: '2026-07-16T10:00:00Z' },
+        ];
+        localStorage.setItem(storageKey, JSON.stringify(hw));
+      }
+      return { data: hw };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)\/homework/) && method === 'POST') {
+      const groupId = path.split('/')[3];
+      const storageKey = `mock_homework_${groupId}`;
+      const hw = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const newHw = {
+        id: `hw-${Date.now()}`,
+        groupId,
+        title: body.title || 'Yangi vazifa',
+        description: body.description || '',
+        dueDate: body.dueDate || body.due_date || '',
+        status: 'active',
+        submissions: 0,
+        totalStudents: 18,
+        createdAt: new Date().toISOString(),
+      };
+      hw.push(newHw);
+      localStorage.setItem(storageKey, JSON.stringify(hw));
+      return { data: newHw };
+    }
+
+    // -------- ADMIN: Group Feedback (mock) --------
+    if (path.match(/^\/admin\/groups\/([^/]+)\/feedback/) && method === 'GET') {
+      const groupId = path.split('/')[3];
+      const storageKey = `mock_feedback_${groupId}`;
+      let fb = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      if (fb.length === 0) {
+        fb = [
+          { id: 'fb-1', groupId, type: 'student', authorName: 'Sardor O\'zbekov', content: 'Dars juda qiziq, mentor yaxshi tushuntiradi!', rating: 5, createdAt: '2026-07-12T14:00:00Z' },
+          { id: 'fb-2', groupId, type: 'student', authorName: 'Botir Hasanov', content: 'Vazifalar biroz ko\'p, lekin foydali', rating: 4, createdAt: '2026-07-13T10:00:00Z' },
+          { id: 'fb-3', groupId, type: 'teacher', authorName: 'Ilhom Karimov', content: 'Guruh juda faol, davomat yaxshi', rating: 5, createdAt: '2026-07-14T16:00:00Z' },
+          { id: 'fb-4', groupId, type: 'teacher', authorName: 'Ilhom Karimov', content: 'React Hooks ni yaxshiroq tushuntirish kerak', rating: 3, createdAt: '2026-07-15T18:00:00Z' },
+        ];
+        localStorage.setItem(storageKey, JSON.stringify(fb));
+      }
+      return { data: fb };
+    }
+
+    if (path.match(/^\/admin\/groups\/([^/]+)\/feedback/) && method === 'POST') {
+      const groupId = path.split('/')[3];
+      const storageKey = `mock_feedback_${groupId}`;
+      const fb = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const newFb = {
+        id: `fb-${Date.now()}`,
+        groupId,
+        type: body.type || 'student',
+        authorName: body.authorName || body.author_name || 'Anonim',
+        content: body.content || '',
+        rating: body.rating || 5,
+        createdAt: new Date().toISOString(),
+      };
+      fb.push(newFb);
+      localStorage.setItem(storageKey, JSON.stringify(fb));
+      return { data: newFb };
+    }
+
     // -------- ADMIN: Mentors --------
     if (path === '/admin/mentors' && method === 'GET') {
       let mentors = JSON.parse(localStorage.getItem('mock_admin_mentors') || '[]');
