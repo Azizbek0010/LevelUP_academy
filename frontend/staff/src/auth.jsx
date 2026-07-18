@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { api, setOnTokenRefreshed } from './api.js';
 
-const AuthCtx = createContext(null);
+const AuthCtx = createContext({ token: null, user: null, loading: true, login: null, loginWithGoogle: null, logout: null });
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
@@ -59,4 +59,4 @@ export function AuthProvider({ children }) {
   );
 }
 
-export const useAuth = () => useContext(AuthCtx);
+export const useAuth = () => useContext(AuthCtx) ?? { token: null, user: null, loading: false, login: null, loginWithGoogle: null, logout: null };
