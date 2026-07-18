@@ -3,8 +3,8 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, FileQuestion, ClipboardCheck, ArrowLeft, Trash2, Copy } from 'lucide-react';
-import { useLessons, useInvalidate } from '../../queries.js';
+import { Plus, FileQuestion, ClipboardCheck, ArrowLeft, Trash2, Copy, Play } from 'lucide-react';
+import { useLessons, useInvalidate, useTrainingTypes, useTopics } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
@@ -15,6 +15,7 @@ const schema = z.object({
   description: z.string().trim().max(2000).optional(),
   instruction: z.string().trim().max(2000).optional(),
   coinReward: z.coerce.number().int().min(0).default(0),
+  videoUrl: z.string().trim().url('Некорректная ссылка').or(z.literal('')).optional(),
 });
 
 export default function Lessons() {
@@ -27,16 +28,26 @@ export default function Lessons() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
+  const [copyingLesson, setCopyingLesson] = useState(null);
+  const [selectedTypeId, setSelectedTypeId] = useState('');
+  const [selectedTopicId, setSelectedTopicId] = useState('');
+  const [copyBusy, setCopyBusy] = useState(false);
+
+  const { data: ttData } = useTrainingTypes();
+  const trainingTypes = ttData?.data || [];
+  const { data: topicsData } = useTopics(selectedTypeId);
+  const topicsList = topicsData?.data || [];
+
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { title: '', lessonType: 'test', description: '', instruction: '', coinReward: 0 },
+    defaultValues: { title: '', lessonType: 'test', description: '', instruction: '', coinReward: 0, videoUrl: '' },
   });
 
   const lessons = data?.data || [];
   const lessonType = watch('lessonType');
 
   const openCreate = () => {
-    reset({ title: '', lessonType: 'test', description: '', instruction: '', coinReward: 0 });
+    reset({ title: '', lessonType: 'test', description: '', instruction: '', coinReward: 0, videoUrl: '' });
     setErr('');
     setModalOpen(true);
   };
@@ -61,13 +72,21 @@ export default function Lessons() {
     }
   };
 
-  const copyLesson = async (id) => {
+  const handleCopy = async (e) => {
+    e.preventDefault();
+    if (!selectedTopicId) return;
     setErr('');
+    setCopyBusy(true);
     try {
-      await api.methodistCopyLesson(token, id, topicId);
+      await api.methodistCopyLesson(token, copyingLesson.id, selectedTopicId);
       invalidate('lessons', topicId);
+      setCopyingLesson(null);
+      setSelectedTypeId('');
+      setSelectedTopicId('');
     } catch (e) {
       setErr(e.message);
+    } finally {
+      setCopyBusy(false);
     }
   };
 
@@ -124,11 +143,21 @@ export default function Lessons() {
                         </span>
                         <span>{ls.questions_count || 0} вопросов</span>
                         {ls.coin_reward > 0 && <span>+{ls.coin_reward}🪙</span>}
+                        {(ls.video_url || ls.videoUrl) && (
+                          <span className="badge badge-sm badge-info gap-1 text-white">
+                            <Play size={10} /> Видео
+                          </span>
+                        )}
+                        {(ls.file_key || ls.fileKey) && (
+                          <span className="badge badge-sm badge-ghost gap-1">
+                            📎 Файл
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button className="btn btn-ghost btn-square btn-xs" onClick={() => copyLesson(ls.id)} title="Копировать">
+                    <button className="btn btn-ghost btn-square btn-xs" onClick={() => setCopyingLesson(ls)} title="Копировать">
                       <Copy size={14} />
                     </button>
                     <button className="btn btn-ghost btn-square btn-xs" onClick={() => archive(ls.id)} title="Удалить">
@@ -175,6 +204,13 @@ export default function Lessons() {
               </label>
 
               <label className="form-control w-full">
+                <span className="label-text mb-1 font-medium">Видео-урок (YouTube/S3 ссылка)</span>
+                <input type="text" {...register('videoUrl')} placeholder="https://youtube.com/watch?v=..."
+                  className={`input input-bordered w-full ${errors.videoUrl ? 'input-error' : ''}`} />
+                {errors.videoUrl && <span className="text-xs text-error mt-1">{errors.videoUrl.message}</span>}
+              </label>
+
+              <label className="form-control w-full">
                 <span className="label-text mb-1 font-medium">Награда (коины)</span>
                 <input type="number" {...register('coinReward')} className="input input-bordered w-full" />
               </label>
@@ -183,6 +219,43 @@ export default function Lessons() {
                 <button type="button" className="btn btn-ghost" onClick={() => setModalOpen(false)} disabled={busy}>Отмена</button>
                 <button type="submit" className="btn bg-[#C6FF34] text-[#141B10] border-none font-bold" disabled={busy}>
                   {busy ? <span className="loading loading-spinner loading-xs" /> : 'Создать и редактировать'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {copyingLesson && (
+        <div className="modal modal-open">
+          <div className="modal-box border border-[#E6EDD8] shadow-xl bg-white max-w-md">
+            <h3 className="font-bold text-lg">Копировать урок</h3>
+            <p className="text-sm opacity-60 mt-1">«{copyingLesson.title}»</p>
+            <form onSubmit={handleCopy} className="space-y-4 mt-4">
+              <label className="form-control w-full">
+                <span className="label-text mb-1 font-medium">Направление обучения</span>
+                <select value={selectedTypeId} onChange={(e) => { setSelectedTypeId(e.target.value); setSelectedTopicId(''); }} className="select select-bordered w-full" required>
+                  <option value="">Выберите направление...</option>
+                  {trainingTypes.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="form-control w-full">
+                <span className="label-text mb-1 font-medium">Тема-получатель</span>
+                <select value={selectedTopicId} onChange={(e) => setSelectedTopicId(e.target.value)} className="select select-bordered w-full" disabled={!selectedTypeId} required>
+                  <option value="">Выберите тему...</option>
+                  {topicsList.map((tp) => (
+                    <option key={tp.id} value={tp.id}>{tp.name}</option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="modal-action">
+                <button type="button" className="btn btn-ghost" onClick={() => { setCopyingLesson(null); setSelectedTypeId(''); setSelectedTopicId(''); }} disabled={copyBusy}>Отмена</button>
+                <button type="submit" className="btn bg-[#C6FF34] text-[#141B10] border-none font-bold" disabled={copyBusy || !selectedTopicId}>
+                  {copyBusy ? <span className="loading loading-spinner loading-xs" /> : 'Копировать'}
                 </button>
               </div>
             </form>
