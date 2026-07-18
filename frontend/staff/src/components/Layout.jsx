@@ -17,7 +17,7 @@ import {
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { disconnectSocket } from '../socket.js';
-import { useMentorGroups } from '../queries.js';
+import { useMentorGroups, useChatContacts } from '../queries.js';
 
 /* ──────────────────── HOOKS ──────────────────── */
 function useMediaQuery(query) {
@@ -344,6 +344,159 @@ function Sidebar({
   );
 }
 
+/* ──────────────────── УВЕДОМЛЕНИЯ ────────────────────
+   Колокольчик раньше был картинкой: жёстко нарисованная «3» и клик, который
+   ничего не открывал.
+
+   Отдельного API уведомлений в бэкенде нет — есть только очередь рассылки
+   (telegram/email), читать из неё нечего. Поэтому панель показывает то, что
+   действительно существует и требует реакции: непрочитанные сообщения от
+   родителей. Цифра на значке — их настоящее количество, а не константа.
+   Появится таблица notifications — сюда добавится второй источник. */
+function Notifications() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Чат есть только у ментора и админа; у остальных ролей эндпоинт ответит 403.
+  const hasChat = user?.role === 'mentor' || user?.role === 'admin';
+  const { data } = useChatContacts({ enabled: hasChat });
+  const contacts = data?.data ?? [];
+  const unread = contacts.filter((c) => (c.unread_count ?? 0) > 0);
+  const total = unread.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onEsc = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [open]);
+
+  const openChat = (contactId) => {
+    setOpen(false);
+    navigate(`/chat${contactId ? `?with=${contactId}` : ''}`);
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label={total > 0 ? `Bildirishnomalar: ${total} ta yangi` : 'Bildirishnomalar'}
+        aria-expanded={open}
+        className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
+        style={{
+          color: open ? 'var(--green)' : 'var(--text-secondary)',
+          background: open ? 'var(--green-bg)' : 'var(--bg)',
+          border: `1px solid ${open ? 'var(--green)' : 'var(--border)'}`,
+        }}
+      >
+        <Bell size={16} />
+        {total > 0 && (
+          <span
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold tabular-nums"
+            style={{ background: '#dc2626', color: '#fff', border: '2px solid var(--surface)' }}
+          >
+            {total > 9 ? '9+' : total}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Bildirishnomalar"
+          /* На телефоне панель шириной 320px, привязанная к правому краю
+             кнопки, уезжала левым краем за экран (замер: left = -26px).
+             Там она растягивается по ширине окна с отступами, на sm+ —
+             обычный выпадающий список под колокольчиком. */
+          className="fixed sm:absolute left-3 right-3 top-[4.25rem] sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[320px] rounded-xl overflow-hidden animate-scale-in z-50"
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            boxShadow: 'var(--shadow-lg)',
+          }}
+        >
+          <div
+            className="flex items-center justify-between px-4 py-3"
+            style={{ borderBottom: '1px solid var(--border)' }}
+          >
+            <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>
+              Bildirishnomalar
+            </span>
+            {total > 0 && <span className="badge badge-primary badge-sm">{total}</span>}
+          </div>
+
+          <div className="max-h-[320px] overflow-y-auto">
+            {!hasChat || unread.length === 0 ? (
+              <div className="px-4 py-10 text-center">
+                <span
+                  className="w-12 h-12 rounded-2xl grid place-items-center mx-auto mb-3"
+                  style={{ background: 'var(--surface-hover)', color: 'var(--text-muted)' }}
+                >
+                  <Bell size={20} />
+                </span>
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                  Yangi bildirishnoma yo'q
+                </p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                  O'qilmagan xabarlar shu yerda ko'rinadi.
+                </p>
+              </div>
+            ) : (
+              unread.map((c) => {
+                const name = `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim();
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => openChat(c.id)}
+                    className="w-full text-left px-4 py-3 flex items-start gap-3 transition-colors"
+                    style={{ borderBottom: '1px solid var(--border)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-hover)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <span className="w-9 h-9 rounded-full bg-primary/15 text-primary grid place-items-center font-bold text-sm shrink-0">
+                      {(name[0] || '?').toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
+                          {name}
+                        </span>
+                        <span className="badge badge-primary badge-sm shrink-0 tabular-nums">
+                          {c.unread_count}
+                        </span>
+                      </span>
+                      <span className="block text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                        {c.last_message || 'Yangi xabar'}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          {unread.length > 0 && (
+            <button
+              onClick={() => openChat(null)}
+              className="w-full px-4 py-2.5 text-sm font-semibold transition-colors"
+              style={{ color: 'var(--green)', background: 'var(--surface-hover)' }}
+            >
+              Barcha xabarlar
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ──────────────────── HEADER ──────────────────── */
 function Header({ sidebarWidth, onMobileToggle }) {
   const { user, logout } = useAuth();
@@ -393,24 +546,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
           Счётчик онлайна показывал число, на которое ментор всё равно никак
           не реагирует. */}
 
-      {/* Notification bell */}
-      <button
-        className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105"
-        style={{
-          color: 'var(--text-secondary)',
-          background: 'var(--bg)',
-          border: '1px solid var(--border)',
-        }}
-      >
-        <Bell size={16} />
-        {/* Notification dot */}
-        <span
-          className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold"
-          style={{ background: '#ef4444', color: '#fff', border: '2px solid var(--surface)' }}
-        >
-          3
-        </span>
-      </button>
+      <Notifications />
 
       {/* Divider */}
       <div className="w-px h-8 hidden sm:block" style={{ background: 'var(--border)' }} />
@@ -454,12 +590,19 @@ function Header({ sidebarWidth, onMobileToggle }) {
               boxShadow: 'var(--shadow-lg)',
             }}
           >
-            <div className="px-3 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
-              <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{user?.email}</div>
-              <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{ROLE_TITLE[role]}</div>
+            <div className="px-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
+              <div className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
+                {user?.firstName} {user?.lastName}
+              </div>
+              <div className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }}>
+                {user?.email}
+              </div>
+              <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>{ROLE_TITLE[role]}</div>
             </div>
+            {/* Вело на /settings, а такого маршрута у ментора и методиста нет —
+                RoleView молча выкидывал их на дашборд. Профиль есть у всех. */}
             <button
-              onClick={() => { setShowUserMenu(false); navigate('/settings'); }}
+              onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
               style={{ color: 'var(--text-secondary)' }}
               onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-hover)'}

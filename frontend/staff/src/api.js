@@ -1507,6 +1507,36 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       ] };
     }
 
+    // -------- PROFILE --------
+    if (path === '/users/me' && method === 'GET') {
+      const saved = JSON.parse(localStorage.getItem('mock_me') || 'null');
+      return {
+        success: true,
+        data: saved || {
+          id: 'mentor-demo-id',
+          firstName: 'Demo',
+          lastName: 'Mentor',
+          email: 'mentor.demo@levelup.local',
+          phone: '+998 90 123 45 67',
+          role: 'mentor',
+          branchName: 'Chilonzor filiali',
+          createdAt: '2026-02-01T09:00:00Z',
+        },
+      };
+    }
+
+    if (path === '/users/me' && method === 'PATCH') {
+      const current = JSON.parse(localStorage.getItem('mock_me') || 'null') || {
+        id: 'mentor-demo-id', firstName: 'Demo', lastName: 'Mentor',
+        email: 'mentor.demo@levelup.local', phone: '+998 90 123 45 67',
+        role: 'mentor', branchName: 'Chilonzor filiali',
+        createdAt: '2026-02-01T09:00:00Z',
+      };
+      const next = { ...current, ...body };
+      localStorage.setItem('mock_me', JSON.stringify(next));
+      return { success: true, data: next };
+    }
+
     /* -------- MENTOR: Davomat --------
        Моков не было вовсе: журнал открывался пустым, а автосохранение при
        каждом клике падало с ошибкой — проверить страницу без поднятого
@@ -1672,6 +1702,13 @@ async function request(path, opts = {}) {
 export const api = {
   // -------- GENERIC METHOD (used by Chat.jsx) --------
   get: (path, config = {}) => request(path, { method: 'GET', token: config.token }).then((data) => ({ data })),
+
+  // -------- PROFILE (любая роль) --------
+  // Бэкенд: GET/PATCH /api/users/me. PATCH принимает только firstName,
+  // lastName, email, avatarKey — смены пароля в кабинете у API нет,
+  // пароль меняется через forgot-password с кодом на почту.
+  me: (token) => request('/users/me', { token }),
+  updateMe: (token, body) => request('/users/me', { method: 'PATCH', token, body }),
 
   // -------- MENTOR: Groups --------
   mentorGroups: (token) => request('/mentor/groups', { token }),

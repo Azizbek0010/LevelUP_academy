@@ -183,10 +183,18 @@ export function useMentorTestResults(testId) {
   });
 }
 
-// -------- CHAT --------
-export function useChatContacts() {
+// -------- PROFILE --------
+export function useMe() {
   const { token } = useAuth();
-  return useAuthedQuery(['chat-contacts'], () => api.chatContacts(token));
+  return useAuthedQuery(['me'], () => api.me(token));
+}
+
+// -------- CHAT --------
+// options нужен вызову из шапки: у методиста и супер-админа чата нет, и
+// запрашивать контакты за них — гарантированный 403 в консоли на каждой странице.
+export function useChatContacts(options = {}) {
+  const { token } = useAuth();
+  return useAuthedQuery(['chat-contacts'], () => api.chatContacts(token), options);
 }
 
 export function useChatHistory(roomKey) {
