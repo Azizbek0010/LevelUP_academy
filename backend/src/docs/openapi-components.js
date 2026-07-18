@@ -55,6 +55,14 @@ export const components = {
       description: 'zod validation failed (body/params/query)',
       content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } },
     },
+    NotFound: {
+      description: 'Resource not found (or not in caller\'s organization/scope)',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+    },
+    Conflict: {
+      description: 'Conflict with current state (e.g. already fired / not fired)',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+    },
   },
 
   schemas: {
@@ -1183,6 +1191,76 @@ export const components = {
         lastName: { type: 'string', maxLength: 80 },
         email: { type: 'string', format: 'email', maxLength: 160 },
         avatarKey: { type: 'string', maxLength: 512 },
+      },
+    },
+
+    // ---------- Methodist lesson media ----------
+    LessonUploadUrl: {
+      type: 'object',
+      description: 'Presigned S3 PUT для вложения практического задания урока',
+      properties: {
+        uploadUrl: { type: 'string', description: 'Presigned S3 PUT url (клиент грузит файл сюда)' },
+        fileKey: { type: 'string', description: 'Ключ объекта; сохранить в урок через PATCH /lessons/:id { fileKey }' },
+      },
+    },
+
+    // ---------- Discipline (штрафы + устав) ----------
+    IssuePenaltyRequest: {
+      type: 'object',
+      required: ['targetUserId', 'type', 'reason'],
+      properties: {
+        targetUserId: { type: 'string', format: 'uuid', description: 'Сотрудник: admin / mentor / methodist' },
+        type: { type: 'string', enum: ['shtraf', 'qora'], description: 'shtraf = штраф; qora = увольнение' },
+        amount: { type: 'number', minimum: 0, description: 'Сумма в сумах — обязательна для shtraf, не задаётся для qora (без автосписания)' },
+        reason: { type: 'string', maxLength: 2000 },
+      },
+    },
+    Penalty: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        type: { type: 'string', enum: ['shtraf', 'qora'] },
+        amount: { type: 'number', nullable: true, description: 'null для qora' },
+        reason: { type: 'string' },
+        created_at: { type: 'string', format: 'date-time' },
+        target_user_id: { type: 'string', format: 'uuid' },
+        target_role: { type: 'string', enum: ['admin', 'mentor', 'methodist'] },
+        target_name: { type: 'string' },
+        issued_by: { type: 'string', format: 'uuid' },
+        issuer_role: { type: 'string', enum: ['superadmin', 'admin'] },
+        issued_by_name: { type: 'string' },
+      },
+    },
+    IssuePenaltyResponse: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            penalty: { $ref: '#/components/schemas/Penalty' },
+            fired: { type: 'boolean', description: 'true если это qora (сотрудник уволен, status=fired)' },
+          },
+        },
+      },
+    },
+    Charter: {
+      type: 'object',
+      description: 'Устав организации — свободный текст правил, один на организацию',
+      properties: {
+        organization_id: { type: 'string', format: 'uuid' },
+        title: { type: 'string' },
+        content: { type: 'string' },
+        updated_by: { type: 'string', format: 'uuid', nullable: true },
+        updated_at: { type: 'string', format: 'date-time', nullable: true },
+      },
+    },
+    UpsertCharterRequest: {
+      type: 'object',
+      required: ['content'],
+      properties: {
+        title: { type: 'string', maxLength: 200 },
+        content: { type: 'string', maxLength: 20000 },
       },
     },
   },

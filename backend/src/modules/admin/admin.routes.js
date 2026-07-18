@@ -839,8 +839,72 @@ router.delete('/groups/:id/students/:studentId', validate({ params: groupStudent
 router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
 
 // ==================== ДИСЦИПЛИНА ====================
-// Admin видит устав (только чтение) и выдаёт штрафы: mentor+methodist (shtraf),
-// mentor (qora). Права проверяются в discipline.service.
+
+/**
+ * @openapi
+ * /api/admin/charter:
+ *   get:
+ *     tags: [Discipline]
+ *     summary: View organization charter (read-only for Admin)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Charter
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Charter' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ * /api/admin/penalties:
+ *   get:
+ *     tags: [Discipline]
+ *     summary: List penalties issued by this admin
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: targetUserId
+ *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: type
+ *         schema: { type: string, enum: [shtraf, qora] }
+ *     responses:
+ *       200:
+ *         description: Penalty list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { type: array, items: { $ref: '#/components/schemas/Penalty' } }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *   post:
+ *     tags: [Discipline]
+ *     summary: Issue penalty — Admin → mentor/methodist (shtraf), mentor (qora)
+ *     description: Ментор только своего филиала. Права проверяются в discipline.service.
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/IssuePenaltyRequest' }
+ *     responses:
+ *       201:
+ *         description: Penalty created
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/IssuePenaltyResponse' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
 router.get('/charter', discipline.getCharter);
 router.get('/penalties', validate({ query: listPenaltiesQuery }), discipline.listPenalties);
 router.post('/penalties', validate({ body: issuePenaltySchema }), discipline.issuePenalty);
