@@ -5,9 +5,106 @@ import {
   Check, X, Clock, AlertTriangle, TrendingUp, UserX,
 } from 'lucide-react';
 
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
 import { useMentorStudentStats } from '../../queries.js';
 import Avatar from '../../components/Avatar.jsx';
 import { EmptyState } from './_ui.jsx';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
+
+/* Цвета серий взяты из валидированной категориальной палитры и проверены
+   скриптом на нашей белой подложке: все три проходят полосу светлоты, порог
+   цветности, разделение при дальтонизме и контраст ≥3:1.
+   Порядок здесь — не украшение: сочетание зелёный+оранжевый рядом провалило
+   проверку на протанопию (ΔE 3.2), между ними обязан стоять синий. */
+const SERIES = [
+  { key: 'attendanceRate', label: 'Davomat', color: '#008300' },
+  { key: 'homeworkAvg', label: 'Uy vazifasi', color: '#2a78d6' },
+  { key: 'testAvg', label: 'Testlar', color: '#eb6834' },
+];
+
+const MONTH_SHORT = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
+
+function TrendChart({ trend }) {
+  const labels = trend.map((t) => {
+    const [, m] = t.month.split('-');
+    return MONTH_SHORT[Number(m) - 1] ?? t.month;
+  });
+
+  const data = {
+    labels,
+    datasets: SERIES.map((s) => ({
+      label: s.label,
+      data: trend.map((t) => t[s.key]),
+      borderColor: s.color,
+      backgroundColor: s.color,
+      borderWidth: 2,          // тонкая линия: данные, а не декорация
+      pointRadius: 4,          // 8px в диаметре — минимальная попадаемая точка
+      pointHoverRadius: 6,
+      pointBackgroundColor: '#ffffff',
+      pointBorderWidth: 2,
+      tension: 0.3,
+      spanGaps: false,         // месяц без данных рвёт линию, а не обнуляет её
+    })),
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },   // наведение на месяц, а не на точку
+    scales: {
+      // Одна ось: все три серии в процентах, второй шкале взяться неоткуда
+      y: {
+        min: 0,
+        max: 100,
+        ticks: { stepSize: 25, color: '#7d8c73', font: { size: 11 }, callback: (v) => `${v}%` },
+        grid: { color: 'rgba(29,36,23,0.06)' },   // сетка отступает на задний план
+        border: { display: false },
+      },
+      x: {
+        // offset даёт поля по краям: без него крайние точки садятся прямо на
+        // рамку и выглядят обрезанными, особенно когда соседний месяц пустой
+        // и точка остаётся стоять одна.
+        offset: true,
+        ticks: { color: '#7d8c73', font: { size: 11 } },
+        grid: { display: false },
+        border: { color: '#dce5d4' },
+      },
+    },
+    plugins: {
+      legend: {
+        position: 'top',
+        align: 'end',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 8,
+          padding: 16,
+          color: '#5c6b53',        // подписи — текстовым цветом, не цветом серии
+          font: { size: 12 },
+        },
+      },
+      tooltip: {
+        backgroundColor: '#1D2417',
+        padding: 10,
+        cornerRadius: 8,
+        titleFont: { size: 12 },
+        bodyFont: { size: 12 },
+        displayColors: true,
+        usePointStyle: true,
+        callbacks: {
+          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y === null ? "ma'lumot yo'q" : `${ctx.parsed.y}%`}`,
+        },
+      },
+    },
+  };
+
+  return <Line data={data} options={options} />;
+}
 
 /**
  * Карточка ученика для ментора: посещаемость, домашние задания, тесты, коины.
@@ -131,7 +228,10 @@ export default function MentorStudentDetail() {
     );
   }
 
-  const { student, groups, attendance, recentAttendance, homework, tests, coins } = stats;
+  const { student, groups, attendance, recentAttendance, homework, tests, coins, trend } = stats;
+  const hasTrend = (trend ?? []).some(
+    (t) => t.attendanceRate !== null || t.homeworkAvg !== null || t.testAvg !== null,
+  );
   const fullName = `${student.firstName} ${student.lastName}`.trim();
 
   const hwFiltered = hwFilter === 'all'
@@ -228,6 +328,22 @@ export default function MentorStudentDetail() {
             <span className="text-base-content/60"> — quyida ro'yxati bor</span>
           </span>
         </div>
+      )}
+
+      {/* ═════ Динамика ═════
+          Метрики выше отвечают «как сейчас», график — «куда движется».
+          Одно без другого врёт: 75% могут быть падением с 95% или подъёмом с 50%. */}
+      {hasTrend && (
+        <Panel title="Dinamika — oxirgi 6 oy" icon={TrendingUp}>
+          <div className="p-4">
+            <div className="h-[260px]">
+              <TrendChart trend={trend} />
+            </div>
+            <p className="text-[11px] text-base-content/40 mt-3">
+              Chiziq uzilgan joyda — o'sha oyda ma'lumot yo'q (dars yoki topshiriq bo'lmagan).
+            </p>
+          </div>
+        </Panel>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">

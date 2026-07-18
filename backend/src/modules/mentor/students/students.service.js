@@ -29,7 +29,10 @@ export async function getStudentStats(studentId, mentorId) {
   // понимать, есть такой в системе или нет.
   if (!student) throw new AppError(404, 'Student not found');
 
-  const [groups, attRows, recentAtt, hwRows, testRows, coins, coinLog] = await Promise.all([
+  const [
+    groups, attRows, recentAtt, hwRows, testRows, coins, coinLog,
+    attMonths, hwMonths, testMonths,
+  ] = await Promise.all([
     repo.listStudentGroups(studentId, mentorId),
     repo.attendanceSummary(studentId, mentorId),
     repo.recentAttendance(studentId, mentorId),
@@ -37,6 +40,9 @@ export async function getStudentStats(studentId, mentorId) {
     repo.testsBreakdown(studentId, mentorId),
     repo.coinsSummary(studentId),
     repo.recentCoins(studentId),
+    repo.attendanceByMonth(studentId, mentorId),
+    repo.homeworkByMonth(studentId, mentorId),
+    repo.testsByMonth(studentId, mentorId),
   ]);
 
   // ---- посещаемость ----
@@ -79,7 +85,32 @@ export async function getStudentStats(studentId, mentorId) {
     ? Math.round(takenTests.reduce((s, t) => s + (t.percent ?? 0), 0) / takenTests.length)
     : null;
 
+  /* ---- динамика ----
+     Собираем непрерывный ряд из шести месяцев, а не только из тех, где есть
+     данные: пропуск месяца на графике должен читаться как провал, а не
+     схлопываться, будто его не было. Отсутствие данных — null, и линия в этой
+     точке рвётся, что честнее нуля (ноль означал бы «ноль процентов»). */
+  const months = [];
+  const cursor = new Date();
+  cursor.setDate(1);
+  cursor.setMonth(cursor.getMonth() - 5);
+  for (let i = 0; i < 6; i += 1) {
+    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+    const att = attMonths.find((r) => r.month === key);
+    const hw = hwMonths.find((r) => r.month === key);
+    const tst = testMonths.find((r) => r.month === key);
+    months.push({
+      month: key,
+      attendanceRate: att ? pct(att.attended, att.total) : null,
+      homeworkAvg: hw ? hw.avg_percent : null,
+      testAvg: tst ? tst.avg_percent : null,
+      lessons: att ? att.total : 0,
+    });
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
   return {
+    trend: months,
     student: {
       id: student.id,
       firstName: student.first_name,

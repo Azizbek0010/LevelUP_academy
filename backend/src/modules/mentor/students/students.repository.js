@@ -114,6 +114,71 @@ export function testsBreakdown(studentId, mentorId, client = pool) {
     .then((r) => r.rows);
 }
 
+/* ── Динамика по месяцам ──────────────────────────────────────────────────
+   Три отдельных запроса, а не один с FULL JOIN: у посещаемости, домашек и
+   тестов свои даты и свои условия отбора, и склеивать их в SQL пришлось бы
+   через подзапросы, которые читаются хуже, чем три простых GROUP BY.
+   Сшиваются по ключу месяца в сервисе. */
+
+const MONTHS_BACK = "date_trunc('month', now()) - interval '5 months'";
+
+export function attendanceByMonth(studentId, mentorId, client = pool) {
+  return client
+    .query(
+      `SELECT to_char(date_trunc('month', a.lesson_date), 'YYYY-MM') AS month,
+              count(*) FILTER (WHERE a.status IN ('present', 'late'))::int AS attended,
+              count(*)::int AS total
+         FROM attendance a
+         JOIN groups g ON g.id = a.group_id
+        WHERE a.student_id = $1 AND g.mentor_id = $2 AND g.deleted_at IS NULL
+          AND a.lesson_date >= ${MONTHS_BACK}
+        GROUP BY 1 ORDER BY 1`,
+      [studentId, mentorId],
+    )
+    .then((r) => r.rows);
+}
+
+/** Средний процент за ДЗ по месяцам — только оценённые работы. */
+export function homeworkByMonth(studentId, mentorId, client = pool) {
+  return client
+    .query(
+      `SELECT to_char(date_trunc('month', h.deadline), 'YYYY-MM') AS month,
+              round(avg(s.score::numeric / nullif(h.max_score, 0) * 100))::int AS avg_percent,
+              count(*)::int AS graded
+         FROM homework h
+         JOIN groups g          ON g.id = h.group_id AND g.mentor_id = $2
+         JOIN group_students gs ON gs.group_id = g.id
+                               AND gs.student_id = $1 AND gs.left_at IS NULL
+         JOIN homework_submissions s ON s.homework_id = h.id AND s.student_id = $1
+        WHERE h.deleted_at IS NULL AND g.deleted_at IS NULL AND s.score IS NOT NULL
+          AND h.deadline >= ${MONTHS_BACK}
+        GROUP BY 1 ORDER BY 1`,
+      [studentId, mentorId],
+    )
+    .then((r) => r.rows);
+}
+
+/** Средний процент за тесты по месяцам — только завершённые попытки. */
+export function testsByMonth(studentId, mentorId, client = pool) {
+  return client
+    .query(
+      `SELECT to_char(date_trunc('month', r.finished_at), 'YYYY-MM') AS month,
+              round(avg(r.score::numeric
+                        / nullif(jsonb_array_length(t.questions), 0) * 100))::int AS avg_percent,
+              count(*)::int AS taken
+         FROM test_results r
+         JOIN tests t           ON t.id = r.test_id AND t.deleted_at IS NULL
+         JOIN groups g          ON g.id = t.group_id AND g.mentor_id = $2
+         JOIN group_students gs ON gs.group_id = g.id
+                               AND gs.student_id = $1 AND gs.left_at IS NULL
+        WHERE r.student_id = $1 AND r.finished_at IS NOT NULL AND g.deleted_at IS NULL
+          AND r.finished_at >= ${MONTHS_BACK}
+        GROUP BY 1 ORDER BY 1`,
+      [studentId, mentorId],
+    )
+    .then((r) => r.rows);
+}
+
 /** Коины: сводка начислений/списаний и последние операции. */
 export function coinsSummary(studentId, client = pool) {
   return client

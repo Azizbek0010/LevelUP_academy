@@ -142,7 +142,27 @@ function mockStudentStats(studentId) {
   const taken = tests.filter((t) => t.finishedAt);
 
   const round = (v) => Math.round(v);
+
+  // Динамика за 6 месяцев. Один месяц намеренно без данных — чтобы было видно,
+  // что линия в пропуске рвётся, а не падает в ноль.
+  const trend = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - (5 - i));
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const wave = (k) => 55 + ((n * 7 + i * 13 + k) % 40);
+    const empty = i === 1;
+    return {
+      month: key,
+      attendanceRate: empty ? null : Math.min(100, wave(0)),
+      homeworkAvg: empty ? null : Math.min(100, wave(9)),
+      testAvg: empty || i === 2 ? null : Math.min(100, wave(21)),
+      lessons: empty ? 0 : 6 + (i % 3),
+    };
+  });
+
   return {
+    trend,
     student: {
       id: studentId,
       firstName: base.firstName,
