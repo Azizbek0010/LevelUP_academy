@@ -3,6 +3,7 @@ import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
 import * as ctrl from './users.controller.js';
+import * as discipline from '../discipline/discipline.controller.js';
 import { idParamSchema, listUsersQuerySchema, updateProfileSchema } from './users.schemas.js';
 
 const router = Router();
@@ -61,6 +62,11 @@ router.use(authenticate);
  */
 router.get('/me', ctrl.getMe);
 router.patch('/me', validate({ body: updateProfileSchema }), ctrl.updateMe);
+
+// Своя дисциплина: сотрудник (admin/mentor/methodist) видит устав + свои штрафы.
+// authorize(...) без ctrl-роутов просто ставит req.scope и режет доступ до staff.
+router.get('/me/penalties', authorize('admin', 'mentor', 'methodist'), discipline.myPenalties);
+router.get('/me/charter', authorize('admin', 'mentor', 'methodist'), discipline.getCharter);
 
 /**
  * @openapi

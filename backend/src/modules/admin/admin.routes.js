@@ -21,6 +21,8 @@ import {
   createAnnouncementSchema,
 } from './admin.schemas.js';
 import * as ctrl from './admin.controller.js';
+import * as discipline from '../discipline/discipline.controller.js';
+import { issuePenaltySchema, listPenaltiesQuery } from '../discipline/discipline.schemas.js';
 import paymentsRoutes from './payments/payments.routes.js';
 import reportsRoutes from './reports/reports.routes.js';
 
@@ -835,5 +837,12 @@ router.delete('/groups/:id/students/:studentId', validate({ params: groupStudent
 
 // объявления (для Telegram-бота — рассылка родителям/студентам филиала или группы)
 router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
+
+// ==================== ДИСЦИПЛИНА ====================
+// Admin видит устав (только чтение) и выдаёт штрафы: mentor+methodist (shtraf),
+// mentor (qora). Права проверяются в discipline.service.
+router.get('/charter', discipline.getCharter);
+router.get('/penalties', validate({ query: listPenaltiesQuery }), discipline.listPenalties);
+router.post('/penalties', validate({ body: issuePenaltySchema }), discipline.issuePenalty);
 
 export default router;

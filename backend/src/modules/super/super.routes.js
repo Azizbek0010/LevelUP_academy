@@ -15,6 +15,12 @@ import {
   updateOrganizationSchema,
 } from './super.schemas.js';
 import * as ctrl from './super.controller.js';
+import * as discipline from '../discipline/discipline.controller.js';
+import {
+  issuePenaltySchema,
+  upsertCharterSchema,
+  listPenaltiesQuery,
+} from '../discipline/discipline.schemas.js';
 
 const router = Router();
 
@@ -526,5 +532,17 @@ router.patch('/methodists/:id', validate({ params: idParam, body: updateMethodis
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.patch('/methodists/:id/freeze', validate({ params: idParam, body: freezeMethodistSchema }), ctrl.freezeMethodist);
+
+// ==================== ДИСЦИПЛИНА (устав + штрафы/qora) ====================
+// Устав — свободный текст правил, один на организацию, виден всем сотрудникам.
+router.get('/charter', discipline.getCharter);
+router.put('/charter', validate({ body: upsertCharterSchema }), discipline.upsertCharter);
+
+// Штрафы/qora: Super Admin → admin, mentor, methodist (shtraf и qora).
+router.get('/penalties', validate({ query: listPenaltiesQuery }), discipline.listPenalties);
+router.post('/penalties', validate({ body: issuePenaltySchema }), discipline.issuePenalty);
+
+// Вернуть уволенного (снять qora → active).
+router.post('/staff/:id/reactivate', validate({ params: idParam }), discipline.reactivateStaff);
 
 export default router;
