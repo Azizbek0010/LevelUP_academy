@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Search, Send, ChevronLeft, MessageSquare, Lock, ShieldCheck, WifiOff } from 'lucide-react';
+import { Search, Send, ChevronLeft, MessageSquare, Lock, WifiOff } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import PageHeader from '../../components/PageHeader.jsx';
 import { useAuth } from '../../auth.jsx';
 import { api, USING_MOCKS } from '../../api.js';
 import { getSocket } from '../../socket.js';
@@ -207,39 +206,20 @@ export default function MentorChat() {
   const totalUnread = contacts.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
 
   return (
-    // Маршрут /chat в Layout помечен как full-page (FULL_PAGE_ROUTES), поэтому
-    // контейнер не даёт ни отступов, ни max-width — это сделано под админский
-    // чат во всю ширину. Наша страница выглядит как обычная (заголовок + карточка),
-    // из-за чего карточка прилипала к сайдбару слева и к краю окна справа.
-    // Повторяем здесь те же отступы, что Layout даёт обычным страницам.
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-      <PageHeader
-        title="Xabarlar"
-        subtitle="O'quvchilarning ota-onalari bilan shaxsiy yozishmalar"
-      />
-
-      {/* Приватность — не украшение: сотрудник должен понимать, кто это видит */}
-      <div className="alert bg-success/10 border border-success/25 text-success mb-4 py-2.5">
-        <ShieldCheck size={16} className="shrink-0" />
-        <span className="text-xs">
-          Yozishmalar shaxsiy: faqat siz va ota-ona ko'radi. Boshqa xodimlar, jumladan admin, ko'ra olmaydi.
-        </span>
-      </div>
-
+    // Маршрут /chat помечен в Layout как full-page (FULL_PAGE_ROUTES): контейнер
+    // отдаёт всю область под верхней панелью и сам задаёт высоту. Поэтому нет ни
+    // заголовка страницы, ни отступов — мессенджер занимает экран целиком.
+    // Про приватность сообщает замок «Shaxsiy» в шапке диалога.
+    <div className="flex-1 min-h-0 flex flex-col bg-base-100">
       {!USING_MOCKS && !connected && (
-        <div className="alert bg-warning/10 border border-warning/25 text-warning mb-4 py-2.5">
-          <WifiOff size={16} className="shrink-0" />
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-warning/10 border-b border-warning/25 text-warning shrink-0">
+          <WifiOff size={14} className="shrink-0" />
           <span className="text-xs">Aloqa uzildi — qayta ulanmoqda...</span>
         </div>
       )}
 
-      <div className="card bg-base-100 overflow-hidden">
-        {/* Высота подобрана так, чтобы поле ввода помещалось на коротких экранах
-            (ноутбук 1366×768 при масштабе Windows 125% даёт ~600px по высоте).
-            Прежние 19rem запаса и min-h 26rem вместе перекрывали видимую область,
-            и футер с полем ввода оказывался ниже сгиба — выглядело так, будто
-            писать негде. dvh вместо vh — из-за адресной строки на мобильных. */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 h-[calc(100dvh-17rem)] min-h-[20rem]">
+      <div className="flex-1 min-h-0">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 h-full">
 
           {/* ---------- Список собеседников ---------- */}
           <aside
