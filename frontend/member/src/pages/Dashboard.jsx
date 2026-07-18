@@ -4,13 +4,14 @@ import { fmt, money, dateShort, timeAgo, ATTENDANCE_STATUS } from '../format.js'
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressRing, StatCard } from '../components/ui.jsx';
+import Icon from '../components/Icons.jsx';
 
 export default function Dashboard() {
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
 
   if (!selectedChild) {
-    return <EmptyState icon="👶" title="Выберите ребёнка" message="Добавьте ребёнка в профиль для просмотра данных" />;
+    return <EmptyState icon="user-circle" title="Выберите ребёнка" message="Добавьте ребёнка в профиль для просмотра данных" />;
   }
 
   if (isLoading) {
@@ -30,8 +31,6 @@ export default function Dashboard() {
   const att = d.attendance?.summary || {};
   const attTotal = att.total || 1;
   const attPct = Math.round(((att.present || 0) / attTotal) * 100);
-  const absentPct = Math.round(((att.absent || 0) / attTotal) * 100);
-  const latePct = Math.round(((att.late || 0) / attTotal) * 100);
 
   const allGrades = [
     ...(d.grades?.homework || []).map((g) => ({ ...g, type: 'hw' })),
@@ -49,19 +48,23 @@ export default function Dashboard() {
     <>
       <PageHeader title={`Обзор — ${d.child.firstName}`} subtitle="Информация об ученике" />
 
-      <div className="card bg-gradient-to-br from-sidebar to-[#1a2e12] text-white mb-6 overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-        <div className="card-body relative">
-          <div className="flex items-center gap-4">
+      <div className="card bg-gradient-to-br from-sidebar via-[#1a2e12] to-[#0f1a0a] text-white mb-6 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/8 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/5 rounded-full translate-y-1/3 -translate-x-1/4 blur-xl" />
+        <div className="card-body relative z-10">
+          <div className="flex items-center gap-5">
             <div className="relative">
-              <ProgressRing value={attPct} size={72} stroke={5} color="#C6FF34" bg="rgba(255,255,255,.15)" />
-              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">{attPct}%</span>
+              <ProgressRing value={attPct} size={76} stroke={5} color="#C6FF34" bg="rgba(255,255,255,.12)" />
+              <span className="absolute inset-0 flex items-center justify-center text-base font-bold">{attPct}%</span>
             </div>
-            <div>
+            <div className="flex-1">
               <h2 className="text-xl font-extrabold">{d.child.firstName} {d.child.lastName}</h2>
-              <p className="text-sm opacity-60 mt-0.5">
-                {d.groups?.length || 0} групп · Рейтинг {d.rank?.rank ? `#${d.rank.rank}` : '—'}
+              <p className="text-sm opacity-50 mt-1 flex items-center gap-2">
+                <Icon name="academic" className="w-4 h-4" />
+                {d.groups?.length || 0} групп
+                <span className="opacity-30">·</span>
+                <Icon name="trophy" className="w-4 h-4" />
+                Рейтинг {d.rank?.rank ? `#${d.rank.rank}` : '—'}
               </p>
             </div>
           </div>
@@ -69,22 +72,25 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <StatCard icon="🪙" label="Коины" value={fmt(d.coins)} color="#C6FF34" sub="Заработанные баллы" />
+        <StatCard icon="star" label="Коины" value={fmt(d.coins)} color="#C6FF34" sub="Заработанные баллы" />
         <StatCard
-          icon="💰"
+          icon="wallet"
           label="Долг"
           value={money(d.totalDebt)}
           color={Number(d.totalDebt) > 0 ? '#ef4444' : '#22c55e'}
           sub={Number(d.totalDebt) > 0 ? 'Требуется оплата' : 'Нет задолженности'}
         />
-        <StatCard icon="🏆" label="Рейтинг" value={d.rank?.rank ? `#${d.rank.rank}` : '—'} color="#f59e0b" sub="Среди одногруппников" />
-        <StatCard icon="📊" label="Посещаемость" value={`${attPct}%`} color="#3b82f6" sub={`${att.present || 0} из ${attTotal}`} />
+        <StatCard icon="trophy" label="Рейтинг" value={d.rank?.rank ? `#${d.rank.rank}` : '—'} color="#f59e0b" sub="Среди одногруппников" />
+        <StatCard icon="chart-bar" label="Посещаемость" value={`${attPct}%`} color="#3b82f6" sub={`${att.present || 0} из ${attTotal}`} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4 mb-6">
         <div className="card bg-base-100">
           <div className="card-body">
-            <h3 className="card-title text-sm">Посещаемость (30 дней)</h3>
+            <h3 className="card-title text-sm gap-2">
+              <Icon name="calendar-check" className="w-4 h-4 text-primary" />
+              Посещаемость (30 дней)
+            </h3>
             <div className="flex items-center gap-6 mt-3">
               <div className="relative">
                 <ProgressRing value={attPct} size={100} stroke={8} />
@@ -103,7 +109,7 @@ export default function Dashboard() {
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ background: st?.color }} />
                       <span className="text-xs w-20 shrink-0">{st?.label}</span>
                       <div className="flex-1 h-1.5 bg-base-200 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: st?.color }} />
+                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: st?.color }} />
                       </div>
                       <span className="text-[11px] font-mono w-6 text-right opacity-50">{count}</span>
                     </div>
@@ -116,25 +122,31 @@ export default function Dashboard() {
 
         <div className="card bg-base-100">
           <div className="card-body">
-            <h3 className="card-title text-sm">Группы</h3>
+            <h3 className="card-title text-sm gap-2">
+              <Icon name="academic" className="w-4 h-4 text-primary" />
+              Группы
+            </h3>
             {d.groups?.length === 0 ? (
-              <EmptyState icon="📚" title="Нет групп" message="Ещё не записан" />
+              <EmptyState icon="folder" title="Нет групп" message="Ещё не записан" />
             ) : (
               <div className="space-y-2 mt-2">
                 {d.groups?.map((g, i) => {
                   const colors = ['#C6FF34', '#3b82f6', '#a855f7', '#f59e0b'];
                   const c = colors[i % colors.length];
                   return (
-                    <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl bg-base-200/40 hover:bg-base-200 transition-colors">
+                    <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl bg-base-200/40 hover:bg-base-200 transition-all duration-200 group">
                       <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
-                        style={{ background: `${c}18`, color: c }}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-transform group-hover:scale-105"
+                        style={{ background: `${c}15`, color: c }}
                       >
                         {g.subject?.slice(0, 2) || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate">{g.name}</p>
-                        <p className="text-xs opacity-40">{g.mentorName}</p>
+                        <p className="text-xs opacity-40 flex items-center gap-1">
+                          <Icon name="user" className="w-3 h-3" />
+                          {g.mentorName}
+                        </p>
                       </div>
                       <span className="text-[11px] opacity-30 font-mono">{g.subject}</span>
                     </div>
@@ -148,9 +160,12 @@ export default function Dashboard() {
 
       <div className="card bg-base-100 mb-6">
         <div className="card-body">
-          <h3 className="card-title text-sm">Последние занятия</h3>
+          <h3 className="card-title text-sm gap-2">
+            <Icon name="clock" className="w-4 h-4 text-primary" />
+            Последние занятия
+          </h3>
           {d.attendance?.recent?.length === 0 ? (
-            <EmptyState icon="📅" title="Нет записей" />
+            <EmptyState icon="calendar" title="Нет записей" />
           ) : (
             <div className="mt-3 space-y-1">
               {d.attendance?.recent?.map((r, i) => {
@@ -163,7 +178,7 @@ export default function Dashboard() {
                     </div>
                     <span className="text-xs opacity-40">{dateShort(r.lessonDate)}</span>
                     <span
-                      className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                      className="text-[11px] px-2.5 py-1 rounded-full font-medium"
                       style={{ background: st?.bg, color: st?.color }}
                     >
                       {st?.label}
@@ -179,13 +194,16 @@ export default function Dashboard() {
       <div className="card bg-base-100">
         <div className="card-body">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="card-title text-sm">Последние оценки</h3>
+            <h3 className="card-title text-sm gap-2">
+              <Icon name="document-text" className="w-4 h-4 text-primary" />
+              Последние оценки
+            </h3>
             {allGrades.length > 0 && (
               <span className="text-xs opacity-40">Средний: <span className="font-bold opacity-100">{avgScore}%</span></span>
             )}
           </div>
           {allGrades.length === 0 ? (
-            <EmptyState icon="📝" title="Нет оценок" />
+            <EmptyState icon="document-text" title="Нет оценок" />
           ) : (
             <div className="overflow-x-auto">
               <table className="table table-sm">
@@ -202,7 +220,7 @@ export default function Dashboard() {
                     const pct = g.maxScore > 0 ? Math.round((g.score / g.maxScore) * 100) : 0;
                     const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
                     return (
-                      <tr key={i} className="hover:bg-base-200/50">
+                      <tr key={i} className="hover:bg-base-200/50 transition-colors">
                         <td className="text-sm font-medium">{g.title}</td>
                         <td>
                           <span
@@ -218,7 +236,7 @@ export default function Dashboard() {
                         <td>
                           <div className="flex items-center gap-2">
                             <div className="w-12 h-1.5 bg-base-200 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: color }} />
                             </div>
                             <span className="text-xs font-mono" style={{ color }}>{g.score}/{g.maxScore}</span>
                           </div>
