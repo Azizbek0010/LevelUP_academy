@@ -6,7 +6,7 @@ import { logger } from '../config/logger.js';
  * Единственная точка отправки уведомлений из HTTP-кода:
  *   await notificationQueue.add('payment.received', { studentId, amount, ... })
  *
- * Job names: payment.received | payment.due_soon | debt.overdue | coins.changed | homework.due | announcement.created
+ * Job names: payment.received | payment.due | payment.due_soon | payment.refunded | debt.overdue | coins.changed | homework.due | announcement.created
  * Никаких прямых вызовов Telegram/SMTP/SMS из контроллеров (исключение: auth OTP).
  */
 export const notificationQueue = new Queue('notifications', {

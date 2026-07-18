@@ -98,4 +98,3 @@ async function replyDuplicateBinding({ pool, ctx, userId, chatId, messages: t })
 
   await ctx.reply(t.alreadyLinkedChat);
 }
-
