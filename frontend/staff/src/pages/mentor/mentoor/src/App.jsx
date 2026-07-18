@@ -5,6 +5,7 @@ import DavomatPage from "./pages/DavomatPage";
 import HomeworkPage from "./pages/HomeworkPage";
 import CoinsPage from "./pages/CoinsPage";
 import SalaryPage from "./pages/SalaryPage";
+import ChatPage from "./pages/ChatPage";
 import { clearAuth, getUser, getToken } from "./api";
 
 const PAGES = {
@@ -13,6 +14,7 @@ const PAGES = {
   homework: HomeworkPage,
   coins: CoinsPage,
   salary: SalaryPage,
+  chat: ChatPage,
 };
 
 export default function App() {

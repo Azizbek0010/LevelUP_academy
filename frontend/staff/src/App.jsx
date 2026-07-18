@@ -34,10 +34,9 @@ const AdminChat = lazy(() => import('./pages/admin/Chat.jsx'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings.jsx'));
 
 const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
-const MentorGroups = lazy(() => import('./pages/mentor/Groups.jsx'));
+
 const MentorAttendance = lazy(() => import('./pages/mentor/Attendance.jsx'));
-const MentorHomework = lazy(() => import('./pages/mentor/Homework.jsx'));
-const MentorCoins = lazy(() => import('./pages/mentor/Coins.jsx'));
+const MentorChat = lazy(() => import('./pages/mentor/Chat.jsx'));
 
 const MethodistDashboard = lazy(() => import('./pages/methodist/Dashboard.jsx'));
 const TrainingTypes = lazy(() => import('./pages/methodist/TrainingTypes.jsx'));
@@ -78,15 +77,12 @@ export default function App() {
         <Route path="/" element={<SW><DashboardRedirect /></SW>} />
 
         {/* Shared paths dispatched by role */}
-        <Route path="/groups" element={<SW><RoleView views={{ superadmin: SuperGroups, mentor: MentorGroups, admin: AdminGroups }} /></SW>} />
+        <Route path="/chat" element={<SW><RoleView views={{ mentor: MentorChat, admin: AdminChat }} /></SW>} />
+        <Route path="/groups" element={<SW><RoleView views={{ superadmin: SuperGroups, admin: AdminGroups }} /></SW>} />
         <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SW>} />
         <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
         <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: MentorAttendance }} /></SW>} />
         <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents }} /></SW>} />
-
-        {/* Mentor routes */}
-        <Route path="/homework" element={<SW><MentorHomework /></SW>} />
-        <Route path="/coins" element={<SW><MentorCoins /></SW>} />
 
         {/* Admin routes */}
         <Route element={<RoleGuard allow={['admin']} />}>
@@ -95,7 +91,6 @@ export default function App() {
           <Route path="/students/:id" element={<SW><AdminStudentDetail /></SW>} />
           <Route path="/expenses" element={<SW><AdminExpenses /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
-          <Route path="/chat" element={<SW><AdminChat /></SW>} />
         </Route>
 
         {/* Super Admin routes */}

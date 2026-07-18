@@ -10,13 +10,15 @@ export default function DavomatPage({ token, user }) {
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loadingGroups, setLoadingGroups] = useState(true);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
   const today = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(today);
+  const isPastDate = selectedDate < today;
 
   // Load groups on mount
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function DavomatPage({ token, user }) {
         }
       })
       .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .finally(() => setLoadingGroups(false));
   }, [token]);
 
   // Load students + attendance when group or date changes
@@ -40,7 +42,7 @@ export default function DavomatPage({ token, user }) {
     const t = token || getToken();
     if (!t || !selectedGroupId) return;
 
-    setLoading(true);
+    setLoadingAttendance(true);
     setError("");
 
     Promise.all([
@@ -61,7 +63,7 @@ export default function DavomatPage({ token, user }) {
         setAttendance(attMap);
       })
       .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .finally(() => setLoadingAttendance(false));
   }, [token, selectedGroupId, selectedDate]);
 
   const toggleStatus = (studentId) => {
@@ -105,14 +107,22 @@ export default function DavomatPage({ token, user }) {
   };
 
   const statusIcon = (status) => {
-    if (status === "present") return <Check size={13} className="text-success" />;
+    if (status === "present") {
+      // Past date = corrected entry -> show warning (yellow)
+      if (isPastDate) return <Check size={13} className="text-warning" />;
+      return <Check size={13} className="text-success" />;
+    }
     if (status === "absent") return <X size={13} className="text-danger" />;
     if (status === "late") return <span className="text-[11px] font-semibold text-warning">L</span>;
     return <Plus size={12} className="text-ink-faint" />;
   };
 
   const statusBg = (status) => {
-    if (status === "present") return "bg-success-soft";
+    if (status === "present") {
+      // Past date = corrected entry -> show warning bg (yellow)
+      if (isPastDate) return "bg-warning-soft";
+      return "bg-success-soft";
+    }
     if (status === "absent") return "bg-danger-soft";
     if (status === "late") return "bg-warning-soft";
     return "bg-surface";
@@ -167,7 +177,8 @@ export default function DavomatPage({ token, user }) {
         </div>
         <div className="flex items-center gap-4 text-[12px] text-ink-soft">
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-success" /> Bor
+            <span className={`h-2.5 w-2.5 rounded-full ${isPastDate ? 'bg-warning' : 'bg-success'}`} />
+            {isPastDate ? "Bor (keyin)" : "Bor"}
           </span>
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-danger" /> Yo'q
@@ -191,7 +202,7 @@ export default function DavomatPage({ token, user }) {
       )}
 
       {/* Attendance Table */}
-      {loading ? (
+      {loadingGroups || loadingAttendance ? (
         <div className="flex items-center justify-center py-20 text-ink-faint">
           Yuklanmoqda...
         </div>
@@ -261,7 +272,7 @@ export default function DavomatPage({ token, user }) {
       <div className="mt-6 flex justify-end">
         <button
           onClick={handleSave}
-          disabled={saving || loading || students.length === 0}
+          disabled={saving || loadingGroups || loadingAttendance || students.length === 0}
           className="flex items-center gap-2 rounded-lg bg-sidebar px-4 py-2.5 text-[13px] font-medium text-white shadow-sm transition-all hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? (
