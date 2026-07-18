@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Search, Bell, ChevronLeft, ChevronRight, ChevronDown, X,
-  LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu, Wifi,
+  Bell, ChevronLeft, ChevronRight, ChevronDown, X,
+  LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu,
 } from 'lucide-react';
 import {
   HiOutlineSquares2X2, HiOutlineBuildingOffice2, HiOutlineUsers,
@@ -16,7 +16,7 @@ import {
 } from 'react-icons/hi2';
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
-import { useOnlineCount, disconnectSocket } from '../socket.js';
+import { disconnectSocket } from '../socket.js';
 import { useMentorGroups } from '../queries.js';
 
 /* ──────────────────── HOOKS ──────────────────── */
@@ -346,11 +346,9 @@ function Sidebar({
 
 /* ──────────────────── HEADER ──────────────────── */
 function Header({ sidebarWidth, onMobileToggle }) {
-  const { user, logout, token } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const role = user?.role;
-  const onlineCount = useOnlineCount(token);
-  const [searchFocused, setSearchFocused] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 
@@ -389,38 +387,11 @@ function Header({ sidebarWidth, onMobileToggle }) {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Search bar (desktop) */}
-      <div className="hidden md:flex items-center relative">
-        <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-all duration-200"
-          style={{
-            background: searchFocused ? 'var(--surface)' : 'var(--bg)',
-            border: `1px solid ${searchFocused ? 'var(--green)' : 'var(--border)'}`,
-            width: searchFocused ? 280 : 200,
-            boxShadow: searchFocused ? '0 0 0 3px rgba(198, 255, 52, 0.1)' : 'none',
-          }}
-        >
-          <Search size={14} style={{ color: 'var(--text-muted)' }} />
-          <input
-            type="text"
-            placeholder="Qidirish..."
-            className="bg-transparent outline-none text-sm w-full"
-            style={{ color: 'var(--text)' }}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-          />
-        </div>
-      </div>
-
-      {/* Live online counter */}
-      <div
-        className="hidden sm:flex items-center gap-1.5 px-2.5 h-9 rounded-xl text-xs font-semibold"
-        style={{ color: 'var(--green, #16a34a)', background: 'var(--bg)', border: '1px solid var(--border)' }}
-        title="Онлайн сейчас"
-      >
-        <Wifi size={13} />
-        <span>{onlineCount}</span>
-      </div>
+      {/* Поиск и счётчик «онлайн» отсюда убраны.
+          Поиск ничего не искал: поле не было ни к чему подключено, только
+          подсвечивалось при фокусе — то есть обещало функцию, которой нет.
+          Счётчик онлайна показывал число, на которое ментор всё равно никак
+          не реагирует. */}
 
       {/* Notification bell */}
       <button
@@ -523,8 +494,19 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const role = user?.role;
-  const FULL_PAGE_ROUTES = ['/chat'];
-  const isFullPage = FULL_PAGE_ROUTES.some(r => location.pathname.startsWith(r));
+  /* Страницы-«рабочие столы»: сами распоряжаются всей областью под шапкой и
+     задают свой скролл.
+
+     Карточка группы ментора (журнал) — из них: раньше она снимала отступы
+     отрицательными маргинами, но `max-w-7xl mx-auto` контейнера оставался, и
+     журнал упирался в 1280px по центру экрана. На широком мониторе со
+     свёрнутым сайдбаром по бокам оставались пустые поля, а дни месяца при
+     этом не помещались и уезжали в горизонтальную прокрутку.
+
+     Проверяем ещё и роль: тот же путь `/groups/:id` у админа — обычная
+     страница с отступами, ей полноэкранный режим не нужен. */
+  const isMentorGroupPage = role === 'mentor' && /^\/groups\/[^/]+/.test(location.pathname);
+  const isFullPage = ['/chat'].some(r => location.pathname.startsWith(r)) || isMentorGroupPage;
 
   /* ── Раскрытие по наведению ──────────────────────────────────────────────
      `collapsed` — закреплённое состояние, выбор пользователя, он же лежит в
@@ -625,7 +607,11 @@ export default function Layout() {
             прокрутки (~17px) — нижний край, а с ним поле ввода, уезжал под
             границу окна. `dvh` вдобавок учитывает выезжающие панели браузера
             на мобильных, где `vh` заведомо больше видимой области. */}
-        <div className={isFullPage ? 'flex-1 flex flex-col h-[calc(100dvh-4rem)] overflow-hidden' : 'p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto'}>
+        {/* max-w-7xl (1280px) убран: на широком мониторе, тем более со
+            свёрнутым сайдбаром, он оставлял по бокам сотни пикселей пустоты,
+            хотя таблицам и сеткам карточек эта ширина как раз нужна. Поля
+            задаёт только padding. */}
+        <div className={isFullPage ? 'flex-1 flex flex-col h-[calc(100dvh-4rem)] overflow-hidden' : 'p-4 sm:p-6 lg:p-8'}>
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>

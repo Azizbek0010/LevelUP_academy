@@ -90,9 +90,11 @@ export default function GroupWorkspace() {
   }
 
   return (
-    // Страница сама распоряжается всей высотой: у журнала свой скролл, и он
-    // не должен тянуть за собой шапку с вкладками.
-    <div className="-m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-4rem)] flex flex-col bg-base-100">
+    // Маршрут помечен в Layout как full-page: контейнер уже отдаёт всю область
+    // под шапкой без отступов и ограничения по ширине. Раньше страница
+    // добивалась этого отрицательными маргинами, но снять `max-w-7xl` они не
+    // могли — журнал упирался в 1280px и не занимал экран.
+    <div className="flex-1 min-h-0 flex flex-col bg-base-100">
       {/* ── Шапка группы ── */}
       <header className="shrink-0 px-4 sm:px-6 pt-4 pb-3 border-b border-base-200">
         <div className="flex items-start gap-3 flex-wrap">
@@ -153,7 +155,9 @@ export default function GroupWorkspace() {
       >
         {/* key: смена группы или вкладки полностью пересоздаёт содержимое —
             иначе несохранённые отметки журнала перетекли бы в другую группу. */}
-        <ActiveTab key={`${groupId}-${activeKey}`} groupId={groupId} />
+        {/* group нужен журналу: из его расписания берутся дни занятий —
+            колонками идут только они, а не все числа месяца. */}
+        <ActiveTab key={`${groupId}-${activeKey}`} groupId={groupId} group={group} />
       </Suspense>
     </div>
   );

@@ -1,5 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Check, X, Minus, Users, Coins, CheckCircle, XCircle } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import {
+  Check, X, Minus, Users, Coins, CheckCircle, XCircle, Cloud, CloudOff, Loader2,
+} from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useMentorGroupStudents, useMentorAttendance } from '../../../queries.js';
@@ -9,17 +11,29 @@ import { useAttendanceLive } from '../../../socket.js';
 import { Avatar, EmptyState } from '../_ui.jsx';
 
 /**
- * Журнал одной группы: месяц по горизонтали, ученики по вертикали.
+ * Журнал одной группы: дни занятий по горизонтали, ученики по вертикали.
  *
- * Клетка перебирает три состояния: не отмечен → keldi → kelmadi → не отмечен.
- * Справа у каждого ученика — баланс коинов и поле быстрого начисления: коины
- * ставятся не выходя из журнала (именно так ментор и работает во время урока).
+ * Кнопки «Сохранить» нет — отметка уходит на сервер сама, пачкой, через
+ * короткую паузу после последнего клика. Ментор отмечает журнал во время
+ * урока, и заставлять его помнить про сохранение — верный способ потерять
+ * данные: ушёл со страницы, не нажав, и работы как не бывало.
+ *
+ * Клетка переключается keldi ⇄ kelmadi. Вернуть её в «не отмечено» нельзя:
+ * бэкенд принимает только present/absent/late/excused и не умеет удалять
+ * запись (DELETE-эндпоинта нет). Раньше третий клик очищал клетку локально —
+ * выглядело как снятие отметки, но на сервер это не уезжало и после
+ * перезагрузки отметка возвращалась.
  */
 
 const MONTHS = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
   'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr',
 ];
+
+/** Пауза после последнего клика, по истечении которой уходит пачка. */
+const AUTOSAVE_DELAY = 700;
+
+const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -61,7 +75,38 @@ function Toast({ message, type = 'success', visible, onClose }) {
   );
 }
 
-export default function AttendanceTab({ groupId }) {
+/* ── Состояние автосохранения ─────────────────────────────────────────────
+   Ошибка — единственное состояние, требующее внимания, поэтому только она
+   заметна и кликабельна. Остальные тихие: сохранение не событие, а фон. */
+function SaveIndicator({ state, onRetry }) {
+  if (state === 'idle') return null;
+
+  if (state === 'error') {
+    return (
+      <button
+        onClick={onRetry}
+        className="flex items-center gap-1.5 text-xs font-semibold text-error hover:underline"
+      >
+        <CloudOff size={14} /> Saqlanmadi — qayta urinish
+      </button>
+    );
+  }
+
+  const view = {
+    pending: { Icon: Loader2, text: 'Saqlanmoqda...', spin: true },
+    saving: { Icon: Loader2, text: 'Saqlanmoqda...', spin: true },
+    saved: { Icon: Cloud, text: 'Saqlandi', spin: false },
+  }[state];
+
+  return (
+    <span className="flex items-center gap-1.5 text-xs text-base-content/45">
+      <view.Icon size={13} className={view.spin ? 'animate-spin' : ''} />
+      {view.text}
+    </span>
+  );
+}
+
+export default function AttendanceTab({ groupId, group }) {
   const { token } = useAuth();
   const qc = useQueryClient();
 
@@ -73,10 +118,16 @@ export default function AttendanceTab({ groupId }) {
 
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
-  const [saving, setSaving] = useState(false);
   const [attendanceMap, setAttendanceMap] = useState({});
   const [coinDrafts, setCoinDrafts] = useState({});   // studentId -> строка из инпута
   const [coinBusyId, setCoinBusyId] = useState(null);
+
+  // idle | pending | saving | saved | error — состояние автосохранения
+  const [saveState, setSaveState] = useState('idle');
+  const pendingRef = useRef(new Map());   // dateKey -> Map(studentId -> status)
+  const flushTimer = useRef(null);
+  // Синхронное зеркало attendanceMap — нужно обработчику клика, см. toggleDay.
+  const mapRef = useRef({});
 
   const monthStrip = useMemo(() => buildMonthStrip(now), [now]);
 
@@ -96,10 +147,26 @@ export default function AttendanceTab({ groupId }) {
   );
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const DAYS = useMemo(
-    () => Array.from({ length: daysInMonth }, (_, i) => i + 1),
-    [daysInMonth],
-  );
+
+  /* Только дни, когда у группы есть занятие.
+     Показывать все 31 число было и бессмысленно (в 22 из них урока нет), и
+     вредно: колонки не помещались на экран и загоняли таблицу в
+     горизонтальную прокрутку. У English B1, например, занятия по пн и ср —
+     это 9 колонок вместо 31, и они спокойно влезают.
+     Если расписания у группы нет, показываем месяц целиком — иначе журнал
+     оказался бы пустым и отметить было бы нечего. */
+  const lessonWeekdays = useMemo(() => {
+    const days = (group?.schedule ?? [])
+      .map((s) => WEEKDAY_INDEX[String(s.day).toLowerCase()])
+      .filter((d) => d !== undefined);
+    return days.length ? new Set(days) : null;
+  }, [group]);
+
+  const DAYS = useMemo(() => {
+    const all = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    if (!lessonWeekdays) return all;
+    return all.filter((d) => lessonWeekdays.has(new Date(year, month, d).getDay()));
+  }, [daysInMonth, lessonWeekdays, year, month]);
 
   const from = `${year}-${pad(month + 1)}-01`;
   const to = `${year}-${pad(month + 1)}-${pad(daysInMonth)}`;
@@ -131,53 +198,83 @@ export default function AttendanceTab({ groupId }) {
       if (fullMap[key] !== undefined) fullMap[key] = a.status;
     });
     setAttendanceMap(fullMap);
+    mapRef.current = fullMap;   // держим зеркало в согласии с данными сервера
   }, [students, month, year, attendance, DAYS]);
 
   const dateKeyFor = (day) => `${year}-${pad(month + 1)}-${pad(day)}`;
 
+  /* Отправка накопленного. Копим в ref, а не в state: между кликом и отправкой
+     не должно быть лишних перерисовок, а пачка обязана пережить их все.
+     Группируем по дате — контракт бэкенда принимает одну дату за запрос. */
+  const flush = useCallback(async () => {
+    const batch = pendingRef.current;
+    if (batch.size === 0) return;
+    pendingRef.current = new Map();
+
+    setSaveState('saving');
+    try {
+      for (const [lessonDate, byStudent] of batch) {
+        const records = [...byStudent].map(([studentId, status]) => ({ studentId, status }));
+        await api.mentorMarkAttendance(token, groupId, { lessonDate, records });
+      }
+      qc.invalidateQueries({ queryKey: ['mentor-attendance'] });
+      setSaveState('saved');
+      // Через пару секунд гасим отметку — постоянная «Saqlandi» превращается
+      // в фоновый шум и перестаёт значить что-либо.
+      setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 2500);
+    } catch (err) {
+      // Возвращаем неотправленное в очередь: следующий клик или повтор
+      // попробуют снова, отметки не пропадут молча.
+      for (const [date, byStudent] of batch) {
+        const existing = pendingRef.current.get(date) ?? new Map();
+        byStudent.forEach((v, k) => existing.set(k, v));
+        pendingRef.current.set(date, existing);
+      }
+      setSaveState('error');
+      setToast({ message: err.message || 'Saqlanmadi — internetni tekshiring', type: 'error' });
+    }
+  }, [token, groupId, qc]);
+
+  const queueSave = useCallback((lessonDate, studentId, status) => {
+    const byStudent = pendingRef.current.get(lessonDate) ?? new Map();
+    byStudent.set(studentId, status);
+    pendingRef.current.set(lessonDate, byStudent);
+
+    setSaveState('pending');
+    clearTimeout(flushTimer.current);
+    flushTimer.current = setTimeout(flush, AUTOSAVE_DELAY);
+  }, [flush]);
+
+  // Уход со страницы не должен съедать последние отметки: то, что ещё не
+  // улетело, отправляем немедленно при размонтировании.
+  useEffect(() => () => {
+    clearTimeout(flushTimer.current);
+    flush();
+  }, [flush]);
+
+  /* Клик по клетке: keldi ⇄ kelmadi. Третьего состояния нет — см. комментарий
+     в шапке файла: снять отметку на бэкенде нечем.
+
+     Текущий статус читаем из ref, а не из state: два быстрых клика подряд
+     попадают в один цикл рендера, state внутри обработчика ещё старый, и
+     второй клик вычислял тот же самый статус — клетка залипала на «keldi».
+     Ref обновляем синхронно, поэтому каждый клик видит результат предыдущего. */
   const toggleDay = (studentId, day) => {
-    const key = `${studentId}_${dateKeyFor(day)}`;
-    setAttendanceMap((prev) => {
-      const current = prev[key];
-      const next = current === null || current === undefined
-        ? 'present'
-        : current === 'present' ? 'absent' : null;
-      return { ...prev, [key]: next };
-    });
+    const dateKey = dateKeyFor(day);
+    const key = `${studentId}_${dateKey}`;
+    const next = mapRef.current[key] === 'present' ? 'absent' : 'present';
+    mapRef.current = { ...mapRef.current, [key]: next };
+    setAttendanceMap(mapRef.current);
+    queueSave(dateKey, studentId, next);
   };
 
   const markAllPresentToday = () => {
-    const key = dateKeyFor(now.getDate());
-    setAttendanceMap((prev) => {
-      const next = { ...prev };
-      students.forEach((s) => { next[`${s.id}_${key}`] = 'present'; });
-      return next;
-    });
-  };
-
-  const handleSave = async () => {
-    if (!groupId || saving) return;
-    setSaving(true);
-    try {
-      const byDate = {};
-      Object.entries(attendanceMap).forEach(([key, status]) => {
-        if (!status) return;
-        const [sId, ...dateParts] = key.split('_');
-        (byDate[dateParts.join('_')] ||= []).push({ studentId: sId, status });
-      });
-
-      for (const [lessonDate, records] of Object.entries(byDate)) {
-        await api.mentorMarkAttendance(token, groupId, { lessonDate, records });
-      }
-
-      qc.invalidateQueries({ queryKey: ['mentor-attendance'] });
-      qc.invalidateQueries({ queryKey: ['mentor-group-students'] });
-      setToast({ message: 'Davomat saqlandi', type: 'success' });
-    } catch (err) {
-      setToast({ message: err.message || 'Xatolik yuz berdi', type: 'error' });
-    } finally {
-      setSaving(false);
-    }
+    const dateKey = dateKeyFor(now.getDate());
+    const next = { ...mapRef.current };
+    students.forEach((s) => { next[`${s.id}_${dateKey}`] = 'present'; });
+    mapRef.current = next;
+    setAttendanceMap(next);
+    students.forEach((s) => queueSave(dateKey, s.id, 'present'));
   };
 
   // Начисление прямо из строки журнала. Минус разрешён: «-5» спишет коины,
@@ -271,11 +368,16 @@ export default function AttendanceTab({ groupId }) {
             <span className="w-3 h-3 rounded border border-warning/40 bg-warning/15" /> keyin tuzatilgan
           </li>
         </ul>
-        {isCurrentMonth && students.length > 0 && (
-          <button className="btn btn-ghost btn-sm gap-1.5 text-success" onClick={markAllPresentToday}>
-            <Check size={14} /> Bugun hammasi keldi
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Индикатор вместо кнопки: раз сохранение происходит само,
+              единственное, что ментору нужно знать, — дошло ли оно. */}
+          <SaveIndicator state={saveState} onRetry={flush} />
+          {isCurrentMonth && students.length > 0 && DAYS.includes(now.getDate()) && (
+            <button className="btn btn-ghost btn-sm gap-1.5 text-success" onClick={markAllPresentToday}>
+              <Check size={14} /> Bugun hammasi keldi
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Сетка ── */}
@@ -290,9 +392,11 @@ export default function AttendanceTab({ groupId }) {
           <table className="table w-full border-collapse">
             <thead>
               <tr>
-                {/* На телефоне колонка имени ужимается: при 230px вместе с
-                    липкой колонкой коинов на дни не оставалось ни пикселя. */}
-                <th className="sticky left-0 top-0 z-20 bg-base-100 min-w-[160px] sm:min-w-[230px] px-3 sm:px-4 py-3 text-left">
+                {/* Ширина задана жёстко, а не через min-width: в таблице
+                    `w-full` свободное место доставалось именно этой колонке, и
+                    между именами и первым днём зияла пустая полоса в пол-экрана.
+                    Остаток теперь забирает колонка коинов (ниже, `w-full`). */}
+                <th className="sticky left-0 top-0 z-20 bg-base-100 w-[160px] sm:w-[240px] min-w-[160px] sm:min-w-[240px] px-3 sm:px-4 py-3 text-left">
                   O'quvchi
                 </th>
                 {DAYS.map((d) => {
@@ -332,7 +436,9 @@ export default function AttendanceTab({ groupId }) {
                 {/* Липнет к правому краю только начиная с sm: на телефоне это
                     вторая неподвижная колонка, и дни оказывались зажаты между
                     ними в ноль. Там она просто уезжает в конец таблицы. */}
-                <th className="sm:sticky sm:right-0 top-0 z-20 bg-base-100 min-w-[190px] px-4 py-3 text-right border-l border-base-200">
+                {/* w-full — эта колонка добирает всю свободную ширину, чтобы
+                    дни занятий стояли плотной группой сразу после имён. */}
+                <th className="sm:sticky sm:right-0 top-0 z-20 bg-base-100 w-full min-w-[190px] px-4 py-3 text-right border-l border-base-200">
                   Koinlar
                 </th>
               </tr>
@@ -412,15 +518,6 @@ export default function AttendanceTab({ groupId }) {
           </table>
         )}
       </div>
-
-      {students.length > 0 && (
-        <footer className="shrink-0 px-4 py-3 border-t border-base-200 bg-base-100 flex justify-end">
-          <button className="btn btn-primary gap-2 px-6" onClick={handleSave} disabled={saving}>
-            {saving ? <span className="loading loading-spinner loading-sm" /> : <Check size={17} />}
-            Saqlash
-          </button>
-        </footer>
-      )}
 
       <Toast
         message={toast?.message}

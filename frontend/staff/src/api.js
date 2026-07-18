@@ -1507,6 +1507,40 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       ] };
     }
 
+    /* -------- MENTOR: Davomat --------
+       Моков не было вовсе: журнал открывался пустым, а автосохранение при
+       каждом клике падало с ошибкой — проверить страницу без поднятого
+       бэкенда было невозможно. Храним отметки в localStorage, поэтому они
+       переживают перезагрузку и ведут себя как настоящие. */
+    const mentorAttMatch = path.match(/^\/mentor\/attendance\/groups\/([^/?]+)/);
+    if (mentorAttMatch && method === 'GET') {
+      const groupId = mentorAttMatch[1];
+      const qs = new URL(path, 'http://localhost').searchParams;
+      const date = qs.get('date');
+      const from = qs.get('from');
+      const to = qs.get('to');
+      const saved = JSON.parse(localStorage.getItem(`mock_mentor_att_${groupId}`) || '[]');
+      const inRange = (d) => (date ? d === date : (!from || d >= from) && (!to || d <= to));
+      return { success: true, data: saved.filter((r) => inRange(r.lesson_date)) };
+    }
+
+    if (mentorAttMatch && method === 'POST') {
+      const groupId = mentorAttMatch[1];
+      const key = `mock_mentor_att_${groupId}`;
+      const saved = JSON.parse(localStorage.getItem(key) || '[]');
+      const lessonDate = body.lessonDate;
+      (body.records || []).forEach((r) => {
+        // upsert по (student, date) — так же, как ON CONFLICT на бэкенде
+        const i = saved.findIndex(
+          (x) => x.student_id === r.studentId && x.lesson_date === lessonDate,
+        );
+        const row = { student_id: r.studentId, lesson_date: lessonDate, status: r.status };
+        if (i >= 0) saved[i] = row; else saved.push(row);
+      });
+      localStorage.setItem(key, JSON.stringify(saved));
+      return { success: true, data: { lessonDate, records: body.records } };
+    }
+
     const groupStudentsMatch = path.match(/^\/mentor\/groups\/([^/]+)\/students$/);
     if (groupStudentsMatch && method === 'GET') {
       return { success: true, data: [
