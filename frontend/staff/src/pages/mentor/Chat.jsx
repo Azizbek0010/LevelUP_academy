@@ -61,23 +61,36 @@ function Composer({ value, onChange, onSend, disabled, sending, placeholder }) {
   const ref = useRef(null);
 
   // Авто-высота: textarea растёт под текст до потолка, дальше — свой скролл.
+  // Полосу прокрутки включаем только по достижении потолка: иначе Chrome
+  // рисовал стрелки скролла даже в пустом поле — высота совпадала со
+  // scrollHeight ровно, и браузер считал содержимое «переполненным».
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+    const next = Math.min(el.scrollHeight, 160);
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > 160 ? 'auto' : 'hidden';
   }, [value]);
 
   const nearLimit = value.length > MAX_LEN - 200;
 
   return (
-    <footer className="shrink-0 border-t border-base-200 bg-base-100 px-3 py-2.5">
+    // pb с safe-area: на айфонах нижнюю полосу занимает индикатор «домой»,
+    // и поле ввода упиралось прямо в него.
+    <footer
+      className="shrink-0 border-t border-base-200 bg-base-100 px-3 pt-2.5"
+      style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom, 0px))' }}
+    >
       <div className="flex items-end gap-2">
         <div className="flex-1 min-w-0">
+          {/* text-base на мобильном — не косметика: Safari на iOS
+              принудительно зумит страницу при фокусе в поле с размером
+              шрифта меньше 16px, и выйти из этого зума потом нельзя. */}
           <textarea
             ref={ref}
             rows={1}
-            className="textarea textarea-bordered w-full resize-none min-h-[2.75rem] max-h-40 text-sm leading-relaxed py-2.5 disabled:bg-base-200/60"
+            className="textarea textarea-bordered w-full resize-none min-h-[2.75rem] max-h-40 text-base sm:text-sm leading-relaxed py-2.5 disabled:bg-base-200/60"
             placeholder={placeholder}
             value={value}
             maxLength={MAX_LEN}
@@ -450,12 +463,14 @@ export default function MentorChat() {
           <header className="shrink-0 px-3 sm:px-4 py-2.5 border-b border-base-200 bg-base-100 flex items-center gap-3 min-h-[3.5rem]">
             {activeContact ? (
               <>
+                {/* На телефоне это основная кнопка навигации — btn-sm давал
+                    32px, вдвое меньше пальца. Комфортный минимум — 44px. */}
                 <button
-                  className="btn btn-ghost btn-sm btn-circle md:hidden shrink-0"
+                  className="btn btn-ghost btn-circle md:hidden shrink-0 -ml-1"
                   onClick={() => setActiveId(null)}
                   aria-label="Orqaga"
                 >
-                  <ChevronLeft size={18} />
+                  <ChevronLeft size={22} />
                 </button>
                 <Avatar name={fullName(activeContact)} />
                 <div className="min-w-0">

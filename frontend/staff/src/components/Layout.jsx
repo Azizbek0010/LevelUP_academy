@@ -544,8 +544,13 @@ export default function Layout() {
       <Header sidebarWidth={sidebarWidth} onMobileToggle={() => setMobileOpen(!mobileOpen)} />
 
       {/* Main content */}
+      {/* overflow-x-hidden — страховка для всех панелей: одна распёртая
+          таблица или длинное слово раньше давали горизонтальную прокрутку
+          всей страницы, а вместе с ней съезжал и низ экрана (в чате под край
+          уходило поле ввода). Пусть переполнение решает тот блок, который
+          его создал, — своим внутренним скроллом. */}
       <main
-        className="transition-all duration-300 pt-16 min-h-screen"
+        className="transition-all duration-300 pt-16 min-h-screen overflow-x-hidden"
         style={{ marginLeft: sidebarWidth }}
       >
         {/* Полноэкранные страницы (мессенджер) считают высоту от вьюпорта.

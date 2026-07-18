@@ -50,7 +50,9 @@ export function SearchInput({ value, onChange, placeholder = 'Qidirish...', clas
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="input input-bordered input-sm w-full pl-9 rounded-lg"
+        // text-base до sm — иначе iOS Safari зумит страницу при фокусе
+        // в поле со шрифтом мельче 16px и обратно уже не отпускает.
+        className="input input-bordered input-sm w-full pl-9 rounded-lg text-base sm:text-sm"
       />
     </div>
   );
