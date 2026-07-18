@@ -14,6 +14,69 @@ body {
   font-feature-settings: 'cv11', 'ss01';
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   ТЁМНОЙ ТЕМЫ БОЛЬШЕ НЕТ.
+   Панель работает в единственной светлой теме `levelup`
+   (см. tailwind.config.js). Раньше здесь жили ~300 строк
+   `html.dark …` с !important и переопределение `--p`/`--pc`
+   в RGB, которое DaisyUI 4.12 подставлял в `oklch()` — из-за
+   этого весь primary был нечитаем. Оба источника проблемы
+   удалены: primary теперь задаётся один раз, в конфиге темы.
+   Если тёмная тема когда-нибудь понадобится — её надо делать
+   переменными темы DaisyUI, а не слоем !important-патчей.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* Brand */
+  --green: #40833B;
+  --green-dark: #35702f;
+  --green-bg: rgba(64, 131, 59, 0.10);
+  --green-glow: rgba(64, 131, 59, 0.18);
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --surface-hover: #f6faef;
+  --bg: #f5f8f1;
+  --accent: #16210f;
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(220, 229, 212, 0.6);
+  --glass: rgba(255, 255, 255, 0.72);
+
+  /* Borders */
+  --border: #dce5d4;
+
+  /* Text */
+  --text: #1D2417;
+  --text-secondary: #5c6b53;
+  --text-muted: #7d8c73;
+
+  /* Status */
+  --danger: #dc2626;
+  --danger-light: #fef2f2;
+  --success: #15803d;
+  --success-light: #f0fdf4;
+  --warning: #b45309;
+  --info: #2563eb;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(29, 36, 23, 0.06);
+  --shadow: 0 4px 12px rgba(29, 36, 23, 0.08);
+  --shadow-lg: 0 8px 24px rgba(29, 36, 23, 0.12);
+
+  /* Border radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Sidebar */
+  --sidebar-hover: rgba(198, 255, 52, 0.08);
+}
+
 .card {
   border: 1px solid theme('colors.base-300');
   box-shadow: 0 1px 2px rgba(29, 36, 23, 0.04), 0 4px 16px rgba(29, 36, 23, 0.04);
@@ -35,138 +98,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   LIGHT MODE — override DaisyUI primary to match calmer green
-   (tailwind.config.js sets primary to neon lime for dark mode;
-    here we calm it down for light backgrounds)
-   ═══════════════════════════════════════════════════════════════ */
-html[data-theme="levelup"],
-:root {
-  /* DaisyUI 4.12 подставляет эти переменные в `oklch(var(--p))`, поэтому
-     значения должны быть oklch-компонентами (L C H), а не RGB.
-     Раньше тут стояло `--p: 67 137 62; --pc: 255 255 255` — RGB-запись
-     #43893E и белого. Браузер читал их как oklch(1 137 62)/oklch(1 255 255),
-     то есть фон и текст схлопывались в почти одинаковый цвет: на каждой
-     primary-поверхности (btn-primary, badge-primary, выделенная строка,
-     пузырь своего сообщения в чате) текст был нечитаем.
-
-     Оттенок — задуманный #43893E, но на пару процентов темнее: ровно
-     #43893E даёт с белым 4.3:1, то есть НЕ проходит WCAG AA для обычного
-     текста (нужно 4.5:1). */
-  --p: 55.2% 0.128 142.4;    /* primary ≈ #40833B (спокойный зелёный) */
-  --pc: 100% 0 0;            /* primary-content = white */
-}
-
-/* ═══════════════════════════════════════════════════════════════
-    DESIGN TOKENS — Light theme (default)
-    ═══════════════════════════════════════════════════════════════ */
-:root {
-  /* Brand — calm forest green for light mode (neon kept for dark) */
-  --green: #43893E;
-  --green-dark: #3a7835;
-  --green-bg: rgba(67, 137, 62, 0.10);
-  --green-glow: rgba(67, 137, 62, 0.18);
-
-  /* Surfaces */
-  --surface: #ffffff;
-  --surface-hover: #f6faef;
-  --bg: #f5f8f1;
-  --accent: #16210f;
-
-  /* Glass */
-  --glass-bg: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(220, 229, 212, 0.6);
-  --glass: rgba(255, 255, 255, 0.72);
-
-  /* Borders */
-  --border: #dce5d4;
-
-  /* Text */
-  --text: #1D2417;
-  --text-secondary: #6b7a62;
-  --text-muted: #94a388;
-
-  /* Status */
-  --danger: #ef4444;
-  --danger-light: #fef2f2;
-  --success: #22c55e;
-  --success-light: #f0fdf4;
-  --warning: #f59e0b;
-  --info: #3b82f6;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(29, 36, 23, 0.06);
-  --shadow: 0 4px 12px rgba(29, 36, 23, 0.08);
-  --shadow-lg: 0 8px 24px rgba(29, 36, 23, 0.12);
-
-  /* Border radius */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-
-  /* Sidebar */
-  --sidebar-hover: rgba(67, 137, 62, 0.08);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   DARK THEME — uses html.dark[data-theme] to beat DaisyUI specificity
-   ═══════════════════════════════════════════════════════════════ */
-.dark {
-  --green: #C6FF34;
-  --green-dark: #a8e02c;
-  --green-bg: rgba(198, 255, 52, 0.10);
-  --green-glow: rgba(198, 255, 52, 0.20);
-
-  --surface: #1a1f16;
-  --surface-hover: #232a20;
-  --bg: #111610;
-  --accent: #C6FF34;
-
-  --glass-bg: rgba(26, 31, 22, 0.88);
-  --glass-border: rgba(60, 72, 52, 0.5);
-  --glass: rgba(26, 31, 22, 0.88);
-
-  --border: #2d3628;
-
-  --text: #e8efe2;
-  --text-secondary: #94a388;
-  --text-muted: #6b7a62;
-
-  --danger: #f87171;
-  --danger-light: rgba(248, 113, 113, 0.12);
-  --success: #4ade80;
-  --success-light: rgba(74, 222, 128, 0.12);
-  --warning: #fbbf24;
-  --info: #60a5fa;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.50);
-
-  --sidebar-hover: rgba(198, 255, 52, 0.06);
-}
-
-/* DaisyUI dark overrides — higher specificity than [data-theme="levelup"] */
-html.dark[data-theme="levelup"],
-html.dark {
-  --b1: 26 31 22;      /* base-100 = #1a1f16 (our --surface) */
-  --b2: 35 42 32;      /* base-200 = #232a20 (our --surface-hover) */
-  --b3: 45 54 40;      /* base-300 = #2d3628 (our --border) */
-  --bc: 232 239 226;   /* base-content = #e8efe2 (our --text) */
-  --n: 45 54 40;       /* neutral = #2d3628 */
-  --nc: 232 239 226;   /* neutral-content */
-  --p: 198 255 52;     /* primary = lime */
-  --pc: 22 33 15;      /* primary-content */
-  --s: 22 33 15;       /* secondary = sidebar dark */
-  --sc: 232 239 226;   /* secondary-content */
-  --a: 163 230 53;     /* accent */
-  --ac: 22 33 15;      /* accent-content */
-  --b1-deco: 26 31 22;
-  --b2-deco: 35 42 32;
-  --b3-deco: 45 54 40;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   DAISYUI COMPONENT OVERRIDES — force theme-aware backgrounds
+   DAISYUI COMPONENT OVERRIDES
    ═══════════════════════════════════════════════════════════════ */
 
 /* Modal backdrop — MUST be full screen, no gaps */
@@ -189,276 +121,12 @@ html.dark {
   padding: 0 !important;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DAISYUI COMPONENT — COMPREHENSIVE dark overrides
-   ═══════════════════════════════════════════════════════════════ */
-
-/* Inputs, textareas, selects */
-html.dark .input,
-html.dark .textarea,
-html.dark .select,
-html.dark .input-bordered,
-html.dark .textarea-bordered,
-html.dark .select-bordered,
-html.dark .input-ghost,
-html.dark .file-input,
-html.dark .file-input-bordered {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
-html.dark .input::placeholder,
-html.dark .textarea::placeholder {
-  color: var(--text-muted) !important;
-}
-
-/* Buttons */
-html.dark .btn {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
-html.dark .btn-primary {
-  background-color: var(--green) !important;
-  border-color: var(--green) !important;
-  color: #111 !important;
-}
-html.dark .btn-ghost {
-  background: transparent !important;
-  color: var(--text-secondary) !important;
-}
-html.dark .btn-ghost:hover {
-  background: var(--surface-hover) !important;
-  color: var(--text) !important;
-}
-html.dark .btn-link {
-  color: var(--green) !important;
-}
-html.dark .btn-sm {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text-secondary) !important;
-}
-html.dark .btn-sm:hover {
-  background-color: var(--surface-hover) !important;
-  color: var(--text) !important;
-}
-
-/* Card backgrounds */
-html.dark .card {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-html.dark .card-body {
-  color: var(--text) !important;
-}
-html.dark .card-title {
-  color: var(--text) !important;
-}
-
-/* Tables */
-html.dark .table {
-  background-color: var(--surface) !important;
-  color: var(--text) !important;
-}
-html.dark .table thead th {
-  background: var(--surface-hover) !important;
-  color: var(--text-secondary) !important;
-  border-color: var(--border) !important;
-}
-html.dark .table tbody tr {
-  border-color: var(--border) !important;
-}
-html.dark .table tbody tr:hover {
-  background: var(--surface-hover) !important;
-}
-html.dark .table td {
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
-
-/* Dividers */
-html.dark .divider {
-  color: var(--text-muted) !important;
-  border-color: var(--border) !important;
-}
-
-/* Badges */
-html.dark .badge {
-  border-color: var(--border) !important;
-}
-html.dark .badge-neutral {
-  background-color: var(--surface-hover) !important;
-  color: var(--text-secondary) !important;
-}
-html.dark .badge-ghost {
-  background-color: var(--surface-hover) !important;
-  color: var(--text-secondary) !important;
-  border-color: var(--border) !important;
-}
-
-/* Alerts */
-html.dark .alert {
-  border-color: var(--border) !important;
-  background-color: var(--surface) !important;
-  color: var(--text) !important;
-}
-
-/* Tabs */
-html.dark .tabs {
-  border-color: var(--border) !important;
-}
-html.dark .tab {
-  color: var(--text-muted) !important;
-}
-html.dark .tab-active,
-html.dark .tab[aria-selected="true"] {
-  color: var(--green) !important;
-  border-color: var(--green) !important;
-}
-
-/* Dropdown / popover */
-html.dark .dropdown-content,
-html.dark .popover {
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: var(--shadow-lg) !important;
-}
-
-/* Menu items */
-html.dark .menu li > * {
-  color: var(--text-secondary) !important;
-}
-html.dark .menu li > *:hover {
-  background: var(--surface-hover) !important;
-  color: var(--text) !important;
-}
-html.dark .menu-title {
-  color: var(--text-muted) !important;
-}
-
-/* Steps */
-html.dark .step {
-  color: var(--text-muted) !important;
-}
-html.dark .step-primary,
-html.dark .step[data-content]::before {
-  border-color: var(--green) !important;
-}
-
-/* Progress */
-html.dark .progress {
-  background-color: var(--surface-hover) !important;
-}
-
-/* Stat boxes */
-html.dark .stat {
-  background-color: var(--surface) !important;
-  color: var(--text) !important;
-}
-html.dark .stat-title {
-  color: var(--text-secondary) !important;
-}
-html.dark .stat-value {
-  color: var(--text) !important;
-}
-html.dark .stat-desc {
-  color: var(--text-muted) !important;
-}
-
-/* Breadcrumbs */
-html.dark .breadcrumbs li {
-  color: var(--text-muted) !important;
-}
-html.dark .breadcrumbs li > * {
-  color: var(--text-secondary) !important;
-}
-
-/* Textarea, select, details */
-html.dark textarea,
-html.dark select {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
-html.dark details,
-html.dark details[open] {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
-
-/* Collapse */
-html.dark .collapse {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
-
-/* Drawer */
-html.dark .drawer-content,
-html.dark .drawer-side {
-  background-color: transparent !important;
-}
-html.dark .drawer-overlay {
-  background-color: rgba(0,0,0,0.5) !important;
-}
-
-/* Hero */
-html.dark .hero {
-  background-color: var(--surface) !important;
-}
-
-/* Footer */
-html.dark .footer {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text-secondary) !important;
-}
-
-/* Hover effects for all interactive elements */
-html.dark .hover\:\*:bg-base-200:hover,
-html.dark *:hover {
-  /* prevent white flash on hover */
-}
-
-/* Remove ALL background color artifacts — force transparent on body, html, root */
+/* Фон рисуют Layout и страницы — html/body не должны просвечивать своим */
 html,
 body,
 #root,
 #root > div {
   background-color: transparent !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   DARK MODE — force dark backgrounds on hardcoded light classes
-   Catches bg-white, bg-base-100, bg-base-200 from any page
-   (methodist, mentor, etc.) without touching their source files.
-   ═══════════════════════════════════════════════════════════════ */
-html.dark .bg-white,
-html.dark .bg-base-100,
-html.dark [style*="background-color: white"],
-html.dark [style*="background-color: #fff"],
-html.dark [style*="background-color: #ffffff"] {
-  background-color: var(--surface) !important;
-}
-html.dark .bg-base-200 {
-  background-color: var(--surface-hover) !important;
-}
-html.dark .bg-base-300 {
-  background-color: var(--border) !important;
-}
-/* Also catch border-[#E6EDD8] hardcoded borders */
-html.dark [class*="border-[#E6EDD8]"],
-html.dark [class*="border-[#dce5d4]"],
-html.dark [class*="border-[#f6faef]"] {
-  border-color: var(--border) !important;
-}
-/* Hardcoded text colors */
-html.dark [class*="text-[#1D2417]"],
-html.dark [class*="text-[#1d2417]"] {
-  color: var(--text) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -510,8 +178,8 @@ html.dark [class*="text-[#1d2417]"] {
   100% { background-position: 200% 0; }
 }
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(198, 255, 52, 0); }
-  50%      { box-shadow: 0 0 12px 4px rgba(198, 255, 52, 0.18); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(64, 131, 59, 0); }
+  50%      { box-shadow: 0 0 12px 4px rgba(64, 131, 59, 0.18); }
 }
 
 .animate-fade-in {
@@ -534,6 +202,17 @@ html.dark [class*="text-[#1d2417]"] {
 }
 .animate-glow-pulse {
   animation: glow-pulse 2.5s ease-in-out infinite;
+}
+
+/* Уважаем системную настройку «меньше движения» */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -595,7 +274,7 @@ html.dark [class*="text-[#1d2417]"] {
 
 /* Green glow ring for focused/active elements */
 .glow-ring {
-  box-shadow: 0 0 0 3px rgba(198, 255, 52, 0.3);
+  box-shadow: 0 0 0 3px rgba(64, 131, 59, 0.28);
 }
 
 /* Pulsing dot indicator (online status) */
@@ -615,4 +294,12 @@ html.dark [class*="text-[#1d2417]"] {
 /* Overflow scroll */
 .overflow-x-auto {
   scrollbar-width: thin;
+}
+
+/* Клавиатурная доступность: видимый фокус на всех интерактивных элементах.
+   :focus-visible не срабатывает на клик мышью — визуального шума не добавляет. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+  border-radius: 6px;
 }

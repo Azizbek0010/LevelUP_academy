@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Search, Send, ChevronLeft, MessageSquare, Lock, WifiOff } from 'lucide-react';
+import { Send, ChevronLeft, MessageSquare, Lock, WifiOff } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth.jsx';
 import { api, USING_MOCKS } from '../../api.js';
 import { getSocket } from '../../socket.js';
 import { useChatContacts, useChatHistory } from '../../queries.js';
+import { Avatar, SearchInput, EmptyState } from './_ui.jsx';
 
 /**
  * Личная переписка сотрудника с родителями учеников.
@@ -15,16 +16,6 @@ import { useChatContacts, useChatHistory } from '../../queries.js';
  * с бэкенда уже отфильтрованным по правам, поэтому здесь ничего доп. фильтровать
  * не нужно.
  */
-
-function Avatar({ name, size = 'md' }) {
-  const letter = (name?.trim()?.[0] || '?').toUpperCase();
-  const cls = size === 'sm' ? 'w-9 h-9 text-sm' : 'w-11 h-11 text-base';
-  return (
-    <span className={`${cls} rounded-full bg-primary/20 text-primary grid place-items-center font-bold shrink-0`}>
-      {letter}
-    </span>
-  );
-}
 
 const fullName = (c) => `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim();
 
@@ -228,15 +219,11 @@ export default function MentorChat() {
             }`}
           >
             <div className="p-3 border-b border-base-200">
-              <div className="flex items-center gap-2 rounded-lg border border-base-300 px-3 py-2">
-                <Search size={14} className="text-base-content/40 shrink-0" />
-                <input
-                  placeholder="Ota-ona yoki o'quvchi..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="bg-transparent text-sm outline-none w-full"
-                />
-              </div>
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Ota-ona yoki o'quvchi..."
+              />
               {totalUnread > 0 && (
                 <p className="text-[11px] text-base-content/50 mt-2">
                   {totalUnread} ta o'qilmagan xabar
@@ -265,12 +252,10 @@ export default function MentorChat() {
                   ))}
                 </div>
               ) : filtered.length === 0 ? (
-                <div className="text-center py-14 px-4 text-base-content/40">
-                  <MessageSquare size={40} className="mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">
-                    {search ? 'Hech kim topilmadi' : "Hozircha ota-onalar yo'q"}
-                  </p>
-                </div>
+                <EmptyState
+                  icon={MessageSquare}
+                  title={search ? 'Hech kim topilmadi' : "Hozircha ota-onalar yo'q"}
+                />
               ) : (
                 filtered.map((c) => (
                   <button
@@ -280,7 +265,7 @@ export default function MentorChat() {
                       activeId === c.id ? 'bg-primary/10' : 'hover:bg-base-200/60'
                     }`}
                   >
-                    <Avatar name={fullName(c)} />
+                    <Avatar name={fullName(c)} size="lg" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-sm font-semibold truncate">{fullName(c)}</span>
@@ -313,11 +298,12 @@ export default function MentorChat() {
             }`}
           >
             {!activeContact ? (
-              <div className="flex-1 grid place-items-center text-base-content/40 px-6 text-center">
-                <div>
-                  <MessageSquare size={48} className="mx-auto mb-3 opacity-25" />
-                  <p className="text-sm">Yozishmani boshlash uchun ota-onani tanlang</p>
-                </div>
+              <div className="flex-1 grid place-items-center">
+                <EmptyState
+                  icon={MessageSquare}
+                  title="Ota-onani tanlang"
+                  hint="Yozishmani boshlash uchun chapdagi ro'yxatdan tanlang."
+                />
               </div>
             ) : (
               <>
@@ -329,7 +315,7 @@ export default function MentorChat() {
                   >
                     <ChevronLeft size={18} />
                   </button>
-                  <Avatar name={fullName(activeContact)} size="sm" />
+                  <Avatar name={fullName(activeContact)} />
                   <div className="min-w-0">
                     <div className="text-sm font-semibold truncate">{fullName(activeContact)}</div>
                     {activeContact.child_names && (

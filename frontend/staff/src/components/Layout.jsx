@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Search, Bell, Sun, Moon, ChevronLeft, ChevronRight, X,
+  Search, Bell, ChevronLeft, ChevronRight, ChevronDown, X,
   LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu, Wifi,
 } from 'lucide-react';
 import {
@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { useOnlineCount, disconnectSocket } from '../socket.js';
+import { useMentorGroups } from '../queries.js';
 
 /* ──────────────────── HOOKS ──────────────────── */
 function useMediaQuery(query) {
@@ -58,17 +59,20 @@ const adminNav = [
   { to: '/settings',  label: 'Настройки',   Icon: HiOutlineCog },
 ];
 
+/**
+ * Меню ментора намеренно короткое.
+ *
+ * Было пять пунктов — Группы, Davomat, Тесты, Коины, Чат — и каждый из трёх
+ * средних начинался с одного и того же вопроса «а с какой группой работаем?».
+ * Ментор выбирал группу заново в каждом разделе. Теперь группа выбирается один
+ * раз здесь, а журнал/тесты/коины — вкладки внутри неё.
+ *
+ * Чат остаётся снаружи: переписка идёт с родителями, а не с группой.
+ */
 const mentorNav = [
-  { to: '/',           label: 'Дашборд',   Icon: HiOutlineSquares2X2, end: true },
-  { to: '/groups',     label: 'Группы',    Icon: HiOutlineUsers },
-  { to: '/attendance', label: 'Davomat',   Icon: HiOutlineCalendarDays },
-  // «Домашки» убраны: страницы для ментора не существует (единственная реализация
-  // лежит в неподключённой pages/mentor/mentoor/, см. заметку там). Пункт вёл на
-  // несуществующий роут. Бэкенд и api.mentorHomework* готовы — вернуть, когда
-  // страница будет написана.
-  { to: '/tests',      label: 'Тесты',     Icon: HiOutlineDocumentText },
-  { to: '/coins',      label: 'Коины',     Icon: HiOutlineCurrencyDollar },
-  { to: '/chat',       label: 'Xabarlar',  Icon: HiOutlineChatBubbleLeftRight },
+  { to: '/',     label: 'Дашборд',  Icon: HiOutlineSquares2X2, end: true },
+  { type: 'mentor-groups' },
+  { to: '/chat', label: 'Xabarlar', Icon: HiOutlineChatBubbleLeftRight },
 ];
 
 const methodistNav = [
@@ -98,8 +102,93 @@ const ROLE_COLORS = {
   methodist: '#f59e0b',
 };
 
+/* ──────────────────── MENTOR: раскрывающийся список групп ────────────────────
+   Отдельный компонент, а не ветка внутри Sidebar: хук useMentorGroups не должен
+   выполняться у админа и методиста — их эндпоинт ментора вернул бы 403. */
+function MentorGroupsNav({ collapsed, onExpandSidebar }) {
+  const { data } = useMentorGroups();
+  const location = useLocation();
+  const groups = data?.data || [];
+
+  const insideGroup = location.pathname.startsWith('/groups');
+  // Раскрыт по умолчанию: список групп — основная навигация ментора, прятать
+  // её за лишним кликом незачем. Свернуть можно вручную.
+  const [open, setOpen] = useState(true);
+
+  const toggle = () => {
+    // В свёрнутом сайдбаре списку негде показаться — сначала разворачиваем его.
+    if (collapsed) { onExpandSidebar(); setOpen(true); return; }
+    setOpen((v) => !v);
+  };
+
+  return (
+    <div>
+      <button
+        onClick={toggle}
+        title={collapsed ? 'Guruhlar' : undefined}
+        aria-expanded={collapsed ? false : open}
+        className={`group w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-sm ${
+          collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
+        }`}
+        style={{
+          color: insideGroup ? '#C6FF34' : 'rgba(232, 239, 226, 0.55)',
+          background: insideGroup ? 'rgba(198, 255, 52, 0.1)' : 'transparent',
+        }}
+      >
+        <HiOutlineUserGroup size={18} strokeWidth={insideGroup ? 2.2 : 1.8} className="shrink-0" />
+        {!collapsed && (
+          <>
+            <span className="flex-1 text-left font-medium">Guruhlar</span>
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+              style={{ background: 'rgba(198,255,52,0.12)', color: 'rgba(198,255,52,0.75)' }}
+            >
+              {groups.length}
+            </span>
+            <ChevronDown
+              size={14}
+              className="shrink-0 transition-transform duration-200"
+              style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+            />
+          </>
+        )}
+      </button>
+
+      {!collapsed && open && (
+        <ul className="mt-1 space-y-0.5 pl-3 border-l ml-4" style={{ borderColor: 'rgba(198,255,52,0.12)' }}>
+          {groups.length === 0 ? (
+            <li className="px-3 py-2 text-[11px]" style={{ color: 'rgba(232,239,226,0.3)' }}>
+              Guruh yo'q
+            </li>
+          ) : (
+            groups.map((g) => {
+              const active = location.pathname === `/groups/${g.id}`;
+              return (
+                <li key={g.id}>
+                  <NavLink
+                    to={`/groups/${g.id}`}
+                    className="block rounded-lg px-3 py-2 text-[13px] transition-colors truncate"
+                    style={{
+                      color: active ? '#C6FF34' : 'rgba(232, 239, 226, 0.5)',
+                      background: active ? 'rgba(198, 255, 52, 0.08)' : 'transparent',
+                      fontWeight: active ? 600 : 400,
+                    }}
+                    title={g.name}
+                  >
+                    {g.name}
+                  </NavLink>
+                </li>
+              );
+            })
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /* ──────────────────── SIDEBAR ──────────────────── */
-function Sidebar({ role, collapsed, onToggle }) {
+function Sidebar({ role, collapsed, onToggle, onExpandSidebar = () => {} }) {
   const nav = ROLE_NAV[role] || [];
   const { user } = useAuth();
   const location = useLocation();
@@ -137,7 +226,17 @@ function Sidebar({ role, collapsed, onToggle }) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
-        {nav.map(({ to, label, Icon, end, soon }, i) => {
+        {nav.map((item, i) => {
+          if (item.type === 'mentor-groups') {
+            return (
+              <MentorGroupsNav
+                key="mentor-groups"
+                collapsed={collapsed}
+                onExpandSidebar={onExpandSidebar}
+              />
+            );
+          }
+          const { to, label, Icon, end, soon } = item;
           const isActive = location.pathname === to || (end && location.pathname === to) || (!end && location.pathname.startsWith(to) && to !== '/');
           return (
             <NavLink
@@ -229,27 +328,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
   const onlineCount = useOnlineCount(token);
   const [searchFocused, setSearchFocused] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('lu-theme') || 'system');
   const userMenuRef = useRef(null);
-
-  // Theme cycling
-  const cycleTheme = () => {
-    const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
-    setTheme(next);
-  };
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    if (theme === 'dark') root.classList.add('dark');
-    else if (theme === 'light') root.classList.add('light');
-    else {
-      // system
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.classList.add(prefersDark ? 'dark' : 'light');
-    }
-    localStorage.setItem('lu-theme', theme);
-  }, [theme]);
 
   // Close user menu on outside click
   useEffect(() => {
@@ -265,8 +344,6 @@ function Header({ sidebarWidth, onMobileToggle }) {
     await logout();
     navigate('/login', { replace: true });
   };
-
-  const themeIcon = theme === 'dark' ? <Moon size={16} /> : theme === 'light' ? <Sun size={16} /> : <Sun size={16} />;
 
   return (
     <header
@@ -320,20 +397,6 @@ function Header({ sidebarWidth, onMobileToggle }) {
         <Wifi size={13} />
         <span>{onlineCount}</span>
       </div>
-
-      {/* Theme toggle */}
-      <button
-        onClick={cycleTheme}
-        className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105"
-        style={{
-          color: 'var(--text-secondary)',
-          background: 'var(--bg)',
-          border: '1px solid var(--border)',
-        }}
-        title={`Tema: ${theme}`}
-      >
-        {themeIcon}
-      </button>
 
       {/* Notification bell */}
       <button
@@ -455,7 +518,12 @@ export default function Layout() {
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* Desktop Sidebar */}
       {isDesktop && (
-        <Sidebar role={role} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+        <Sidebar
+          role={role}
+          collapsed={collapsed}
+          onToggle={() => setCollapsed(!collapsed)}
+          onExpandSidebar={() => setCollapsed(false)}
+        />
       )}
 
       {/* Mobile Sidebar Overlay */}
