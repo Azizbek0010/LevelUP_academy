@@ -39,6 +39,8 @@ const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
 const MentorAttendance = lazy(() => import('./pages/mentor/Attendance.jsx'));
 const MentorChat = lazy(() => import('./pages/mentor/Chat.jsx'));
 const MentorTests = lazy(() => import('./pages/mentor/Tests.jsx'));
+const MentorGroups = lazy(() => import('./pages/mentor/Groups.jsx'));
+const MentorCoins = lazy(() => import('./pages/mentor/Coins.jsx'));
 
 const MethodistDashboard = lazy(() => import('./pages/methodist/Dashboard.jsx'));
 const TrainingTypes = lazy(() => import('./pages/methodist/TrainingTypes.jsx'));
@@ -80,12 +82,13 @@ export default function App() {
 
         {/* Shared paths dispatched by role */}
         <Route path="/chat" element={<SW><RoleView views={{ mentor: MentorChat, admin: AdminChat }} /></SW>} />
-        <Route path="/groups" element={<SW><RoleView views={{ superadmin: SuperGroups, admin: AdminGroups }} /></SW>} />
+        <Route path="/groups" element={<SW><RoleView views={{ superadmin: SuperGroups, admin: AdminGroups, mentor: MentorGroups }} /></SW>} />
         <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SW>} />
         <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
         <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile }} /></SW>} />
         <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: MentorAttendance }} /></SW>} />
         <Route path="/tests" element={<SW><RoleView views={{ mentor: MentorTests }} /></SW>} />
+        <Route path="/coins" element={<SW><RoleView views={{ mentor: MentorCoins }} /></SW>} />
         <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents }} /></SW>} />
 
         {/* Admin routes */}

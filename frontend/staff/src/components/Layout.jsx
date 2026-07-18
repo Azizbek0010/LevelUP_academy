@@ -62,7 +62,10 @@ const mentorNav = [
   { to: '/',           label: 'Дашборд',   Icon: HiOutlineSquares2X2, end: true },
   { to: '/groups',     label: 'Группы',    Icon: HiOutlineUsers },
   { to: '/attendance', label: 'Davomat',   Icon: HiOutlineCalendarDays },
-  { to: '/homework',   label: 'Домашки',   Icon: HiOutlineClipboardDocumentCheck },
+  // «Домашки» убраны: страницы для ментора не существует (единственная реализация
+  // лежит в неподключённой pages/mentor/mentoor/, см. заметку там). Пункт вёл на
+  // несуществующий роут. Бэкенд и api.mentorHomework* готовы — вернуть, когда
+  // страница будет написана.
   { to: '/tests',      label: 'Тесты',     Icon: HiOutlineDocumentText },
   { to: '/coins',      label: 'Коины',     Icon: HiOutlineCurrencyDollar },
   { to: '/chat',       label: 'Xabarlar',  Icon: HiOutlineChatBubbleLeftRight },
