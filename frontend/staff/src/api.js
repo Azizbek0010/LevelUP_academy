@@ -805,6 +805,7 @@ async function request(path, { method = 'GET', body, token } = {}) {
     err.fields = data.details || data.errors || null;
     throw err;
   }
+
   return data;
 }
 

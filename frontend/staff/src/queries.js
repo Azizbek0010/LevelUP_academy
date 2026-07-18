@@ -171,5 +171,11 @@ export function useMethodistAnalytics() {
 // -------- INVALIDATE --------
 export function useInvalidate() {
   const qc = useQueryClient();
-  return (...keys) => keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+  return (...keys) => keys.forEach((k) => {
+    if (Array.isArray(k)) {
+      qc.invalidateQueries({ queryKey: k });
+    } else {
+      qc.invalidateQueries({ queryKey: [k] });
+    }
+  });
 }
