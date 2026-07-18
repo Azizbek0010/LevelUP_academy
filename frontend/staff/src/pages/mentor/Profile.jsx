@@ -6,7 +6,6 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
-import PageHeader from '../../components/PageHeader.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import { useMe, useMentorGroups } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
@@ -242,14 +241,18 @@ export default function MentorProfile() {
     iso ? new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
 
   return (
-    <div>
-      <PageHeader title="Profil" subtitle="Shaxsiy ma'lumotlar va akkaunt sozlamalari" />
+    /* Заголовок страницы убран: карточка слева и так представляет человека,
+       а строка «Profil» съедала высоту, которой не хватает форме.
 
-      {/* 380px под карточку личности + остальное форме. Было max-w-5xl на всю
-          страницу — на широком мониторе справа оставалась пустая треть. */}
-      <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-5 items-start">
+       Раскладка рабочего стола: маршрут помечен в Layout как full-page, здесь
+       две колонки со своими границами прокрутки. Карточка личности стоит на
+       месте, крутится только форма — на десктопе (lg+). Ниже lg колонки
+       складываются в одну и страница скроллится целиком: на телефоне
+       фиксированная карточка в пол-экрана только мешала бы. */
+    <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 p-4 sm:p-6 lg:p-8 overflow-y-auto lg:overflow-hidden">
 
-        {/* ═════ Карточка личности ═════ */}
+      {/* ═════ Карточка личности — неподвижная ═════ */}
+      <aside className="w-full lg:w-[380px] shrink-0 lg:h-full lg:overflow-y-auto">
         <div className="space-y-5">
           <section className="card bg-base-100 overflow-hidden">
             {/* Цветная шапка: аватар лежит на границе, как в привычных
@@ -302,8 +305,10 @@ export default function MentorProfile() {
             </div>
           </section>
         </div>
+      </aside>
 
-        {/* ═════ Настройки ═════ */}
+      {/* ═════ Настройки — единственная прокручиваемая область ═════ */}
+      <div className="flex-1 min-w-0 lg:h-full lg:overflow-y-auto lg:pr-1">
         <div className="space-y-5">
           <section className="card bg-base-100">
             <header className="px-5 py-4 border-b border-base-200">

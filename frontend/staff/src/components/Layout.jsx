@@ -666,7 +666,13 @@ export default function Layout() {
      Проверяем ещё и роль: тот же путь `/groups/:id` у админа — обычная
      страница с отступами, ей полноэкранный режим не нужен. */
   const isMentorGroupPage = role === 'mentor' && /^\/groups\/[^/]+/.test(location.pathname);
-  const isFullPage = ['/chat'].some(r => location.pathname.startsWith(r)) || isMentorGroupPage;
+  // Профиль ментора — тоже рабочий стол: карточка слева стоит на месте,
+  // прокручивается только колонка с формой. Проверка роли обязательна —
+  // у админа по тому же адресу обычная страница с общим скроллом.
+  const isMentorProfile = role === 'mentor' && location.pathname === '/profile';
+  const isFullPage = ['/chat'].some(r => location.pathname.startsWith(r))
+    || isMentorGroupPage
+    || isMentorProfile;
 
   /* ── Раскрытие по наведению ──────────────────────────────────────────────
      `collapsed` — закреплённое состояние, выбор пользователя, он же лежит в
