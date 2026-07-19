@@ -38,6 +38,13 @@ const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 }
 
 const pad = (n) => String(n).padStart(2, '0');
 
+/** «Emirxan Ergashev» → «Emirxan.E»: в колонку шириной 68px имя целиком не лезет. */
+function shortName(full) {
+  if (!full) return '';
+  const [first, last] = full.split(' ');
+  return last ? `${first}.${last[0]}` : first;
+}
+
 /* Полоса месяцев: полгода назад и три вперёд от текущего. Прошлые нужны для
    правок задним числом, будущие — чтобы заранее открыть журнал. */
 function buildMonthStrip(base) {
@@ -174,6 +181,22 @@ export default function AttendanceTab({ groupId, group }) {
   const to = `${year}-${pad(month + 1)}-${pad(daysInMonth)}`;
   const { data: attendanceData } = useMentorAttendance(groupId, { from, to });
   const attendance = useMemo(() => attendanceData?.data || [], [attendanceData]);
+
+  /* Кто отметил каждый день. Берём первую запись за дату: журнал заполняет
+     один человек за урок, а если подменял другой — важен сам факт, что это
+     не постоянный преподаватель, а не поимённый разбор по ученикам. */
+  const markedByByDate = useMemo(() => {
+    const map = {};
+    attendance.forEach((r) => {
+      const day = String(r.lesson_date ?? '').slice(0, 10);
+      if (!day || map[day]) return;
+      const name = `${r.marked_by_first_name ?? ''} ${r.marked_by_last_name ?? ''}`.trim();
+      if (name) map[day] = name;
+    });
+    return map;
+  }, [attendance]);
+
+  const markedByFor = useCallback((dateKey) => markedByByDate[dateKey] ?? '', [markedByByDate]);
 
   /* Живые обновления: журнал этой группы отметили в другом месте — второй
      ментор, админ или тот же ментор со второго устройства.
@@ -422,6 +445,11 @@ export default function AttendanceTab({ groupId, group }) {
       </div>
 
       {/* ── Сетка ── */}
+      {/* Таблица ниже — `min-w-max`, а не `w-full`: колонки держат свою ширину,
+          и журнал за месяц (12–14 дней) уезжает под горизонтальную прокрутку
+          вместо того, чтобы ужимать дни до нечитаемых полосок. Имя ученика и
+          коины закреплены по краям, поэтому при прокрутке видно, чью строку
+          смотришь и сколько у него коинов. */}
       <div className="overflow-auto flex-1 min-h-0">
         {rosterLoading ? (
           <div className="p-4 space-y-2">
@@ -430,7 +458,7 @@ export default function AttendanceTab({ groupId, group }) {
         ) : students.length === 0 ? (
           <EmptyState icon={Users} title="Bu guruhda o'quvchilar yo'q" />
         ) : (
-          <table className="table w-full border-collapse">
+          <table className="table min-w-max border-collapse">
             <thead>
               <tr>
                 {/* Ширина задана жёстко, а не через min-width: в таблице
@@ -453,7 +481,7 @@ export default function AttendanceTab({ groupId, group }) {
                   return (
                     <th
                       key={d}
-                      className="sticky top-0 z-10 w-12 px-1.5 py-3 text-center border-l border-base-200"
+                      className="sticky top-0 z-10 w-[68px] min-w-[68px] px-1.5 py-2.5 text-center border-l border-base-200"
                       style={{
                         background: isToday
                           ? 'var(--green-bg)'
@@ -467,19 +495,31 @@ export default function AttendanceTab({ groupId, group }) {
                           : 'var(--text-secondary)',
                       }}
                     >
-                      <div className="text-[9px] uppercase">
+                      {/* Полная дата, а не одно число: журнал за месяц — это
+                          12–14 колонок, и «3» посреди ленты не сказать от
+                          какого месяца, когда листаешь соседние. */}
+                      <div className="text-[11px] font-bold tabular-nums leading-tight">
+                        {pad(d)}.{pad(month + 1)}
+                      </div>
+                      <div className="text-[8px] uppercase mt-0.5 opacity-70">
                         {new Date(year, month, d).toLocaleDateString('uz-UZ', { weekday: 'short' })}
                       </div>
-                      <div className="text-sm font-bold mt-0.5 tabular-nums">{d}</div>
+                      {/* Кто вёл этот урок. У группы бывает подменный
+                          преподаватель — по колонке видно, чья это отметка. */}
+                      <div className="text-[8px] mt-0.5 truncate opacity-55" title={markedByFor(key)}>
+                        {shortName(markedByFor(key))}
+                      </div>
                     </th>
                   );
                 })}
                 {/* Липнет к правому краю только начиная с sm: на телефоне это
                     вторая неподвижная колонка, и дни оказывались зажаты между
                     ними в ноль. Там она просто уезжает в конец таблицы. */}
-                {/* w-full — эта колонка добирает всю свободную ширину, чтобы
-                    дни занятий стояли плотной группой сразу после имён. */}
-                <th className="sm:sticky sm:right-0 top-0 z-20 bg-base-100 w-full min-w-[250px] px-4 py-3 border-l border-base-200">
+                {/* Фиксированная ширина, не `w-full`. Пока колонка добирала всё
+                    свободное место, при 12–14 днях месяца именно она забирала
+                    ширину, а дни сплющивались в нечитаемые полоски. Теперь
+                    лишнюю ширину забирает лента дней, а не коины. */}
+                <th className="sm:sticky sm:right-0 top-0 z-20 bg-base-100 w-[250px] min-w-[250px] px-4 py-3 border-l border-base-200">
                   {/* Подписи стоят ровно над своими числами в строках ниже:
                       «сегодня» и «всего» — разные величины, и без заголовков
                       два числа подряд читаются как одно составное. */}
