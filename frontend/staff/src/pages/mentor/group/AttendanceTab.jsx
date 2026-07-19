@@ -548,9 +548,12 @@ export default function AttendanceTab({ groupId, group }) {
                           }`}
                           title={`Bu oy uchun: ${budget.allocated} coin (${budget.students} o'quvchi × ${budget.coinsPerStudent}). Sarflandi: ${budget.spent}`}
                         >
-                          <Coins size={12} />
+                          {/* Только остаток. Дробь «97/110» заставляла вычитать
+                              в уме, чтобы ответить на единственный интересующий
+                              вопрос — сколько ещё можно раздать. Из чего
+                              сложился лимит, видно в подсказке. */}
+                          <Coins size={13} />
                           {budget.remaining}
-                          <span className="opacity-50 font-normal">/{budget.allocated}</span>
                         </span>
                       )}
                     </span>
