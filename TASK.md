@@ -187,7 +187,15 @@
          kichik yuklamada ishlaydi, lekin web uxlab qolsa cron ham uxlaydi (free plan 15 daqiqada uxlaydi)
       3. Tashqi cron (masalan cron-job.org) maxsus endpointni chaqiradi — eng arzoni, lekin endpoint himoyalanishi shart
 
-- [ ] BUG-TESTS-RED 🔥 (2026-07-19 auditda topildi — testlar ISHGA TUSHIRILDI):
+- [x] BUG-TESTS-RED ✅ TUZATILDI 2026-07-19 (commit `b22c3e4`):
+      testlar bugungi sanaga o'tkazildi (sana serverdagidek Toshkent bo'yicha hisoblanadi),
+      `npm test` `&&` zanjiridan `tests/run-all.js` ga o'tkazildi — endi har bir to'plam
+      alohida processda yuguradi va bittasi yiqilsa qolganlari BEKOR BO'LMAYDI.
+      Yangi test qo'shildi (3b) — "faqat bugun" qoidasining o'zi hech narsa bilan qoplanmagan edi,
+      shuning uchun uning kelishi 3 ta begona testni yiqitgan edi. Endi kecha va ertaga ham tekshiriladi.
+      **Natija: 5 ta to'plam ham YASHIL — 66 test** (mentor 17 · student 17 · parent 4 · payments 13 · auth 15)
+
+- [~] ~~BUG-TESTS-RED~~ (tarix uchun) 🔥 (2026-07-19 auditda topildi — testlar ISHGA TUSHIRILDI):
       **Mentor testlarida 3 ta FAIL, sababi mening o'z o'zgarishim.**
       `b6bf912` commit'i "mentor faqat BUGUNGI darsni belgilay oladi" qoidasini kiritdi
       (`attendance.service.js:35` — `assertToday()`), testlar esa davomatni o'tgan sana bilan qo'yadi:
