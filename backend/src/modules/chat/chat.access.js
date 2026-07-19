@@ -196,7 +196,12 @@ export async function listStaffContacts(user, db = pool) {
           FROM chat_messages m
          WHERE m.deleted_at IS NULL
            AND m.read_at IS NULL
-           AND m.sender_id <> $1
+           -- $1::uuid обязателен. Выше тот же параметр используется как
+           -- $1::text (склейка room_key), Postgres выводит его тип из первого
+           -- употребления и получает text — а sender_id это uuid. Без явного
+           -- приведения запрос падает на «operator does not exist: uuid <> text»
+           -- и весь список собеседников отвечает 500.
+           AND m.sender_id <> $1::uuid
            AND m.room_key LIKE 'dm:' || $1::text || ':%'
          GROUP BY m.room_key
      )
