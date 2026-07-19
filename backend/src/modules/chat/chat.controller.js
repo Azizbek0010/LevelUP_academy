@@ -1,11 +1,35 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { AppError } from '../../utils/AppError.js';
 import * as chatService from './chat.service.js';
-import { listStaffContacts } from './chat.access.js';
+import { listStaffContacts, listStaffStudentContacts } from './chat.access.js';
 
-/** GET /api/chat/contacts — родители, с которыми сотрудник вправе переписываться. */
+/**
+ * GET /api/chat/contacts — все, кому сотрудник вправе писать: родители и сами
+ * ученики.
+ *
+ * `peer_type` обязателен клиенту: в списке рядом стоят мать и её ребёнок с
+ * одной фамилией, и без пометки непонятно, кому пишешь. Сортировка общая — по
+ * времени последнего сообщения, иначе свежий диалог с учеником уезжал бы под
+ * список молчащих родителей.
+ */
 export const getContacts = asyncHandler(async (req, res) => {
-  const data = await listStaffContacts(req.user);
+  const [parents, students] = await Promise.all([
+    listStaffContacts(req.user),
+    listStaffStudentContacts(req.user),
+  ]);
+
+  const data = [
+    ...parents.map((c) => ({ ...c, peer_type: 'parent' })),
+    ...students.map((c) => ({ ...c, peer_type: 'student' })),
+  ].sort((a, b) => {
+    if (a.last_message_at && b.last_message_at) {
+      return new Date(b.last_message_at) - new Date(a.last_message_at);
+    }
+    if (a.last_message_at) return -1;
+    if (b.last_message_at) return 1;
+    return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+  });
+
   res.json({ success: true, data });
 });
 

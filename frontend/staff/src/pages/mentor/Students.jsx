@@ -64,13 +64,14 @@ function RowMenu({ x, y, student, onClose }) {
 
   const name = `${student.firstName} ${student.lastName}`.trim();
 
-  /* Пункта «написать самому ученику» здесь нет намеренно.
-     Чат на бэкенде — это пара «сотрудник ↔ родитель»: комната называется
-     dm:<staffId>:<parentId>, доступ проверяет canStaffChatParent, роль
-     student в ней не участвует вовсе. Кнопка, ведущая в несуществующий
-     диалог, хуже её отсутствия; чтобы она появилась, нужно расширять
-     chat.access.js и сокет на второй тип собеседника. */
   const items = [
+    {
+      Icon: MessageSquare,
+      label: "O'quvchiga yozish",
+      // Комната та же, что и с родителем: dm:<staffId>:<peerId>. Бэкенд теперь
+      // пускает вторым участником и ученика (canStaffChatStudent).
+      onClick: () => navigate(`/chat?peer=${student.id}`),
+    },
     {
       Icon: UserRound,
       label: "Ota-onasiga yozish",
@@ -78,7 +79,7 @@ function RowMenu({ x, y, student, onClose }) {
          Первая версия передавала имя и полагалась на поиск по child_names:
          тёзки открывали чужой диалог, а расхождение в записи имени не
          находило вообще ничего. */
-      onClick: () => navigate(`/chat?parent=${student.parentId}`),
+      onClick: () => navigate(`/chat?peer=${student.parentId}`),
       // У ученика может не быть привязанного родителя — тогда писать некому,
       // и честнее показать это, чем открыть пустой чат.
       disabled: !student.parentId,

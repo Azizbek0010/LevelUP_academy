@@ -322,6 +322,26 @@ function mockStudentStats(studentId) {
   };
 }
 
+/* -------- мок-хранилище чата --------
+   Отправленное в мок-режиме держим в localStorage, а не в state страницы:
+   иначе сообщение исчезало при переходе в другой диалог или перезагрузке. */
+const MOCK_CHAT_KEY = 'mock_chat_messages';
+
+function mockChatRead() {
+  try {
+    return JSON.parse(localStorage.getItem(MOCK_CHAT_KEY) || '{}');
+  } catch {
+    return {};   // повреждённый JSON не должен ронять весь чат
+  }
+}
+
+function mockChatAppend(roomKey, message) {
+  const all = mockChatRead();
+  all[roomKey] = [...(all[roomKey] ?? []), message];
+  localStorage.setItem(MOCK_CHAT_KEY, JSON.stringify(all));
+  return message;
+}
+
 // -------- Super Admin mock helpers --------
 const getMockData = () => {
   let branches = JSON.parse(localStorage.getItem('mock_branches'));
@@ -1756,10 +1776,12 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
           { body: 'Ertaga darsga keladi', from: 'parent', at: '2026-07-17T15:10:00Z' },
         ],
       };
-      if (dmSeed[roomKey]) {
-        // Реальный бэкенд отдаёт историю НОВЫМИ СВЕРХУ (ORDER BY created_at DESC),
-        // и фронт на это рассчитывает — мок обязан повторять тот же порядок.
-        const messages = [...dmSeed[roomKey]].reverse().map((m, i) => ({
+      // Всё отправленное в мок-режиме лежит в localStorage и приклеивается
+      // к сиду — иначе история обнулялась при каждой перезагрузке.
+      const sent = mockChatRead()[roomKey] ?? [];
+
+      if (dmSeed[roomKey] || roomKey.startsWith('dm:')) {
+        const seeded = (dmSeed[roomKey] ?? []).map((m, i) => ({
           id: `${roomKey}-${i}`,
           chat_type: 'direct',
           room_key: roomKey,
@@ -1771,13 +1793,17 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
           sender_last_name: '',
           sender_role: m.from === 'me' ? 'mentor' : 'parent',
         }));
+        // Реальный бэкенд отдаёт историю НОВЫМИ СВЕРХУ (ORDER BY created_at
+        // DESC), и фронт на это рассчитывает — мок обязан повторять порядок.
+        const messages = [...seeded, ...sent]
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         return { success: true, data: { messages, nextCursor: null } };
       }
-      if (roomKey.startsWith('dm:')) {
-        return { success: true, data: { messages: [], nextCursor: null } };
-      }
 
-      const messages = mockMessages[roomKey] || mockMessages['global'];
+      const messages = [
+        ...sent,
+        ...(mockMessages[roomKey] || mockMessages['global']),
+      ];
       return { success: true, data: { messages, nextCursor: null } };
     }
 
@@ -1791,8 +1817,31 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
          «написать родителю» из списка учеников не находил никого, потому что
          связывать было нечего. Теперь у каждого второго ученика есть
          родитель с тем же parentId, что отдаёт ростер. */
-      const contacts = mockParentsOfStudents();
-      return { success: true, data: contacts };
+      /* Бэкенд отдаёт и родителей, и самих учеников, помечая каждого
+         `peer_type` — иначе мать и её ребёнок стоят в списке рядом с одной
+         фамилией и непонятно, кому пишешь. Мок повторяет ту же форму. */
+      const parents = mockParentsOfStudents()
+        .map((c) => ({ ...c, peer_type: 'parent' }));
+      const seenStudents = new Map();
+      MOCK_MENTOR_GROUPS.forEach((g) => {
+        mockGroupStudents(g.id).forEach((s) => {
+          if (seenStudents.has(s.id)) return;   // ученик может быть в двух группах
+          seenStudents.set(s.id, {
+            id: s.id,
+            first_name: s.firstName,
+            last_name: s.lastName,
+            avatar_key: null,
+            child_names: null,
+            room_key: `dm:mock-me:${s.id}`,
+            last_message: null,
+            last_message_at: null,
+            unread_count: 0,
+            peer_type: 'student',
+          });
+        });
+      });
+      const students = [...seenStudents.values()];
+      return { success: true, data: [...parents, ...students] };
     }
 
     if (path.match(/^\/chat\/([^/]+)\/read$/) && method === 'POST') {
@@ -2028,6 +2077,10 @@ export const api = {
   mentorGroups: (token) => request('/mentor/groups', { token }),
   mentorGroupStudents: (token, groupId) => request(`/mentor/groups/${groupId}/students`, { token }),
   mentorGroupStats: (token, groupId) => request(`/mentor/groups/${groupId}/stats`, { token }),
+
+  /* Дописать сообщение в мок-историю чата. Вызывается только под USING_MOCKS —
+     с живым бэкендом сохранение делает сокет. */
+  mockChatAppend,
 
   // -------- MENTOR: Attendance --------
   mentorAttendance: (token, groupId, params) => {

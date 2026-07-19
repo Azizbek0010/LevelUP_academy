@@ -138,10 +138,10 @@ export default function MentorChat() {
   const { token, user } = useAuth();
   const qc = useQueryClient();
 
-  /* ?parent=<id> — приход из списка учеников («написать родителю»).
-     Идентификатор, а не имя: поиск по имени ребёнка открывал чужой диалог
-     при тёзках и не находил ничего, если имя записано хоть немного иначе. */
-  const requestedParentId = new URLSearchParams(window.location.search).get('parent');
+  /* ?peer=<id> — приход из списка учеников: собеседником может быть и ученик,
+     и его родитель. Идентификатор, а не имя: поиск по имени открывал чужой
+     диалог при тёзках и не находил ничего при ином написании. */
+  const requestedParentId = new URLSearchParams(window.location.search).get('peer');
   const [search, setSearch] = useState('');
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState('');
@@ -304,17 +304,22 @@ export default function MentorChat() {
     setSending(true);
     setError('');
 
-    // В мок-режиме сокет-сервера нет — показываем локально, чтобы страницу
-    // можно было смотреть без поднятого бэкенда.
+    // В мок-режиме сокет-сервера нет — пишем в localStorage, чтобы страницу
+    // можно было смотреть без поднятого бэкенда. Именно localStorage, а не
+    // только state: раньше отправленное жило в памяти компонента и исчезало
+    // при переходе на другой чат или перезагрузке — выглядело как «сообщения
+    // пропадают».
     if (USING_MOCKS) {
-      setLiveMessages((prev) => [...prev, {
+      const message = {
         id: `local-${Date.now()}`,
         room_key: roomKey,
         sender_id: user?.id ?? 'mock-me',
         body,
         created_at: new Date().toISOString(),
         sender_role: user?.role ?? 'mentor',
-      }]);
+      };
+      api.mockChatAppend(roomKey, message);
+      setLiveMessages((prev) => [...prev, message]);
       setDraft('');
       setAtBottom(true);
       setSending(false);
@@ -328,7 +333,7 @@ export default function MentorChat() {
         const timer = setTimeout(() => {
           if (!done) resolve({ ok: false, error: 'timeout' });
         }, 8000);
-        s.emit('chat:dm:send', { parentId: activeContact.id, body }, (res) => {
+        s.emit('chat:dm:send', { peerId: activeContact.id, body }, (res) => {
           done = true;
           clearTimeout(timer);
           resolve(res ?? { ok: false, error: 'no response' });
@@ -438,11 +443,25 @@ export default function MentorChat() {
                               {formatTime(c.last_message_at)}
                             </span>
                           </div>
-                          {c.child_names && (
-                            <div className="text-[11px] text-base-content/45 truncate mt-0.5">
-                              {c.child_names}
-                            </div>
-                          )}
+                          {/* Кто это — ученик или родитель. Без пометки мать и
+                              её ребёнок стоят в списке рядом с одной фамилией,
+                              и понять, кому пишешь, невозможно. */}
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span
+                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                                c.peer_type === 'student'
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'bg-base-200 text-base-content/55'
+                              }`}
+                            >
+                              {c.peer_type === 'student' ? "O'quvchi" : 'Ota-ona'}
+                            </span>
+                            {c.child_names && (
+                              <span className="text-[11px] text-base-content/45 truncate">
+                                {c.child_names}
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center justify-between gap-2 mt-1">
                             {/* Непрочитанное — плотнее и темнее: список читают
                                 боковым зрением, вес важнее цвета. */}

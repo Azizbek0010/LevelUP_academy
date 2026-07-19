@@ -2,6 +2,7 @@ import { pool } from '../config/db.js';
 import { saveMessage } from '../modules/chat/chat.service.js';
 import {
   canStaffChatParent,
+  canStaffChatPeer,
   dmRoom,
   userRoom,
   isUuid,
@@ -55,13 +56,17 @@ export function registerChat(io, socket, _redis) {
     }
   });
 
-  // --- личный диалог: сотрудник → родитель ---
-  socket.on('chat:dm:send', async ({ parentId, body } = {}, ack) => {
+  /* --- личный диалог: сотрудник → родитель ИЛИ ученик ---
+     `peerId` — новое имя поля: собеседником может быть и тот и другой, а
+     `parentId` принимается по-прежнему, чтобы уже открытые вкладки со старым
+     кодом не начали получать отказ на первое же сообщение. */
+  socket.on('chat:dm:send', async ({ peerId, parentId, body } = {}, ack) => {
     try {
+      const target = peerId ?? parentId;
       if (!DM_STAFF_ROLES.has(user.role)) throw new Error('Forbidden');
-      if (!(await canStaffChatParent(user, parentId))) throw new Error('Forbidden');
+      if (!(await canStaffChatPeer(user, target))) throw new Error('Forbidden');
 
-      const roomKey = dmRoom(user.id, parentId);
+      const roomKey = dmRoom(user.id, target);
       const message = await saveMessage({
         chatType: 'direct',
         roomKey,
@@ -70,8 +75,8 @@ export function registerChat(io, socket, _redis) {
         body,
       });
 
-      // Только двое: сам отправитель (эхо для других его вкладок) и родитель.
-      io.to(userRoom(user.id)).to(userRoom(parentId)).emit('chat:dm:message', message);
+      // Только двое: сам отправитель (эхо для других его вкладок) и собеседник.
+      io.to(userRoom(user.id)).to(userRoom(target)).emit('chat:dm:message', message);
       ack?.({ ok: true, id: message.id, roomKey });
     } catch (err) {
       ack?.({ ok: false, error: err.message });
