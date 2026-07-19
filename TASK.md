@@ -177,6 +177,11 @@
 - [ ] AB-SUPER-REPORTS: `GET /api/super/reports` — organizatsiya bo'yicha HAQIQIY hisobot
       (filiallar kesimida tushum, qarz, o'quvchi harakati). Hozir front Dashboard datasini ko'rsatyapti.
       Front tomoni: FE-SUPER-REPORTS (Aziz)
+- [ ] AB-EXPENSE-PATCH 🆕 (audit 2026-07-19): `PATCH`/`PUT /api/admin/expenses/:id` YO'Q —
+      faqat POST, GET va DELETE bor (`admin.routes.js:181`). Ya'ni **xarajatni TAHRIRLAB bo'lmaydi**,
+      faqat o'chirib qaytadan yozish mumkin. Front buni bilib turibdi:
+      `Expenses.jsx:339` da "TODO: Backend has no PATCH/PUT endpoint" deb yozilgan.
+      ⚠️ TASK.md da "K-ADMIN: Expenses CRUD" [x] deb turgan edi — CRUD emas, U (Update) yo'q
 - [ ] AB-MAIN-REVENUE: `main-admin/Revenue.jsx` (454 qator) `useDashboard` da o'tiribdi —
       real tushumga ULANMAGAN. Platforma tushumi uchun alohida endpoint kerak.
       ⚠️ Pul jadvallariga faqat **SELECT** — yozish YO'Q (AB-V1 dagi "Partner profit" bilan bir xil qoida).
@@ -342,6 +347,10 @@
 - [ ] MAIN: Forgot-password — sikl polish
 - [ ] MAIN: Design-system — laym #C6FF34, Manrope, 3 holat (Skeleton/Empty/Error), responsive 1280/768/375, TanStack Query cache invalidation
 - [ ] MAIN: Test organizatsiyalarni tozalash (Karis bilan kelishib)
+- [ ] MAIN-FINES 🆕 (audit 2026-07-19): `Fines.jsx:27` da `initialMock` hardcode —
+      sahifa soxta jarima ro'yxatini ko'rsatyapti. Real endpointga ulansin yoki olib tashlansin
+- [ ] MAIN-UNTRACKED 🆕: `Fines.jsx` (306 qator) va `Announcements.jsx` (364 qator) kodda BOR,
+      lekin TASK.md da umuman yozilmagan edi — kim qurgani va holati noma'lum, aniqlashtirilsin
 
 ## Frontend — Admin (Abduloh, Odil, Hamidula)
 
@@ -353,6 +362,50 @@
 - [x] ADMIN: Payments UI (full/split modal; K-PAY chiqqach ulanadi) — Payments.jsx (775 qator)
 - [x] ADMIN: Expenses CRUD — Expenses.jsx + PDF eksport (Abduloh, jspdf)
 - [x] ADMIN: Reports — Reports.jsx, GET /api/admin/reports ga ulangan
+
+## Frontend — YANGI TASKLAR: Sardor / Kozim / Alish 🆕 2026-07-19
+
+> Mentor paneli Karis'ga o'tdi (jamoa bilan kelishilgan) → uchalasi bo'shadi.
+> Quyidagilar auditda topilgan HAQIQIY ishlar — har birining isboti bor, o'ylab topilgani yo'q.
+
+### 🔴 KOZIM — admin/Chat.jsx ni jonlantirish (eng katta ish, BLOKLANMAGAN)
+
+- [ ] FE-CHAT-ADMIN: `staff/src/pages/admin/Chat.jsx` (1275 qator) — **soxta chat**.
+      Ichida 7 ta TODO va hardcode kontaktlar:
+      ```js
+      const initialContacts = [
+        { id: 1, name: 'Aziz Karimov', role: 'Mentor', lastMsg: 'Salom, bugun dars bormi?' ... }
+      ```
+      Ya'ni admin chatni ochsa — o'ylab topilgan odamlar va o'ylab topilgan xabarlarni ko'radi.
+      Uchta muammo: (1) kontaktlar hardcode (2) Socket.io UMUMAN ulanmagan — realtime yo'q
+      (3) "men / u" xabarni `sender_id` bo'yicha emas, boshqa yo'l bilan aniqlayapti — noto'g'ri
+      ⚠️ Kodda "backendda endpoint yo'q" deb yozilgan — bu ESKIRGAN. Endi BOR:
+      `GET /api/chat/contacts` va `POST /api/chat/dm` (chat.routes.js:98 va :147) + socket tayyor
+      📌 Namuna yonida: `pages/mentor/Chat.jsx` — xuddi shu ish u yerda ishlaydigan qilib yozilgan, ko'chir
+      💡 Kozim'ga berildi: u o'z panelida chat qilgan, mavzuni biladi
+
+### 🔴 SARDOR — o'lik kod va konsol tozalash
+
+- [ ] FE-DEAD-CODE: repo'da router'ga UMUMAN ulanmagan kod yotibdi, hammani chalg'itadi:
+      • `staff/src/pages/mentor/mentoor/` — 13 fayl, 98K, o'z tailwind.config.js si bilan
+      • `staff/src/pages/super/ComingSoon.jsx` — App.jsx da ishlatilmaydi
+      • `main-admin/src/pages/Placeholder.jsx` — App.jsx da ishlatilmaydi
+      ⚠️ `mentoor/` — Kozim'ning ishi. O'chirishdan OLDIN Karis va Kozim bilan kelishilsin
+- [ ] FE-ROUTER-FLAG: React Router v7 future flag'lari 4 ta app'ning HECH BIRIDA qo'yilmagan →
+      konsol warning'lari to'lib ketgan. Elyor buni 2026-07-16 da aytgan, hech kim olmagan.
+      `main.jsx` larga `future={{ v7_startTransition: true, v7_relativeSplatPath: true }}`
+- [ ] FE-COOP: Google login COOP konsol xatosi (`firebase.js` / `vite.config.js`) —
+      bu ham Elyor ro'yxatidan, hech kim olmagan
+
+### 🔴 ALISH — member va student panellarini mentor darajasiga chiqarish
+
+> ⚠️ Zona: `member/` Kama'da, `student/` Abdulaziz'da. Karis ruxsat bergandan KEYIN boshlansin.
+
+- [ ] FE-THIN-PAGES: bu sahifalar juda "yupqa" — mentor paneli darajasidan ancha past:
+      `student/Videos.jsx` 69 qator · `student/Tests.jsx` 79 · `student/Leaderboard.jsx` 90 ·
+      `member/Debt.jsx` 108 · `member/Notifications.jsx` 112 · `member/Attendance.jsx` 122
+      Uch holat (Skeleton / EmptyState / Error), bo'sh holat matnlari, xatoda retry —
+      `pages/mentor/_ui.jsx` dagi tayyor komponentlar bilan
 
 ## Frontend — Mentor (Sardor, Kozim, Alish)
 
