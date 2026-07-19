@@ -168,6 +168,20 @@
 - [ ] AB-SUPER-STATS: `GET /api/super/stats` — route umuman YO'Q. KPI + grafik data (recharts uchun).
       ⚠️ Front `Stats.jsx` ham statik — api chaqirmaydi, ya'ni ikkala tomon ham kerak
 
+### AB-SUPER-REPORTS + AB-MAIN-REVENUE 🆕 (2026-07-19 auditda topildi)
+
+> Muammo: bitta endpoint uchta sahifani boqyapti. `super/Dashboard.jsx`, `super/Stats.jsx` va
+> `super/Reports.jsx` — uchalasi ham `useSuperDashboard` ni chaqiradi. Stats va Reports'ning
+> o'z ma'lumoti YO'Q, ya'ni ular Dashboard'ning nusxasi bo'lib qolgan.
+
+- [ ] AB-SUPER-REPORTS: `GET /api/super/reports` — organizatsiya bo'yicha HAQIQIY hisobot
+      (filiallar kesimida tushum, qarz, o'quvchi harakati). Hozir front Dashboard datasini ko'rsatyapti.
+      Front tomoni: FE-SUPER-REPORTS (Aziz)
+- [ ] AB-MAIN-REVENUE: `main-admin/Revenue.jsx` (454 qator) `useDashboard` da o'tiribdi —
+      real tushumga ULANMAGAN. Platforma tushumi uchun alohida endpoint kerak.
+      ⚠️ Pul jadvallariga faqat **SELECT** — yozish YO'Q (AB-V1 dagi "Partner profit" bilan bir xil qoida).
+      Front tomoni Shohjahon'da (MAIN: Revenue — uning ochiq vazifasi)
+
 ### AB-VERIFY — jonli tekshiruv (mock'siz)
 
 - [ ] AB-VERIFY: `VITE_USE_MOCKS=false` bilan real backend'da Student va Parent panellarini E2E tekshirish
@@ -276,18 +290,40 @@
       3) «Забыли пароль» mock ishlamaydi (AUTH-FORGOT bilan bir xil ildiz)
       4) React Router v7 future-flag warning
 
-## Frontend — Super Admin ✅ TUGADI
+## Frontend — Super Admin ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 
-> FRONT to'liq tayyor (Shohjahon, save-zone 0bb957e), LEKIN STATIK — backend integratsiya hali yo'q
-> (Settings/organization real API ga ulanmagan). Backend integratsiya → Abdulaziz (pastda "Backend — Super Admin Integratsiya").
-> Jamoa qayta taqsimlandi: Shohjahon → Main Admin, Said Islom + Aziz → Methodist, sxvs — loyihadan olindi.
+> ❌ Bu bo'lim ilgari "✅ TUGADI" deb turgan edi — bu NOTO'G'RI bo'lgan.
+> Sahifalar chizilgan, lekin 3 tasi bo'sh qaytadi va 1 tasi O'YLAB TOPILGAN raqam ko'rsatadi.
+> **Egasi:** Said Islom + Aziz — Super panelni asli SHULAR qurgan, kodni biladi.
+> Ikkalasining ham ochiq vazifasi yo'q edi, Methodist karkasi tayyor.
+> Backend tomoni Abdulaziz'da (AB-SUPER-* ga qara) — front va back BIRGA yopiladi.
 
 - [x] SUPER (front): Dashboard (org income, branches, admins, students)
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
 - [x] SUPER (front): CRUD admins
-- [x] SUPER (front): Reports
 - [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
 - [ ] SUPER (front): 🆕 Dars davomiyligi sozlamasi — Settings da PATCH /api/super/organization lessonDurationMin (Karis o'zi qiladi)
+
+### 🔴 FE-SUPER (Said Islom + Aziz) — auditda topilgan xatolar
+
+- [ ] FE-SUPER-STATS 🔥 (Said Islom): `super/Stats.jsx:22-27` da **O'YLAB TOPILGAN raqamlar** bor:
+      ```js
+      const PAYMENT_METHODS = [
+        { name: 'Наличные', value: 65 }, { name: 'Карта', value: 30 }, { name: 'Online', value: 5 },
+      ];
+      ```
+      Bu hardcode haqiqiy grafik bo'lib chiziladi — hamkor "65% naqd" degan raqamni ko'radi,
+      lekin uni HECH KIM hisoblamagan. Bu eng xavflisi: sahifa ishlayotgandek ko'rinadi.
+      Hardcode o'chirilsin, `GET /api/super/stats` ga ulansin (backend — AB-SUPER-STATS).
+      ⚠️ Sahifa hozir `useSuperDashboard` ni chaqiryapti — bu Dashboard'ning endpointi, Stats'niki EMAS
+- [ ] FE-SUPER-REPORTS (Aziz): `super/Reports.jsx` ham `useSuperDashboard` da o'tiribdi — o'z ma'lumoti yo'q.
+      Ya'ni Dashboard / Stats / Reports — uchtasi BITTA endpointdan oziqlanyapti.
+      O'z endpointiga ulansin (backend — AB-SUPER-REPORTS)
+- [ ] FE-SUPER-WIRE (Said Islom + Aziz): Announcements (359 qator) / Reminders (257) / Audit (293) —
+      front yozilgan va `api` ni chaqiradi, lekin backend 501 yoki bo'sh ro'yxat qaytaradi →
+      **909 qator kod hech qachon hech narsa ko'rsatolmaydi**.
+      Abdulaziz backendni yopgach (AB-SUPER-ANN/REM/AUDIT) — real data bilan tekshirilsin,
+      Skeleton / EmptyState / Error uch holati ishlashiga ishonch hosil qilinsin
 
 ## Frontend — Main Admin (Shohjahon) 🔥 YANGI — to'liq egasi
 
@@ -300,7 +336,8 @@
 - [x] MAIN: Org-detail sahifasi — OrgDetail.jsx qurilgan
 - [ ] MAIN (Shohjahon) 🔴: Billing — sahifa hali ESKI modelda (`baseFirstBranch`/`perStudent`), backend `{ tiers, currency }` qaytaradi → SAHIFA BUZILGAN, shoshilinch (BUG-BILLING)
 - [ ] MAIN: Revenue — Revenue.jsx bor (454 qator) lekin api chaqiruvi deyarli yo'q, real tushumga ulanmagan
-- [ ] MAIN: Settings — real platforma sozlamalari (hozir zaglushka)
+- [x] MAIN: Settings — ✅ audit 2026-07-19: "zaglushka" deb yozilgani NOTO'G'RI edi.
+      438 qator, `useDashboard` + `usePricing` + `api.updateProfile` — real ishlaydi
 - [ ] MAIN: Google OAuth — jonli E2E login testi (Firebase levelup-1c059)
 - [ ] MAIN: Forgot-password — sikl polish
 - [ ] MAIN: Design-system — laym #C6FF34, Manrope, 3 holat (Skeleton/Empty/Error), responsive 1280/768/375, TanStack Query cache invalidation
@@ -369,11 +406,23 @@
 - [x] METHODIST: Analytics
 - [x] METHODIST: Dashboard
 
-## Frontend — Design / UX (BARCHA panellar, sifat sharti)
+## Frontend — Design / UX 🆕 EGALARI BELGILANDI (2026-07-19)
 
-- [ ] UI: Har bir panel FRONTEND-DESIGN-SYSTEM.md ga qat'iy rioya qiladi (laym #C6FF34, Manrope, qorong'i sidebar #1D2417, kartochka soyalari) — o'zboshimcha ranglar TAQIQLANADI
-- [ ] UI: Har bir sahifada 3 holat: Skeleton (yuklanish), EmptyState (bo'sh ma'lumot), Error (xato + retry)
-- [ ] UI: Umumiy komponentlar bitta joyda (Button, Modal, Table, Toast, Avatar, PageHeader) — har panel o'zinikini YASAMAYDI, main-admin dagi tayyorlaridan namuna
-- [ ] UI: Responsive tekshiruv: 1280 / 768 / 375 px kengliklar, gorizontal scroll yo'q
-- [ ] UI: Jadvallar: tabular-nums raqamlar, hover-podsvetka, status-pilyulalar (design-system bo'yicha)
-- [ ] UI: Barcha mutatsiyalardan keyin TanStack Query cache invalidation + optimistic/loading tugma holatlari
+> Bu blok ilgari EGASIZ turgan edi — 6 ta vazifa, hech kimga biriktirilmagan.
+> Egasiz vazifa = hech kim qilmaydigan vazifa. Endi mentor jamoasi bo'shadi
+> (mentor panelni Karis o'zi oldi, jamoa bilan kelishilgan) — shular oladi.
+
+- [ ] UI-DS (Sardor): Har bir panel FRONTEND-DESIGN-SYSTEM.md ga qat'iy rioya qiladi
+      (laym #C6FF34, Manrope, qorong'i sidebar #1D2417, kartochka soyalari) — o'zboshimcha ranglar TAQIQLANADI
+- [ ] UI-STATES (HAR KIM o'z paneli bo'yicha): har sahifada 3 holat — Skeleton (yuklanish),
+      EmptyState (bo'sh ma'lumot), Error (xato + retry). Bu markazlashgan vazifa EMAS:
+      kim qaysi sahifada ishlayotgan bo'lsa, o'sha sahifaning uch holatini o'zi yopadi
+- [ ] UI-SHARED (Abduloh): Umumiy komponentlar bitta joyda — har panel o'zinikini YASAMAYDI.
+      ⚠️ Audit 2026-07-19: tayyor komponentlar `frontend/staff/src/pages/mentor/_ui.jsx` da
+      (Panel, EmptyState, RowSkeleton, Avatar, SearchInput, GroupSelect), lekin **admin sahifalari
+      bu fayldan UMUMAN foydalanmayapti** — har biri o'zinikini yasagan, dizayn shuning uchun har xil.
+      (Eski matnda "main-admin dagi namunadan" deyilgan edi — bu eskirgan, manba endi `_ui.jsx`)
+- [ ] UI-RESPONSIVE (Alish): 1280 / 768 / 375 px kengliklar, gorizontal scroll yo'q
+- [ ] UI-TABLES (Hamidula): tabular-nums raqamlar, hover-podsvetka, status-pilyulalar (design-system bo'yicha)
+- [ ] UI-CACHE (Kozim): barcha mutatsiyalardan keyin TanStack Query cache invalidation +
+      optimistic/loading tugma holatlari. Kozim'ga berildi — u api integratsiyasida ishlagan tajribasi bor

@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 19.07.2026 20:52 (UTC+5, Toshkent vaqti)
-> Statistika: 129/182 task tugallangan (70%)
+> Oxirgi yangilanish: 19.07.2026 21:33 (UTC+5, Toshkent vaqti)
+> Statistika: 129/186 task tugallangan (69%)
 
 ---
 
-## Progress: [##############......] 70%
+## Progress: [#############.......] 69%
 
 ## Tugallangan vazifalar
 
@@ -134,11 +134,10 @@
 - [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617). Auditda tasdiqlandi: `refreshPromise` 4 ta app da ham bor
 - [x] AUTH: Socket.io client — `staff/socket.js` (presence + davomat live + ack-request), `member/socket.js`. `main-admin` va `student` da realtime sahifa YO'Q (Chat yo'q) → ularga socket kerak emas
 
-### Frontend — Super Admin ✅ TUGADI
+### Frontend — Super Admin ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 - [x] SUPER (front): Dashboard (org income, branches, admins, students)
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
 - [x] SUPER (front): CRUD admins
-- [x] SUPER (front): Reports
 - [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
 
 ### Frontend — Main Admin (Shohjahon) 🔥 YANGI — to'liq egasi
@@ -146,6 +145,7 @@
 - [x] MAIN: Leads — ro'yxat / filtr / status o'zgartirish, OnboardModal (temp-parol), Qabul / Rad etish
 - [x] MAIN: Organizations (hamkorlar) — ro'yxat / qidiruv, freeze / activate (855 qator)
 - [x] MAIN: Org-detail sahifasi — OrgDetail.jsx qurilgan
+- [x] MAIN: Settings — ✅ audit 2026-07-19: "zaglushka" deb yozilgani NOTO'G'RI edi.
 
 ### Frontend — Admin (Abduloh, Odil, Hamidula)
 - [x] ADMIN: rey/xob admin_page ishini staff strukturasiga ko'chirish (alohida Vite-app EMAS — staff ichida sahifalar; merge REVIEW dan keyin)
