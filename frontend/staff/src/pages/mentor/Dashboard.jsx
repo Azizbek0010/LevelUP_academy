@@ -6,11 +6,23 @@ import {
 import { useMentorGroups, useMentorAttendance } from '../../queries.js';
 import { Panel, EmptyState, RowSkeleton } from './_ui.jsx';
 
-const LESSON_MINUTES = 60;
+/* Порядок соответствует Date.getDay(): 0 — воскресенье. */
+const WEEKDAY = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
-function getLessonTime(g) {
-  if (g.lesson_time) return g.lesson_time;
-  return g.schedule?.[0]?.start || null;
+/* Занятие группы в конкретный день недели — или null, если в этот день
+   группа не занимается.
+
+   Раньше здесь брался `schedule[0]` — первый слот расписания, каким бы днём
+   он ни был. Из-за этого «сегодняшними» считались вообще все группы с
+   проставленным временем: в воскресенье плитка показывала 6 занятий вместо
+   одного, потому что день недели не проверялся нигде. */
+function getDaySlot(g, dayKey) {
+  const slot = g.schedule?.find((s) => s.day === dayKey);
+  if (slot) return slot;
+  /* lesson_time — плоское поле у групп без разобранного расписания. Дня в нём
+     нет, поэтому такую группу показываем каждый день: это честнее, чем молча
+     потерять её из ленты. */
+  return g.lesson_time ? { start: g.lesson_time, end: null } : null;
 }
 
 function toMinutes(t) {
@@ -61,19 +73,28 @@ export default function MentorDashboard() {
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const totalStudents = groups.reduce((sum, g) => sum + (g.students || 0), 0);
 
-  // Уроки с известным временем, отсортированные по расписанию — основа и для
-  // счётчика «сегодня», и для ленты ниже.
+  /* Занятия именно сегодняшнего дня, по расписанию — основа и для счётчика,
+     и для ленты ниже. Длительность берём из самого слота: она у групп разная
+     (60, 90, 120 минут), и жёсткие 60 раньше гасили подсветку «идёт сейчас»
+     на середине двухчасового занятия. */
+  const todayKey = WEEKDAY[now.getDay()];
   const lessons = useMemo(
     () =>
       groups
-        .map((g) => ({ g, time: getLessonTime(g), min: toMinutes(getLessonTime(g)) }))
-        .filter((l) => l.min !== null)
+        .map((g) => {
+          const slot = getDaySlot(g, todayKey);
+          if (!slot) return null;
+          const min = toMinutes(slot.start);
+          if (min === null) return null;
+          return { g, time: slot.start, min, endMin: toMinutes(slot.end) ?? min + 60 };
+        })
+        .filter(Boolean)
         .sort((a, b) => a.min - b.min),
-    [groups],
+    [groups, todayKey],
   );
 
   const activeLesson = lessons.find(
-    (l) => currentMinutes >= l.min && currentMinutes < l.min + LESSON_MINUTES,
+    (l) => currentMinutes >= l.min && currentMinutes < l.endMin,
   );
   const activeGroup = activeLesson?.g;
 
@@ -104,7 +125,7 @@ export default function MentorDashboard() {
                 {activeGroup.name} — dars ketmoqda
               </p>
               <p className="text-xs text-base-content/55 truncate">
-                {activeGroup.subject || 'Fan'} · {getLessonTime(activeGroup)} · davomat belgilanmagan
+                {activeGroup.subject || 'Fan'} · {activeLesson.time} · davomat belgilanmagan
               </p>
             </div>
           </div>
@@ -167,9 +188,9 @@ export default function MentorDashboard() {
                 className="absolute left-[7px] top-3 bottom-3 w-px bg-base-300"
                 aria-hidden="true"
               />
-              {lessons.map(({ g, time, min }) => {
-                const isNow = min <= currentMinutes && min + LESSON_MINUTES > currentMinutes;
-                const isPast = min + LESSON_MINUTES <= currentMinutes;
+              {lessons.map(({ g, time, min, endMin }) => {
+                const isNow = min <= currentMinutes && endMin > currentMinutes;
+                const isPast = endMin <= currentMinutes;
                 return (
                   <li key={g.id} className="relative flex items-start gap-4">
                     <span
