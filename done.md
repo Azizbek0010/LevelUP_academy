@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 19.07.2026 21:51 (UTC+5, Toshkent vaqti)
-> Statistika: 129/194 task tugallangan (66%)
+> Oxirgi yangilanish: 19.07.2026 21:59 (UTC+5, Toshkent vaqti)
+> Statistika: 132/195 task tugallangan (67%)
 
 ---
 
-## Progress: [#############.......] 66%
+## Progress: [#############.......] 67%
 
 ## Tugallangan vazifalar
 
@@ -63,6 +63,7 @@
 - [x] MP-SEED: `seed-mentor-demo.mjs` (demo mentorni real data bilan to'ldiradi),
 
 ### BUGLAR / BLOKERLAR (Karis) — 2026-07-18 tekshiruvida topildi
+- [x] BUG-PROD-MOCKS ✅ TUZATILDI 2026-07-19: `frontend/{staff,student,member}/.env.production`
 - [x] ~~BUG-STACK~~ ✅ TUZATILGAN (2026-07-19 auditda tekshirildi, TASK.md eskirgan edi): `render.yaml:19-20` da `NODE_ENV=production` O'RNATILGAN, `errorHandler.js:41` stack'ni faqat `env.NODE_ENV === 'development'` da qaytaradi (qat'iy tenglik — yangi hostingda o'zgaruvchi unutilsa ham stack chiqmaydi). Bundan tashqari 5xx da `details` ham berkitildi, o'rniga `errorId` (pino req.id) qaytadi — commit `5a1f177`
 
 ### Swagger / API hujjatlari (Karis) ✅ 2026-07-18
@@ -125,6 +126,8 @@
 
 ### Backend — Narx / GTM (Karis) 🔥 YANGI (2026-07-16)
 - [x] PRICE: Bucket tariflar backendda (config/plans.js TIERS, computeBill by students)
+- [x] PRICE ✅ 2026-07-19: Neon'dagi migratsiyalar prognat qilindi.
+- [x] PRICE ✅ 2026-07-19: `render.yaml` ga `preDeployCommand: npm run migrate` qo'shildi.
 
 ### Frontend — Auth (Elyor)
 - [x] AUTH: Login sahifalar (3 endpoint: main / staff / member) — `staff/pages/Login.jsx`, `member/pages/Login.jsx`, `main-admin/pages/Login.jsx`, uchalasi `/auth/{staff,member,main}/login` ga ulangan. `origin/elyor` da save-zone dan ortiqcha commit YO'Q — merge qilinadigan narsa qolmagan
@@ -196,6 +199,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 77 task
+- Karis (Backend): 80 task
 - Abdulaziz (Backend): 57 task
 - Frontend jamoasi: 48 task

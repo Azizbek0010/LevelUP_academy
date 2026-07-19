@@ -104,9 +104,22 @@
 
 ## 🔴 BUGLAR / BLOKERLAR (Karis) — 2026-07-18 tekshiruvida topildi
 
-- [ ] BUG-PROD-MOCKS 🔥 KRITIK (2026-07-19 da qayta tasdiqlandi — HALI OCHIQ): `frontend/{staff,student,member}/.env.production` da `VITE_USE_MOCKS=false` YO'Q — uchalasida ham faqat `VITE_API_URL` bor. Kod `VITE_USE_MOCKS !== 'false'` → undefined bo'lsa MOCK YONIQ. `.env` gitignore'da (faqat lokal), Vercel'da faqat `.env.production` bor → **prodda panellar soxta localStorage datasini ko'rsatyapti**. Tuzatish: uchala `.env.production` ga `VITE_USE_MOCKS=false` qo'shish.
-      ✅ Aniqlik: `main-admin` bu bug'dan JABRLANMAGAN — uning `api.js` da `VITE_USE_MOCKS` pattern'i umuman yo'q. Ya'ni 4 emas, 3 ta app
+- [x] BUG-PROD-MOCKS ✅ TUZATILDI 2026-07-19: `frontend/{staff,student,member}/.env.production`
+      uchalasiga ham `VITE_USE_MOCKS=false` qo'shildi. Ilgari o'zgaruvchi umuman yo'q edi va
+      kod `VITE_USE_MOCKS !== 'false'` ni tekshirgani uchun undefined = MOCK YONIQ bo'lardi —
+      ya'ni prodda panellar soxta localStorage datasini ko'rsatardi.
+      `main-admin` bu bug'dan jabrlanmagan (uning `api.js` da bu pattern yo'q)
 - [x] ~~BUG-STACK~~ ✅ TUZATILGAN (2026-07-19 auditda tekshirildi, TASK.md eskirgan edi): `render.yaml:19-20` da `NODE_ENV=production` O'RNATILGAN, `errorHandler.js:41` stack'ni faqat `env.NODE_ENV === 'development'` da qaytaradi (qat'iy tenglik — yangi hostingda o'zgaruvchi unutilsa ham stack chiqmaydi). Bundan tashqari 5xx da `details` ham berkitildi, o'rniga `errorId` (pino req.id) qaytadi — commit `5a1f177`
+- [ ] BUG-LOCAL-PROD-DB 🔥🔥 ENG XAVFLISI (2026-07-19 auditda topildi): `backend/.env` dagi
+      `DATABASE_URL` **to'g'ridan-to'g'ri PROD Neon bazasiga** qaragan
+      (`ep-empty-wind-ai4drexy...neon.tech`), lokal Docker postgres'ga EMAS —
+      holbuki `levelup-postgres` konteyneri 22 soatdan beri ishlab turibdi va ishlatilmayapti.
+      **Nima demak:** kim `npm run seed` yoki `seed-mentor-demo.mjs` ni lokal ishga tushirsa —
+      demo data TO'G'RIDAN-TO'G'RI PRODGA yoziladi. Skript `INSERT`/`UPDATE` qiladi.
+      Hozircha omad: prodda demo guruhlar yo'q (13 org, 15 filial, 58 user, 6 guruh — real data).
+      Lekin bu vaqt masalasi.
+      **Tuzatish:** lokal `.env` `postgresql://postgres:postgres@localhost:5432/levelup` ga o'tsin,
+      prod URL faqat Render dashboard'ida qolsin. Jamoaga ham aytilsin
 - [ ] BUG-BILLING: `main-admin/src/pages/Billing.jsx` hali ESKI narx modelida (`baseFirstBranch`/`perStudent`), backend 2026-07-16 dan `{ tiers, currency }` qaytaradi → sahifa buzilgan. Egasi: Shohjahon (pastda MAIN bo'limida ham bor).
       SABABI TOPILDI: swagger `PlatformPricing` sxemasi ham eski modelda qolgan edi — Shohjahon hujjatga qarab qurgan. Sxema 2026-07-18 da tuzatildi (tiers), endi front ni ham moslashtirish kerak
 
@@ -280,12 +293,15 @@
 > To'liq strategiya — PRICING.md (vault). Model: o'quvchi bucket tariflari, filiallar bepul, narx=sifat (kafolat).
 
 - [x] PRICE: Bucket tariflar backendda (config/plans.js TIERS, computeBill by students)
-- [ ] PRICE 🔴 SHOSHILINCH: Neon'da migratsiyalarni prognat (npm run migrate) — 1783700000000_org-lesson-duration + qolgan 6 tasi + **YANGI 2 tasi** (`1783840000000_mentor-profile`, `1783850000000_mentor-coin-budget`); aks holda guruh jadvali, mentor oyligi, mentor profili va koin limiti prodda 500
-- [ ] PRICE 🔴 SHOSHILINCH: render.yaml ga preDeployCommand: npm run migrate.
-      **Xavf (2026-07-19 auditda aniqlandi):** `render.yaml` da `branch: main` + `autoDeploy: true`,
-      lekin `preDeployCommand` YO'Q → main ga merge = backend DARHOL deploy bo'ladi,
-      migratsiyalar esa YUGURMAYDI. Ya'ni yangi kod eski sxemaga murojaat qiladi → mentor sahifalari 500 beradi.
-      main ga chiqarishdan OLDIN yo migratsiyani qo'lda prognat qilish, yo preDeployCommand qo'shish shart
+- [x] PRICE ✅ 2026-07-19: Neon'dagi migratsiyalar prognat qilindi.
+      ⚠️ Bu yerda yozilgani NOTO'G'RI edi — "9 ta yugurtirilmagan" deyilgandi, aslida
+      bazani tekshirganda 17 tasi ALLAQACHON yugurgan ekan (`org-lesson-duration`, `lesson-media`,
+      `user-status-fired`, `staff-penalties`, `org-charter`, `mentor-profile` — hammasi joyida).
+      Faqat BITTA qolgan edi: `1783850000000_mentor-coin-budget` → yugurtirildi, jami 18 ta.
+      Tekshirildi: `organizations.coins_per_student` ✓, `coin_history.group_id` ✓, indeks ✓
+- [x] PRICE ✅ 2026-07-19: `render.yaml` ga `preDeployCommand: npm run migrate` qo'shildi.
+      Endi migratsiya yangi kod trafikni olishdan OLDIN yuguradi; migratsiya yiqilsa —
+      Render deploy'ni to'xtatadi va eski versiya ishlab turaveradi (buzuq versiyani chiqargandan yaxshi)
 - [ ] PRICE: Tariflarni DB-editable qilish (Main Admin tahrirlaydi) — v2
 - [ ] FREEZE: Obunani muzlatish — 1 oy bepul, keyin (2-3-4...oy) pullik; backend logika + billing + status
 - [ ] WHITE-LABEL: Markazga o'z brendida sayt (bizning backend/storage) — pullik xizmat 4 990 000 dan (minimal, murakkab bo'lsa qimmatroq); shablon self-serve + to'liq kastom premium

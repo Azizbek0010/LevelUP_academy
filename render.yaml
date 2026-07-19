@@ -11,6 +11,12 @@ services:
     plan: free
     branch: main
     buildCommand: npm install
+    # Миграции гоняются ДО того, как новый код начнёт принимать трафик.
+    # Без этого деплой поднимал свежий код поверх старой схемы: код обращался
+    # к колонкам, которых в базе ещё нет, и страницы отдавали 500. Если
+    # миграция упадёт — Render прервёт деплой и оставит работать прошлую
+    # версию, что лучше, чем выкатить заведомо нерабочую.
+    preDeployCommand: npm run migrate
     startCommand: npm start
     healthCheckPath: /health
     autoDeploy: true
