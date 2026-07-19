@@ -40,7 +40,11 @@ const LAST = ['Valiyev', 'Karimov', 'Rahimov', 'Yusupov', 'Nazarov', 'Ergashev',
   'Abdullayev', 'Salimov', 'Qodirov', 'Mirzayev', 'Sattorov', 'Hakimov', 'Jo\'rayev',
   'Nematov', 'Oripov', 'Sharipov', 'Umarov', 'Xolmatov', 'Yo\'ldoshev'];
 
-/** Группы. `level` задаёт средний уровень набора — группы должны отличаться. */
+/* Группы. `level` задаёт средний уровень набора — группы должны отличаться.
+
+   Занятия ТРИ раза в неделю у всех: при двух днях в месяце выходит 8-9 уроков,
+   и журнал выглядит полупустым — учебный центр так курс не ведёт. Три дня дают
+   привычные 12-14 занятий в месяц. */
 const GROUPS = [
   { name: 'JavaScript Basics', subject: 'JavaScript', price: 450000, level: 0.62, size: 12,
     schedule: [{ day: 'mon', start: '18:00', end: '19:30' }, { day: 'wed', start: '18:00', end: '19:30' }, { day: 'fri', start: '18:00', end: '19:30' }],
@@ -51,15 +55,15 @@ const GROUPS = [
     topics: ['JSX asoslari', 'Komponentlar', 'Props va State', 'useEffect',
       'Ro\'yxatlar va key', 'Formalar', 'Router', 'Custom hooklar'] },
   { name: 'Node.js Backend', subject: 'Node.js', price: 650000, level: 0.55, size: 9,
-    schedule: [{ day: 'mon', start: '19:30', end: '21:00' }, { day: 'wed', start: '19:30', end: '21:00' }],
+    schedule: [{ day: 'mon', start: '19:30', end: '21:00' }, { day: 'wed', start: '19:30', end: '21:00' }, { day: 'fri', start: '19:30', end: '21:00' }],
     topics: ['Node asoslari', 'Express marshrutlari', 'Middleware', 'REST API',
       'PostgreSQL ulanish', 'Autentifikatsiya', 'Fayl yuklash'] },
   { name: 'Python Start', subject: 'Python', price: 400000, level: 0.66, size: 11,
-    schedule: [{ day: 'tue', start: '14:00', end: '15:30' }, { day: 'thu', start: '14:00', end: '15:30' }],
+    schedule: [{ day: 'tue', start: '14:00', end: '15:30' }, { day: 'thu', start: '14:00', end: '15:30' }, { day: 'sat', start: '14:00', end: '15:30' }],
     topics: ['Sintaksis asoslari', 'Ro\'yxatlar va lug\'atlar', 'Funksiyalar',
       'Fayllar bilan ishlash', 'Modullar', 'OOP asoslari'] },
   { name: 'Frontend Pro', subject: 'Frontend', price: 700000, level: 0.78, size: 8,
-    schedule: [{ day: 'sat', start: '10:00', end: '12:00' }, { day: 'sun', start: '10:00', end: '12:00' }],
+    schedule: [{ day: 'mon', start: '10:00', end: '12:00' }, { day: 'wed', start: '10:00', end: '12:00' }, { day: 'sat', start: '10:00', end: '12:00' }],
     topics: ['Semantik HTML', 'CSS Grid va Flex', 'Responsive dizayn',
       'Animatsiyalar', 'Optimallashtirish', 'Deploy'] },
 ];
@@ -346,6 +350,24 @@ for (let gi = 0; gi < GROUPS.length; gi += 1) {
   }
 }
 
+/* ---------- отметки в дни без занятий ----------
+   Журнал строит колонки по расписанию, поэтому отметка, сделанная в день вне
+   расписания (осталась от прежнего расписания или от ручных проверок), в
+   таблице не показывается вовсе — но продолжает считаться в статистике
+   посещаемости. Такие «невидимые» записи и дают расхождение вида «14 колонок,
+   а дней с отметками 17». */
+let orphaned = 0;
+for (let gi = 0; gi < GROUPS.length; gi += 1) {
+  const days = [...new Set(GROUPS[gi].schedule.map((s) => WEEKDAY[s.day]))];
+  const { rowCount } = await db.query(
+    // extract(dow) в Postgres: 0 = воскресенье, как и в JS getDay()
+    `DELETE FROM attendance
+      WHERE group_id = $1 AND extract(dow FROM lesson_date)::int <> ALL($2::int[])`,
+    [groupIds[gi], days],
+  );
+  orphaned += rowCount;
+}
+
 /* ---------- домашние задания ---------- */
 
 let hwRows = 0;
@@ -479,7 +501,7 @@ console.log(`
 
   групп:              ${stat.groups}
   учеников:           ${stat.students}
-  посещаемость:       ${stat.att} записей
+  посещаемость:       ${stat.att} записей (вне расписания удалено: ${orphaned})
   домашних заданий:   ${stat.hw} (сдач: ${hwRows})
   тестов:             ${stat.tests} (результатов: ${testRows})
   операций с коинами: ${coinRows}
