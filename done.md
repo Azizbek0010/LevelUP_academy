@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 19.07.2026 20:52 (UTC+5, Toshkent vaqti)
-> Statistika: 129/182 task tugallangan (70%)
+> Oxirgi yangilanish: 19.07.2026 21:59 (UTC+5, Toshkent vaqti)
+> Statistika: 132/195 task tugallangan (67%)
 
 ---
 
-## Progress: [##############......] 70%
+## Progress: [#############.......] 67%
 
 ## Tugallangan vazifalar
 
@@ -63,6 +63,7 @@
 - [x] MP-SEED: `seed-mentor-demo.mjs` (demo mentorni real data bilan to'ldiradi),
 
 ### BUGLAR / BLOKERLAR (Karis) — 2026-07-18 tekshiruvida topildi
+- [x] BUG-PROD-MOCKS ✅ TUZATILDI 2026-07-19: `frontend/{staff,student,member}/.env.production`
 - [x] ~~BUG-STACK~~ ✅ TUZATILGAN (2026-07-19 auditda tekshirildi, TASK.md eskirgan edi): `render.yaml:19-20` da `NODE_ENV=production` O'RNATILGAN, `errorHandler.js:41` stack'ni faqat `env.NODE_ENV === 'development'` da qaytaradi (qat'iy tenglik — yangi hostingda o'zgaruvchi unutilsa ham stack chiqmaydi). Bundan tashqari 5xx da `details` ham berkitildi, o'rniga `errorId` (pino req.id) qaytadi — commit `5a1f177`
 
 ### Swagger / API hujjatlari (Karis) ✅ 2026-07-18
@@ -125,6 +126,8 @@
 
 ### Backend — Narx / GTM (Karis) 🔥 YANGI (2026-07-16)
 - [x] PRICE: Bucket tariflar backendda (config/plans.js TIERS, computeBill by students)
+- [x] PRICE ✅ 2026-07-19: Neon'dagi migratsiyalar prognat qilindi.
+- [x] PRICE ✅ 2026-07-19: `render.yaml` ga `preDeployCommand: npm run migrate` qo'shildi.
 
 ### Frontend — Auth (Elyor)
 - [x] AUTH: Login sahifalar (3 endpoint: main / staff / member) — `staff/pages/Login.jsx`, `member/pages/Login.jsx`, `main-admin/pages/Login.jsx`, uchalasi `/auth/{staff,member,main}/login` ga ulangan. `origin/elyor` da save-zone dan ortiqcha commit YO'Q — merge qilinadigan narsa qolmagan
@@ -134,11 +137,10 @@
 - [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617). Auditda tasdiqlandi: `refreshPromise` 4 ta app da ham bor
 - [x] AUTH: Socket.io client — `staff/socket.js` (presence + davomat live + ack-request), `member/socket.js`. `main-admin` va `student` da realtime sahifa YO'Q (Chat yo'q) → ularga socket kerak emas
 
-### Frontend — Super Admin ✅ TUGADI
+### Frontend — Super Admin ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 - [x] SUPER (front): Dashboard (org income, branches, admins, students)
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
 - [x] SUPER (front): CRUD admins
-- [x] SUPER (front): Reports
 - [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
 
 ### Frontend — Main Admin (Shohjahon) 🔥 YANGI — to'liq egasi
@@ -146,6 +148,7 @@
 - [x] MAIN: Leads — ro'yxat / filtr / status o'zgartirish, OnboardModal (temp-parol), Qabul / Rad etish
 - [x] MAIN: Organizations (hamkorlar) — ro'yxat / qidiruv, freeze / activate (855 qator)
 - [x] MAIN: Org-detail sahifasi — OrgDetail.jsx qurilgan
+- [x] MAIN: Settings — ✅ audit 2026-07-19: "zaglushka" deb yozilgani NOTO'G'RI edi.
 
 ### Frontend — Admin (Abduloh, Odil, Hamidula)
 - [x] ADMIN: rey/xob admin_page ishini staff strukturasiga ko'chirish (alohida Vite-app EMAS — staff ichida sahifalar; merge REVIEW dan keyin)
@@ -196,6 +199,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 77 task
+- Karis (Backend): 80 task
 - Abdulaziz (Backend): 57 task
 - Frontend jamoasi: 48 task
