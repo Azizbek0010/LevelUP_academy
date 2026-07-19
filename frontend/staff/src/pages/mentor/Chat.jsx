@@ -227,6 +227,16 @@ export default function MentorChat() {
       setLiveMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
       // превью и счётчик непрочитанных в списке слева
       qc.invalidateQueries({ queryKey: ['chat-contacts'] });
+      /* И перечитать саму переписку. Дублирует live-состояние намеренно:
+         `liveMessages` живёт в компоненте и теряется от любого его пересоздания
+         (переподписка, hot-reload, размонтирование при переходе), а сообщение
+         после этого всплывало только при следующей загрузке истории — со
+         стороны выглядит как «отправил, а видно лишь после перезагрузки».
+         Кэш-запрос переживает пересоздание компонента, поэтому показ больше не
+         зависит от эфемерного состояния. */
+      if (msg?.room_key) {
+        qc.invalidateQueries({ queryKey: ['chat-history', msg.room_key] });
+      }
     };
     const onConnect = () => setConnected(true);
     const onDisconnect = () => setConnected(false);
@@ -348,14 +358,21 @@ export default function MentorChat() {
         setError(ack.error === 'timeout' ? 'Server javob bermadi' : 'Xabar yuborilmadi');
         return;
       }
-      setDraft('');   // эхо от сервера придёт в chat:dm:message — руками не дописываем
+      setDraft('');
       setAtBottom(true);
+      /* Эхо от сервера придёт в chat:dm:message и допишет пузырь, но полагаться
+         только на него нельзя: если событие потеряется (обрыв, переподписка),
+         своё же сообщение не появится до перезагрузки. Перечитывание истории
+         страхует этот случай — id совпадут, дубля не будет. */
+      if (ack.roomKey) {
+        qc.invalidateQueries({ queryKey: ['chat-history', ack.roomKey] });
+      }
     } catch {
       setError('Xabar yuborilmadi');
     } finally {
       setSending(false);
     }
-  }, [draft, activeContact, sending, roomKey, token, user]);
+  }, [draft, activeContact, sending, roomKey, token, user, qc]);
 
   const totalUnread = contacts.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
 
