@@ -97,7 +97,10 @@
 > Backend kod tayyor (barcha panellar). Endi asosiy ish — frontend panellarni backend bilan ulash.
 
 - [ ] K-INT: Frontend ↔ backend integratsiya (SUPER ADMIN'dan tashqari — u Abdulaziz'da) — main-admin org-detail endpoint (Shohjahon uchun), endpoint kontraktlar, CORS/cookie, jonli E2E qolgan panellar bo'yicha
-- [ ] K-INT: admin GroupDetail — 6 endpoint YO'Q, front (Abduloh) chaqiryapti: GET/POST /admin/groups/:id/{attendance,homework,feedback}. Qaror kerak: attendance/homework mentor jadvallaridan reuse (yagona manba), feedback — YANGI migratsiya + CRUD
+- [~] K-INT: admin GroupDetail 6 endpoint → **AB-INT-GROUP (Abdulaziz)** ga berildi.
+      ⚠️ Karis'da faqat BITTA narsa qoldi: qaror qabul qilish —
+      attendance/homework mentor jadvallaridan reuse qilinsinmi yoki alohida?
+      Abdulaziz shu qarorni KUTYAPTI, ya'ni bu blokerni sen ochasan
 
 ## 🔴 BUGLAR / BLOKERLAR (Karis) — 2026-07-18 tekshiruvida topildi
 
@@ -134,10 +137,14 @@
 - [x] K-SUPER-INT: Dars davomiyligi (2026-07-16) — organizations.lesson_duration_min + lessonDurationMin GET/PATCH /api/super/organization da
 - [x] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa (repository listOrgStudents: ILIKE search + LIMIT/OFFSET)
 - [x] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
-- [ ] K-SUPER-INT: GET /api/super/stats — Stats (KPI + grafik data, recharts) ⚠️ YAGONA QOLGANI: route YO'Q, front Stats.jsx ham statik (api chaqirmaydi)
-- [ ] K-SUPER-INT: GET/POST/DELETE /api/super/announcements — Announcements ⚠️ ZAGLUSHKA: jadval YO'Q, GET bo'sh ro'yxat qaytaradi, POST/DELETE = 501. Migratsiya + notificationQueue kerak
-- [ ] K-SUPER-INT: GET /api/super/reminders (+resend/delete) — Reminders ⚠️ ZAGLUSHKA: xuddi shunday (GET bo'sh, resend/delete = 501)
-- [ ] K-SUPER-INT: GET /api/super/audit — Audit log ⚠️ ZAGLUSHKA: audit jadvali yo'q, doim { items: [], total: 0 }
+> ⚠️ TUZATISH 2026-07-19: quyidagi 4 ta vazifa Abdulaziz'ga BERILDI (AB-SUPER-* ga qara).
+> Bu yerda ham, u yerda ham turgani XATO edi — bitta ish ikki joyda ikki odamga yozilgan edi.
+> Egasi endi BITTA: Abdulaziz. Bu yerda faqat tarix uchun qoldirilyapti.
+
+- [~] K-SUPER-INT: GET /api/super/stats → **AB-SUPER-STATS (Abdulaziz)**
+- [~] K-SUPER-INT: GET/POST/DELETE /api/super/announcements → **AB-SUPER-ANN (Abdulaziz)**
+- [~] K-SUPER-INT: GET /api/super/reminders → **AB-SUPER-REM (Abdulaziz)**
+- [~] K-SUPER-INT: GET /api/super/audit → **AB-SUPER-AUDIT (Abdulaziz)**
 - [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
 - [ ] K-SUPER-INT: har bir sahifa E2E — real superadmin login → real data
 
