@@ -141,6 +141,39 @@
 - [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
 - [ ] K-SUPER-INT: har bir sahifa E2E — real superadmin login → real data
 
+## Backend — YANGI TOPSHIRIQ (Abdulaziz) 🔥 2026-07-19, Karis bergan
+
+> Auditda topilgan ochiq backend ishlar. Hammasi `backend/` zonasida — Abdulaziz'ning zonasi.
+> Tartib MUHIM: AB-INT-GROUP birinchi, chunki u boshqa odamni (Abduloh) BLOKLAB turibdi.
+
+### AB-INT-GROUP 🔴 1-NAVBAT (Abdulohni bloklayapti)
+
+- [ ] AB-INT-GROUP: admin GroupDetail uchun 6 ta endpoint YO'Q, front (Abduloh) ularni allaqachon chaqiryapti va mock'dan olyapti:
+      `GET/POST /api/admin/groups/:id/attendance`, `.../homework`, `.../feedback`.
+      **Avval qaror kerak:** attendance va homework — mentor jadvallaridan REUSE qilinsinmi
+      (yagona manba, tavsiya shu) yoki alohida? feedback — YANGI migratsiya + CRUD kerak (jadval yo'q).
+      Qarorni Karis bilan kelishib, keyin yozish. Kontrakt: `frontend/TEAM-TASKS.md`
+
+### AB-SUPER-STUB — Super Admin 3 ta zaglushka (jadval YO'Q, 501 qaytaradi)
+
+> Hozir `super.service.js:342-348` bo'sh massiv qaytaradi, `super.controller.js:67` esa 501.
+> Front (Shohjahon qurgan) sahifalar bor, lekin data yo'q — ya'ni sahifalar bo'm-bo'sh turibdi.
+
+- [ ] AB-SUPER-ANN: `GET/POST/DELETE /api/super/announcements` — e'lonlar.
+      Migratsiya + CRUD + `notificationQueue` ga ulash (POST bo'lganda xodimlarga/ota-onalarga ketsin).
+      Bilol'ning TG-boti shu queue'ni o'qiydi — `AB-V1` dagi `/api/admin/announcements` bilan bir xil pattern, undan namuna ol
+- [ ] AB-SUPER-REM: `GET /api/super/reminders` (+ resend / delete) — eslatmalar. Migratsiya + CRUD
+- [ ] AB-SUPER-AUDIT: `GET /api/super/audit` — audit log. Migratsiya (kim / nima / qachon / qaysi org) +
+      yozuvni MUHIM mutatsiyalarga ulash (branch/admin CRUD, freeze, shtraf). Faqat o'qish uchun, o'chirib bo'lmaydi
+- [ ] AB-SUPER-STATS: `GET /api/super/stats` — route umuman YO'Q. KPI + grafik data (recharts uchun).
+      ⚠️ Front `Stats.jsx` ham statik — api chaqirmaydi, ya'ni ikkala tomon ham kerak
+
+### AB-VERIFY — jonli tekshiruv (mock'siz)
+
+- [ ] AB-VERIFY: `VITE_USE_MOCKS=false` bilan real backend'da Student va Parent panellarini E2E tekshirish
+      (ikkalasi ham uning zonasi). Hozir ikkalasi ham faqat mock rejimida ko'rilgan
+- [ ] AB-VERIFY: Parent Chat — Socket.io realtime ulanishi hech qachon tekshirilmagan (`Chat.jsx`, 16 chaqiruv)
+
 ## SEO — Landing + platforma (Abdulaziz / abdulazizSEO) 🔥 full
 
 > abdulazizSEO rejimi: ikkala zonada (frontend + backend) faqat SEO ishlari.
