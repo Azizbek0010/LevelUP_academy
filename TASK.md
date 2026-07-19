@@ -187,6 +187,26 @@
          kichik yuklamada ishlaydi, lekin web uxlab qolsa cron ham uxlaydi (free plan 15 daqiqada uxlaydi)
       3. Tashqi cron (masalan cron-job.org) maxsus endpointni chaqiradi — eng arzoni, lekin endpoint himoyalanishi shart
 
+- [ ] BUG-TESTS-RED 🔥 (2026-07-19 auditda topildi — testlar ISHGA TUSHIRILDI):
+      **Mentor testlarida 3 ta FAIL, sababi mening o'z o'zgarishim.**
+      `b6bf912` commit'i "mentor faqat BUGUNGI darsni belgilay oladi" qoidasini kiritdi
+      (`attendance.service.js:35` — `assertToday()`), testlar esa davomatni o'tgan sana bilan qo'yadi:
+      • 1. Bulk-mark mixed statuses → `O'tgan kunlar davomatini o'zgartirib bo'lmaydi`
+      • 2. Re-mark same group+date → xuddi shu
+      • 3. Boshqa mentor chet guruhni belgilashi → 404 kutilgan, 422 kelgan
+
+      ✅ Xavfsizlik TEKSHIRILDI — sizib chiqish YO'Q: `assertToday` egalikdan OLDIN tursa ham,
+      o'tgan sanada har qanday guruh (o'ziniki, chetniki, umuman yo'q) bir xil 422 beradi,
+      bugungi sanada esa bir xil 404 — ya'ni guruh bor-yo'qligini ajratib bo'lmaydi.
+      **Kod TO'G'RI, TESTLAR eskirgan** → 3 ta testni bugungi sanaga o'tkazish kerak
+      (3-testni ham, aks holda u egalik tekshiruvigacha yetib bormaydi va tekshirmaydi)
+
+      ⚠️ Bundan ham yomoni: `npm test` skripti `&&` bilan zanjir qilingan —
+      mentor yiqilgani uchun **student / parent / payments / auth testlari UMUMAN yugurmagan**.
+      Alohida ishga tushirilganda hammasi YASHIL: student 17/17 · parent 4/4 · payments 13/13 · auth 15/15.
+      Ya'ni bitta fail 49 ta sog'lom testni yashirib turgan. `&&` o'rniga har biri alohida ishlasin
+      va oxirida umumiy natija chiqsin
+
 - [ ] BUG-REDIS-SILENT 🔥 (2026-07-19): `env.js` da `REDIS_URL: z.string().min(1).default('redis://localhost:6379')`.
       Ya'ni Render'da bu o'zgaruvchi qo'yilmasa — server JIMGINA ko'tariladi va localhost'ga urinaveradi.
       Log'da `Redis error` chiqadi, lekin process yiqilmaydi. Natijada socket (chat, davomat live) va
