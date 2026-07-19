@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Bell, ChevronLeft, ChevronRight, ChevronDown, X,
-  LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu,
+  LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu, Volume2, VolumeX,
 } from 'lucide-react';
 import {
   HiOutlineSquares2X2, HiOutlineBuildingOffice2, HiOutlineUsers,
@@ -20,6 +20,9 @@ import Avatar from './Avatar.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { disconnectSocket, getSocket } from '../socket.js';
 import { useMentorGroups, useChatContacts } from '../queries.js';
+import {
+  playNotificationSound, unlockSound, isSoundEnabled, setSoundEnabled,
+} from '../lib/notificationSound.js';
 
 /* ──────────────────── HOOKS ──────────────────── */
 function useMediaQuery(query) {
@@ -374,6 +377,7 @@ function Notifications() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const ref = useRef(null);
 
   // Чат есть только у ментора и админа; у остальных ролей эндпоинт ответит 403.
@@ -389,10 +393,17 @@ function Notifications() {
   useEffect(() => {
     if (!hasChat || !token) return undefined;
     const socket = getSocket(token);
-    const onMessage = () => qc.invalidateQueries({ queryKey: ['chat-contacts'] });
+    const onMessage = (message) => {
+      qc.invalidateQueries({ queryKey: ['chat-contacts'] });
+      // Своё же сообщение возвращается эхом в другие вкладки — пищать на него
+      // значит звенеть каждый раз, когда ментор пишет сам.
+      if (message?.sender_id && message.sender_id !== user?.id) {
+        playNotificationSound();
+      }
+    };
     socket.on('chat:dm:message', onMessage);
     return () => socket.off('chat:dm:message', onMessage);
-  }, [hasChat, token, qc]);
+  }, [hasChat, token, qc, user?.id]);
   const unread = contacts.filter((c) => (c.unread_count ?? 0) > 0);
   const total = unread.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
 
@@ -418,7 +429,13 @@ function Notifications() {
       {/* Круглая ghost-кнопка вместо квадрата с рамкой: в ряду с аватаром
           пользователя рамка выглядела чужеродной деталью. */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          // Первый клик по колокольчику заодно разблокирует аудио: браузер
+          // разрешает запустить звук только внутри жеста пользователя, и без
+          // этого самый первый сигнал терялся бы молча.
+          unlockSound();
+          setOpen((v) => !v);
+        }}
         aria-label={total > 0 ? `Bildirishnomalar: ${total} ta yangi` : 'Bildirishnomalar'}
         aria-expanded={open}
         className={`relative w-10 h-10 rounded-full grid place-items-center transition-colors ${
@@ -445,11 +462,30 @@ function Notifications() {
         >
           <header className="flex items-center justify-between gap-2 px-4 py-3.5 border-b border-base-200">
             <h2 className="text-[15px] font-bold">Bildirishnomalar</h2>
-            {total > 0 && (
-              <span className="text-[11px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5 tabular-nums">
-                {total} yangi
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {total > 0 && (
+                <span className="text-[11px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5 tabular-nums">
+                  {total} yangi
+                </span>
+              )}
+              {/* Звук отключаемый: сигнал на каждое сообщение мешает тому, кто
+                  ведёт урок с открытой панелью. Выбор живёт в localStorage. */}
+              <button
+                onClick={() => {
+                  const next = !soundOn;
+                  setSoundEnabled(next);
+                  setSoundOn(next);
+                  if (next) { unlockSound(); playNotificationSound(); }  // сразу слышно, что включилось
+                }}
+                aria-label={soundOn ? "Ovozni o'chirish" : 'Ovozni yoqish'}
+                title={soundOn ? "Ovoz yoqilgan" : "Ovoz o'chirilgan"}
+                className={`w-7 h-7 rounded-lg grid place-items-center transition-colors ${
+                  soundOn ? 'text-primary hover:bg-primary/10' : 'text-base-content/35 hover:bg-base-200'
+                }`}
+              >
+                {soundOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
+              </button>
+            </div>
           </header>
 
           <div className="max-h-[min(60vh,380px)] overflow-y-auto">
