@@ -146,6 +146,16 @@ export function useMentorAttendance(groupId, params) {
   );
 }
 
+/** Остаток месячного лимита коинов по группе. */
+export function useMentorCoinBudget(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['mentor-coin-budget', groupId],
+    () => api.mentorCoinBudget(token, groupId),
+    { enabled: !!groupId },
+  );
+}
+
 export function useMentorHomeworkList(groupId) {
   const { token } = useAuth();
   return useAuthedQuery(['mentor-homework', groupId], () => api.mentorHomeworkList(token, groupId), {

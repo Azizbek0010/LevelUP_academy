@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { useMentorGroupStudents, useMentorAttendance } from '../../../queries.js';
+import { useMentorGroupStudents, useMentorAttendance, useMentorCoinBudget } from '../../../queries.js';
 import { useAuth } from '../../../auth.jsx';
 import { api } from '../../../api.js';
 import { useAttendanceLive, markAttendanceSocket } from '../../../socket.js';
@@ -182,6 +182,9 @@ export default function AttendanceTab({ groupId, group }) {
   const { data: attendanceData } = useMentorAttendance(groupId, { from, to });
   const attendance = useMemo(() => attendanceData?.data || [], [attendanceData]);
 
+  const { data: budgetData } = useMentorCoinBudget(groupId);
+  const budget = budgetData?.data ?? null;
+
   /* Кто отметил каждый день. Берём первую запись за дату: журнал заполняет
      один человек за урок, а если подменял другой — важен сам факт, что это
      не постоянный преподаватель, а не поимённый разбор по ученикам. */
@@ -350,8 +353,13 @@ export default function AttendanceTab({ groupId, group }) {
 
     setCoinBusyId(student.id);
     try {
-      await api.mentorGrantCoins(token, { studentId: student.id, amount, reason: 'Dars' });
+      /* groupId обязателен, когда ученик состоит в двух группах этого ментора:
+         сервер иначе не знает, из какого месячного лимита списывать. */
+      await api.mentorGrantCoins(token, {
+        studentId: student.id, amount, reason: 'Dars', groupId,
+      });
       qc.invalidateQueries({ queryKey: ['mentor-group-students', groupId] });
+      qc.invalidateQueries({ queryKey: ['mentor-coin-budget', groupId] });
       setCoinDrafts((prev) => ({ ...prev, [student.id]: '' }));
       setToast({ message: `${student.first_name}: ${amount > 0 ? '+' : ''}${amount} coin`, type: 'success' });
     } catch (err) {
@@ -526,7 +534,26 @@ export default function AttendanceTab({ groupId, group }) {
                   <div className="flex items-center justify-end gap-2">
                     <span className="w-11 text-center">Bugun</span>
                     <span className="w-12 text-center">Jami</span>
-                    <span className="w-[100px]" />
+                    {/* Остаток месячного лимита. Стоит именно здесь, над самой
+                        кнопкой выдачи: ментор видит, сколько ему ещё можно
+                        раздать, ровно в тот момент, когда собирается это
+                        сделать, — а не после отказа сервера. */}
+                    <span className="w-[100px] flex justify-end">
+                      {budget && (
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold tabular-nums ${
+                            budget.remaining === 0
+                              ? 'bg-error/10 text-error'
+                              : 'bg-warning/10 text-warning'
+                          }`}
+                          title={`Bu oy uchun: ${budget.allocated} coin (${budget.students} o'quvchi × ${budget.coinsPerStudent}). Sarflandi: ${budget.spent}`}
+                        >
+                          <Coins size={12} />
+                          {budget.remaining}
+                          <span className="opacity-50 font-normal">/{budget.allocated}</span>
+                        </span>
+                      )}
+                    </span>
                   </div>
                 </th>
               </tr>

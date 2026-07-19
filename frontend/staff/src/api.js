@@ -2125,6 +2125,11 @@ export const api = {
 
   // -------- MENTOR: Coins --------
   mentorGrantCoins: (token, body) => request('/mentor/coins', { method: 'POST', token, body }),
+  /* Остаток месячного лимита по группе. Лимит = норма организации × число
+     учеников; считается на бэкенде на каждый запрос, поэтому кэшировать надолго
+     нельзя — зачисление ученика меняет его сразу. */
+  mentorCoinBudget: (token, groupId) =>
+    request(`/mentor/coins/groups/${groupId}/budget`, { token }),
   mentorCoinHistory: (token, studentId) => request(`/mentor/coins/students/${studentId}`, { token }),
 
   // -------- MENTOR: Tests --------
