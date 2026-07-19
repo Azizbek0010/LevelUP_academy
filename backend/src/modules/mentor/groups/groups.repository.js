@@ -22,8 +22,12 @@ export function groupRoster(groupId, db = pool) {
       // coins_today — чистое изменение за сегодня, а не только начисления:
       // если ментор дал 10 и тут же снял 5, честнее показать +5, чем +10.
       // Считается от начала текущих суток по времени сервера.
+      // parent_id нужен интерфейсу, чтобы «написать родителю» открывало
+      // конкретного человека по идентификатору. Раньше связь искалась по
+      // совпадению имени ребёнка в списке контактов — тёзки и любое
+      // расхождение в записи имени ломали её.
       `SELECT u.id, u.first_name, u.last_name, u.status,
-              sp.coin_balance, gs.joined_at,
+              sp.coin_balance, sp.parent_id, gs.joined_at,
               COALESCE((
                 SELECT sum(ch.amount)::int
                   FROM coin_history ch

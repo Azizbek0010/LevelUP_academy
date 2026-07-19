@@ -55,10 +55,19 @@ const UZ_LAST = [
   'Nazarova', 'Mirzayev', 'Sattorova', 'Ergashev', 'Qodirova', 'Xolmatov',
 ];
 
+/**
+ * Родитель ученика. Есть не у каждого — так и в жизни, и это позволяет
+ * проверить, что пункт «написать родителю» гаснет там, где писать некому.
+ */
+function mockParentIdFor(n) {
+  return n % 2 === 0 ? `parent-of-${n}` : null;
+}
+
 /** Один ученик по сквозному номеру — номер и есть его личность. */
 function mockStudent(n) {
   return {
     id: `stu-${n}`,
+    parentId: mockParentIdFor(n),
     firstName: UZ_FIRST[n % UZ_FIRST.length],
     lastName: UZ_LAST[(n * 5 + 1) % UZ_LAST.length],
     phone: `+9989${String(10000000 + n * 137).slice(0, 8)}`,
@@ -88,6 +97,33 @@ function mockGroupStudents(groupId) {
   // строку с двумя группами, а не показывает его дважды.
   if (groupId === 'group-uuid-5') return [mockStudent(1), mockStudent(2), ...own.slice(2)];
   return own;
+}
+
+/**
+ * Родители всех учеников ментора — ровно те, кого отдал бы бэкенд:
+ * по одному на ученика, у кого он есть, с реальным именем ребёнка.
+ */
+function mockParentsOfStudents() {
+  const seen = new Map();
+  MOCK_MENTOR_GROUPS.forEach((g) => {
+    mockGroupStudents(g.id).forEach((s) => {
+      if (!s.parentId || seen.has(s.parentId)) return;
+      const n = Number(String(s.id).replace(/\D/g, '')) || 1;
+      seen.set(s.parentId, {
+        id: s.parentId,
+        // фамилия у родителя та же, что у ребёнка — так список читается
+        first_name: UZ_FIRST[(n * 3 + 5) % UZ_FIRST.length],
+        last_name: s.lastName,
+        avatar_key: null,
+        child_names: `${s.firstName} ${s.lastName}`,
+        room_key: `dm:mock-me:${s.parentId}`,
+        last_message: n % 4 === 0 ? 'Rahmat, tushundim' : null,
+        last_message_at: n % 4 === 0 ? '2026-07-18T09:40:00Z' : null,
+        unread_count: n % 6 === 0 ? 2 : 0,
+      });
+    });
+  });
+  return [...seen.values()];
 }
 
 /* Статистика группы — форма ответа GET /api/mentor/groups/:id/stats.
@@ -1749,17 +1785,13 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     // Личный диалог = комната `dm:<staffId>:<parentId>`; здесь staffId фиксируем
     // как mock-me, чтобы ключи в списке и в истории совпадали.
     if (path === '/chat/contacts' && method === 'GET') {
-      const contacts = [
-        { id: 'parent-uuid-1', first_name: 'Dilnoza', last_name: 'Rahimova', avatar_key: null,
-          child_names: 'Aziza Rahimova', room_key: 'dm:mock-me:parent-uuid-1',
-          last_message: 'Rahmat, tushundim', last_message_at: '2026-07-18T09:40:00Z', unread_count: 2 },
-        { id: 'parent-uuid-2', first_name: 'Sherzod', last_name: 'Toshmatov', avatar_key: null,
-          child_names: 'Bekzod Toshmatov', room_key: 'dm:mock-me:parent-uuid-2',
-          last_message: 'Ertaga darsga keladi', last_message_at: '2026-07-17T15:10:00Z', unread_count: 0 },
-        { id: 'parent-uuid-3', first_name: 'Nodira', last_name: 'Yusupova', avatar_key: null,
-          child_names: 'Malika Yusupova, Sardor Yusupov', room_key: 'dm:mock-me:parent-uuid-3',
-          last_message: null, last_message_at: null, unread_count: 0 },
-      ];
+      /* Список собеседников строится ИЗ ТЕХ ЖЕ учеников, что и остальные
+         экраны. Раньше здесь лежали три родителя с выдуманными детьми
+         («Aziza Rahimova»), не встречающимися ни в одной группе, — переход
+         «написать родителю» из списка учеников не находил никого, потому что
+         связывать было нечего. Теперь у каждого второго ученика есть
+         родитель с тем же parentId, что отдаёт ростер. */
+      const contacts = mockParentsOfStudents();
       return { success: true, data: contacts };
     }
 

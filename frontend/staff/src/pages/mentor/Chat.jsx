@@ -138,11 +138,11 @@ export default function MentorChat() {
   const { token, user } = useAuth();
   const qc = useQueryClient();
 
-  /* ?q=<имя ученика> — приход из списка учеников («написать родителю»).
-     Ищем по child_names, поэтому имя ребёнка сразу отбирает нужного
-     родителя, и ментору не приходится вспоминать, как его зовут. */
-  const initialQuery = new URLSearchParams(window.location.search).get('q') ?? '';
-  const [search, setSearch] = useState(initialQuery);
+  /* ?parent=<id> — приход из списка учеников («написать родителю»).
+     Идентификатор, а не имя: поиск по имени ребёнка открывал чужой диалог
+     при тёзках и не находил ничего, если имя записано хоть немного иначе. */
+  const requestedParentId = new URLSearchParams(window.location.search).get('parent');
+  const [search, setSearch] = useState('');
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -249,18 +249,17 @@ export default function MentorChat() {
   useEffect(() => {
     if (activeId || contacts.length === 0) return;
 
-    /* Пришли из списка учеников с ?q=<имя ребёнка> — открываем найденного
-       родителя сразу, в том числе на телефоне: намерение «написать этому
-       родителю» уже выражено, показывать вместо диалога список незачем. */
-    if (initialQuery) {
-      const q = initialQuery.toLowerCase();
-      const match = contacts.find((c) => (c.child_names ?? '').toLowerCase().includes(q));
+    /* Пришли с ?parent=<id> — открываем именно его, в том числе на телефоне:
+       намерение «написать этому родителю» уже выражено, показывать вместо
+       диалога список незачем. */
+    if (requestedParentId) {
+      const match = contacts.find((c) => c.id === requestedParentId);
       if (match) { setActiveId(match.id); return; }
     }
 
     if (!isWide) return;
     setActiveId(contacts[0].id);
-  }, [isWide, activeId, contacts, initialQuery]);
+  }, [isWide, activeId, contacts, requestedParentId]);
 
   // --- отметить прочитанным при открытии диалога ---
   useEffect(() => {

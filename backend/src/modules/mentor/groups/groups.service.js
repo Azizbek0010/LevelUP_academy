@@ -27,6 +27,7 @@ export async function groupRoster(mentorId, groupId) {
     status: s.status,
     coinBalance: s.coin_balance,
     coinsToday: s.coins_today ?? 0,
+    parentId: s.parent_id ?? null,
     joinedAt: s.joined_at,
   }));
 }

@@ -74,9 +74,15 @@ function RowMenu({ x, y, student, onClose }) {
     {
       Icon: UserRound,
       label: "Ota-onasiga yozish",
-      // Открываем чат с подставленным именем ребёнка: список собеседников
-      // умеет искать по child_names, и нужный родитель находится сразу.
-      onClick: () => navigate(`/chat?q=${encodeURIComponent(name)}`),
+      /* По идентификатору родителя, а не по имени ребёнка.
+         Первая версия передавала имя и полагалась на поиск по child_names:
+         тёзки открывали чужой диалог, а расхождение в записи имени не
+         находило вообще ничего. */
+      onClick: () => navigate(`/chat?parent=${student.parentId}`),
+      // У ученика может не быть привязанного родителя — тогда писать некому,
+      // и честнее показать это, чем открыть пустой чат.
+      disabled: !student.parentId,
+      hint: student.parentId ? null : "Ota-ona biriktirilmagan",
     },
     {
       Icon: BarChart3,
@@ -99,17 +105,22 @@ function RowMenu({ x, y, student, onClose }) {
         </div>
       </div>
       <div className="p-1.5">
-        {items.map(({ Icon, label, onClick }) => (
+        {items.map(({ Icon, label, onClick, disabled, hint }) => (
           <button
             key={label}
             role="menuitem"
+            disabled={disabled}
+            title={hint ?? undefined}
             onClick={() => { onClose(); onClick(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/75 hover:bg-base-200 hover:text-base-content transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/75 hover:bg-base-200 hover:text-base-content transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
           >
             <span className="w-7 h-7 rounded-lg bg-base-200 grid place-items-center shrink-0">
               <Icon size={14} />
             </span>
-            {label}
+            <span className="text-left min-w-0">
+              {label}
+              {hint && <span className="block text-[10px] text-base-content/40">{hint}</span>}
+            </span>
           </button>
         ))}
       </div>
