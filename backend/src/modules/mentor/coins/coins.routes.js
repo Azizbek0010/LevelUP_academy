@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { validate } from '../../../middlewares/validate.js';
-import { grantCoinsSchema, studentParam, historyQuery } from './coins.schemas.js';
+import { grantCoinsSchema, studentParam, historyQuery, groupParam } from './coins.schemas.js';
 import * as ctrl from './coins.controller.js';
 
 /**
@@ -48,6 +48,49 @@ const router = Router();
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.post('/', validate({ body: grantCoinsSchema }), ctrl.grantCoins);
+
+/**
+ * @openapi
+ * /api/mentor/coins/groups/{groupId}/budget:
+ *   get:
+ *     tags: [Mentor Coins]
+ *     summary: Remaining monthly coin allowance for a group
+ *     description: >
+ *       A mentor may hand out `coins_per_student × current group size` coins per
+ *       calendar month, per group. Nothing is pre-allocated: the figure is
+ *       derived on read, so enrolling a student raises the allowance
+ *       immediately. Whatever is left over does not carry into the next month.
+ *       Deductions made by the mentor within the same month return to the
+ *       allowance; deductions of coins granted in an earlier month do not.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: groupId
+ *         in: path
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Budget state for the current month
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     month: { type: string, example: '2026-07' }
+ *                     coinsPerStudent: { type: integer, example: 10 }
+ *                     students: { type: integer, example: 12 }
+ *                     allocated: { type: integer, example: 120 }
+ *                     spent: { type: integer, example: 45 }
+ *                     remaining: { type: integer, example: 75 }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       404:
+ *         description: Not your group
+ */
+router.get('/groups/:groupId/budget', validate({ params: groupParam }), ctrl.groupBudget);
 
 /**
  * @openapi
