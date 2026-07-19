@@ -14,10 +14,11 @@ import {
   HiOutlineClipboardDocumentCheck, HiOutlineCurrencyDollar,
   HiOutlineDocumentText,
 } from 'react-icons/hi2';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
 import Avatar from './Avatar.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
-import { disconnectSocket } from '../socket.js';
+import { disconnectSocket, getSocket } from '../socket.js';
 import { useMentorGroups, useChatContacts } from '../queries.js';
 
 /* ──────────────────── HOOKS ──────────────────── */
@@ -369,7 +370,8 @@ function formatWhen(iso) {
 }
 
 function Notifications() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const qc = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -378,6 +380,19 @@ function Notifications() {
   const hasChat = user?.role === 'mentor' || user?.role === 'admin';
   const { data } = useChatContacts({ enabled: hasChat });
   const contacts = data?.data ?? [];
+
+  /* Счётчик обязан оживать сам. Без этой подписки колокольчик показывал
+     непрочитанные только на момент загрузки страницы: родитель писал, а
+     ментор ничего не видел до F5 — «уведомлений нет» при том, что сообщение
+     уже лежало в базе. Комнату слушать не нужно, сервер шлёт адресно в
+     `user:<id>`; достаточно перечитать контакты, там же считается unread. */
+  useEffect(() => {
+    if (!hasChat || !token) return undefined;
+    const socket = getSocket(token);
+    const onMessage = () => qc.invalidateQueries({ queryKey: ['chat-contacts'] });
+    socket.on('chat:dm:message', onMessage);
+    return () => socket.off('chat:dm:message', onMessage);
+  }, [hasChat, token, qc]);
   const unread = contacts.filter((c) => (c.unread_count ?? 0) > 0);
   const total = unread.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
 
