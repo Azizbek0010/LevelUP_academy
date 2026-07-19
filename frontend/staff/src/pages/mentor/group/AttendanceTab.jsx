@@ -537,14 +537,22 @@ export default function AttendanceTab({ groupId, group }) {
                     {/* Остаток месячного лимита. Стоит именно здесь, над самой
                         кнопкой выдачи: ментор видит, сколько ему ещё можно
                         раздать, ровно в тот момент, когда собирается это
-                        сделать, — а не после отказа сервера. */}
+                        сделать, — а не после отказа сервера.
+
+                        Без плашки: подложка в шапке спорила с числами коинов в
+                        строках и притягивала взгляд сильнее, чем сами данные
+                        журнала.
+
+                        Цвет — брендовый зелёный, а не warning, которым по всему
+                        проекту обозначен БАЛАНС УЧЕНИКА (Students, StudentDetail,
+                        строки ниже). Это разные величины: там сколько у ребёнка,
+                        здесь сколько ментору ещё можно раздать, и одинаковый
+                        оранжевый их смешивал. Ноль — красным: выдавать нельзя. */}
                     <span className="w-[100px] flex justify-end">
                       {budget && (
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold tabular-nums ${
-                            budget.remaining === 0
-                              ? 'bg-error/10 text-error'
-                              : 'bg-warning/10 text-warning'
+                          className={`inline-flex items-center gap-1.5 text-sm font-extrabold tabular-nums ${
+                            budget.remaining === 0 ? 'text-error' : 'text-primary'
                           }`}
                           title={`Bu oy uchun: ${budget.allocated} coin (${budget.students} o'quvchi × ${budget.coinsPerStudent}). Sarflandi: ${budget.spent}`}
                         >
@@ -552,7 +560,7 @@ export default function AttendanceTab({ groupId, group }) {
                               в уме, чтобы ответить на единственный интересующий
                               вопрос — сколько ещё можно раздать. Из чего
                               сложился лимит, видно в подсказке. */}
-                          <Coins size={13} />
+                          <Coins size={14} />
                           {budget.remaining}
                         </span>
                       )}
