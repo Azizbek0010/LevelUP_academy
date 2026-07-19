@@ -1,13 +1,5 @@
-import { pool } from '../config/db.js';
-import { saveMessage } from '../modules/chat/chat.service.js';
-import {
-  canStaffChatParent,
-  canStaffChatPeer,
-  dmRoom,
-  userRoom,
-  isUuid,
-  DM_STAFF_ROLES,
-} from '../modules/chat/chat.access.js';
+import { saveMessage, sendDirectMessage } from '../modules/chat/chat.service.js';
+import { userRoom } from '../modules/chat/chat.access.js';
 
 const GLOBAL_ROLES = new Set(['main_admin', 'superadmin', 'admin', 'mentor']);
 
@@ -62,22 +54,15 @@ export function registerChat(io, socket, _redis) {
      кодом не начали получать отказ на первое же сообщение. */
   socket.on('chat:dm:send', async ({ peerId, parentId, body } = {}, ack) => {
     try {
-      const target = peerId ?? parentId;
-      if (!DM_STAFF_ROLES.has(user.role)) throw new Error('Forbidden');
-      if (!(await canStaffChatPeer(user, target))) throw new Error('Forbidden');
-
-      const roomKey = dmRoom(user.id, target);
-      const message = await saveMessage({
-        chatType: 'direct',
-        roomKey,
-        senderId: user.id,
-        branchId: user.branchId,
+      // Права, запись и рассылка обоим участникам — в sendDirectMessage,
+      // общем с REST: держать вторую копию проверки доступа значит однажды
+      // поправить только одну из них.
+      const message = await sendDirectMessage({
+        sender: user,
+        peerId: peerId ?? parentId,
         body,
       });
-
-      // Только двое: сам отправитель (эхо для других его вкладок) и собеседник.
-      io.to(userRoom(user.id)).to(userRoom(target)).emit('chat:dm:message', message);
-      ack?.({ ok: true, id: message.id, roomKey });
+      ack?.({ ok: true, id: message.id, roomKey: message.room_key });
     } catch (err) {
       ack?.({ ok: false, error: err.message });
     }
@@ -88,43 +73,10 @@ export function registerChat(io, socket, _redis) {
   // а не из произвольного ввода: писать первым родитель не может.
   socket.on('chat:dm:reply', async ({ staffId, body } = {}, ack) => {
     try {
-      if (user.role !== 'parent') throw new Error('Forbidden');
-
-      const roomKey = dmRoom(staffId, user.id);
-      // Сотрудник должен сохранять право на этот диалог — иначе отвечать некому.
-      const staff = await findDmStaff(staffId);
-      if (!staff || !(await canStaffChatParent(staff, user.id))) throw new Error('Forbidden');
-
-      const message = await saveMessage({
-        chatType: 'direct',
-        roomKey,
-        senderId: user.id,
-        branchId: user.branchId,
-        body,
-      });
-
-      io.to(userRoom(user.id)).to(userRoom(staffId)).emit('chat:dm:message', message);
-      ack?.({ ok: true, id: message.id, roomKey });
+      const message = await sendDirectMessage({ sender: user, peerId: staffId, body });
+      ack?.({ ok: true, id: message.id, roomKey: message.room_key });
     } catch (err) {
       ack?.({ ok: false, error: err.message });
     }
   });
-}
-
-/** Минимальный профиль сотрудника для повторной проверки прав (роль + скоуп). */
-async function findDmStaff(staffId) {
-  if (!isUuid(staffId)) return null;
-  const { rows: [row] } = await pool.query(
-    `SELECT id, role, organization_id, branch_id
-       FROM users
-      WHERE id = $1 AND deleted_at IS NULL AND status = 'active'`,
-    [staffId],
-  );
-  if (!row) return null;
-  return {
-    id: row.id,
-    role: row.role,
-    organizationId: row.organization_id,
-    branchId: row.branch_id,
-  };
 }

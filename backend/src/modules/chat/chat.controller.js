@@ -33,6 +33,19 @@ export const getContacts = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+/**
+ * POST /api/chat/dm — отправить личное сообщение обычным HTTP.
+ *
+ * Сокет остаётся основным транспортом фронта, но проверять чат руками через
+ * него неудобно, а внешним интеграциям (тот же Telegram-бот) держать
+ * websocket-соединение незачем. Логика общая с сокетом — см. sendDirectMessage.
+ */
+export const sendDm = asyncHandler(async (req, res) => {
+  const { peerId, body } = req.body ?? {};
+  const message = await chatService.sendDirectMessage({ sender: req.user, peerId, body });
+  res.status(201).json({ success: true, data: message });
+});
+
 /** POST /api/chat/:roomKey/read — пометить входящие комнаты прочитанными. */
 export const markRead = asyncHandler(async (req, res) => {
   const updated = await chatService.markRoomRead(req.params.roomKey, req.user.id);
