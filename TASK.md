@@ -160,6 +160,40 @@
       Lekin bu vaqt masalasi.
       **Tuzatish:** lokal `.env` `postgresql://postgres:postgres@localhost:5432/levelup` ga o'tsin,
       prod URL faqat Render dashboard'ida qolsin. Jamoaga ham aytilsin
+- [ ] BUG-NO-WORKER 🔥🔥🔥 ENG KATTASI (2026-07-19 auditda topildi): **prodda BIRORTA worker ishlamayapti.**
+
+      `worker.js` 4 ta worker va 3 ta cron ko'taradi:
+      `notificationWorker` · `overdueWorker` + cron 09:00 · **`billingWorker` + oylik cron** · `dueSoonWorker`
+      `package.json` da alohida skript ham bor: `"worker": "node worker.js"`.
+      Lekin `render.yaml` da **`type: worker` servisi 0 ta** — faqat bitta `type: web`,
+      u esa `npm start` → `node src/server.js` ni ishga tushiradi. Ya'ni `worker.js` HECH QACHON yugurmaydi.
+
+      **Prodda nima ishlamayapti:**
+      • Oylik hisob-fakturalar AVTOMATIK yaratilmaydi (billing.worker, har oy 1-sanada) →
+        invoice yo'q → qarz hisoblanmaydi → `total_debt` o'sib bormaydi
+      • Muddati o'tgan to'lovlar aniqlanmaydi (overdue cron 09:00) →
+        `invoice='overdue'` qo'yilmaydi → `paymentGate` (402) ishlamaydi, qarzdor student panelni ochaveradi
+      • To'lov bildirishnomalari yuborilmaydi (`payment.received` / `payment.due` / `payment.refunded`)
+      • Ota-onaga eslatmalar bormaydi (dueSoon)
+      • **Bilol'ning Telegram boti umuman xabar olmaydi** — queue'ga tushadi, hech kim o'qimaydi
+
+      ⚠️ TASK.md da `K-PAY` "oylik avto-hisoblash" bilan birga **[x] BAJARILGAN** deb turibdi.
+      Kod yozilgan — to'g'ri. Lekin prodda ishlamayapti, ya'ni mijoz uchun u YO'Q.
+      Bu loyihaning asosiy sotuv nuqtasi (to'lov boshqaruvi) prodda o'lik degani.
+
+      **Yechim variantlari** (Karis tanlaydi):
+      1. `render.yaml` ga `type: worker` servisi qo'shish — TO'G'RI yo'l, lekin **free planda worker YO'Q**, pullik kerak
+      2. Vaqtinchalik: `worker.js` ni web servis ichida ko'tarish (`server.js` dan import) —
+         kichik yuklamada ishlaydi, lekin web uxlab qolsa cron ham uxlaydi (free plan 15 daqiqada uxlaydi)
+      3. Tashqi cron (masalan cron-job.org) maxsus endpointni chaqiradi — eng arzoni, lekin endpoint himoyalanishi shart
+
+- [ ] BUG-REDIS-SILENT 🔥 (2026-07-19): `env.js` da `REDIS_URL: z.string().min(1).default('redis://localhost:6379')`.
+      Ya'ni Render'da bu o'zgaruvchi qo'yilmasa — server JIMGINA ko'tariladi va localhost'ga urinaveradi.
+      Log'da `Redis error` chiqadi, lekin process yiqilmaydi. Natijada socket (chat, davomat live) va
+      barcha queue'lar ishlamaydi, sabab esa ko'rinmaydi.
+      `REDIS_URL` `sync: false` — ya'ni faylda yo'q, faqat dashboard'da. Tekshirilsin va prodda default olib tashlansin
+      (production'da majburiy bo'lsin, dev'da default qolsin)
+
 - [ ] BUG-BILLING: `main-admin/src/pages/Billing.jsx` hali ESKI narx modelida (`baseFirstBranch`/`perStudent`), backend 2026-07-16 dan `{ tiers, currency }` qaytaradi → sahifa buzilgan. Egasi: Shohjahon (pastda MAIN bo'limida ham bor).
       SABABI TOPILDI: swagger `PlatformPricing` sxemasi ham eski modelda qolgan edi — Shohjahon hujjatga qarab qurgan. Sxema 2026-07-18 da tuzatildi (tiers), endi front ni ham moslashtirish kerak
 
