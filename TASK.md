@@ -193,6 +193,25 @@
       (ikkalasi ham uning zonasi). Hozir ikkalasi ham faqat mock rejimida ko'rilgan
 - [ ] AB-VERIFY: Parent Chat — Socket.io realtime ulanishi hech qachon tekshirilmagan (`Chat.jsx`, 16 chaqiruv)
 
+## Telegram bot (Bilol) ⚠️ TASK.md ga 2026-07-19 da QO'SHILDI
+
+> ❌ Muammo: Bilol jamoada, 14 commit qilgan, lekin bu faylda uning NOMI ham yo'q edi.
+> Vazifalari `docs/TASK-telegram-bot.md` da alohida yotibdi va u yerda **0 ta [x]** —
+> holbuki u allaqachon ishlagan (masalan `bot.start()` — /start va /stop umuman
+> polling qilmayotgan edi, o'sha tuzatilgan). Ya'ni fayl real holatdan orqada.
+> Bitta manba bo'lishi kerak — shuning uchun bu yerga ko'rsatkich qo'yildi.
+
+- [ ] TG-SYNC 🔴 (Bilol): `docs/TASK-telegram-bot.md` ni REAL holatga keltirsin —
+      bajarilganlarini [x] qilsin. Hozir 12+ vazifa ochiq ko'rinadi, aslida bir qismi tayyor
+- [ ] TG-BIND (Bilol): `POST /api/telegram/bind-token` + deep-link orqali `/start` bilan
+      hisobni bog'lash (Redis `GETDEL` bilan atomar tekshiruv) + `/stop` uzish
+- [ ] TG-DUE (Bilol): `payment.due_soon` handler — ota-onaga to'lov muddati haqida eslatma.
+      Payload formati Karis bilan kelishilsin
+- [ ] TG-ANN (Bilol): `announcement` handler — filial/guruh ota-onalariga e'lon tarqatish,
+      qabul qiluvchilarni resolve qilish + katta ro'yxatga bo'lib yuborish
+- [ ] TG-FRONT (kim bo'shasa): kabinetda "Telegramni bog'lash" tugmasi —
+      `bind-token` ni chaqirib deep-link ko'rsatadi. Front tomoni hech kimga berilmagan
+
 ## SEO — Landing + platforma (Abdulaziz / abdulazizSEO) 🔥 full
 
 > abdulazizSEO rejimi: ikkala zonada (frontend + backend) faqat SEO ishlari.
