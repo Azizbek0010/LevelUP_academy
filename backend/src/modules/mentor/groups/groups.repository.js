@@ -19,8 +19,17 @@ export function listMentorGroups(mentorId, db = pool) {
 export function groupRoster(groupId, db = pool) {
   return db
     .query(
+      // coins_today — чистое изменение за сегодня, а не только начисления:
+      // если ментор дал 10 и тут же снял 5, честнее показать +5, чем +10.
+      // Считается от начала текущих суток по времени сервера.
       `SELECT u.id, u.first_name, u.last_name, u.status,
-              sp.coin_balance, gs.joined_at
+              sp.coin_balance, gs.joined_at,
+              COALESCE((
+                SELECT sum(ch.amount)::int
+                  FROM coin_history ch
+                 WHERE ch.student_id = u.id
+                   AND ch.created_at >= date_trunc('day', now())
+              ), 0) AS coins_today
          FROM group_students gs
          JOIN users u ON u.id = gs.student_id
          JOIN student_profiles sp ON sp.user_id = u.id

@@ -1,7 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { Users, UserX, Coins, ArrowRight, BookOpen } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Users, UserX, Coins, ArrowRight, BookOpen,
+  MessageSquare, UserRound, BarChart3,
+} from 'lucide-react';
 
 import { useMentorGroups } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
@@ -24,6 +27,96 @@ const STATUS = {
   dropped: { label: "O'chirilgan", cls: 'badge-ghost' },
 };
 
+/**
+ * Контекстное меню строки — правая кнопка мыши или двойной клик.
+ *
+ * Открывается там, где нажали, и само отодвигается от краёв: меню, вылезшее
+ * за нижний край списка из 46 человек, пришлось бы догонять прокруткой.
+ */
+function RowMenu({ x, y, student, onClose }) {
+  const navigate = useNavigate();
+  const ref = useRef(null);
+  const [pos, setPos] = useState({ x, y });
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    setPos({
+      x: Math.min(x, window.innerWidth - width - 8),
+      y: Math.min(y, window.innerHeight - height - 8),
+    });
+  }, [x, y]);
+
+  useEffect(() => {
+    const onDown = (e) => { if (!ref.current?.contains(e.target)) onClose(); };
+    const onEsc = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onEsc);
+    // Прокрутка под открытым меню оставила бы его висеть над чужой строкой
+    window.addEventListener('scroll', onClose, true);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onEsc);
+      window.removeEventListener('scroll', onClose, true);
+    };
+  }, [onClose]);
+
+  const name = `${student.firstName} ${student.lastName}`.trim();
+
+  /* Пункта «написать самому ученику» здесь нет намеренно.
+     Чат на бэкенде — это пара «сотрудник ↔ родитель»: комната называется
+     dm:<staffId>:<parentId>, доступ проверяет canStaffChatParent, роль
+     student в ней не участвует вовсе. Кнопка, ведущая в несуществующий
+     диалог, хуже её отсутствия; чтобы она появилась, нужно расширять
+     chat.access.js и сокет на второй тип собеседника. */
+  const items = [
+    {
+      Icon: UserRound,
+      label: "Ota-onasiga yozish",
+      // Открываем чат с подставленным именем ребёнка: список собеседников
+      // умеет искать по child_names, и нужный родитель находится сразу.
+      onClick: () => navigate(`/chat?q=${encodeURIComponent(name)}`),
+    },
+    {
+      Icon: BarChart3,
+      label: "Statistikani ko'rish",
+      onClick: () => navigate(`/students/${student.id}`),
+    },
+  ];
+
+  return (
+    <div
+      ref={ref}
+      role="menu"
+      className="popover-surface fixed z-[100] w-60 overflow-hidden animate-scale-in"
+      style={{ left: pos.x, top: pos.y }}
+    >
+      <div className="px-3 py-2.5 border-b border-base-200">
+        <div className="text-sm font-bold truncate">{name}</div>
+        <div className="text-[11px] text-base-content/45 truncate">
+          {student.groups.map((g) => g.name).join(', ')}
+        </div>
+      </div>
+      <div className="p-1.5">
+        {items.map(({ Icon, label, onClick }) => (
+          <button
+            key={label}
+            role="menuitem"
+            onClick={() => { onClose(); onClick(); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/75 hover:bg-base-200 hover:text-base-content transition-colors"
+          >
+            <span className="w-7 h-7 rounded-lg bg-base-200 grid place-items-center shrink-0">
+              <Icon size={14} />
+            </span>
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function MentorStudents() {
   const { token } = useAuth();
   const { data: groupsData, isLoading: groupsLoading } = useMentorGroups();
@@ -31,6 +124,7 @@ export default function MentorStudents() {
 
   const [search, setSearch] = useState('');
   const [groupFilter, setGroupFilter] = useState('');
+  const [menu, setMenu] = useState(null);   // { x, y, student }
 
   const rosters = useQueries({
     queries: groups.map((g) => ({
@@ -178,7 +272,15 @@ export default function MentorStudents() {
                   {filtered.map((s) => {
                     const st = STATUS[s.status] || STATUS.active;
                     return (
-                      <tr key={s.id} className="hover">
+                      <tr
+                        key={s.id}
+                        className="hover cursor-context-menu"
+                        onContextMenu={(e) => {
+                          e.preventDefault();   // вместо меню браузера — своё
+                          setMenu({ x: e.clientX, y: e.clientY, student: s });
+                        }}
+                        onDoubleClick={(e) => setMenu({ x: e.clientX, y: e.clientY, student: s })}
+                      >
                         <td>
                           {/* Ссылка на всю ячейку с именем: попасть в неё проще,
                               чем в подчёркнутый текст, а строка целиком
@@ -239,6 +341,15 @@ export default function MentorStudents() {
       <Link to="/groups" className="btn btn-ghost btn-sm gap-1.5 text-primary">
         Guruhlar bo'yicha ko'rish <ArrowRight size={14} />
       </Link>
+
+      {menu && (
+        <RowMenu
+          x={menu.x}
+          y={menu.y}
+          student={menu.student}
+          onClose={() => setMenu(null)}
+        />
+      )}
     </div>
   );
 }

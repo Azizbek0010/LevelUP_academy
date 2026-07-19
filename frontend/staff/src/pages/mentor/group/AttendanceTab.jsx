@@ -143,6 +143,7 @@ export default function AttendanceTab({ groupId, group }) {
         first_name: s.first_name ?? s.firstName,
         last_name: s.last_name ?? s.lastName,
         coin_balance: s.coin_balance ?? s.coinBalance ?? 0,
+        coins_today: s.coins_today ?? s.coinsToday ?? 0,
       })),
     [rosterData],
   );
@@ -478,8 +479,15 @@ export default function AttendanceTab({ groupId, group }) {
                     ними в ноль. Там она просто уезжает в конец таблицы. */}
                 {/* w-full — эта колонка добирает всю свободную ширину, чтобы
                     дни занятий стояли плотной группой сразу после имён. */}
-                <th className="sm:sticky sm:right-0 top-0 z-20 bg-base-100 w-full min-w-[190px] px-4 py-3 text-right border-l border-base-200">
-                  Koinlar
+                <th className="sm:sticky sm:right-0 top-0 z-20 bg-base-100 w-full min-w-[250px] px-4 py-3 border-l border-base-200">
+                  {/* Подписи стоят ровно над своими числами в строках ниже:
+                      «сегодня» и «всего» — разные величины, и без заголовков
+                      два числа подряд читаются как одно составное. */}
+                  <div className="flex items-center justify-end gap-2">
+                    <span className="w-11 text-center">Bugun</span>
+                    <span className="w-12 text-center">Jami</span>
+                    <span className="w-[100px]" />
+                  </div>
                 </th>
               </tr>
             </thead>
@@ -529,8 +537,25 @@ export default function AttendanceTab({ groupId, group }) {
                   {/* Коины прямо в строке: баланс + быстрое начисление */}
                   <td className="sm:sticky sm:right-0 z-10 bg-base-100 px-3 py-2.5 border-l border-base-200">
                     <div className="flex items-center justify-end gap-2">
-                      <span className="flex items-center gap-1 text-sm font-bold text-warning tabular-nums">
-                        <Coins size={13} /> {s.coin_balance ?? 0}
+                      {/* Сегодня: сколько начислено за текущий день. Ноль —
+                          приглушённый, чтобы взгляд цеплялся за тех, кому уже
+                          дали коины, а не пересчитывал нули. */}
+                      <span
+                        className={`w-11 text-center text-sm font-bold tabular-nums ${
+                          (s.coins_today ?? 0) > 0 ? 'text-success'
+                            : (s.coins_today ?? 0) < 0 ? 'text-error'
+                            : 'text-base-content/30'
+                        }`}
+                        title="Bugun berilgan coinlar"
+                      >
+                        {(s.coins_today ?? 0) > 0 ? '+' : ''}{s.coins_today ?? 0}
+                      </span>
+                      {/* Всего: накопленный баланс */}
+                      <span
+                        className="w-12 flex items-center justify-center gap-1 text-sm font-bold text-warning tabular-nums"
+                        title="Jami balans"
+                      >
+                        <Coins size={12} /> {s.coin_balance ?? 0}
                       </span>
                       <input
                         type="number"
@@ -539,7 +564,7 @@ export default function AttendanceTab({ groupId, group }) {
                         onKeyDown={(e) => { if (e.key === 'Enter') submitCoins(s); }}
                         placeholder="0"
                         aria-label={`${s.first_name} uchun coin miqdori`}
-                        className="input input-bordered input-xs w-16 text-center tabular-nums"
+                        className="input input-bordered input-xs w-14 text-center tabular-nums"
                       />
                       <button
                         onClick={() => submitCoins(s)}

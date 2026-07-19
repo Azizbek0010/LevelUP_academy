@@ -138,7 +138,11 @@ export default function MentorChat() {
   const { token, user } = useAuth();
   const qc = useQueryClient();
 
-  const [search, setSearch] = useState('');
+  /* ?q=<имя ученика> — приход из списка учеников («написать родителю»).
+     Ищем по child_names, поэтому имя ребёнка сразу отбирает нужного
+     родителя, и ментору не приходится вспоминать, как его зовут. */
+  const initialQuery = new URLSearchParams(window.location.search).get('q') ?? '';
+  const [search, setSearch] = useState(initialQuery);
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -243,9 +247,20 @@ export default function MentorChat() {
   // пустая заглушка, и страница выглядит так, будто писать негде.
   // На узком не трогаем: там сначала список, это осознанный мастер-детейл.
   useEffect(() => {
-    if (!isWide || activeId || contacts.length === 0) return;
+    if (activeId || contacts.length === 0) return;
+
+    /* Пришли из списка учеников с ?q=<имя ребёнка> — открываем найденного
+       родителя сразу, в том числе на телефоне: намерение «написать этому
+       родителю» уже выражено, показывать вместо диалога список незачем. */
+    if (initialQuery) {
+      const q = initialQuery.toLowerCase();
+      const match = contacts.find((c) => (c.child_names ?? '').toLowerCase().includes(q));
+      if (match) { setActiveId(match.id); return; }
+    }
+
+    if (!isWide) return;
     setActiveId(contacts[0].id);
-  }, [isWide, activeId, contacts]);
+  }, [isWide, activeId, contacts, initialQuery]);
 
   // --- отметить прочитанным при открытии диалога ---
   useEffect(() => {

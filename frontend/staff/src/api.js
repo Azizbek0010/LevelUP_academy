@@ -64,6 +64,9 @@ function mockStudent(n) {
     phone: `+9989${String(10000000 + n * 137).slice(0, 8)}`,
     status: n % 13 === 0 ? 'frozen' : 'active',
     coinBalance: ((n * 37) % 40) * 5 + 20,
+    // Часть учеников уже получила коины сегодня — иначе колонка «Bugun»
+    // при проверке всегда нулевая и её нечем отличить от сломанной.
+    coinsToday: n % 3 === 0 ? ((n % 4) + 1) * 5 : 0,
     student_code: `stu${String(1000 + n)}`,
   };
 }

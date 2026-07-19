@@ -9,7 +9,6 @@ import { EmptyState } from '../_ui.jsx';
 
 const AttendanceTab = lazy(() => import('./AttendanceTab.jsx'));
 const TestsTab = lazy(() => import('./TestsTab.jsx'));
-const CoinsTab = lazy(() => import('./CoinsTab.jsx'));
 const StatsTab = lazy(() => import('./StatsTab.jsx'));
 
 /**
@@ -24,10 +23,13 @@ const StatsTab = lazy(() => import('./StatsTab.jsx'));
  * пользователя на журнал.
  */
 
+/* Вкладки «Koinlar» больше нет: начисление переехало прямо в строку журнала —
+   там же, где ментор отмечает присутствие, и видно «сегодня» и «всего».
+   Отдельный экран ради того же действия заставлял переключаться туда-сюда
+   во время урока. История операций по ученику осталась в его карточке. */
 const TABS = [
   { key: 'davomat', label: 'Davomat', Icon: CalendarDays, Component: AttendanceTab },
   { key: 'testlar', label: 'Testlar', Icon: FileText, Component: TestsTab },
-  { key: 'koinlar', label: 'Koinlar', Icon: Coins, Component: CoinsTab },
   // Сравнение учеников между собой: кто тянет, кто отстаёт
   { key: 'statistika', label: 'Statistika', Icon: BarChart3, Component: StatsTab },
 ];
