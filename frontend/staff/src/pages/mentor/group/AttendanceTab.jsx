@@ -390,22 +390,34 @@ export default function AttendanceTab({ groupId, group }) {
      чтобы отличаться от отметки в день урока. Раньше здесь стояли классы
      `text-danger`/`bg-danger/15`, которых в конфиге Tailwind не существовало, —
      «kelmadi» рисовался вообще без красного. */
-  const cellStyle = (status, day) => {
-    const isPast = dateKeyFor(day) < today;
+  const cellStyle = (status) => {
+    /* «Был» — обычное состояние, и его в журнале подавляющее большинство:
+       рисуем тихо, светлой заливкой с насыщенной галочкой.
+       «Не был» — исключение, ради которого журнал и открывают: заливаем
+       красным целиком, крест белый. Так пропуски видно, не вчитываясь, а
+       присутствие не мельтешит.
+
+       Разделения «отмечено в срок / задним числом» здесь больше нет. Оно
+       красило оранжевым КАЖДУЮ отметку прошедшего дня, то есть почти всю
+       таблицу, и вместо исключения обозначало норму. Вдобавок дублировало
+       дату из шапки колонки: что день прошёл, видно и без подсветки. */
     if (status === 'present') {
-      return isPast
-        ? 'bg-warning/15 text-warning border-warning/40'
-        : 'bg-success/15 text-success border-success/40';
+      return 'bg-success/12 text-success border-success/35 hover:bg-success/20';
     }
-    if (status === 'absent') return 'bg-error/15 text-error border-error/40';
-    // Неотмеченная клетка — бледно-зелёная, а не серая: таких клеток в журнале
-    // большинство, и на сером фоне отметки читались как пятна на пустоте.
-    return 'border-primary/20 text-primary/25 hover:border-primary/50 hover:bg-primary/[0.06]';
+    if (status === 'absent') {
+      return 'bg-error text-white border-error hover:bg-error/90';
+    }
+    /* Неотмеченная клетка — почти невидимая рамка. Зелёный отсюда убран:
+       он спорил с зелёным «был», и пустая клетка читалась как отметка. */
+    return 'border-base-200 text-base-content/15 hover:border-primary/50 hover:bg-primary/[0.05]';
   };
 
   const cellIcon = (status) => {
-    if (status === 'present') return <Check size={16} />;
-    if (status === 'absent') return <X size={16} />;
+    // Толстая обводка: галочка и крест должны различаться формой на беглом
+    // взгляде, не только цветом — при 8% мужчин с красно-зелёной слепотой
+    // цвет один различать не может.
+    if (status === 'present') return <Check size={16} strokeWidth={3} />;
+    if (status === 'absent') return <X size={16} strokeWidth={3} />;
     return <Minus size={13} />;
   };
 
@@ -448,15 +460,29 @@ export default function AttendanceTab({ groupId, group }) {
 
       {/* ── Легенда + массовая отметка ── */}
       <div className="shrink-0 px-4 py-2 border-b border-base-200 flex items-center justify-between gap-3 flex-wrap">
-        <ul className="flex items-center gap-3 text-[11px] text-base-content/50 flex-wrap">
+        {/* Образцы легенды — точные копии клеток из таблицы, с теми же
+            иконками и размером. Раньше это были три голых квадратика 12×12 в
+            пастельных тонах: отличить их друг от друга было труднее, чем
+            сами клетки, которые они объясняют. Иконка внутри снимает вопрос
+            и для тех, кто путает красный с зелёным. */}
+        <ul className="flex items-center gap-4 text-[11px] font-medium text-base-content/60 flex-wrap">
           <li className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded border border-success/40 bg-success/15" /> keldi
+            <span className="w-6 h-6 rounded-lg border grid place-items-center bg-success/12 text-success border-success/35">
+              <Check size={13} strokeWidth={3} />
+            </span>
+            keldi
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded border border-error/40 bg-error/15" /> kelmadi
+            <span className="w-6 h-6 rounded-lg border grid place-items-center bg-error text-white border-error">
+              <X size={13} strokeWidth={3} />
+            </span>
+            kelmadi
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded border border-warning/40 bg-warning/15" /> keyin tuzatilgan
+            <span className="w-6 h-6 rounded-lg border border-base-200 grid place-items-center text-base-content/15">
+              <Minus size={13} />
+            </span>
+            belgilanmagan
           </li>
         </ul>
         <div className="flex items-center gap-3">
@@ -623,7 +649,7 @@ export default function AttendanceTab({ groupId, group }) {
                         <button
                           onClick={() => toggleDay(s.id, d)}
                           aria-label={`${s.first_name} ${s.last_name}, ${d}-kun: ${statusLabel(status)}`}
-                          className={`mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status, d)}`}
+                          className={`mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status)}`}
                         >
                           {cellIcon(status)}
                         </button>
