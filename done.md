@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 19.07.2026 21:59 (UTC+5, Toshkent vaqti)
-> Statistika: 132/195 task tugallangan (67%)
+> Oxirgi yangilanish: 19.07.2026 22:30 (UTC+5, Toshkent vaqti)
+> Statistika: 134/197 task tugallangan (68%)
 
 ---
 
-## Progress: [#############.......] 67%
+## Progress: [#############.......] 68%
 
 ## Tugallangan vazifalar
 
@@ -61,6 +61,10 @@
 - [x] MP-CHAT: Chat qayta yozildi — kompozer HAR DOIM render bo'ladi (ilgari `activeContact` ichida edi →
 - [x] MP-SHELL: Staff qobig'i — sidebar hover'da ochiladi/yopiladi, ishlaydigan bildirishnomalar paneli,
 - [x] MP-SEED: `seed-mentor-demo.mjs` (demo mentorni real data bilan to'ldiradi),
+
+### Backend — Integration (Karis) 🔥 hozirgi fokus
+- [x] K-INT: admin GroupDetail — **QAROR QABUL QILINDI 2026-07-19**, Abdulaziz bloki OCHILDI.
+- [x] BUG-LOCAL-PROD-DB ✅ TUZATILDI 2026-07-19: `backend/.env` dagi `DATABASE_URL`
 
 ### BUGLAR / BLOKERLAR (Karis) — 2026-07-18 tekshiruvida topildi
 - [x] BUG-PROD-MOCKS ✅ TUZATILDI 2026-07-19: `frontend/{staff,student,member}/.env.production`
@@ -199,6 +203,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 80 task
+- Karis (Backend): 82 task
 - Abdulaziz (Backend): 57 task
 - Frontend jamoasi: 48 task
