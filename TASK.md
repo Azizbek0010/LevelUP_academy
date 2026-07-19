@@ -62,6 +62,36 @@
 - [x] K-PAY: Payments modul: oylik avto-hisoblash (billing.worker, 1-sana, muddat 5-sana) + invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + ad-hoc to'lov + refund/void + chek S3 ga; commit dan KEYIN notificationQueue ('payment.received'/'payment.due'/'payment.refunded'); total_debt + invoice.status qayta hisob. To'lamasa (5-sanadan keyin, invoice='overdue') — student panelga umuman data qaytmaydi (paymentGate, 402). NASIYA YO'Q
 - [x] K-PAY: Branch reports: filial bo'yicha tushum va qarzlar (guruhlar kesimida) — GET /api/admin/reports
 
+## Mentor panel — to'liq qayta ishlash (Karis) ✅ 2026-07-18/19 — save-zone da 42 commit
+
+> Bu ish hech qaysi md faylda YOZILMAGAN edi (audit 2026-07-19 da qo'shildi).
+> Backend + frontend birga: `modules/mentor/*`, `modules/chat/*`, `modules/coins/*`, `frontend/staff`.
+
+- [x] MP-COINS: Mentor oylik koin limiti — migratsiya `1783850000000_mentor-coin-budget`
+      (`organizations.coins_per_student` normasi). Limit SAQLANMAYDI, hisoblanadi:
+      norma × guruhdagi aktiv o'quvchi soni − shu oyda berilgani. Sabab: yangi o'quvchi kelsa
+      limit DARHOL o'ssin (saqlangan qiymat har qabul/chiqishda eskirardi).
+      `GET /api/mentor/coins/groups/:groupId/budget`, jurnalda qolgan limit ko'rinadi
+- [x] MP-PROFILE: Mentor professional profili — migratsiya `1783840000000_mentor-profile`
+      (bio, ko'nikmalar, admin qo'yadigan daraja); profil ikki panelli "stol" ko'rinishida
+- [x] MP-STATS: Statistika — har o'quvchi bo'yicha (davomat/uy vazifa/test/koin), 6 oylik trend grafigi,
+      guruh ichida o'quvchilarni solishtiruvchi "Statistika" tab'i, barcha o'quvchilar sahifasi.
+      `GET /api/mentor/groups/:groupId/stats`, `GET /api/mentor/groups/:groupId/students`
+- [x] MP-ATTEND: Davomat Socket.IO ga ko'chirildi — o'qish, yozish va jonli yangilanish;
+      avtosaqlash (Saqlash tugmasi olib tashlandi), butun oy darslari sana bilan va kim belgilagani,
+      **mentor faqat BUGUNGI darsni belgilay oladi**, koinlar to'g'ridan-to'g'ri jurnal qatorida
+- [x] MP-CHAT: Chat qayta yozildi — kompozer HAR DOIM render bo'ladi (ilgari `activeContact` ichida edi →
+      kontakt ro'yxati bo'sh bo'lsa yozadigan joy yo'q edi, "input yo'q" shikoyatining ildizi shu),
+      `POST /api/chat/dm` (HTTP orqali xabar), xodim→o'quvchi to'g'ridan-to'g'ri yozishi,
+      bildirishnoma qo'ng'irog'i socket orqali yangilanadi, kontakt ro'yxatidagi 500 tuzatildi
+- [x] MP-SHELL: Staff qobig'i — sidebar hover'da ochiladi/yopiladi, ishlaydigan bildirishnomalar paneli,
+      header menyulari, telefonda gorizontal overflow va chat kompozeri tuzatildi, firma logotipi
+- [x] MP-SEED: `seed-mentor-demo.mjs` (demo mentorni real data bilan to'ldiradi),
+      `test-token.mjs`, `send-test-dm.mjs`, `docs/CHAT-TESTING.md` (qo'lda Postman/curl bilan tekshirish)
+- [ ] MP-VERIFY 🔴: **JONLI TEKSHIRILMAGAN** — Docker ko'tarilmagani uchun real BD da hech biri
+      yugurtirilmagan. Mock rejimida playwright bilan tekshirilgan xolos.
+      Kontakt ro'yxati BO'SH holati ham jonli ko'rilmagan (mocklarda doim 3 ta kontakt bor)
+
 ## Backend — Integration (Karis) 🔥 hozirgi fokus
 
 > Backend kod tayyor (barcha panellar). Endi asosiy ish — frontend panellarni backend bilan ulash.
@@ -71,8 +101,9 @@
 
 ## 🔴 BUGLAR / BLOKERLAR (Karis) — 2026-07-18 tekshiruvida topildi
 
-- [ ] BUG-PROD-MOCKS 🔥 KRITIK: `frontend/{staff,student,member}/.env.production` da `VITE_USE_MOCKS=false` YO'Q. Kod `VITE_USE_MOCKS !== 'false'` → undefined bo'lsa MOCK YONIQ. `.env` gitignore'da (faqat lokal), Vercel'da faqat `.env.production` bor → **prodda panellar soxta localStorage datasini ko'rsatyapti**. Tuzatish: uchala `.env.production` ga `VITE_USE_MOCKS=false` qo'shish
-- [ ] BUG-STACK 🔥: `render.yaml` da NODE_ENV o'rnatilmagan, `config/env.js` default `'development'` → `errorHandler.js:19` prodda `err.stack` qaytaryapti (api.levelup-academy.uz da jonli ko'rildi). Tuzatish: render.yaml ga NODE_ENV=production
+- [ ] BUG-PROD-MOCKS 🔥 KRITIK (2026-07-19 da qayta tasdiqlandi — HALI OCHIQ): `frontend/{staff,student,member}/.env.production` da `VITE_USE_MOCKS=false` YO'Q — uchalasida ham faqat `VITE_API_URL` bor. Kod `VITE_USE_MOCKS !== 'false'` → undefined bo'lsa MOCK YONIQ. `.env` gitignore'da (faqat lokal), Vercel'da faqat `.env.production` bor → **prodda panellar soxta localStorage datasini ko'rsatyapti**. Tuzatish: uchala `.env.production` ga `VITE_USE_MOCKS=false` qo'shish.
+      ✅ Aniqlik: `main-admin` bu bug'dan JABRLANMAGAN — uning `api.js` da `VITE_USE_MOCKS` pattern'i umuman yo'q. Ya'ni 4 emas, 3 ta app
+- [x] ~~BUG-STACK~~ ✅ TUZATILGAN (2026-07-19 auditda tekshirildi, TASK.md eskirgan edi): `render.yaml:19-20` da `NODE_ENV=production` O'RNATILGAN, `errorHandler.js:41` stack'ni faqat `env.NODE_ENV === 'development'` da qaytaradi (qat'iy tenglik — yangi hostingda o'zgaruvchi unutilsa ham stack chiqmaydi). Bundan tashqari 5xx da `details` ham berkitildi, o'rniga `errorId` (pino req.id) qaytadi — commit `5a1f177`
 - [ ] BUG-BILLING: `main-admin/src/pages/Billing.jsx` hali ESKI narx modelida (`baseFirstBranch`/`perStudent`), backend 2026-07-16 dan `{ tiers, currency }` qaytaradi → sahifa buzilgan. Egasi: Shohjahon (pastda MAIN bo'limida ham bor).
       SABABI TOPILDI: swagger `PlatformPricing` sxemasi ham eski modelda qolgan edi — Shohjahon hujjatga qarab qurgan. Sxema 2026-07-18 da tuzatildi (tiers), endi front ni ham moslashtirish kerak
 
@@ -109,6 +140,39 @@
 - [ ] K-SUPER-INT: GET /api/super/audit — Audit log ⚠️ ZAGLUSHKA: audit jadvali yo'q, doim { items: [], total: 0 }
 - [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
 - [ ] K-SUPER-INT: har bir sahifa E2E — real superadmin login → real data
+
+## Backend — YANGI TOPSHIRIQ (Abdulaziz) 🔥 2026-07-19, Karis bergan
+
+> Auditda topilgan ochiq backend ishlar. Hammasi `backend/` zonasida — Abdulaziz'ning zonasi.
+> Tartib MUHIM: AB-INT-GROUP birinchi, chunki u boshqa odamni (Abduloh) BLOKLAB turibdi.
+
+### AB-INT-GROUP 🔴 1-NAVBAT (Abdulohni bloklayapti)
+
+- [ ] AB-INT-GROUP: admin GroupDetail uchun 6 ta endpoint YO'Q, front (Abduloh) ularni allaqachon chaqiryapti va mock'dan olyapti:
+      `GET/POST /api/admin/groups/:id/attendance`, `.../homework`, `.../feedback`.
+      **Avval qaror kerak:** attendance va homework — mentor jadvallaridan REUSE qilinsinmi
+      (yagona manba, tavsiya shu) yoki alohida? feedback — YANGI migratsiya + CRUD kerak (jadval yo'q).
+      Qarorni Karis bilan kelishib, keyin yozish. Kontrakt: `frontend/TEAM-TASKS.md`
+
+### AB-SUPER-STUB — Super Admin 3 ta zaglushka (jadval YO'Q, 501 qaytaradi)
+
+> Hozir `super.service.js:342-348` bo'sh massiv qaytaradi, `super.controller.js:67` esa 501.
+> Front (Shohjahon qurgan) sahifalar bor, lekin data yo'q — ya'ni sahifalar bo'm-bo'sh turibdi.
+
+- [ ] AB-SUPER-ANN: `GET/POST/DELETE /api/super/announcements` — e'lonlar.
+      Migratsiya + CRUD + `notificationQueue` ga ulash (POST bo'lganda xodimlarga/ota-onalarga ketsin).
+      Bilol'ning TG-boti shu queue'ni o'qiydi — `AB-V1` dagi `/api/admin/announcements` bilan bir xil pattern, undan namuna ol
+- [ ] AB-SUPER-REM: `GET /api/super/reminders` (+ resend / delete) — eslatmalar. Migratsiya + CRUD
+- [ ] AB-SUPER-AUDIT: `GET /api/super/audit` — audit log. Migratsiya (kim / nima / qachon / qaysi org) +
+      yozuvni MUHIM mutatsiyalarga ulash (branch/admin CRUD, freeze, shtraf). Faqat o'qish uchun, o'chirib bo'lmaydi
+- [ ] AB-SUPER-STATS: `GET /api/super/stats` — route umuman YO'Q. KPI + grafik data (recharts uchun).
+      ⚠️ Front `Stats.jsx` ham statik — api chaqirmaydi, ya'ni ikkala tomon ham kerak
+
+### AB-VERIFY — jonli tekshiruv (mock'siz)
+
+- [ ] AB-VERIFY: `VITE_USE_MOCKS=false` bilan real backend'da Student va Parent panellarini E2E tekshirish
+      (ikkalasi ham uning zonasi). Hozir ikkalasi ham faqat mock rejimida ko'rilgan
+- [ ] AB-VERIFY: Parent Chat — Socket.io realtime ulanishi hech qachon tekshirilmagan (`Chat.jsx`, 16 chaqiruv)
 
 ## SEO — Landing + platforma (Abdulaziz / abdulazizSEO) 🔥 full
 
@@ -171,8 +235,12 @@
 > To'liq strategiya — PRICING.md (vault). Model: o'quvchi bucket tariflari, filiallar bepul, narx=sifat (kafolat).
 
 - [x] PRICE: Bucket tariflar backendda (config/plans.js TIERS, computeBill by students)
-- [ ] PRICE: Neon'da migratsiyalarni prognat (npm run migrate) — 1783700000000_org-lesson-duration + qolgan 6 tasi; aks holda guruh jadvali va mentor oyligi prodda 500
-- [ ] PRICE: render.yaml ga preDeployCommand: npm run migrate (migratsiya avtomatik yugursin)
+- [ ] PRICE 🔴 SHOSHILINCH: Neon'da migratsiyalarni prognat (npm run migrate) — 1783700000000_org-lesson-duration + qolgan 6 tasi + **YANGI 2 tasi** (`1783840000000_mentor-profile`, `1783850000000_mentor-coin-budget`); aks holda guruh jadvali, mentor oyligi, mentor profili va koin limiti prodda 500
+- [ ] PRICE 🔴 SHOSHILINCH: render.yaml ga preDeployCommand: npm run migrate.
+      **Xavf (2026-07-19 auditda aniqlandi):** `render.yaml` da `branch: main` + `autoDeploy: true`,
+      lekin `preDeployCommand` YO'Q → main ga merge = backend DARHOL deploy bo'ladi,
+      migratsiyalar esa YUGURMAYDI. Ya'ni yangi kod eski sxemaga murojaat qiladi → mentor sahifalari 500 beradi.
+      main ga chiqarishdan OLDIN yo migratsiyani qo'lda prognat qilish, yo preDeployCommand qo'shish shart
 - [ ] PRICE: Tariflarni DB-editable qilish (Main Admin tahrirlaydi) — v2
 - [ ] FREEZE: Obunani muzlatish — 1 oy bepul, keyin (2-3-4...oy) pullik; backend logika + billing + status
 - [ ] WHITE-LABEL: Markazga o'z brendida sayt (bizning backend/storage) — pullik xizmat 4 990 000 dan (minimal, murakkab bo'lsa qimmatroq); shablon self-serve + to'liq kastom premium
@@ -182,12 +250,31 @@
 
 ## Frontend — Auth (Elyor)
 
-- [ ] AUTH: Login sahifalar (3 endpoint: main / staff / member) — elyor branchda bor, main ga merge kerak
-- [ ] AUTH: ProtectedRoute + RoleGuard
-- [ ] AUTH: Router setup by roles
-- [ ] AUTH: Redux authSlice — KERAK EMAS (useAuth() context yetarli, qaror 2026-07-15)
-- [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617)
-- [ ] AUTH: Socket.io client
+> ⚠️ AUDIT 2026-07-19 (Karis): bu bo'limdagi galochkalar ESKIRGAN edi — kod tekshirildi,
+> 4 ta vazifa allaqachon bajarilgan, 1 tasi kerak emas. Faqat BITTA haqiqiy tirqish topildi (pastda).
+
+- [x] AUTH: Login sahifalar (3 endpoint: main / staff / member) — `staff/pages/Login.jsx`, `member/pages/Login.jsx`, `main-admin/pages/Login.jsx`, uchalasi `/auth/{staff,member,main}/login` ga ulangan. `origin/elyor` da save-zone dan ortiqcha commit YO'Q — merge qilinadigan narsa qolmagan
+- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+superadmin route'larida ishlatiladi
+- [x] AUTH: Router setup by roles — staff/App.jsx da rolli route'lar
+- [x] AUTH: Redux authSlice — KERAK EMAS (useAuth() context yetarli, qaror 2026-07-15)
+- [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617). Auditda tasdiqlandi: `refreshPromise` 4 ta app da ham bor
+- [x] AUTH: Socket.io client — `staff/socket.js` (presence + davomat live + ack-request), `member/socket.js`. `main-admin` va `student` da realtime sahifa YO'Q (Chat yo'q) → ularga socket kerak emas
+
+### 🔴 AUTH — haqiqiy ochiq tirqish (auditda topildi 2026-07-19)
+
+- [ ] AUTH-FORGOT 🔥: **Parolni tiklash FRONTDA umuman yo'q.** Backend tayyor va ishlaydi
+      (`POST /api/auth/forgot-password` + `POST /api/auth/reset-password`, passwordResetLimiter,
+      zod validatsiya, email OTP), lekin frontend da `*forgot*` / `*reset*` / `*otp*` fayl **0 ta**.
+      Ya'ni foydalanuvchi parolini unutса — interfeys orqali tiklay olmaydi.
+      Ochiq savol: `member` (Student/Parent) login-kod bilan kiradi va email'i bo'lmasligi mumkin →
+      ularga tiklash admin orqalimi yoki umuman formasiz? Qaror kerak.
+- [ ] AUTH-ELYOR-4: Elyor 2026-07-16 da 4 ta muammoni topgan, lekin ular umumiy fayllarda
+      (`api.js`, `auth.jsx`, `main.jsx`, `vite.config.js`) — o'z chegarasidan tashqari bo'lgani uchun
+      TEGMAGAN va Karis'ga uzatgan (`frontend/staff/elyor-log.md`). **Hech kim olmagan, osilib qolgan:**
+      1) admin dashboard `api.adminDashboard is not a function`
+      2) Google login COOP konsol xatosi
+      3) «Забыли пароль» mock ishlamaydi (AUTH-FORGOT bilan bir xil ildiz)
+      4) React Router v7 future-flag warning
 
 ## Frontend — Super Admin ✅ TUGADI
 

@@ -1,7 +1,7 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 18.07.2026 17:12 (UTC+5, Toshkent vaqti)
-> Statistika: 116/165 task tugallangan (70%)
+> Oxirgi yangilanish: 19.07.2026 20:52 (UTC+5, Toshkent vaqti)
+> Statistika: 129/182 task tugallangan (70%)
 
 ---
 
@@ -52,6 +52,18 @@
 ### Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
 - [x] K-PAY: Payments modul: oylik avto-hisoblash (billing.worker, 1-sana, muddat 5-sana) + invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + ad-hoc to'lov + refund/void + chek S3 ga; commit dan KEYIN notificationQueue ('payment.received'/'payment.due'/'payment.refunded'); total_debt + invoice.status qayta hisob. To'lamasa (5-sanadan keyin, invoice='overdue') — student panelga umuman data qaytmaydi (paymentGate, 402). NASIYA YO'Q
 - [x] K-PAY: Branch reports: filial bo'yicha tushum va qarzlar (guruhlar kesimida) — GET /api/admin/reports
+
+### Mentor panel — to'liq qayta ishlash (Karis) ✅ 2026-07-18/19 — save-zone da 42 commit
+- [x] MP-COINS: Mentor oylik koin limiti — migratsiya `1783850000000_mentor-coin-budget`
+- [x] MP-PROFILE: Mentor professional profili — migratsiya `1783840000000_mentor-profile`
+- [x] MP-STATS: Statistika — har o'quvchi bo'yicha (davomat/uy vazifa/test/koin), 6 oylik trend grafigi,
+- [x] MP-ATTEND: Davomat Socket.IO ga ko'chirildi — o'qish, yozish va jonli yangilanish;
+- [x] MP-CHAT: Chat qayta yozildi — kompozer HAR DOIM render bo'ladi (ilgari `activeContact` ichida edi →
+- [x] MP-SHELL: Staff qobig'i — sidebar hover'da ochiladi/yopiladi, ishlaydigan bildirishnomalar paneli,
+- [x] MP-SEED: `seed-mentor-demo.mjs` (demo mentorni real data bilan to'ldiradi),
+
+### BUGLAR / BLOKERLAR (Karis) — 2026-07-18 tekshiruvida topildi
+- [x] ~~BUG-STACK~~ ✅ TUZATILGAN (2026-07-19 auditda tekshirildi, TASK.md eskirgan edi): `render.yaml:19-20` da `NODE_ENV=production` O'RNATILGAN, `errorHandler.js:41` stack'ni faqat `env.NODE_ENV === 'development'` da qaytaradi (qat'iy tenglik — yangi hostingda o'zgaruvchi unutilsa ham stack chiqmaydi). Bundan tashqari 5xx da `details` ham berkitildi, o'rniga `errorId` (pino req.id) qaytadi — commit `5a1f177`
 
 ### Swagger / API hujjatlari (Karis) ✅ 2026-07-18
 - [x] DOCS: Barcha route'lar auditi — 158 route topildi, 139 tasi hujjatlashtirilgan edi, 19 tasi YO'Q edi (16 super + 2 admin + 1 telegram)
@@ -115,7 +127,12 @@
 - [x] PRICE: Bucket tariflar backendda (config/plans.js TIERS, computeBill by students)
 
 ### Frontend — Auth (Elyor)
-- [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617)
+- [x] AUTH: Login sahifalar (3 endpoint: main / staff / member) — `staff/pages/Login.jsx`, `member/pages/Login.jsx`, `main-admin/pages/Login.jsx`, uchalasi `/auth/{staff,member,main}/login` ga ulangan. `origin/elyor` da save-zone dan ortiqcha commit YO'Q — merge qilinadigan narsa qolmagan
+- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+superadmin route'larida ishlatiladi
+- [x] AUTH: Router setup by roles — staff/App.jsx da rolli route'lar
+- [x] AUTH: Redux authSlice — KERAK EMAS (useAuth() context yetarli, qaror 2026-07-15)
+- [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617). Auditda tasdiqlandi: `refreshPromise` 4 ta app da ham bor
+- [x] AUTH: Socket.io client — `staff/socket.js` (presence + davomat live + ack-request), `member/socket.js`. `main-admin` va `student` da realtime sahifa YO'Q (Chat yo'q) → ularga socket kerak emas
 
 ### Frontend — Super Admin ✅ TUGADI
 - [x] SUPER (front): Dashboard (org income, branches, admins, students)
@@ -179,6 +196,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 64 task
-- Abdulaziz (Backend): 50 task
-- Frontend jamoasi: 43 task
+- Karis (Backend): 77 task
+- Abdulaziz (Backend): 57 task
+- Frontend jamoasi: 48 task

@@ -146,6 +146,16 @@ export function useMentorAttendance(groupId, params) {
   );
 }
 
+/** Остаток месячного лимита коинов по группе. */
+export function useMentorCoinBudget(groupId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['mentor-coin-budget', groupId],
+    () => api.mentorCoinBudget(token, groupId),
+    { enabled: !!groupId },
+  );
+}
+
 export function useMentorHomeworkList(groupId) {
   const { token } = useAuth();
   return useAuthedQuery(['mentor-homework', groupId], () => api.mentorHomeworkList(token, groupId), {
@@ -183,10 +193,36 @@ export function useMentorTestResults(testId) {
   });
 }
 
-// -------- CHAT --------
-export function useChatContacts() {
+export function useMentorGroupStats(groupId) {
   const { token } = useAuth();
-  return useAuthedQuery(['chat-contacts'], () => api.chatContacts(token));
+  return useAuthedQuery(
+    ['mentor-group-stats', groupId],
+    () => api.mentorGroupStats(token, groupId),
+    { enabled: !!groupId },
+  );
+}
+
+export function useMentorStudentStats(studentId) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['mentor-student-stats', studentId],
+    () => api.mentorStudentStats(token, studentId),
+    { enabled: !!studentId },
+  );
+}
+
+// -------- PROFILE --------
+export function useMe() {
+  const { token } = useAuth();
+  return useAuthedQuery(['me'], () => api.me(token));
+}
+
+// -------- CHAT --------
+// options нужен вызову из шапки: у методиста и супер-админа чата нет, и
+// запрашивать контакты за них — гарантированный 403 в консоли на каждой странице.
+export function useChatContacts(options = {}) {
+  const { token } = useAuth();
+  return useAuthedQuery(['chat-contacts'], () => api.chatContacts(token), options);
 }
 
 export function useChatHistory(roomKey) {

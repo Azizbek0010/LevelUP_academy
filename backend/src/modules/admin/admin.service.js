@@ -322,16 +322,38 @@ export async function setMentorFrozen(branchId, id, frozen) {
   return mapMentor(row);
 }
 
-export async function updateMentor(branchId, id, body) {
-  let row;
+/**
+ * Обновление ментора админом. Поля лежат в двух таблицах: имя/телефон в
+ * `users`, грейд в `mentor_profiles`. Обе записи в одной транзакции — иначе
+ * при падении второго запроса ментор остался бы с новым именем и старым
+ * уровнем, и понять это по ответу было бы нельзя.
+ */
+export async function updateMentor(branchId, id, body, adminId) {
+  const { grade, ...userFields } = body;
+
   try {
-    row = await repo.updateMentor(id, branchId, body);
+    await withTransaction(async (client) => {
+      // Принадлежность филиалу проверяем до записи: патч может состоять из
+      // одного грейда, и тогда UPDATE по users со своим WHERE не выполнится,
+      // а значит и чужого ментора никто бы не отсёк.
+      const mentor = await repo.findMentorInBranch(id, branchId, client);
+      if (!mentor) throw new AppError(404, 'Mentor not found in your branch');
+
+      if (Object.keys(userFields).length > 0) {
+        await repo.updateMentor(id, branchId, userFields, client);
+      }
+      if (grade !== undefined) {
+        await repo.upsertMentorGrade(id, grade, adminId, client);
+      }
+    });
   } catch (err) {
     if (err.code === '23505' && err.constraint === 'uq_users_phone') {
       throw new AppError(409, 'Phone already in use');
     }
     throw err;
   }
+
+  const row = await repo.findMentorWithProfile(id, branchId);
   if (!row) throw new AppError(404, 'Mentor not found in your branch');
   return mapMentor(row);
 }
@@ -354,6 +376,12 @@ function mapMentor(m) {
     email: m.email,
     phone: m.phone,
     status: m.status,
+    // Карточка: у ментора, который её не заполнял, строки в mentor_profiles
+    // нет вовсе — отдаём предсказуемые пустые значения, а не undefined.
+    grade: m.grade ?? null,
+    bio: m.bio ?? null,
+    skills: m.skills ?? [],
+    groups: m.groups !== undefined ? Number(m.groups) : undefined,
   };
 }
 

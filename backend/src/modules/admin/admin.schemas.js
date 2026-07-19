@@ -82,11 +82,16 @@ export const createMentorSchema = z.object({
 
 export const freezeMentorSchema = z.object({ frozen: z.boolean() });
 
+/**
+ * `grade` — уровень ментора (junior/middle/senior). Живёт именно здесь, а не в
+ * профиле самого ментора: себе уровень не присваивают. `null` снимает грейд.
+ */
 export const updateMentorSchema = z
   .object({
     firstName: name(),
     lastName: name(),
     phone,
+    grade: z.enum(['junior', 'middle', 'senior']).nullable(),
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });

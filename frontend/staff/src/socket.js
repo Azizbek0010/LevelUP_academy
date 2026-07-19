@@ -75,6 +75,51 @@ export function useOnlineCount(token) {
 }
 
 /**
+ * Запрос по сокету с ответом (ack) и обязательным таймаутом.
+ *
+ * Без таймаута обещание висело бы вечно: если соединение оборвалось между
+ * emit и ответом, socket.io не сообщит об этом — коллбэк просто не вызовется,
+ * и журнал остался бы в состоянии «сохраняю...» навсегда.
+ */
+export function socketRequest(token, event, payload, { timeout = 8000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const s = getSocket(token);
+
+    if (!s.connected) {
+      // Сразу говорим «нет связи», чтобы вызывающий успел уйти на запасной путь,
+      // а не ждал восемь секунд на глазах у пользователя.
+      reject(new Error('socket_disconnected'));
+      return;
+    }
+
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error('socket_timeout'));
+    }, timeout);
+
+    s.emit(event, payload, (res) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (res?.ok) resolve(res);
+      else reject(new Error(res?.error || 'socket_error'));
+    });
+  });
+}
+
+/** Отметить давомат по сокету. Ответ — сохранённые записи. */
+export function markAttendanceSocket(token, { groupId, lessonDate, records }) {
+  return socketRequest(token, 'attendance:mark', { groupId, lessonDate, records });
+}
+
+/** Прочитать журнал по сокету (date либо from+to). */
+export function fetchAttendanceSocket(token, { groupId, ...query }) {
+  return socketRequest(token, 'attendance:fetch', { groupId, ...query });
+}
+
+/**
  * Live-обновления журнала davomat по группе.
  *
  * Подписка серверная (`attendance:subscribe` → комната группы), поэтому её

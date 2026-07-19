@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Snowflake, Sun, Trash2, Pencil, Users, UserCheck, UserX, Mail, Phone } from 'lucide-react';
+import { Plus, Snowflake, Sun, Trash2, Pencil, Users, UserCheck, UserX, Mail, Phone, Award } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
@@ -43,8 +43,37 @@ function StatCard({ Icon, label, value, color, gradient, delay }) {
   );
 }
 
+/* Грейд ментора. Меняется только отсюда: сам ментор в своём профиле видит его
+   как read-only — PATCH /api/users/me это поле не принимает. */
+const GRADES = [
+  { value: '', label: 'Не задан', color: 'var(--text-muted)' },
+  { value: 'junior', label: 'Junior', color: '#2563eb' },
+  { value: 'middle', label: 'Middle', color: '#b45309' },
+  { value: 'senior', label: 'Senior', color: '#15803d' },
+];
+
+function GradePicker({ value, onChange, busy }) {
+  const current = GRADES.find((g) => g.value === (value || '')) || GRADES[0];
+  return (
+    <label className="flex items-center gap-1.5" title="Уровень ментора">
+      <Award size={11} style={{ color: current.color }} />
+      <select
+        className="h-7 pl-1.5 pr-6 rounded-[8px] text-[11px] font-bold bg-[var(--surface)] border border-[var(--border)] outline-none cursor-pointer disabled:opacity-50"
+        style={{ color: current.color }}
+        value={value || ''}
+        disabled={busy}
+        onChange={(e) => onChange(e.target.value || null)}
+      >
+        {GRADES.map((g) => (
+          <option key={g.value} value={g.value}>{g.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 /* ═══════════════ Mentor Card ═══════════════ */
-function MentorCard({ m, onEdit, onFreeze, onDelete }) {
+function MentorCard({ m, onEdit, onFreeze, onDelete, onGrade, gradeBusy }) {
   const status = STATUS_COLORS[m.status] || STATUS_COLORS.active;
 
   return (
@@ -79,8 +108,28 @@ function MentorCard({ m, onEdit, onFreeze, onDelete }) {
             )}
           </div>
 
+          {/* Навыки — короткой строкой: админу важно понимать, кого он видит,
+              но карточка не должна превращаться в анкету. */}
+          {m.skills?.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {m.skills.slice(0, 3).map((s) => (
+                <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-[var(--text-secondary)]">
+                  {s}
+                </span>
+              ))}
+              {m.skills.length > 3 && (
+                <span className="text-[10px] px-1 text-[var(--text-muted)]">+{m.skills.length - 3}</span>
+              )}
+            </div>
+          )}
+
           {/* Action buttons */}
-          <div className="flex items-center gap-1 mt-3">
+          <div className="flex items-center gap-1 mt-3 flex-wrap">
+            <GradePicker
+              value={m.grade}
+              busy={gradeBusy === m.id}
+              onChange={(grade) => onGrade(m, grade)}
+            />
             <button className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold text-[var(--text-secondary)] bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--green)]/40 hover:bg-[var(--green-bg)] transition-all"
               onClick={() => onEdit(m)}>
               <Pencil size={11} /> Изменить
@@ -128,6 +177,20 @@ export default function AdminMentors() {
     finally { setBusy(false); }
   };
 
+  const [gradeBusy, setGradeBusy] = useState(null);
+
+  const setGrade = async (m, grade) => {
+    setGradeBusy(m.id);
+    try {
+      await api.adminUpdateMentor(token, m.id, { grade });
+      refetch();
+    } catch (e) {
+      alert(e.message || 'Не удалось изменить уровень');
+    } finally {
+      setGradeBusy(null);
+    }
+  };
+
   const toggleFreeze = async (m) => {
     try { await api.adminFreezeMentor(token, m.id, m.status !== 'frozen'); refetch(); }
     catch (e) { alert(e.message || 'Ошибка'); }
@@ -168,7 +231,15 @@ export default function AdminMentors() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {rows.map((m) => (
-            <MentorCard key={m.id} m={m} onEdit={edit} onFreeze={toggleFreeze} onDelete={del} />
+            <MentorCard
+              key={m.id}
+              m={m}
+              onEdit={edit}
+              onFreeze={toggleFreeze}
+              onDelete={del}
+              onGrade={setGrade}
+              gradeBusy={gradeBusy}
+            />
           ))}
         </div>
       )}

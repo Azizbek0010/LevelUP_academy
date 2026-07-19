@@ -13,6 +13,375 @@ const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 // знать об этом, чтобы не ждать ack от несуществующего сервера.
 export const USING_MOCKS = USE_MOCKS;
 
+/* -------- Mentor mock helpers --------
+   Было две группы и один и тот же список из трёх учеников, который отдавался
+   для любой группы: на дашборде «O'quvchilar» показывал 0 (у групп не было
+   поля students), а журнал и коины во всех группах выглядели одинаково.
+   Теперь у каждой группы свой состав, свой размер и своё расписание. */
+const MOCK_MENTOR_GROUPS = [
+  {
+    id: 'group-uuid-1', name: 'English B1', subject: 'Ingliz tili', students: 12,
+    schedule: [{ day: 'mon', start: '14:00', end: '16:00' },
+               { day: 'wed', start: '14:00', end: '16:00' }],
+  },
+  {
+    id: 'group-uuid-2', name: 'Frontend Basics', subject: 'Dasturlash', students: 9,
+    schedule: [{ day: 'tue', start: '10:00', end: '12:00' },
+               { day: 'thu', start: '10:00', end: '12:00' }],
+  },
+  {
+    id: 'group-uuid-3', name: 'IELTS Intensive', subject: 'Ingliz tili', students: 7,
+    schedule: [{ day: 'mon', start: '18:00', end: '20:00' },
+               { day: 'fri', start: '18:00', end: '20:00' }],
+  },
+  {
+    id: 'group-uuid-4', name: 'English A2', subject: 'Ingliz tili', students: 14,
+    schedule: [{ day: 'tue', start: '16:00', end: '18:00' },
+               { day: 'sat', start: '11:00', end: '13:00' }],
+  },
+  {
+    id: 'group-uuid-5', name: 'Speaking Club', subject: 'Ingliz tili', students: 6,
+    schedule: [{ day: 'sat', start: '15:00', end: '16:30' }],
+  },
+];
+
+const UZ_FIRST = [
+  'Aziza', 'Bekzod', 'Malika', 'Sardor', 'Nodira', 'Javohir', 'Zilola', 'Otabek',
+  'Gulnora', 'Doston', 'Shahzoda', 'Ulugbek', 'Kamola', 'Aziz', 'Nilufar',
+  'Jasur', 'Dilnoza', 'Temur', 'Sevara', 'Akmal',
+];
+const UZ_LAST = [
+  'Rahimova', 'Toshmatov', 'Yusupova', 'Karimov', 'Ismoilova', 'Aliyev',
+  'Nazarova', 'Mirzayev', 'Sattorova', 'Ergashev', 'Qodirova', 'Xolmatov',
+];
+
+/**
+ * Родитель ученика. Есть не у каждого — так и в жизни, и это позволяет
+ * проверить, что пункт «написать родителю» гаснет там, где писать некому.
+ */
+function mockParentIdFor(n) {
+  return n % 2 === 0 ? `parent-of-${n}` : null;
+}
+
+/** Один ученик по сквозному номеру — номер и есть его личность. */
+function mockStudent(n) {
+  return {
+    id: `stu-${n}`,
+    parentId: mockParentIdFor(n),
+    firstName: UZ_FIRST[n % UZ_FIRST.length],
+    lastName: UZ_LAST[(n * 5 + 1) % UZ_LAST.length],
+    phone: `+9989${String(10000000 + n * 137).slice(0, 8)}`,
+    status: n % 13 === 0 ? 'frozen' : 'active',
+    coinBalance: ((n * 37) % 40) * 5 + 20,
+    // Часть учеников уже получила коины сегодня — иначе колонка «Bugun»
+    // при проверке всегда нулевая и её нечем отличить от сломанной.
+    coinsToday: n % 3 === 0 ? ((n % 4) + 1) * 5 : 0,
+    student_code: `stu${String(1000 + n)}`,
+  };
+}
+
+/* Состав группы: стабильный и не пересекающийся с соседями.
+   Номера сквозные — смещение группы равно сумме размеров предыдущих. Первый
+   вариант считал смещение как index*7, диапазоны накладывались, и разные
+   ученики получали одинаковые имя, телефон и student_code: в общем списке
+   это выглядело дублями. */
+function mockGroupStudents(groupId) {
+  const idx = MOCK_MENTOR_GROUPS.findIndex((g) => g.id === groupId);
+  if (idx < 0) return [];
+  const offset = MOCK_MENTOR_GROUPS.slice(0, idx).reduce((s, g) => s + g.students, 0);
+  const own = Array.from({ length: MOCK_MENTOR_GROUPS[idx].students }, (_, i) =>
+    mockStudent(offset + i + 1));
+
+  // Speaking Club — разговорный клуб: пара ребят ходит туда из English B1.
+  // Это ещё и проверка того, что общий список склеивает такого ученика в одну
+  // строку с двумя группами, а не показывает его дважды.
+  if (groupId === 'group-uuid-5') return [mockStudent(1), mockStudent(2), ...own.slice(2)];
+  return own;
+}
+
+/**
+ * Родители всех учеников ментора — ровно те, кого отдал бы бэкенд:
+ * по одному на ученика, у кого он есть, с реальным именем ребёнка.
+ */
+function mockParentsOfStudents() {
+  const seen = new Map();
+  MOCK_MENTOR_GROUPS.forEach((g) => {
+    mockGroupStudents(g.id).forEach((s) => {
+      if (!s.parentId || seen.has(s.parentId)) return;
+      const n = Number(String(s.id).replace(/\D/g, '')) || 1;
+      seen.set(s.parentId, {
+        id: s.parentId,
+        // фамилия у родителя та же, что у ребёнка — так список читается
+        first_name: UZ_FIRST[(n * 3 + 5) % UZ_FIRST.length],
+        last_name: s.lastName,
+        avatar_key: null,
+        child_names: `${s.firstName} ${s.lastName}`,
+        room_key: `dm:mock-me:${s.parentId}`,
+        // Превью/непрочитанные — из фактической истории, не из остатка от
+        // номера ученика: раньше каждый шестой контакт носил бейдж «2» при
+        // полностью пустом диалоге.
+        ...mockRoomSummary(`dm:mock-me:${s.parentId}`),
+      });
+    });
+  });
+  return [...seen.values()];
+}
+
+/* Статистика группы — форма ответа GET /api/mentor/groups/:id/stats.
+   Показатели выводятся из номера ученика, поэтому список получается с разбросом:
+   сильные, средние и отстающие — иначе сравнивать было бы нечего. */
+function mockGroupStats(groupId) {
+  const group = MOCK_MENTOR_GROUPS.find((g) => g.id === groupId) ?? MOCK_MENTOR_GROUPS[0];
+  const roster = mockGroupStudents(group.id);
+
+  const students = roster.map((s, i) => {
+    const n = Number(String(s.id).replace(/\D/g, '')) || i + 1;
+    const attendanceRate = 55 + ((n * 7) % 46);
+    const homeworkTotal = 8;
+    const homeworkDone = Math.min(homeworkTotal, 3 + ((n * 3) % 6));
+    const homeworkAvg = 45 + ((n * 11) % 56);
+    const testsTotal = 4;
+    const testsTaken = Math.min(testsTotal, 1 + (n % 4));
+    const testAvg = 40 + ((n * 13) % 61);
+    const item = {
+      id: s.id,
+      firstName: s.firstName,
+      lastName: s.lastName,
+      status: s.status,
+      coinBalance: s.coinBalance,
+      attendanceRate,
+      lessons: 18,
+      homeworkDone,
+      homeworkTotal,
+      homeworkRate: Math.round((homeworkDone / homeworkTotal) * 100),
+      homeworkAvg,
+      testsTaken,
+      testsTotal,
+      testAvg,
+    };
+    const parts = [item.attendanceRate, item.homeworkRate, item.homeworkAvg, item.testAvg];
+    return { ...item, overall: Math.round(parts.reduce((a, b) => a + b, 0) / parts.length) };
+  }).sort((a, b) => b.overall - a.overall);
+
+  const BANDS = [
+    { key: 'weak', label: '0–59%', from: 0, to: 59 },
+    { key: 'mid', label: '60–79%', from: 60, to: 79 },
+    { key: 'good', label: '80–89%', from: 80, to: 89 },
+    { key: 'top', label: '90–100%', from: 90, to: 100 },
+  ];
+  const distribution = BANDS.map((b) => {
+    const count = students.filter((s) => s.overall >= b.from && s.overall <= b.to).length;
+    return { ...b, count, percent: Math.round((count / students.length) * 100) };
+  });
+
+  const avg = (key) => Math.round(
+    students.reduce((s, r) => s + (r[key] ?? 0), 0) / students.length,
+  );
+
+  return {
+    group: { id: group.id, name: group.name, subject: group.subject },
+    summary: {
+      students: students.length,
+      attendanceRate: avg('attendanceRate'),
+      homeworkRate: avg('homeworkRate'),
+      homeworkAvg: avg('homeworkAvg'),
+      testAvg: avg('testAvg'),
+      overall: avg('overall'),
+    },
+    distribution,
+    students,
+  };
+}
+
+/* Статистика ученика — та же форма, что отдаёт GET /api/mentor/students/:id/stats.
+   Числа выводятся из номера ученика, поэтому у разных людей картина разная, но
+   у одного и того же она не скачет между открытиями. */
+function mockStudentStats(studentId) {
+  const n = Number(String(studentId).replace(/\D/g, '')) || 7;
+  const base = mockStudent(n);
+  const groups = MOCK_MENTOR_GROUPS.filter((_, i) => (n + i) % 3 !== 0).slice(0, 2);
+
+  const present = 12 + (n % 9);
+  const absent = n % 5;
+  const late = n % 3;
+  const attTotal = present + absent + late;
+
+  const HW_TITLES = [
+    'Present Simple — mashqlar', 'Past Tense — yozma ish', 'Future Forms',
+    'Reading: Unit 4', 'Vocabulary 100 ta so\'z', 'Listening practice',
+    'Essay: My city', 'Phrasal verbs',
+  ];
+  const homework = HW_TITLES.map((title, i) => {
+    const roll = (n + i * 3) % 5;
+    const state = roll === 0 ? 'missed' : roll === 1 ? 'submitted' : 'graded';
+    const maxScore = 10;
+    return {
+      id: `hw-${n}-${i}`,
+      title,
+      groupName: groups[i % groups.length]?.name ?? 'English B1',
+      deadline: new Date(Date.now() - (8 - i) * 86400000).toISOString(),
+      maxScore,
+      coinReward: 5,
+      state,
+      score: state === 'graded' ? 5 + ((n + i) % 6) : null,
+      submittedAt: state === 'missed' ? null : new Date(Date.now() - (8 - i) * 86400000).toISOString(),
+    };
+  });
+  const graded = homework.filter((h) => h.score !== null);
+  const done = homework.filter((h) => h.state !== 'missed' && h.state !== 'pending');
+
+  const TEST_TITLES = ['Grammar Test', 'Vocabulary Test', 'Midterm Exam', 'Listening Test'];
+  const tests = TEST_TITLES.map((title, i) => {
+    const taken = (n + i) % 4 !== 0;
+    const maxScore = 10;
+    const score = taken ? 4 + ((n + i * 2) % 7) : null;
+    return {
+      id: `test-${n}-${i}`,
+      title,
+      groupName: groups[i % groups.length]?.name ?? 'English B1',
+      maxScore,
+      score,
+      percent: taken ? Math.round((score / maxScore) * 100) : null,
+      finishedAt: taken ? new Date(Date.now() - (6 - i) * 86400000).toISOString() : null,
+    };
+  });
+  const taken = tests.filter((t) => t.finishedAt);
+
+  const round = (v) => Math.round(v);
+
+  // Динамика за 6 месяцев. Один месяц намеренно без данных — чтобы было видно,
+  // что линия в пропуске рвётся, а не падает в ноль.
+  const trend = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - (5 - i));
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const wave = (k) => 55 + ((n * 7 + i * 13 + k) % 40);
+    const empty = i === 1;
+    return {
+      month: key,
+      attendanceRate: empty ? null : Math.min(100, wave(0)),
+      homeworkAvg: empty ? null : Math.min(100, wave(9)),
+      testAvg: empty || i === 2 ? null : Math.min(100, wave(21)),
+      lessons: empty ? 0 : 6 + (i % 3),
+    };
+  });
+
+  return {
+    trend,
+    student: {
+      id: studentId,
+      firstName: base.firstName,
+      lastName: base.lastName,
+      phone: base.phone,
+      email: null,
+      status: base.status,
+      loginCode: base.student_code,
+      coinBalance: base.coinBalance,
+      joinedAt: '2026-02-10T09:00:00Z',
+    },
+    groups,
+    attendance: {
+      present, absent, late, excused: 0, total: attTotal,
+      rate: round(((present + late) / attTotal) * 100),
+    },
+    recentAttendance: Array.from({ length: 10 }, (_, i) => ({
+      date: new Date(Date.now() - (i + 1) * 2 * 86400000).toISOString().slice(0, 10),
+      status: (n + i) % 7 === 0 ? 'absent' : (n + i) % 5 === 0 ? 'late' : 'present',
+      groupName: groups[0]?.name ?? 'English B1',
+    })),
+    homework: {
+      total: homework.length,
+      done: done.length,
+      missed: homework.filter((h) => h.state === 'missed').length,
+      pending: 0,
+      graded: graded.length,
+      avgPercent: graded.length
+        ? round(graded.reduce((s, h) => s + (h.score / h.maxScore) * 100, 0) / graded.length)
+        : null,
+      completionRate: round((done.length / homework.length) * 100),
+      items: homework,
+    },
+    tests: {
+      total: tests.length,
+      taken: taken.length,
+      avgPercent: taken.length
+        ? round(taken.reduce((s, t) => s + t.percent, 0) / taken.length)
+        : null,
+      items: tests,
+    },
+    coins: {
+      balance: base.coinBalance,
+      earned: base.coinBalance + 40,
+      spent: 40,
+      recent: [
+        { id: 'c1', amount: 10, reason: 'Uy vazifasi', refType: 'homework', createdAt: new Date(Date.now() - 86400000).toISOString() },
+        { id: 'c2', amount: 5, reason: 'Dars faolligi', refType: null, createdAt: new Date(Date.now() - 3 * 86400000).toISOString() },
+        { id: 'c3', amount: -20, reason: "Do'kondan xarid", refType: 'shop_order', createdAt: new Date(Date.now() - 6 * 86400000).toISOString() },
+      ],
+    },
+  };
+}
+
+/* -------- мок-хранилище чата --------
+   Отправленное в мок-режиме держим в localStorage, а не в state страницы:
+   иначе сообщение исчезало при переходе в другой диалог или перезагрузке. */
+const MOCK_CHAT_KEY = 'mock_chat_messages';
+
+/* Готовые диалоги `dm:<staffId>:<peerId>`. Лежат на уровне модуля, потому что
+   их читают ДВА мока — история и список контактов. Пока сид был локальной
+   переменной внутри истории, список рисовал превью и счётчик непрочитанных из
+   головы: «2 новых» у пустого диалога и «Yozishmalar boshlanmagan» у того, где
+   переписка есть. */
+const DM_SEED = {
+  'dm:mock-me:parent-uuid-1': [
+    { body: 'Assalomu alaykum, Aziza bugun darsga kelmadi', from: 'parent', at: '2026-07-18T09:30:00Z' },
+    { body: 'Va alaykum assalom. Sababi bormi?', from: 'me', at: '2026-07-18T09:35:00Z' },
+    { body: "Kasal bo'lib qoldi, ertaga keladi", from: 'parent', at: '2026-07-18T09:38:00Z' },
+    { body: 'Rahmat, tushundim', from: 'parent', at: '2026-07-18T09:40:00Z' },
+  ],
+  'dm:mock-me:parent-uuid-2': [
+    { body: 'Bekzod uyga vazifani bajardimi?', from: 'parent', at: '2026-07-17T15:00:00Z' },
+    { body: "Ha, to'liq bajardi. 9/10 ball", from: 'me', at: '2026-07-17T15:05:00Z' },
+    { body: 'Ertaga darsga keladi', from: 'parent', at: '2026-07-17T15:10:00Z' },
+  ],
+};
+
+/**
+ * Превью и счётчик непрочитанных для карточки контакта — из той же истории,
+ * что откроется по клику. Непрочитанным считается только ВХОДЯЩЕЕ (`from`
+ * не `me`) после последнего исходящего: свои же сообщения не могут быть
+ * «новыми для меня».
+ */
+function mockRoomSummary(roomKey) {
+  const seeded = DM_SEED[roomKey] ?? [];
+  const sent = (mockChatRead()[roomKey] ?? []).map((m) => ({
+    body: m.body, from: 'me', at: m.created_at,
+  }));
+  const all = [...seeded, ...sent].sort((a, b) => new Date(a.at) - new Date(b.at));
+  if (!all.length) return { last_message: null, last_message_at: null, unread_count: 0 };
+
+  const lastOwn = all.map((m) => m.from === 'me').lastIndexOf(true);
+  const unread = all.slice(lastOwn + 1).filter((m) => m.from !== 'me').length;
+  const last = all[all.length - 1];
+  return { last_message: last.body, last_message_at: last.at, unread_count: unread };
+}
+
+function mockChatRead() {
+  try {
+    return JSON.parse(localStorage.getItem(MOCK_CHAT_KEY) || '{}');
+  } catch {
+    return {};   // повреждённый JSON не должен ронять весь чат
+  }
+}
+
+function mockChatAppend(roomKey, message) {
+  const all = mockChatRead();
+  all[roomKey] = [...(all[roomKey] ?? []), message];
+  localStorage.setItem(MOCK_CHAT_KEY, JSON.stringify(all));
+  return message;
+}
+
 // -------- Super Admin mock helpers --------
 const getMockData = () => {
   let branches = JSON.parse(localStorage.getItem('mock_branches'));
@@ -1433,24 +1802,12 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
           { id: `pm-${i}-2`, chat_type: 'parent', room_key: `parent:${i}`, sender_id: 'mock-admin-id-001', body: 'Va alaykum assalom! Qanday yordam bera olaman?', attachment_key: null, created_at: '2026-07-16T10:01:00Z', sender_first_name: 'Demo', sender_last_name: 'Admin', sender_role: 'admin' },
         ];
       }
-      // личные диалоги `dm:<staffId>:<parentId>` — своя переписка на каждого родителя
-      const dmSeed = {
-        'dm:mock-me:parent-uuid-1': [
-          { body: 'Assalomu alaykum, Aziza bugun darsga kelmadi', from: 'parent', at: '2026-07-18T09:30:00Z' },
-          { body: 'Va alaykum assalom. Sababi bormi?', from: 'me', at: '2026-07-18T09:35:00Z' },
-          { body: 'Kasal bo\'lib qoldi, ertaga keladi', from: 'parent', at: '2026-07-18T09:38:00Z' },
-          { body: 'Rahmat, tushundim', from: 'parent', at: '2026-07-18T09:40:00Z' },
-        ],
-        'dm:mock-me:parent-uuid-2': [
-          { body: 'Bekzod uyga vazifani bajardimi?', from: 'parent', at: '2026-07-17T15:00:00Z' },
-          { body: 'Ha, to\'liq bajardi. 9/10 ball', from: 'me', at: '2026-07-17T15:05:00Z' },
-          { body: 'Ertaga darsga keladi', from: 'parent', at: '2026-07-17T15:10:00Z' },
-        ],
-      };
-      if (dmSeed[roomKey]) {
-        // Реальный бэкенд отдаёт историю НОВЫМИ СВЕРХУ (ORDER BY created_at DESC),
-        // и фронт на это рассчитывает — мок обязан повторять тот же порядок.
-        const messages = [...dmSeed[roomKey]].reverse().map((m, i) => ({
+      // Всё отправленное в мок-режиме лежит в localStorage и приклеивается
+      // к сиду — иначе история обнулялась при каждой перезагрузке.
+      const sent = mockChatRead()[roomKey] ?? [];
+
+      if (DM_SEED[roomKey] || roomKey.startsWith('dm:')) {
+        const seeded = (DM_SEED[roomKey] ?? []).map((m, i) => ({
           id: `${roomKey}-${i}`,
           chat_type: 'direct',
           room_key: roomKey,
@@ -1462,13 +1819,17 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
           sender_last_name: '',
           sender_role: m.from === 'me' ? 'mentor' : 'parent',
         }));
+        // Реальный бэкенд отдаёт историю НОВЫМИ СВЕРХУ (ORDER BY created_at
+        // DESC), и фронт на это рассчитывает — мок обязан повторять порядок.
+        const messages = [...seeded, ...sent]
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         return { success: true, data: { messages, nextCursor: null } };
       }
-      if (roomKey.startsWith('dm:')) {
-        return { success: true, data: { messages: [], nextCursor: null } };
-      }
 
-      const messages = mockMessages[roomKey] || mockMessages['global'];
+      const messages = [
+        ...sent,
+        ...(mockMessages[roomKey] || mockMessages['global']),
+      ];
       return { success: true, data: { messages, nextCursor: null } };
     }
 
@@ -1476,18 +1837,35 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     // Личный диалог = комната `dm:<staffId>:<parentId>`; здесь staffId фиксируем
     // как mock-me, чтобы ключи в списке и в истории совпадали.
     if (path === '/chat/contacts' && method === 'GET') {
-      const contacts = [
-        { id: 'parent-uuid-1', first_name: 'Dilnoza', last_name: 'Rahimova', avatar_key: null,
-          child_names: 'Aziza Rahimova', room_key: 'dm:mock-me:parent-uuid-1',
-          last_message: 'Rahmat, tushundim', last_message_at: '2026-07-18T09:40:00Z', unread_count: 2 },
-        { id: 'parent-uuid-2', first_name: 'Sherzod', last_name: 'Toshmatov', avatar_key: null,
-          child_names: 'Bekzod Toshmatov', room_key: 'dm:mock-me:parent-uuid-2',
-          last_message: 'Ertaga darsga keladi', last_message_at: '2026-07-17T15:10:00Z', unread_count: 0 },
-        { id: 'parent-uuid-3', first_name: 'Nodira', last_name: 'Yusupova', avatar_key: null,
-          child_names: 'Malika Yusupova, Sardor Yusupov', room_key: 'dm:mock-me:parent-uuid-3',
-          last_message: null, last_message_at: null, unread_count: 0 },
-      ];
-      return { success: true, data: contacts };
+      /* Список собеседников строится ИЗ ТЕХ ЖЕ учеников, что и остальные
+         экраны. Раньше здесь лежали три родителя с выдуманными детьми
+         («Aziza Rahimova»), не встречающимися ни в одной группе, — переход
+         «написать родителю» из списка учеников не находил никого, потому что
+         связывать было нечего. Теперь у каждого второго ученика есть
+         родитель с тем же parentId, что отдаёт ростер. */
+      /* Бэкенд отдаёт и родителей, и самих учеников, помечая каждого
+         `peer_type` — иначе мать и её ребёнок стоят в списке рядом с одной
+         фамилией и непонятно, кому пишешь. Мок повторяет ту же форму. */
+      const parents = mockParentsOfStudents()
+        .map((c) => ({ ...c, peer_type: 'parent' }));
+      const seenStudents = new Map();
+      MOCK_MENTOR_GROUPS.forEach((g) => {
+        mockGroupStudents(g.id).forEach((s) => {
+          if (seenStudents.has(s.id)) return;   // ученик может быть в двух группах
+          seenStudents.set(s.id, {
+            id: s.id,
+            first_name: s.firstName,
+            last_name: s.lastName,
+            avatar_key: null,
+            child_names: null,
+            room_key: `dm:mock-me:${s.id}`,
+            ...mockRoomSummary(`dm:mock-me:${s.id}`),
+            peer_type: 'student',
+          });
+        });
+      });
+      const students = [...seenStudents.values()];
+      return { success: true, data: [...parents, ...students] };
     }
 
     if (path.match(/^\/chat\/([^/]+)\/read$/) && method === 'POST') {
@@ -1498,22 +1876,89 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     // Мока не было вовсе: в мок-режиме у ментора список групп приходил пустым,
     // из-за чего Davomat/Koinlar/Testlar нечем было открыть.
     if (path === '/mentor/groups' && method === 'GET') {
-      return { success: true, data: [
-        { id: 'group-uuid-1', name: 'English B1', subject: 'Ingliz tili',
-          schedule: [{ day: 'mon', start: '14:00', end: '16:00' },
-                     { day: 'wed', start: '14:00', end: '16:00' }] },
-        { id: 'group-uuid-2', name: 'Frontend Basics', subject: 'Dasturlash',
-          schedule: [{ day: 'tue', start: '10:00', end: '12:00' }] },
-      ] };
+      return { success: true, data: MOCK_MENTOR_GROUPS };
+    }
+
+    // -------- PROFILE --------
+    // grade сюда НЕ пишется: на бэкенде PATCH /users/me его срезает схемой,
+    // ставит только админ. Мок повторяет это правило, иначе фронт можно было
+    // бы «проверить» на поведении, которого в бою нет.
+    const DEFAULT_ME = {
+      id: 'mentor-demo-id',
+      firstName: 'Demo',
+      lastName: 'Mentor',
+      email: 'mentor.demo@levelup.local',
+      phone: '+998 90 123 45 67',
+      role: 'mentor',
+      branchName: 'Chilonzor filiali',
+      createdAt: '2026-02-01T09:00:00Z',
+      bio: "5 yildan beri ingliz tili o'qitaman. IELTS 8.0. Darslarni suhbat asosida olib boraman.",
+      skills: ['Ingliz tili', 'IELTS', 'Speaking', 'Grammar'],
+      grade: 'middle',
+      gradeSetAt: '2026-06-01T10:00:00Z',
+    };
+
+    if (path === '/users/me' && method === 'GET') {
+      const saved = JSON.parse(localStorage.getItem('mock_me') || 'null');
+      return { success: true, data: saved || DEFAULT_ME };
+    }
+
+    if (path === '/users/me' && method === 'PATCH') {
+      const current = JSON.parse(localStorage.getItem('mock_me') || 'null') || DEFAULT_ME;
+      const { grade, ...allowed } = body;   // grade игнорируем — как на бэкенде
+      const next = { ...current, ...allowed };
+      localStorage.setItem('mock_me', JSON.stringify(next));
+      return { success: true, data: next };
+    }
+
+    /* -------- MENTOR: Davomat --------
+       Моков не было вовсе: журнал открывался пустым, а автосохранение при
+       каждом клике падало с ошибкой — проверить страницу без поднятого
+       бэкенда было невозможно. Храним отметки в localStorage, поэтому они
+       переживают перезагрузку и ведут себя как настоящие. */
+    const mentorAttMatch = path.match(/^\/mentor\/attendance\/groups\/([^/?]+)/);
+    if (mentorAttMatch && method === 'GET') {
+      const groupId = mentorAttMatch[1];
+      const qs = new URL(path, 'http://localhost').searchParams;
+      const date = qs.get('date');
+      const from = qs.get('from');
+      const to = qs.get('to');
+      const saved = JSON.parse(localStorage.getItem(`mock_mentor_att_${groupId}`) || '[]');
+      const inRange = (d) => (date ? d === date : (!from || d >= from) && (!to || d <= to));
+      return { success: true, data: saved.filter((r) => inRange(r.lesson_date)) };
+    }
+
+    if (mentorAttMatch && method === 'POST') {
+      const groupId = mentorAttMatch[1];
+      const key = `mock_mentor_att_${groupId}`;
+      const saved = JSON.parse(localStorage.getItem(key) || '[]');
+      const lessonDate = body.lessonDate;
+      (body.records || []).forEach((r) => {
+        // upsert по (student, date) — так же, как ON CONFLICT на бэкенде
+        const i = saved.findIndex(
+          (x) => x.student_id === r.studentId && x.lesson_date === lessonDate,
+        );
+        const row = { student_id: r.studentId, lesson_date: lessonDate, status: r.status };
+        if (i >= 0) saved[i] = row; else saved.push(row);
+      });
+      localStorage.setItem(key, JSON.stringify(saved));
+      return { success: true, data: { lessonDate, records: body.records } };
+    }
+
+    // -------- MENTOR: статистика ученика --------
+    const statsMatch = path.match(/^\/mentor\/students\/([^/]+)\/stats$/);
+    if (statsMatch && method === 'GET') {
+      return { success: true, data: mockStudentStats(statsMatch[1]) };
+    }
+
+    const groupStatsMatch = path.match(/^\/mentor\/groups\/([^/]+)\/stats$/);
+    if (groupStatsMatch && method === 'GET') {
+      return { success: true, data: mockGroupStats(groupStatsMatch[1]) };
     }
 
     const groupStudentsMatch = path.match(/^\/mentor\/groups\/([^/]+)\/students$/);
     if (groupStudentsMatch && method === 'GET') {
-      return { success: true, data: [
-        { id: 'stu-1', firstName: 'Aziza', lastName: 'Rahimova', coinBalance: 120 },
-        { id: 'stu-2', firstName: 'Bekzod', lastName: 'Toshmatov', coinBalance: 85 },
-        { id: 'stu-3', firstName: 'Malika', lastName: 'Yusupova', coinBalance: 210 },
-      ] };
+      return { success: true, data: mockGroupStudents(groupStudentsMatch[1]) };
     }
 
     // -------- MENTOR: Tests --------
@@ -1639,9 +2084,27 @@ export const api = {
   // -------- GENERIC METHOD (used by Chat.jsx) --------
   get: (path, config = {}) => request(path, { method: 'GET', token: config.token }).then((data) => ({ data })),
 
+  // -------- PROFILE (любая роль) --------
+  // Бэкенд: GET/PATCH /api/users/me. PATCH принимает только firstName,
+  // lastName, email, avatarKey — смены пароля в кабинете у API нет,
+  // пароль меняется через forgot-password с кодом на почту.
+  me: (token) => request('/users/me', { token }),
+  updateMe: (token, body) => request('/users/me', { method: 'PATCH', token, body }),
+
+  // -------- MENTOR: Students --------
+  // Одна сводка вместо тридцати запросов: собрать её на клиенте значило бы
+  // тянуть submissions по каждому ДЗ и results по каждому тесту.
+  mentorStudentStats: (token, studentId) =>
+    request(`/mentor/students/${studentId}/stats`, { token }),
+
   // -------- MENTOR: Groups --------
   mentorGroups: (token) => request('/mentor/groups', { token }),
   mentorGroupStudents: (token, groupId) => request(`/mentor/groups/${groupId}/students`, { token }),
+  mentorGroupStats: (token, groupId) => request(`/mentor/groups/${groupId}/stats`, { token }),
+
+  /* Дописать сообщение в мок-историю чата. Вызывается только под USING_MOCKS —
+     с живым бэкендом сохранение делает сокет. */
+  mockChatAppend,
 
   // -------- MENTOR: Attendance --------
   mentorAttendance: (token, groupId, params) => {
@@ -1662,6 +2125,11 @@ export const api = {
 
   // -------- MENTOR: Coins --------
   mentorGrantCoins: (token, body) => request('/mentor/coins', { method: 'POST', token, body }),
+  /* Остаток месячного лимита по группе. Лимит = норма организации × число
+     учеников; считается на бэкенде на каждый запрос, поэтому кэшировать надолго
+     нельзя — зачисление ученика меняет его сразу. */
+  mentorCoinBudget: (token, groupId) =>
+    request(`/mentor/coins/groups/${groupId}/budget`, { token }),
   mentorCoinHistory: (token, studentId) => request(`/mentor/coins/students/${studentId}`, { token }),
 
   // -------- MENTOR: Tests --------

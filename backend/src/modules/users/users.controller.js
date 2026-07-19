@@ -9,9 +9,9 @@ export const getMe = asyncHandler(async (req, res) => {
   res.json({ success: true, data: user });
 });
 
-/** PATCH /api/users/me — обновить свой профиль. */
+/** PATCH /api/users/me — обновить свой профиль (роль решает, доступна ли карточка ментора). */
 export const updateMe = asyncHandler(async (req, res) => {
-  const user = await usersService.updateOwnProfile(req.user.id, req.body);
+  const user = await usersService.updateOwnProfile(req.user.id, req.user.role, req.body);
   res.json({ success: true, data: user });
 });
 

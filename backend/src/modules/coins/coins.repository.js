@@ -25,15 +25,19 @@ export async function setBalance(studentId, newBalance, client) {
 }
 
 export async function insertHistory(entry, client) {
-  const { branchId, studentId, actorId, operation, amount, balanceAfter, reason, refType, refId } =
-    entry;
+  const { branchId, studentId, actorId, operation, amount, balanceAfter, reason, refType, refId,
+    // Из какого месячного бюджета операция. NULL для всего, что бюджета ментора
+    // не касается: покупок в магазине, начислений админом, системных.
+    groupId } = entry;
   const { rows: [row] } = await client.query(
     `INSERT INTO coin_history
-       (branch_id, student_id, actor_id, operation, amount, balance_after, reason, ref_type, ref_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       (branch_id, student_id, actor_id, operation, amount, balance_after, reason, ref_type,
+        ref_id, group_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING id, branch_id, student_id, actor_id, operation, amount, balance_after,
-               reason, ref_type, ref_id, created_at`,
-    [branchId, studentId, actorId, operation, amount, balanceAfter, reason, refType ?? null, refId ?? null],
+               reason, ref_type, ref_id, group_id, created_at`,
+    [branchId, studentId, actorId, operation, amount, balanceAfter, reason, refType ?? null,
+      refId ?? null, groupId ?? null],
   );
   return row;
 }

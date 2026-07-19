@@ -616,7 +616,7 @@ export default function Expenses() {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all [color-scheme:dark] cursor-pointer"
+                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all [color-scheme:light] cursor-pointer"
               />
             </div>
             <div className="relative">
@@ -624,7 +624,7 @@ export default function Expenses() {
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all [color-scheme:dark] cursor-pointer"
+                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all [color-scheme:light] cursor-pointer"
               />
             </div>
             <SelectFilter
@@ -702,14 +702,14 @@ export default function Expenses() {
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 placeholder="Dan"
-                className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] [color-scheme:dark] transition-all"
+                className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] [color-scheme:light] transition-all"
               />
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
                 placeholder="Gacha"
-                className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] [color-scheme:dark] transition-all"
+                className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] [color-scheme:light] transition-all"
               />
             </div>
             <SelectFilter
@@ -1072,7 +1072,7 @@ export default function Expenses() {
                   type="date"
                   value={formData.spentAt}
                   onChange={(e) => setFormData({ ...formData, spentAt: e.target.value })}
-                  className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200 [color-scheme:dark]"
+                  className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200 [color-scheme:light]"
                 />
               </div>
             </div>

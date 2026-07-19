@@ -99,6 +99,55 @@ router.get('/contacts', authenticate, ctrl.getContacts);
 
 /**
  * @openapi
+ * /api/chat/dm:
+ *   post:
+ *     tags: [Chat]
+ *     summary: Send a direct message over HTTP
+ *     description: >
+ *       Sends a private message without a websocket. Direction follows the
+ *       caller's role, never a request field: staff (mentor/admin/superadmin)
+ *       message a parent or a student, while a parent or student may only reply
+ *       to a staff member who is already allowed to talk to them — neither can
+ *       open a conversation. Permission checks and persistence are shared with
+ *       the socket events, and the message is still pushed live to both
+ *       participants' `user:<id>` rooms.
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [peerId, body]
+ *             properties:
+ *               peerId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: The other participant — a parent/student for staff, a staff member for a parent/student
+ *               body: { type: string, maxLength: 4000 }
+ *           example: { peerId: '3fa85f64-5717-4562-b3fc-2c963f66afa6', body: 'Salom ustoz' }
+ *     responses:
+ *       201:
+ *         description: Message stored and delivered
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/ChatMessage' }
+ *       400:
+ *         description: peerId must be a uuid
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403:
+ *         description: Not allowed to message this person
+ *       422:
+ *         description: Empty or too long body
+ */
+router.post('/dm', authenticate, ctrl.sendDm);
+
+/**
+ * @openapi
  * /api/chat/{roomKey}/read:
  *   post:
  *     tags: [Chat]

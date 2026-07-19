@@ -8,6 +8,14 @@ export const grantCoinsSchema = z.object({
     .int('Amount must be an integer')
     .refine((n) => n !== 0, 'Amount must be a non-zero integer'),
   reason: z.string().trim().min(1, 'Reason is required').max(200),
+  /* Из какого месячного бюджета списывать. Необязателен: если ученик состоит в
+     одной группе ментора, она определяется сама. Обязателен, когда групп
+     несколько — угадывать чужой лимит нельзя. */
+  groupId: z.string().uuid('Invalid groupId').optional(),
+});
+
+export const groupParam = z.object({
+  groupId: z.string().uuid('Invalid groupId'),
 });
 
 export const studentParam = z.object({
