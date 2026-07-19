@@ -1,7 +1,7 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 19.07.2026 21:59 (UTC+5, Toshkent vaqti)
-> Statistika: 132/195 task tugallangan (67%)
+> Oxirgi yangilanish: 19.07.2026 22:56 (UTC+5, Toshkent vaqti)
+> Statistika: 135/200 task tugallangan (67%)
 
 ---
 
@@ -62,9 +62,14 @@
 - [x] MP-SHELL: Staff qobig'i — sidebar hover'da ochiladi/yopiladi, ishlaydigan bildirishnomalar paneli,
 - [x] MP-SEED: `seed-mentor-demo.mjs` (demo mentorni real data bilan to'ldiradi),
 
+### Backend — Integration (Karis) 🔥 hozirgi fokus
+- [x] K-INT: admin GroupDetail — **QAROR QABUL QILINDI 2026-07-19**, Abdulaziz bloki OCHILDI.
+- [x] BUG-LOCAL-PROD-DB ✅ TUZATILDI 2026-07-19: `backend/.env` dagi `DATABASE_URL`
+
 ### BUGLAR / BLOKERLAR (Karis) — 2026-07-18 tekshiruvida topildi
 - [x] BUG-PROD-MOCKS ✅ TUZATILDI 2026-07-19: `frontend/{staff,student,member}/.env.production`
 - [x] ~~BUG-STACK~~ ✅ TUZATILGAN (2026-07-19 auditda tekshirildi, TASK.md eskirgan edi): `render.yaml:19-20` da `NODE_ENV=production` O'RNATILGAN, `errorHandler.js:41` stack'ni faqat `env.NODE_ENV === 'development'` da qaytaradi (qat'iy tenglik — yangi hostingda o'zgaruvchi unutilsa ham stack chiqmaydi). Bundan tashqari 5xx da `details` ham berkitildi, o'rniga `errorId` (pino req.id) qaytadi — commit `5a1f177`
+- [x] BUG-TESTS-RED ✅ TUZATILDI 2026-07-19 (commit `b22c3e4`):
 
 ### Swagger / API hujjatlari (Karis) ✅ 2026-07-18
 - [x] DOCS: Barcha route'lar auditi — 158 route topildi, 139 tasi hujjatlashtirilgan edi, 19 tasi YO'Q edi (16 super + 2 admin + 1 telegram)
@@ -199,6 +204,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 80 task
+- Karis (Backend): 83 task
 - Abdulaziz (Backend): 57 task
 - Frontend jamoasi: 48 task

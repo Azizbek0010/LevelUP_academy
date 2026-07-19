@@ -74,7 +74,15 @@ async function main() {
   console.log(`  mentor=${mentorId} otherMentor=${otherMentorId} admin=${adminId}`);
   console.log(`  students=${studentIds.join(',')}\n`);
 
-  const lessonDate = '2026-06-01';
+  /* Дата обязана быть сегодняшней: markAttendance пускает только текущий день
+     (assertToday в attendance.service.js). Раньше здесь стояло '2026-06-01',
+     и после появления этого правила три теста падали на 422 — проверялся не
+     тот путь, который они описывают.
+
+     Считаем ровно так же, как сервис: по Ташкенту, а не по UTC. С полуночи до
+     пяти утра по местному UTC всё ещё вчера, и прогон в это время снова
+     разошёлся бы с сервисом. */
+  const lessonDate = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tashkent' });
   const weekKey = `lb:branch:${branchId}:week:${isoWeekKey()}`;
   const monthKeyStr = `lb:branch:${branchId}:month:${monthKey()}`;
 
@@ -145,6 +153,30 @@ async function main() {
         404,
         'markAttendance by other mentor',
       );
+    });
+
+    /* Само правило «только сегодня» до сих пор не было покрыто ничем — именно
+       из-за этого его появление тихо уронило три теста выше, а не один
+       выделенный. Проверяем обе границы: вчера и завтра. */
+    await test('3b. Marking a past or future lesson -> 422', async () => {
+      const shift = (days) => {
+        const d = new Date();
+        d.setDate(d.getDate() + days);
+        return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Tashkent' });
+      };
+
+      for (const [when, date] of [['past', shift(-1)], ['future', shift(1)]]) {
+        await expectAppError(
+          () => attendanceService.markAttendance({
+            mentorId,
+            groupId,
+            lessonDate: date,
+            records: [{ studentId: s1, status: 'present' }],
+          }),
+          422,
+          `markAttendance in the ${when}`,
+        );
+      }
     });
 
     await test('4. Invalid attendance status rejected by zod schema', async () => {

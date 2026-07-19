@@ -54,7 +54,23 @@
 - [x] K-DISC: Ustav (org_charters, erkin matn, upsert, barcha xodimlarga ko'rinadi)
 - [x] K-DISC: Endpointlar — super PUT/GET /charter, POST/GET /penalties, POST /staff/:id/reactivate; admin GET /charter, POST/GET /penalties; shared GET /users/me/penalties, /users/me/charter
 - [x] K-DISC: Swagger — Discipline tegi, 10 endpoint, swagger/*.md qayta generatsiya (139 endpoint)
-- [ ] K-DISC: FRONT — shtraf/ustav formalari super+admin panellarida, ko'rish mentor/methodist da (kontrakt tayyor, front jamoasiga)
+- [ ] K-DISC-FRONT 🆕 EGASI: **HAMIDULA** (2026-07-19 da biriktirildi).
+      ⚠️ Ilgari "front jamoasiga" deb turgan edi — ISM yo'q edi, shuning uchun 2026-07-18 dan
+      beri hech kim olmagan. Egasiz vazifa = qilinmaydigan vazifa.
+      Hamidula tanlandi: yuki eng yengil edi (bitta UI-TABLES), forma ishi esa uning yo'nalishi.
+
+      Nima qilinadi (backend TAYYOR, 10 endpoint, Swagger'da "Discipline" tegi ostida):
+      • Super panelda: ustav tahrirlash formasi (`PUT /api/super/charter`) +
+        shtraf berish formasi (`POST /api/super/penalties`) + ro'yxat (`GET`)
+      • Admin panelda: shtraf berish + ro'yxat (`POST/GET /api/admin/penalties`),
+        ustavni faqat o'qish (`GET /api/admin/charter`)
+      • Mentor va Methodist panelida: FAQAT ko'rish — o'z shtraflari
+        (`GET /api/users/me/penalties`) va ustav (`GET /api/users/me/charter`)
+
+      ⚠️ Huquqlar matritsasi backendda qat'iy (CAN_ISSUE) — frontda tugmalarni shunga qarab yashir:
+      superadmin → admin/mentor/methodist ga; admin → mentor/methodist ga shtraf,
+      qora ro'yxat esa FAQAT mentor'ga; main_admin → HECH KIMGA.
+      Backend baribir tekshiradi, lekin ishlamaydigan tugma ko'rsatish yomon UX
 - [ ] K-DISC: runtime tekshiruv — hali BD da yugurtirilmagan (npm run migrate + jonli test)
 
 ## Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
@@ -97,10 +113,34 @@
 > Backend kod tayyor (barcha panellar). Endi asosiy ish — frontend panellarni backend bilan ulash.
 
 - [ ] K-INT: Frontend ↔ backend integratsiya (SUPER ADMIN'dan tashqari — u Abdulaziz'da) — main-admin org-detail endpoint (Shohjahon uchun), endpoint kontraktlar, CORS/cookie, jonli E2E qolgan panellar bo'yicha
-- [~] K-INT: admin GroupDetail 6 endpoint → **AB-INT-GROUP (Abdulaziz)** ga berildi.
-      ⚠️ Karis'da faqat BITTA narsa qoldi: qaror qabul qilish —
-      attendance/homework mentor jadvallaridan reuse qilinsinmi yoki alohida?
-      Abdulaziz shu qarorni KUTYAPTI, ya'ni bu blokerni sen ochasan
+- [x] K-INT: admin GroupDetail — **QAROR QABUL QILINDI 2026-07-19**, Abdulaziz bloki OCHILDI.
+
+      **Qaror: attendance va homework — mentor jadvallaridan REUSE. Yangi jadval YO'Q.**
+
+      Sabab: bu saqlash masalasi emas, KO'RISH masalasi. Mentor davomatni belgilaydi,
+      admin o'sha belgilanganni ko'radi — bu bitta ma'lumotning ikki o'quvchisi.
+      Alohida jadval qilinsa, admin ko'rgan davomat mentor yozgan davomatdan
+      farq qila boshlaydi. Bu yerda esa oyliklar (mentor_salaries davomatdan hisoblanadi),
+      ota-onaga hisobot va qarz — hammasi shu raqamga bog'liq. Ikki manba = ikki haqiqat,
+      va qaysi biri to'g'riligini hech kim ayta olmaydi. Sinxronizatsiya ham yechim emas:
+      u albatta bir kun bo'lib qoladi va buni hech kim sezmaydi.
+
+      Amalda: mavjud `attendance` va `homework` jadvallariga admin uchun **faqat o'qish**,
+      scope `branch_id` bo'yicha (admin faqat o'z filialini ko'radi, JWT dan olinadi —
+      klientdan kelgan branch_id ga ishonilmaydi, CONSTRAINTS bo'yicha).
+      Yozish huquqi mentor'da qoladi.
+
+      ⚠️ `feedback` — BOSHQA masala: bu jadval umuman YO'Q, ya'ni yangi migratsiya + CRUD kerak.
+      Uni reuse qilib bo'lmaydi, chunki reuse qiladigan narsaning o'zi yo'q.
+
+      📌 Karis boshqacha o'ylasa — aytsin, o'zgartiramiz. Lekin Abdulaziz kutib turmasin
+- [x] BUG-LOCAL-PROD-DB ✅ TUZATILDI 2026-07-19: `backend/.env` dagi `DATABASE_URL`
+      lokal Docker postgres'ga o'tkazildi (`levelup:levelup@localhost:5432/levelup`).
+      Tekshirildi: ulanish ishlaydi, lokal bazada AYNI o'sha 18 migratsiya va demo data bor
+      (111 user, 6 guruh) — ya'ni hech narsa buzilmadi, ish jarayoni o'zgarmaydi.
+      Prod (Neon) satri fayldan olib tashlandi va izoh qoldirildi — u faqat Render dashboard'ida.
+      ⚠️ JAMOAGA: kimda `backend/.env` da Neon satri tursa — DARHOL lokalga o'tkazsin.
+      Aks holda `npm run seed` demo datani to'g'ridan-to'g'ri PRODGA yozadi
 
 ## 🔴 BUGLAR / BLOKERLAR (Karis) — 2026-07-18 tekshiruvida topildi
 
@@ -120,6 +160,68 @@
       Lekin bu vaqt masalasi.
       **Tuzatish:** lokal `.env` `postgresql://postgres:postgres@localhost:5432/levelup` ga o'tsin,
       prod URL faqat Render dashboard'ida qolsin. Jamoaga ham aytilsin
+- [ ] BUG-NO-WORKER 🔥🔥🔥 ENG KATTASI (2026-07-19 auditda topildi): **prodda BIRORTA worker ishlamayapti.**
+
+      `worker.js` 4 ta worker va 3 ta cron ko'taradi:
+      `notificationWorker` · `overdueWorker` + cron 09:00 · **`billingWorker` + oylik cron** · `dueSoonWorker`
+      `package.json` da alohida skript ham bor: `"worker": "node worker.js"`.
+      Lekin `render.yaml` da **`type: worker` servisi 0 ta** — faqat bitta `type: web`,
+      u esa `npm start` → `node src/server.js` ni ishga tushiradi. Ya'ni `worker.js` HECH QACHON yugurmaydi.
+
+      **Prodda nima ishlamayapti:**
+      • Oylik hisob-fakturalar AVTOMATIK yaratilmaydi (billing.worker, har oy 1-sanada) →
+        invoice yo'q → qarz hisoblanmaydi → `total_debt` o'sib bormaydi
+      • Muddati o'tgan to'lovlar aniqlanmaydi (overdue cron 09:00) →
+        `invoice='overdue'` qo'yilmaydi → `paymentGate` (402) ishlamaydi, qarzdor student panelni ochaveradi
+      • To'lov bildirishnomalari yuborilmaydi (`payment.received` / `payment.due` / `payment.refunded`)
+      • Ota-onaga eslatmalar bormaydi (dueSoon)
+      • **Bilol'ning Telegram boti umuman xabar olmaydi** — queue'ga tushadi, hech kim o'qimaydi
+
+      ⚠️ TASK.md da `K-PAY` "oylik avto-hisoblash" bilan birga **[x] BAJARILGAN** deb turibdi.
+      Kod yozilgan — to'g'ri. Lekin prodda ishlamayapti, ya'ni mijoz uchun u YO'Q.
+      Bu loyihaning asosiy sotuv nuqtasi (to'lov boshqaruvi) prodda o'lik degani.
+
+      **Yechim variantlari** (Karis tanlaydi):
+      1. `render.yaml` ga `type: worker` servisi qo'shish — TO'G'RI yo'l, lekin **free planda worker YO'Q**, pullik kerak
+      2. Vaqtinchalik: `worker.js` ni web servis ichida ko'tarish (`server.js` dan import) —
+         kichik yuklamada ishlaydi, lekin web uxlab qolsa cron ham uxlaydi (free plan 15 daqiqada uxlaydi)
+      3. Tashqi cron (masalan cron-job.org) maxsus endpointni chaqiradi — eng arzoni, lekin endpoint himoyalanishi shart
+
+- [x] BUG-TESTS-RED ✅ TUZATILDI 2026-07-19 (commit `b22c3e4`):
+      testlar bugungi sanaga o'tkazildi (sana serverdagidek Toshkent bo'yicha hisoblanadi),
+      `npm test` `&&` zanjiridan `tests/run-all.js` ga o'tkazildi — endi har bir to'plam
+      alohida processda yuguradi va bittasi yiqilsa qolganlari BEKOR BO'LMAYDI.
+      Yangi test qo'shildi (3b) — "faqat bugun" qoidasining o'zi hech narsa bilan qoplanmagan edi,
+      shuning uchun uning kelishi 3 ta begona testni yiqitgan edi. Endi kecha va ertaga ham tekshiriladi.
+      **Natija: 5 ta to'plam ham YASHIL — 66 test** (mentor 17 · student 17 · parent 4 · payments 13 · auth 15)
+
+- [~] ~~BUG-TESTS-RED~~ (tarix uchun) 🔥 (2026-07-19 auditda topildi — testlar ISHGA TUSHIRILDI):
+      **Mentor testlarida 3 ta FAIL, sababi mening o'z o'zgarishim.**
+      `b6bf912` commit'i "mentor faqat BUGUNGI darsni belgilay oladi" qoidasini kiritdi
+      (`attendance.service.js:35` — `assertToday()`), testlar esa davomatni o'tgan sana bilan qo'yadi:
+      • 1. Bulk-mark mixed statuses → `O'tgan kunlar davomatini o'zgartirib bo'lmaydi`
+      • 2. Re-mark same group+date → xuddi shu
+      • 3. Boshqa mentor chet guruhni belgilashi → 404 kutilgan, 422 kelgan
+
+      ✅ Xavfsizlik TEKSHIRILDI — sizib chiqish YO'Q: `assertToday` egalikdan OLDIN tursa ham,
+      o'tgan sanada har qanday guruh (o'ziniki, chetniki, umuman yo'q) bir xil 422 beradi,
+      bugungi sanada esa bir xil 404 — ya'ni guruh bor-yo'qligini ajratib bo'lmaydi.
+      **Kod TO'G'RI, TESTLAR eskirgan** → 3 ta testni bugungi sanaga o'tkazish kerak
+      (3-testni ham, aks holda u egalik tekshiruvigacha yetib bormaydi va tekshirmaydi)
+
+      ⚠️ Bundan ham yomoni: `npm test` skripti `&&` bilan zanjir qilingan —
+      mentor yiqilgani uchun **student / parent / payments / auth testlari UMUMAN yugurmagan**.
+      Alohida ishga tushirilganda hammasi YASHIL: student 17/17 · parent 4/4 · payments 13/13 · auth 15/15.
+      Ya'ni bitta fail 49 ta sog'lom testni yashirib turgan. `&&` o'rniga har biri alohida ishlasin
+      va oxirida umumiy natija chiqsin
+
+- [ ] BUG-REDIS-SILENT 🔥 (2026-07-19): `env.js` da `REDIS_URL: z.string().min(1).default('redis://localhost:6379')`.
+      Ya'ni Render'da bu o'zgaruvchi qo'yilmasa — server JIMGINA ko'tariladi va localhost'ga urinaveradi.
+      Log'da `Redis error` chiqadi, lekin process yiqilmaydi. Natijada socket (chat, davomat live) va
+      barcha queue'lar ishlamaydi, sabab esa ko'rinmaydi.
+      `REDIS_URL` `sync: false` — ya'ni faylda yo'q, faqat dashboard'da. Tekshirilsin va prodda default olib tashlansin
+      (production'da majburiy bo'lsin, dev'da default qolsin)
+
 - [ ] BUG-BILLING: `main-admin/src/pages/Billing.jsx` hali ESKI narx modelida (`baseFirstBranch`/`perStudent`), backend 2026-07-16 dan `{ tiers, currency }` qaytaradi → sahifa buzilgan. Egasi: Shohjahon (pastda MAIN bo'limida ham bor).
       SABABI TOPILDI: swagger `PlatformPricing` sxemasi ham eski modelda qolgan edi — Shohjahon hujjatga qarab qurgan. Sxema 2026-07-18 da tuzatildi (tiers), endi front ni ham moslashtirish kerak
 
