@@ -320,6 +320,10 @@ export default function MentorChat() {
       };
       api.mockChatAppend(roomKey, message);
       setLiveMessages((prev) => [...prev, message]);
+      // Карточка контакта показывает превью последнего сообщения — без этого
+      // она до перезагрузки твердит «Yozishmalar boshlanmagan» у диалога, в
+      // который только что написали.
+      qc.invalidateQueries({ queryKey: ['chat-contacts'] });
       setDraft('');
       setAtBottom(true);
       setSending(false);

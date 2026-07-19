@@ -117,9 +117,10 @@ function mockParentsOfStudents() {
         avatar_key: null,
         child_names: `${s.firstName} ${s.lastName}`,
         room_key: `dm:mock-me:${s.parentId}`,
-        last_message: n % 4 === 0 ? 'Rahmat, tushundim' : null,
-        last_message_at: n % 4 === 0 ? '2026-07-18T09:40:00Z' : null,
-        unread_count: n % 6 === 0 ? 2 : 0,
+        // Превью/непрочитанные — из фактической истории, не из остатка от
+        // номера ученика: раньше каждый шестой контакт носил бейдж «2» при
+        // полностью пустом диалоге.
+        ...mockRoomSummary(`dm:mock-me:${s.parentId}`),
       });
     });
   });
@@ -326,6 +327,45 @@ function mockStudentStats(studentId) {
    Отправленное в мок-режиме держим в localStorage, а не в state страницы:
    иначе сообщение исчезало при переходе в другой диалог или перезагрузке. */
 const MOCK_CHAT_KEY = 'mock_chat_messages';
+
+/* Готовые диалоги `dm:<staffId>:<peerId>`. Лежат на уровне модуля, потому что
+   их читают ДВА мока — история и список контактов. Пока сид был локальной
+   переменной внутри истории, список рисовал превью и счётчик непрочитанных из
+   головы: «2 новых» у пустого диалога и «Yozishmalar boshlanmagan» у того, где
+   переписка есть. */
+const DM_SEED = {
+  'dm:mock-me:parent-uuid-1': [
+    { body: 'Assalomu alaykum, Aziza bugun darsga kelmadi', from: 'parent', at: '2026-07-18T09:30:00Z' },
+    { body: 'Va alaykum assalom. Sababi bormi?', from: 'me', at: '2026-07-18T09:35:00Z' },
+    { body: "Kasal bo'lib qoldi, ertaga keladi", from: 'parent', at: '2026-07-18T09:38:00Z' },
+    { body: 'Rahmat, tushundim', from: 'parent', at: '2026-07-18T09:40:00Z' },
+  ],
+  'dm:mock-me:parent-uuid-2': [
+    { body: 'Bekzod uyga vazifani bajardimi?', from: 'parent', at: '2026-07-17T15:00:00Z' },
+    { body: "Ha, to'liq bajardi. 9/10 ball", from: 'me', at: '2026-07-17T15:05:00Z' },
+    { body: 'Ertaga darsga keladi', from: 'parent', at: '2026-07-17T15:10:00Z' },
+  ],
+};
+
+/**
+ * Превью и счётчик непрочитанных для карточки контакта — из той же истории,
+ * что откроется по клику. Непрочитанным считается только ВХОДЯЩЕЕ (`from`
+ * не `me`) после последнего исходящего: свои же сообщения не могут быть
+ * «новыми для меня».
+ */
+function mockRoomSummary(roomKey) {
+  const seeded = DM_SEED[roomKey] ?? [];
+  const sent = (mockChatRead()[roomKey] ?? []).map((m) => ({
+    body: m.body, from: 'me', at: m.created_at,
+  }));
+  const all = [...seeded, ...sent].sort((a, b) => new Date(a.at) - new Date(b.at));
+  if (!all.length) return { last_message: null, last_message_at: null, unread_count: 0 };
+
+  const lastOwn = all.map((m) => m.from === 'me').lastIndexOf(true);
+  const unread = all.slice(lastOwn + 1).filter((m) => m.from !== 'me').length;
+  const last = all[all.length - 1];
+  return { last_message: last.body, last_message_at: last.at, unread_count: unread };
+}
 
 function mockChatRead() {
   try {
@@ -1762,26 +1802,12 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
           { id: `pm-${i}-2`, chat_type: 'parent', room_key: `parent:${i}`, sender_id: 'mock-admin-id-001', body: 'Va alaykum assalom! Qanday yordam bera olaman?', attachment_key: null, created_at: '2026-07-16T10:01:00Z', sender_first_name: 'Demo', sender_last_name: 'Admin', sender_role: 'admin' },
         ];
       }
-      // личные диалоги `dm:<staffId>:<parentId>` — своя переписка на каждого родителя
-      const dmSeed = {
-        'dm:mock-me:parent-uuid-1': [
-          { body: 'Assalomu alaykum, Aziza bugun darsga kelmadi', from: 'parent', at: '2026-07-18T09:30:00Z' },
-          { body: 'Va alaykum assalom. Sababi bormi?', from: 'me', at: '2026-07-18T09:35:00Z' },
-          { body: 'Kasal bo\'lib qoldi, ertaga keladi', from: 'parent', at: '2026-07-18T09:38:00Z' },
-          { body: 'Rahmat, tushundim', from: 'parent', at: '2026-07-18T09:40:00Z' },
-        ],
-        'dm:mock-me:parent-uuid-2': [
-          { body: 'Bekzod uyga vazifani bajardimi?', from: 'parent', at: '2026-07-17T15:00:00Z' },
-          { body: 'Ha, to\'liq bajardi. 9/10 ball', from: 'me', at: '2026-07-17T15:05:00Z' },
-          { body: 'Ertaga darsga keladi', from: 'parent', at: '2026-07-17T15:10:00Z' },
-        ],
-      };
       // Всё отправленное в мок-режиме лежит в localStorage и приклеивается
       // к сиду — иначе история обнулялась при каждой перезагрузке.
       const sent = mockChatRead()[roomKey] ?? [];
 
-      if (dmSeed[roomKey] || roomKey.startsWith('dm:')) {
-        const seeded = (dmSeed[roomKey] ?? []).map((m, i) => ({
+      if (DM_SEED[roomKey] || roomKey.startsWith('dm:')) {
+        const seeded = (DM_SEED[roomKey] ?? []).map((m, i) => ({
           id: `${roomKey}-${i}`,
           chat_type: 'direct',
           room_key: roomKey,
@@ -1833,9 +1859,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
             avatar_key: null,
             child_names: null,
             room_key: `dm:mock-me:${s.id}`,
-            last_message: null,
-            last_message_at: null,
-            unread_count: 0,
+            ...mockRoomSummary(`dm:mock-me:${s.id}`),
             peer_type: 'student',
           });
         });
