@@ -62,6 +62,15 @@ const GROUPS = [
     schedule: [{ day: 'tue', start: '14:00', end: '15:30' }, { day: 'thu', start: '14:00', end: '15:30' }, { day: 'sat', start: '14:00', end: '15:30' }],
     topics: ['Sintaksis asoslari', 'Ro\'yxatlar va lug\'atlar', 'Funksiyalar',
       'Fayllar bilan ishlash', 'Modullar', 'OOP asoslari'] },
+  /* Единственная группа с занятиями в воскресенье. Нужна именно такой: ментор
+     теперь вправе отмечать только СЕГОДНЯШНИЙ урок, а у всех остальных групп
+     расписание будни-суббота — в воскресенье журнал не потрогать вообще, и
+     проверить отметку в выходной было не на чем. */
+  { name: 'IT Kids', subject: 'IT Kids', price: 300000, level: 0.6, size: 10,
+    schedule: [{ day: 'sun', start: '11:00', end: '13:00' }],
+    topics: ['Kompyuter bilan tanishuv', 'Scratch asoslari', 'Algoritm nima',
+      'Sikllar va shartlar', 'Kichik o\'yin yaratish', 'Internet xavfsizligi',
+      'Prezentatsiya tayyorlash'] },
   { name: 'Frontend Pro', subject: 'Frontend', price: 700000, level: 0.78, size: 8,
     schedule: [{ day: 'mon', start: '10:00', end: '12:00' }, { day: 'wed', start: '10:00', end: '12:00' }, { day: 'sat', start: '10:00', end: '12:00' }],
     topics: ['Semantik HTML', 'CSS Grid va Flex', 'Responsive dizayn',
@@ -317,8 +326,11 @@ for (let gi = 0; gi < GROUPS.length; gi += 1) {
 
   // Даты занятий за последние LESSON_WEEKS недель, только будни расписания и
   // только прошедшие: журнал на будущее заполнять нечем.
+  /* Сегодняшний урок НЕ заполняем (back останавливается на 1). Отмечать его —
+     работа ментора, и он единственный день, который ему теперь разрешено
+     трогать: заполни его сид, и проверить отметку было бы негде. */
   const dates = [];
-  for (let back = LESSON_WEEKS * 7; back >= 0; back -= 1) {
+  for (let back = LESSON_WEEKS * 7; back >= 1; back -= 1) {
     const d = new Date(today);
     d.setDate(d.getDate() - back);
     if (days.has(d.getDay())) dates.push(iso(d));
