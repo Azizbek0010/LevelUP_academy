@@ -38,6 +38,23 @@ const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 }
 
 const pad = (n) => String(n).padStart(2, '0');
 
+/**
+ * Оставить во вводе только целое число, возможно со знаком минус.
+ *
+ * Минус обязателен: этим же полем коины СНИМАЮТ, «-5» списывает пятёрку.
+ * Поэтому нельзя просто вырезать всё, кроме цифр. Минус допускается один и
+ * только первым символом — «5-3» и «--5» не числа.
+ *
+ * Возвращаем строку, а не число: пустое поле и промежуточное «-» должны
+ * существовать, пока человек печатает, иначе ввод «-5» невозможен физически.
+ */
+function sanitizeCoinInput(raw) {
+  const negative = String(raw).trimStart().startsWith('-');
+  const digits = String(raw).replace(/\D/g, '');
+  if (!digits) return negative ? '-' : '';
+  return (negative ? '-' : '') + digits.slice(0, 4);   // 4 разряда — предел разумного
+}
+
 /** «Emirxan Ergashev» → «Emirxan.E»: в колонку шириной 68px имя целиком не лезет. */
 function shortName(full) {
   if (!full) return '';
@@ -381,7 +398,9 @@ export default function AttendanceTab({ groupId, group }) {
         : 'bg-success/15 text-success border-success/40';
     }
     if (status === 'absent') return 'bg-error/15 text-error border-error/40';
-    return 'border-base-300 text-base-content/25 hover:border-base-content/30 hover:bg-base-200/60';
+    // Неотмеченная клетка — бледно-зелёная, а не серая: таких клеток в журнале
+    // большинство, и на сером фоне отметки читались как пятна на пустоте.
+    return 'border-primary/20 text-primary/25 hover:border-primary/50 hover:bg-primary/[0.06]';
   };
 
   const cellIcon = (status) => {
@@ -574,7 +593,7 @@ export default function AttendanceTab({ groupId, group }) {
                 <tr key={s.id} className="border-b border-base-200 last:border-0">
                   <td className="sticky left-0 z-10 bg-base-100 px-3 sm:px-4 py-2.5">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-base-content/35 tabular-nums w-5 shrink-0">
+                      <span className="text-xs text-primary/40 tabular-nums w-5 shrink-0">
                         {idx + 1}.
                       </span>
                       <Avatar name={`${s.first_name} ${s.last_name}`} size="sm" />
@@ -598,7 +617,7 @@ export default function AttendanceTab({ groupId, group }) {
                       <td
                         key={d}
                         className={`px-1.5 py-2.5 text-center border-l border-base-200 ${
-                          isWeekend ? 'bg-base-200/40' : ''
+                          isWeekend ? 'bg-primary/[0.04]' : ''
                         }`}
                       >
                         <button
@@ -617,12 +636,14 @@ export default function AttendanceTab({ groupId, group }) {
                     <div className="flex items-center justify-end gap-2">
                       {/* Сегодня: сколько начислено за текущий день. Ноль —
                           приглушённый, чтобы взгляд цеплялся за тех, кому уже
-                          дали коины, а не пересчитывал нули. */}
+                          дали коины, а не пересчитывал нули. Приглушён бледным
+                          зелёным, а не серым: серого в этой колонке набиралось
+                          на треть экрана, и живые числа тонули в нём. */}
                       <span
                         className={`w-11 text-center text-sm font-bold tabular-nums ${
-                          (s.coins_today ?? 0) > 0 ? 'text-success'
+                          (s.coins_today ?? 0) > 0 ? 'text-primary'
                             : (s.coins_today ?? 0) < 0 ? 'text-error'
-                            : 'text-base-content/30'
+                            : 'text-primary/35'
                         }`}
                         title="Bugun berilgan coinlar"
                       >
@@ -635,19 +656,32 @@ export default function AttendanceTab({ groupId, group }) {
                       >
                         <Coins size={12} /> {s.coin_balance ?? 0}
                       </span>
+                      {/* type="text", а не "number", хотя вводятся цифры.
+                          У number три беды именно в такой таблице: колесо мыши
+                          над сфокусированным полем незаметно меняет число —
+                          прокрутил журнал и начислил не то; браузер принимает
+                          «e», «+» и точку, а лишние спиннеры отъедают ширину.
+                          Цифры обеспечиваются фильтром ввода, а inputMode
+                          поднимает на телефоне цифровую клавиатуру. */}
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         value={coinDrafts[s.id] ?? ''}
-                        onChange={(e) => setCoinDrafts((prev) => ({ ...prev, [s.id]: e.target.value }))}
+                        onChange={(e) => setCoinDrafts(
+                          (prev) => ({ ...prev, [s.id]: sanitizeCoinInput(e.target.value) }),
+                        )}
                         onKeyDown={(e) => { if (e.key === 'Enter') submitCoins(s); }}
                         placeholder="0"
                         aria-label={`${s.first_name} uchun coin miqdori`}
-                        className="input input-bordered input-xs w-14 text-center tabular-nums"
+                        className="input input-xs w-14 text-center tabular-nums border border-primary/25 bg-primary/[0.04] text-primary font-semibold placeholder:text-primary/30 focus:border-primary focus:outline-none focus:bg-base-100"
                       />
                       <button
                         onClick={() => submitCoins(s)}
                         disabled={coinBusyId === s.id || !Number(coinDrafts[s.id])}
-                        className="btn btn-xs btn-primary"
+                        /* Выключенная кнопка бледно-зелёная, а не серая:
+                           DaisyUI в :disabled красит её нейтральным тоном, и
+                           колонка превращалась в серую стену. */
+                        className="btn btn-xs btn-primary border-none disabled:!bg-primary/10 disabled:!text-primary/45"
                       >
                         {coinBusyId === s.id
                           ? <span className="loading loading-spinner loading-xs" />
