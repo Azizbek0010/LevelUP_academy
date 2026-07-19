@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  Check, X, Minus, Users, Coins, CheckCircle, XCircle, Cloud, CloudOff, Loader2,
+  Check, X, Minus, Plus, Users, Coins, CheckCircle, XCircle, Cloud, CloudOff, Loader2,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -552,7 +552,7 @@ export default function AttendanceTab({ groupId, group }) {
                       два числа подряд читаются как одно составное. */}
                   <div className="flex items-center justify-end gap-2">
                     <span className="w-11 text-center">Bugun</span>
-                    <span className="w-12 text-center">Jami</span>
+                    <span className="w-14 text-right">Jami</span>
                     {/* Остаток месячного лимита. Стоит именно здесь, над самой
                         кнопкой выдачи: ментор видит, сколько ему ещё можно
                         раздать, ровно в тот момент, когда собирается это
@@ -634,27 +634,32 @@ export default function AttendanceTab({ groupId, group }) {
                   {/* Коины прямо в строке: баланс + быстрое начисление */}
                   <td className="sm:sticky sm:right-0 z-10 bg-base-100 px-3 py-2.5 border-l border-base-200">
                     <div className="flex items-center justify-end gap-2">
-                      {/* Сегодня: сколько начислено за текущий день. Ноль —
-                          приглушённый, чтобы взгляд цеплялся за тех, кому уже
-                          дали коины, а не пересчитывал нули. Приглушён бледным
-                          зелёным, а не серым: серого в этой колонке набиралось
-                          на треть экрана, и живые числа тонули в нём. */}
-                      <span
-                        className={`w-11 text-center text-sm font-bold tabular-nums ${
-                          (s.coins_today ?? 0) > 0 ? 'text-primary'
-                            : (s.coins_today ?? 0) < 0 ? 'text-error'
-                            : 'text-primary/35'
-                        }`}
-                        title="Bugun berilgan coinlar"
-                      >
-                        {(s.coins_today ?? 0) > 0 ? '+' : ''}{s.coins_today ?? 0}
+                      {/* Сегодняшнее начисление показываем ТОЛЬКО когда оно
+                          есть. Раньше здесь стоял ноль у каждого, и колонка
+                          превращалась в столбик из двенадцати нулей — читать
+                          в нём было нечего, а место он занимал наравне с
+                          данными. Место держим пустым, чтобы строки не
+                          разъезжались. */}
+                      <span className="w-11 text-center">
+                        {(s.coins_today ?? 0) !== 0 && (
+                          <span
+                            className={`text-[13px] font-bold tabular-nums ${
+                              (s.coins_today ?? 0) > 0 ? 'text-primary' : 'text-error'
+                            }`}
+                            title="Bugun berilgan coinlar"
+                          >
+                            {(s.coins_today ?? 0) > 0 ? '+' : ''}{s.coins_today}
+                          </span>
+                        )}
                       </span>
-                      {/* Всего: накопленный баланс */}
+                      {/* Баланс — справочная величина, а не то, ради чего сюда
+                          пришли: приглушён, чтобы не спорить с полем ввода. */}
                       <span
-                        className="w-12 flex items-center justify-center gap-1 text-sm font-bold text-warning tabular-nums"
+                        className="w-14 flex items-center justify-end gap-1 text-[13px] font-semibold text-base-content/70 tabular-nums"
                         title="Jami balans"
                       >
-                        <Coins size={12} /> {s.coin_balance ?? 0}
+                        <Coins size={12} className="text-warning/60" />
+                        {s.coin_balance ?? 0}
                       </span>
                       {/* type="text", а не "number", хотя вводятся цифры.
                           У number три беды именно в такой таблице: колесо мыши
@@ -673,19 +678,27 @@ export default function AttendanceTab({ groupId, group }) {
                         onKeyDown={(e) => { if (e.key === 'Enter') submitCoins(s); }}
                         placeholder="0"
                         aria-label={`${s.first_name} uchun coin miqdori`}
-                        className="input input-xs w-14 text-center tabular-nums border border-primary/25 bg-primary/[0.04] text-primary font-semibold placeholder:text-primary/30 focus:border-primary focus:outline-none focus:bg-base-100"
+                        className="input input-sm h-8 w-16 text-center tabular-nums border border-base-300 bg-base-100 text-base-content font-semibold placeholder:text-base-content/25 focus:border-primary focus:outline-none"
                       />
+                      {/* Иконка вместо слова «Coin». Слово повторялось в
+                          двенадцати строках подряд и читалось как обои: смысла
+                          не добавляло, а ширину занимало. Действие названо в
+                          aria-label и title — для скринридера и подсказки оно
+                          не пропало.
+
+                          Кнопка активна только при введённом числе, поэтому
+                          выключенное состояние — норма, а не ошибка: держим его
+                          тихим, но не серым. */}
                       <button
                         onClick={() => submitCoins(s)}
                         disabled={coinBusyId === s.id || !Number(coinDrafts[s.id])}
-                        /* Выключенная кнопка бледно-зелёная, а не серая:
-                           DaisyUI в :disabled красит её нейтральным тоном, и
-                           колонка превращалась в серую стену. */
-                        className="btn btn-xs btn-primary border-none disabled:!bg-primary/10 disabled:!text-primary/45"
+                        aria-label={`${s.first_name} ga coin berish`}
+                        title="Coin berish"
+                        className="w-8 h-8 shrink-0 grid place-items-center rounded-lg bg-primary text-primary-content transition-colors hover:bg-primary/90 disabled:bg-primary/[0.07] disabled:text-primary/30"
                       >
                         {coinBusyId === s.id
                           ? <span className="loading loading-spinner loading-xs" />
-                          : 'Coin'}
+                          : <Plus size={16} strokeWidth={2.5} />}
                       </button>
                     </div>
                   </td>
