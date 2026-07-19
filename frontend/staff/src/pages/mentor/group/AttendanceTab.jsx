@@ -139,7 +139,11 @@ export default function AttendanceTab({ groupId, group }) {
   const closeToast = useCallback(() => setToast(null), []);
 
   const now = useMemo(() => new Date(), []);
-  const today = now.toISOString().split('T')[0];
+  /* Локальная дата, а не UTC. `toISOString()` переводит в UTC, и с полуночи до
+     пяти утра по Ташкенту он отдавал вчерашнее число: журнал считал бы «сегодня»
+     вчерашний день, подсвечивал не ту колонку и пускал в неё правку, которую
+     сервер (он считает по Asia/Tashkent) тут же отклонял. */
+  const today = now.toLocaleDateString('en-CA');   // en-CA = YYYY-MM-DD
 
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -345,6 +349,10 @@ export default function AttendanceTab({ groupId, group }) {
      Ref обновляем синхронно, поэтому каждый клик видит результат предыдущего. */
   const toggleDay = (studentId, day) => {
     const dateKey = dateKeyFor(day);
+    // Дублирует серверное правило намеренно: сервер откажет в любом случае,
+    // но без этой проверки клетка успевала бы перекраситься до отказа и
+    // возвращалась обратно — мигание, которое выглядит как сбой.
+    if (dateKey !== today) return;
     const key = `${studentId}_${dateKey}`;
     const next = mapRef.current[key] === 'present' ? 'absent' : 'present';
     mapRef.current = { ...mapRef.current, [key]: next };
@@ -390,7 +398,7 @@ export default function AttendanceTab({ groupId, group }) {
      чтобы отличаться от отметки в день урока. Раньше здесь стояли классы
      `text-danger`/`bg-danger/15`, которых в конфиге Tailwind не существовало, —
      «kelmadi» рисовался вообще без красного. */
-  const cellStyle = (status) => {
+  const cellStyle = (status, editable) => {
     /* «Был» — обычное состояние, и его в журнале подавляющее большинство:
        рисуем тихо, светлой заливкой с насыщенной галочкой.
        «Не был» — исключение, ради которого журнал и открывают: заливаем
@@ -401,15 +409,20 @@ export default function AttendanceTab({ groupId, group }) {
        красило оранжевым КАЖДУЮ отметку прошедшего дня, то есть почти всю
        таблицу, и вместо исключения обозначало норму. Вдобавок дублировало
        дату из шапки колонки: что день прошёл, видно и без подсветки. */
+    /* Ховер только у редактируемых клеток. Атрибут `disabled` блокирует клик,
+       но CSS `:hover` продолжает срабатывать, и клетка прошлого дня отзывалась
+       на курсор, обещая действие, которого не будет. */
     if (status === 'present') {
-      return 'bg-success/12 text-success border-success/35 hover:bg-success/20';
+      return `bg-success/12 text-success border-success/35${editable ? ' hover:bg-success/20' : ''}`;
     }
     if (status === 'absent') {
-      return 'bg-error text-white border-error hover:bg-error/90';
+      return `bg-error text-white border-error${editable ? ' hover:bg-error/90' : ''}`;
     }
     /* Неотмеченная клетка — почти невидимая рамка. Зелёный отсюда убран:
        он спорил с зелёным «был», и пустая клетка читалась как отметка. */
-    return 'border-base-200 text-base-content/15 hover:border-primary/50 hover:bg-primary/[0.05]';
+    return `border-base-200 text-base-content/15${
+      editable ? ' hover:border-primary/50 hover:bg-primary/[0.05]' : ''
+    }`;
   };
 
   const cellIcon = (status) => {
@@ -637,8 +650,12 @@ export default function AttendanceTab({ groupId, group }) {
                   </td>
 
                   {DAYS.map((d) => {
-                    const status = attendanceMap[`${s.id}_${dateKeyFor(d)}`];
+                    const dateKey = dateKeyFor(d);
+                    const status = attendanceMap[`${s.id}_${dateKey}`];
                     const isWeekend = new Date(year, month, d).getDay() === 0;
+                    // Отмечать можно только сегодняшний урок — остальные дни
+                    // показываем как есть, но трогать не даём.
+                    const editable = dateKey === today;
                     return (
                       <td
                         key={d}
@@ -648,8 +665,14 @@ export default function AttendanceTab({ groupId, group }) {
                       >
                         <button
                           onClick={() => toggleDay(s.id, d)}
-                          aria-label={`${s.first_name} ${s.last_name}, ${d}-kun: ${statusLabel(status)}`}
-                          className={`mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status)}`}
+                          disabled={!editable}
+                          aria-label={`${s.first_name} ${s.last_name}, ${d}-kun: ${statusLabel(status)}${
+                            editable ? '' : ' (o\'zgartirib bo\'lmaydi)'
+                          }`}
+                          title={editable ? undefined : "Faqat bugungi davomatni belgilash mumkin"}
+                          className={`mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status, editable)} ${
+                            editable ? 'cursor-pointer' : 'cursor-default'
+                          }`}
                         >
                           {cellIcon(status)}
                         </button>
