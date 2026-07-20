@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Archive, ArchiveRestore, ChevronRight, Users, User, FolderOpen, Search, LayoutGrid, List } from 'lucide-react';
+import { Plus, Archive, ArchiveRestore, ChevronRight, Users, User, FolderOpen, LayoutGrid, List } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminGroups, useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SkeletonTable } from '../../components/Skeleton.jsx';
+import { Avatar, SearchInput, EmptyState, RowSkeleton } from '../mentor/_ui.jsx';
 
 const isArchived = (g) => g.isArchived ?? g.is_archived ?? false;
 const MAX_STUDENTS = 15;
@@ -157,18 +157,12 @@ export default function AdminGroups() {
       {/* ═══ Search + View Toggle ═══ */}
       {rows.length > 0 && (
         <div className="flex items-center gap-3 animate-fade-in stagger-3">
-          <div className="glass-strong rounded-[16px] p-1 flex-1">
-            <div className="flex items-center gap-2 px-4 py-2.5">
-              <Search size={16} className="text-[var(--text-muted)] shrink-0" />
-              <input
-                type="text"
-                className="flex-1 bg-transparent outline-none text-[13px] text-[var(--text)] placeholder:text-[var(--text-muted)]"
-                placeholder="Поиск по названию или ментору…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Поиск по названию или ментору…"
+            className="flex-1"
+          />
           {/* View toggle */}
           <div className="flex items-center gap-1 p-1 rounded-[12px]" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <button
@@ -191,22 +185,20 @@ export default function AdminGroups() {
 
       {/* ═══ Group List ═══ */}
       {isLoading ? (
-        <div className="mt-4"><SkeletonTable cols={4} /></div>
+        <RowSkeleton count={4} />
       ) : error ? (
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
       ) : filteredRows.length === 0 ? (
-        <div className="glass-strong rounded-[20px] p-12 text-center animate-fade-in">
-          <FolderOpen size={48} className="mx-auto mb-4 text-[var(--text-muted)] opacity-20" />
-          <p className="text-[15px] font-bold text-[var(--text-secondary)]">Нет групп</p>
-          <p className="text-[12px] text-[var(--text-muted)] mt-1.5">
-            {search ? 'Попробуйте изменить запрос' : 'Создайте первую учебную группу'}
-          </p>
-          {!search && (
-            <button className="btn btn-primary btn-sm mt-4 gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
+        <EmptyState
+          icon={FolderOpen}
+          title={search ? 'Попробуйте изменить запрос' : 'Нет групп'}
+          hint={search ? undefined : 'Создайте первую учебную группу'}
+          action={!search ? (
+            <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
               <Plus size={14} /> Создать
             </button>
-          )}
-        </div>
+          ) : undefined}
+        />
       ) : viewMode === 'card' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredRows.map((g) => (

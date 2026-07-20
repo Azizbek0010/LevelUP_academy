@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminInvoices, useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SkeletonTable } from '../../components/Skeleton.jsx';
+import { Avatar, RowSkeleton } from '../mentor/_ui.jsx';
 
 const STATUS = {
   paid: { label: 'Оплачен', bg: '#2ECC7115', text: '#2ECC71', icon: CheckCircle2 },
@@ -87,16 +87,13 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
   const remaining = total - paid;
   const paidPercent = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
   const studentName = inv.student || inv.studentName || '';
-  const initials = studentName.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
 
   return (
     <div className="glass-strong rounded-[16px] p-5 card-hover-premium group">
       <div className="flex items-start gap-3 mb-3">
         {/* Student avatar */}
-        <div className="w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-extrabold shrink-0 transition-transform group-hover:scale-105 cursor-pointer"
-          style={{ background: `${st.text}15`, color: st.text }}
-          onClick={() => onStudentClick(inv)} title="Открыть профиль студента">
-          {initials}
+        <div onClick={() => onStudentClick(inv)} title="Открыть профиль студента" className="shrink-0 cursor-pointer">
+          <Avatar name={studentName} size="lg" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-[14px] font-bold text-[var(--text)] truncate cursor-pointer hover:text-[var(--accent)] transition-colors"
@@ -406,7 +403,7 @@ export default function AdminPayments() {
 
       {/* ═══ Invoice List ═══ */}
       {isLoading ? (
-        <div className="mt-4"><SkeletonTable cols={6} /></div>
+        <div className="mt-4"><RowSkeleton count={6} /></div>
       ) : error ? (
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
       ) : allRows.length === 0 ? (
@@ -504,9 +501,7 @@ export default function AdminPayments() {
                 {adhocForm.studentId && adhocForm.studentName ? (
                   <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-[var(--surface)] border border-[var(--border)]">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
-                        {adhocForm.studentName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                      </div>
+                      <Avatar name={adhocForm.studentName} size="sm" />
                       <span className="text-[13px] font-bold text-[var(--text)]">{adhocForm.studentName}</span>
                     </div>
                     <button className="btn btn-ghost btn-xs" onClick={() => {
@@ -529,9 +524,7 @@ export default function AdminPayments() {
                           <button key={s.id} type="button"
                             className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-[var(--surface-hover)] transition-colors border-b border-[var(--border)] last:border-0"
                             onClick={() => selectStudent(s)}>
-                            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
-                              {[s.firstName || '', s.lastName || ''].filter(Boolean).map(n => n[0]).join('').toUpperCase()}
-                            </div>
+                            <Avatar name={[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')} size="sm" />
                             <div className="flex-1 min-w-0">
                               <div className="text-[12px] font-bold text-[var(--text)] truncate">{[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')}</div>
                               <div className="text-[10px] text-[var(--text-muted)]">{s.groupName || '—'} · {s.createdAt ? dateShort(s.createdAt) : ''}</div>

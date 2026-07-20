@@ -9,16 +9,11 @@ import { useAuth } from '../../auth.jsx';
 import { useAdminStudentDetail } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SkeletonTable } from '../../components/Skeleton.jsx';
+import { Avatar, RowSkeleton } from '../mentor/_ui.jsx';
 
 /* ─── helpers ─── */
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
-const initials = (s) => {
-  const f = s.firstName || s.first_name || '';
-  const l = s.lastName || s.last_name || '';
-  return ((f[0] || '') + (l[0] || '')).toUpperCase() || '?';
-};
 const formatMoney = (n) =>
   n != null ? n.toLocaleString('ru-RU') + ' UZS' : '—';
 const formatDate = (d) => {
@@ -137,7 +132,7 @@ export default function AdminStudentDetail() {
     return (
       <div>
         <PageHeader title="Talaba" />
-        <div className="mt-6"><SkeletonTable cols={2} /></div>
+        <div className="mt-6"><RowSkeleton count={2} /></div>
       </div>
     );
   }
@@ -286,11 +281,7 @@ export default function AdminStudentDetail() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Avatar + Name */}
           <div className="flex items-center gap-4 p-4 rounded-[12px] bg-[var(--surface)] border border-[var(--border)]">
-            <div className={`w-14 h-14 rounded-full flex items-center justify-center text-[18px] font-extrabold ${
-              isActive ? 'bg-[var(--green-bg)] text-[var(--green)]' : 'bg-red-50 text-red-500'
-            }`}>
-              {initials(student)}
-            </div>
+            <Avatar name={fullName(student)} size="lg" />
             <div className="min-w-0">
               <p className="text-[16px] font-extrabold text-[var(--text)] truncate">{fullName(student)}</p>
               <div className="flex items-center gap-2 mt-1">

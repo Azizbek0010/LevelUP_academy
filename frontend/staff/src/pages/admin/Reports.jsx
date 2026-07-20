@@ -11,7 +11,7 @@ import { money, fmt } from '../../format.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminReports } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SkeletonTable } from '../../components/Skeleton.jsx';
+import { RowSkeleton } from '../mentor/_ui.jsx';
 
 const COLORS = ['#2ECC71', '#E8543E', '#3B82F6', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899'];
 
@@ -98,7 +98,7 @@ export default function AdminReports() {
     return (
       <div>
         <PageHeader title="Отчёты" subtitle="Выручка и долги по группам" />
-        <div className="mt-6"><SkeletonTable cols={4} /></div>
+        <div className="mt-6"><RowSkeleton count={4} /></div>
       </div>
     );
   }

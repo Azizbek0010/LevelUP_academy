@@ -4,16 +4,10 @@ import { useAuth } from '../../auth.jsx';
 import { useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SkeletonTable } from '../../components/Skeleton.jsx';
+import { Avatar, EmptyState, RowSkeleton } from '../mentor/_ui.jsx';
 
 const fullName = (m) =>
   [m.firstName || m.first_name, m.lastName || m.last_name].filter(Boolean).join(' ') || '—';
-
-const initials = (m) => {
-  const f = m.firstName || m.first_name || '';
-  const l = m.lastName || m.last_name || '';
-  return ((f[0] || '') + (l[0] || '')).toUpperCase() || '?';
-};
 
 const emptyForm = { id: null, firstName: '', lastName: '', phone: '', email: '' };
 
@@ -80,9 +74,8 @@ function MentorCard({ m, onEdit, onFreeze, onDelete, onGrade, gradeBusy }) {
     <div className="glass-strong rounded-[16px] p-5 card-hover-premium group">
       <div className="flex items-start gap-4">
         {/* Avatar */}
-        <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-[15px] font-extrabold transition-transform duration-300 group-hover:scale-105"
-          style={{ background: `${status.text}15`, color: status.text }}>
-          {initials(m)}
+        <div className="transition-transform duration-300 group-hover:scale-105">
+          <Avatar name={fullName(m)} size="lg" />
         </div>
 
         {/* Info */}
@@ -219,15 +212,15 @@ export default function AdminMentors() {
 
       {/* ═══ Mentor Cards ═══ */}
       {isLoading ? (
-        <div className="mt-4"><SkeletonTable cols={4} /></div>
+        <RowSkeleton count={4} />
       ) : error ? (
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
       ) : rows.length === 0 ? (
-        <div className="glass-strong rounded-[20px] p-12 text-center animate-fade-in">
-          <Users size={40} className="mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
-          <p className="text-[14px] font-medium text-[var(--text-muted)]">Нет менторов</p>
-          <p className="text-[12px] text-[var(--text-muted)] mt-1 opacity-60">Добавьте первого преподавателя</p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="Нет менторов"
+          hint="Добавьте первого преподавателя"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {rows.map((m) => (
