@@ -2037,6 +2037,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     err.fields = data.details || data.errors || null;
     throw err;
   }
+
   return data;
 }
 
