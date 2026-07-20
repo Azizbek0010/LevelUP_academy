@@ -9,7 +9,7 @@ import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminExpenses } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SearchInput, RowSkeleton } from '../mentor/_ui.jsx';
+import { SearchInput, RowSkeleton, Kpi } from '../mentor/_ui.jsx';
 
 const CATEGORIES = ['All', 'Rent', 'Salary', 'Materials', 'Utility', 'Other'];
 const CATEGORY_COLORS = {
@@ -551,34 +551,16 @@ export default function Expenses() {
       </div>
 
       {/* ═══ Statistics Cards ═══ */}
+      {/* Раньше это была локальная копия KPI-плитки, и только у «Bu oy» была
+          строка тренда «+0.0% o'tgan oyga nisbatan» — из-за неё одна карточка
+          оказывалась выше остальных четырёх, и ряд ехал. Теперь общий Kpi без
+          тренда: все плитки одной высоты, как в панели ментора. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {[
-          { title: 'Jami xarajatlar', value: formatCurrency(stats.total), icon: <Banknote className="w-5 h-5" />, color: '#E8543E', delay: 'stagger-1' },
-          { title: 'Bu oy', value: formatCurrency(stats.thisMonth), icon: <CalendarDays className="w-5 h-5" />, color: '#F59E0B', delta: stats.trend, deltaLabel: "o'tgan oyga nisbatan", delay: 'stagger-2' },
-          { title: 'Kutilmoqda', value: formatCurrency(stats.pendingAmount), icon: <Clock className="w-5 h-5" />, color: '#F59E0B', delay: 'stagger-3' },
-          { title: 'Tasdiqlangan', value: formatCurrency(stats.approvedAmount), icon: <DollarSign className="w-5 h-5" />, color: '#2ECC71', delay: 'stagger-4' },
-          { title: "O'rtacha xarajat", value: formatCurrency(stats.avgAmount), icon: <BarChart3 className="w-5 h-5" />, color: '#3B82F6', delay: 'stagger-5' },
-        ].map((card, i) => (
-          <div key={i} className={`animate-fade-in ${card.delay}`}>
-            <div className="card bg-base-100 p-4 card-hover-premium">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-[0.06em]">{card.title}</span>
-                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: `${card.color}18`, color: card.color }}>
-                  {card.icon}
-                </div>
-              </div>
-              <div className="text-[20px] font-extrabold text-base-content tabular-nums leading-none">{card.value}</div>
-              {card.delta != null && (
-                <div className="flex items-center gap-1.5 mt-2">
-                  <span className={`text-[11px] font-bold ${card.delta >= 0 ? 'text-[#2ECC71]' : 'text-[#E8543E]'}`}>
-                    {card.delta >= 0 ? '+' : ''}{card.delta.toFixed(1)}%
-                  </span>
-                  <span className="text-[10px] text-base-content/45">{card.deltaLabel}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+        <Kpi Icon={Banknote} title="Jami xarajatlar" value={formatCurrency(stats.total)} tone="neutral" />
+        <Kpi Icon={CalendarDays} title="Bu oy" value={formatCurrency(stats.thisMonth)} tone="neutral" />
+        <Kpi Icon={Clock} title="Kutilmoqda" value={formatCurrency(stats.pendingAmount)} tone="warning" />
+        <Kpi Icon={DollarSign} title="Tasdiqlangan" value={formatCurrency(stats.approvedAmount)} tone="success" />
+        <Kpi Icon={BarChart3} title="O'rtacha xarajat" value={formatCurrency(stats.avgAmount)} tone="neutral" />
       </div>
 
       {/* ═══ Filter Toolbar ═══ */}

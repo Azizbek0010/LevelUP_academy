@@ -98,23 +98,24 @@ export default function AdminDashboard() {
       <PageHeader title="Дашборд" />
 
       {/* ═══ Welcome Banner ═══ */}
-      <div className="card bg-base-100 p-6 relative overflow-hidden animate-fade-in">
-        <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-15" style={{ background: 'linear-gradient(135deg, #C6FF34, #22c55e)' }} />
-        <div className="relative flex items-center gap-4">
-          <div className="w-14 h-14 rounded-[16px] flex items-center justify-center text-2xl shrink-0" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>
+      {/* Декоративное размытое пятно в углу убрано — оно ничего не значило и
+          у панели ментора его нет. */}
+      <div className="card bg-base-100 p-6 animate-fade-in">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-[16px] flex items-center justify-center text-2xl shrink-0 bg-primary/10 text-primary">
             {greeting.icon}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-extrabold" style={{ color: 'var(--text)' }}>
+            <h2 className="text-lg font-extrabold text-base-content">
               {greeting.text}, {user?.firstName || 'Администратор'}!
             </h2>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm mt-0.5 text-base-content/70">
               Сегодня {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}. Вот обзор вашего филиала.
             </p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl shrink-0" style={{ background: 'var(--green-bg)', border: '1px solid rgba(34,197,94,0.2)' }}>
-            <Zap size={16} style={{ color: '#16a34a' }} />
-            <span className="text-xs font-bold" style={{ color: '#15803d' }}>Всё активно</span>
+          <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl shrink-0 bg-success/10 border border-success/20">
+            <Zap size={16} className="text-success" />
+            <span className="text-xs font-bold text-success">Всё активно</span>
           </div>
         </div>
       </div>
