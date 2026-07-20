@@ -179,6 +179,7 @@ export default function Expenses() {
   const [dateTo, setDateTo] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState(null);
   const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', paymentMethod: 'Naqt' });
@@ -317,6 +318,7 @@ export default function Expenses() {
   const openModal = () => {
     const today = new Date().toISOString().split('T')[0];
     setFormData({ category: 'Other', amount: '', spentAt: today, note: '', paymentMethod: 'Naqt' });
+    setEditingId(null);
     setError(null);
     setModalOpen(true);
   };
@@ -334,35 +336,44 @@ export default function Expenses() {
       note: expense.note || '',
       paymentMethod: getPaymentMethod(expense) !== '—' ? getPaymentMethod(expense) : 'Naqt',
     });
+    setEditingId(expense.id);
     setError(null);
     setModalOpen(true);
-    // TODO: Backend has no PATCH/PUT /admin/expenses/:id endpoint.
-    // Saving the edit will call handleSave which calls createExpense (creates a new expense).
-    // To support editing, a PATCH /admin/expenses/:id endpoint needs to be added in backend/src/modules/admin/admin.routes.js
-    // and a corresponding updateExpense function in adminService.js:
-    //   export const updateExpense = (id, data) => api.patch(`/admin/expenses/${id}`, data).then((r) => r.data);
   };
 
   const handleSave = useCallback(async () => {
     setSaving(true);
     setError(null);
     try {
-      // Uses api.adminCreateExpense(token, body) from api.js
-      await api.adminCreateExpense(token, {
+      const body = {
         category: formData.category,
         amount: Number(formData.amount),
         spentAt: formData.spentAt || undefined,
+        paymentMethod: formData.paymentMethod || undefined,
         note: formData.note || undefined,
-      });
+      };
+
+      if (editingId) {
+        // Backendda hali PATCH /admin/expenses/:id yo'q — Karisga aytish kerak
+        await api.adminUpdateExpense(token, editingId, body);
+      } else {
+        await api.adminCreateExpense(token, body);
+      }
+      setEditingId(null);
       setModalOpen(false);
       await loadExpenses();
     } catch (err) {
-      console.error('Create expense failed:', err);
-      setError(err.response?.data?.message || err.message || "Xarajat qo'shishda xatolik");
+      console.error('Save expense failed:', err);
+      const msg = err.response?.data?.message || err.message;
+      if (editingId && err.status === 404) {
+        setError("Tahrirlash hali ishlamaydi — backendda PATCH yo'q. Karisga xabar bering.");
+      } else {
+        setError(msg || "Xarajatni saqlashda xatolik");
+      }
     } finally {
       setSaving(false);
     }
-  }, [formData, loadExpenses, token]);
+  }, [editingId, formData, loadExpenses, token]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
@@ -380,6 +391,8 @@ export default function Expenses() {
       setSaving(false);
     }
   }, [deleteTarget, loadExpenses, token]);
+
+  const filteredTotal = useMemo(() => filtered.reduce((s, e) => s + (e.amount || 0), 0), [filtered]);
 
   const handleExport = useCallback(async () => {
     setExporting(true);
@@ -484,8 +497,6 @@ export default function Expenses() {
   const getStatusCount = (status) =>
     status === 'All' ? expenses.length : expenses.filter((e) => getStatusFromExpense(e) === status.toLowerCase()).length;
 
-  const filteredTotal = useMemo(() => filtered.reduce((s, e) => s + (e.amount || 0), 0), [filtered]);
-
   // ═══════════════════════════════════════════
   //  Render
   // ═══════════════════════════════════════════
@@ -582,7 +593,7 @@ export default function Expenses() {
               placeholder="Xarajatlarni qidirish..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
+              className="w-full h-10 pl-10 pr-10 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
             />
             {search && (
               <button
@@ -636,10 +647,10 @@ export default function Expenses() {
           </div>
 
           {/* Mobile filter toggle + clear */}
-          <div className="flex items-center gap-2 lg:hidden w-full sm:w-auto">
+          <div className="flex items-center gap-2 lg:hidden flex-nowrap">
             <button
               onClick={() => setFiltersExpanded(!filtersExpanded)}
-              className={`flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] border text-[12px] font-semibold transition-all ${
+              className={`flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] border text-[12px] font-semibold transition-all shrink-0 ${
                 filtersExpanded || hasActiveFilters
                   ? 'border-[var(--green)] text-[var(--green)] bg-[var(--green-bg)]'
                   : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'
@@ -653,27 +664,9 @@ export default function Expenses() {
                 </span>
               )}
             </button>
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[12px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all"
-              >
-                <X className="w-3.5 h-3.5" />
-                Tozalash
-              </button>
-            )}
           </div>
 
-          {/* Desktop clear filters */}
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="hidden lg:flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[12px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all shrink-0"
-            >
-              <X className="w-3.5 h-3.5" />
-              Tozalash
-            </button>
-          )}
+          {/* Desktop clear filters — moved to category pills row */}
         </div>
 
         {/* Mobile expanded filters */}
@@ -745,6 +738,16 @@ export default function Expenses() {
               </button>
             );
           })}
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[11px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all ml-auto shrink-0"
+            >
+              <X className="w-3.5 h-3.5" />
+              Tozalash
+            </button>
+          )}
         </div>
       </div>
 
@@ -1028,7 +1031,7 @@ export default function Expenses() {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="modal-box glass-strong max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setModalOpen(false)}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajat qo'shish</h3>
+          <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">{editingId ? 'Xarajatni tahrirlash' : 'Xarajat qo\'shish'}</h3>
           <div className="space-y-5">
             <div>
               <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">Kategoriya *</label>
@@ -1126,7 +1129,7 @@ export default function Expenses() {
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     Saqlanmoqda...
                   </span>
-                ) : "Qo'shish"}
+                ) : editingId ? "Saqlash" : "Qo'shish"}
               </button>
             </div>
           </div>

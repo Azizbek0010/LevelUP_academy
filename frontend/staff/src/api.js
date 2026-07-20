@@ -2170,6 +2170,7 @@ export const api = {
   adminExpenses: (token, qs = '') => request(`/admin/expenses${qs}`, { token }),
   adminCreateExpense: (token, body) => request('/admin/expenses', { method: 'POST', token, body }),
   adminDeleteExpense: (token, id) => request(`/admin/expenses/${id}`, { method: 'DELETE', token }),
+  adminUpdateExpense: (token, id, body) => request(`/admin/expenses/${id}`, { method: 'PATCH', token, body }),
   adminStudents: (token, qs = '') => request(`/admin/students${qs}`, { token }),
   adminCreateStudent: (token, body) => request('/admin/students', { method: 'POST', token, body }),
   adminStudentDetail: (token, id) => request(`/admin/students/${id}`, { token }),
