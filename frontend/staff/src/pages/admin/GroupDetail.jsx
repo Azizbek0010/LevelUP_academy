@@ -6,13 +6,14 @@ import {
   BookOpen, Plus, Star, MessageSquare, Send, Loader2,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth.jsx';
 import {
   useAdminGroupDetail, useAdminStudents,
   useAdminGroupHomework, useAdminGroupFeedback,
 } from '../../queries.js';
-import { api } from '../../api.js';
+import { api, USING_MOCKS } from '../../api.js';
+import { getSocket } from '../../socket.js';
 import { money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Avatar, RowSkeleton, EmptyState, Modal } from '../mentor/_ui.jsx';
@@ -81,10 +82,15 @@ function AttendanceTab({ groupId, token }) {
   const [year, setYear] = useState(() => restoreAtt().year ?? now.getFullYear());
   const [month, setMonth] = useState(() => restoreAtt().month ?? now.getMonth());
   const [attendanceMap, setAttendanceMap] = useState({});
+  // Параллельная карта: у каких клеток отметку поставил/исправил администратор.
+  // Ключи те же, что у attendanceMap (`${studentId}_${date}`).
+  const [correctedMap, setCorrectedMap] = useState({});
   const [saveState, setSaveState] = useState('idle');
   const pendingRef = useRef(new Map());
   const flushTimer = useRef(null);
   const mapRef = useRef({});
+  const correctedRef = useRef({});
+  const qc = useQueryClient();
   const [hoveredStudent, setHoveredStudent] = useState(null);
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
   const hoverTimerRef = useRef(null);
@@ -179,6 +185,7 @@ function AttendanceTab({ groupId, token }) {
         fullMap[`${sid}_${year}-${pad(month + 1)}-${pad(d)}`] = null;
       });
     });
+    const corrected = {};
     // Fill from API data
     DAYS.forEach((d, idx) => {
       const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
@@ -189,18 +196,40 @@ function AttendanceTab({ groupId, token }) {
         const status = r.status;
         if (sid && status) {
           fullMap[`${sid}_${dateStr}`] = status;
+          if (r.correctedByAdmin) corrected[`${sid}_${dateStr}`] = true;
         }
       });
     });
     setAttendanceMap(fullMap);
     mapRef.current = fullMap;
+    setCorrectedMap(corrected);
+    correctedRef.current = corrected;
   }, [groupId, month, year, students, DAYS, dayResults]);
 
   // Reset on month/groupId change
   useEffect(() => {
     setAttendanceMap({});
     mapRef.current = {};
+    setCorrectedMap({});
+    correctedRef.current = {};
   }, [groupId, month, year]);
+
+  // Живое обновление: если ментор (или другой админ) правит журнал этой группы,
+  // перечитываем затронутый день — клетка получит актуальный статус и пометку.
+  useEffect(() => {
+    if (!token || USING_MOCKS || !groupId) return undefined;
+    const s = getSocket(token);
+    const onUpdate = (payload) => {
+      if (payload?.groupId && payload.groupId !== groupId) return;
+      qc.invalidateQueries({ queryKey: ['admin-group-attendance', groupId] });
+    };
+    s.emit('attendance:subscribe', { groupId });
+    s.on('attendance:updated', onUpdate);
+    return () => {
+      s.off('attendance:updated', onUpdate);
+      s.emit('attendance:unsubscribe', { groupId });
+    };
+  }, [token, groupId, qc]);
 
   const dateKeyFor = (day) => `${year}-${pad(month + 1)}-${pad(day)}`;
 
@@ -212,6 +241,10 @@ function AttendanceTab({ groupId, token }) {
     const next = cycle[mapRef.current[key]] || 'present';
     mapRef.current = { ...mapRef.current, [key]: next };
     setAttendanceMap({ ...mapRef.current });
+    // Правит админ → клетка сразу помечается как исправленная администратором
+    // (не дожидаясь перечитывания с сервера).
+    correctedRef.current = { ...correctedRef.current, [key]: true };
+    setCorrectedMap({ ...correctedRef.current });
     queueSave(dateKey, studentId, next);
   }, [year, month, groupId, token]);
 
@@ -335,13 +368,19 @@ function AttendanceTab({ groupId, token }) {
             </span>
             Не отмечен
           </li>
+          <li className="flex items-center gap-1.5">
+            <span className="relative w-6 h-6 rounded-lg border border-base-300 grid place-items-center ring-2 ring-indigo-500 ring-offset-1">
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-base-100" />
+            </span>
+            Исправлено админом
+          </li>
         </ul>
         <span className="flex items-center gap-1.5 text-xs text-base-content/45">
-          {saveState === 'saving' && <><Loader2 size={13} className="animate-spin" /> Saqlanmoqda...</>}
-          {saveState === 'saved' && <>Saqlandi</>}
+          {saveState === 'saving' && <><Loader2 size={13} className="animate-spin" /> Сохранение...</>}
+          {saveState === 'saved' && <>Сохранено</>}
           {saveState === 'error' && (
             <button onClick={flush} className="text-red-500 hover:underline">
-              Saqlanmadi — qayta urinish
+              Не сохранено — повторить
             </button>
           )}
         </span>
@@ -452,7 +491,9 @@ function AttendanceTab({ groupId, token }) {
                     {/* Day cells (current 15-day chunk) */}
                     {currentChunk.map((d) => {
                       const dateKey = dateKeyFor(d);
-                      const status = attendanceMap[`${sid}_${dateKey}`];
+                      const cellKey = `${sid}_${dateKey}`;
+                      const status = attendanceMap[cellKey];
+                      const corrected = correctedMap[cellKey];
                       return (
                         <td
                           key={d}
@@ -460,9 +501,16 @@ function AttendanceTab({ groupId, token }) {
                         >
                           <button
                             onClick={() => toggleDay(sid, d)}
-                            className={`mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors cursor-pointer hover:scale-105 active:scale-95 ${cellStyle(status)}`}
+                            title={corrected ? 'Исправлено администратором' : undefined}
+                            className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors cursor-pointer hover:scale-105 active:scale-95 ${cellStyle(status)} ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''}`}
                           >
                             {cellIcon(status)}
+                            {/* Отметка «исправлено администратором»: клетка держит
+                                цвет статуса, а угловая точка (не статусный цвет)
+                                сообщает, что правку внёс админ. */}
+                            {corrected && (
+                              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-base-100" />
+                            )}
                           </button>
                         </td>
                       );

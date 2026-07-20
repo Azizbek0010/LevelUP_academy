@@ -34,6 +34,10 @@ const MONTHS = [
 /** Пауза после последнего клика, по истечении которой уходит пачка. */
 const AUTOSAVE_DELAY = 700;
 
+// Роли, чья отметка = «исправление администратора»: клетка держит цвет статуса,
+// но получает пометку. Ментор видит её так же, как админ.
+const ADMIN_MARK_ROLES = new Set(['admin', 'superadmin', 'main_admin']);
+
 const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -148,6 +152,9 @@ export default function AttendanceTab({ groupId, group }) {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [attendanceMap, setAttendanceMap] = useState({});
+  // Клетки, чью отметку поставил/исправил админ — показываем пометкой.
+  const [correctedMap, setCorrectedMap] = useState({});
+  const correctedRef = useRef({});
   const [coinDrafts, setCoinDrafts] = useState({});   // studentId -> строка из инпута
   const [coinBusyId, setCoinBusyId] = useState(null);
 
@@ -247,6 +254,14 @@ export default function AttendanceTab({ groupId, group }) {
     mapRef.current = next;
     setAttendanceMap(next);
 
+    // Правку внёс админ → помечаем эти клетки как исправленные администратором.
+    if (payload?.byAdmin) {
+      const corr = { ...correctedRef.current };
+      Object.keys(patch).forEach((k) => { corr[k] = true; });
+      correctedRef.current = corr;
+      setCorrectedMap(corr);
+    }
+
     /* Ростер здесь НЕ перезапрашивается, и это важно.
        Раньше стоял invalidateQueries по ученикам группы — «вдруг коины
        изменились». Отметка посещаемости коины не трогает (их меняет отдельная
@@ -259,6 +274,8 @@ export default function AttendanceTab({ groupId, group }) {
 
   useEffect(() => {
     setAttendanceMap({});
+    setCorrectedMap({});
+    correctedRef.current = {};
   }, [groupId, month, year]);
 
   useEffect(() => {
@@ -268,14 +285,20 @@ export default function AttendanceTab({ groupId, group }) {
         fullMap[`${s.id}_${year}-${pad(month + 1)}-${pad(d)}`] = null;
       });
     });
+    const corr = {};
     attendance.forEach((a) => {
       const attDate = a.date ?? a.lesson_date; // бэкенд: lesson_date, моки: date
       if (!attDate) return;
       const key = `${a.student_id}_${attDate}`;
-      if (fullMap[key] !== undefined) fullMap[key] = a.status;
+      if (fullMap[key] !== undefined) {
+        fullMap[key] = a.status;
+        if (ADMIN_MARK_ROLES.has(a.marked_by_role)) corr[key] = true;
+      }
     });
     setAttendanceMap(fullMap);
     mapRef.current = fullMap;   // держим зеркало в согласии с данными сервера
+    setCorrectedMap(corr);
+    correctedRef.current = corr;
   }, [students, month, year, attendance, DAYS]);
 
   const dateKeyFor = (day) => `${year}-${pad(month + 1)}-${pad(day)}`;
@@ -497,6 +520,12 @@ export default function AttendanceTab({ groupId, group }) {
             </span>
             belgilanmagan
           </li>
+          <li className="flex items-center gap-1.5">
+            <span className="relative w-6 h-6 rounded-lg border border-base-200 grid place-items-center ring-2 ring-indigo-500 ring-offset-1">
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-base-100" />
+            </span>
+            administrator tuzatgan
+          </li>
         </ul>
         <div className="flex items-center gap-3">
           {/* Индикатор вместо кнопки: раз сохранение происходит само,
@@ -651,7 +680,9 @@ export default function AttendanceTab({ groupId, group }) {
 
                   {DAYS.map((d) => {
                     const dateKey = dateKeyFor(d);
-                    const status = attendanceMap[`${s.id}_${dateKey}`];
+                    const cellKey = `${s.id}_${dateKey}`;
+                    const status = attendanceMap[cellKey];
+                    const corrected = correctedMap[cellKey];
                     const isWeekend = new Date(year, month, d).getDay() === 0;
                     // Отмечать можно только сегодняшний урок — остальные дни
                     // показываем как есть, но трогать не даём.
@@ -667,14 +698,17 @@ export default function AttendanceTab({ groupId, group }) {
                           onClick={() => toggleDay(s.id, d)}
                           disabled={!editable}
                           aria-label={`${s.first_name} ${s.last_name}, ${d}-kun: ${statusLabel(status)}${
-                            editable ? '' : ' (o\'zgartirib bo\'lmaydi)'
-                          }`}
-                          title={editable ? undefined : "Faqat bugungi davomatni belgilash mumkin"}
-                          className={`mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status, editable)} ${
+                            corrected ? ', administrator tuzatgan' : ''
+                          }${editable ? '' : ' (o\'zgartirib bo\'lmaydi)'}`}
+                          title={corrected ? 'Administrator tuzatgan' : editable ? undefined : "Faqat bugungi davomatni belgilash mumkin"}
+                          className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status, editable)} ${
                             editable ? 'cursor-pointer' : 'cursor-default'
-                          }`}
+                          } ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''}`}
                         >
                           {cellIcon(status)}
+                          {corrected && (
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-base-100" />
+                          )}
                         </button>
                       </td>
                     );
