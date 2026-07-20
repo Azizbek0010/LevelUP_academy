@@ -6,6 +6,7 @@ html,
 body,
 #root {
   height: 100%;
+  background-color: var(--bg);
 }
 
 body {
@@ -81,12 +82,22 @@ body {
   --radius-md: 12px;
   --radius-lg: 16px;
 
+  /* DaisyUI semantic colors — match our green/lime brand */
+  --p: 198 255 52;
+  --pc: 22 33 15;
+  --s: 22 33 15;
+  --sc: 232 239 226;
+  --a: 163 230 53;
+  --ac: 22 33 15;
+  --n: 45 54 40;
+  --nc: 232 239 226;
+
   /* Sidebar */
   --sidebar-hover: rgba(198, 255, 52, 0.08);
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DARK THEME — uses html.dark[data-theme] to beat DaisyUI specificity
+   DARK THEME
    ═══════════════════════════════════════════════════════════════ */
 .dark {
   --green: #C6FF34;
@@ -121,292 +132,90 @@ body {
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.50);
 
   --sidebar-hover: rgba(198, 255, 52, 0.06);
-}
 
-/* DaisyUI dark overrides — higher specificity than [data-theme="levelup"] */
-html.dark[data-theme="levelup"],
-html.dark {
+  /* DaisyUI overrides — force DaisyUI to respect our dark surface tokens */
   --b1: 26 31 22;      /* base-100 = #1a1f16 (our --surface) */
   --b2: 35 42 32;      /* base-200 = #232a20 (our --surface-hover) */
   --b3: 45 54 40;      /* base-300 = #2d3628 (our --border) */
   --bc: 232 239 226;   /* base-content = #e8efe2 (our --text) */
-  --n: 45 54 40;       /* neutral = #2d3628 */
-  --nc: 232 239 226;   /* neutral-content */
+
+  /* DaisyUI semantic colors — match dark green/lime theme */
   --p: 198 255 52;     /* primary = lime */
   --pc: 22 33 15;      /* primary-content */
-  --s: 22 33 15;       /* secondary = sidebar dark */
+  --s: 22 33 15;       /* secondary */
   --sc: 232 239 226;   /* secondary-content */
   --a: 163 230 53;     /* accent */
   --ac: 22 33 15;      /* accent-content */
-  --b1-deco: 26 31 22;
-  --b2-deco: 35 42 32;
-  --b3-deco: 45 54 40;
+  --n: 45 54 40;       /* neutral */
+  --nc: 232 239 226;   /* neutral-content */
 }
 
 /* ═══════════════════════════════════════════════════════════════
    DAISYUI COMPONENT OVERRIDES — force theme-aware backgrounds
    ═══════════════════════════════════════════════════════════════ */
 
-/* Modal backdrop — MUST be full screen, no gaps */
-.modal-backdrop {
-  background: rgba(0, 0, 0, 0.55) !important;
-  backdrop-filter: blur(4px);
+/* Modal — ensure full-viewport overlay regardless of parent stacking context */
+.modal {
   position: fixed !important;
   inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
+  z-index: 999 !important;
 }
+
+/* Modal box — always use our surface token */
 .modal-box {
   background: var(--surface) !important;
   border: 1px solid var(--glass-border) !important;
   box-shadow: var(--shadow-lg) !important;
 }
-.modal {
-  position: fixed !important;
-  inset: 0 !important;
-  padding: 0 !important;
+
+/* Modal backdrop — softer overlay */
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(4px);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DAISYUI COMPONENT — COMPREHENSIVE dark overrides
-   ═══════════════════════════════════════════════════════════════ */
-
-/* Inputs, textareas, selects */
-html.dark .input,
-html.dark .textarea,
-html.dark .select,
-html.dark .input-bordered,
-html.dark .textarea-bordered,
-html.dark .select-bordered,
-html.dark .input-ghost,
-html.dark .file-input,
-html.dark .file-input-bordered {
-  background-color: var(--surface) !important;
+/* Modal form elements — force theme-aware colors (fixes createPortal DaisyUI bleed) */
+.modal .input-bordered,
+.modal .select-bordered {
+  background: var(--bg) !important;
   border-color: var(--border) !important;
   color: var(--text) !important;
 }
-html.dark .input::placeholder,
-html.dark .textarea::placeholder {
-  color: var(--text-muted) !important;
-}
-
-/* Buttons */
-html.dark .btn {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
-html.dark .btn-primary {
-  background-color: var(--green) !important;
+.modal .input-bordered:focus,
+.modal .select-bordered:focus {
   border-color: var(--green) !important;
-  color: #111 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px var(--green-bg) !important;
 }
-html.dark .btn-ghost {
+.modal .btn-ghost {
+  color: var(--text-secondary) !important;
   background: transparent !important;
-  color: var(--text-secondary) !important;
 }
-html.dark .btn-ghost:hover {
-  background: var(--surface-hover) !important;
-  color: var(--text) !important;
-}
-html.dark .btn-link {
-  color: var(--green) !important;
-}
-html.dark .btn-sm {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text-secondary) !important;
-}
-html.dark .btn-sm:hover {
-  background-color: var(--surface-hover) !important;
-  color: var(--text) !important;
-}
-
-/* Card backgrounds */
-html.dark .card {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-html.dark .card-body {
-  color: var(--text) !important;
-}
-html.dark .card-title {
-  color: var(--text) !important;
-}
-
-/* Tables */
-html.dark .table {
-  background-color: var(--surface) !important;
-  color: var(--text) !important;
-}
-html.dark .table thead th {
-  background: var(--surface-hover) !important;
-  color: var(--text-secondary) !important;
-  border-color: var(--border) !important;
-}
-html.dark .table tbody tr {
-  border-color: var(--border) !important;
-}
-html.dark .table tbody tr:hover {
+.modal .btn-ghost:hover {
   background: var(--surface-hover) !important;
 }
-html.dark .table td {
-  border-color: var(--border) !important;
-  color: var(--text) !important;
+.modal .btn-primary {
+  --btn-color: var(--green);
+  background: var(--green) !important;
+  color: #16210f !important;
 }
-
-/* Dividers */
-html.dark .divider {
+.modal label {
+  color: var(--text-secondary) !important;
+}
+.modal input::placeholder,
+.modal select::placeholder {
   color: var(--text-muted) !important;
-  border-color: var(--border) !important;
+  opacity: 1;
 }
-
-/* Badges */
-html.dark .badge {
-  border-color: var(--border) !important;
-}
-html.dark .badge-neutral {
-  background-color: var(--surface-hover) !important;
-  color: var(--text-secondary) !important;
-}
-html.dark .badge-ghost {
-  background-color: var(--surface-hover) !important;
-  color: var(--text-secondary) !important;
-  border-color: var(--border) !important;
-}
-
-/* Alerts */
-html.dark .alert {
-  border-color: var(--border) !important;
-  background-color: var(--surface) !important;
-  color: var(--text) !important;
-}
-
-/* Tabs */
-html.dark .tabs {
-  border-color: var(--border) !important;
-}
-html.dark .tab {
-  color: var(--text-muted) !important;
-}
-html.dark .tab-active,
-html.dark .tab[aria-selected="true"] {
-  color: var(--green) !important;
-  border-color: var(--green) !important;
-}
-
-/* Dropdown / popover */
-html.dark .dropdown-content,
-html.dark .popover {
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: var(--shadow-lg) !important;
-}
-
-/* Menu items */
-html.dark .menu li > * {
-  color: var(--text-secondary) !important;
-}
-html.dark .menu li > *:hover {
+.modal .alert {
   background: var(--surface-hover) !important;
-  color: var(--text) !important;
-}
-html.dark .menu-title {
-  color: var(--text-muted) !important;
-}
-
-/* Steps */
-html.dark .step {
-  color: var(--text-muted) !important;
-}
-html.dark .step-primary,
-html.dark .step[data-content]::before {
-  border-color: var(--green) !important;
-}
-
-/* Progress */
-html.dark .progress {
-  background-color: var(--surface-hover) !important;
-}
-
-/* Stat boxes */
-html.dark .stat {
-  background-color: var(--surface) !important;
-  color: var(--text) !important;
-}
-html.dark .stat-title {
-  color: var(--text-secondary) !important;
-}
-html.dark .stat-value {
-  color: var(--text) !important;
-}
-html.dark .stat-desc {
-  color: var(--text-muted) !important;
-}
-
-/* Breadcrumbs */
-html.dark .breadcrumbs li {
-  color: var(--text-muted) !important;
-}
-html.dark .breadcrumbs li > * {
-  color: var(--text-secondary) !important;
-}
-
-/* Textarea, select, details */
-html.dark textarea,
-html.dark select {
-  background-color: var(--surface) !important;
   border-color: var(--border) !important;
   color: var(--text) !important;
 }
-html.dark details,
-html.dark details[open] {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
-
-/* Collapse */
-html.dark .collapse {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
-
-/* Drawer */
-html.dark .drawer-content,
-html.dark .drawer-side {
-  background-color: transparent !important;
-}
-html.dark .drawer-overlay {
-  background-color: rgba(0,0,0,0.5) !important;
-}
-
-/* Hero */
-html.dark .hero {
-  background-color: var(--surface) !important;
-}
-
-/* Footer */
-html.dark .footer {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text-secondary) !important;
-}
-
-/* Hover effects for all interactive elements */
-html.dark .hover\:\*:bg-base-200:hover,
-html.dark *:hover {
-  /* prevent white flash on hover */
-}
-
-/* Remove ALL background color artifacts — force transparent on body, html, root */
-html,
-body,
-#root,
-#root > div {
-  background-color: transparent !important;
+.modal .alert-error {
+  background: var(--danger-light) !important;
+  border-color: var(--danger) !important;
+  color: var(--danger) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -419,11 +228,14 @@ body,
   border: 1px solid var(--glass-border);
 }
 .glass-strong {
-  background: var(--glass-bg);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow);
+}
+.dark .glass-strong {
+  background: rgba(26, 31, 22, 0.88);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -541,6 +353,11 @@ body,
   50%      { opacity: 0.5; }
 }
 
+/* Loading spinner — match sidebar green accent */
+.loading-spinner {
+  color: var(--green) !important;
+}
+
 /* Green glow ring for focused/active elements */
 .glow-ring {
   box-shadow: 0 0 0 3px rgba(198, 255, 52, 0.3);
@@ -562,5 +379,25 @@ body,
 
 /* Overflow scroll */
 .overflow-x-auto {
+  scrollbar-width: thin;
+}
+
+/* ── Scrollbar styling — sidebar-matching dark green ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(198, 255, 52, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(198, 255, 52, 0.3);
+}
+html {
+  scrollbar-color: rgba(198, 255, 52, 0.15) transparent;
   scrollbar-width: thin;
 }

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Search, Bell, Sun, Moon, ChevronLeft, ChevronRight, X,
-  LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu, Wifi,
+  Bell, Sun, Moon, ChevronLeft, ChevronRight, X,
+  LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu,
 } from 'lucide-react';
 import {
   HiOutlineSquares2X2, HiOutlineBuildingOffice2, HiOutlineUsers,
@@ -15,7 +15,7 @@ import {
 } from 'react-icons/hi2';
 import { useAuth } from '../auth.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
-import { useOnlineCount, disconnectSocket } from '../socket.js';
+import { disconnectSocket } from '../socket.js';
 
 /* ──────────────────── HOOKS ──────────────────── */
 function useMediaQuery(query) {
@@ -34,14 +34,14 @@ const superNav = [
   { to: '/',              label: 'Дашборд',       Icon: HiOutlineSquares2X2, end: true },
   { to: '/branches',      label: 'Филиалы',        Icon: HiOutlineBuildingOffice2 },
   { to: '/admins',        label: 'Сотрудники',     Icon: HiOutlineUsers },
-  { to: '/students',      label: 'Студенты',       Icon: HiOutlineAcademicCap },
-  { to: '/groups',        label: 'Группы',         Icon: HiOutlineUserGroup },
-  { to: '/attendance',    label: 'Посещаемость',   Icon: HiOutlineCalendarDays },
+  { to: '/students',      label: 'Студенты',       Icon: HiOutlineAcademicCap,  soon: true },
+  { to: '/groups',        label: 'Группы',         Icon: HiOutlineUserGroup,     soon: true },
+  { to: '/attendance',    label: 'Посещаемость',   Icon: HiOutlineCalendarDays,  soon: true },
   { to: '/reports',       label: 'Аналитика',      Icon: HiOutlineChartBar },
-  { to: '/stats',         label: 'Статистика',     Icon: HiOutlineChartPie },
-  { to: '/announcements', label: 'Объявления',     Icon: HiOutlineMegaphone },
-  { to: '/reminders',     label: 'Напоминания',    Icon: HiOutlineBellAlert },
-  { to: '/audit',         label: 'Аудит',          Icon: HiOutlineShieldExclamation },
+  { to: '/stats',         label: 'Статистика',     Icon: HiOutlineChartPie,       soon: true },
+  { to: '/announcements', label: 'Объявления',     Icon: HiOutlineMegaphone,      soon: true },
+  { to: '/reminders',     label: 'Напоминания',    Icon: HiOutlineBellAlert,      soon: true },
+  { to: '/audit',         label: 'Аудит',          Icon: HiOutlineShieldExclamation, soon: true },
   { to: '/settings',      label: 'Настройки',      Icon: HiOutlineCog },
 ];
 
@@ -100,13 +100,12 @@ function Sidebar({ role, collapsed, onToggle }) {
 
   return (
     <aside
-      className="fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300 ease-in-out overflow-hidden"
+      className="fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300 ease-in-out"
       style={{
         width: collapsed ? 72 : 256,
         background: 'linear-gradient(180deg, #0f1a0a 0%, #16210f 40%, #1a2912 100%)',
         borderRight: '1px solid rgba(198, 255, 52, 0.08)',
         boxShadow: '4px 0 24px rgba(0, 0, 0, 0.3)',
-        borderRadius: '0 0 16px 0',
       }}
     >
       {/* Logo */}
@@ -196,14 +195,13 @@ function Sidebar({ role, collapsed, onToggle }) {
       </nav>
 
       {/* Collapse toggle */}
-      <div className="px-3 pb-3 shrink-0">
+      <div className="px-3 pb-3">
         <button
           onClick={onToggle}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs transition-all duration-200"
           style={{
             color: 'rgba(232,239,226,0.35)',
             background: 'rgba(198,255,52,0.04)',
-            marginBottom: '4px',
           }}
           title={collapsed ? 'Kengaytirish' : 'Kichiklashtirish'}
         >
@@ -217,11 +215,9 @@ function Sidebar({ role, collapsed, onToggle }) {
 
 /* ──────────────────── HEADER ──────────────────── */
 function Header({ sidebarWidth, onMobileToggle }) {
-  const { user, logout, token } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const role = user?.role;
-  const onlineCount = useOnlineCount(token);
-  const [searchFocused, setSearchFocused] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('lu-theme') || 'system');
   const userMenuRef = useRef(null);
@@ -281,39 +277,6 @@ function Header({ sidebarWidth, onMobileToggle }) {
 
       {/* Spacer */}
       <div className="flex-1" />
-
-      {/* Search bar (desktop) */}
-      <div className="hidden md:flex items-center relative">
-        <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-all duration-200"
-          style={{
-            background: searchFocused ? 'var(--surface)' : 'var(--bg)',
-            border: `1px solid ${searchFocused ? 'var(--green)' : 'var(--border)'}`,
-            width: searchFocused ? 280 : 200,
-            boxShadow: searchFocused ? '0 0 0 3px rgba(198, 255, 52, 0.1)' : 'none',
-          }}
-        >
-          <Search size={14} style={{ color: 'var(--text-muted)' }} />
-          <input
-            type="text"
-            placeholder="Qidirish..."
-            className="bg-transparent outline-none text-sm w-full"
-            style={{ color: 'var(--text)' }}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-          />
-        </div>
-      </div>
-
-      {/* Live online counter */}
-      <div
-        className="hidden sm:flex items-center gap-1.5 px-2.5 h-9 rounded-xl text-xs font-semibold"
-        style={{ color: 'var(--green, #16a34a)', background: 'var(--bg)', border: '1px solid var(--border)' }}
-        title="Онлайн сейчас"
-      >
-        <Wifi size={13} />
-        <span>{onlineCount}</span>
-      </div>
 
       {/* Theme toggle */}
       <button
