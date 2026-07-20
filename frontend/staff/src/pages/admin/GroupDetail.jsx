@@ -12,15 +12,10 @@ import {
 } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SkeletonTable } from '../../components/Skeleton.jsx';
+import { Avatar, RowSkeleton } from '../mentor/_ui.jsx';
 
 /* ─── helpers ─── */
 const fullName = (s) => s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
-const initials = (s) => {
-  const f = s.firstName || s.first_name || '';
-  const l = s.lastName || s.last_name || '';
-  return ((f[0] || '') + (l[0] || '')).toUpperCase() || '?';
-};
 const today = () => new Date().toISOString().slice(0, 10);
 const yesterday = (d) => { const dt = new Date(d); dt.setDate(dt.getDate() - 1); return dt.toISOString().slice(0, 10); };
 const tomorrow = (d) => { const dt = new Date(d); dt.setDate(dt.getDate() + 1); return dt.toISOString().slice(0, 10); };
@@ -430,8 +425,8 @@ function StudentCard({ s, onRemove }) {
   return (
     <div className="glass-strong rounded-[16px] p-4 card-hover-premium group">
       <div className="flex items-center gap-3.5">
-        <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 text-[14px] font-extrabold bg-[var(--green-bg)] text-[var(--green)] transition-transform duration-300 group-hover:scale-105">
-          {initials(s)}
+        <div className="transition-transform duration-300 group-hover:scale-105">
+          <Avatar name={fullName(s)} size="lg" />
         </div>
         <div className="flex-1 min-w-0">
           <span className="text-[13px] font-bold text-[var(--text)] truncate block">{fullName(s)}</span>
@@ -497,7 +492,7 @@ export default function AdminGroupDetail() {
     return (
       <div>
         <PageHeader title="Группа" />
-        <div className="mt-6"><SkeletonTable cols={2} /></div>
+        <div className="mt-6"><RowSkeleton count={2} /></div>
       </div>
     );
   }
