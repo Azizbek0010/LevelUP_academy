@@ -1,161 +1,354 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, UserPlus, X, Users, GraduationCap, KeyRound, Phone,
-  CalendarDays, ChevronLeft, ChevronRight, Check, XIcon, Clock, AlertCircle,
-  BookOpen, Plus, Star, MessageSquare, Send, FileText, Loader2,
+  CalendarDays, Check, Minus,
+  BookOpen, Plus, Star, MessageSquare, Send, Loader2,
 } from 'lucide-react';
+import { useQueries } from '@tanstack/react-query';
 import { useAuth } from '../../auth.jsx';
 import {
   useAdminGroupDetail, useAdminStudents,
-  useAdminGroupAttendance, useAdminGroupHomework, useAdminGroupFeedback,
+  useAdminGroupHomework, useAdminGroupFeedback,
 } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, RowSkeleton } from '../mentor/_ui.jsx';
+import { Avatar, RowSkeleton, EmptyState } from '../mentor/_ui.jsx';
 
 /* ─── helpers ─── */
 const fullName = (s) => s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
-const today = () => new Date().toISOString().slice(0, 10);
-const yesterday = (d) => { const dt = new Date(d); dt.setDate(dt.getDate() - 1); return dt.toISOString().slice(0, 10); };
-const tomorrow = (d) => { const dt = new Date(d); dt.setDate(dt.getDate() + 1); return dt.toISOString().slice(0, 10); };
-const STATUS_LABELS = { present: 'Мавжуд', absent: 'Йук', late: 'Кечикди', excused: 'Узрли' };
-const STATUS_COLORS = {
-  present: 'bg-emerald-500 text-white',
-  absent: 'bg-red-500 text-white',
-  late: 'bg-amber-500 text-white',
-  excused: 'bg-gray-400 text-white',
-};
-const STATUS_ICONS = {
-  present: Check,
-  absent: XIcon,
-  late: Clock,
-  excused: AlertCircle,
-};
+const pad = (n) => String(n).padStart(2, '0');
+const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+const MONTHS = [
+  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
+  'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr',
+];
 
-/* ═══════════════ AttendanceTab ═══════════════ */
+function buildMonthStrip(base) {
+  const list = [];
+  for (let offset = -6; offset <= 3; offset += 1) {
+    const d = new Date(base.getFullYear(), base.getMonth() + offset, 1);
+    list.push({ year: d.getFullYear(), month: d.getMonth() });
+  }
+  return list;
+}
+
+/* ═══════════════ AttendanceTab — Calendar Table ═══════════════ */
 function AttendanceTab({ groupId, token }) {
-  const [date, setDate] = useState(today());
-  const [saving, setSaving] = useState(false);
-  const { data: attData, refetch } = useAdminGroupAttendance(groupId, date);
-  const records = attData?.data || attData || [];
+  const now = useMemo(() => new Date(), []);
+  const todayStr = now.toLocaleDateString('en-CA');
 
-  const cycleStatus = useCallback((current) => {
-    const order = [null, 'present', 'absent', 'late', 'excused'];
-    const idx = order.indexOf(current);
-    return order[(idx + 1) % order.length];
-  }, []);
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
+  const [attendanceMap, setAttendanceMap] = useState({});
+  const [saveState, setSaveState] = useState('idle');
+  const pendingRef = useRef(new Map());
+  const flushTimer = useRef(null);
+  const mapRef = useRef({});
 
-  const handleToggle = async (studentId, studentName, currentStatus) => {
-    const newStatus = cycleStatus(currentStatus);
-    // Optimistic update
-    const updated = records.map((r) =>
-      r.studentId === studentId ? { ...r, status: newStatus } : r
-    );
-    // Save optimistically (will refetch)
-    try {
-      setSaving(true);
-      await api.adminMarkGroupAttendance(token, groupId, {
-        lessonDate: date,
-        records: updated.map((r) => ({ studentId: r.studentId, studentName: r.studentName, status: r.status })),
+  const monthStrip = useMemo(() => buildMonthStrip(now), [now]);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Fetch students from group detail
+  const { data: groupDetailData } = useAdminGroupDetail(groupId);
+  const groupRaw = groupDetailData?.data || groupDetailData || {};
+  const group = groupRaw.group || groupRaw;
+  const students = group.students || [];
+
+  // Determine lesson weekdays from group schedule
+  const lessonWeekdays = useMemo(() => {
+    const days = (group?.schedule ?? [])
+      .map((s) => WEEKDAY_INDEX[String(s.day).toLowerCase()])
+      .filter((d) => d !== undefined);
+    return days.length ? new Set(days) : null;
+  }, [group]);
+
+  // Lesson days only (filtered by schedule if available)
+  const DAYS = useMemo(() => {
+    const all = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    if (!lessonWeekdays) return all;
+    return all.filter((d) => lessonWeekdays.has(new Date(year, month, d).getDay()));
+  }, [daysInMonth, lessonWeekdays, year, month]);
+
+  // Build per-day attendance queries dynamically (useQueries — rules-of-hooks safe)
+  const attendanceQueries = useMemo(() => DAYS.map((d) => {
+    const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
+    return {
+      queryKey: ['admin-group-attendance', groupId, dateStr],
+      queryFn: () => api.adminGroupAttendance(token, groupId, dateStr),
+      enabled: !!groupId && !!dateStr,
+    };
+  }), [DAYS, year, month, groupId, token]);
+
+  const dayResults = useQueries({ queries: attendanceQueries });
+
+  // Build attendance map from all day results
+  useEffect(() => {
+    const fullMap = {};
+    // Initialize empty
+    students.forEach((s) => {
+      DAYS.forEach((d) => {
+        const sid = s.id || s.studentId;
+        fullMap[`${sid}_${year}-${pad(month + 1)}-${pad(d)}`] = null;
       });
-      refetch();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSaving(false);
+    });
+    // Fill from API data
+    DAYS.forEach((d, idx) => {
+      const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
+      const result = dayResults[idx];
+      const records = result?.data?.data || result?.data || [];
+      records.forEach((r) => {
+        const sid = r.studentId || r.student_id;
+        const status = r.status;
+        if (sid && status) {
+          fullMap[`${sid}_${dateStr}`] = status;
+        }
+      });
+    });
+    setAttendanceMap(fullMap);
+    mapRef.current = fullMap;
+  }, [groupId, month, year, students, DAYS, dayResults]);
+
+  // Reset on month/groupId change
+  useEffect(() => {
+    setAttendanceMap({});
+    mapRef.current = {};
+  }, [groupId, month, year]);
+
+  const dateKeyFor = (day) => `${year}-${pad(month + 1)}-${pad(day)}`;
+
+  /* ── Toggle cell: present ⇄ absent ── */
+  const toggleDay = useCallback((studentId, day) => {
+    const dateKey = dateKeyFor(day);
+    if (dateKey !== todayStr) return;
+    const key = `${studentId}_${dateKey}`;
+    const next = mapRef.current[key] === 'present' ? 'absent' : 'present';
+    mapRef.current = { ...mapRef.current, [key]: next };
+    setAttendanceMap({ ...mapRef.current });
+    queueSave(dateKey, studentId, next);
+  }, [todayStr, year, month, groupId, token]);
+
+  /* ── Auto-save with debounce ── */
+  const flush = useCallback(async () => {
+    const batch = pendingRef.current;
+    if (batch.size === 0) return;
+    pendingRef.current = new Map();
+
+    setSaveState('saving');
+    try {
+      for (const [lessonDate, byStudent] of batch) {
+        const records = [...byStudent].map(([studentId, status]) => ({ studentId, status }));
+        await api.adminMarkGroupAttendance(token, groupId, { lessonDate, records });
+      }
+      setSaveState('saved');
+      setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 2500);
+    } catch (err) {
+      for (const [date, byStudent] of batch) {
+        const existing = pendingRef.current.get(date) ?? new Map();
+        byStudent.forEach((v, k) => existing.set(k, v));
+        pendingRef.current.set(date, existing);
+      }
+      setSaveState('error');
     }
+  }, [token, groupId]);
+
+  const queueSave = useCallback((lessonDate, studentId, status) => {
+    const byStudent = pendingRef.current.get(lessonDate) ?? new Map();
+    byStudent.set(studentId, status);
+    pendingRef.current.set(lessonDate, byStudent);
+
+    setSaveState('pending');
+    clearTimeout(flushTimer.current);
+    flushTimer.current = setTimeout(flush, 700);
+  }, [flush]);
+
+  // Flush on unmount
+  useEffect(() => () => { clearTimeout(flushTimer.current); flush(); }, [flush]);
+
+  /* ── Cell styles (matching mentor) ── */
+  const cellStyle = (status, editable) => {
+    if (status === 'present') {
+      return `bg-emerald-100 text-emerald-700 border-emerald-300${editable ? ' hover:bg-emerald-200' : ''}`;
+    }
+    if (status === 'absent') {
+      return `bg-red-500 text-white border-red-500${editable ? ' hover:bg-red-600' : ''}`;
+    }
+    return `border-gray-200 text-gray-300${editable ? ' hover:border-[var(--green)]/50 hover:bg-[var(--green)]/[0.05]' : ''}`;
   };
 
-  const stats = {
-    present: records.filter((r) => r.status === 'present').length,
-    absent: records.filter((r) => r.status === 'absent').length,
-    late: records.filter((r) => r.status === 'late').length,
-    excused: records.filter((r) => r.status === 'excused').length,
+  const cellIcon = (status) => {
+    if (status === 'present') return <Check size={16} strokeWidth={3} />;
+    if (status === 'absent') return <X size={16} strokeWidth={3} />;
+    return <Minus size={13} />;
   };
-  const total = records.length;
-  const attendancePct = total > 0 ? Math.round((stats.present / total) * 100) : 0;
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      {/* Date nav */}
-      <div className="flex items-center gap-3">
-        <button className="btn btn-ghost btn-sm" onClick={() => setDate(yesterday(date))}>
-          <ChevronLeft size={18} />
-        </button>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--border)]">
-          <CalendarDays size={14} className="text-[var(--green)]" />
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="bg-transparent text-[13px] font-semibold text-[var(--text)] outline-none"
-          />
-        </div>
-        <button className="btn btn-ghost btn-sm" onClick={() => setDate(tomorrow(date))}>
-          <ChevronRight size={18} />
-        </button>
-        {date !== today() && (
-          <button className="btn btn-ghost btn-xs text-[var(--green)]" onClick={() => setDate(today())}>
-            Бугун
-          </button>
-        )}
-        {saving && <Loader2 size={14} className="animate-spin text-[var(--green)]" />}
-      </div>
-
-      {/* Stats */}
-      <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-[10px] bg-emerald-50 text-emerald-700 text-[12px] font-bold">
-          <Check size={14} /> {stats.present} / {total} ({attendancePct}%)
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-[10px] bg-red-50 text-red-700 text-[12px] font-bold">
-          <XIcon size={14} /> {stats.absent}
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-[10px] bg-amber-50 text-amber-700 text-[12px] font-bold">
-          <Clock size={14} /> {stats.late}
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-[10px] bg-gray-100 text-gray-600 text-[12px] font-bold">
-          <AlertCircle size={14} /> {stats.excused}
-        </div>
-      </div>
-
-      {/* Student list */}
-      {records.length === 0 ? (
-        <div className="text-center py-12 text-[var(--text-muted)] text-[13px]">
-          <CalendarDays size={32} className="mx-auto mb-2 opacity-30" />
-          Бугун учун давомат йўқ
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {records.map((r) => {
-            const Icon = r.status ? STATUS_ICONS[r.status] : null;
+    <div className="flex flex-col min-h-0 flex-1 animate-fade-in">
+      {/* ── Month strip ── */}
+      <div className="shrink-0 border-b border-[var(--border)] px-3 py-2 overflow-x-auto">
+        <div className="flex gap-1.5 w-max">
+          {monthStrip.map(({ year: y, month: m }) => {
+            const active = y === year && m === month;
+            const isThis = y === now.getFullYear() && m === now.getMonth();
             return (
               <button
-                key={r.id || r.studentId}
-                onClick={() => handleToggle(r.studentId, r.studentName, r.status)}
-                className="w-full flex items-center gap-3 p-3 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--green)] hover:shadow-sm transition-all text-left group"
+                key={`${y}-${m}`}
+                onClick={() => { setYear(y); setMonth(m); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                  active
+                    ? 'bg-[var(--green)] text-white'
+                    : isThis
+                    ? 'bg-[var(--green)]/10 text-[var(--green)] hover:bg-[var(--green)]/15'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--surface)]'
+                }`}
               >
-                {/* Status badge */}
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-[13px] font-extrabold transition-all ${
-                  r.status ? STATUS_COLORS[r.status] : 'bg-gray-100 text-gray-400 border-2 border-dashed border-gray-300'
-                }`}>
-                  {Icon ? <Icon size={16} /> : (r.studentName?.[0] || '?')}
-                </div>
-
-                {/* Name */}
-                <span className="flex-1 text-[13px] font-semibold text-[var(--text)]">{r.studentName || r.studentId}</span>
-
-                {/* Status label */}
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                  r.status ? STATUS_COLORS[r.status] : 'bg-gray-100 text-gray-400'
-                }`}>
-                  {r.status ? STATUS_LABELS[r.status] : 'Босма'}
-                </span>
+                {MONTHS[m].slice(0, 3)}{' '}
+                <span className={active ? 'opacity-70' : 'opacity-50'}>{String(y).slice(2)}</span>
               </button>
             );
           })}
         </div>
-      )}
+      </div>
+
+      {/* ── Legend ── */}
+      <div className="shrink-0 px-4 py-2 border-b border-[var(--border)] flex items-center justify-between gap-3 flex-wrap">
+        <ul className="flex items-center gap-4 text-[11px] font-medium text-[var(--text-muted)] flex-wrap">
+          <li className="flex items-center gap-1.5">
+            <span className="w-6 h-6 rounded-lg border grid place-items-center bg-emerald-100 text-emerald-700 border-emerald-300">
+              <Check size={13} strokeWidth={3} />
+            </span>
+            keldi
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className="w-6 h-6 rounded-lg border grid place-items-center bg-red-500 text-white border-red-500">
+              <X size={13} strokeWidth={3} />
+            </span>
+            kelmadi
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className="w-6 h-6 rounded-lg border border-gray-200 grid place-items-center text-gray-300">
+              <Minus size={13} />
+            </span>
+            belgilanmagan
+          </li>
+        </ul>
+        <span className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+          {saveState === 'saving' && <><Loader2 size={13} className="animate-spin" /> Saqlanmoqda...</>}
+          {saveState === 'saved' && <>Saqlandi</>}
+          {saveState === 'error' && (
+            <button onClick={flush} className="text-red-500 hover:underline">
+              Saqlanmadi — qayta urinish
+            </button>
+          )}
+        </span>
+      </div>
+
+      {/* ── Calendar table ── */}
+      <div className="overflow-auto flex-1 min-h-0">
+        {students.length === 0 ? (
+          <EmptyState icon={Users} title="Bu guruhda o'quvchilar yo'q" />
+        ) : (
+          <table className="table min-w-max border-collapse">
+            <thead>
+              <tr>
+                {/* Sticky student name column */}
+                <th className="sticky left-0 top-0 z-20 bg-[var(--surface)] w-[160px] sm:w-[240px] min-w-[160px] sm:min-w-[240px] px-3 sm:px-4 py-3 text-left text-[13px] font-bold text-[var(--text)]">
+                  O'quvchi
+                </th>
+                {/* Day columns */}
+                {DAYS.map((d) => {
+                  const key = dateKeyFor(d);
+                  const isToday = key === todayStr;
+                  return (
+                    <th
+                      key={d}
+                      className="sticky top-0 z-10 w-[68px] min-w-[68px] px-1.5 py-2.5 text-center border-l border-[var(--border)]"
+                      style={{
+                        background: isToday ? 'var(--green-bg)' : 'var(--surface)',
+                        color: isToday ? 'var(--green)' : 'var(--text-muted)',
+                      }}
+                    >
+                      <div className="text-[11px] font-bold tabular-nums leading-tight">
+                        {pad(d)}.{pad(month + 1)}
+                      </div>
+                      <div className="text-[8px] uppercase mt-0.5 opacity-70">
+                        {new Date(year, month, d).toLocaleDateString('uz-UZ', { weekday: 'short' })}
+                      </div>
+                    </th>
+                  );
+                })}
+                {/* Summary column */}
+                <th className="sticky right-0 top-0 z-20 bg-[var(--surface)] w-[80px] min-w-[80px] px-4 py-3 text-center border-l border-[var(--border)] text-[13px] font-bold text-[var(--text)]">
+                  Jami
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((s, idx) => {
+                const sid = s.id || s.studentId;
+                const firstName = s.firstName || s.first_name || '';
+                const lastName = s.lastName || s.last_name || '';
+                const studentFullName = fullName(s);
+                // Count present days
+                let presentCount = 0;
+                DAYS.forEach((d) => {
+                  if (attendanceMap[`${sid}_${dateKeyFor(d)}`] === 'present') presentCount++;
+                });
+
+                return (
+                  <tr key={sid} className="border-b border-[var(--border)] last:border-0">
+                    {/* Sticky name cell */}
+                    <td className="sticky left-0 z-10 bg-[var(--surface)] px-3 sm:px-4 py-2.5">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-[var(--green)]/40 tabular-nums w-5 shrink-0">
+                          {idx + 1}.
+                        </span>
+                        <Avatar name={studentFullName} size="sm" />
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold truncate text-[var(--text)]">
+                            {firstName} {lastName}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Day cells */}
+                    {DAYS.map((d) => {
+                      const dateKey = dateKeyFor(d);
+                      const status = attendanceMap[`${sid}_${dateKey}`];
+                      const editable = dateKey === todayStr;
+                      return (
+                        <td
+                          key={d}
+                          className="px-1.5 py-2.5 text-center border-l border-[var(--border)]"
+                        >
+                          <button
+                            onClick={() => toggleDay(sid, d)}
+                            disabled={!editable}
+                            title={editable ? undefined : 'Faqat bugungi davomatni belgilash mumkin'}
+                            className={`mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status, editable)} ${
+                              editable ? 'cursor-pointer' : 'cursor-default'
+                            }`}
+                          >
+                            {cellIcon(status)}
+                          </button>
+                        </td>
+                      );
+                    })}
+
+                    {/* Summary */}
+                    <td className="sticky right-0 z-10 bg-[var(--surface)] px-4 py-2.5 border-l border-[var(--border)] text-center">
+                      <span className="text-[13px] font-bold tabular-nums text-[var(--text-secondary)]">
+                        {presentCount}/{DAYS.length}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
