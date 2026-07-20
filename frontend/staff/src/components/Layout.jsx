@@ -209,7 +209,7 @@ function Sidebar({
   return (
     <aside
       {...hoverProps}
-      className="fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-200 ease-out overflow-hidden"
+      className="fixed top-0 left-0 h-full z-40 flex flex-col transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden"
       style={{
         width: collapsed ? 72 : 256,
         background: 'linear-gradient(180deg, #0f1a0a 0%, #16210f 40%, #1a2912 100%)',
