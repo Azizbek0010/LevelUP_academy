@@ -2,58 +2,15 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Wallet, TriangleAlert, Receipt, TrendingUp, Users, GraduationCap, Clock,
-  UserPlus, FolderPlus, CreditCard, FileText, ArrowUpRight, ArrowDownRight,
-  BarChart3, Sparkles, Activity, Zap,
-  Sun, Moon, CloudSun, Sunrise,
+  UserPlus, FolderPlus, CreditCard, FileText, ArrowUpRight, BarChart3,
+  Sparkles, Activity, Zap, Sun, Moon, CloudSun, Sunrise
 } from 'lucide-react';
 import { fmt, money } from '../../format.js';
 import { useAdminDashboard } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
-
-/* ═══════════════ Premium KPI Card ═══════════════ */
-function KpiCard({ Icon, title, value, trend, trendLabel, color, gradient, delay }) {
-  const isPositive = trend >= 0;
-  return (
-    <div className={`animate-fade-in ${delay}`}>
-      <div className="glass-strong rounded-[20px] p-5 card-hover-premium group relative overflow-hidden">
-        {/* Gradient accent */}
-        <div
-          className="absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"
-          style={{ background: gradient }}
-        />
-        <div className="relative">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em]">
-              {title}
-            </span>
-            <div
-              className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
-              style={{ background: `${color}15`, color }}
-            >
-              <Icon size={20} strokeWidth={2.2} />
-            </div>
-          </div>
-          <div className="text-[26px] font-extrabold text-[var(--text)] tabular-nums leading-none tracking-[-0.03em]">
-            {value}
-          </div>
-          {trend != null && (
-            <div className="flex items-center gap-1.5 mt-3">
-              <span className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${isPositive ? 'text-[#2ECC71]' : 'text-[#E8543E]'}`}>
-                {isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                {isPositive ? '+' : ''}{typeof trend === 'number' ? trend.toFixed(1) : trend}%
-              </span>
-              {trendLabel && (
-                <span className="text-[10px] text-[var(--text-muted)]">{trendLabel}</span>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+import { Kpi } from '../mentor/_ui.jsx';
 
 /* ═══════════════ Quick Action Card ═══════════════ */
 function QuickAction({ to, label, Icon, color, description }) {
@@ -164,37 +121,29 @@ export default function AdminDashboard() {
 
       {/* ═══ KPI Cards ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
+        <Kpi
           Icon={TrendingUp}
           title="Общий доход"
           value={money(t.revenue)}
-          color="#2ECC71"
-          gradient="linear-gradient(135deg, #2ECC71, #27AE60)"
-          delay="stagger-1"
+          tone="success"
         />
-        <KpiCard
+        <Kpi
           Icon={TriangleAlert}
           title="Долги"
           value={money(t.outstandingDebt)}
-          color="#F59E0B"
-          gradient="linear-gradient(135deg, #F59E0B, #E67E22)"
-          delay="stagger-2"
+          tone="warning"
         />
-        <KpiCard
+        <Kpi
           Icon={Receipt}
           title="Расходы"
           value={money(t.expenses)}
-          color="#E8543E"
-          gradient="linear-gradient(135deg, #E8543E, #C0392B)"
-          delay="stagger-3"
+          tone="danger"
         />
-        <KpiCard
+        <Kpi
           Icon={Wallet}
           title="Чистая прибыль"
           value={money(t.profit)}
-          color="#3B82F6"
-          gradient="linear-gradient(135deg, #3B82F6, #2980B9)"
-          delay="stagger-4"
+          tone="neutral"
         />
       </div>
 

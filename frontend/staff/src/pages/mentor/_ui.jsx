@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react';
-import { Search, Inbox, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Inbox, X, ArrowRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 /**
  * Общие кирпичики панели ментора.
@@ -148,6 +149,68 @@ export function Modal({ isOpen, onClose, title, children, actions }) {
       <div className="modal-backdrop" onClick={onClose} />
     </dialog>
   );
+}
+
+/* ── KPI-плитка ───────────────────────────────────────────────────────────
+   Плитка жила в ШЕСТИ копиях: `StatCard` в Students / Groups / Mentors /
+   Payments (байт-в-байт, отличались только пробелами) и почти такой же
+   `KpiCard` в Dashboard / Reports. Каждая копия принимала сырой hex и
+   градиент — в сумме 13 захардкоженных цветов, часть из них дублировалась
+   в разном регистре (`#8B5CF6` и `#8b5cf6`, `#3B82F6` и `#3b82f6`).
+
+   Здесь цвет задаётся СМЫСЛОМ, а не пикселем: `tone` → токен темы. Разница
+   с прежним подходом не косметическая: «Просрочено» остаётся тревожным при
+   любой смене темы, а «Всего» перестаёт притворяться особенным только
+   потому, что кому-то был симпатичен синий. Плитки различает иконка и
+   подпись — как в панели ментора, откуда эта форма и взята. */
+const KPI_TONES = {
+  neutral: 'bg-primary/10 text-primary',
+  success: 'bg-success/10 text-success',
+  warning: 'bg-warning/10 text-warning',
+  danger: 'bg-error/10 text-error',
+};
+
+export function Kpi({ Icon, title, value, unit, tone = 'neutral', trend, trendLabel, to }) {
+  const body = (
+    <div className="p-4">
+      <div className="flex items-center gap-2.5">
+        <span
+          className={`w-8 h-8 rounded-lg grid place-items-center shrink-0 ${KPI_TONES[tone] ?? KPI_TONES.neutral}`}
+        >
+          <Icon size={16} strokeWidth={2.2} />
+        </span>
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
+          {title}
+        </span>
+        {to && <ArrowRight size={14} className="ml-auto text-base-content/25 shrink-0" />}
+      </div>
+      <div className="text-3xl font-extrabold mt-3 leading-none tabular-nums">{value}</div>
+      {unit && <div className="text-xs text-base-content/45 mt-1">{unit}</div>}
+      {trend != null && (
+        <div className="flex items-center gap-1.5 mt-2">
+          <span
+            className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${
+              trend >= 0 ? 'text-success' : 'text-error'
+            }`}
+          >
+            {trend >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+            {trend >= 0 ? '+' : ''}
+            {typeof trend === 'number' ? trend.toFixed(1) : trend}%
+          </span>
+          {trendLabel && <span className="text-[10px] text-base-content/40">{trendLabel}</span>}
+        </div>
+      )}
+    </div>
+  );
+
+  if (to) {
+    return (
+      <Link to={to} className="card bg-base-100 card-hover-premium hover:border-primary/40 block">
+        {body}
+      </Link>
+    );
+  }
+  return <div className="card bg-base-100">{body}</div>;
 }
 
 /* ── Скелет строки списка ─────────────────────────────────────────────── */

@@ -4,7 +4,7 @@ import { useAuth } from '../../auth.jsx';
 import { useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, EmptyState, RowSkeleton } from '../mentor/_ui.jsx';
+import { Avatar, EmptyState, Kpi, RowSkeleton } from '../mentor/_ui.jsx';
 
 const fullName = (m) =>
   [m.firstName || m.first_name, m.lastName || m.last_name].filter(Boolean).join(' ') || '—';
@@ -17,26 +17,6 @@ const STATUS_COLORS = {
 };
 
 /* ═══════════════ Stat Card ═══════════════ */
-function StatCard({ Icon, label, value, color, gradient, delay }) {
-  return (
-    <div className={`animate-fade-in ${delay}`}>
-      <div className="glass-strong rounded-[16px] p-4 group relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-16 h-16 rounded-full blur-2xl opacity-15 group-hover:opacity-25 transition-opacity duration-500" style={{ background: gradient }} />
-        <div className="relative flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
-            style={{ background: `${color}15`, color }}>
-            <Icon size={18} strokeWidth={2.2} />
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.05em]">{label}</div>
-            <div className="text-[20px] font-extrabold text-[var(--text)] tabular-nums leading-none mt-0.5">{value}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* Грейд ментора. Меняется только отсюда: сам ментор в своём профиле видит его
    как read-only — PATCH /api/users/me это поле не принимает. */
 const GRADES = [
@@ -205,9 +185,9 @@ export default function AdminMentors() {
 
       {/* ═══ Stats ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard Icon={Users} label="Всего" value={rows.length} color="#3B82F6" gradient="linear-gradient(135deg,#3B82F6,#2980B9)" delay="stagger-1" />
-        <StatCard Icon={UserCheck} label="Активные" value={activeCount} color="#2ECC71" gradient="linear-gradient(135deg,#2ECC71,#27AE60)" delay="stagger-2" />
-        <StatCard Icon={UserX} label="Заморожены" value={frozenCount} color="#E8543E" gradient="linear-gradient(135deg,#E8543E,#C0392B)" delay="stagger-3" />
+        <Kpi Icon={Users} title="Всего" value={rows.length}  tone="neutral" />
+        <Kpi Icon={UserCheck} title="Активные" value={activeCount}  tone="success" />
+        <Kpi Icon={UserX} title="Заморожены" value={frozenCount}  tone="danger" />
       </div>
 
       {/* ═══ Mentor Cards ═══ */}

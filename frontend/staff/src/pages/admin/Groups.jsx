@@ -5,33 +5,13 @@ import { useAuth } from '../../auth.jsx';
 import { useAdminGroups, useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, SearchInput, EmptyState, RowSkeleton } from '../mentor/_ui.jsx';
+import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput } from '../mentor/_ui.jsx';
 
 const isArchived = (g) => g.isArchived ?? g.is_archived ?? false;
 const MAX_STUDENTS = 15;
 const emptyForm = { name: '', mentorId: '', maxStudents: MAX_STUDENTS };
 
 /* ═══════════════ Stat Card ═══════════════ */
-function StatCard({ Icon, label, value, color, gradient, delay }) {
-  return (
-    <div className={`animate-fade-in ${delay}`}>
-      <div className="glass-strong rounded-[16px] p-4 group relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-16 h-16 rounded-full blur-2xl opacity-15 group-hover:opacity-25 transition-opacity duration-500" style={{ background: gradient }} />
-        <div className="relative flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
-            style={{ background: `${color}15`, color }}>
-            <Icon size={18} strokeWidth={2.2} />
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.05em]">{label}</div>
-            <div className="text-[20px] font-extrabold text-[var(--text)] tabular-nums leading-none mt-0.5">{value}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ═══════════════ Group Card ═══════════════ */
 function GroupCard({ g, onArchive }) {
   const archived = isArchived(g);
@@ -149,9 +129,9 @@ export default function AdminGroups() {
 
       {/* ═══ Stats ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard Icon={FolderOpen} label="Всего" value={rows.length} color="#3B82F6" gradient="linear-gradient(135deg,#3B82F6,#2980B9)" delay="stagger-1" />
-        <StatCard Icon={Users} label="Активные" value={activeGroups} color="#2ECC71" gradient="linear-gradient(135deg,#2ECC71,#27AE60)" delay="stagger-2" />
-        <StatCard Icon={Archive} label="В архиве" value={archivedGroups} color="#F59E0B" gradient="linear-gradient(135deg,#F59E0B,#E67E22)" delay="stagger-3" />
+        <Kpi Icon={FolderOpen} title="Всего" value={rows.length}  tone="neutral" />
+        <Kpi Icon={Users} title="Активные" value={activeGroups}  tone="success" />
+        <Kpi Icon={Archive} title="В архиве" value={archivedGroups}  tone="warning" />
       </div>
 
       {/* ═══ Search + View Toggle ═══ */}

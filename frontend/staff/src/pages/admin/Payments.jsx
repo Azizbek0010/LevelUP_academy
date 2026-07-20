@@ -1,9 +1,9 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Wallet, CreditCard, Banknote, Clock, CheckCircle2, AlertTriangle, AlertCircle,
-  TrendingUp, Search, ChevronLeft, ChevronRight, Plus, X, FileText, Upload,
-  RotateCcw, Ban, Info, Download, Check,
+  Wallet, CreditCard, Banknote, Clock, CheckCircle2, AlertTriangle,
+  AlertCircle, TrendingUp, Search, ChevronLeft, ChevronRight, Plus, X,
+  Upload, RotateCcw, Ban, Info
 } from 'lucide-react';
 import { money, dateShort } from '../../format.js';
 import { useAuth } from '../../auth.jsx';
@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminInvoices, useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, RowSkeleton } from '../mentor/_ui.jsx';
+import { Avatar, Kpi, RowSkeleton } from '../mentor/_ui.jsx';
 
 const STATUS = {
   paid: { label: 'Оплачен', bg: '#2ECC7115', text: '#2ECC71', icon: CheckCircle2 },
@@ -30,26 +30,6 @@ const STATUS_LABELS = {
 const METHODS = { cash: 'Наличные', card: 'Карта', transfer: 'Перевод' };
 
 /* ══════════ StatCard ══════════ */
-function StatCard({ Icon, label, value, color, gradient, delay }) {
-  return (
-    <div className={`animate-fade-in ${delay}`}>
-      <div className="glass-strong rounded-[16px] p-4 group relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-16 h-16 rounded-full blur-2xl opacity-15 group-hover:opacity-25 transition-opacity" style={{ background: gradient }} />
-        <div className="relative flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
-            style={{ background: `${color}15`, color }}>
-            <Icon size={18} strokeWidth={2.2} />
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.05em]">{label}</div>
-            <div className="text-[20px] font-extrabold text-[var(--text)] tabular-nums leading-none mt-0.5">{value}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ══════════ SplitPartsForm (reused in pay + ad-hoc modals) ══════════ */
 function SplitPartsForm({ parts, onChange, onAdd, onRemove, maxParts = 5 }) {
   return (
@@ -395,10 +375,10 @@ export default function AdminPayments() {
 
       {/* ═══ Stats ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard Icon={TrendingUp} label="Всего счетов" value={allRows.length} color="#3B82F6" gradient="linear-gradient(135deg,#3B82F6,#2980B9)" delay="stagger-1" />
-        <StatCard Icon={CheckCircle2} label="Оплачено" value={stats.paid} color="#2ECC71" gradient="linear-gradient(135deg,#2ECC71,#27AE60)" delay="stagger-2" />
-        <StatCard Icon={Clock} label="Ожидает" value={stats.waiting} color="#F59E0B" gradient="linear-gradient(135deg,#F59E0B,#E67E22)" delay="stagger-3" />
-        <StatCard Icon={AlertTriangle} label="Просрочено" value={stats.overdue} color="#E8543E" gradient="linear-gradient(135deg,#E8543E,#C0392B)" delay="stagger-4" />
+        <Kpi Icon={TrendingUp} title="Всего счетов" value={allRows.length}  tone="neutral" />
+        <Kpi Icon={CheckCircle2} title="Оплачено" value={stats.paid}  tone="success" />
+        <Kpi Icon={Clock} title="Ожидает" value={stats.waiting}  tone="warning" />
+        <Kpi Icon={AlertTriangle} title="Просрочено" value={stats.overdue}  tone="danger" />
       </div>
 
       {/* ═══ Invoice List ═══ */}

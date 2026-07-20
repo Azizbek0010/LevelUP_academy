@@ -1,8 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import {
-  BarChart3, TrendingUp, Users, AlertTriangle, DollarSign,
-  Activity, Calendar, Filter, Search, Download, X, RefreshCw,
-  Banknote, ChevronRight,
+  BarChart3, TrendingUp, Users, AlertTriangle, Activity, Filter, Search,
+  Download, X, RefreshCw, Banknote
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -11,39 +10,11 @@ import {
 import { money, fmt } from '../../format.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminReports } from '../../queries.js';
-import { RowSkeleton } from '../mentor/_ui.jsx';
+import { Kpi, RowSkeleton } from '../mentor/_ui.jsx';
 
 const COLORS = ['#2ECC71', '#E8543E', '#3B82F6', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899'];
 
 /* ═══════════════ KPI Card ═══════════════ */
-function KpiCard({ Icon, title, value, color, gradient, delay, subtitle }) {
-  return (
-    <div className={`animate-fade-in ${delay}`}>
-      <div className="glass-strong rounded-[20px] p-5 card-hover-premium group relative overflow-hidden">
-        <div
-          className="absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"
-          style={{ background: gradient }}
-        />
-        <div className="relative">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em]">{title}</span>
-            <div
-              className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
-              style={{ background: `${color}15`, color }}
-            >
-              <Icon size={20} strokeWidth={2.2} />
-            </div>
-          </div>
-          <div className="text-[26px] font-extrabold text-[var(--text)] tabular-nums leading-none tracking-[-0.03em]">{value}</div>
-          {subtitle && (
-            <div className="text-[11px] mt-1.5 text-[var(--text-muted)]">{subtitle}</div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ═══════════════ Custom Tooltip ═══════════════ */
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -334,39 +305,31 @@ export default function AdminReports() {
 
       {/* ═══ KPI Cards ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
+        <Kpi
           Icon={TrendingUp}
           title="Jami daromad"
           value={money(totalRevenue)}
-          color="#2ECC71"
-          gradient="linear-gradient(135deg,#2ECC71,#27AE60)"
-          delay="stagger-1"
+          tone="success"
         />
-        <KpiCard
+        <Kpi
           Icon={AlertTriangle}
           title="Jami qarz"
           value={money(totalDebt)}
-          color="#E8543E"
-          gradient="linear-gradient(135deg,#E8543E,#C0392B)"
-          delay="stagger-2"
-          subtitle={groupsWithDebt > 0 ? `${groupsWithDebt} ta guruhda` : ''}
+          unit={groupsWithDebt > 0 ? `${groupsWithDebt} ta guruhda` : ''}
+          tone="danger"
         />
-        <KpiCard
+        <Kpi
           Icon={Users}
           title="Talabalar"
           value={fmt(totalStudents)}
-          color="#3B82F6"
-          gradient="linear-gradient(135deg,#3B82F6,#2980B9)"
-          delay="stagger-3"
-          subtitle={`${byGroup.length} ta guruh`}
+          unit={`${byGroup.length} ta guruh`}
+          tone="neutral"
         />
-        <KpiCard
+        <Kpi
           Icon={BarChart3}
           title="O'rtacha daromad"
           value={money(avgRevenue)}
-          color="#8B5CF6"
-          gradient="linear-gradient(135deg,#8B5CF6,#6C3483)"
-          delay="stagger-4"
+          tone="neutral"
         />
       </div>
 
