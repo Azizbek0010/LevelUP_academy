@@ -179,6 +179,7 @@ export default function Expenses() {
   const [dateTo, setDateTo] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState(null);
   const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', paymentMethod: 'Naqt' });
@@ -317,6 +318,7 @@ export default function Expenses() {
   const openModal = () => {
     const today = new Date().toISOString().split('T')[0];
     setFormData({ category: 'Other', amount: '', spentAt: today, note: '', paymentMethod: 'Naqt' });
+    setEditingId(null);
     setError(null);
     setModalOpen(true);
   };
@@ -334,35 +336,43 @@ export default function Expenses() {
       note: expense.note || '',
       paymentMethod: getPaymentMethod(expense) !== '—' ? getPaymentMethod(expense) : 'Naqt',
     });
+    setEditingId(expense.id);
     setError(null);
     setModalOpen(true);
-    // TODO: Backend has no PATCH/PUT /admin/expenses/:id endpoint.
-    // Saving the edit will call handleSave which calls createExpense (creates a new expense).
-    // To support editing, a PATCH /admin/expenses/:id endpoint needs to be added in backend/src/modules/admin/admin.routes.js
-    // and a corresponding updateExpense function in adminService.js:
-    //   export const updateExpense = (id, data) => api.patch(`/admin/expenses/${id}`, data).then((r) => r.data);
   };
 
   const handleSave = useCallback(async () => {
     setSaving(true);
     setError(null);
     try {
-      // Uses api.adminCreateExpense(token, body) from api.js
-      await api.adminCreateExpense(token, {
+      const body = {
         category: formData.category,
         amount: Number(formData.amount),
         spentAt: formData.spentAt || undefined,
         note: formData.note || undefined,
-      });
+      };
+
+      if (editingId) {
+        // Backendda hali PATCH /admin/expenses/:id yo'q — Karisga aytish kerak
+        await api.adminUpdateExpense(token, editingId, body);
+      } else {
+        await api.adminCreateExpense(token, body);
+      }
+      setEditingId(null);
       setModalOpen(false);
       await loadExpenses();
     } catch (err) {
-      console.error('Create expense failed:', err);
-      setError(err.response?.data?.message || err.message || "Xarajat qo'shishda xatolik");
+      console.error('Save expense failed:', err);
+      const msg = err.response?.data?.message || err.message;
+      if (editingId && err.status === 404) {
+        setError("Tahrirlash hali ishlamaydi — backendda PATCH yo'q. Karisga xabar bering.");
+      } else {
+        setError(msg || "Xarajatni saqlashda xatolik");
+      }
     } finally {
       setSaving(false);
     }
-  }, [formData, loadExpenses, token]);
+  }, [editingId, formData, loadExpenses, token]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
@@ -1028,7 +1038,7 @@ export default function Expenses() {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="modal-box glass-strong max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setModalOpen(false)}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajat qo'shish</h3>
+          <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">{editingId ? 'Xarajatni tahrirlash' : 'Xarajat qo\'shish'}</h3>
           <div className="space-y-5">
             <div>
               <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">Kategoriya *</label>
@@ -1126,7 +1136,7 @@ export default function Expenses() {
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     Saqlanmoqda...
                   </span>
-                ) : "Qo'shish"}
+                ) : editingId ? "Saqlash" : "Qo'shish"}
               </button>
             </div>
           </div>

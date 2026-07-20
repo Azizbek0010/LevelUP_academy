@@ -292,6 +292,8 @@ body {
   background: var(--danger-light) !important;
   border-color: var(--danger) !important;
   color: var(--danger) !important;
+}
+
 /* Фон рисуют Layout и страницы — html/body не должны просвечивать своим */
 html,
 body,
@@ -493,12 +495,12 @@ body,
 html {
   scrollbar-color: rgba(198, 255, 52, 0.15) transparent;
   scrollbar-width: thin;
+}
+
 /* Клавиатурная доступность: видимый фокус на всех интерактивных элементах.
    :focus-visible не срабатывает на клик мышью — визуального шума не добавляет. */
 :where(a, button, input, textarea, select, [tabindex]):focus-visible {
   outline: 2px solid var(--green);
   outline-offset: 2px;
   border-radius: 6px;
-}
-}
 }

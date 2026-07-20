@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Bell, Sun, Moon, ChevronLeft, ChevronRight, X,
-  LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu,
-  Bell, ChevronLeft, ChevronRight, ChevronDown, X,
-  LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu, Volume2, VolumeX,
+  Bell, Sun, Moon, ChevronDown, ChevronRight,
+  User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu,
+  Volume2, VolumeX,
 } from 'lucide-react';
 import {
   HiOutlineSquares2X2, HiOutlineBuildingOffice2, HiOutlineUsers,
@@ -20,7 +19,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
 import Avatar from './Avatar.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
-import { disconnectSocket } from '../socket.js';
 import { disconnectSocket, getSocket } from '../socket.js';
 import { useMentorGroups, useChatContacts } from '../queries.js';
 import {
@@ -211,14 +209,12 @@ function Sidebar({
 
   return (
     <aside
-      className="fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300 ease-in-out"
-      {...hoverProps}
       className="fixed top-0 left-0 h-full z-40 flex flex-col transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden"
+      {...hoverProps}
       style={{
         width: collapsed ? 72 : 256,
         background: 'linear-gradient(180deg, #0f1a0a 0%, #16210f 40%, #1a2912 100%)',
         borderRight: '1px solid rgba(198, 255, 52, 0.08)',
-        boxShadow: '4px 0 24px rgba(0, 0, 0, 0.3)',
         // Когда панель выехала поверх страницы, тень должна быть заметнее:
         // иначе не читается, что это слой над контентом, а не раздвинувшая его колонка.
         boxShadow: overlaying
@@ -327,9 +323,8 @@ function Sidebar({
         })}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className="px-3 pb-3">
-      {/* Кнопка теперь управляет не «свёрнут/развёрнут», а «закреплён ли
+      {/* Collapse toggle.
+          Кнопка теперь управляет не «свёрнут/развёрнут», а «закреплён ли
           открытым». Панель и так раскрывается на наведении — кнопка нужна,
           чтобы зафиксировать её и не гонять мышь к краю каждый раз. */}
       <div className="px-3 pb-3 shrink-0">
@@ -340,7 +335,7 @@ function Sidebar({
             color: 'rgba(232,239,226,0.35)',
             background: 'rgba(198,255,52,0.04)',
           }}
-          title={pinned ? 'Panelni yig\'ish' : 'Panelni ochiq qoldirish'}
+          title={pinned ? "Panelni yig'ish" : 'Panelni ochiq qoldirish'}
           aria-pressed={pinned}
         >
           {pinned ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
@@ -355,14 +350,6 @@ function Sidebar({
   );
 }
 
-/* ──────────────────── HEADER ──────────────────── */
-function Header({ sidebarWidth, onMobileToggle }) {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const role = user?.role;
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('lu-theme') || 'system');
-  const userMenuRef = useRef(null);
 /* ──────────────────── УВЕДОМЛЕНИЯ ────────────────────
    Колокольчик раньше был картинкой: жёстко нарисованная «3» и клик, который
    ничего не открывал.
@@ -372,6 +359,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
    действительно существует и требует реакции: непрочитанные сообщения от
    родителей. Цифра на значке — их настоящее количество, а не константа.
    Появится таблица notifications — сюда добавится второй источник. */
+
 /** «14:30» сегодня, «Kecha» вчера, дальше — дата. Как в списке чата. */
 function formatWhen(iso) {
   if (!iso) return '';
@@ -418,6 +406,7 @@ function Notifications() {
     socket.on('chat:dm:message', onMessage);
     return () => socket.off('chat:dm:message', onMessage);
   }, [hasChat, token, qc, user?.id]);
+
   const unread = contacts.filter((c) => (c.unread_count ?? 0) > 0);
   const total = unread.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
 
@@ -580,7 +569,33 @@ function Header({ sidebarWidth, onMobileToggle }) {
   const navigate = useNavigate();
   const role = user?.role;
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('lu-theme') || 'system');
   const userMenuRef = useRef(null);
+
+  // Apply theme on mount and whenever theme changes
+  useEffect(() => {
+    const apply = (t) => {
+      document.documentElement.classList.remove('dark', 'light');
+      if (t === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else if (t === 'light') {
+        document.documentElement.classList.add('light');
+      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      }
+    };
+    apply(theme);
+  }, [theme]);
+
+  const cycleTheme = () => {
+    const order = ['light', 'dark', 'system'];
+    const idx = order.indexOf(theme);
+    const next = order[(idx + 1) % order.length];
+    setTheme(next);
+    localStorage.setItem('lu-theme', next);
+  };
+
+  const themeIcon = theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />;
 
   // Close user menu on outside click
   useEffect(() => {
@@ -631,27 +646,6 @@ function Header({ sidebarWidth, onMobileToggle }) {
         {themeIcon}
       </button>
 
-      {/* Notification bell */}
-      <button
-        className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105"
-        style={{
-          color: 'var(--text-secondary)',
-          background: 'var(--bg)',
-          border: '1px solid var(--border)',
-        }}
-      >
-        <Bell size={16} />
-        {/* Notification dot */}
-        <span
-          className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold"
-          style={{ background: '#ef4444', color: '#fff', border: '2px solid var(--surface)' }}
-        >
-          3
-        </span>
-      </button>
-
-      {/* Divider */}
-      <div className="w-px h-8 hidden sm:block" style={{ background: 'var(--border)' }} />
       {/* Поиск и счётчик «онлайн» отсюда убраны.
           Поиск ничего не искал: поле не было ни к чему подключено, только
           подсвечивалось при фокусе — то есть обещало функцию, которой нет.
@@ -885,5 +879,4 @@ export default function Layout() {
       </main>
     </div>
   );
-}
 }
