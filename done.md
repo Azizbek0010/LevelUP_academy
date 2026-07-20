@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 21.07.2026 00:16 (UTC+5, Toshkent vaqti)
-> Statistika: 137/205 task tugallangan (66%)
+> Oxirgi yangilanish: 21.07.2026 01:12 (UTC+5, Toshkent vaqti)
+> Statistika: 139/205 task tugallangan (67%)
 
 ---
 
-## Progress: [#############.......] 66%
+## Progress: [#############.......] 67%
 
 ## Tugallangan vazifalar
 
@@ -168,6 +168,9 @@
 - [x] ADMIN: Expenses CRUD — Expenses.jsx + PDF eksport (Abduloh, jspdf)
 - [x] ADMIN: Reports — Reports.jsx, GET /api/admin/reports ga ulangan
 
+### Frontend — YANGI TASKLAR: Sardor / Kozim / Alish 🆕 2026-07-19
+- [x] FE-CHAT-ADMIN ✅ BAJARILDI 2026-07-21 (Karis): chat endi HAQIQIY.
+
 ### Frontend — Mentor (Sardor, Kozim, Alish)
 - [x] MENTOR: Dashboard (groups, upcoming lessons)
 - [x] MENTOR: Attendance journal — Attendance.jsx (726 qator, api ga ulangan)
@@ -204,10 +207,13 @@
 - [x] METHODIST: Analytics
 - [x] METHODIST: Dashboard
 
+### Frontend — Design / UX 🆕 EGALARI BELGILANDI (2026-07-19)
+- [x] UI-SHARED ✅ BAJARILDI 2026-07-21 (Karis): admin sahifalari endi `mentor/_ui.jsx` dan
+
 ---
 
 ## Jamoa boyicha
 
 - Karis (Backend): 85 task
 - Abdulaziz (Backend): 59 task
-- Frontend jamoasi: 48 task
+- Frontend jamoasi: 50 task

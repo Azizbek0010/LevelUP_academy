@@ -519,7 +519,16 @@
 
 ### 🔴 KOZIM — admin/Chat.jsx ni jonlantirish (eng katta ish, BLOKLANMAGAN)
 
-- [ ] FE-CHAT-ADMIN: `staff/src/pages/admin/Chat.jsx` (1275 qator) — **soxta chat**.
+- [x] FE-CHAT-ADMIN ✅ BAJARILDI 2026-07-21 (Karis): chat endi HAQIQIY.
+      Yechim — nusxa ko'chirish EMAS, umumiy komponent: `components/StaffChat.jsx`
+      ni mentor va admin BIRGA ishlatadi (`variant` faqat matnlarni almashtiradi).
+      Sabab: rollar farqi faqat qamrovda, uni backend hisoblaydi
+      (`listStaffContacts` — mentorga guruhlari, adminga butun filial).
+      Jonli tekshirildi: kontaktlar BD dan keladi, yuborilgan xabar socket orqali
+      `chat_messages` ga admin `sender_id` bilan yozildi. Jami −1934 qator.
+      ⚠️ Olib tashlangan soxta funksiyalar (backend ularni QO'LLAB-QUVVATLAMAYDI):
+      xabarga javob, "yozmoqda" indikatori, yozishmani o'chirish, tarix bo'yicha qidiruv
+- [~] ~~FE-CHAT-ADMIN~~ (tarix uchun): `staff/src/pages/admin/Chat.jsx` (1275 qator) — **soxta chat**.
       Ichida 7 ta TODO va hardcode kontaktlar:
       ```js
       const initialContacts = [
@@ -536,7 +545,7 @@
 ### 🔴 SARDOR — o'lik kod va konsol tozalash
 
 - [ ] FE-DEAD-CODE: repo'da router'ga UMUMAN ulanmagan kod yotibdi, hammani chalg'itadi:
-      • `staff/src/pages/mentor/mentoor/` — 13 fayl, 98K, o'z tailwind.config.js si bilan
+      • ~~`staff/src/pages/mentor/mentoor/`~~ ✅ O'CHIRILDI 2026-07-21 (Karis, Kozim bilan kelishilgan)
       • `staff/src/pages/super/ComingSoon.jsx` — App.jsx da ishlatilmaydi
       • `main-admin/src/pages/Placeholder.jsx` — App.jsx da ishlatilmaydi
       ⚠️ `mentoor/` — Kozim'ning ishi. O'chirishdan OLDIN Karis va Kozim bilan kelishilsin
@@ -629,14 +638,27 @@
 
 - [ ] UI-DS (Sardor): Har bir panel FRONTEND-DESIGN-SYSTEM.md ga qat'iy rioya qiladi
       (laym #C6FF34, Manrope, qorong'i sidebar #1D2417, kartochka soyalari) — o'zboshimcha ranglar TAQIQLANADI
+      ✅ ADMIN QISMI BAJARILDI 2026-07-21 (Karis): admin panelida 651 ta klass-daraja
+      `var(--...)` mavzu tokenlariga o'tkazildi, `glass-strong` → `card bg-base-100`.
+      **Ildiz sabab topildi:** `index.css` `:root` da DaisyUI mavzusidagi AYNI qiymatlar
+      qayta e'lon qilingan edi (`--green` #40833B == `primary`, `--text` #1D2417 ==
+      `base-content`, `--surface` #fff == `base-100`, `--danger` #dc2626 == `error`) —
+      ya'ni bitta palitraning ikkita nusxasi. Brend rangini o'zgartirish ikki joyni
+      tahrirlashni talab qilardi. Yana `src/pages/admin/style.md` da Abdullohning
+      alohida "style guide"i yotgan edi (docs/archive ga ko'chirildi) — dizayn
+      shuning uchun ikkiga bo'lingan
+      ⚠️ QOLDI: ~105 ta inline `style={{ ... 'var(--x)' }}`. Ular BIR XIL ko'rinadi
+      (qiymatlar bir xil), lekin hali `index.css` ga bog'liq. Har birini `className` ga
+      ko'chirish kerak — skript bilan ko'r-ko'rona qilinmadi
 - [ ] UI-STATES (HAR KIM o'z paneli bo'yicha): har sahifada 3 holat — Skeleton (yuklanish),
       EmptyState (bo'sh ma'lumot), Error (xato + retry). Bu markazlashgan vazifa EMAS:
       kim qaysi sahifada ishlayotgan bo'lsa, o'sha sahifaning uch holatini o'zi yopadi
-- [ ] UI-SHARED (Abduloh): Umumiy komponentlar bitta joyda — har panel o'zinikini YASAMAYDI.
-      ⚠️ Audit 2026-07-19: tayyor komponentlar `frontend/staff/src/pages/mentor/_ui.jsx` da
-      (Panel, EmptyState, RowSkeleton, Avatar, SearchInput, GroupSelect), lekin **admin sahifalari
-      bu fayldan UMUMAN foydalanmayapti** — har biri o'zinikini yasagan, dizayn shuning uchun har xil.
-      (Eski matnda "main-admin dagi namunadan" deyilgan edi — bu eskirgan, manba endi `_ui.jsx`)
+- [x] UI-SHARED ✅ BAJARILDI 2026-07-21 (Karis): admin sahifalari endi `mentor/_ui.jsx` dan
+      foydalanadi. KPI-plitka OLTI nusxada yotgan edi — `StatCard` Students/Groups/Mentors/
+      Payments da (bayt-ma-bayt bir xil) + deyarli xuddi shunday `KpiCard` Dashboard/Reports da.
+      Bittasi `_ui.jsx` ga ko'chirildi. Nusxalar xom hex qabul qilardi: 13 ta qotirilgan rang,
+      ba'zisi turli registrda takrorlangan (`#8B5CF6` va `#8b5cf6`). Endi `tone`
+      (neutral/success/warning/danger) → mavzu tokeni
 - [ ] UI-RESPONSIVE (Alish): 1280 / 768 / 375 px kengliklar, gorizontal scroll yo'q
 - [ ] UI-TABLES (Hamidula): tabular-nums raqamlar, hover-podsvetka, status-pilyulalar (design-system bo'yicha)
 - [ ] UI-CACHE (Kozim): barcha mutatsiyalardan keyin TanStack Query cache invalidation +
