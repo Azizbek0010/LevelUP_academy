@@ -1,4 +1,5 @@
-import { Search, Inbox } from 'lucide-react';
+import { useRef, useEffect } from 'react';
+import { Search, Inbox, X } from 'lucide-react';
 
 /**
  * Общие кирпичики панели ментора.
@@ -111,6 +112,41 @@ export function Panel({ title, icon: Icon, action, children, bodyClass = 'p-4' }
       )}
       <div className={bodyClass}>{children}</div>
     </section>
+  );
+}
+
+/* ── Modal (overlay + box + backdrop) ────────────────────────────────────
+   Везде в админке/менторе были сырые `<dialog className="modal modal-open">`.
+   Теперь одна точка сборки: открытие через `isOpen`, закрытие по X / backdrop /
+   Escape (браузерный `<dialog>` сам ловит Escape, но для единообразия
+   прописано и здесь). */
+export function Modal({ isOpen, onClose, title, children, actions }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (isOpen) el.showModal?.(); else el.close?.();
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+  return (
+    <dialog ref={ref} className="modal modal-open" onClose={onClose}>
+      <div className="modal-box glass-strong border border-[var(--border)]">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-lg">{title}</h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors"
+            aria-label="Yopish"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        {children}
+        {actions && <div className="modal-action">{actions}</div>}
+      </div>
+      <div className="modal-backdrop" onClick={onClose} />
+    </dialog>
   );
 }
 
