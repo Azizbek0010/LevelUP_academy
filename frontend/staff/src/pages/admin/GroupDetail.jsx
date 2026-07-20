@@ -140,17 +140,16 @@ function AttendanceTab({ groupId, token }) {
 
   const dateKeyFor = (day) => `${year}-${pad(month + 1)}-${pad(day)}`;
 
-  /* ── Toggle cell: absent → present → late → absent ── */
+  /* ── Toggle cell: absent → present → late → absent (all days editable) ── */
   const toggleDay = useCallback((studentId, day) => {
     const dateKey = dateKeyFor(day);
-    if (dateKey !== todayStr) return;
     const key = `${studentId}_${dateKey}`;
     const cycle = { absent: 'present', present: 'late', late: 'absent' };
     const next = cycle[mapRef.current[key]] || 'present';
     mapRef.current = { ...mapRef.current, [key]: next };
     setAttendanceMap({ ...mapRef.current });
     queueSave(dateKey, studentId, next);
-  }, [todayStr, year, month, groupId, token]);
+  }, [year, month, groupId, token]);
 
   /* ── Auto-save with debounce ── */
   const flush = useCallback(async () => {
@@ -189,18 +188,12 @@ function AttendanceTab({ groupId, token }) {
   // Flush on unmount
   useEffect(() => () => { clearTimeout(flushTimer.current); flush(); }, [flush]);
 
-  /* ── Cell styles (matching mentor) ── */
-  const cellStyle = (status, editable) => {
-    if (status === 'present') {
-      return `bg-emerald-100 text-emerald-700 border-emerald-300${editable ? ' hover:bg-emerald-200' : ''}`;
-    }
-    if (status === 'late') {
-      return `bg-amber-200 text-amber-800 border-amber-400${editable ? ' hover:bg-amber-300' : ''}`;
-    }
-    if (status === 'absent') {
-      return `bg-red-500 text-white border-red-500${editable ? ' hover:bg-red-600' : ''}`;
-    }
-    return `border-gray-200 text-gray-300${editable ? ' hover:border-[var(--green)]/50 hover:bg-[var(--green)]/[0.05]' : ''}`;
+  /* ── Cell styles (all days editable) ── */
+  const cellStyle = (status) => {
+    if (status === 'present') return 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200';
+    if (status === 'late') return 'bg-amber-200 text-amber-800 border-amber-400 hover:bg-amber-300';
+    if (status === 'absent') return 'bg-red-500 text-white border-red-500 hover:bg-red-600';
+    return 'border-gray-200 text-gray-300 hover:border-[var(--green)]/50 hover:bg-[var(--green)]/[0.05]';
   };
 
   const cellIcon = (status) => {
@@ -373,7 +366,6 @@ function AttendanceTab({ groupId, token }) {
                     {currentChunk.map((d) => {
                       const dateKey = dateKeyFor(d);
                       const status = attendanceMap[`${sid}_${dateKey}`];
-                      const editable = dateKey === todayStr;
                       return (
                         <td
                           key={d}
@@ -381,11 +373,7 @@ function AttendanceTab({ groupId, token }) {
                         >
                           <button
                             onClick={() => toggleDay(sid, d)}
-                            disabled={!editable}
-                            title={editable ? undefined : 'Faqat bugungi davomatni belgilash mumkin'}
-                            className={`mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status, editable)} ${
-                              editable ? 'cursor-pointer' : 'cursor-default'
-                            }`}
+                            className={`mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors cursor-pointer hover:scale-105 active:scale-95 ${cellStyle(status)}`}
                           >
                             {cellIcon(status)}
                           </button>
