@@ -1,20 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Snowflake, Sun, Trash2, KeyRound, Search, GraduationCap, UserCheck, UserX, Copy, Check, Coins, LayoutGrid, List, Filter } from 'lucide-react';
+import { Plus, Snowflake, Sun, Trash2, KeyRound, GraduationCap, UserCheck, UserX, Copy, Check, Coins, LayoutGrid, List, Filter } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SkeletonTable } from '../../components/Skeleton.jsx';
+import { Avatar, SearchInput, EmptyState, RowSkeleton } from '../mentor/_ui.jsx';
 
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
-
-const initials = (s) => {
-  const f = s.firstName || s.first_name || '';
-  const l = s.lastName || s.last_name || '';
-  return ((f[0] || '') + (l[0] || '')).toUpperCase() || '?';
-};
 
 const emptyForm = { firstName: '', lastName: '', phone: '', parentPhone: '', age: '', gender: 'male', coins: 0, frozen: false };
 
@@ -58,9 +52,8 @@ function StudentCard({ s, onFreeze, onDelete, onRegen, onNavigate }) {
     <div className="glass-strong rounded-[16px] p-4 card-hover-premium group cursor-pointer" onClick={() => onNavigate?.(s.id)}>
       <div className="flex items-start gap-3.5">
         {/* Avatar */}
-        <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 text-[14px] font-extrabold transition-transform duration-300 group-hover:scale-105"
-          style={{ background: `${status.text}15`, color: status.text }}>
-          {initials(s)}
+        <div className="transition-transform duration-300 group-hover:scale-105">
+          <Avatar name={fullName(s)} size="lg" />
         </div>
 
         {/* Info */}
@@ -198,18 +191,12 @@ export default function AdminStudents() {
 
       {/* ═══ Search + View Toggle ═══ */}
       <div className="flex items-center gap-3 animate-fade-in stagger-3">
-        <div className="glass-strong rounded-[16px] p-1 flex-1">
-          <div className="flex items-center gap-2 px-4 py-2.5">
-            <Search size={16} className="text-[var(--text-muted)] shrink-0" />
-            <input
-              type="text"
-              className="flex-1 bg-transparent outline-none text-[13px] text-[var(--text)] placeholder:text-[var(--text-muted)]"
-              placeholder="Поиск по имени, фамилии или телефону…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Поиск по имени, фамилии или телефону…"
+          className="flex-1"
+        />
         {/* Status filter tabs */}
         <div className="hidden sm:flex items-center gap-1 p-1 rounded-[12px]" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           {[
@@ -251,22 +238,20 @@ export default function AdminStudents() {
 
       {/* ═══ Student List ═══ */}
       {isLoading ? (
-        <div className="mt-4"><SkeletonTable cols={5} /></div>
+        <RowSkeleton count={5} />
       ) : error ? (
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
       ) : filteredRows.length === 0 ? (
-        <div className="glass-strong rounded-[20px] p-12 text-center animate-fade-in">
-          <GraduationCap size={48} className="mx-auto mb-4 text-[var(--text-muted)] opacity-20" />
-          <p className="text-[15px] font-bold text-[var(--text-secondary)]">Нет студентов</p>
-          <p className="text-[12px] text-[var(--text-muted)] mt-1.5">
-            {search ? 'Попробуйте изменить запрос' : 'Добавьте первого студента'}
-          </p>
-          {!search && (
-            <button className="btn btn-primary btn-sm mt-4 gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
+        <EmptyState
+          icon={GraduationCap}
+          title={search ? 'Попробуйте изменить запрос' : 'Нет студентов'}
+          hint={search ? undefined : 'Добавьте первого студента'}
+          action={!search ? (
+            <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
               <Plus size={14} /> Добавить
             </button>
-          )}
-        </div>
+          ) : undefined}
+        />
       ) : viewMode === 'card' ? (
         /* Card view */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -295,10 +280,7 @@ export default function AdminStudents() {
                   <tr key={s.id} className="hover:bg-[var(--surface-hover)] cursor-pointer" onClick={() => navigate(`/students/${s.id}`)}>
                     <td>
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
-                          style={{ background: `${(STATUS_COLORS[s.status] || STATUS_COLORS.active).text}15`, color: (STATUS_COLORS[s.status] || STATUS_COLORS.active).text }}>
-                          {initials(s)}
-                        </div>
+                        <Avatar name={fullName(s)} size="sm" />
                         <span className="font-semibold text-[var(--text)]">{fullName(s)}</span>
                       </div>
                     </td>
