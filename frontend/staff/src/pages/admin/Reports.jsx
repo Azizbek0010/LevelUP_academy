@@ -171,10 +171,9 @@ export default function AdminReports() {
       <div className="space-y-6 pb-8 animate-page-enter">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <div className="w-1 h-7 rounded-full bg-primary" />
             <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Hisobotlar</h1>
           </div>
-          <p className="text-[13px] text-base-content/70 ml-4">Yuklanmoqda...</p>
+          <p className="text-[13px] text-base-content/70">Yuklanmoqda...</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -195,7 +194,6 @@ export default function AdminReports() {
       <div className="space-y-6 pb-8 animate-page-enter">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <div className="w-1 h-7 rounded-full bg-primary" />
             <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Hisobotlar</h1>
           </div>
         </div>
@@ -226,10 +224,9 @@ export default function AdminReports() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <div className="w-1 h-7 rounded-full bg-primary" />
             <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Hisobotlar</h1>
           </div>
-          <p className="text-[13px] text-base-content/70 ml-4">
+          <p className="text-[13px] text-base-content/70">
             Daromad va qarzlarni guruhlar bo'yicha tahlil qilish
           </p>
         </div>
@@ -338,7 +335,6 @@ export default function AdminReports() {
         {/* Bar Chart */}
         <div className="lg:col-span-2 card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-3">
           <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-1 h-6 rounded-full bg-primary" />
             <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Guruhlar bo'yicha daromad</h2>
           </div>
           {barData.length === 0 ? (
@@ -362,7 +358,6 @@ export default function AdminReports() {
         {/* Pie Chart */}
         <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-4">
           <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-1 h-6 rounded-full bg-[#8B5CF6]" />
             <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Daromad ulushi</h2>
           </div>
           {pieData.length === 0 ? (

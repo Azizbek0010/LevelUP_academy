@@ -152,7 +152,6 @@ export default function AdminDashboard() {
         {/* Branch Stats */}
         <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-3">
           <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-1 h-6 rounded-full bg-primary" />
             <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Показатели филиала</h2>
           </div>
           <div className="space-y-2.5">
@@ -165,7 +164,6 @@ export default function AdminDashboard() {
         {/* Monthly Overview */}
         <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-4">
           <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-1 h-6 rounded-full bg-[#3B82F6]" />
             <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">За этот месяц</h2>
           </div>
           <div className="space-y-2.5">
@@ -179,7 +177,6 @@ export default function AdminDashboard() {
       {/* ═══ Quick Actions ═══ */}
       <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-5">
         <div className="flex items-center gap-2.5 mb-5">
-          <div className="w-1 h-6 rounded-full bg-[#F59E0B]" />
           <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Быстрые действия</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -195,7 +192,6 @@ export default function AdminDashboard() {
       {/* ═══ Activity Feed ═══ */}
       <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-6">
         <div className="flex items-center gap-2.5 mb-5">
-          <div className="w-1 h-6 rounded-full bg-[#8B5CF6]" />
           <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Последняя активность</h2>
         </div>
         <div className="space-y-3">

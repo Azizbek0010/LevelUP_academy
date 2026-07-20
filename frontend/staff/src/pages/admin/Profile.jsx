@@ -133,7 +133,6 @@ export default function Profile() {
       {/* Personal info form */}
       <form onSubmit={handleSaveProfile} className="card bg-base-100 p-6 animate-fade-in stagger-1">
         <div className="flex items-center gap-2.5 mb-5">
-          <div className="w-1 h-6 rounded-full bg-primary" />
           <h2 className="text-[15px] font-extrabold" style={{ color: 'var(--text)' }}>Личные данные</h2>
         </div>
 
@@ -264,7 +263,6 @@ export default function Profile() {
       {/* Change password form */}
       <form onSubmit={handleChangePassword} className="card bg-base-100 p-6 animate-fade-in stagger-2">
         <div className="flex items-center gap-2.5 mb-5">
-          <div className="w-1 h-6 rounded-full bg-error" />
           <h2 className="text-[15px] font-extrabold" style={{ color: 'var(--text)' }}>Смена пароля</h2>
         </div>
 

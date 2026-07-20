@@ -532,10 +532,9 @@ export default function Expenses() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <div className="w-1 h-7 rounded-full bg-primary" />
             <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Xarajatlar</h1>
           </div>
-          <p className="text-[13px] text-base-content/70 ml-4">
+          <p className="text-[13px] text-base-content/70">
             Tashkilot xarajatlarini kuzatish, boshqarish va tahlil qilish
           </p>
         </div>
