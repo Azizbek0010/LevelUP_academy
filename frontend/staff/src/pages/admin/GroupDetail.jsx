@@ -2,8 +2,9 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, UserPlus, X, Users, GraduationCap, KeyRound, Phone,
-  CalendarDays, Check, Minus,
+  CalendarDays, Check, Minus, Clock,
   BookOpen, Plus, Star, MessageSquare, Send, Loader2,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import { useAuth } from '../../auth.jsx';
@@ -78,6 +79,20 @@ function AttendanceTab({ groupId, token }) {
     return all.filter((d) => lessonWeekdays.has(new Date(year, month, d).getDay()));
   }, [daysInMonth, lessonWeekdays, year, month]);
 
+  // Paginate into chunks of 15
+  const CHUNK_SIZE = 15;
+  const [pageIndex, setPageIndex] = useState(0);
+  const chunks = useMemo(() => {
+    const result = [];
+    for (let i = 0; i < DAYS.length; i += CHUNK_SIZE) result.push(DAYS.slice(i, i + CHUNK_SIZE));
+    return result;
+  }, [DAYS]);
+  const currentChunk = chunks[pageIndex] || [];
+  const totalPages = chunks.length;
+
+  // Reset page on month change
+  useEffect(() => { setPageIndex(0); }, [year, month]);
+
   // Build per-day attendance queries dynamically (useQueries — rules-of-hooks safe)
   const attendanceQueries = useMemo(() => DAYS.map((d) => {
     const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
@@ -125,12 +140,13 @@ function AttendanceTab({ groupId, token }) {
 
   const dateKeyFor = (day) => `${year}-${pad(month + 1)}-${pad(day)}`;
 
-  /* ── Toggle cell: present ⇄ absent ── */
+  /* ── Toggle cell: absent → present → late → absent ── */
   const toggleDay = useCallback((studentId, day) => {
     const dateKey = dateKeyFor(day);
     if (dateKey !== todayStr) return;
     const key = `${studentId}_${dateKey}`;
-    const next = mapRef.current[key] === 'present' ? 'absent' : 'present';
+    const cycle = { absent: 'present', present: 'late', late: 'absent' };
+    const next = cycle[mapRef.current[key]] || 'present';
     mapRef.current = { ...mapRef.current, [key]: next };
     setAttendanceMap({ ...mapRef.current });
     queueSave(dateKey, studentId, next);
@@ -178,6 +194,9 @@ function AttendanceTab({ groupId, token }) {
     if (status === 'present') {
       return `bg-emerald-100 text-emerald-700 border-emerald-300${editable ? ' hover:bg-emerald-200' : ''}`;
     }
+    if (status === 'late') {
+      return `bg-amber-200 text-amber-800 border-amber-400${editable ? ' hover:bg-amber-300' : ''}`;
+    }
     if (status === 'absent') {
       return `bg-red-500 text-white border-red-500${editable ? ' hover:bg-red-600' : ''}`;
     }
@@ -186,6 +205,7 @@ function AttendanceTab({ groupId, token }) {
 
   const cellIcon = (status) => {
     if (status === 'present') return <Check size={16} strokeWidth={3} />;
+    if (status === 'late') return <Clock size={14} strokeWidth={2.5} />;
     if (status === 'absent') return <X size={16} strokeWidth={3} />;
     return <Minus size={13} />;
   };
@@ -228,6 +248,12 @@ function AttendanceTab({ groupId, token }) {
             keldi
           </li>
           <li className="flex items-center gap-1.5">
+            <span className="w-6 h-6 rounded-lg border grid place-items-center bg-amber-200 text-amber-800 border-amber-400">
+              <Clock size={13} strokeWidth={2.5} />
+            </span>
+            kechga qoldi
+          </li>
+          <li className="flex items-center gap-1.5">
             <span className="w-6 h-6 rounded-lg border grid place-items-center bg-red-500 text-white border-red-500">
               <X size={13} strokeWidth={3} />
             </span>
@@ -251,6 +277,29 @@ function AttendanceTab({ groupId, token }) {
         </span>
       </div>
 
+      {/* ── Page navigation (15 days per page) ── */}
+      {totalPages > 1 && (
+        <div className="shrink-0 px-4 py-2 border-b border-[var(--border)] flex items-center justify-center gap-3">
+          <button
+            onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+            disabled={pageIndex === 0}
+            className="w-7 h-7 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <span className="text-xs font-bold text-[var(--text-muted)]">
+            {pageIndex + 1} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPageIndex((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={pageIndex >= totalPages - 1}
+            className="w-7 h-7 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
+
       {/* ── Calendar table ── */}
       <div className="overflow-auto flex-1 min-h-0">
         {students.length === 0 ? (
@@ -263,8 +312,8 @@ function AttendanceTab({ groupId, token }) {
                 <th className="sticky left-0 top-0 z-20 bg-[var(--surface)] w-[160px] sm:w-[240px] min-w-[160px] sm:min-w-[240px] px-3 sm:px-4 py-3 text-left text-[13px] font-bold text-[var(--text)]">
                   O'quvchi
                 </th>
-                {/* Day columns */}
-                {DAYS.map((d) => {
+                {/* Day columns (current 15-day chunk) */}
+                {currentChunk.map((d) => {
                   const key = dateKeyFor(d);
                   const isToday = key === todayStr;
                   return (
@@ -320,8 +369,8 @@ function AttendanceTab({ groupId, token }) {
                       </Link>
                     </td>
 
-                    {/* Day cells */}
-                    {DAYS.map((d) => {
+                    {/* Day cells (current 15-day chunk) */}
+                    {currentChunk.map((d) => {
                       const dateKey = dateKeyFor(d);
                       const status = attendanceMap[`${sid}_${dateKey}`];
                       const editable = dateKey === todayStr;
