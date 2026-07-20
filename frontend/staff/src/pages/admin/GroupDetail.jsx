@@ -56,12 +56,20 @@ function AttendanceTab({ groupId, token }) {
   const students = group.students || [];
 
   // Determine lesson weekdays from group schedule
+  // schedule may come as JSON string from DB — force parse to array
+  const scheduleArray = useMemo(() => {
+    const raw = group?.schedule;
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return []; } }
+    return [];
+  }, [group]);
+
   const lessonWeekdays = useMemo(() => {
-    const days = (group?.schedule ?? [])
+    const days = scheduleArray
       .map((s) => WEEKDAY_INDEX[String(s.day).toLowerCase()])
       .filter((d) => d !== undefined);
     return days.length ? new Set(days) : null;
-  }, [group]);
+  }, [scheduleArray]);
 
   // Lesson days only (filtered by schedule if available)
   const DAYS = useMemo(() => {
