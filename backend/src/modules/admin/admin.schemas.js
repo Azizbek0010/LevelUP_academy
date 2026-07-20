@@ -143,6 +143,44 @@ export const listGroupsQuery = z.object({
   limit: z.string().optional(),
 });
 
+// ---------- рабочее пространство группы (davomat / ДЗ / фикр) ----------
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');
+
+// davomat: чтение по дате урока
+export const groupAttendanceQuery = z.object({ date: isoDate });
+
+// davomat: массовая отметка. status = null → снять отметку (ученик «не отмечен»).
+// studentName фронт присылает для оптимистичного UI — на бэке имя берём из users,
+// поэтому здесь оно необязательно и игнорируется.
+export const markGroupAttendanceSchema = z.object({
+  lessonDate: isoDate,
+  records: z
+    .array(
+      z.object({
+        studentId: z.string().uuid('Invalid studentId'),
+        studentName: z.string().optional(),
+        status: z.enum(['present', 'absent', 'late', 'excused']).nullable(),
+      }),
+    )
+    .min(1, 'At least one record is required'),
+});
+
+// ДЗ: админ заводит короткое задание (заголовок + описание + срок).
+// maxScore/coinReward не задаются из этой формы — берутся дефолты таблицы.
+export const createGroupHomeworkSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(2000).optional(),
+  dueDate: isoDate.optional(),
+});
+
+// фикр-мулоҳоза: отзыв ученика/ментора о группе
+export const createGroupFeedbackSchema = z.object({
+  type: z.enum(['student', 'teacher']),
+  authorName: z.string().trim().max(120).optional(),
+  content: z.string().trim().min(1).max(2000),
+  rating: z.coerce.number().int().min(1).max(5),
+});
+
 // ---------- объявления ----------
 // Без groupId — рассылка всем активным студентам/родителям филиала.
 export const createAnnouncementSchema = z.object({

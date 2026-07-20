@@ -5,6 +5,11 @@ import { parsePagination, buildPageMeta } from '../../utils/pagination.js';
 import { genLoginCode, genNumericPassword } from '../auth/credentials.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
 import * as repo from './admin.repository.js';
+// Reuse: davomat и ДЗ живут в общих таблицах (attendance / homework), админская
+// GroupDetail работает с тем же data-layer, что и mentor — единая точка правды,
+// новых таблиц под них не заводим (решение команды 2026-07-19).
+import * as attendanceRepo from '../mentor/attendance/attendance.repository.js';
+import * as homeworkRepo from '../homework/homework.repository.js';
 
 const hash = (pwd) => argon2.hash(pwd, { type: argon2.argon2id });
 
@@ -511,6 +516,164 @@ function mapGroup(g) {
     isArchived: g.is_archived,
     createdAt: g.created_at,
   };
+}
+
+// ==================== РАБОЧЕЕ ПРОСТРАНСТВО ГРУППЫ ====================
+
+const TZ = 'Asia/Tashkent';
+// en-CA даёт ровно YYYY-MM-DD — тот же формат, в котором приходит lessonDate.
+const todayLocal = () => new Date().toLocaleDateString('en-CA', { timeZone: TZ });
+
+const fullName = (first, last) => `${first ?? ''} ${last ?? ''}`.trim();
+
+/** Группа строго в филиале админа — общий guard для всех операций рабочего пространства. */
+async function requireGroup(branchId, groupId) {
+  const group = await repo.findGroupInBranch(groupId, branchId);
+  if (!group) throw new AppError(404, 'Group not found in your branch');
+  return group;
+}
+
+// -------- davomat --------
+
+/**
+ * Полный ростер группы на дату урока: каждый активный ученик + его статус
+ * (null, если не отмечен). Именно ростер, а не только отмеченные строки, — иначе
+ * в свежий день журнал был бы пустым и отмечать было бы некого.
+ */
+export async function getGroupAttendance(branchId, groupId, date) {
+  await requireGroup(branchId, groupId);
+  const [students, marks] = await Promise.all([
+    repo.groupStudents(groupId),
+    attendanceRepo.findByGroupAndDate(groupId, date),
+  ]);
+  const byStudent = new Map(marks.map((m) => [m.student_id, m]));
+  return students.map((s) => {
+    const m = byStudent.get(s.id);
+    return {
+      id: m?.id ?? null,
+      studentId: s.id,
+      studentName: fullName(s.first_name, s.last_name),
+      status: m?.status ?? null,
+    };
+  });
+}
+
+/**
+ * Отметить/снять davomat группы на дату урока. Ученики с непустым статусом —
+ * upsert, с null — снятие отметки (см. attendanceRepo.deleteMarks). Админ вправе
+ * править журнал за прошлые уроки (корректировка), но не за будущий: отмечать
+ * посещаемость ещё не состоявшегося занятия нельзя.
+ */
+export async function markGroupAttendance(branchId, groupId, adminId, { lessonDate, records }) {
+  if (lessonDate > todayLocal()) {
+    throw new AppError(422, 'Cannot mark attendance for a future lesson');
+  }
+  const group = await requireGroup(branchId, groupId);
+
+  const toUpsert = records.filter((r) => r.status);
+  const toClear = records.filter((r) => !r.status).map((r) => r.studentId);
+
+  if (toUpsert.length > 0) {
+    await attendanceRepo.upsertMany({
+      branchId,
+      groupId,
+      markedBy: adminId,
+      lessonDate,
+      records: toUpsert.map((r) => ({ studentId: r.studentId, status: r.status, comment: null })),
+    });
+  }
+  if (toClear.length > 0) {
+    await attendanceRepo.deleteMarks(groupId, lessonDate, toClear);
+  }
+
+  return getGroupAttendance(branchId, groupId, lessonDate);
+}
+
+// -------- ДЗ --------
+
+function mapHomework(h, totalStudents) {
+  const submissions = Number(h.submissions_count ?? 0);
+  const graded = Number(h.graded_count ?? 0);
+  const overdue = h.deadline && new Date(h.deadline) < new Date();
+  let status = 'active';
+  if (totalStudents > 0 && graded >= totalStudents) status = 'completed';
+  else if (overdue) status = 'overdue';
+  return {
+    id: h.id,
+    title: h.title,
+    description: h.description ?? null,
+    dueDate: h.deadline ? new Date(h.deadline).toISOString().slice(0, 10) : null,
+    status,
+    submissions,
+    totalStudents,
+  };
+}
+
+export async function listGroupHomework(branchId, groupId) {
+  await requireGroup(branchId, groupId);
+  const [rows, totalStudents] = await Promise.all([
+    homeworkRepo.listHomeworkForGroup(groupId),
+    repo.countActiveGroupStudents(groupId),
+  ]);
+  return rows.map((h) => mapHomework(h, totalStudents));
+}
+
+export async function createGroupHomework(branchId, groupId, adminId, body) {
+  const group = await requireGroup(branchId, groupId);
+  if (group.is_archived) throw new AppError(409, 'Group is archived');
+
+  // deadline — NOT NULL в схеме. Форма админа даёт только дату (или ничего):
+  // берём конец указанного дня, а без даты — срок через неделю.
+  const deadline = body.dueDate
+    ? new Date(`${body.dueDate}T23:59:59`)
+    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  const hw = await homeworkRepo.createHomework({
+    branchId,
+    groupId,
+    createdBy: adminId,
+    title: body.title,
+    description: body.description,
+    maxScore: 100,
+    coinReward: 0,
+    deadline,
+  });
+
+  const totalStudents = await repo.countActiveGroupStudents(groupId);
+  return mapHomework({ ...hw, submissions_count: 0, graded_count: 0 }, totalStudents);
+}
+
+// -------- фикр-мулоҳоза --------
+
+function mapFeedback(f) {
+  return {
+    id: f.id,
+    type: f.type,
+    authorName: f.author_name ?? null,
+    content: f.content,
+    rating: f.rating,
+    createdAt: f.created_at,
+  };
+}
+
+export async function listGroupFeedback(branchId, groupId) {
+  await requireGroup(branchId, groupId);
+  const rows = await repo.listGroupFeedback(groupId);
+  return rows.map(mapFeedback);
+}
+
+export async function createGroupFeedback(branchId, groupId, adminId, body) {
+  const group = await requireGroup(branchId, groupId);
+  const row = await repo.insertGroupFeedback({
+    branchId,
+    groupId,
+    type: body.type,
+    authorName: body.authorName,
+    content: body.content,
+    rating: body.rating,
+    createdBy: adminId,
+  });
+  return mapFeedback(row);
 }
 
 // ==================== ОБЪЯВЛЕНИЯ ====================

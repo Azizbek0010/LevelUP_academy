@@ -592,6 +592,45 @@ export function removeStudentFromGroup(groupId, studentId, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
+// ==================== РАБОЧЕЕ ПРОСТРАНСТВО ГРУППЫ (davomat/ДЗ/фикр) ====================
+
+/** Сколько активных участников в группе — знаменатель для «сдано N/M» и статуса ДЗ. */
+export function countActiveGroupStudents(groupId, client = pool) {
+  return client
+    .query(
+      `SELECT count(*)::int AS n FROM group_students gs
+        WHERE gs.group_id = $1 AND gs.left_at IS NULL`,
+      [groupId],
+    )
+    .then((r) => r.rows[0].n);
+}
+
+export function insertGroupFeedback(
+  { branchId, groupId, type, authorName, content, rating, createdBy },
+  client = pool,
+) {
+  return client
+    .query(
+      `INSERT INTO group_feedback (branch_id, group_id, type, author_name, content, rating, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, type, author_name, content, rating, created_at`,
+      [branchId, groupId, type, authorName ?? null, content, rating, createdBy],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function listGroupFeedback(groupId, client = pool) {
+  return client
+    .query(
+      `SELECT id, type, author_name, content, rating, created_at
+         FROM group_feedback
+        WHERE group_id = $1 AND deleted_at IS NULL
+        ORDER BY created_at DESC`,
+      [groupId],
+    )
+    .then((r) => r.rows);
+}
+
 // ==================== ОБЪЯВЛЕНИЯ ====================
 
 /** id активных студентов филиала; при groupId — только участники этой группы. */

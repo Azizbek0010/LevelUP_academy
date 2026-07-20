@@ -19,6 +19,10 @@ import {
   addGroupStudentSchema,
   listGroupsQuery,
   createAnnouncementSchema,
+  groupAttendanceQuery,
+  markGroupAttendanceSchema,
+  createGroupHomeworkSchema,
+  createGroupFeedbackSchema,
 } from './admin.schemas.js';
 import * as ctrl from './admin.controller.js';
 import * as discipline from '../discipline/discipline.controller.js';
@@ -857,6 +861,219 @@ router.post('/groups/:id/students', validate({ params: idParam, body: addGroupSt
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.delete('/groups/:id/students/:studentId', validate({ params: groupStudentParams }), ctrl.removeGroupStudent);
+
+// ==================== РАБОЧЕЕ ПРОСТРАНСТВО ГРУППЫ ====================
+// GroupDetail (Admin): davomat / ДЗ / фикр-мулоҳоза. davomat и ДЗ переиспользуют
+// общие таблицы attendance / homework (те же, что у mentor); фикр — своя таблица.
+
+/**
+ * @openapi
+ * /api/admin/groups/{id}/attendance:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Group attendance roster for a lesson date
+ *     description: >
+ *       Returns every active student of the group with their status on the given
+ *       date (`null` if not yet marked) — a full roster, not only marked rows.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *       - name: date
+ *         in: query
+ *         required: true
+ *         schema: { type: string, example: '2026-07-20' }
+ *     responses:
+ *       200:
+ *         description: Attendance roster
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id: { type: string, format: uuid, nullable: true }
+ *                   studentId: { type: string, format: uuid }
+ *                   studentName: { type: string }
+ *                   status:
+ *                     type: string
+ *                     nullable: true
+ *                     enum: [present, absent, late, excused]
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ *   post:
+ *     tags: [Admin]
+ *     summary: Mark/clear group attendance for a lesson date
+ *     description: >
+ *       Records with a status are upserted; records with `status: null` clear the
+ *       mark. Admins may correct past lessons but not future ones. Returns the
+ *       refreshed roster.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [lessonDate, records]
+ *             properties:
+ *               lessonDate: { type: string, example: '2026-07-20' }
+ *               records:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required: [studentId, status]
+ *                   properties:
+ *                     studentId: { type: string, format: uuid }
+ *                     status:
+ *                       type: string
+ *                       nullable: true
+ *                       enum: [present, absent, late, excused]
+ *     responses:
+ *       200: { description: Refreshed roster }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get(
+  '/groups/:id/attendance',
+  validate({ params: idParam, query: groupAttendanceQuery }),
+  ctrl.groupAttendance,
+);
+router.post(
+  '/groups/:id/attendance',
+  validate({ params: idParam, body: markGroupAttendanceSchema }),
+  ctrl.markGroupAttendance,
+);
+
+/**
+ * @openapi
+ * /api/admin/groups/{id}/homework:
+ *   get:
+ *     tags: [Admin]
+ *     summary: List group homework with submission progress
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     responses:
+ *       200:
+ *         description: Homework list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id: { type: string, format: uuid }
+ *                   title: { type: string }
+ *                   description: { type: string, nullable: true }
+ *                   dueDate: { type: string, nullable: true, example: '2026-07-27' }
+ *                   status: { type: string, enum: [active, completed, overdue] }
+ *                   submissions: { type: integer }
+ *                   totalStudents: { type: integer }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *   post:
+ *     tags: [Admin]
+ *     summary: Create homework for the group
+ *     description: >
+ *       maxScore (100) and coinReward (0) use table defaults. If `dueDate` is
+ *       omitted the deadline defaults to one week ahead.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title]
+ *             properties:
+ *               title: { type: string, minLength: 1, maxLength: 200 }
+ *               description: { type: string, maxLength: 2000 }
+ *               dueDate: { type: string, example: '2026-07-27' }
+ *     responses:
+ *       201: { description: Homework created }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get('/groups/:id/homework', validate({ params: idParam }), ctrl.groupHomework);
+router.post(
+  '/groups/:id/homework',
+  validate({ params: idParam, body: createGroupHomeworkSchema }),
+  ctrl.createGroupHomework,
+);
+
+/**
+ * @openapi
+ * /api/admin/groups/{id}/feedback:
+ *   get:
+ *     tags: [Admin]
+ *     summary: List group feedback (student/teacher reviews)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     responses:
+ *       200:
+ *         description: Feedback list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id: { type: string, format: uuid }
+ *                   type: { type: string, enum: [student, teacher] }
+ *                   authorName: { type: string, nullable: true }
+ *                   content: { type: string }
+ *                   rating: { type: integer, minimum: 1, maximum: 5 }
+ *                   createdAt: { type: string, format: date-time }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *   post:
+ *     tags: [Admin]
+ *     summary: Add feedback to the group
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [type, content, rating]
+ *             properties:
+ *               type: { type: string, enum: [student, teacher] }
+ *               authorName: { type: string, maxLength: 120 }
+ *               content: { type: string, minLength: 1, maxLength: 2000 }
+ *               rating: { type: integer, minimum: 1, maximum: 5 }
+ *     responses:
+ *       201: { description: Feedback created }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get('/groups/:id/feedback', validate({ params: idParam }), ctrl.groupFeedback);
+router.post(
+  '/groups/:id/feedback',
+  validate({ params: idParam, body: createGroupFeedbackSchema }),
+  ctrl.createGroupFeedback,
+);
 
 // объявления (для Telegram-бота — рассылка родителям/студентам филиала или группы)
 /**

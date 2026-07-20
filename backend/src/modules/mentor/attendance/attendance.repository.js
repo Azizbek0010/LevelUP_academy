@@ -29,6 +29,21 @@ export async function upsertMany({ branchId, groupId, markedBy, lessonDate, reco
   return rows;
 }
 
+/**
+ * Снять отметки на дату урока для перечисленных студентов (unmark).
+ * `attendance.status` — NOT NULL, поэтому «пусто» = отсутствие строки, а не
+ * NULL-статус: сбросить отметку можно только удалением. Используется, когда
+ * админ в журнале прогоняет статус ученика по кругу обратно в «не отмечено».
+ */
+export async function deleteMarks(groupId, lessonDate, studentIds) {
+  if (studentIds.length === 0) return;
+  await pool.query(
+    `DELETE FROM attendance
+      WHERE group_id = $1 AND lesson_date = $2 AND student_id = ANY($3::uuid[])`,
+    [groupId, lessonDate, studentIds],
+  );
+}
+
 /** Отметки группы на конкретную дату урока. */
 export async function findByGroupAndDate(groupId, lessonDate) {
   const { rows } = await pool.query(
