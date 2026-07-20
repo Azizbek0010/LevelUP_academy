@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, UserPlus, X, Users, GraduationCap, KeyRound, Phone,
-  CalendarDays, Check, Minus, ChevronLeft, ChevronRight,
+  CalendarDays, Check, Minus,
   BookOpen, Plus, Star, MessageSquare, Send, Loader2,
 } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
@@ -45,18 +45,6 @@ function AttendanceTab({ groupId, token }) {
   const pendingRef = useRef(new Map());
   const flushTimer = useRef(null);
   const mapRef = useRef({});
-
-  /* ── Scroll arrows ── */
-  const scrollRef = useRef(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  const checkScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 4);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  }, []);
 
   const monthStrip = useMemo(() => buildMonthStrip(now), [now]);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -185,23 +173,6 @@ function AttendanceTab({ groupId, token }) {
   // Flush on unmount
   useEffect(() => () => { clearTimeout(flushTimer.current); flush(); }, [flush]);
 
-  // Auto-scroll to today's column on mount / month change
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    // Delay to let table render
-    const t = setTimeout(() => {
-      const todayIdx = DAYS.findIndex((d) => dateKeyFor(d) === todayStr);
-      if (todayIdx > 0) {
-        // Each day col is ~68px, plus sticky name col ~240px
-        const scrollTarget = 240 + todayIdx * 68 - el.clientWidth / 2 + 34;
-        el.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' });
-      }
-      checkScroll();
-    }, 150);
-    return () => clearTimeout(t);
-  }, [DAYS, month, year, todayStr, checkScroll]);
-
   /* ── Cell styles (matching mentor) ── */
   const cellStyle = (status, editable) => {
     if (status === 'present') {
@@ -281,32 +252,7 @@ function AttendanceTab({ groupId, token }) {
       </div>
 
       {/* ── Calendar table ── */}
-      <div className="relative flex-1 min-h-0">
-        {/* Left scroll arrow */}
-        {canScrollLeft && (
-          <button
-            onClick={() => scrollRef.current?.scrollBy({ left: -240, behavior: 'smooth' })}
-            className="absolute left-0 top-0 bottom-0 z-30 w-10 flex items-center justify-center bg-gradient-to-r from-[var(--surface)] via-[var(--surface)]/90 to-transparent hover:from-[var(--green-bg)] transition-colors"
-            aria-label="Chapga siljish"
-          >
-            <ChevronLeft size={20} className="text-[var(--text-muted)]" />
-          </button>
-        )}
-        {/* Right scroll arrow */}
-        {canScrollRight && (
-          <button
-            onClick={() => scrollRef.current?.scrollBy({ left: 240, behavior: 'smooth' })}
-            className="absolute right-0 top-0 bottom-0 z-30 w-10 flex items-center justify-center bg-gradient-to-l from-[var(--surface)] via-[var(--surface)]/90 to-transparent hover:from-[var(--green-bg)] transition-colors"
-            aria-label="O'ngga siljish"
-          >
-            <ChevronRight size={20} className="text-[var(--text-muted)]" />
-          </button>
-        )}
-        <div
-          ref={scrollRef}
-          onScroll={checkScroll}
-          className="overflow-auto flex-1 min-h-0"
-        >
+      <div className="overflow-auto flex-1 min-h-0">
         {students.length === 0 ? (
           <EmptyState icon={Users} title="Bu guruhda o'quvchilar yo'q" />
         ) : (
@@ -361,17 +307,17 @@ function AttendanceTab({ groupId, token }) {
                   <tr key={sid} className="border-b border-[var(--border)] last:border-0">
                     {/* Sticky name cell */}
                     <td className="sticky left-0 z-10 bg-[var(--surface)] px-3 sm:px-4 py-2.5">
-                      <div className="flex items-center gap-3">
+                      <Link to={`/students/${sid}`} className="flex items-center gap-3 group">
                         <span className="text-xs text-[var(--green)]/40 tabular-nums w-5 shrink-0">
                           {idx + 1}.
                         </span>
                         <Avatar name={studentFullName} size="sm" />
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold truncate text-[var(--text)]">
+                          <div className="text-sm font-semibold truncate text-[var(--text)] group-hover:text-[var(--green)] transition-colors">
                             {firstName} {lastName}
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     </td>
 
                     {/* Day cells */}
@@ -410,7 +356,6 @@ function AttendanceTab({ groupId, token }) {
             </tbody>
           </table>
         )}
-        </div>
       </div>
     </div>
   );
