@@ -4,14 +4,15 @@ import { useChild } from '../child-context.jsx';
 import { dateShort, ATTENDANCE_STATUS } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
-import { EmptyState, ErrorState, ProgressRing, ProgressBar } from '../components/ui.jsx';
+import { EmptyState, ErrorState, ProgressRing } from '../components/ui.jsx';
+import Icon from '../components/Icons.jsx';
 
 export default function Attendance() {
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
   const [filter, setFilter] = useState('all');
 
-  if (!selectedChild) return <EmptyState icon="👶" title="Выберите ребёнка" />;
+  if (!selectedChild) return <EmptyState icon="user-circle" title="Выберите ребёнка" />;
 
   if (isLoading) {
     return (
@@ -60,10 +61,12 @@ export default function Attendance() {
                     <button
                       key={s}
                       onClick={() => setFilter(filter === s ? 'all' : s)}
-                      className={`p-3 rounded-xl text-center transition-all ${
-                        filter === s ? 'ring-2 ring-offset-2' : 'hover:bg-base-200'
+                      className={`p-3 rounded-xl text-center transition-all duration-200 ${
+                        filter === s
+                          ? 'ring-2 ring-offset-2 shadow-sm'
+                          : 'hover:bg-base-200'
                       }`}
-                      style={filter === s ? { ringColor: st?.color, background: st?.bg } : {}}
+                      style={filter === s ? { borderColor: st?.color, background: st?.bg, ringColor: st?.color } : {}}
                     >
                       <p className="text-xl font-extrabold" style={{ color: st?.color }}>{count}</p>
                       <p className="text-[10px] opacity-50 mt-0.5">{st?.label}</p>
@@ -78,9 +81,12 @@ export default function Attendance() {
 
       <div className="card bg-base-100">
         <div className="card-body">
-          <h3 className="card-title text-sm">История посещений</h3>
+          <h3 className="card-title text-sm gap-2">
+            <Icon name="clock" className="w-4 h-4 text-primary" />
+            История посещений
+          </h3>
           {filtered.length === 0 ? (
-            <EmptyState icon="📅" title="Нет записей" message="Посещаемость ещё не отмечена" />
+            <EmptyState icon="calendar" title="Нет записей" message="Посещаемость ещё не отмечена" />
           ) : (
             <div className="overflow-x-auto mt-3">
               <table className="table table-sm">
@@ -96,7 +102,7 @@ export default function Attendance() {
                   {filtered.map((r, i) => {
                     const st = ATTENDANCE_STATUS[r.status];
                     return (
-                      <tr key={i} className="hover:bg-base-200/50">
+                      <tr key={i} className="hover:bg-base-200/50 transition-colors">
                         <td className="text-sm whitespace-nowrap font-medium">{dateShort(r.lessonDate)}</td>
                         <td className="text-sm">{r.groupName}</td>
                         <td>

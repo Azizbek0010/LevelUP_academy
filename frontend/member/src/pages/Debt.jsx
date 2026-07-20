@@ -4,12 +4,13 @@ import { money, fmt } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressBar } from '../components/ui.jsx';
+import Icon from '../components/Icons.jsx';
 
 export default function Debt() {
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
 
-  if (!selectedChild) return <EmptyState icon="👶" title="Выберите ребёнка" />;
+  if (!selectedChild) return <EmptyState icon="user-circle" title="Выберите ребёнка" />;
 
   if (isLoading) {
     return (
@@ -36,12 +37,12 @@ export default function Debt() {
       />
 
       <div className="grid lg:grid-cols-2 gap-4 mb-6">
-        <div className="card bg-base-100 overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-24 h-24 rounded-full" style={{ background: totalDebt > 0 ? 'rgba(239,68,68,.06)' : 'rgba(34,197,94,.06)' }} />
-          <div className="card-body relative">
+        <div className="card bg-base-100 overflow-hidden relative hover:shadow-lg transition-shadow">
+          <div className="absolute top-0 right-0 w-28 h-28 rounded-full -translate-y-1/3 translate-x-1/3 blur-xl" style={{ background: totalDebt > 0 ? 'rgba(239,68,68,.08)' : 'rgba(34,197,94,.08)' }} />
+          <div className="card-body relative z-10">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: totalDebt > 0 ? 'rgba(239,68,68,.1)' : 'rgba(34,197,94,.1)' }}>
-                <span className="text-lg">💰</span>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: totalDebt > 0 ? 'rgba(239,68,68,.1)' : 'rgba(34,197,94,.1)' }}>
+                <Icon name="wallet" className="w-5 h-5" style={{ color: totalDebt > 0 ? '#ef4444' : '#22c55e' }} />
               </div>
               <span className="text-sm font-medium opacity-60">Общий долг</span>
             </div>
@@ -60,17 +61,20 @@ export default function Debt() {
           </div>
         </div>
 
-        <div className="card bg-base-100 overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-primary/5" />
-          <div className="card-body relative">
+        <div className="card bg-base-100 overflow-hidden relative hover:shadow-lg transition-shadow">
+          <div className="absolute top-0 right-0 w-28 h-28 rounded-full bg-primary/5 -translate-y-1/3 translate-x-1/3 blur-xl" />
+          <div className="card-body relative z-10">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10">
-                <span className="text-lg">🪙</span>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-primary/10">
+                <Icon name="star" className="w-5 h-5 text-primary" />
               </div>
               <span className="text-sm font-medium opacity-60">Коины</span>
             </div>
             <p className="text-3xl font-extrabold text-primary">{fmt(coins)}</p>
-            <p className="text-[11px] opacity-30 mt-2">Заработанные баллы за достижения</p>
+            <p className="text-[11px] opacity-30 mt-2 flex items-center gap-1">
+              <Icon name="sparkles" className="w-3 h-3" />
+              Заработанные баллы за достижения
+            </p>
           </div>
         </div>
       </div>
@@ -79,7 +83,7 @@ export default function Debt() {
         <div className="card bg-base-100">
           <div className="card-body text-center py-12">
             <div className="w-16 h-16 rounded-2xl bg-error/10 flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">⚠️</span>
+              <Icon name="alert" className="w-8 h-8 text-error" />
             </div>
             <h3 className="text-lg font-bold mb-2">Есть задолженность</h3>
             <p className="text-sm text-base-content/50 max-w-sm mx-auto mb-4">
@@ -96,7 +100,7 @@ export default function Debt() {
         <div className="card bg-base-100">
           <div className="card-body text-center py-12">
             <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">✅</span>
+              <Icon name="check-circle" className="w-8 h-8 text-success" />
             </div>
             <h3 className="text-lg font-bold mb-2">Задолженностей нет</h3>
             <p className="text-sm text-base-content/50">Все счета оплачены вовремя</p>

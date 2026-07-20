@@ -3,17 +3,16 @@ import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
 import { useChatMessages } from '../queries.js';
 import { getSocket } from '../socket.js';
-import { datetimeShort, timeAgo } from '../format.js';
+import { timeAgo } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { EmptyState } from '../components/ui.jsx';
+import Icon from '../components/Icons.jsx';
 
 const ROOMS = [
-  { key: 'global', label: 'Общий чат', icon: '🌐', desc: 'Чат для всех родителей и сотрудников' },
-  { key: 'direct', label: 'От staff', icon: '💬', desc: 'Личные сообщения от менторов и администраторов' },
+  { key: 'global', label: 'Общий чат', icon: 'globe', desc: 'Чат для всех родителей и сотрудников' },
+  { key: 'direct', label: 'От staff', icon: 'chat', desc: 'Личные сообщения от менторов и администраторов' },
 ];
-
-const QUICK_REACTIONS = ['👍', '❤️', '😊', '🙏', '💪', '✅'];
 
 export default function Chat() {
   const { token, user } = useAuth();
@@ -22,7 +21,6 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [showReactions, setShowReactions] = useState(null);
   const bottomRef = useRef(null);
   const socketRef = useRef(null);
   const inputRef = useRef(null);
@@ -41,16 +39,7 @@ export default function Chat() {
     if (!token) return;
     const s = getSocket(token);
     socketRef.current = s;
-
-    const onConnect = () => {};
-    const onDisconnect = () => {};
-    s.on('connect', onConnect);
-    s.on('disconnect', onDisconnect);
-
-    return () => {
-      s.off('connect', onConnect);
-      s.off('disconnect', onDisconnect);
-    };
+    return () => {};
   }, [token]);
 
   useEffect(() => {
@@ -104,18 +93,18 @@ export default function Chat() {
         subtitle={selectedChild ? `${selectedChild.firstName} ${selectedChild.lastName}` : ''}
       />
 
-      <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit shadow-sm">
         {ROOMS.map((r) => (
           <button
             key={r.key}
-            onClick={() => { setActiveRoom(r.key); setMessages([]); setShowReactions(null); }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            onClick={() => { setActiveRoom(r.key); setMessages([]); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               activeRoom === r.key
                 ? 'bg-primary text-primary-content shadow-sm'
                 : 'text-base-content/50 hover:bg-base-200'
             }`}
           >
-            <span className="mr-1.5">{r.icon}</span>
+            <Icon name={r.icon} className="w-4 h-4" />
             {r.label}
           </button>
         ))}
@@ -127,7 +116,10 @@ export default function Chat() {
           <span className="text-xs font-medium opacity-60">Онлайн</span>
           <span className="text-[11px] opacity-30 ml-1">· {roomInfo?.desc}</span>
           {activeRoom === 'direct' && (
-            <span className="ml-auto text-[11px] opacity-30 bg-base-200 px-2 py-0.5 rounded-full">Только чтение</span>
+            <span className="ml-auto text-[11px] opacity-30 bg-base-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Icon name="document-text" className="w-3 h-3" />
+              Только чтение
+            </span>
           )}
         </div>
 
@@ -139,7 +131,7 @@ export default function Chat() {
           )}
 
           {!isLoading && messages.length === 0 && (
-            <EmptyState icon="💬" title="Пока нет сообщений" message="Начните общение первым" />
+            <EmptyState icon="chat" title="Пока нет сообщений" message="Начните общение первым" />
           )}
 
           {messages.map((msg, idx) => {
@@ -207,9 +199,7 @@ export default function Chat() {
                 onClick={handleSend}
                 disabled={!input.trim() || sending}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                </svg>
+                <Icon name="paperplane" className="w-5 h-5" />
               </button>
             </div>
           </div>
