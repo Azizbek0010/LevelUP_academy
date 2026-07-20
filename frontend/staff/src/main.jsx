@@ -7,9 +7,6 @@ import { AuthProvider } from './auth.jsx';
 import App from './App.jsx';
 import './index.css';
 
-// Тема переключена обратно — см. Layout.jsx Header. Класс `dark` на <html>
-// применяется динамически через useEffect при изменении `lu-theme`.
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Bell, Sun, Moon, ChevronDown, ChevronRight,
+  Bell, ChevronDown, ChevronRight,
   User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu,
   Volume2, VolumeX,
 } from 'lucide-react';
@@ -567,33 +567,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
   const navigate = useNavigate();
   const role = user?.role;
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('lu-theme') || 'system');
   const userMenuRef = useRef(null);
-
-  // Apply theme on mount and whenever theme changes
-  useEffect(() => {
-    const apply = (t) => {
-      document.documentElement.classList.remove('dark', 'light');
-      if (t === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else if (t === 'light') {
-        document.documentElement.classList.add('light');
-      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-      }
-    };
-    apply(theme);
-  }, [theme]);
-
-  const cycleTheme = () => {
-    const order = ['light', 'dark', 'system'];
-    const idx = order.indexOf(theme);
-    const next = order[(idx + 1) % order.length];
-    setTheme(next);
-    localStorage.setItem('lu-theme', next);
-  };
-
-  const themeIcon = theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />;
 
   // Close user menu on outside click
   useEffect(() => {
@@ -629,20 +603,6 @@ function Header({ sidebarWidth, onMobileToggle }) {
 
       {/* Spacer */}
       <div className="flex-1" />
-
-      {/* Theme toggle */}
-      <button
-        onClick={cycleTheme}
-        className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105"
-        style={{
-          color: 'var(--text-secondary)',
-          background: 'var(--bg)',
-          border: '1px solid var(--border)',
-        }}
-        title={`Tema: ${theme}`}
-      >
-        {themeIcon}
-      </button>
 
       {/* Поиск и счётчик «онлайн» отсюда убраны.
           Поиск ничего не искал: поле не было ни к чему подключено, только
