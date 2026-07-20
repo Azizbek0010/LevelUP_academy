@@ -181,6 +181,45 @@ router.get('/dashboard', ctrl.dashboard);
 
 /**
  * @openapi
+ * /api/main/revenue:
+ *   get:
+ *     tags: [Main Admin]
+ *     summary: Platform revenue detail — our income (sum of partner bills) + per-partner billing
+ *     description: >
+ *       Our monthly income = sum of each partner's computed bill (by student count).
+ *       Read-only over money tables — writes nothing.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Revenue detail
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totals:
+ *                   type: object
+ *                   properties:
+ *                     partners: { type: integer }
+ *                     activePartners: { type: integer }
+ *                     students: { type: integer }
+ *                     branches: { type: integer }
+ *                     ourMonthlyIncome: { type: number }
+ *                     partnersRevenue: { type: number }
+ *                     partnersExpenses: { type: number }
+ *                     partnersProfit: { type: number }
+ *                     currency: { type: string, example: UZS }
+ *                 partners:
+ *                   type: array
+ *                   items: { type: object }
+ *                 pricing: { $ref: '#/components/schemas/PlatformPricing' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.get('/revenue', ctrl.revenue);
+
+/**
+ * @openapi
  * /api/main/pricing:
  *   get:
  *     tags: [Main Admin]

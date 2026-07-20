@@ -22,6 +22,16 @@ export const createExpenseSchema = z.object({
   note: z.string().trim().max(1000).optional(),
 });
 
+export const updateExpenseSchema = z
+  .object({
+    category: z.string().trim().min(1).max(60),
+    amount: money,
+    spentAt: z.coerce.date(),
+    note: z.string().trim().max(1000),
+  })
+  .partial()
+  .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
+
 export const listExpensesQuery = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),

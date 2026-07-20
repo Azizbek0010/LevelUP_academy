@@ -13,6 +13,8 @@ import {
   updateMethodistSchema,
   freezeMethodistSchema,
   updateOrganizationSchema,
+  createAnnouncementSchema,
+  statsQuery,
 } from './super.schemas.js';
 import * as ctrl from './super.controller.js';
 import * as discipline from '../discipline/discipline.controller.js';
@@ -410,7 +412,7 @@ router.get('/attendance', ctrl.attendance);
  *       501: { $ref: '#/components/responses/NotImplemented' }
  */
 router.get('/announcements', ctrl.listAnnouncements);
-router.post('/announcements', ctrl.notImplemented);
+router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
 
 /**
  * @openapi
@@ -427,7 +429,7 @@ router.post('/announcements', ctrl.notImplemented);
  *     responses:
  *       501: { $ref: '#/components/responses/NotImplemented' }
  */
-router.delete('/announcements/:id', ctrl.notImplemented);
+router.delete('/announcements/:id', validate({ params: idParam }), ctrl.deleteAnnouncement);
 
 /**
  * @openapi
@@ -509,6 +511,78 @@ router.delete('/reminders/:id', ctrl.notImplemented);
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
 router.get('/audit', ctrl.listAudit);
+
+/**
+ * @openapi
+ * /api/super/stats:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: Organization statistics — KPIs, revenue series, per-branch and per-method breakdown
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: period
+ *         in: query
+ *         schema: { type: string, enum: ['7d', '30d', '90d'], default: '30d' }
+ *     responses:
+ *       200:
+ *         description: Stats
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 period: { type: string }
+ *                 totals:
+ *                   type: object
+ *                   properties:
+ *                     revenue: { type: number }
+ *                     outstandingDebt: { type: number }
+ *                     activeStudents: { type: integer }
+ *                     admins: { type: integer }
+ *                     branches: { type: integer }
+ *                     avgRevenue: { type: number }
+ *                     debtRatio: { type: number }
+ *                     currency: { type: string }
+ *                 branches: { type: array, items: { type: object } }
+ *                 revenueSeries: { type: array, items: { type: object } }
+ *                 paymentMethods: { type: array, items: { type: object } }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.get('/stats', validate({ query: statsQuery }), ctrl.stats);
+
+/**
+ * @openapi
+ * /api/super/reports:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: Organization report — real per-branch revenue, debt, students, admins, revenue share
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Report
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totals: { type: object }
+ *                 branches:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string, format: uuid }
+ *                       name: { type: string }
+ *                       students: { type: integer }
+ *                       admins: { type: integer }
+ *                       revenue: { type: number }
+ *                       debt: { type: number }
+ *                       share: { type: number }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.get('/reports', ctrl.reports);
 
 /**
  * @openapi

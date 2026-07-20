@@ -14,6 +14,10 @@ export const dashboard = asyncHandler(async (_req, res) => {
   res.json(await service.platformDashboard());
 });
 
+export const revenue = asyncHandler(async (_req, res) => {
+  res.json(await service.platformRevenue());
+});
+
 export const getPricing = asyncHandler(async (_req, res) => {
   res.json({ pricing: await service.getPricing() });
 });

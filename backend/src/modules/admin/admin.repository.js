@@ -81,6 +81,39 @@ export function countExpenses({ branchId, from, to }, client = pool) {
     .then((r) => r.rows[0].n);
 }
 
+const EXPENSE_RETURN = 'id, category, amount, spent_at, note, created_at';
+
+/** Частичное обновление расхода в пределах филиала. */
+export function updateExpense(id, branchId, fields, client = pool) {
+  const cols = [];
+  const vals = [];
+  let i = 1;
+  for (const [key, col] of [
+    ['category', 'category'],
+    ['amount', 'amount'],
+    ['note', 'note'],
+  ]) {
+    if (fields[key] !== undefined) {
+      cols.push(`${col} = $${i++}`);
+      vals.push(fields[key]);
+    }
+  }
+  if (fields.spentAt !== undefined) {
+    cols.push(`spent_at = $${i++}::date`);
+    vals.push(fields.spentAt);
+  }
+  if (cols.length === 0) return Promise.resolve(null);
+  vals.push(id, branchId);
+  return client
+    .query(
+      `UPDATE expenses SET ${cols.join(', ')}, updated_at = now()
+        WHERE id = $${i++} AND branch_id = $${i} AND deleted_at IS NULL
+        RETURNING ${EXPENSE_RETURN}`,
+      vals,
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
 export function softDeleteExpense(id, branchId, client = pool) {
   return client
     .query(

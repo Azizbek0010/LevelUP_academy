@@ -6,6 +6,7 @@ import {
   idParam,
   groupStudentParams,
   createExpenseSchema,
+  updateExpenseSchema,
   listExpensesQuery,
   createStudentSchema,
   updateStudentSchema,
@@ -182,6 +183,44 @@ router.get('/expenses', validate({ query: listExpensesQuery }), ctrl.listExpense
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
+/**
+ * @openapi
+ * /api/admin/expenses/{id}:
+ *   patch:
+ *     tags: [Admin]
+ *     summary: Update a branch expense (partial — at least one field)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               category: { type: string, minLength: 1, maxLength: 60 }
+ *               amount: { type: number }
+ *               spentAt: { type: string, format: date }
+ *               note: { type: string, maxLength: 1000 }
+ *     responses:
+ *       200:
+ *         description: Updated expense
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties: { expense: { $ref: '#/components/schemas/Expense' } }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Expense not found
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.patch('/expenses/:id', validate({ params: idParam, body: updateExpenseSchema }), ctrl.updateExpense);
 router.delete('/expenses/:id', validate({ params: idParam }), ctrl.deleteExpense);
 
 /**

@@ -71,6 +71,12 @@ export async function listExpenses(branchId, query) {
   };
 }
 
+export async function updateExpense(branchId, id, body) {
+  const row = await repo.updateExpense(id, branchId, body);
+  if (!row) throw new AppError(404, 'Expense not found');
+  return mapExpense(row);
+}
+
 export async function deleteExpense(branchId, id) {
   const row = await repo.softDeleteExpense(id, branchId);
   if (!row) throw new AppError(404, 'Expense not found');

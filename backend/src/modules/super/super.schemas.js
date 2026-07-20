@@ -89,3 +89,17 @@ export const updateMethodistSchema = z
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
 
 export const freezeMethodistSchema = z.object({ frozen: z.boolean() });
+
+// ---------- объявления организации ----------
+
+export const createAnnouncementSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  body: z.string().trim().min(1).max(4000),
+  targetType: z.enum(['all-staff', 'all-admins', 'all-mentors', 'all-parents', 'all-students']),
+});
+
+// ---------- статистика: период ----------
+
+export const statsQuery = z.object({
+  period: z.enum(['7d', '30d', '90d']).optional(),
+});

@@ -1,6 +1,8 @@
 import argon2 from 'argon2';
 import { AppError } from '../../utils/AppError.js';
 import { planLimits } from '../../config/plans.js';
+import { logger } from '../../config/logger.js';
+import { notificationQueue } from '../../queues/notification.queue.js';
 import * as repo from './super.repository.js';
 
 // ---------- филиалы ----------
@@ -334,18 +336,164 @@ export async function attendance(orgId, { groupId, date }) {
   return { records, lessons: records, totals, total: records.length };
 }
 
-// ---------- заглушки: нет таблиц (announcements/reminders/audit) ----------
-// Таблиц в схеме нет. Возвращаем пустые списки, чтобы страницы рендерились (EmptyState).
-// Полная реализация = миграции + notificationQueue (домен AB-V1/Bilol) — отдельная задача.
+// ---------- объявления организации (Super Announcements) ----------
 
-export async function listAnnouncements() {
-  return { announcements: [], items: [], total: 0 };
+function mapAnnouncement(a) {
+  return {
+    id: a.id,
+    title: a.title,
+    body: a.body,
+    targetType: a.target_type,
+    recipientCount: Number(a.recipient_count),
+    readCount: 0, // пометок «прочитано» в системе пока нет
+    senderName: a.sender_name ?? null,
+    readers: [],
+    nonReaders: [],
+    createdAt: a.created_at,
+  };
 }
+
+export async function listAnnouncements(orgId) {
+  const rows = await repo.listAnnouncements(orgId);
+  const items = rows.map(mapAnnouncement);
+  return { items, announcements: items, total: items.length };
+}
+
+export async function createAnnouncement(orgId, senderId, { title, body, targetType }) {
+  const recipientCount = await repo.countAnnouncementRecipients(orgId, targetType);
+  const row = await repo.insertAnnouncement({ orgId, senderId, title, body, targetType, recipientCount });
+
+  // Telegram-доставка только для аудиторий, у которых есть привязка бота
+  // (родители/студенты). Сотрудники получают объявление как внутреннюю запись.
+  if (targetType === 'all-parents' || targetType === 'all-students') {
+    const studentIds = await repo.orgActiveStudentIds(orgId);
+    if (studentIds.length > 0) {
+      await notificationQueue.add('announcement.created', { studentIds, title, message: body });
+    }
+  }
+
+  return mapAnnouncement(row);
+}
+
+export async function deleteAnnouncement(orgId, id) {
+  const row = await repo.softDeleteAnnouncement(id, orgId);
+  if (!row) throw new AppError(404, 'Announcement not found in your organization');
+  return { id: row.id };
+}
+
+// ---------- reminders: заглушка (нужна запись из воркера) ----------
+// Таблицы напоминаний ещё нет: они пишутся notification-воркером при отправке
+// платёжных уведомлений — отдельная задача (AB-SUPER-REM).
 export async function listReminders() {
   return { reminders: [], items: [], total: 0 };
 }
-export async function listAudit() {
-  return { items: [], total: 0 };
+
+// ---------- аудит-лог организации (Super Audit) ----------
+
+function mapAudit(a) {
+  return {
+    id: a.id,
+    action: a.action,
+    actorName: a.actor_name ?? null,
+    actorRole: a.actor_role ?? null,
+    entityType: a.entity_type ?? null,
+    entityId: a.entity_id ?? null,
+    entityLabel: a.entity_label ?? null,
+    success: a.success,
+    ip: a.ip ?? null,
+    userAgent: a.user_agent ?? null,
+    meta: a.meta ?? null,
+    createdAt: a.created_at,
+  };
+}
+
+export async function listAudit(orgId) {
+  const rows = await repo.listAudit(orgId);
+  const items = rows.map(mapAudit);
+  return { items, total: items.length };
+}
+
+/**
+ * Записать событие в аудит. Никогда не бросает: аудит — побочный эффект, его сбой
+ * не должен валить саму операцию (создание админа и т.п.). Ошибку только логируем.
+ */
+export async function recordAudit(entry) {
+  try {
+    await repo.insertAudit(entry);
+  } catch (err) {
+    logger.error({ err, action: entry.action }, 'Failed to write audit log');
+  }
+}
+
+// ---------- статистика организации (Super Stats) ----------
+
+const PERIOD_DAYS = { '7d': 7, '30d': 30, '90d': 90 };
+
+export async function stats(orgId, period = '30d') {
+  const days = PERIOD_DAYS[period] ?? 30;
+  const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const [t, branches, series, methods] = await Promise.all([
+    repo.orgTotals(orgId),
+    repo.branchBreakdown(orgId),
+    repo.revenueSeries(orgId, from),
+    repo.revenueByMethod(orgId, from),
+  ]);
+  const revenue = Number(t.revenue);
+  const debt = Number(t.outstanding_debt);
+  const branchCount = Number(t.branches);
+  return {
+    period,
+    totals: {
+      revenue,
+      outstandingDebt: debt,
+      activeStudents: Number(t.active_students),
+      admins: Number(t.admins),
+      branches: branchCount,
+      avgRevenue: branchCount > 0 ? revenue / branchCount : 0,
+      debtRatio: revenue + debt > 0 ? Number(((debt / (revenue + debt)) * 100).toFixed(1)) : 0,
+      currency: 'UZS',
+    },
+    branches: branches.map((b) => ({
+      id: b.id,
+      name: b.name,
+      revenue: Number(b.revenue),
+      debt: Number(b.debt),
+      students: Number(b.students),
+    })),
+    revenueSeries: series.map((s) => ({ date: s.day, revenue: Number(s.revenue) })),
+    paymentMethods: methods.map((m) => ({ method: m.method, amount: Number(m.amount) })),
+  };
+}
+
+// ---------- отчёт организации (Super Reports) ----------
+
+export async function reports(orgId) {
+  const [t, branches] = await Promise.all([repo.orgTotals(orgId), repo.branchBreakdown(orgId)]);
+  const revenue = Number(t.revenue);
+  const branchCount = Number(t.branches);
+  return {
+    totals: {
+      branches: branchCount,
+      activeStudents: Number(t.active_students),
+      admins: Number(t.admins),
+      revenue,
+      outstandingDebt: Number(t.outstanding_debt),
+      avgRevenue: branchCount > 0 ? revenue / branchCount : 0,
+      currency: 'UZS',
+    },
+    branches: branches.map((b) => {
+      const r = Number(b.revenue);
+      return {
+        id: b.id,
+        name: b.name,
+        students: Number(b.students),
+        admins: Number(b.admins),
+        revenue: r,
+        debt: Number(b.debt),
+        share: revenue > 0 ? Number(((r / revenue) * 100).toFixed(1)) : 0,
+      };
+    }),
+  };
 }
 
 // ---------- дашборд организации ----------

@@ -23,6 +23,10 @@ export const listExpenses = asyncHandler(async (req, res) => {
   res.json(await service.listExpenses(branchId(req), req.query));
 });
 
+export const updateExpense = asyncHandler(async (req, res) => {
+  res.json({ expense: await service.updateExpense(branchId(req), req.params.id, req.body) });
+});
+
 export const deleteExpense = asyncHandler(async (req, res) => {
   await service.deleteExpense(branchId(req), req.params.id);
   res.status(204).end();
