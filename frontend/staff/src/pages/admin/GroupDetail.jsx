@@ -21,7 +21,7 @@ import { Avatar, RowSkeleton, EmptyState, Modal } from '../mentor/_ui.jsx';
 const fullName = (s) => s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
 
 /* Короткие ярлыки дней для строки расписания в шапке группы. */
-const DAY_LABEL = { mon: 'Du', tue: 'Se', wed: 'Cho', thu: 'Pa', fri: 'Ju', sat: 'Sha', sun: 'Ya' };
+const DAY_LABEL = { mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс' };
 
 function scheduleText(group) {
   let sched = group?.schedule;
@@ -51,8 +51,8 @@ function Meta({ Icon, label, value }) {
 const pad = (n) => String(n).padStart(2, '0');
 const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 const MONTHS = [
-  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
-  'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr',
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
 ];
 
 function buildMonthStrip(base) {
@@ -315,25 +315,25 @@ function AttendanceTab({ groupId, token }) {
             <span className="w-6 h-6 rounded-lg border grid place-items-center bg-emerald-100 text-emerald-700 border-emerald-300">
               <Check size={13} strokeWidth={3} />
             </span>
-            keldi
+            Пришёл
           </li>
           <li className="flex items-center gap-1.5">
             <span className="w-6 h-6 rounded-lg border grid place-items-center bg-amber-200 text-amber-800 border-amber-400">
               <Clock size={13} strokeWidth={2.5} />
             </span>
-            kechga qoldi
+            Опоздал
           </li>
           <li className="flex items-center gap-1.5">
             <span className="w-6 h-6 rounded-lg border grid place-items-center bg-red-500 text-white border-red-500">
               <X size={13} strokeWidth={3} />
             </span>
-            kelmadi
+            Не пришёл
           </li>
           <li className="flex items-center gap-1.5">
             <span className="w-6 h-6 rounded-lg border border-gray-200 grid place-items-center text-gray-300">
               <Minus size={13} />
             </span>
-            belgilanmagan
+            Не отмечен
           </li>
         </ul>
         <span className="flex items-center gap-1.5 text-xs text-base-content/45">
@@ -375,7 +375,7 @@ function AttendanceTab({ groupId, token }) {
       {/* ── Calendar table ── */}
       <div className="overflow-auto flex-1 min-h-0">
         {students.length === 0 ? (
-          <EmptyState icon={Users} title="Bu guruhda o'quvchilar yo'q" />
+          <EmptyState icon={Users} title="В этой группе нет учеников" />
         ) : (
           <div
             className={slideDir ? `animate-slide-${slideDir}` : ''}
@@ -386,7 +386,7 @@ function AttendanceTab({ groupId, token }) {
               <tr>
                 {/* Sticky student name column */}
                 <th className="sticky left-0 top-0 z-20 bg-base-100 w-[160px] sm:w-[240px] min-w-[160px] sm:min-w-[240px] px-3 sm:px-4 py-3 text-left text-[13px] font-bold text-base-content">
-                  O'quvchi
+                  Ученик
                 </th>
                 {/* Day columns (current 15-day chunk) */}
                 {currentChunk.map((d) => {
@@ -405,7 +405,7 @@ function AttendanceTab({ groupId, token }) {
                         {pad(d)}.{pad(month + 1)}
                       </div>
                       <div className="text-[8px] uppercase mt-0.5 opacity-70">
-                        {new Date(year, month, d).toLocaleDateString('uz-UZ', { weekday: 'short' })}
+                        {new Date(year, month, d).toLocaleDateString('ru-RU', { weekday: 'short' })}
                       </div>
                     </th>
                   );
@@ -491,7 +491,7 @@ function AttendanceTab({ groupId, token }) {
         const hsCode = hs.login_code || hs.loginCode || '—';
         const hsStatus = hs.status || 'active';
         const hsDebt = hs.totalDebt ?? hs.debt ?? 0;
-        const statusLabel = hsStatus === 'active' ? 'Faol' : hsStatus === 'frozen' ? 'Muzlatilgan' : hsStatus;
+        const statusLabel = hsStatus === 'active' ? 'Активен' : hsStatus === 'frozen' ? 'Заморожен' : hsStatus;
         const statusColor = hsStatus === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
         return (
           <div
@@ -549,7 +549,7 @@ function HomeworkTab({ groupId }) {
     if (s === 'overdue') return 'bg-red-100 text-red-700';
     return 'bg-gray-100 text-gray-500';
   };
-  const statusLabel = (s) => s === 'active' ? 'Faol' : s === 'completed' ? 'Bajarildi' : s === 'overdue' ? 'Muddati o\'tgan' : s;
+  const statusLabel = (s) => s === 'active' ? 'Активна' : s === 'completed' ? 'Выполнено' : s === 'overdue' ? 'Просрочено' : s;
 
   const filteredHw = hw.filter((h) => {
     if (statusFilter !== 'all' && h.status !== statusFilter) return false;
@@ -575,18 +575,18 @@ function HomeworkTab({ groupId }) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <span className="text-[13px] font-bold text-base-content/70 whitespace-nowrap">
-            Uy vazifalari ({filteredHw.length})
+            Домашние задания ({filteredHw.length})
           </span>
           <input
             type="search"
-            placeholder="Qidirish..."
+            placeholder="Поиск..."
             value={hwSearch}
             onChange={(e) => setHwSearch(e.target.value)}
             className="input input-bordered input-xs w-32 sm:w-40 rounded-lg text-[12px]"
           />
         </div>
         <button className="btn btn-primary btn-sm gap-1 shrink-0" onClick={() => setShowAdd(true)}>
-          <Plus size={14} /> Qo'shish
+          <Plus size={14} /> Добавить
         </button>
       </div>
 
@@ -602,7 +602,7 @@ function HomeworkTab({ groupId }) {
             }`}
             onClick={() => setStatusFilter(f)}
           >
-            {f === 'all' ? 'Barchasi' : statusLabel(f)}
+            {f === 'all' ? 'Все' : statusLabel(f)}
           </button>
         ))}
       </div>
@@ -610,7 +610,7 @@ function HomeworkTab({ groupId }) {
       {filteredHw.length === 0 ? (
         <div className="text-center py-12 text-base-content/45 text-[13px]">
           <BookOpen size={32} className="mx-auto mb-2 opacity-30" />
-          {hw.length === 0 ? "Hali uy vazifasi yo'q" : "Hech narsa topilmadi"}
+          {hw.length === 0 ? "Пока нет заданий" : "Ничего не найдено"}
         </div>
       ) : (
         <div className="space-y-3">
@@ -643,13 +643,13 @@ function HomeworkTab({ groupId }) {
       )}
 
       {/* Add Modal */}
-      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Уй вазифаси қўшиш"
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Добавить задание"
         actions={
           <>
             <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Бекор қилиш</button>
             <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.title.trim() || submitting}>
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-              Қўшиш
+              Добавить
             </button>
           </>
         }
@@ -657,13 +657,13 @@ function HomeworkTab({ groupId }) {
         <div className="space-y-3">
           <input
             className="input input-bordered w-full"
-            placeholder="Сарлавха"
+            placeholder="Заголовок"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
           <textarea
             className="textarea textarea-bordered w-full"
-            placeholder="Тафсилот (ихтиёрий)"
+            placeholder="Описание (необязательно)"
             rows={3}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -733,12 +733,12 @@ function FeedbackTab({ groupId }) {
               }`}
               onClick={() => setFilter(f)}
             >
-              {f === 'all' ? 'Барчаси' : f === 'student' ? 'О\'quvchi' : 'Ментор'}
+              {f === 'all' ? 'Все' : f === 'student' ? 'Ученик' : 'Ментор'}
             </button>
           ))}
         </div>
         <button className="btn btn-primary btn-sm gap-1" onClick={() => setShowAdd(true)}>
-          <Plus size={14} /> Қўшиш
+          <Plus size={14} /> Добавить
         </button>
       </div>
 
@@ -762,7 +762,7 @@ function FeedbackTab({ groupId }) {
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     f.type === 'student' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
                   }`}>
-                    {f.type === 'student' ? 'О\'quvchi' : 'Ментор'}
+                    {f.type === 'student' ? 'Ученик' : 'Ментор'}
                   </span>
                 </div>
                 {renderStars(f.rating)}
@@ -775,13 +775,13 @@ function FeedbackTab({ groupId }) {
       )}
 
       {/* Add Modal */}
-      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Фикр-мулоҳоза қўшиш"
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Добавить отзыв"
         actions={
           <>
             <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Бекор қилиш</button>
             <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.content.trim() || submitting}>
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-              Юбориш
+              Отправить
             </button>
           </>
         }
@@ -796,19 +796,19 @@ function FeedbackTab({ groupId }) {
                 }`}
                 onClick={() => setForm({ ...form, type: t })}
               >
-                {t === 'student' ? 'О\'quвчи' : 'Ментор'}
+                {t === 'student' ? 'Ученик' : 'Ментор'}
               </button>
             ))}
           </div>
           <input
             className="input input-bordered w-full"
-            placeholder="Муаллиф номи"
+            placeholder="Имя автора"
             value={form.authorName}
             onChange={(e) => setForm({ ...form, authorName: e.target.value })}
           />
           <textarea
             className="textarea textarea-bordered w-full"
-            placeholder="Фикр-мулоҳоза матни..."
+            placeholder="Текст отзыва..."
             rows={4}
             value={form.content}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
@@ -835,9 +835,9 @@ function FeedbackTab({ groupId }) {
 
 /* ═══════════════ Main GroupDetail ═══════════════ */
 const TABS = [
-  { key: 'attendance', label: 'Давомат', icon: CalendarDays },
-  { key: 'homework', label: 'Уй вазифаси', icon: BookOpen },
-  { key: 'feedback', label: 'Фикр-мулоҳоза', icon: MessageSquare },
+  { key: 'attendance', label: 'Посещаемость', icon: CalendarDays },
+  { key: 'homework', label: 'Домашние задания', icon: BookOpen },
+  { key: 'feedback', label: 'Отзывы', icon: MessageSquare },
 ];
 
 export default function AdminGroupDetail() {
@@ -888,12 +888,12 @@ export default function AdminGroupDetail() {
     <div className="space-y-5 pb-8">
       {/* Back link */}
       <Link to="/groups" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-base-content/45 hover:text-primary transition-colors animate-fade-in">
-        <ArrowLeft size={16} /> Группаларга
+        <ArrowLeft size={16} /> К группам
       </Link>
 
       <PageHeader title={group.name || 'Группа'} subtitle={group.mentorName ? `Ментор: ${group.mentorName}` : group.mentor?.name ? `Ментор: ${group.mentor.name}` : undefined}>
         <button className="btn btn-primary btn-sm gap-1" onClick={() => setAdding(true)}>
-          <UserPlus size={16} /> Қўшиш
+          <UserPlus size={16} /> Добавить
         </button>
       </PageHeader>
 
@@ -904,11 +904,11 @@ export default function AdminGroupDetail() {
           цена и суммарный долг (последнее важно именно админу). */}
       <div className="card bg-base-100 px-4 py-3.5 animate-fade-in stagger-1">
         <div className="flex items-center gap-x-8 gap-y-3 flex-wrap">
-          <Meta Icon={Users} label="O'quvchilar" value={students.length} />
-          {group.subject && <Meta Icon={BookOpen} label="Yo'nalish" value={group.subject} />}
-          {scheduleText(group) && <Meta Icon={CalendarDays} label="Jadval" value={scheduleText(group)} />}
-          {group.monthlyPrice > 0 && <Meta Icon={CreditCard} label="Oylik" value={money(group.monthlyPrice)} />}
-          {totalDebt > 0 && <Meta Icon={Clock} label="Jami qarz" value={money(totalDebt)} />}
+          <Meta Icon={Users} label="Ученики" value={students.length} />
+          {group.subject && <Meta Icon={BookOpen} label="Направление" value={group.subject} />}
+          {scheduleText(group) && <Meta Icon={CalendarDays} label="Расписание" value={scheduleText(group)} />}
+          {group.monthlyPrice > 0 && <Meta Icon={CreditCard} label="Оплата/мес" value={money(group.monthlyPrice)} />}
+          {totalDebt > 0 && <Meta Icon={Clock} label="Общий долг" value={money(totalDebt)} />}
         </div>
       </div>
 
@@ -938,11 +938,11 @@ export default function AdminGroupDetail() {
       </div>
 
       {/* Add Student Modal */}
-      <Modal isOpen={adding} onClose={() => setAdding(false)} title="О'кувчини қўшиш"
+      <Modal isOpen={adding} onClose={() => setAdding(false)} title="Добавить ученика"
         actions={
           <>
             <button className="btn btn-ghost" onClick={() => setAdding(false)}>Бекор қилиш</button>
-            <button className="btn btn-primary" onClick={add} disabled={!pick}>Қўшиш</button>
+            <button className="btn btn-primary" onClick={add} disabled={!pick}>Добавить</button>
           </>
         }
       >

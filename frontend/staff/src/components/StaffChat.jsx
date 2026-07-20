@@ -43,13 +43,15 @@ const COPY = {
     privacyTitle: "Bu yozishmani faqat siz va suhbatdosh ko'radi. Administrator ham ko'ra olmaydi.",
   },
   admin: {
-    searchPlaceholder: "O'quvchi yoki ota-ona...",
-    emptyTitle: "Hozircha suhbatdoshlar yo'q",
-    emptyHint: "Filialdagi o'quvchilar va ularning ota-onalari shu yerda paydo bo'ladi.",
-    pickTitle: 'Suhbatdoshni tanlang',
-    pickHint: "Chapdagi ro'yxatdan suhbatdoshni tanlasangiz, yozishma shu yerda ochiladi.",
-    composerIdle: "Yozish uchun chapdan suhbatdoshni tanlang",
-    privacyTitle: "Bu yozishmani faqat siz va suhbatdosh ko'radi.",
+    // Админ переписывается только с родителями (не с учениками) — см. бэкенд
+    // canStaffChatStudent / getContacts.
+    searchPlaceholder: 'Ota-onani qidirish...',
+    emptyTitle: "Hozircha ota-onalar yo'q",
+    emptyHint: "Filialdagi o'quvchilarning ota-onalari shu yerda paydo bo'ladi.",
+    pickTitle: 'Ota-onani tanlang',
+    pickHint: "Chapdagi ro'yxatdan ota-onani tanlasangiz, yozishma shu yerda ochiladi.",
+    composerIdle: "Yozish uchun chapdan ota-onani tanlang",
+    privacyTitle: "Bu yozishmani faqat siz va ota-ona ko'radi.",
   },
 };
 
