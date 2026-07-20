@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 20.07.2026 19:42 (UTC+5, Toshkent vaqti)
-> Statistika: 135/200 task tugallangan (67%)
+> Oxirgi yangilanish: 21.07.2026 00:16 (UTC+5, Toshkent vaqti)
+> Statistika: 137/205 task tugallangan (66%)
 
 ---
 
-## Progress: [#############.......] 67%
+## Progress: [#############.......] 66%
 
 ## Tugallangan vazifalar
 
@@ -91,6 +91,10 @@
 - [x] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa (repository listOrgStudents: ILIKE search + LIMIT/OFFSET)
 - [x] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
 - [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
+
+### Backend — YANGI TOPSHIRIQ (Abdulaziz) 🔥 2026-07-19, Karis bergan
+- [x] AB-EXPENSE-PATCH ✅ TUZATILDI (2026-07-21 audit): `PATCH /api/admin/expenses/:id`
+- [x] AB-VERIFY: Parent Chat — Socket.io realtime ✅ TASDIQLANDI (2026-07-21, Kama auditi):
 
 ### Backend — Infrastructure (Abdulaziz) ✅
 - [x] AB-INFRA: Scaffold + structure + deps + docker-compose
@@ -186,7 +190,7 @@
 - [x] PARENT: Davomat detali — Attendance.jsx
 - [x] PARENT: Baholar / uy vazifa natijalari — Grades.jsx
 - [x] PARENT: To'lov / qarz — Debt.jsx
-- [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ⚠️ Socket.io realtime ulanishi tekshirilmagan
+- [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ✅ Socket.io realtime tasdiqlandi (2026-07-21)
 - [x] PARENT: Bildirishnomalar — Notifications.jsx
 
 ### Frontend — Landing Page ✅
@@ -204,6 +208,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 83 task
-- Abdulaziz (Backend): 57 task
+- Karis (Backend): 85 task
+- Abdulaziz (Backend): 59 task
 - Frontend jamoasi: 48 task

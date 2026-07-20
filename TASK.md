@@ -299,11 +299,11 @@
 - [ ] AB-SUPER-REPORTS: `GET /api/super/reports` — organizatsiya bo'yicha HAQIQIY hisobot
       (filiallar kesimida tushum, qarz, o'quvchi harakati). Hozir front Dashboard datasini ko'rsatyapti.
       Front tomoni: FE-SUPER-REPORTS (Aziz)
-- [ ] AB-EXPENSE-PATCH 🆕 (audit 2026-07-19): `PATCH`/`PUT /api/admin/expenses/:id` YO'Q —
-      faqat POST, GET va DELETE bor (`admin.routes.js:181`). Ya'ni **xarajatni TAHRIRLAB bo'lmaydi**,
-      faqat o'chirib qaytadan yozish mumkin. Front buni bilib turibdi:
-      `Expenses.jsx:339` da "TODO: Backend has no PATCH/PUT endpoint" deb yozilgan.
-      ⚠️ TASK.md da "K-ADMIN: Expenses CRUD" [x] deb turgan edi — CRUD emas, U (Update) yo'q
+- [x] AB-EXPENSE-PATCH ✅ TUZATILDI (2026-07-21 audit): `PATCH /api/admin/expenses/:id`
+      qo'shildi (`admin.routes.js:223`, controller→service→repository to'liq zanjir).
+      Front (`Expenses.jsx:358`) `editingId` bo'lsa `api.adminUpdateExpense()` chaqiradi,
+      aks holda create. Kozim TG'da qayta topgan edi — tekshirilganda allaqachon yopilgan
+      ekan (parallel commit `460914b` — "expense edit" — bilan kelgan)
 - [ ] AB-MAIN-REVENUE: `main-admin/Revenue.jsx` (454 qator) `useDashboard` da o'tiribdi —
       real tushumga ULANMAGAN. Platforma tushumi uchun alohida endpoint kerak.
       ⚠️ Pul jadvallariga faqat **SELECT** — yozish YO'Q (AB-V1 dagi "Partner profit" bilan bir xil qoida).
@@ -313,7 +313,8 @@
 
 - [ ] AB-VERIFY: `VITE_USE_MOCKS=false` bilan real backend'da Student va Parent panellarini E2E tekshirish
       (ikkalasi ham uning zonasi). Hozir ikkalasi ham faqat mock rejimida ko'rilgan
-- [ ] AB-VERIFY: Parent Chat — Socket.io realtime ulanishi hech qachon tekshirilmagan (`Chat.jsx`, 16 chaqiruv)
+- [x] AB-VERIFY: Parent Chat — Socket.io realtime ✅ TASDIQLANDI (2026-07-21, Kama auditi):
+      `member/Chat.jsx` `getSocket()` + `chat:global:send` orqali real ishlaydi
 
 ## Telegram bot (Bilol) ⚠️ TASK.md ga 2026-07-19 da QO'SHILDI
 
@@ -425,19 +426,23 @@
 
 ### 🔴 AUTH — haqiqiy ochiq tirqish (auditda topildi 2026-07-19)
 
-- [ ] AUTH-FORGOT 🔥: **Parolni tiklash FRONTDA umuman yo'q.** Backend tayyor va ishlaydi
-      (`POST /api/auth/forgot-password` + `POST /api/auth/reset-password`, passwordResetLimiter,
-      zod validatsiya, email OTP), lekin frontend da `*forgot*` / `*reset*` / `*otp*` fayl **0 ta**.
-      Ya'ni foydalanuvchi parolini unutса — interfeys orqali tiklay olmaydi.
-      Ochiq savol: `member` (Student/Parent) login-kod bilan kiradi va email'i bo'lmasligi mumkin →
-      ularga tiklash admin orqalimi yoki umuman formasiz? Qaror kerak.
+- [ ] AUTH-FORGOT 🔥 QISMAN TUZATILDI (2026-07-21 audit): avvalgi yozuv NOTO'G'RI edi —
+      "frontend da fayl 0 ta" audit fayl NOMI bo'yicha qidirgan edi, `ForgotForm` esa `Login.jsx`
+      ICHIDA yozilgan, alohida fayl emas. Haqiqatda `ForgotForm` (`staff` + `main-admin`,
+      `Login.jsx`) real backendga TO'G'RI ulangan (`forgotPassword`/`resetPassword`, `api.js:2162-63`).
+      **Qolgan haqiqiy tirqish:** `USE_MOCKS=true` bo'lganda `api.js` mock-blokida
+      `/auth/forgot-password` va `/auth/reset-password` uchun case yo'q → "Mock route not
+      implemented" (dev/mock rejimida ishlamaydi, real backendda ishlaydi). Tuzatish: mock
+      blokiga (`/auth/logout`dan keyin, ~2018-qator atrofida) ikkita `if` case qo'shish.
+      Ochiq savol qoladi: `member` (Student/Parent) login-kod bilan kiradi, email bo'lmasligi
+      mumkin → ularga tiklash admin orqalimi yoki umuman formasiz? Qaror kerak.
 - [ ] AUTH-ELYOR-4: Elyor 2026-07-16 da 4 ta muammoni topgan, lekin ular umumiy fayllarda
       (`api.js`, `auth.jsx`, `main.jsx`, `vite.config.js`) — o'z chegarasidan tashqari bo'lgani uchun
-      TEGMAGAN va Karis'ga uzatgan (`frontend/staff/elyor-log.md`). **Hech kim olmagan, osilib qolgan:**
-      1) admin dashboard `api.adminDashboard is not a function`
-      2) Google login COOP konsol xatosi
-      3) «Забыли пароль» mock ishlamaydi (AUTH-FORGOT bilan bir xil ildiz)
-      4) React Router v7 future-flag warning
+      TEGMAGAN va Karis'ga uzatgan (`frontend/staff/elyor-log.md`). 2026-07-21 qayta tekshirildi:
+      1) [x] admin dashboard `api.adminDashboard is not a function` — TUZATILGAN (`api.js:2166` bor)
+      2) [ ] «Забыли пароль» mock ishlamaydi — hali OCHIQ (AUTH-FORGOT bilan bir xil ildiz)
+      3) [ ] Google login COOP konsol xatosi — hali OCHIQ (FE-COOP)
+      4) [ ] React Router v7 future-flag warning — hali OCHIQ (FE-ROUTER-FLAG), past prioritet
 
 ## Frontend — Super Admin ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 
@@ -583,10 +588,23 @@
 - [x] PARENT: Davomat detali — Attendance.jsx
 - [x] PARENT: Baholar / uy vazifa natijalari — Grades.jsx
 - [x] PARENT: To'lov / qarz — Debt.jsx
-- [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ⚠️ Socket.io realtime ulanishi tekshirilmagan
+- [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ✅ Socket.io realtime tasdiqlandi (2026-07-21)
 - [x] PARENT: Bildirishnomalar — Notifications.jsx
 - [ ] PARENT: jonli E2E — mock o'chirilgan holda real parent login bilan tekshirish
 - [ ] PARENT: Design-system — laym #C6FF34, Manrope, 3 holat (Skeleton/Empty/Error), responsive 1280/768/375, TanStack Query
+
+### 🔴 PARENT (Kama) — auditda topilgan yangi kamchiliklar (2026-07-21)
+
+- [ ] AB-PARENT-NOTIF: `GET /api/parent/notifications` backendda YO'Q — `parent.routes.js`
+      faqat `overviewRoutes`ni ulaydi. Hozir front faqat mock bilan ishlaydi. Egasi: Abdulaziz (backend)
+- [ ] FE-PARENT-DEBT: `member/Debt.jsx:57` — progress-bar qiymati hardcode `value={0}`,
+      to'langan/kutilayotgan ulush hech qachon hisoblanmaydi. Egasi: Kama
+- [ ] FE-PARENT-PROFILE-PREF: `member/Profile.jsx:100,112` — toggle'lar `defaultChecked`,
+      `onChange` yo'q, saqlanmaydi. Backendda preference API ham yo'q. Egasi: Kama (front) + Abdulaziz (backend, kerak bo'lsa)
+- [ ] FE-PARENT-SIDEBAR-NOTIF: desktop sidebar'da bildirishnomalarga link yo'q — faqat mobil
+      qo'ng'iroq ikonkasi orqali ochiladi. Egasi: Kama
+- [ ] FE-PARENT-PAGINATION: ro'yxatlarda (Attendance/Grades/Notifications) pagination yo'q,
+      faqat oz miqdordagi yozuv ko'rsatiladi. Egasi: Kama
 
 ## Frontend — Landing Page ✅
 
