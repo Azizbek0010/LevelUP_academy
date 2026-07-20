@@ -37,7 +37,7 @@
 | Elyor | Auth | Super Admin, Admin, Mentor, Methodist |
 | Said Islom | Super Admin (дашборд) | Auth, Admin, Mentor, Methodist |
 | Aziz | Super Admin (филиалы) | Auth, Admin, Mentor, Methodist |
-| Abduloh | Admin (студенты) | Auth, Super Admin, Mentor, Methodist |
+| Abduloh | Admin (студенты) + **весь фронт** | 🔓 **ИСКЛЮЧЕНИЕ — ограничений нет** (см. ниже) |
 | Odil | Admin (группы) | Auth, Super Admin, Mentor, Methodist |
 | Hamidula | Admin (расходы) | Auth, Super Admin, Mentor, Methodist |
 | Sardor | Mentor (дашборд) | Auth, Super Admin, Admin, Methodist |
@@ -46,6 +46,17 @@
 | Azizbek | Methodist | Auth, Super Admin, Admin, Mentor |
 
 **Почему:** Каждая панель — отдельное Vite-приложение. Смешивание кода = конфликты + ломает рабочий процесс.
+
+#### 🔓 Исключение: Abduloh (решение Karis, 2026-07-20)
+
+На **Abduloh** запрет выше не распространяется — у него полный доступ ко всему `frontend/`: любая панель, любое из 5 Vite-приложений. Он может заходить в чужую панель и править код.
+
+При этом:
+
+- Владение задачами НЕ меняется — у каждого остаётся своя панель и свои таски. Доступ Abduloh это право чинить и дорабатывать, а не забрать панель себе.
+- ⛔ Затирать/удалять чужую работу нельзя даже с полным доступом. Конфликт решается через merge, а не через удаление чужого кода.
+- Правил `backend/` это не касается — туда по-прежнему нельзя.
+- Правил остальных это не касается — все остальные строки таблицы работают как раньше.
 
 ---
 

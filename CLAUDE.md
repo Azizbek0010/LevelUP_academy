@@ -238,12 +238,24 @@ LevelUp-Academy/
 | **Shohjahon** | Main Admin фронт (завершил Super Admin → переведён на Main Admin) | только `frontend/main-admin` |
 | **Said Islom** | Methodist фронт (переведён из Super Admin — панель завершена) | только `frontend/staff` (methodist) |
 | **Aziz** | Methodist фронт (переведён из Super Admin — панель завершена) | только `frontend/staff` (methodist) |
-| **Abduloh** (@Corvin_0, git: yunusovabdullox36-hash) | Admin фронт | только `frontend/staff` (admin) |
+| **Abduloh** (@Corvin_0, git: yunusovabdullox36-hash) | Admin фронт + **весь фронтенд (полный доступ)** | **ВЕСЬ `frontend/`**: любая панель, любое из 5 Vite-приложений (`staff`, `main-admin`, `member`, `student`, `landing-page`). ❌ `backend/` по-прежнему НЕЛЬЗЯ |
 | **Odil** | Admin фронт | только `frontend/staff` (admin) |
 | **Hamidula** | Admin фронт | только `frontend/staff` (admin) |
 | **Sardor** | Mentor фронт | только `frontend/staff` (mentor) |
 | **Kozim** | Mentor фронт | только `frontend/staff` (mentor) |
 | **Alish** | Mentor фронт | только `frontend/staff` (mentor) |
+
+### 🔓 Abduloh — полный доступ к фронтенду (решение Karis, 2026-07-20)
+
+Abduloh — **единственный из фронт-команды, кто не ограничен своей панелью**. Когда он представляется на входе («Кто ты?» → Abduloh), правило «работай только в своей панели» к нему **НЕ применяется**: он может править любые файлы внутри `frontend/`.
+
+Что это значит на практике:
+
+- ✅ Может: `frontend/staff` (admin, mentor, methodist, super), `frontend/main-admin`, `frontend/member`, `frontend/student`, `frontend/landing-page`
+- ❌ Не может: `backend/` (правило Frontend ≠ Backend действует), root-файлы репозитория (зона Team Lead)
+- ⚠️ **Задачи у остальных НЕ отобраны.** Elyor, Shohjahon, Said Islom, Aziz, Odil, Hamidula, Sardor, Kozim, Alish, Kama остаются владельцами своих панелей. Полный доступ Abduloh — это право входить в чужую панель и чинить/дорабатывать, а не передача владения.
+- ⛔ **Правило «не затирать чужую работу» действует поверх этого доступа без исключений.** Он не имеет права удалять/перезаписывать чужой код или ветку. Конфликт — решается через merge и разговор с автором, а не через удаление. Переписал чужой файл — сначала сообщи владельцу панели.
+- Workflow не меняется: он пушит в свою ветку `Abduloh`, merge в `save-zone` делает только Karis.
 
 
 ---
