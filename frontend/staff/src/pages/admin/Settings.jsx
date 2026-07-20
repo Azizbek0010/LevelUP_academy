@@ -5,7 +5,7 @@ import { api } from '../../api.js';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
 import {
   Building2, Palette, Bell, Shield, CreditCard, Globe,
-  CheckCircle2, AlertCircle, Eye, EyeOff, Moon, Sun,
+  CheckCircle2, AlertCircle, Eye, EyeOff,
   MessageSquare, Mail, Smartphone, Clock, Coins,
   FileText, Languages, MapPin, Phone, Save, Sparkles,
   KeyRound, Lock, Monitor, Zap, Globe2, Timer,
@@ -283,59 +283,11 @@ function TabGeneral({ settings, onChange }) {
 
 /* ═══════════════════ Tab: Appearance ═══════════════════ */
 
+// Выбор темы удалён вместе с самой тёмной темой (см. src/index.css):
+// переключатель остался бы кнопкой, которая ничего не меняет.
 function TabAppearance({ settings, onChange }) {
-  const themes = [
-    { val: 'light',  label: 'Светлая', icon: Sun },
-    { val: 'dark',   label: 'Тёмная',  icon: Moon },
-    { val: 'system', label: 'Системная', icon: Monitor },
-  ];
-
   return (
     <div className="space-y-5 animate-fade-in">
-      <SettingCard
-        icon={Palette}
-        title="Тема оформления"
-        subtitle="Выберите вид интерфейса"
-        color="#8b5cf6"
-      >
-        <div className="grid grid-cols-3 gap-3">
-          {themes.map(({ val, label, icon: Icon }) => (
-            <button
-              key={val}
-              onClick={() => onChange({ theme: val })}
-              className="flex flex-col items-center gap-2.5 py-5 px-3 rounded-2xl border transition-all duration-300"
-              style={{
-                background: settings.theme === val
-                  ? 'linear-gradient(135deg, rgba(198,255,52,0.12), rgba(198,255,52,0.04))'
-                  : 'var(--surface)',
-                borderColor: settings.theme === val ? '#C6FF34' : 'var(--border)',
-                boxShadow: settings.theme === val ? '0 4px 20px var(--green-glow)' : 'var(--shadow-sm)',
-              }}
-            >
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300"
-                style={{
-                  background: settings.theme === val ? '#C6FF34' : 'var(--surface-hover)',
-                  color: settings.theme === val ? '#141B10' : 'var(--text-muted)',
-                  boxShadow: settings.theme === val ? '0 4px 12px var(--green-glow)' : 'none',
-                }}
-              >
-                <Icon size={22} />
-              </div>
-              <span
-                className="text-[12px] font-bold"
-                style={{ color: settings.theme === val ? '#C6FF34' : 'var(--text-secondary)' }}
-              >
-                {label}
-              </span>
-              {settings.theme === val && (
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#C6FF34' }} />
-              )}
-            </button>
-          ))}
-        </div>
-      </SettingCard>
-
       <SettingCard
         icon={Sparkles}
         title="Отображение"
@@ -827,16 +779,6 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
 
-  /* ── Load persisted theme on mount ── */
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('lu-theme');
-      if (saved && ['light', 'dark', 'system'].includes(saved)) {
-        setSettings((prev) => ({ ...prev, theme: saved }));
-      }
-    } catch {}
-  }, []);
-
   useEffect(() => {
     if (data) {
       const s = data.data || data.settings || data;
@@ -845,21 +787,6 @@ export default function AdminSettings() {
       }
     }
   }, [data]);
-
-  /* ── Theme toggle: apply to document.documentElement ── */
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    if (settings.theme === 'dark') {
-      root.classList.add('dark');
-    } else if (settings.theme === 'light') {
-      root.classList.add('light');
-    } else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.classList.add(prefersDark ? 'dark' : 'light');
-    }
-    try { localStorage.setItem('lu-theme', settings.theme); } catch {}
-  }, [settings.theme]);
 
   const update = (patch) => {
     setSettings((prev) => ({ ...prev, ...patch }));

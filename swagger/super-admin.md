@@ -248,6 +248,173 @@ Freeze or unfreeze an admin account
 
 ---
 
+### GET `/api/super/announcements`
+⚠️ STUB — always returns an empty list
+
+NOT IMPLEMENTED. There is no announcements table in the schema yet. The endpoint exists only so the Announcements page can render its EmptyState. Real implementation = migration + notificationQueue.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Responses:**
+
+- **200** — Always empty
+  - `announcements` (optional):
+    - _array of:_
+      - _(free-form object)_
+  - `items` (optional):
+    - _array of:_
+      - _(free-form object)_
+  - `total`: integer (optional) _e.g. 0_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### POST `/api/super/announcements`
+⚠️ NOT IMPLEMENTED — always 501
+
+Needs an announcements table + migration. Do not wire the UI to this yet.
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Responses:**
+
+- **501** — Endpoint is a stub — the feature has no DB table/migration yet. The route exists so the front-end can render, but it always fails. Do not wire UI to it.
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### DELETE `/api/super/announcements/{id}`
+⚠️ NOT IMPLEMENTED — always 501
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Responses:**
+
+- **501** — Endpoint is a stub — the feature has no DB table/migration yet. The route exists so the front-end can render, but it always fails. Do not wire UI to it.
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### GET `/api/super/attendance`
+Attendance across the organization (optional group/date filter)
+
+`records` and `lessons` are the same array (`lessons` is a front-end alias). `totals` counts each status over the returned records.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Params:**
+- `groupId` (query, string) (optional)
+- `date` (query, string) (optional)
+
+**Responses:**
+
+- **200** — Attendance records
+  - `records` (optional):
+    - _array of:_
+      - `id`: string (uuid) (optional)
+      - `groupId`: string (uuid) (optional)
+      - `groupName`: string (optional)
+      - `studentId`: string (uuid) (optional)
+      - `firstName`: string (optional)
+      - `lastName`: string (optional)
+      - `date`: string (date) (optional)
+      - `status`: enum: `present` | `absent` | `late` | `excused` (optional)
+  - `lessons` (optional):
+    - _array of:_
+      - _(free-form object)_
+  - `totals` (optional):
+    - `present`: integer (optional)
+    - `absent`: integer (optional)
+    - `late`: integer (optional)
+    - `excused`: integer (optional)
+  - `total`: integer (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### GET `/api/super/audit`
+⚠️ STUB — always returns an empty list
+
+NOT IMPLEMENTED. No audit-log table yet; returns an empty list so the page renders.
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Responses:**
+
+- **200** — Always empty
+  - `items` (optional):
+    - _array of:_
+      - _(free-form object)_
+  - `total`: integer (optional) _e.g. 0_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
 ### POST `/api/super/branches`
 Create a branch in the organization
 
@@ -625,6 +792,171 @@ Organization dashboard (revenue, debt, students, per-branch breakdown)
 
 ---
 
+### GET `/api/super/groups`
+List groups across the whole organization
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Responses:**
+
+- **200** — Groups of every branch
+  - `groups` (optional):
+    - _array of:_
+      - `id`: string (uuid) (optional)
+      - `name`: string (optional)
+      - `subject`: string (optional)
+      - `monthlyPrice`: number (optional)
+      - `schedule` (optional):
+        - _(free-form object)_
+      - `lessonDays` (optional):
+        - _(free-form object)_
+      - `room`: string (optional)
+      - `isArchived`: boolean (optional)
+      - `branchName`: string (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### DELETE `/api/super/groups/{id}`
+Soft-delete a group of the organization
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — Deleted
+  - `id`: string (uuid) (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### POST `/api/super/groups/{id}/archive`
+Archive a group (read-only, mutations return 403 afterwards)
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — Archived
+  - `group` (optional):
+    - `id`: string (uuid) (optional)
+    - `isArchived`: boolean (optional) _e.g. true_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### POST `/api/super/groups/{id}/unarchive`
+Unarchive a group
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — Unarchived
+  - `group` (optional):
+    - `id`: string (uuid) (optional)
+    - `isArchived`: boolean (optional) _e.g. false_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
 ### POST `/api/super/methodists`
 Create a methodist (organization-level, not tied to a branch)
 
@@ -851,5 +1183,300 @@ Freeze or unfreeze a methodist account
     - `message`: string (optional) _e.g. "Validation failed"_
     - `details` (optional):
       - _(free-form object)_
+
+---
+
+### GET `/api/super/organization`
+Organization profile (Settings page)
+
+Returns the partner organization profile. `plan` is derived from the organization's tier (see `config/plans.js`), it is not stored per-row.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Responses:**
+
+- **200** — Organization profile
+  - **Organization**:
+    - `id`: string (uuid) (optional)
+    - `name`: string (optional)
+    - `domain`: string (optional) _e.g. "levelup"_
+    - `status`: string (optional) _e.g. "active"_
+    - `lessonDurationMin`: integer (optional) — Lesson length in minutes, applied to every group of the org. Group end time is computed from it on the backend. _e.g. 90_
+    - `createdAt`: string (date-time) (optional)
+    - `plan` (optional):
+      - `branchLimit`: integer (optional)
+      - `diskSpace`: string (optional) _e.g. "500 ГБ"_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### PATCH `/api/super/organization`
+Update organization profile (name / domain / lesson duration)
+
+Partial update — at least one field is required. `lessonDurationMin` applies to every group of the organization: group end time is computed from it on the backend (see POST/PATCH /api/admin/groups).
+
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Request body:**
+- **UpdateOrganizationRequest**:
+  - `name`: string (optional)
+  - `domain`: string (optional) — Lowercased. Empty string or null clears it. Must be unique (409 otherwise).
+  - `lessonDurationMin`: integer (optional)
+
+**Responses:**
+
+- **200** — Updated organization profile
+  - **Organization**:
+    - `id`: string (uuid) (optional)
+    - `name`: string (optional)
+    - `domain`: string (optional) _e.g. "levelup"_
+    - `status`: string (optional) _e.g. "active"_
+    - `lessonDurationMin`: integer (optional) — Lesson length in minutes, applied to every group of the org. Group end time is computed from it on the backend. _e.g. 90_
+    - `createdAt`: string (date-time) (optional)
+    - `plan` (optional):
+      - `branchLimit`: integer (optional)
+      - `diskSpace`: string (optional) _e.g. "500 ГБ"_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **409** — Conflict with current state (e.g. already fired / not fired)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### GET `/api/super/reminders`
+⚠️ STUB — always returns an empty list
+
+NOT IMPLEMENTED. No reminders table yet; returns an empty list so the page renders.
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Responses:**
+
+- **200** — Always empty
+  - `reminders` (optional):
+    - _array of:_
+      - _(free-form object)_
+  - `items` (optional):
+    - _array of:_
+      - _(free-form object)_
+  - `total`: integer (optional) _e.g. 0_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### DELETE `/api/super/reminders/{id}`
+⚠️ NOT IMPLEMENTED — always 501
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Responses:**
+
+- **501** — Endpoint is a stub — the feature has no DB table/migration yet. The route exists so the front-end can render, but it always fails. Do not wire UI to it.
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### POST `/api/super/reminders/{id}/resend`
+⚠️ NOT IMPLEMENTED — always 501
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Responses:**
+
+- **501** — Endpoint is a stub — the feature has no DB table/migration yet. The route exists so the front-end can render, but it always fails. Do not wire UI to it.
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### GET `/api/super/students`
+List students across the whole organization (paginated)
+
+Search matches first name, last name or phone (ILIKE). Scope is the caller's organization — students of every branch are included.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Params:**
+- `search` (query, string) (optional) — Substring match on first name / last name / phone
+- `frozen` (query, string) (optional) — Filter by frozen status; omit for all
+- `page` (query, integer) (optional)
+- `limit` (query, integer) (optional)
+
+**Responses:**
+
+- **200** — Paginated students
+  - `students` (optional):
+    - _array of:_
+      - `id`: string (uuid) (optional)
+      - `firstName`: string (optional)
+      - `lastName`: string (optional)
+      - `phone`: string (optional)
+      - `status`: string (optional)
+      - `frozen`: boolean (optional)
+      - `branchName`: string (optional)
+      - `createdAt`: string (date-time) (optional)
+  - `total`: integer (optional)
+  - `page`: integer (optional)
+  - `pageCount`: integer (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### DELETE `/api/super/students/{id}`
+Soft-delete a student of the organization
+
+Sets `deleted_at`; the row is kept for finance history.
+
+**Auth:** Bearer JWT required
+**Role(s):** superadmin
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — Deleted
+  - `id`: string (uuid) (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
 
 ---

@@ -104,17 +104,11 @@ function StatRow({ Icon, label, value, danger, accent }) {
 
 /* ═══════════════ Revenue Chart ═══════════════ */
 function RevenueChart({ totals, thisMonth }) {
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
-  useEffect(() => {
-    const obs = new MutationObserver(() => setIsDark(document.documentElement.classList.contains('dark')));
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => obs.disconnect();
-  }, []);
-
-  const tickColor = isDark ? '#94a388' : '#6b7a62';
-  const gridColor = isDark ? 'rgba(45, 54, 40, 0.4)' : 'rgba(220, 229, 212, 0.3)';
-  const tooltipBg = isDark ? '#1a1f16' : '#1a1f16';
-  const tooltipBorder = isDark ? '#2d3628' : '#2d3628';
+  // Тема одна (светлая) — наблюдатель за классом `dark` больше не нужен.
+  const tickColor = '#5c6b53';
+  const gridColor = 'rgba(220, 229, 212, 0.3)';
+  const tooltipBg = '#1a1f16';
+  const tooltipBorder = '#2d3628';
 
   const chartData = {
     labels: ['Доход', 'Расход', 'Прибыль'],

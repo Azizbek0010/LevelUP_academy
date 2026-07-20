@@ -226,6 +226,7 @@ function mapOrganization(o) {
     domain: o.domain,
     status: o.status,
     lessonDurationMin: o.lesson_duration_min,
+    coinsPerStudent: o.coins_per_student,
     createdAt: o.created_at,
     plan: {
       branchLimit: limits?.maxBranches ?? null,

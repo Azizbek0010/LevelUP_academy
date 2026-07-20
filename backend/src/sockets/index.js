@@ -5,6 +5,8 @@ import { redis, redisPub, redisSub } from '../config/redis.js';
 import { socketAuth } from './socketAuth.js';
 import { registerPresence } from './presence.js';
 import { registerChat } from './chat.js';
+import { registerAttendance } from './attendance.js';
+import { setIO } from './io.js';
 
 export function initSockets(httpServer) {
   const io = new Server(httpServer, {
@@ -20,7 +22,9 @@ export function initSockets(httpServer) {
   io.on('connection', (socket) => {
     registerPresence(io, socket, redis);
     registerChat(io, socket, redis);
+    registerAttendance(io, socket);
   });
 
+  setIO(io); // даёт сервисам (davomat и т.п.) слать live-события из HTTP-слоя
   return io;
 }

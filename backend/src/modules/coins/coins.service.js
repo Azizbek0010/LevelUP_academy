@@ -36,7 +36,8 @@ const monthKeyFor = (branchId) => `lb:branch:${branchId}:month:${monthKey()}`;
  *   Если не передан — оборачивает в собственную транзакцию и шлёт side-effects сам.
  */
 export async function changeCoins(input, client = null) {
-  const { studentId, actorId, amount, operation, reason, refType = null, refId = null } = input;
+  const { studentId, actorId, amount, operation, reason, refType = null, refId = null,
+    groupId = null } = input;
 
   if (!Number.isInteger(amount) || amount === 0) {
     throw new AppError(422, 'Coin amount must be a non-zero integer');
@@ -58,7 +59,7 @@ export async function changeCoins(input, client = null) {
     await repo.setBalance(studentId, balanceAfter, db);
     const history = await repo.insertHistory(
       { branchId: profile.branch_id, studentId, actorId, operation, amount, balanceAfter,
-        reason: reason.trim(), refType, refId },
+        reason: reason.trim(), refType, refId, groupId },
       db,
     );
     return { history, balanceAfter, branchId: profile.branch_id };

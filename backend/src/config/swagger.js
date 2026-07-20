@@ -60,6 +60,7 @@ const definition = {
     { name: 'Chat', description: 'Realtime chat REST history (sending is via Socket.io, not REST)' },
     { name: 'Coins', description: "Student's own coin balance + history" },
     { name: 'Users', description: 'Cross-role profile endpoints (own profile, scoped user lookups)' },
+    { name: 'Discipline', description: 'Дисциплина сотрудников: штрафы (shtraf) + увольнение (qora) + устав организации' },
   ],
   components,
   security: [{ bearerAuth: [] }],

@@ -15,9 +15,84 @@ body {
   font-feature-settings: 'cv11', 'ss01';
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   ТЁМНОЙ ТЕМЫ БОЛЬШЕ НЕТ.
+   Панель работает в единственной светлой теме `levelup`
+   (см. tailwind.config.js). Раньше здесь жили ~300 строк
+   `html.dark …` с !important и переопределение `--p`/`--pc`
+   в RGB, которое DaisyUI 4.12 подставлял в `oklch()` — из-за
+   этого весь primary был нечитаем. Оба источника проблемы
+   удалены: primary теперь задаётся один раз, в конфиге темы.
+   Если тёмная тема когда-нибудь понадобится — её надо делать
+   переменными темы DaisyUI, а не слоем !important-патчей.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* Brand */
+  --green: #40833B;
+  --green-dark: #35702f;
+  --green-bg: rgba(64, 131, 59, 0.10);
+  --green-glow: rgba(64, 131, 59, 0.18);
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --surface-hover: #f6faef;
+  --bg: #f5f8f1;
+  --accent: #16210f;
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(220, 229, 212, 0.6);
+  --glass: rgba(255, 255, 255, 0.72);
+
+  /* Borders */
+  --border: #dce5d4;
+
+  /* Text */
+  --text: #1D2417;
+  --text-secondary: #5c6b53;
+  --text-muted: #7d8c73;
+
+  /* Status */
+  --danger: #dc2626;
+  --danger-light: #fef2f2;
+  --success: #15803d;
+  --success-light: #f0fdf4;
+  --warning: #b45309;
+  --info: #2563eb;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(29, 36, 23, 0.06);
+  --shadow: 0 4px 12px rgba(29, 36, 23, 0.08);
+  --shadow-lg: 0 8px 24px rgba(29, 36, 23, 0.12);
+
+  /* Border radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Sidebar */
+  --sidebar-hover: rgba(198, 255, 52, 0.08);
+}
+
+/* Тень — из docs/FRONTEND-DESIGN-SYSTEM.md («карточки — чисто белые, с явной
+   тенью»). Стояло вчетверо слабее (0.04 против 0.14), поэтому белые карточки
+   почти сливались со светлым фоном и вся панель выглядела плоской. */
 .card {
   border: 1px solid theme('colors.base-300');
-  box-shadow: 0 1px 2px rgba(29, 36, 23, 0.04), 0 4px 16px rgba(29, 36, 23, 0.04);
+  box-shadow: 0 10px 28px rgba(29, 36, 23, 0.10), 0 2px 6px rgba(29, 36, 23, 0.06);
+}
+
+/* Всплывающие слои (меню в шапке, поповеры) — выше карточек, тень сильнее:
+   иначе панель, висящая над контентом, читается как его часть. */
+.popover-surface {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(29, 36, 23, 0.18), 0 4px 12px rgba(29, 36, 23, 0.10);
 }
 
 .table thead th {
@@ -152,6 +227,7 @@ body {
 
 /* ═══════════════════════════════════════════════════════════════
    DAISYUI COMPONENT OVERRIDES — force theme-aware backgrounds
+   DAISYUI COMPONENT OVERRIDES
    ═══════════════════════════════════════════════════════════════ */
 
 /* Modal — ensure full-viewport overlay regardless of parent stacking context */
@@ -216,6 +292,12 @@ body {
   background: var(--danger-light) !important;
   border-color: var(--danger) !important;
   color: var(--danger) !important;
+/* Фон рисуют Layout и страницы — html/body не должны просвечивать своим */
+html,
+body,
+#root,
+#root > div {
+  background-color: transparent !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -270,8 +352,8 @@ body {
   100% { background-position: 200% 0; }
 }
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(198, 255, 52, 0); }
-  50%      { box-shadow: 0 0 12px 4px rgba(198, 255, 52, 0.18); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(64, 131, 59, 0); }
+  50%      { box-shadow: 0 0 12px 4px rgba(64, 131, 59, 0.18); }
 }
 
 .animate-fade-in {
@@ -294,6 +376,17 @@ body {
 }
 .animate-glow-pulse {
   animation: glow-pulse 2.5s ease-in-out infinite;
+}
+
+/* Уважаем системную настройку «меньше движения» */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -360,7 +453,7 @@ body {
 
 /* Green glow ring for focused/active elements */
 .glow-ring {
-  box-shadow: 0 0 0 3px rgba(198, 255, 52, 0.3);
+  box-shadow: 0 0 0 3px rgba(64, 131, 59, 0.28);
 }
 
 /* Pulsing dot indicator (online status) */
@@ -400,4 +493,12 @@ body {
 html {
   scrollbar-color: rgba(198, 255, 52, 0.15) transparent;
   scrollbar-width: thin;
+/* Клавиатурная доступность: видимый фокус на всех интерактивных элементах.
+   :focus-visible не срабатывает на клик мышью — визуального шума не добавляет. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+}
 }

@@ -21,6 +21,8 @@ import {
   createAnnouncementSchema,
 } from './admin.schemas.js';
 import * as ctrl from './admin.controller.js';
+import * as discipline from '../discipline/discipline.controller.js';
+import { issuePenaltySchema, listPenaltiesQuery } from '../discipline/discipline.schemas.js';
 import paymentsRoutes from './payments/payments.routes.js';
 import reportsRoutes from './reports/reports.routes.js';
 
@@ -72,6 +74,29 @@ router.use('/reports', reportsRoutes);
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
 router.get('/dashboard', ctrl.dashboard);
+/**
+ * @openapi
+ * /api/admin/settings:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Branch-visible org settings (lesson duration)
+ *     description: >
+ *       Read-only for admins — the value is owned by the organization and is edited by the
+ *       Super Admin (PATCH /api/super/organization). The group form uses it to compute the
+ *       lesson end time from the chosen start time.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Settings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 lessonDurationMin: { type: integer, nullable: true, example: 90 }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
 router.get('/settings', ctrl.settings);
 
 /**
@@ -834,6 +859,110 @@ router.post('/groups/:id/students', validate({ params: idParam, body: addGroupSt
 router.delete('/groups/:id/students/:studentId', validate({ params: groupStudentParams }), ctrl.removeGroupStudent);
 
 // объявления (для Telegram-бота — рассылка родителям/студентам филиала или группы)
+/**
+ * @openapi
+ * /api/admin/announcements:
+ *   post:
+ *     tags: [Admin]
+ *     summary: Broadcast an announcement to students of the branch (or one group)
+ *     description: >
+ *       Resolves the recipients (all active students of the branch, or only the given group),
+ *       then enqueues `announcement.created` on the notification queue — delivery is handled
+ *       asynchronously by the Telegram bot worker, never inline.
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, message]
+ *             properties:
+ *               title: { type: string, minLength: 1, maxLength: 160 }
+ *               message: { type: string, minLength: 1, maxLength: 2000 }
+ *               groupId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Omit to send to every active student of the branch
+ *     responses:
+ *       201:
+ *         description: Queued for delivery
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
 router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
+
+// ==================== ДИСЦИПЛИНА ====================
+
+/**
+ * @openapi
+ * /api/admin/charter:
+ *   get:
+ *     tags: [Discipline]
+ *     summary: View organization charter (read-only for Admin)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Charter
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Charter' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ * /api/admin/penalties:
+ *   get:
+ *     tags: [Discipline]
+ *     summary: List penalties issued by this admin
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: targetUserId
+ *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: type
+ *         schema: { type: string, enum: [shtraf, qora] }
+ *     responses:
+ *       200:
+ *         description: Penalty list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { type: array, items: { $ref: '#/components/schemas/Penalty' } }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *   post:
+ *     tags: [Discipline]
+ *     summary: Issue penalty — Admin → mentor/methodist (shtraf), mentor (qora)
+ *     description: Ментор только своего филиала. Права проверяются в discipline.service.
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/IssuePenaltyRequest' }
+ *     responses:
+ *       201:
+ *         description: Penalty created
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/IssuePenaltyResponse' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get('/charter', discipline.getCharter);
+router.get('/penalties', validate({ query: listPenaltiesQuery }), discipline.listPenalties);
+router.post('/penalties', validate({ body: issuePenaltySchema }), discipline.issuePenalty);
 
 export default router;

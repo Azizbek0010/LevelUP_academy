@@ -35,9 +35,12 @@ const AdminSettings = lazy(() => import('./pages/admin/Settings.jsx'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile.jsx'));
 
 const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
-
-const MentorAttendance = lazy(() => import('./pages/mentor/Attendance.jsx'));
 const MentorChat = lazy(() => import('./pages/mentor/Chat.jsx'));
+const MentorGroups = lazy(() => import('./pages/mentor/Groups.jsx'));
+const MentorGroupWorkspace = lazy(() => import('./pages/mentor/group/GroupWorkspace.jsx'));
+const MentorProfile = lazy(() => import('./pages/mentor/Profile.jsx'));
+const MentorStudents = lazy(() => import('./pages/mentor/Students.jsx'));
+const MentorStudentDetail = lazy(() => import('./pages/mentor/StudentDetail.jsx'));
 
 const MethodistDashboard = lazy(() => import('./pages/methodist/Dashboard.jsx'));
 const TrainingTypes = lazy(() => import('./pages/methodist/TrainingTypes.jsx'));
@@ -67,6 +70,16 @@ function RoleView({ views }) {
   return Comp ? <Comp /> : <Navigate to="/" replace />;
 }
 
+/**
+ * У ментора журнал, тесты и коины больше не отдельные экраны — это вкладки
+ * внутри группы. Старые адреса оставлены живыми: по ним уже могли разойтись
+ * ссылки, и молчаливый 404 хуже переадресации. `/groups` сам откроет первую
+ * группу на нужной вкладке.
+ */
+function MentorLegacyRedirect({ tab }) {
+  return <Navigate to={`/groups?tab=${tab}`} replace />;
+}
+
 const SW = ({ children }) => <Suspense fallback={<Splash />}>{children}</Suspense>;
 
 export default function App() {
@@ -79,17 +92,28 @@ export default function App() {
 
         {/* Shared paths dispatched by role */}
         <Route path="/chat" element={<SW><RoleView views={{ mentor: MentorChat, admin: AdminChat }} /></SW>} />
-        <Route path="/groups" element={<SW><RoleView views={{ superadmin: SuperGroups, admin: AdminGroups }} /></SW>} />
+        <Route path="/groups" element={<SW><RoleView views={{ superadmin: SuperGroups, admin: AdminGroups, mentor: MentorGroups }} /></SW>} />
+        {/* Карточка группы. У админа она была под RoleGuard(['admin']); теперь
+            тот же путь обслуживает и ментора — RoleView так же не пускает
+            чужие роли (уводит на «/»), поэтому доступ админа не расширился. */}
+        <Route path="/groups/:id" element={<SW><RoleView views={{ admin: AdminGroupDetail, mentor: MentorGroupWorkspace }} /></SW>} />
         <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SW>} />
         <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
-        <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile }} /></SW>} />
-        <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: MentorAttendance }} /></SW>} />
-        <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents }} /></SW>} />
+        <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile, mentor: MentorProfile }} /></SW>} />
+        <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: () => <MentorLegacyRedirect tab="davomat" /> }} /></SW>} />
+        <Route path="/tests" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="testlar" /> }} /></SW>} />
+        <Route path="/coins" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="koinlar" /> }} /></SW>} />
+        <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents, mentor: MentorStudents }} /></SW>} />
 
         {/* Admin routes */}
+        {/* Карточка ученика: у админа своя, у ментора — статистика по его
+            предмету. RoleView так же не пускает чужие роли, как RoleGuard. */}
+        <Route
+          path="/students/:id"
+          element={<SW><RoleView views={{ admin: AdminStudentDetail, mentor: MentorStudentDetail }} /></SW>}
+        />
+
         <Route element={<RoleGuard allow={['admin']} />}>
-          <Route path="/groups/:id" element={<SW><AdminGroupDetail /></SW>} />
-          <Route path="/students/:id" element={<SW><AdminStudentDetail /></SW>} />
           <Route path="/payments" element={<SW><AdminPayments /></SW>} />
           <Route path="/expenses" element={<SW><AdminExpenses /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />

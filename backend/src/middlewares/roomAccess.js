@@ -1,5 +1,6 @@
 import { pool } from '../config/db.js';
 import { AppError } from '../utils/AppError.js';
+import { assertDmAccess } from '../modules/chat/chat.access.js';
 
 const STAFF = new Set(['main_admin', 'superadmin', 'admin', 'mentor']);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -7,8 +8,13 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 /**
  * Доступ к комнате чата по `:roomKey` (требует authenticate до себя):
  *   - global      — все, кроме студентов;
- *   - parent:<id> — сам этот родитель или staff;
+ *   - dm:<staffId>:<parentId> — только эти двое (см. chat.access.js);
  *   - group:<id>  — staff уровня филиала+ или участник группы (ментор/студент).
+ *
+ * Тип `parent:<id>` УДАЛЁН: одна общая комната на родителя означала, что любой
+ * сотрудник читает переписку любого другого сотрудника с этим родителем, а
+ * проверка «просто staff» пропускала и чужие организации. Личные диалоги теперь
+ * живут в `dm:` с проверкой реальной связи в данных.
  */
 export async function requireRoomAccess(req, _res, next) {
   try {
@@ -25,12 +31,14 @@ export async function requireRoomAccess(req, _res, next) {
     const sep = roomKey.indexOf(':');
     const type = sep === -1 ? roomKey : roomKey.slice(0, sep);
     const id = sep === -1 ? '' : roomKey.slice(sep + 1);
-    if (!UUID_RE.test(id)) return next(new AppError(400, 'Invalid room key'));
 
-    if (type === 'parent') {
-      if (STAFF.has(user.role) || user.id === id) return next();
-      return next(new AppError(403, 'No access to this room'));
+    // dm:<staffId>:<parentId> — разбирается целиком, участников ровно двое.
+    if (type === 'dm') {
+      await assertDmAccess(user, roomKey);
+      return next();
     }
+
+    if (!UUID_RE.test(id)) return next(new AppError(400, 'Invalid room key'));
 
     if (type === 'group') {
       // управленцы видят любые группы; ментор/студент — только свои

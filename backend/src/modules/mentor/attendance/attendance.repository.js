@@ -45,9 +45,16 @@ export async function findByGroupAndDate(groupId, lessonDate) {
 /** Отметки группы за диапазон дат (включительно). */
 export async function findByGroupAndRange(groupId, from, to) {
   const { rows } = await pool.query(
-    `SELECT a.*, u.first_name, u.last_name
+    /* Имя отметившего нужно в шапке журнала: у группы бывает подменный
+       преподаватель, и по колонке должно быть видно, кто вёл этот урок.
+       LEFT JOIN, а не JOIN: сотрудника могли удалить (soft-delete), и из-за
+       обычного JOIN отметка пропала бы из журнала целиком. */
+    `SELECT a.*, u.first_name, u.last_name,
+            m.first_name AS marked_by_first_name,
+            m.last_name  AS marked_by_last_name
        FROM attendance a
        JOIN users u ON u.id = a.student_id
+       LEFT JOIN users m ON m.id = a.marked_by
       WHERE a.group_id = $1 AND a.lesson_date BETWEEN $2 AND $3
       ORDER BY a.lesson_date DESC, u.last_name, u.first_name`,
     [groupId, from, to],

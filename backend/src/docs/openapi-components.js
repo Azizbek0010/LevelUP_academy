@@ -55,6 +55,20 @@ export const components = {
       description: 'zod validation failed (body/params/query)',
       content: { 'application/json': { schema: { $ref: '#/components/schemas/ValidationErrorResponse' } } },
     },
+    NotFound: {
+      description: 'Resource not found (or not in caller\'s organization/scope)',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+    },
+    Conflict: {
+      description: 'Conflict with current state (e.g. already fired / not fired)',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+    },
+    NotImplemented: {
+      description:
+        'Endpoint is a stub — the feature has no DB table/migration yet. ' +
+        'The route exists so the front-end can render, but it always fails. Do not wire UI to it.',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+    },
   },
 
   schemas: {
@@ -204,24 +218,86 @@ export const components = {
         },
       },
     },
+    Organization: {
+      type: 'object',
+      description:
+        'Partner organization profile (Super Admin → Settings). `plan` is derived at read time ' +
+        'from the org tier via config/plans.js — it is not a stored column.',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        name: { type: 'string' },
+        domain: { type: 'string', nullable: true, example: 'levelup' },
+        status: { type: 'string', example: 'active' },
+        lessonDurationMin: {
+          type: 'integer',
+          nullable: true,
+          description:
+            'Lesson length in minutes, applied to every group of the org. Group end time is ' +
+            'computed from it on the backend.',
+          example: 90,
+        },
+        createdAt: { type: 'string', format: 'date-time' },
+        plan: {
+          type: 'object',
+          properties: {
+            branchLimit: { type: 'integer', nullable: true },
+            diskSpace: { type: 'string', example: '500 ГБ' },
+          },
+        },
+      },
+    },
+    UpdateOrganizationRequest: {
+      type: 'object',
+      description: 'Partial — at least one field required.',
+      properties: {
+        name: { type: 'string', minLength: 2, maxLength: 160 },
+        domain: {
+          type: 'string',
+          nullable: true,
+          description: 'Lowercased. Empty string or null clears it. Must be unique (409 otherwise).',
+        },
+        lessonDurationMin: { type: 'integer', minimum: 10, maximum: 600 },
+      },
+    },
     PlatformPricing: {
       type: 'object',
+      description:
+        'Student-bucket tiers (model changed 2026-07-16). Branches are free — the old ' +
+        'baseFirstBranch/perExtraBranch/perStudent fields NO LONGER EXIST. ' +
+        'Price is a flat fee decided by the active student count. Source: config/plans.js.',
       properties: {
-        baseFirstBranch: { type: 'number' },
-        perExtraBranch: { type: 'number' },
-        perStudent: { type: 'number' },
+        tiers: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'standard' },
+              label: { type: 'string', example: 'Standard' },
+              minStudents: { type: 'integer', example: 101 },
+              maxStudents: {
+                type: 'integer',
+                nullable: true,
+                description: 'null = no upper bound (Network tier)',
+                example: 300,
+              },
+              price: {
+                type: 'integer',
+                nullable: true,
+                description: 'UZS/month. null = negotiated individually (Network tier)',
+                example: 349000,
+              },
+            },
+          },
+        },
         currency: { type: 'string', example: 'UZS' },
-        updatedAt: { type: 'string', format: 'date-time' },
       },
     },
     UpdatePricingRequest: {
       type: 'object',
-      description: 'Partial — at least one field required. All amounts in UZS, integers ≥ 0.',
-      properties: {
-        baseFirstBranch: { type: 'integer', minimum: 0 },
-        perExtraBranch: { type: 'integer', minimum: 0 },
-        perStudent: { type: 'integer', minimum: 0 },
-      },
+      description:
+        'DEPRECATED — tiers are hard-coded in config/plans.js, so PUT is a no-op that simply ' +
+        'echoes the current tiers back. Making them DB-editable is a v2 task.',
+      properties: {},
     },
     PartnerSummary: {
       type: 'object',
@@ -1155,6 +1231,28 @@ export const components = {
       },
     },
 
+    ChatContact: {
+      type: 'object',
+      description:
+        'A parent the caller may privately message, plus that conversation’s preview. '
+        + '`room_key` is the private pair room `dm:<staffId>:<parentId>` — it is never shared with other staff.',
+      properties: {
+        id: { type: 'string', format: 'uuid', description: 'Parent user id' },
+        first_name: { type: 'string' },
+        last_name: { type: 'string' },
+        avatar_key: { type: 'string', nullable: true },
+        child_names: {
+          type: 'string',
+          nullable: true,
+          description: 'Comma-separated children of this parent (context for the staff member)',
+        },
+        room_key: { type: 'string', example: 'dm:3fa85f64-…:9c1b2d34-…' },
+        last_message: { type: 'string', nullable: true },
+        last_message_at: { type: 'string', format: 'date-time', nullable: true },
+        unread_count: { type: 'integer', example: 2 },
+      },
+    },
+
     // ---------- users ----------
     UserProfile: {
       type: 'object',
@@ -1183,6 +1281,76 @@ export const components = {
         lastName: { type: 'string', maxLength: 80 },
         email: { type: 'string', format: 'email', maxLength: 160 },
         avatarKey: { type: 'string', maxLength: 512 },
+      },
+    },
+
+    // ---------- Methodist lesson media ----------
+    LessonUploadUrl: {
+      type: 'object',
+      description: 'Presigned S3 PUT для вложения практического задания урока',
+      properties: {
+        uploadUrl: { type: 'string', description: 'Presigned S3 PUT url (клиент грузит файл сюда)' },
+        fileKey: { type: 'string', description: 'Ключ объекта; сохранить в урок через PATCH /lessons/:id { fileKey }' },
+      },
+    },
+
+    // ---------- Discipline (штрафы + устав) ----------
+    IssuePenaltyRequest: {
+      type: 'object',
+      required: ['targetUserId', 'type', 'reason'],
+      properties: {
+        targetUserId: { type: 'string', format: 'uuid', description: 'Сотрудник: admin / mentor / methodist' },
+        type: { type: 'string', enum: ['shtraf', 'qora'], description: 'shtraf = штраф; qora = увольнение' },
+        amount: { type: 'number', minimum: 0, description: 'Сумма в сумах — обязательна для shtraf, не задаётся для qora (без автосписания)' },
+        reason: { type: 'string', maxLength: 2000 },
+      },
+    },
+    Penalty: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        type: { type: 'string', enum: ['shtraf', 'qora'] },
+        amount: { type: 'number', nullable: true, description: 'null для qora' },
+        reason: { type: 'string' },
+        created_at: { type: 'string', format: 'date-time' },
+        target_user_id: { type: 'string', format: 'uuid' },
+        target_role: { type: 'string', enum: ['admin', 'mentor', 'methodist'] },
+        target_name: { type: 'string' },
+        issued_by: { type: 'string', format: 'uuid' },
+        issuer_role: { type: 'string', enum: ['superadmin', 'admin'] },
+        issued_by_name: { type: 'string' },
+      },
+    },
+    IssuePenaltyResponse: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            penalty: { $ref: '#/components/schemas/Penalty' },
+            fired: { type: 'boolean', description: 'true если это qora (сотрудник уволен, status=fired)' },
+          },
+        },
+      },
+    },
+    Charter: {
+      type: 'object',
+      description: 'Устав организации — свободный текст правил, один на организацию',
+      properties: {
+        organization_id: { type: 'string', format: 'uuid' },
+        title: { type: 'string' },
+        content: { type: 'string' },
+        updated_by: { type: 'string', format: 'uuid', nullable: true },
+        updated_at: { type: 'string', format: 'date-time', nullable: true },
+      },
+    },
+    UpsertCharterRequest: {
+      type: 'object',
+      required: ['content'],
+      properties: {
+        title: { type: 'string', maxLength: 200 },
+        content: { type: 'string', maxLength: 20000 },
       },
     },
   },
