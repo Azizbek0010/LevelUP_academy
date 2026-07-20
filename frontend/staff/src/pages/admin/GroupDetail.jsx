@@ -14,7 +14,7 @@ import {
 } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, RowSkeleton, EmptyState } from '../mentor/_ui.jsx';
+import { Avatar, RowSkeleton, EmptyState, Modal } from '../mentor/_ui.jsx';
 
 /* ─── helpers ─── */
 const fullName = (s) => s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
@@ -39,13 +39,42 @@ function AttendanceTab({ groupId, token }) {
   const now = useMemo(() => new Date(), []);
   const todayStr = now.toLocaleDateString('en-CA');
 
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth());
+  // ── localStorage restore/persist ──
+  const LS_ATT = 'admin-attendance-state';
+  const restoreAtt = () => {
+    try { return JSON.parse(localStorage.getItem(LS_ATT)) || {}; } catch { return {}; }
+  };
+  const persistAtt = (val) => {
+    try { localStorage.setItem(LS_ATT, JSON.stringify(val)); } catch { /* noop */ }
+  };
+
+  const [year, setYear] = useState(() => restoreAtt().year ?? now.getFullYear());
+  const [month, setMonth] = useState(() => restoreAtt().month ?? now.getMonth());
   const [attendanceMap, setAttendanceMap] = useState({});
   const [saveState, setSaveState] = useState('idle');
   const pendingRef = useRef(new Map());
   const flushTimer = useRef(null);
   const mapRef = useRef({});
+  const [hoveredStudent, setHoveredStudent] = useState(null);
+  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
+  const hoverTimerRef = useRef(null);
+  const [slideDir, setSlideDir] = useState(null); // 'left' | 'right' for nav transition
+
+  const showPopup = useCallback((s, e) => {
+    clearTimeout(hoverTimerRef.current);
+    const rect = e.currentTarget.closest('td').getBoundingClientRect();
+    setPopupPos({ top: rect.bottom + 4, left: Math.max(8, rect.left) });
+    setHoveredStudent(s);
+  }, []);
+
+  const hidePopup = useCallback(() => {
+    clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => setHoveredStudent(null), 150);
+  }, []);
+
+  const keepPopup = useCallback(() => {
+    clearTimeout(hoverTimerRef.current);
+  }, []);
 
   const monthStrip = useMemo(() => buildMonthStrip(now), [now]);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -81,7 +110,7 @@ function AttendanceTab({ groupId, token }) {
 
   // Paginate into chunks of 15
   const CHUNK_SIZE = 15;
-  const [pageIndex, setPageIndex] = useState(0);
+  const [pageIndex, setPageIndex] = useState(() => restoreAtt().pageIndex ?? 0);
   const chunks = useMemo(() => {
     const result = [];
     for (let i = 0; i < DAYS.length; i += CHUNK_SIZE) result.push(DAYS.slice(i, i + CHUNK_SIZE));
@@ -92,6 +121,11 @@ function AttendanceTab({ groupId, token }) {
 
   // Reset page on month change
   useEffect(() => { setPageIndex(0); }, [year, month]);
+
+  // Persist attendance state on change
+  useEffect(() => {
+    persistAtt({ year, month, pageIndex });
+  }, [year, month, pageIndex]);
 
   // Build per-day attendance queries dynamically (useQueries — rules-of-hooks safe)
   const attendanceQueries = useMemo(() => DAYS.map((d) => {
@@ -205,6 +239,19 @@ function AttendanceTab({ groupId, token }) {
 
   return (
     <div className="flex flex-col min-h-0 flex-1 animate-fade-in">
+      {/* ── Slide animation keyframes ── */}
+      <style>{`
+        @keyframes slideInLeft {
+          from { transform: translateX(-24px); opacity: 0; }
+          to   { transform: translateX(0);    opacity: 1; }
+        }
+        @keyframes slideInRight {
+          from { transform: translateX(24px);  opacity: 0; }
+          to   { transform: translateX(0);     opacity: 1; }
+        }
+        .animate-slide-left  { animation: slideInLeft  0.25s ease-out; }
+        .animate-slide-right { animation: slideInRight 0.25s ease-out; }
+      `}</style>
       {/* ── Month strip ── */}
       <div className="shrink-0 border-b border-[var(--border)] px-3 py-2 overflow-x-auto">
         <div className="flex gap-1.5 w-max">
@@ -270,25 +317,27 @@ function AttendanceTab({ groupId, token }) {
         </span>
       </div>
 
-      {/* ── Page navigation (15 days per page) ── */}
+      {/* ── Page navigation (15 days per page) with smooth slide ── */}
       {totalPages > 1 && (
-        <div className="shrink-0 px-4 py-2 border-b border-[var(--border)] flex items-center justify-center gap-3">
+        <div className="shrink-0 px-4 py-2 border-b border-[var(--border)] flex items-center justify-center gap-4">
           <button
-            onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+            onClick={() => { setSlideDir('right'); setPageIndex((p) => Math.max(0, p - 1)); }}
             disabled={pageIndex === 0}
-            className="w-7 h-7 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="w-8 h-8 rounded-xl border border-[var(--border)] grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
+            aria-label="Oldingi sahifa"
           >
-            <ChevronLeft size={14} />
+            <ChevronLeft size={15} />
           </button>
-          <span className="text-xs font-bold text-[var(--text-muted)]">
+          <span className="text-xs font-bold text-[var(--text-muted)] tabular-nums min-w-[3rem] text-center">
             {pageIndex + 1} / {totalPages}
           </span>
           <button
-            onClick={() => setPageIndex((p) => Math.min(totalPages - 1, p + 1))}
+            onClick={() => { setSlideDir('left'); setPageIndex((p) => Math.min(totalPages - 1, p + 1)); }}
             disabled={pageIndex >= totalPages - 1}
-            className="w-7 h-7 rounded-lg border border-[var(--border)] grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="w-8 h-8 rounded-xl border border-[var(--border)] grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
+            aria-label="Keyingi sahifa"
           >
-            <ChevronRight size={14} />
+            <ChevronRight size={15} />
           </button>
         </div>
       )}
@@ -298,6 +347,10 @@ function AttendanceTab({ groupId, token }) {
         {students.length === 0 ? (
           <EmptyState icon={Users} title="Bu guruhda o'quvchilar yo'q" />
         ) : (
+          <div
+            className={slideDir ? `animate-slide-${slideDir}` : ''}
+            onAnimationEnd={() => setSlideDir(null)}
+          >
           <table className="table min-w-max border-collapse">
             <thead>
               <tr>
@@ -348,7 +401,11 @@ function AttendanceTab({ groupId, token }) {
                 return (
                   <tr key={sid} className="border-b border-[var(--border)] last:border-0">
                     {/* Sticky name cell */}
-                    <td className="sticky left-0 z-10 bg-[var(--surface)] px-3 sm:px-4 py-2.5">
+                    <td
+                      className="sticky left-0 z-10 bg-[var(--surface)] px-3 sm:px-4 py-2.5 cursor-pointer"
+                      onMouseEnter={(e) => showPopup(s, e)}
+                      onMouseLeave={hidePopup}
+                    >
                       <Link to={`/students/${sid}`} className="flex items-center gap-3 group">
                         <span className="text-xs text-[var(--green)]/40 tabular-nums w-5 shrink-0">
                           {idx + 1}.
@@ -392,8 +449,56 @@ function AttendanceTab({ groupId, token }) {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
+
+      {/* ── Hover popup ── */}
+      {hoveredStudent && (() => {
+        const hs = hoveredStudent;
+        const hsName = fullName(hs);
+        const hsPhone = hs.phone || hs.phoneNumber || '—';
+        const hsCode = hs.login_code || hs.loginCode || '—';
+        const hsStatus = hs.status || 'active';
+        const hsDebt = hs.totalDebt ?? hs.debt ?? 0;
+        const statusLabel = hsStatus === 'active' ? 'Faol' : hsStatus === 'frozen' ? 'Muzlatilgan' : hsStatus;
+        const statusColor = hsStatus === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
+        return (
+          <div
+            className="fixed z-[9999] w-64 bg-white shadow-xl rounded-2xl border border-[var(--border)] p-4 animate-fade-in pointer-events-auto"
+            style={{ top: popupPos.top, left: popupPos.left }}
+            onMouseEnter={keepPopup}
+            onMouseLeave={hidePopup}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <Avatar name={hsName} size="lg" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-bold text-[var(--text)] truncate">{hsName}</div>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${statusColor}`}>
+                  {statusLabel}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-1.5 text-[12px] text-[var(--text-muted)]">
+              {hsPhone !== '—' && (
+                <div className="flex items-center gap-2">
+                  <Phone size={11} className="shrink-0" />
+                  <span dir="auto">{hsPhone}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <KeyRound size={11} className="shrink-0" />
+                <span className="font-mono">{hsCode}</span>
+              </div>
+              {hsDebt > 0 && (
+                <div className="flex items-center gap-2 text-red-500 font-semibold">
+                  <span>Qarz: {hsDebt.toLocaleString()} so'm</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -405,6 +510,22 @@ function HomeworkTab({ groupId }) {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', dueDate: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [hwSearch, setHwSearch] = useState('');
+
+  const statusBadge = (s) => {
+    if (s === 'active') return 'bg-emerald-100 text-emerald-700';
+    if (s === 'completed') return 'bg-blue-100 text-blue-700';
+    if (s === 'overdue') return 'bg-red-100 text-red-700';
+    return 'bg-gray-100 text-gray-500';
+  };
+  const statusLabel = (s) => s === 'active' ? 'Faol' : s === 'completed' ? 'Bajarildi' : s === 'overdue' ? 'Muddati o\'tgan' : s;
+
+  const filteredHw = hw.filter((h) => {
+    if (statusFilter !== 'all' && h.status !== statusFilter) return false;
+    if (hwSearch && !h.title.toLowerCase().includes(hwSearch.toLowerCase())) return false;
+    return true;
+  });
 
   const handleAdd = async () => {
     if (!form.title.trim()) return;
@@ -418,31 +539,52 @@ function HomeworkTab({ groupId }) {
     finally { setSubmitting(false); }
   };
 
-  const statusBadge = (s) => {
-    if (s === 'active') return 'bg-emerald-100 text-emerald-700';
-    if (s === 'completed') return 'bg-blue-100 text-blue-700';
-    if (s === 'overdue') return 'bg-red-100 text-red-700';
-    return 'bg-gray-100 text-gray-500';
-  };
-  const statusLabel = (s) => s === 'active' ? 'Актив' : s === 'completed' ? 'Бajarildi' : s === 'overdue' ? 'Muddati otgan' : s;
-
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[var(--text-secondary)]">Уй вазифалари ({hw.length})</span>
-        <button className="btn btn-primary btn-sm gap-1" onClick={() => setShowAdd(true)}>
-          <Plus size={14} /> Қўшиш
+      {/* Toolbar: count + search + filter + add */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <span className="text-[13px] font-bold text-[var(--text-secondary)] whitespace-nowrap">
+            Uy vazifalari ({filteredHw.length})
+          </span>
+          <input
+            type="search"
+            placeholder="Qidirish..."
+            value={hwSearch}
+            onChange={(e) => setHwSearch(e.target.value)}
+            className="input input-bordered input-xs w-32 sm:w-40 rounded-lg text-[12px]"
+          />
+        </div>
+        <button className="btn btn-primary btn-sm gap-1 shrink-0" onClick={() => setShowAdd(true)}>
+          <Plus size={14} /> Qo'shish
         </button>
       </div>
 
-      {hw.length === 0 ? (
+      {/* Status filter pills */}
+      <div className="flex gap-2">
+        {['all', 'active', 'completed', 'overdue'].map((f) => (
+          <button
+            key={f}
+            className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition-all ${
+              statusFilter === f
+                ? 'bg-[var(--green)] text-white'
+                : 'bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)] hover:bg-[var(--green-bg)]'
+            }`}
+            onClick={() => setStatusFilter(f)}
+          >
+            {f === 'all' ? 'Barchasi' : statusLabel(f)}
+          </button>
+        ))}
+      </div>
+
+      {filteredHw.length === 0 ? (
         <div className="text-center py-12 text-[var(--text-muted)] text-[13px]">
           <BookOpen size={32} className="mx-auto mb-2 opacity-30" />
-          Ҳали уй вазифаси йўқ
+          {hw.length === 0 ? "Hali uy vazifasi yo'q" : "Hech narsa topilmadi"}
         </div>
       ) : (
         <div className="space-y-3">
-          {hw.map((h) => (
+          {filteredHw.map((h) => (
             <div key={h.id} className="p-4 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] space-y-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -454,10 +596,9 @@ function HomeworkTab({ groupId }) {
                 </span>
               </div>
               <div className="flex items-center gap-4 text-[11px] text-[var(--text-muted)]">
-                {h.dueDate && <span>Муддат: {h.dueDate}</span>}
-                <span>{h.submissions || 0} / {h.totalStudents || 0} топширилган</span>
+                {h.dueDate && <span>Muddat: {h.dueDate}</span>}
+                <span>{h.submissions || 0} / {h.totalStudents || 0} topshirilgan</span>
               </div>
-              {/* Progress bar */}
               {h.totalStudents > 0 && (
                 <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
                   <div
@@ -472,42 +613,39 @@ function HomeworkTab({ groupId }) {
       )}
 
       {/* Add Modal */}
-      {showAdd && (
-        <dialog className="modal modal-open">
-          <div className="modal-box glass-strong border border-[var(--border)]">
-            <h3 className="font-bold text-lg mb-4">Уй вазифаси қўшиш</h3>
-            <div className="space-y-3">
-              <input
-                className="input input-bordered w-full"
-                placeholder="Сарлавха"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-              />
-              <textarea
-                className="textarea textarea-bordered w-full"
-                placeholder="Тафсилот (ихтиёрий)"
-                rows={3}
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-              />
-              <input
-                type="date"
-                className="input input-bordered w-full"
-                value={form.dueDate}
-                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-              />
-            </div>
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Бекор қилиш</button>
-              <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.title.trim() || submitting}>
-                {submitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                Қўшиш
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setShowAdd(false)} />
-        </dialog>
-      )}
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Уй вазифаси қўшиш"
+        actions={
+          <>
+            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Бекор қилиш</button>
+            <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.title.trim() || submitting}>
+              {submitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              Қўшиш
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <input
+            className="input input-bordered w-full"
+            placeholder="Сарлавха"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+          />
+          <textarea
+            className="textarea textarea-bordered w-full"
+            placeholder="Тафсилот (ихтиёрий)"
+            rows={3}
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          <input
+            type="date"
+            className="input input-bordered w-full"
+            value={form.dueDate}
+            onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -517,11 +655,21 @@ function FeedbackTab({ groupId }) {
   const { data: fbData, refetch } = useAdminGroupFeedback(groupId);
   const fb = fbData?.data || fbData || [];
   const [filter, setFilter] = useState('all');
+  const [fbSearch, setFbSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ type: 'student', authorName: '', content: '', rating: 5 });
   const [submitting, setSubmitting] = useState(false);
 
-  const filtered = filter === 'all' ? fb : fb.filter((f) => f.type === filter);
+  const filtered = fb.filter((f) => {
+    if (filter !== 'all' && f.type !== filter) return false;
+    if (fbSearch) {
+      const q = fbSearch.toLowerCase();
+      const matchesContent = f.content?.toLowerCase().includes(q);
+      const matchesAuthor = f.authorName?.toLowerCase().includes(q);
+      if (!matchesContent && !matchesAuthor) return false;
+    }
+    return true;
+  });
 
   const handleAdd = async () => {
     if (!form.content.trim()) return;
@@ -597,98 +745,60 @@ function FeedbackTab({ groupId }) {
       )}
 
       {/* Add Modal */}
-      {showAdd && (
-        <dialog className="modal modal-open">
-          <div className="modal-box glass-strong border border-[var(--border)]">
-            <h3 className="font-bold text-lg mb-4">Фикр-мулоҳоза қўшиш</h3>
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                {['student', 'teacher'].map((t) => (
-                  <button
-                    key={t}
-                    className={`flex-1 py-2 rounded-[10px] text-[13px] font-bold transition-all ${
-                      form.type === t ? 'bg-[var(--green)] text-white' : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text-muted)]'
-                    }`}
-                    onClick={() => setForm({ ...form, type: t })}
-                  >
-                    {t === 'student' ? 'О\'quвчи' : 'Ментор'}
-                  </button>
-                ))}
-              </div>
-              <input
-                className="input input-bordered w-full"
-                placeholder="Муаллиф номи"
-                value={form.authorName}
-                onChange={(e) => setForm({ ...form, authorName: e.target.value })}
-              />
-              <textarea
-                className="textarea textarea-bordered w-full"
-                placeholder="Фикр-мулоҳоза матни..."
-                rows={4}
-                value={form.content}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
-              />
-              <div>
-                <label className="text-[12px] font-bold text-[var(--text-secondary)] mb-1 block">Баҳо</label>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <button
-                      key={i}
-                      onClick={() => setForm({ ...form, rating: i })}
-                      className="p-1"
-                    >
-                      <Star size={20} className={i <= form.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Бекор қилиш</button>
-              <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.content.trim() || submitting}>
-                {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                Юбориш
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Фикр-мулоҳоза қўшиш"
+        actions={
+          <>
+            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Бекор қилиш</button>
+            <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.content.trim() || submitting}>
+              {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+              Юбориш
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            {['student', 'teacher'].map((t) => (
+              <button
+                key={t}
+                className={`flex-1 py-2 rounded-[10px] text-[13px] font-bold transition-all ${
+                  form.type === t ? 'bg-[var(--green)] text-white' : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text-muted)]'
+                }`}
+                onClick={() => setForm({ ...form, type: t })}
+              >
+                {t === 'student' ? 'О\'quвчи' : 'Ментор'}
               </button>
+            ))}
+          </div>
+          <input
+            className="input input-bordered w-full"
+            placeholder="Муаллиф номи"
+            value={form.authorName}
+            onChange={(e) => setForm({ ...form, authorName: e.target.value })}
+          />
+          <textarea
+            className="textarea textarea-bordered w-full"
+            placeholder="Фикр-мулоҳоза матни..."
+            rows={4}
+            value={form.content}
+            onChange={(e) => setForm({ ...form, content: e.target.value })}
+          />
+          <div>
+            <label className="text-[12px] font-bold text-[var(--text-secondary)] mb-1 block">Баҳо</label>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <button
+                  key={i}
+                  onClick={() => setForm({ ...form, rating: i })}
+                  className="p-1"
+                >
+                  <Star size={20} className={i <= form.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
+                </button>
+              ))}
             </div>
           </div>
-          <div className="modal-backdrop" onClick={() => setShowAdd(false)} />
-        </dialog>
-      )}
-    </div>
-  );
-}
-
-/* ═══════════════ StudentCard ═══════════════ */
-function StudentCard({ s, onRemove }) {
-  return (
-    <div className="glass-strong rounded-[16px] p-4 card-hover-premium group">
-      <div className="flex items-center gap-3.5">
-        <div className="transition-transform duration-300 group-hover:scale-105">
-          <Avatar name={fullName(s)} size="lg" />
         </div>
-        <div className="flex-1 min-w-0">
-          <span className="text-[13px] font-bold text-[var(--text)] truncate block">{fullName(s)}</span>
-          <div className="flex items-center gap-3 mt-1 text-[11px] text-[var(--text-muted)]">
-            {(s.login_code || s.loginCode) && (
-              <span className="font-mono flex items-center gap-1">
-                <KeyRound size={10} /> {s.login_code || s.loginCode}
-              </span>
-            )}
-            {s.phone && (
-              <span className="flex items-center gap-1">
-                <Phone size={10} /> {s.phone}
-              </span>
-            )}
-          </div>
-        </div>
-        <button
-          className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:bg-red-50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
-          title="Группадан олиб ташлаш"
-          onClick={() => onRemove(s.id)}
-        >
-          <X size={14} />
-        </button>
-      </div>
+      </Modal>
     </div>
   );
 }
@@ -805,44 +915,20 @@ export default function AdminGroupDetail() {
         {activeTab === 'feedback' && <FeedbackTab groupId={id} />}
       </div>
 
-      {/* Student List (always visible below tabs) */}
-      <div className="animate-fade-in stagger-4">
-        <h3 className="text-[14px] font-bold text-[var(--text)] mb-3 flex items-center gap-2">
-          <Users size={16} className="text-[var(--green)]" />
-          О'кувчилар рўйхати ({students.length})
-        </h3>
-        {students.length === 0 ? (
-          <div className="glass-strong rounded-[20px] p-12 text-center">
-            <Users size={40} className="mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
-            <p className="text-[14px] font-medium text-[var(--text-muted)]">Группада о'кувчилар йўқ</p>
-            <p className="text-[12px] text-[var(--text-muted)] mt-1 opacity-60">Биринчи о'кувчини қўшинг</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {students.map((s) => (
-              <StudentCard key={s.id} s={s} onRemove={remove} />
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Add Student Modal */}
-      {adding && (
-        <dialog className="modal modal-open">
-          <div className="modal-box glass-strong border border-[var(--border)]">
-            <h3 className="font-bold text-lg mb-4">О'кувчини қўшиш</h3>
-            <select className="select select-bordered w-full" value={pick} onChange={(e) => setPick(e.target.value)}>
-              <option value="">О'кувчини танланг...</option>
-              {candidates.map((s) => <option key={s.id} value={s.id}>{fullName(s)}</option>)}
-            </select>
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setAdding(false)}>Бекор қилиш</button>
-              <button className="btn btn-primary" onClick={add} disabled={!pick}>Қўшиш</button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setAdding(false)} />
-        </dialog>
-      )}
+      <Modal isOpen={adding} onClose={() => setAdding(false)} title="О'кувчини қўшиш"
+        actions={
+          <>
+            <button className="btn btn-ghost" onClick={() => setAdding(false)}>Бекор қилиш</button>
+            <button className="btn btn-primary" onClick={add} disabled={!pick}>Қўшиш</button>
+          </>
+        }
+      >
+        <select className="select select-bordered w-full" value={pick} onChange={(e) => setPick(e.target.value)}>
+          <option value="">О'кувчини танланг...</option>
+          {candidates.map((s) => <option key={s.id} value={s.id}>{fullName(s)}</option>)}
+        </select>
+      </Modal>
     </div>
   );
 }
