@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, UserPlus, X, Users, GraduationCap, KeyRound, Phone,
-  CalendarDays, Check, Minus, Clock,
+  ArrowLeft, UserPlus, X, Users, KeyRound, Phone,
+  CalendarDays, Check, Minus, Clock, CreditCard,
   BookOpen, Plus, Star, MessageSquare, Send, Loader2,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
@@ -13,11 +13,41 @@ import {
   useAdminGroupHomework, useAdminGroupFeedback,
 } from '../../queries.js';
 import { api } from '../../api.js';
+import { money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Avatar, RowSkeleton, EmptyState, Modal } from '../mentor/_ui.jsx';
 
 /* ─── helpers ─── */
 const fullName = (s) => s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
+
+/* Короткие ярлыки дней для строки расписания в шапке группы. */
+const DAY_LABEL = { mon: 'Du', tue: 'Se', wed: 'Cho', thu: 'Pa', fri: 'Ju', sat: 'Sha', sun: 'Ya' };
+
+function scheduleText(group) {
+  let sched = group?.schedule;
+  if (typeof sched === 'string') { try { sched = JSON.parse(sched); } catch { sched = []; } }
+  if (!Array.isArray(sched) || sched.length === 0) return null;
+  const days = sched.map((s) => DAY_LABEL[String(s.day).toLowerCase()] || s.day).join(', ');
+  const start = group.startTime || sched[0]?.start;
+  const end = group.endTime || sched[0]?.end;
+  const time = start ? (end ? `${start}–${end}` : start) : null;
+  return time ? `${days} · ${time}` : days;
+}
+
+/* Компактный показатель для мета-строки шапки. */
+function Meta({ Icon, label, value }) {
+  return (
+    <div className="flex items-center gap-2.5 min-w-0">
+      <span className="w-8 h-8 rounded-lg grid place-items-center bg-primary/10 text-primary shrink-0">
+        <Icon size={15} />
+      </span>
+      <div className="min-w-0">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-base-content/45 leading-none">{label}</div>
+        <div className="text-[14px] font-extrabold text-base-content tabular-nums mt-1 truncate leading-none">{value}</div>
+      </div>
+    </div>
+  );
+}
 const pad = (n) => String(n).padStart(2, '0');
 const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 const MONTHS = [
@@ -822,6 +852,7 @@ export default function AdminGroupDetail() {
   const raw = data?.data || data || {};
   const group = raw.group || raw;
   const students = group.students || raw.students || [];
+  const totalDebt = students.reduce((sum, s) => sum + Number(s.totalDebt ?? s.total_debt ?? 0), 0);
   const allStudents = (studentsData?.data || studentsData || {}).students || [];
   const candidates = allStudents.filter((s) => !students.some((gs) => gs.id === s.id));
 
@@ -866,28 +897,19 @@ export default function AdminGroupDetail() {
         </button>
       </PageHeader>
 
-      {/* Stats bar */}
-      <div className="card bg-base-100 p-4 flex items-center gap-6 animate-fade-in stagger-1">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-primary/10 text-primary">
-            <Users size={18} />
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-base-content/70 uppercase tracking-[0.05em]">О'кувчилар</div>
-            <div className="text-[20px] font-extrabold text-base-content tabular-nums leading-none mt-0.5">{students.length}</div>
-          </div>
+      {/* Мета-строка группы. Раньше здесь была почти пустая карточка с двумя
+          элементами: числом учеников и ментором — причём ментор повторял то,
+          что уже написано в подзаголовке шапки. Теперь компактная лента
+          реальных данных группы, без дубля: ученики, направление, расписание,
+          цена и суммарный долг (последнее важно именно админу). */}
+      <div className="card bg-base-100 px-4 py-3.5 animate-fade-in stagger-1">
+        <div className="flex items-center gap-x-8 gap-y-3 flex-wrap">
+          <Meta Icon={Users} label="O'quvchilar" value={students.length} />
+          {group.subject && <Meta Icon={BookOpen} label="Yo'nalish" value={group.subject} />}
+          {scheduleText(group) && <Meta Icon={CalendarDays} label="Jadval" value={scheduleText(group)} />}
+          {group.monthlyPrice > 0 && <Meta Icon={CreditCard} label="Oylik" value={money(group.monthlyPrice)} />}
+          {totalDebt > 0 && <Meta Icon={Clock} label="Jami qarz" value={money(totalDebt)} />}
         </div>
-        {(group.mentorName || group.mentor?.name) && (
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[#3B82F615] text-[#3B82F6]">
-              <GraduationCap size={18} />
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-base-content/70 uppercase tracking-[0.05em]">Ментор</div>
-              <div className="text-[14px] font-bold text-base-content mt-0.5">{group.mentorName || group.mentor?.name}</div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Tabs */}
