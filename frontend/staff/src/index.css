@@ -6,7 +6,7 @@ html,
 body,
 #root {
   height: 100%;
-  background-color: var(--bg);
+  background-color: var(--bg) !important;
 }
 
 body {
@@ -75,7 +75,11 @@ body {
   --radius-lg: 16px;
 
   /* Sidebar */
-  --sidebar-hover: rgba(198, 255, 52, 0.08);
+  --sidebar-hover: rgba(64, 131, 59, 0.08);
+
+  /* Scrollbar */
+  --scrollbar-thumb: rgba(64, 131, 59, 0.25);
+  --scrollbar-thumb-hover: rgba(64, 131, 59, 0.45);
 }
 
 /* Тень — из docs/FRONTEND-DESIGN-SYSTEM.md («карточки — чисто белые, с явной
@@ -111,14 +115,14 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DESIGN TOKENS — Light theme (default)
+   DESIGN TOKENS — Light theme (default) — original dark green brand
    ═══════════════════════════════════════════════════════════════ */
 :root {
-  /* Brand */
-  --green: #C6FF34;
-  --green-dark: #a8e02c;
-  --green-bg: rgba(198, 255, 52, 0.12);
-  --green-glow: rgba(198, 255, 52, 0.25);
+  /* Brand — original dark green */
+  --green: #40833B;
+  --green-dark: #35702f;
+  --green-bg: rgba(64, 131, 59, 0.10);
+  --green-glow: rgba(64, 131, 59, 0.18);
 
   /* Surfaces */
   --surface: #ffffff;
@@ -136,16 +140,16 @@ body {
 
   /* Text */
   --text: #1D2417;
-  --text-secondary: #6b7a62;
-  --text-muted: #94a388;
+  --text-secondary: #5c6b53;
+  --text-muted: #7d8c73;
 
   /* Status */
-  --danger: #ef4444;
+  --danger: #dc2626;
   --danger-light: #fef2f2;
-  --success: #22c55e;
+  --success: #15803d;
   --success-light: #f0fdf4;
-  --warning: #f59e0b;
-  --info: #3b82f6;
+  --warning: #b45309;
+  --info: #2563eb;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(29, 36, 23, 0.06);
@@ -157,33 +161,23 @@ body {
   --radius-md: 12px;
   --radius-lg: 16px;
 
-  /* DaisyUI semantic colors — match our green/lime brand */
-  --p: 198 255 52;
-  --pc: 22 33 15;
-  --s: 22 33 15;
-  --sc: 232 239 226;
-  --a: 163 230 53;
-  --ac: 22 33 15;
-  --n: 45 54 40;
-  --nc: 232 239 226;
-
-  /* Sidebar */
-  --sidebar-hover: rgba(198, 255, 52, 0.08);
+  /* Sidebar — DaisyUI tokenlari tailwind.config.js dan keladi, bu yerda emas */
+  --sidebar-hover: rgba(64, 131, 59, 0.08);
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DARK THEME
+   DARK THEME — matching the original dark green brand
    ═══════════════════════════════════════════════════════════════ */
 .dark {
-  --green: #C6FF34;
-  --green-dark: #a8e02c;
-  --green-bg: rgba(198, 255, 52, 0.10);
-  --green-glow: rgba(198, 255, 52, 0.20);
+  --green: #2d6a28;
+  --green-dark: #245320;
+  --green-bg: rgba(64, 131, 59, 0.08);
+  --green-glow: rgba(64, 131, 59, 0.15);
 
   --surface: #1a1f16;
   --surface-hover: #232a20;
   --bg: #111610;
-  --accent: #C6FF34;
+  --accent: #40833B;
 
   --glass-bg: rgba(26, 31, 22, 0.88);
   --glass-border: rgba(60, 72, 52, 0.5);
@@ -206,23 +200,11 @@ body {
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.50);
 
-  --sidebar-hover: rgba(198, 255, 52, 0.06);
+  --sidebar-hover: rgba(64, 131, 59, 0.06);
 
-  /* DaisyUI overrides — force DaisyUI to respect our dark surface tokens */
-  --b1: 26 31 22;      /* base-100 = #1a1f16 (our --surface) */
-  --b2: 35 42 32;      /* base-200 = #232a20 (our --surface-hover) */
-  --b3: 45 54 40;      /* base-300 = #2d3628 (our --border) */
-  --bc: 232 239 226;   /* base-content = #e8efe2 (our --text) */
-
-  /* DaisyUI semantic colors — match dark green/lime theme */
-  --p: 198 255 52;     /* primary = lime */
-  --pc: 22 33 15;      /* primary-content */
-  --s: 22 33 15;       /* secondary */
-  --sc: 232 239 226;   /* secondary-content */
-  --a: 163 230 53;     /* accent */
-  --ac: 22 33 15;      /* accent-content */
-  --n: 45 54 40;       /* neutral */
-  --nc: 232 239 226;   /* neutral-content */
+  /* Scrollbar — lighter for visibility on dark bg */
+  --scrollbar-thumb: rgba(148, 173, 120, 0.25);
+  --scrollbar-thumb-hover: rgba(148, 173, 120, 0.45);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -294,13 +276,7 @@ body {
   color: var(--danger) !important;
 }
 
-/* Фон рисуют Layout и страницы — html/body не должны просвечивать своим */
-html,
-body,
-#root,
-#root > div {
-  background-color: transparent !important;
-}
+/* Фон задаётся css-переменной — меняется автоматически при переключении темы */
 
 /* ═══════════════════════════════════════════════════════════════
    GLASS MORPHISM
@@ -477,7 +453,7 @@ body,
   scrollbar-width: thin;
 }
 
-/* ── Scrollbar styling — sidebar-matching dark green ── */
+/* ── Scrollbar styling — changes with theme ── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -486,14 +462,14 @@ body,
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(198, 255, 52, 0.15);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(198, 255, 52, 0.3);
+  background: var(--scrollbar-thumb-hover);
 }
 html {
-  scrollbar-color: rgba(198, 255, 52, 0.15) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
   scrollbar-width: thin;
 }
 

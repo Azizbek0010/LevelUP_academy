@@ -349,6 +349,7 @@ export default function Expenses() {
         category: formData.category,
         amount: Number(formData.amount),
         spentAt: formData.spentAt || undefined,
+        paymentMethod: formData.paymentMethod || undefined,
         note: formData.note || undefined,
       };
 
@@ -390,6 +391,8 @@ export default function Expenses() {
       setSaving(false);
     }
   }, [deleteTarget, loadExpenses, token]);
+
+  const filteredTotal = useMemo(() => filtered.reduce((s, e) => s + (e.amount || 0), 0), [filtered]);
 
   const handleExport = useCallback(async () => {
     setExporting(true);
@@ -494,8 +497,6 @@ export default function Expenses() {
   const getStatusCount = (status) =>
     status === 'All' ? expenses.length : expenses.filter((e) => getStatusFromExpense(e) === status.toLowerCase()).length;
 
-  const filteredTotal = useMemo(() => filtered.reduce((s, e) => s + (e.amount || 0), 0), [filtered]);
-
   // ═══════════════════════════════════════════
   //  Render
   // ═══════════════════════════════════════════
@@ -592,7 +593,7 @@ export default function Expenses() {
               placeholder="Xarajatlarni qidirish..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
+              className="w-full h-10 pl-10 pr-10 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
             />
             {search && (
               <button
@@ -646,10 +647,10 @@ export default function Expenses() {
           </div>
 
           {/* Mobile filter toggle + clear */}
-          <div className="flex items-center gap-2 lg:hidden w-full sm:w-auto">
+          <div className="flex items-center gap-2 lg:hidden flex-nowrap">
             <button
               onClick={() => setFiltersExpanded(!filtersExpanded)}
-              className={`flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] border text-[12px] font-semibold transition-all ${
+              className={`flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] border text-[12px] font-semibold transition-all shrink-0 ${
                 filtersExpanded || hasActiveFilters
                   ? 'border-[var(--green)] text-[var(--green)] bg-[var(--green-bg)]'
                   : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'
@@ -663,27 +664,9 @@ export default function Expenses() {
                 </span>
               )}
             </button>
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[12px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all"
-              >
-                <X className="w-3.5 h-3.5" />
-                Tozalash
-              </button>
-            )}
           </div>
 
-          {/* Desktop clear filters */}
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="hidden lg:flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[12px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all shrink-0"
-            >
-              <X className="w-3.5 h-3.5" />
-              Tozalash
-            </button>
-          )}
+          {/* Desktop clear filters — moved to category pills row */}
         </div>
 
         {/* Mobile expanded filters */}
@@ -755,6 +738,16 @@ export default function Expenses() {
               </button>
             );
           })}
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[11px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all ml-auto shrink-0"
+            >
+              <X className="w-3.5 h-3.5" />
+              Tozalash
+            </button>
+          )}
         </div>
       </div>
 

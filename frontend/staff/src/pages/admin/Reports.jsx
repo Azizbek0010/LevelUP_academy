@@ -284,7 +284,7 @@ export default function AdminReports() {
               placeholder="Guruh nomi bo'yicha qidirish..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
+              className="w-full h-10 pl-10 pr-10 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
             />
             {search && (
               <button
@@ -318,15 +318,17 @@ export default function AdminReports() {
           </div>
 
           {/* Clear */}
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[12px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all shrink-0"
-            >
-              <X className="w-3.5 h-3.5" />
-              Tozalash
-            </button>
-          )}
+          <button
+            onClick={clearFilters}
+            className={`flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[12px] font-semibold transition-all shrink-0 ${
+              hasActiveFilters
+                ? 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+                : 'text-transparent pointer-events-none'
+            }`}
+          >
+            <X className="w-3.5 h-3.5" />
+            Tozalash
+          </button>
         </div>
       </div>
 
