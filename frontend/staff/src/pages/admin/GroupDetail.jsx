@@ -227,7 +227,7 @@ function AttendanceTab({ groupId, token }) {
     if (status === 'present') return 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200';
     if (status === 'late') return 'bg-amber-200 text-amber-800 border-amber-400 hover:bg-amber-300';
     if (status === 'absent') return 'bg-red-500 text-white border-red-500 hover:bg-red-600';
-    return 'border-gray-200 text-gray-300 hover:border-[var(--green)]/50 hover:bg-[var(--green)]/[0.05]';
+    return 'border-gray-200 text-gray-300 hover:border-primary/50 hover:bg-primary/[0.05]';
   };
 
   const cellIcon = (status) => {
@@ -253,7 +253,7 @@ function AttendanceTab({ groupId, token }) {
         .animate-slide-right { animation: slideInRight 0.25s ease-out; }
       `}</style>
       {/* ── Month strip ── */}
-      <div className="shrink-0 border-b border-[var(--border)] px-3 py-2 overflow-x-auto">
+      <div className="shrink-0 border-b border-base-300 px-3 py-2 overflow-x-auto">
         <div className="flex gap-1.5 w-max">
           {monthStrip.map(({ year: y, month: m }) => {
             const active = y === year && m === month;
@@ -264,10 +264,10 @@ function AttendanceTab({ groupId, token }) {
                 onClick={() => { setYear(y); setMonth(m); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                   active
-                    ? 'bg-[var(--green)] text-white'
+                    ? 'bg-primary text-white'
                     : isThis
-                    ? 'bg-[var(--green)]/10 text-[var(--green)] hover:bg-[var(--green)]/15'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--surface)]'
+                    ? 'bg-primary/10 text-primary hover:bg-primary/15'
+                    : 'text-base-content/45 hover:bg-base-100'
                 }`}
               >
                 {MONTHS[m].slice(0, 3)}{' '}
@@ -279,8 +279,8 @@ function AttendanceTab({ groupId, token }) {
       </div>
 
       {/* ── Legend ── */}
-      <div className="shrink-0 px-4 py-2 border-b border-[var(--border)] flex items-center justify-between gap-3 flex-wrap">
-        <ul className="flex items-center gap-4 text-[11px] font-medium text-[var(--text-muted)] flex-wrap">
+      <div className="shrink-0 px-4 py-2 border-b border-base-300 flex items-center justify-between gap-3 flex-wrap">
+        <ul className="flex items-center gap-4 text-[11px] font-medium text-base-content/45 flex-wrap">
           <li className="flex items-center gap-1.5">
             <span className="w-6 h-6 rounded-lg border grid place-items-center bg-emerald-100 text-emerald-700 border-emerald-300">
               <Check size={13} strokeWidth={3} />
@@ -306,7 +306,7 @@ function AttendanceTab({ groupId, token }) {
             belgilanmagan
           </li>
         </ul>
-        <span className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+        <span className="flex items-center gap-1.5 text-xs text-base-content/45">
           {saveState === 'saving' && <><Loader2 size={13} className="animate-spin" /> Saqlanmoqda...</>}
           {saveState === 'saved' && <>Saqlandi</>}
           {saveState === 'error' && (
@@ -319,22 +319,22 @@ function AttendanceTab({ groupId, token }) {
 
       {/* ── Page navigation (15 days per page) with smooth slide ── */}
       {totalPages > 1 && (
-        <div className="shrink-0 px-4 py-2 border-b border-[var(--border)] flex items-center justify-center gap-4">
+        <div className="shrink-0 px-4 py-2 border-b border-base-300 flex items-center justify-center gap-4">
           <button
             onClick={() => { setSlideDir('right'); setPageIndex((p) => Math.max(0, p - 1)); }}
             disabled={pageIndex === 0}
-            className="w-8 h-8 rounded-xl border border-[var(--border)] grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
+            className="w-8 h-8 rounded-xl border border-base-300 grid place-items-center text-base-content/45 hover:bg-base-100 hover:text-base-content disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
             aria-label="Oldingi sahifa"
           >
             <ChevronLeft size={15} />
           </button>
-          <span className="text-xs font-bold text-[var(--text-muted)] tabular-nums min-w-[3rem] text-center">
+          <span className="text-xs font-bold text-base-content/45 tabular-nums min-w-[3rem] text-center">
             {pageIndex + 1} / {totalPages}
           </span>
           <button
             onClick={() => { setSlideDir('left'); setPageIndex((p) => Math.min(totalPages - 1, p + 1)); }}
             disabled={pageIndex >= totalPages - 1}
-            className="w-8 h-8 rounded-xl border border-[var(--border)] grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
+            className="w-8 h-8 rounded-xl border border-base-300 grid place-items-center text-base-content/45 hover:bg-base-100 hover:text-base-content disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
             aria-label="Keyingi sahifa"
           >
             <ChevronRight size={15} />
@@ -355,7 +355,7 @@ function AttendanceTab({ groupId, token }) {
             <thead>
               <tr>
                 {/* Sticky student name column */}
-                <th className="sticky left-0 top-0 z-20 bg-[var(--surface)] w-[160px] sm:w-[240px] min-w-[160px] sm:min-w-[240px] px-3 sm:px-4 py-3 text-left text-[13px] font-bold text-[var(--text)]">
+                <th className="sticky left-0 top-0 z-20 bg-base-100 w-[160px] sm:w-[240px] min-w-[160px] sm:min-w-[240px] px-3 sm:px-4 py-3 text-left text-[13px] font-bold text-base-content">
                   O'quvchi
                 </th>
                 {/* Day columns (current 15-day chunk) */}
@@ -365,7 +365,7 @@ function AttendanceTab({ groupId, token }) {
                   return (
                     <th
                       key={d}
-                      className="sticky top-0 z-10 w-[68px] min-w-[68px] px-1.5 py-2.5 text-center border-l border-[var(--border)]"
+                      className="sticky top-0 z-10 w-[68px] min-w-[68px] px-1.5 py-2.5 text-center border-l border-base-300"
                       style={{
                         background: isToday ? 'var(--green-bg)' : 'var(--surface)',
                         color: isToday ? 'var(--green)' : 'var(--text-muted)',
@@ -381,7 +381,7 @@ function AttendanceTab({ groupId, token }) {
                   );
                 })}
                 {/* Summary column */}
-                <th className="sticky right-0 top-0 z-20 bg-[var(--surface)] w-[80px] min-w-[80px] px-4 py-3 text-center border-l border-[var(--border)] text-[13px] font-bold text-[var(--text)]">
+                <th className="sticky right-0 top-0 z-20 bg-base-100 w-[80px] min-w-[80px] px-4 py-3 text-center border-l border-base-300 text-[13px] font-bold text-base-content">
                   Jami
                 </th>
               </tr>
@@ -399,20 +399,20 @@ function AttendanceTab({ groupId, token }) {
                 });
 
                 return (
-                  <tr key={sid} className="border-b border-[var(--border)] last:border-0">
+                  <tr key={sid} className="border-b border-base-300 last:border-0">
                     {/* Sticky name cell */}
                     <td
-                      className="sticky left-0 z-10 bg-[var(--surface)] px-3 sm:px-4 py-2.5 cursor-pointer"
+                      className="sticky left-0 z-10 bg-base-100 px-3 sm:px-4 py-2.5 cursor-pointer"
                       onMouseEnter={(e) => showPopup(s, e)}
                       onMouseLeave={hidePopup}
                     >
                       <Link to={`/students/${sid}`} className="flex items-center gap-3 group">
-                        <span className="text-xs text-[var(--green)]/40 tabular-nums w-5 shrink-0">
+                        <span className="text-xs text-primary/40 tabular-nums w-5 shrink-0">
                           {idx + 1}.
                         </span>
                         <Avatar name={studentFullName} size="sm" />
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold truncate text-[var(--text)] group-hover:text-[var(--green)] transition-colors">
+                          <div className="text-sm font-semibold truncate text-base-content group-hover:text-primary transition-colors">
                             {firstName} {lastName}
                           </div>
                         </div>
@@ -426,7 +426,7 @@ function AttendanceTab({ groupId, token }) {
                       return (
                         <td
                           key={d}
-                          className="px-1.5 py-2.5 text-center border-l border-[var(--border)]"
+                          className="px-1.5 py-2.5 text-center border-l border-base-300"
                         >
                           <button
                             onClick={() => toggleDay(sid, d)}
@@ -439,8 +439,8 @@ function AttendanceTab({ groupId, token }) {
                     })}
 
                     {/* Summary */}
-                    <td className="sticky right-0 z-10 bg-[var(--surface)] px-4 py-2.5 border-l border-[var(--border)] text-center">
-                      <span className="text-[13px] font-bold tabular-nums text-[var(--text-secondary)]">
+                    <td className="sticky right-0 z-10 bg-base-100 px-4 py-2.5 border-l border-base-300 text-center">
+                      <span className="text-[13px] font-bold tabular-nums text-base-content/70">
                         {presentCount}/{DAYS.length}
                       </span>
                     </td>
@@ -465,7 +465,7 @@ function AttendanceTab({ groupId, token }) {
         const statusColor = hsStatus === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
         return (
           <div
-            className="fixed z-[9999] w-64 bg-white shadow-xl rounded-2xl border border-[var(--border)] p-4 animate-fade-in pointer-events-auto"
+            className="fixed z-[9999] w-64 bg-white shadow-xl rounded-2xl border border-base-300 p-4 animate-fade-in pointer-events-auto"
             style={{ top: popupPos.top, left: popupPos.left }}
             onMouseEnter={keepPopup}
             onMouseLeave={hidePopup}
@@ -473,13 +473,13 @@ function AttendanceTab({ groupId, token }) {
             <div className="flex items-center gap-3 mb-3">
               <Avatar name={hsName} size="lg" />
               <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-bold text-[var(--text)] truncate">{hsName}</div>
+                <div className="text-[14px] font-bold text-base-content truncate">{hsName}</div>
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${statusColor}`}>
                   {statusLabel}
                 </span>
               </div>
             </div>
-            <div className="space-y-1.5 text-[12px] text-[var(--text-muted)]">
+            <div className="space-y-1.5 text-[12px] text-base-content/45">
               {hsPhone !== '—' && (
                 <div className="flex items-center gap-2">
                   <Phone size={11} className="shrink-0" />
@@ -544,7 +544,7 @@ function HomeworkTab({ groupId }) {
       {/* Toolbar: count + search + filter + add */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <span className="text-[13px] font-bold text-[var(--text-secondary)] whitespace-nowrap">
+          <span className="text-[13px] font-bold text-base-content/70 whitespace-nowrap">
             Uy vazifalari ({filteredHw.length})
           </span>
           <input
@@ -567,8 +567,8 @@ function HomeworkTab({ groupId }) {
             key={f}
             className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition-all ${
               statusFilter === f
-                ? 'bg-[var(--green)] text-white'
-                : 'bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)] hover:bg-[var(--green-bg)]'
+                ? 'bg-primary text-white'
+                : 'bg-base-100 text-base-content/45 border border-base-300 hover:bg-primary/10'
             }`}
             onClick={() => setStatusFilter(f)}
           >
@@ -578,31 +578,31 @@ function HomeworkTab({ groupId }) {
       </div>
 
       {filteredHw.length === 0 ? (
-        <div className="text-center py-12 text-[var(--text-muted)] text-[13px]">
+        <div className="text-center py-12 text-base-content/45 text-[13px]">
           <BookOpen size={32} className="mx-auto mb-2 opacity-30" />
           {hw.length === 0 ? "Hali uy vazifasi yo'q" : "Hech narsa topilmadi"}
         </div>
       ) : (
         <div className="space-y-3">
           {filteredHw.map((h) => (
-            <div key={h.id} className="p-4 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] space-y-2">
+            <div key={h.id} className="p-4 rounded-[14px] border border-base-300 bg-base-100 space-y-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-[14px] font-bold text-[var(--text)] truncate">{h.title}</h4>
-                  {h.description && <p className="text-[12px] text-[var(--text-muted)] mt-1 line-clamp-2">{h.description}</p>}
+                  <h4 className="text-[14px] font-bold text-base-content truncate">{h.title}</h4>
+                  {h.description && <p className="text-[12px] text-base-content/45 mt-1 line-clamp-2">{h.description}</p>}
                 </div>
                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${statusBadge(h.status)}`}>
                   {statusLabel(h.status)}
                 </span>
               </div>
-              <div className="flex items-center gap-4 text-[11px] text-[var(--text-muted)]">
+              <div className="flex items-center gap-4 text-[11px] text-base-content/45">
                 {h.dueDate && <span>Muddat: {h.dueDate}</span>}
                 <span>{h.submissions || 0} / {h.totalStudents || 0} topshirilgan</span>
               </div>
               {h.totalStudents > 0 && (
                 <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[var(--green)] transition-all"
+                    className="h-full rounded-full bg-primary transition-all"
                     style={{ width: `${Math.round(((h.submissions || 0) / h.totalStudents) * 100)}%` }}
                   />
                 </div>
@@ -699,7 +699,7 @@ function FeedbackTab({ groupId }) {
             <button
               key={f}
               className={`text-[12px] font-bold px-3 py-1 rounded-full transition-all ${
-                filter === f ? 'bg-[var(--green)] text-white' : 'bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)]'
+                filter === f ? 'bg-primary text-white' : 'bg-base-100 text-base-content/45 border border-base-300'
               }`}
               onClick={() => setFilter(f)}
             >
@@ -713,14 +713,14 @@ function FeedbackTab({ groupId }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-[var(--text-muted)] text-[13px]">
+        <div className="text-center py-12 text-base-content/45 text-[13px]">
           <MessageSquare size={32} className="mx-auto mb-2 opacity-30" />
           Ҳали фикр-мулоҳоза йўқ
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((f) => (
-            <div key={f.id} className="p-4 rounded-[14px] border border-[var(--border)] bg-[var(--surface)]">
+            <div key={f.id} className="p-4 rounded-[14px] border border-base-300 bg-base-100">
               <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${
@@ -728,7 +728,7 @@ function FeedbackTab({ groupId }) {
                   }`}>
                     {f.type === 'student' ? 'О' : 'М'}
                   </div>
-                  <span className="text-[13px] font-bold text-[var(--text)]">{f.authorName || 'Аноним'}</span>
+                  <span className="text-[13px] font-bold text-base-content">{f.authorName || 'Аноним'}</span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     f.type === 'student' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
                   }`}>
@@ -737,8 +737,8 @@ function FeedbackTab({ groupId }) {
                 </div>
                 {renderStars(f.rating)}
               </div>
-              <p className="text-[13px] text-[var(--text)] leading-relaxed">{f.content}</p>
-              <div className="mt-2 text-[11px] text-[var(--text-muted)]">{f.createdAt?.slice(0, 10)}</div>
+              <p className="text-[13px] text-base-content leading-relaxed">{f.content}</p>
+              <div className="mt-2 text-[11px] text-base-content/45">{f.createdAt?.slice(0, 10)}</div>
             </div>
           ))}
         </div>
@@ -762,7 +762,7 @@ function FeedbackTab({ groupId }) {
               <button
                 key={t}
                 className={`flex-1 py-2 rounded-[10px] text-[13px] font-bold transition-all ${
-                  form.type === t ? 'bg-[var(--green)] text-white' : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text-muted)]'
+                  form.type === t ? 'bg-primary text-white' : 'bg-base-100 border border-base-300 text-base-content/45'
                 }`}
                 onClick={() => setForm({ ...form, type: t })}
               >
@@ -784,7 +784,7 @@ function FeedbackTab({ groupId }) {
             onChange={(e) => setForm({ ...form, content: e.target.value })}
           />
           <div>
-            <label className="text-[12px] font-bold text-[var(--text-secondary)] mb-1 block">Баҳо</label>
+            <label className="text-[12px] font-bold text-base-content/70 mb-1 block">Баҳо</label>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((i) => (
                 <button
@@ -856,7 +856,7 @@ export default function AdminGroupDetail() {
   return (
     <div className="space-y-5 pb-8">
       {/* Back link */}
-      <Link to="/groups" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-muted)] hover:text-[var(--green)] transition-colors animate-fade-in">
+      <Link to="/groups" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-base-content/45 hover:text-primary transition-colors animate-fade-in">
         <ArrowLeft size={16} /> Группаларга
       </Link>
 
@@ -867,14 +867,14 @@ export default function AdminGroupDetail() {
       </PageHeader>
 
       {/* Stats bar */}
-      <div className="glass-strong rounded-[16px] p-4 flex items-center gap-6 animate-fade-in stagger-1">
+      <div className="card bg-base-100 p-4 flex items-center gap-6 animate-fade-in stagger-1">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[var(--green-bg)] text-[var(--green)]">
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-primary/10 text-primary">
             <Users size={18} />
           </div>
           <div>
-            <div className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.05em]">О'кувчилар</div>
-            <div className="text-[20px] font-extrabold text-[var(--text)] tabular-nums leading-none mt-0.5">{students.length}</div>
+            <div className="text-[11px] font-bold text-base-content/70 uppercase tracking-[0.05em]">О'кувчилар</div>
+            <div className="text-[20px] font-extrabold text-base-content tabular-nums leading-none mt-0.5">{students.length}</div>
           </div>
         </div>
         {(group.mentorName || group.mentor?.name) && (
@@ -883,23 +883,23 @@ export default function AdminGroupDetail() {
               <GraduationCap size={18} />
             </div>
             <div>
-              <div className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.05em]">Ментор</div>
-              <div className="text-[14px] font-bold text-[var(--text)] mt-0.5">{group.mentorName || group.mentor?.name}</div>
+              <div className="text-[11px] font-bold text-base-content/70 uppercase tracking-[0.05em]">Ментор</div>
+              <div className="text-[14px] font-bold text-base-content mt-0.5">{group.mentorName || group.mentor?.name}</div>
             </div>
           </div>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1 rounded-[14px] bg-[var(--surface)] border border-[var(--border)] animate-fade-in stagger-2">
+      <div className="flex gap-2 p-1 rounded-[14px] bg-base-100 border border-base-300 animate-fade-in stagger-2">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[10px] text-[13px] font-bold transition-all duration-200 ${
               activeTab === key
-                ? 'bg-[var(--green)] text-white shadow-md'
-                : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--green-bg)]'
+                ? 'bg-primary text-white shadow-md'
+                : 'text-base-content/45 hover:text-base-content hover:bg-primary/10'
             }`}
           >
             <Icon size={16} />
@@ -909,7 +909,7 @@ export default function AdminGroupDetail() {
       </div>
 
       {/* Tab Content */}
-      <div className="glass-strong rounded-[16px] p-5 animate-fade-in stagger-3">
+      <div className="card bg-base-100 p-5 animate-fade-in stagger-3">
         {activeTab === 'attendance' && <AttendanceTab groupId={id} token={token} />}
         {activeTab === 'homework' && <HomeworkTab groupId={id} />}
         {activeTab === 'feedback' && <FeedbackTab groupId={id} />}

@@ -132,7 +132,7 @@ function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#22c55e' 
         }}
       >
         <span
-           className="absolute top-0.5 w-5 h-5 rounded-full bg-[var(--surface)] shadow-md transition-all duration-300"
+           className="absolute top-0.5 w-5 h-5 rounded-full bg-base-100 shadow-md transition-all duration-300"
           style={{
             left: checked ? 22 : 2,
             transform: checked ? 'scale(1)' : 'scale(0.85)',
@@ -146,7 +146,7 @@ function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#22c55e' 
 function PremiumInput({ value, onChange, placeholder, icon: Icon, type = 'text', disabled = false }) {
   return (
     <div
-      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
       style={{
         background: 'var(--surface)',
         borderColor: 'var(--border)',
@@ -169,7 +169,7 @@ function PremiumInput({ value, onChange, placeholder, icon: Icon, type = 'text',
 function PremiumSelect({ value, onChange, children, icon: Icon }) {
   return (
     <div
-      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
       style={{
         background: 'var(--surface)',
         borderColor: 'var(--border)',
@@ -484,7 +484,7 @@ function TabSecurity({ settings, onChange }) {
         <div className="space-y-4 max-w-md">
           <Field label="Текущий пароль">
             <div
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
               style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
             >
               <KeyRound size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
@@ -509,7 +509,7 @@ function TabSecurity({ settings, onChange }) {
 
           <Field label="Новый пароль" hint="Минимум 8 символов">
             <div
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
               style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
             >
               <Lock size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />

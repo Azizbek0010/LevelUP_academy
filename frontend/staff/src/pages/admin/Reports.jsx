@@ -19,8 +19,8 @@ const COLORS = ['#2ECC71', '#E8543E', '#3B82F6', '#F59E0B', '#8B5CF6', '#06B6D4'
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="glass-strong rounded-[12px] p-3 shadow-lg border border-[var(--border)]">
-      <p className="text-[12px] font-bold text-[var(--text)] mb-1">{label}</p>
+    <div className="card bg-base-100 p-3 shadow-lg border border-base-300">
+      <p className="text-[12px] font-bold text-base-content mb-1">{label}</p>
       {payload.map((p, i) => (
         <p key={i} className="text-[11px]" style={{ color: p.color }}>
           {p.name}: {money(p.value)}
@@ -171,14 +171,14 @@ export default function AdminReports() {
       <div className="space-y-6 pb-8 animate-page-enter">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <div className="w-1 h-7 rounded-full bg-[var(--green)]" />
-            <h1 className="text-[28px] font-extrabold text-[var(--text)] tracking-[-0.035em] leading-none">Hisobotlar</h1>
+            <div className="w-1 h-7 rounded-full bg-primary" />
+            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Hisobotlar</h1>
           </div>
-          <p className="text-[13px] text-[var(--text-secondary)] ml-4">Yuklanmoqda...</p>
+          <p className="text-[13px] text-base-content/70 ml-4">Yuklanmoqda...</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="glass-strong rounded-[20px] p-5">
+            <div key={i} className="card bg-base-100 p-5">
               <div className="skeleton h-3 w-20 rounded-[6px] mb-4" />
               <div className="skeleton h-8 w-32 rounded-[6px]" />
             </div>
@@ -195,8 +195,8 @@ export default function AdminReports() {
       <div className="space-y-6 pb-8 animate-page-enter">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <div className="w-1 h-7 rounded-full bg-[var(--green)]" />
-            <h1 className="text-[28px] font-extrabold text-[var(--text)] tracking-[-0.035em] leading-none">Hisobotlar</h1>
+            <div className="w-1 h-7 rounded-full bg-primary" />
+            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Hisobotlar</h1>
           </div>
         </div>
         <div
@@ -226,10 +226,10 @@ export default function AdminReports() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <div className="w-1 h-7 rounded-full bg-[var(--green)]" />
-            <h1 className="text-[28px] font-extrabold text-[var(--text)] tracking-[-0.035em] leading-none">Hisobotlar</h1>
+            <div className="w-1 h-7 rounded-full bg-primary" />
+            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Hisobotlar</h1>
           </div>
-          <p className="text-[13px] text-[var(--text-secondary)] ml-4">
+          <p className="text-[13px] text-base-content/70 ml-4">
             Daromad va qarzlarni guruhlar bo'yicha tahlil qilish
           </p>
         </div>
@@ -246,21 +246,21 @@ export default function AdminReports() {
       </div>
 
       {/* ═══ Filter Panel ═══ */}
-      <div className="glass-strong rounded-[20px] p-4 card-hover-premium">
+      <div className="card bg-base-100 p-4 card-hover-premium">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           {/* Search */}
           <div className="relative flex-1 w-full sm:max-w-xs">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/45 pointer-events-none" />
             <input
               placeholder="Guruh nomi bo'yicha qidirish..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 pl-10 pr-10 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
+              className="w-full h-10 pl-10 pr-10 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/45 hover:text-base-content transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -269,7 +269,7 @@ export default function AdminReports() {
 
           {/* Date filters */}
           <div className="flex items-center gap-2">
-            <span className="text-[12px] font-semibold text-[var(--text-muted)] shrink-0 hidden sm:block">
+            <span className="text-[12px] font-semibold text-base-content/45 shrink-0 hidden sm:block">
               <Filter size={14} className="inline mr-1" />
               Davr:
             </span>
@@ -277,14 +277,14 @@ export default function AdminReports() {
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all [color-scheme:light] cursor-pointer"
+              className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all [color-scheme:light] cursor-pointer"
             />
-            <span className="text-[11px] text-[var(--text-muted)]">—</span>
+            <span className="text-[11px] text-base-content/45">—</span>
             <input
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all [color-scheme:light] cursor-pointer"
+              className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all [color-scheme:light] cursor-pointer"
             />
           </div>
 
@@ -293,7 +293,7 @@ export default function AdminReports() {
             onClick={clearFilters}
             className={`flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] text-[12px] font-semibold transition-all shrink-0 ${
               hasActiveFilters
-                ? 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+                ? 'text-base-content/45 hover:text-base-content hover:bg-base-200'
                 : 'text-transparent pointer-events-none'
             }`}
           >
@@ -336,13 +336,13 @@ export default function AdminReports() {
       {/* ═══ Charts ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Bar Chart */}
-        <div className="lg:col-span-2 glass-strong rounded-[20px] p-5 card-hover-premium animate-fade-in stagger-3">
+        <div className="lg:col-span-2 card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-3">
           <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-1 h-6 rounded-full bg-[var(--green)]" />
-            <h2 className="text-[15px] font-extrabold text-[var(--text)] tracking-[-0.02em]">Guruhlar bo'yicha daromad</h2>
+            <div className="w-1 h-6 rounded-full bg-primary" />
+            <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Guruhlar bo'yicha daromad</h2>
           </div>
           {barData.length === 0 ? (
-            <div className="flex items-center justify-center h-48 text-[13px] text-[var(--text-muted)]">
+            <div className="flex items-center justify-center h-48 text-[13px] text-base-content/45">
               <Activity size={16} className="mr-2 opacity-40" /> Ma'lumot mavjud emas
             </div>
           ) : (
@@ -360,13 +360,13 @@ export default function AdminReports() {
         </div>
 
         {/* Pie Chart */}
-        <div className="glass-strong rounded-[20px] p-5 card-hover-premium animate-fade-in stagger-4">
+        <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-4">
           <div className="flex items-center gap-2.5 mb-5">
             <div className="w-1 h-6 rounded-full bg-[#8B5CF6]" />
-            <h2 className="text-[15px] font-extrabold text-[var(--text)] tracking-[-0.02em]">Daromad ulushi</h2>
+            <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Daromad ulushi</h2>
           </div>
           {pieData.length === 0 ? (
-            <div className="flex items-center justify-center h-48 text-[13px] text-[var(--text-muted)]">
+            <div className="flex items-center justify-center h-48 text-[13px] text-base-content/45">
               <Activity size={16} className="mr-2 opacity-40" /> Ma'lumot mavjud emas
             </div>
           ) : (
@@ -394,11 +394,11 @@ export default function AdminReports() {
       </div>
 
       {/* ═══ Table ═══ */}
-      <div className="glass-strong rounded-[20px] overflow-hidden card-hover-premium animate-fade-in stagger-5">
+      <div className="card bg-base-100 overflow-hidden card-hover-premium animate-fade-in stagger-5">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--text-muted)] bg-[var(--surface)]">
+              <tr className="text-[10px] font-bold uppercase tracking-[0.07em] text-base-content/45 bg-base-100">
                 <th className="px-5 py-4">Guruh</th>
                 <th className="px-5 py-4 text-right">Talabalar</th>
                 <th className="px-5 py-4 text-right">Daromad</th>
@@ -411,13 +411,13 @@ export default function AdminReports() {
                 <tr>
                   <td colSpan={5}>
                     <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <div className="w-14 h-14 rounded-full bg-[var(--surface)] flex items-center justify-center mb-3">
-                        <Banknote className="w-7 h-7 text-[var(--text-muted)]" />
+                      <div className="w-14 h-14 rounded-full bg-base-100 flex items-center justify-center mb-3">
+                        <Banknote className="w-7 h-7 text-base-content/45" />
                       </div>
-                      <p className="text-[14px] font-bold text-[var(--text)] mb-1">
+                      <p className="text-[14px] font-bold text-base-content mb-1">
                         {search ? "Hech narsa topilmadi" : "Ma'lumot mavjud emas"}
                       </p>
-                      <p className="text-[12px] text-[var(--text-secondary)] max-w-[280px]">
+                      <p className="text-[12px] text-base-content/70 max-w-[280px]">
                         {search ? "Boshqa qidiruv so'zini sinab ko'ring" : "Hozircha hisobot ma'lumotlari yo'q"}
                       </p>
                     </div>
@@ -431,17 +431,17 @@ export default function AdminReports() {
                   return (
                     <tr
                       key={g.id || g.groupId || i}
-                      className="group border-t border-[var(--border)] text-[13px] transition-all duration-150 hover:bg-[var(--surface-hover)]"
+                      className="group border-t border-base-300 text-[13px] transition-all duration-150 hover:bg-base-200"
                     >
                       <td className="px-5 py-4">
-                        <span className="text-[var(--text)] font-medium">
+                        <span className="text-base-content font-medium">
                           {g.name || g.groupName || '—'}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-right tabular-nums text-[var(--text-secondary)]">
+                      <td className="px-5 py-4 text-right tabular-nums text-base-content/70">
                         {fmt(g.students ?? g.studentsCount ?? 0)}
                       </td>
-                      <td className="px-5 py-4 text-right tabular-nums font-bold text-[var(--green)]">
+                      <td className="px-5 py-4 text-right tabular-nums font-bold text-primary">
                         {money(revenue)}
                       </td>
                       <td className="px-5 py-4 text-right tabular-nums font-semibold" style={{ color: debt > 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
@@ -471,18 +471,18 @@ export default function AdminReports() {
 
         {/* Table footer */}
         {byGroup.length > 0 && (
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-[var(--border)] bg-[var(--surface)]">
-            <span className="text-[11px] text-[var(--text-muted)]">
+          <div className="flex items-center justify-between px-5 py-3.5 border-t border-base-300 bg-base-100">
+            <span className="text-[11px] text-base-content/45">
               {byGroup.length} ta guruh
             </span>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-[0.06em]">Jami daromad:</span>
-                <span className="text-[13px] font-extrabold text-[var(--green)] tabular-nums">{money(totalRevenue)}</span>
+                <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Jami daromad:</span>
+                <span className="text-[13px] font-extrabold text-primary tabular-nums">{money(totalRevenue)}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-[0.06em]">Jami qarz:</span>
-                <span className="text-[13px] font-extrabold text-[var(--danger)] tabular-nums">{money(totalDebt)}</span>
+                <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Jami qarz:</span>
+                <span className="text-[13px] font-extrabold text-error tabular-nums">{money(totalDebt)}</span>
               </div>
             </div>
           </div>

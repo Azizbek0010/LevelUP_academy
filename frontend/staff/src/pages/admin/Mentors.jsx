@@ -32,7 +32,7 @@ function GradePicker({ value, onChange, busy }) {
     <label className="flex items-center gap-1.5" title="Уровень ментора">
       <Award size={11} style={{ color: current.color }} />
       <select
-        className="h-7 pl-1.5 pr-6 rounded-[8px] text-[11px] font-bold bg-[var(--surface)] border border-[var(--border)] outline-none cursor-pointer disabled:opacity-50"
+        className="h-7 pl-1.5 pr-6 rounded-[8px] text-[11px] font-bold bg-base-100 border border-base-300 outline-none cursor-pointer disabled:opacity-50"
         style={{ color: current.color }}
         value={value || ''}
         disabled={busy}
@@ -51,7 +51,7 @@ function MentorCard({ m, onEdit, onFreeze, onDelete, onGrade, gradeBusy }) {
   const status = STATUS_COLORS[m.status] || STATUS_COLORS.active;
 
   return (
-    <div className="glass-strong rounded-[16px] p-5 card-hover-premium group">
+    <div className="card bg-base-100 p-5 card-hover-premium group">
       <div className="flex items-start gap-4">
         {/* Avatar */}
         <div className="transition-transform duration-300 group-hover:scale-105">
@@ -61,14 +61,14 @@ function MentorCard({ m, onEdit, onFreeze, onDelete, onGrade, gradeBusy }) {
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[14px] font-bold text-[var(--text)] truncate">{fullName(m)}</span>
+            <span className="text-[14px] font-bold text-base-content truncate">{fullName(m)}</span>
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
               style={{ background: status.bg, color: status.text }}>
               {status.label}
             </span>
           </div>
 
-          <div className="flex flex-col gap-1 text-[11px] text-[var(--text-muted)]">
+          <div className="flex flex-col gap-1 text-[11px] text-base-content/45">
             {m.email && (
               <span className="flex items-center gap-1.5">
                 <Mail size={10} className="opacity-50" /> {m.email}
@@ -86,12 +86,12 @@ function MentorCard({ m, onEdit, onFreeze, onDelete, onGrade, gradeBusy }) {
           {m.skills?.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {m.skills.slice(0, 3).map((s) => (
-                <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-[var(--text-secondary)]">
+                <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-base-200 text-base-content/70">
                   {s}
                 </span>
               ))}
               {m.skills.length > 3 && (
-                <span className="text-[10px] px-1 text-[var(--text-muted)]">+{m.skills.length - 3}</span>
+                <span className="text-[10px] px-1 text-base-content/45">+{m.skills.length - 3}</span>
               )}
             </div>
           )}
@@ -103,15 +103,15 @@ function MentorCard({ m, onEdit, onFreeze, onDelete, onGrade, gradeBusy }) {
               busy={gradeBusy === m.id}
               onChange={(grade) => onGrade(m, grade)}
             />
-            <button className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold text-[var(--text-secondary)] bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--green)]/40 hover:bg-[var(--green-bg)] transition-all"
+            <button className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold text-base-content/70 bg-base-100 border border-base-300 hover:border-primary/40 hover:bg-primary/10 transition-all"
               onClick={() => onEdit(m)}>
               <Pencil size={11} /> Изменить
             </button>
-            <button className="h-7 w-7 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-all"
+            <button className="h-7 w-7 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-base-100 hover:text-base-content transition-all"
               title={m.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => onFreeze(m)}>
               {m.status === 'frozen' ? <Sun size={13} /> : <Snowflake size={13} />}
             </button>
-            <button className="h-7 w-7 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger-light)] hover:text-[var(--danger)] transition-all"
+            <button className="h-7 w-7 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-error/10 hover:text-error transition-all"
               title="Удалить" onClick={() => onDelete(m)}>
               <Trash2 size={13} />
             </button>
@@ -220,7 +220,7 @@ export default function AdminMentors() {
       {/* ═══ Create/Edit Modal ═══ */}
       {form && (
         <dialog className="modal modal-open">
-          <div className="modal-box glass-strong border border-[var(--border)]">
+          <div className="modal-box card bg-base-100 border border-base-300">
             <h3 className="font-bold text-lg mb-4">{form.id ? 'Изменить ментора' : 'Новый ментор'}</h3>
             {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
             <div className="space-y-3">

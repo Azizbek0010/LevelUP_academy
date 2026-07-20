@@ -69,18 +69,18 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
   const studentName = inv.student || inv.studentName || '';
 
   return (
-    <div className="glass-strong rounded-[16px] p-5 card-hover-premium group">
+    <div className="card bg-base-100 p-5 card-hover-premium group">
       <div className="flex items-start gap-3 mb-3">
         {/* Student avatar */}
         <div onClick={() => onStudentClick(inv)} title="Открыть профиль студента" className="shrink-0 cursor-pointer">
           <Avatar name={studentName} size="lg" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-[14px] font-bold text-[var(--text)] truncate cursor-pointer hover:text-[var(--accent)] transition-colors"
+          <h3 className="text-[14px] font-bold text-base-content truncate cursor-pointer hover:text-secondary transition-colors"
             onClick={() => onStudentClick(inv)}>
             {studentName || '—'}
           </h3>
-          <p className="text-[11px] text-[var(--text-muted)] mt-0.5 truncate">{inv.group || inv.groupName || '—'}</p>
+          <p className="text-[11px] text-base-content/45 mt-0.5 truncate">{inv.group || inv.groupName || '—'}</p>
         </div>
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 ml-2"
           style={{ background: st.bg, color: st.text }}>
@@ -89,27 +89,27 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
       </div>
       <div className="flex items-center justify-between mb-3">
         <div>
-          <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Сумма</div>
-          <div className="text-[18px] font-extrabold text-[var(--text)] tabular-nums">{money(total)}</div>
+          <div className="text-[10px] font-bold text-base-content/45 uppercase tracking-wider">Сумма</div>
+          <div className="text-[18px] font-extrabold text-base-content tabular-nums">{money(total)}</div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Оплачено</div>
+          <div className="text-[10px] font-bold text-base-content/45 uppercase tracking-wider">Оплачено</div>
           <div className="text-[14px] font-bold tabular-nums" style={{ color: paidPercent >= 100 ? '#2ECC71' : 'var(--text)' }}>{money(paid)}</div>
         </div>
       </div>
-      <div className="w-full h-1.5 rounded-full bg-[var(--surface)] mb-3 overflow-hidden">
+      <div className="w-full h-1.5 rounded-full bg-base-100 mb-3 overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{
           width: `${paidPercent}%`,
           background: paidPercent >= 100 ? '#2ECC71' : paidPercent > 0 ? '#F59E0B' : 'var(--border)',
         }} />
       </div>
       <div className="flex items-center justify-between">
-        <button className="flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+        <button className="flex items-center gap-1 text-[11px] text-base-content/45 hover:text-secondary transition-colors"
           onClick={() => onDetail(inv)}>
           <Info size={10} /> Детали
         </button>
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
+          <span className="flex items-center gap-1 text-[11px] text-base-content/45">
             <Clock size={10} /> {dateShort(inv.dueDate || inv.due_date)}
           </span>
           {inv.status !== 'paid' && inv.status !== 'cancelled' && (
@@ -340,10 +340,14 @@ export default function AdminPayments() {
       <PageHeader title="Платежи" subtitle="Счета и оплаты (наличные + карта)">
         <div className="flex items-center gap-3">
           {allRows.length > 0 && (
-            <span className="text-sm text-[var(--text-muted)] tabular-nums">{meta.total || allRows.length} счетов</span>
+            <span className="text-sm text-base-content/45 tabular-nums">{meta.total || allRows.length} счетов</span>
           )}
-          <button className="h-9 px-4 rounded-[10px] flex items-center gap-1.5 text-[12px] font-bold text-white transition-all hover:opacity-90 active:scale-95"
-            style={{ background: 'var(--accent)', color: '#000' }} onClick={() => { setShowAdHoc(true); setErr(''); setStudentSearch(''); }}>
+          {/* Было `background: var(--accent)` (#16210f) с `color: #000` —
+              чёрным по почти чёрному, кнопка не читалась вовсе. */}
+          <button
+            className="btn btn-primary btn-sm gap-1.5"
+            onClick={() => { setShowAdHoc(true); setErr(''); setStudentSearch(''); }}
+          >
             <Plus size={14} /> Разовый платёж
           </button>
         </div>
@@ -352,17 +356,17 @@ export default function AdminPayments() {
       {/* ═══ Search & Filters ═══ */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/45" />
           <input type="text" placeholder="Поиск по имени студента..."
-            className="w-full h-10 pl-9 pr-4 rounded-[12px] text-[13px] font-medium bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all"
+            className="w-full h-10 pl-9 pr-4 rounded-[12px] text-[13px] font-medium bg-base-100 border border-base-300 text-base-content placeholder:text-base-content/45 focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary transition-all"
             value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
         <div className="flex gap-1.5 flex-wrap">
           {STATUS_LIST.map((s) => (
             <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
               className={`h-8 px-3 rounded-lg text-[12px] font-bold transition-all ${statusFilter === s
-                ? 'bg-[var(--accent)] text-black shadow-sm'
-                : 'bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)] hover:border-[var(--accent)]/40'
+                ? 'bg-secondary text-secondary-content shadow-sm'
+                : 'bg-base-100 text-base-content/45 border border-base-300 hover:border-secondary/40'
               }`}>
               {STATUS_LABELS[s]}
               {s !== 'all' && (
@@ -387,16 +391,16 @@ export default function AdminPayments() {
       ) : error ? (
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
       ) : allRows.length === 0 ? (
-        <div className="glass-strong rounded-[20px] p-12 text-center animate-fade-in mt-4">
-          <Wallet size={40} className="mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
-          <p className="text-[14px] font-medium text-[var(--text-muted)]">Нет счетов</p>
-          <p className="text-[12px] text-[var(--text-muted)] mt-1 opacity-60">Счета появятся здесь</p>
+        <div className="card bg-base-100 p-12 text-center animate-fade-in mt-4">
+          <Wallet size={40} className="mx-auto mb-3 text-base-content/45 opacity-30" />
+          <p className="text-[14px] font-medium text-base-content/45">Нет счетов</p>
+          <p className="text-[12px] text-base-content/45 mt-1 opacity-60">Счета появятся здесь</p>
         </div>
       ) : rows.length === 0 ? (
-        <div className="glass-strong rounded-[20px] p-8 text-center animate-fade-in mt-4">
-          <Search size={32} className="mx-auto mb-2 text-[var(--text-muted)] opacity-30" />
-          <p className="text-[13px] font-medium text-[var(--text-muted)]">Ничего не найдено</p>
-          <p className="text-[11px] text-[var(--text-muted)] mt-1 opacity-60">Попробуйте изменить фильтры</p>
+        <div className="card bg-base-100 p-8 text-center animate-fade-in mt-4">
+          <Search size={32} className="mx-auto mb-2 text-base-content/45 opacity-30" />
+          <p className="text-[13px] font-medium text-base-content/45">Ничего не найдено</p>
+          <p className="text-[11px] text-base-content/45 mt-1 opacity-60">Попробуйте изменить фильтры</p>
         </div>
       ) : (
         <>
@@ -419,7 +423,7 @@ export default function AdminPayments() {
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
-              <span className="text-sm text-[var(--text-muted)] tabular-nums">Страница {meta.page || page} из {totalPages}</span>
+              <span className="text-sm text-base-content/45 tabular-nums">Страница {meta.page || page} из {totalPages}</span>
               <div className="flex gap-2">
                 <button className="btn btn-ghost btn-sm" disabled={(meta.page || page) <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}><ChevronLeft size={16} /></button>
@@ -435,10 +439,10 @@ export default function AdminPayments() {
       {/* ═══════════════ MODAL: Pay Invoice ═══════════════ */}
       {pay && createPortal(
         <dialog className="modal modal-open">
-          <div className="modal-box glass-strong border border-[var(--border)]">
+          <div className="modal-box card bg-base-100 border border-base-300">
             <h3 className="font-bold text-lg mb-1">Приём оплаты</h3>
-            <p className="text-sm text-[var(--text-muted)] mb-4">{pay.student} · {pay.group || '—'}</p>
-            <p className="text-xs text-[var(--text-muted)] mb-3">
+            <p className="text-sm text-base-content/45 mb-4">{pay.student} · {pay.group || '—'}</p>
+            <p className="text-xs text-base-content/45 mb-3">
               Счёт: {dateShort(pay.dueDate || pay.due_date)} · Остаток: {money(Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0))}
             </p>
             {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
@@ -447,7 +451,7 @@ export default function AdminPayments() {
             }} onAdd={() => setPayParts([...payParts, { method: 'card', amount: '' }])}
               onRemove={(i) => setPayParts(payParts.filter((_, idx) => idx !== i))} />
             {payParts.length > 1 && (
-              <p className="text-xs text-[var(--text-muted)] mt-2 tabular-nums">
+              <p className="text-xs text-base-content/45 mt-2 tabular-nums">
                 Итого: {money(payPartsSum)}
                 {payPartsSum > Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0) && (
                   <span className="text-error ml-1">· Превышает остаток!</span>
@@ -469,20 +473,20 @@ export default function AdminPayments() {
       {/* ═══════════════ MODAL: Razoviy (Ad-hoc) Payment ═══════════════ */}
       {showAdHoc && createPortal(
         <dialog className="modal modal-open">
-          <div className="modal-box glass-strong border border-[var(--border)] max-w-lg">
+          <div className="modal-box card bg-base-100 border border-base-300 max-w-lg">
             <h3 className="font-bold text-lg mb-1">Разовый платёж</h3>
-            <p className="text-sm text-[var(--text-muted)] mb-4">Создать счёт и принять оплату вне графика начислений</p>
+            <p className="text-sm text-base-content/45 mb-4">Создать счёт и принять оплату вне графика начислений</p>
             {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
 
             <div className="space-y-3">
               {/* Searchable student selection */}
               <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-1">Студент</label>
+                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Студент</label>
                 {adhocForm.studentId && adhocForm.studentName ? (
-                  <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-[var(--surface)] border border-[var(--border)]">
+                  <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-100 border border-base-300">
                     <div className="flex items-center gap-2">
                       <Avatar name={adhocForm.studentName} size="sm" />
-                      <span className="text-[13px] font-bold text-[var(--text)]">{adhocForm.studentName}</span>
+                      <span className="text-[13px] font-bold text-base-content">{adhocForm.studentName}</span>
                     </div>
                     <button className="btn btn-ghost btn-xs" onClick={() => {
                       setAdhocForm({ ...adhocForm, studentId: '', studentName: '' });
@@ -493,28 +497,28 @@ export default function AdminPayments() {
                   </div>
                 ) : (
                   <div className="relative">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                    <input type="text" className="w-full h-10 pl-9 pr-4 rounded-[10px] text-[13px] bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]" 
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/45" />
+                    <input type="text" className="w-full h-10 pl-9 pr-4 rounded-[10px] text-[13px] bg-base-100 border border-base-300 text-base-content placeholder:text-base-content/45 focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary" 
                       placeholder="Искать по имени, фамилии или дате..."
                       value={studentSearch} onChange={(e) => setStudentSearch(e.target.value)}
                       autoFocus />
                     {studentSearch && filteredStudents.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-[10px] border border-[var(--border)] shadow-lg z-50" style={{ background: 'var(--surface)' }}>
+                      <div className="absolute top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-[10px] border border-base-300 shadow-lg z-50" style={{ background: 'var(--surface)' }}>
                         {filteredStudents.map((s) => (
                           <button key={s.id} type="button"
-                            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-[var(--surface-hover)] transition-colors border-b border-[var(--border)] last:border-0"
+                            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-base-200 transition-colors border-b border-base-300 last:border-0"
                             onClick={() => selectStudent(s)}>
                             <Avatar name={[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')} size="sm" />
                             <div className="flex-1 min-w-0">
-                              <div className="text-[12px] font-bold text-[var(--text)] truncate">{[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')}</div>
-                              <div className="text-[10px] text-[var(--text-muted)]">{s.groupName || '—'} · {s.createdAt ? dateShort(s.createdAt) : ''}</div>
+                              <div className="text-[12px] font-bold text-base-content truncate">{[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')}</div>
+                              <div className="text-[10px] text-base-content/45">{s.groupName || '—'} · {s.createdAt ? dateShort(s.createdAt) : ''}</div>
                             </div>
                           </button>
                         ))}
                       </div>
                     )}
                     {studentSearch && filteredStudents.length === 0 && (
-                      <p className="text-[11px] text-[var(--text-muted)] mt-1 pl-1">Студент не найден</p>
+                      <p className="text-[11px] text-base-content/45 mt-1 pl-1">Студент не найден</p>
                     )}
                   </div>
                 )}
@@ -522,7 +526,7 @@ export default function AdminPayments() {
 
               {/* Total amount */}
               <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-1">Сумма счета</label>
+                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Сумма счета</label>
                 <input className="input input-bordered w-full h-10 text-[13px]" type="number" placeholder="Сумма"
                   value={adhocForm.totalAmount}
                   onChange={(e) => setAdhocForm((f) => ({ ...f, totalAmount: e.target.value }))} />
@@ -530,7 +534,7 @@ export default function AdminPayments() {
 
               {/* Split parts */}
               <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-1">Части оплаты</label>
+                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Части оплаты</label>
                 <SplitPartsForm parts={adhocParts}
                   onChange={(i, f, v) => {
                     const u = [...adhocParts]; u[i] = { ...u[i], [f]: v }; setAdhocParts(u);
@@ -541,7 +545,7 @@ export default function AdminPayments() {
               </div>
 
               {adhocParts.length > 1 && (
-                <p className={`text-xs tabular-nums ${adhocTotal > Number(adhocForm.totalAmount) ? 'text-error' : 'text-[var(--text-muted)]'}`}>
+                <p className={`text-xs tabular-nums ${adhocTotal > Number(adhocForm.totalAmount) ? 'text-error' : 'text-base-content/45'}`}>
                   Итого частей: {money(adhocTotal)}
                   {adhocTotal > Number(adhocForm.totalAmount) && (
                     <span className="ml-1">· Превышает сумму счёта!</span>
@@ -554,7 +558,7 @@ export default function AdminPayments() {
 
               {/* Comment */}
               <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-1">Комментарий</label>
+                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Комментарий</label>
                 <input className="input input-bordered w-full h-10 text-[13px]" type="text" placeholder="Опционально"
                   value={adhocForm.comment}
                   onChange={(e) => setAdhocForm((f) => ({ ...f, comment: e.target.value }))} />
@@ -576,11 +580,11 @@ export default function AdminPayments() {
       {/* ═══════════════ MODAL: Invoice Detail ═══════════════ */}
       {detail && createPortal(
         <dialog className="modal modal-open">
-          <div className="modal-box glass-strong border border-[var(--border)] max-w-xl">
+          <div className="modal-box card bg-base-100 border border-base-300 max-w-xl">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="font-bold text-lg">{detail.student || '—'}</h3>
-                <p className="text-sm text-[var(--text-muted)]">{detail.group || '—'}</p>
+                <p className="text-sm text-base-content/45">{detail.group || '—'}</p>
               </div>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
                 style={{ background: (STATUS[detail.status] || STATUS.pending).bg, color: (STATUS[detail.status] || STATUS.pending).text }}>
@@ -593,31 +597,31 @@ export default function AdminPayments() {
 
             {/* Summary */}
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="glass-strong rounded-[12px] p-3 text-center">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Сумма</div>
+              <div className="card bg-base-100 p-3 text-center">
+                <div className="text-[10px] font-bold text-base-content/45 uppercase">Сумма</div>
                 <div className="text-[16px] font-extrabold tabular-nums">{money(Number(detail.totalAmount || detail.amount || 0))}</div>
               </div>
-              <div className="glass-strong rounded-[12px] p-3 text-center">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Оплачено</div>
+              <div className="card bg-base-100 p-3 text-center">
+                <div className="text-[10px] font-bold text-base-content/45 uppercase">Оплачено</div>
                 <div className="text-[16px] font-extrabold tabular-nums" style={{ color: '#2ECC71' }}>{money(Number(detail.paidAmount || detail.paid_amount || 0))}</div>
               </div>
-              <div className="glass-strong rounded-[12px] p-3 text-center">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Срок</div>
+              <div className="card bg-base-100 p-3 text-center">
+                <div className="text-[10px] font-bold text-base-content/45 uppercase">Срок</div>
                 <div className="text-[12px] font-bold tabular-nums">{dateShort(detail.dueDate || detail.due_date)}</div>
               </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 mb-3 border-b border-[var(--border)] pb-2">
-              <button className={`text-[12px] font-bold px-3 py-1 rounded-lg transition-all ${detailTab === 'transactions' ? 'bg-[var(--accent)] text-black' : 'text-[var(--text-muted)] hover:text-[var(--text)]'}`}
+            <div className="flex gap-2 mb-3 border-b border-base-300 pb-2">
+              <button className={`text-[12px] font-bold px-3 py-1 rounded-lg transition-all ${detailTab === 'transactions' ? 'bg-secondary text-secondary-content' : 'text-base-content/45 hover:text-base-content'}`}
                 onClick={() => setDetailTab('transactions')}>
                 Транзакции ({invoiceTx.length})
               </button>
-              <button className={`text-[12px] font-bold px-3 py-1 rounded-lg transition-all ${detailTab === 'reverse' ? 'bg-[var(--accent)] text-black' : 'text-[var(--text-muted)] hover:text-[var(--text)]'}`}
+              <button className={`text-[12px] font-bold px-3 py-1 rounded-lg transition-all ${detailTab === 'reverse' ? 'bg-secondary text-secondary-content' : 'text-base-content/45 hover:text-base-content'}`}
                 onClick={() => setDetailTab('reverse')}>
                 Возврат / Аннулирование
               </button>
-              <button className={`text-[12px] font-bold px-3 py-1 rounded-lg transition-all ${detailTab === 'receipt' ? 'bg-[var(--accent)] text-black' : 'text-[var(--text-muted)] hover:text-[var(--text)]'}`}
+              <button className={`text-[12px] font-bold px-3 py-1 rounded-lg transition-all ${detailTab === 'receipt' ? 'bg-secondary text-secondary-content' : 'text-base-content/45 hover:text-base-content'}`}
                 onClick={() => setDetailTab('receipt')}>
                 Чек
               </button>
@@ -627,16 +631,16 @@ export default function AdminPayments() {
             {detailTab === 'transactions' && (
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {invoiceTx.length === 0 ? (
-                  <p className="text-[12px] text-[var(--text-muted)] text-center py-4">Нет транзакций для этого счёта</p>
+                  <p className="text-[12px] text-base-content/45 text-center py-4">Нет транзакций для этого счёта</p>
                 ) : (
                   invoiceTx.map((tx, i) => (
-                    <div key={tx.id || i} className="flex items-center justify-between p-2.5 rounded-[10px] bg-[var(--surface)]">
+                    <div key={tx.id || i} className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-100">
                       <div className="flex items-center gap-2">
-                        {tx.method === 'cash' ? <Banknote size={14} className="text-[var(--text-muted)]" />
-                          : tx.method === 'card' ? <CreditCard size={14} className="text-[var(--text-muted)]" />
-                            : <Wallet size={14} className="text-[var(--text-muted)]" />}
+                        {tx.method === 'cash' ? <Banknote size={14} className="text-base-content/45" />
+                          : tx.method === 'card' ? <CreditCard size={14} className="text-base-content/45" />
+                            : <Wallet size={14} className="text-base-content/45" />}
                         <div>
-                          <span className="text-[12px] font-bold text-[var(--text)]">{METHODS[tx.method] || tx.method}</span>
+                          <span className="text-[12px] font-bold text-base-content">{METHODS[tx.method] || tx.method}</span>
                           <span className={`ml-2 text-[11px] font-semibold ${tx.status === 'completed' ? 'text-success' : tx.status === 'refunded' ? 'text-error' : 'text-warning'}`}>
                             {tx.status}
                           </span>
@@ -652,9 +656,9 @@ export default function AdminPayments() {
             {/* ── Tab: Refund / Void ── */}
             {detailTab === 'reverse' && (
               <div className="space-y-3">
-                <p className="text-[12px] text-[var(--text-muted)]">Выберите завершённую транзакцию для возврата или аннулирования:</p>
+                <p className="text-[12px] text-base-content/45">Выберите завершённую транзакцию для возврата или аннулирования:</p>
                 {invoiceTx.filter((t) => t.status === 'completed').length === 0 ? (
-                  <p className="text-[12px] text-[var(--text-muted)] text-center py-4">Нет завершённых транзакций</p>
+                  <p className="text-[12px] text-base-content/45 text-center py-4">Нет завершённых транзакций</p>
                 ) : (
                   <select className="select select-bordered w-full text-[13px]"
                     value={reverseTxId || ''} onChange={(e) => setReverseTxId(e.target.value)}>
@@ -669,11 +673,11 @@ export default function AdminPayments() {
                 {reverseTxId && (
                   <>
                     <div className="flex gap-2">
-                      <button className={`flex-1 h-9 rounded-[10px] text-[12px] font-bold transition-all ${reverseMode === 'refund' ? 'bg-error text-white' : 'bg-[var(--surface)] text-[var(--text-muted)]'}`}
+                      <button className={`flex-1 h-9 rounded-[10px] text-[12px] font-bold transition-all ${reverseMode === 'refund' ? 'bg-error text-white' : 'bg-base-100 text-base-content/45'}`}
                         onClick={() => setReverseMode('refund')}>
                         <RotateCcw size={14} className="inline mr-1" /> Возврат (Refund)
                       </button>
-                      <button className={`flex-1 h-9 rounded-[10px] text-[12px] font-bold transition-all ${reverseMode === 'void' ? 'bg-warning text-white' : 'bg-[var(--surface)] text-[var(--text-muted)]'}`}
+                      <button className={`flex-1 h-9 rounded-[10px] text-[12px] font-bold transition-all ${reverseMode === 'void' ? 'bg-warning text-white' : 'bg-base-100 text-base-content/45'}`}
                         onClick={() => setReverseMode('void')}>
                         <Ban size={14} className="inline mr-1" /> Аннулировать (Void)
                       </button>
@@ -694,9 +698,9 @@ export default function AdminPayments() {
             {/* ── Tab: Receipt ── */}
             {detailTab === 'receipt' && (
               <div className="space-y-3">
-                <p className="text-[12px] text-[var(--text-muted)]">Загрузить чек для транзакции:</p>
+                <p className="text-[12px] text-base-content/45">Загрузить чек для транзакции:</p>
                 {invoiceTx.filter((t) => t.status === 'completed').length === 0 ? (
-                  <p className="text-[12px] text-[var(--text-muted)] text-center py-4">Нет завершённых транзакций</p>
+                  <p className="text-[12px] text-base-content/45 text-center py-4">Нет завершённых транзакций</p>
                 ) : (
                   <select className="select select-bordered w-full text-[13px]"
                     value={uploadTxId || ''} onChange={(e) => setUploadTxId(e.target.value)}>
@@ -710,10 +714,10 @@ export default function AdminPayments() {
                   </select>
                 )}
                 {uploadTxId && (
-                  <div className="border-2 border-dashed border-[var(--border)] rounded-[12px] p-6 text-center hover:border-[var(--accent)]/50 transition-colors cursor-pointer"
+                  <div className="border-2 border-dashed border-base-300 rounded-[12px] p-6 text-center hover:border-secondary/50 transition-colors cursor-pointer"
                     onClick={() => document.getElementById('receipt-file-input')?.click()}>
-                    <Upload size={24} className="mx-auto mb-2 text-[var(--text-muted)]" />
-                    <p className="text-[12px] text-[var(--text-muted)]">{uploadFile ? uploadFile.name : 'Нажмите для выбора файла'}</p>
+                    <Upload size={24} className="mx-auto mb-2 text-base-content/45" />
+                    <p className="text-[12px] text-base-content/45">{uploadFile ? uploadFile.name : 'Нажмите для выбора файла'}</p>
                     <input id="receipt-file-input" type="file" accept="image/*,.pdf" className="hidden"
                       onChange={(e) => {
                         setUploadFile(e.target.files?.[0] || null);
@@ -722,7 +726,7 @@ export default function AdminPayments() {
                   </div>
                 )}
                 {uploading && (
-                  <div className="flex items-center justify-center gap-2 text-[12px] text-[var(--text-muted)]">
+                  <div className="flex items-center justify-center gap-2 text-[12px] text-base-content/45">
                     <span className="loading loading-spinner loading-xs" /> Загрузка...
                   </div>
                 )}

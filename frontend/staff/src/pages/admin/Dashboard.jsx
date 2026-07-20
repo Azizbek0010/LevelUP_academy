@@ -17,7 +17,7 @@ function QuickAction({ to, label, Icon, color, description }) {
   return (
     <Link
       to={to}
-      className="glass-strong rounded-[16px] p-4 flex items-center gap-3.5 group card-hover-premium transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
+      className="card bg-base-100 p-4 flex items-center gap-3.5 group card-hover-premium transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
     >
       <div
         className="w-11 h-11 rounded-[12px] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
@@ -26,12 +26,12 @@ function QuickAction({ to, label, Icon, color, description }) {
         <Icon size={20} strokeWidth={2} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-bold text-[var(--text)]">{label}</div>
+        <div className="text-[13px] font-bold text-base-content">{label}</div>
         {description && (
-          <div className="text-[11px] text-[var(--text-muted)] mt-0.5 truncate">{description}</div>
+          <div className="text-[11px] text-base-content/45 mt-0.5 truncate">{description}</div>
         )}
       </div>
-      <ArrowUpRight size={14} className="text-[var(--text-muted)] group-hover:text-[var(--green)] transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+      <ArrowUpRight size={14} className="text-base-content/45 group-hover:text-primary transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
     </Link>
   );
 }
@@ -39,16 +39,16 @@ function QuickAction({ to, label, Icon, color, description }) {
 /* ═══════════════ Stat Row ═══════════════ */
 function StatRow({ Icon, label, value, danger, accent }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 rounded-[12px] bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--green)]/30 transition-all duration-200 group">
-      <span className="flex items-center gap-2.5 text-[13px] text-[var(--text-secondary)]">
+    <div className="flex items-center justify-between px-4 py-3 rounded-[12px] bg-base-100 border border-base-300 hover:border-primary/30 transition-all duration-200 group">
+      <span className="flex items-center gap-2.5 text-[13px] text-base-content/70">
         {Icon && (
-          <span className="w-7 h-7 rounded-[8px] flex items-center justify-center bg-[var(--green-bg)] text-[var(--green)] group-hover:scale-110 transition-transform">
+          <span className="w-7 h-7 rounded-[8px] flex items-center justify-center bg-primary/10 text-primary group-hover:scale-110 transition-transform">
             <Icon size={14} />
           </span>
         )}
         {label}
       </span>
-      <span className={`text-[14px] font-extrabold tabular-nums ${danger ? 'text-[var(--danger)]' : accent ? 'text-[var(--green)]' : 'text-[var(--text)]'}`}>
+      <span className={`text-[14px] font-extrabold tabular-nums ${danger ? 'text-error' : accent ? 'text-primary' : 'text-base-content'}`}>
         {value}
       </span>
     </div>
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
       <PageHeader title="Дашборд" />
 
       {/* ═══ Welcome Banner ═══ */}
-      <div className="glass-strong rounded-[20px] p-6 relative overflow-hidden animate-fade-in">
+      <div className="card bg-base-100 p-6 relative overflow-hidden animate-fade-in">
         <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-15" style={{ background: 'linear-gradient(135deg, #C6FF34, #22c55e)' }} />
         <div className="relative flex items-center gap-4">
           <div className="w-14 h-14 rounded-[16px] flex items-center justify-center text-2xl shrink-0" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>
@@ -150,10 +150,10 @@ export default function AdminDashboard() {
       {/* ═══ Branch Stats + Monthly Overview ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Branch Stats */}
-        <div className="glass-strong rounded-[20px] p-5 card-hover-premium animate-fade-in stagger-3">
+        <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-3">
           <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-1 h-6 rounded-full bg-[var(--green)]" />
-            <h2 className="text-[15px] font-extrabold text-[var(--text)] tracking-[-0.02em]">Показатели филиала</h2>
+            <div className="w-1 h-6 rounded-full bg-primary" />
+            <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Показатели филиала</h2>
           </div>
           <div className="space-y-2.5">
             <StatRow Icon={GraduationCap} label="Активные студенты" value={fmt(t.activeStudents)} accent />
@@ -163,10 +163,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Monthly Overview */}
-        <div className="glass-strong rounded-[20px] p-5 card-hover-premium animate-fade-in stagger-4">
+        <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-4">
           <div className="flex items-center gap-2.5 mb-5">
             <div className="w-1 h-6 rounded-full bg-[#3B82F6]" />
-            <h2 className="text-[15px] font-extrabold text-[var(--text)] tracking-[-0.02em]">За этот месяц</h2>
+            <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">За этот месяц</h2>
           </div>
           <div className="space-y-2.5">
             <StatRow Icon={TrendingUp} label="Доход" value={money(m.revenue)} accent />
@@ -177,10 +177,10 @@ export default function AdminDashboard() {
       </div>
 
       {/* ═══ Quick Actions ═══ */}
-      <div className="glass-strong rounded-[20px] p-5 card-hover-premium animate-fade-in stagger-5">
+      <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-5">
         <div className="flex items-center gap-2.5 mb-5">
           <div className="w-1 h-6 rounded-full bg-[#F59E0B]" />
-          <h2 className="text-[15px] font-extrabold text-[var(--text)] tracking-[-0.02em]">Быстрые действия</h2>
+          <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Быстрые действия</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <QuickAction to="/students" label="Студенты" Icon={UserPlus} color="#2ECC71" description="Добавить или найти студента" />
@@ -193,10 +193,10 @@ export default function AdminDashboard() {
       </div>
 
       {/* ═══ Activity Feed ═══ */}
-      <div className="glass-strong rounded-[20px] p-5 card-hover-premium animate-fade-in stagger-6">
+      <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-6">
         <div className="flex items-center gap-2.5 mb-5">
           <div className="w-1 h-6 rounded-full bg-[#8B5CF6]" />
-          <h2 className="text-[15px] font-extrabold text-[var(--text)] tracking-[-0.02em]">Последняя активность</h2>
+          <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Последняя активность</h2>
         </div>
         <div className="space-y-3">
           {[
@@ -204,7 +204,7 @@ export default function AdminDashboard() {
             { icon: BarChart3, text: 'Данные обновлены', time: '5 мин назад', color: '#3B82F6' },
             { icon: Sparkles, text: 'Добро пожаловать в панель управления', time: 'Сегодня', color: '#F59E0B' },
           ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-[12px] bg-[var(--surface)] border border-[var(--border)]">
+            <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-[12px] bg-base-100 border border-base-300">
               <div
                 className="w-8 h-8 rounded-[8px] flex items-center justify-center shrink-0"
                 style={{ background: `${item.color}15`, color: item.color }}
@@ -212,9 +212,9 @@ export default function AdminDashboard() {
                 <item.icon size={14} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium text-[var(--text)]">{item.text}</p>
+                <p className="text-[13px] font-medium text-base-content">{item.text}</p>
               </div>
-              <span className="text-[11px] text-[var(--text-muted)] shrink-0">{item.time}</span>
+              <span className="text-[11px] text-base-content/45 shrink-0">{item.time}</span>
             </div>
           ))}
         </div>

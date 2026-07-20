@@ -75,8 +75,8 @@ function getCreatedBy(e) {
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload) return null;
   return (
-    <div className="glass-strong rounded-[12px] px-3.5 py-2.5 text-[11px] shadow-[0_8px_24px_var(--shadow-lg)]">
-      <p className="font-bold text-[var(--text)] mb-1.5 text-[12px]">{label}</p>
+    <div className="card bg-base-100 px-3.5 py-2.5 text-[11px] shadow-[0_8px_24px_var(--shadow-lg)]">
+      <p className="font-bold text-base-content mb-1.5 text-[12px]">{label}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ color: p.color }} className="tabular-nums font-semibold">{formatCurrency(p.value)}</p>
       ))}
@@ -101,33 +101,33 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
     <div ref={ref} className="relative">
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-        className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all duration-200"
+        className="w-8 h-8 rounded-[8px] flex items-center justify-center text-base-content/45 hover:text-base-content hover:bg-base-200 transition-all duration-200"
       >
         <MoreVertical className="w-4 h-4" />
       </button>
       {open && (
         <div
-          className="absolute right-0 top-full mt-1 z-50 min-w-[170px] rounded-[12px] border border-[var(--border)] bg-[var(--surface)] shadow-[0_8px_24px_var(--shadow-lg)] py-1.5 animate-scale-in origin-top-right"
+          className="absolute right-0 top-full mt-1 z-50 min-w-[170px] rounded-[12px] border border-base-300 bg-base-100 shadow-[0_8px_24px_var(--shadow-lg)] py-1.5 animate-scale-in origin-top-right"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={() => { onView(expense); setOpen(false); }}
-            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Eye className="w-4 h-4" /></span>
             Ko'rish
           </button>
           <button
             onClick={() => { onEdit(expense); setOpen(false); }}
-            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Pencil className="w-4 h-4" /></span>
             Tahrirlash
           </button>
-          <div className="border-t border-[var(--border)] my-1" />
+          <div className="border-t border-base-300 my-1" />
           <button
             onClick={() => { onDelete(expense); setOpen(false); }}
-            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-[var(--danger)] hover:bg-[rgba(232,84,62,0.08)] transition-colors"
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-error hover:bg-[rgba(232,84,62,0.08)] transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Trash2 className="w-4 h-4" /></span>
             O'chirish
@@ -532,10 +532,10 @@ export default function Expenses() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <div className="w-1 h-7 rounded-full bg-[var(--green)]" />
-            <h1 className="text-[28px] font-extrabold text-[var(--text)] tracking-[-0.035em] leading-none">Xarajatlar</h1>
+            <div className="w-1 h-7 rounded-full bg-primary" />
+            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Xarajatlar</h1>
           </div>
-          <p className="text-[13px] text-[var(--text-secondary)] ml-4">
+          <p className="text-[13px] text-base-content/70 ml-4">
             Tashkilot xarajatlarini kuzatish, boshqarish va tahlil qilish
           </p>
         </div>
@@ -561,20 +561,20 @@ export default function Expenses() {
           { title: "O'rtacha xarajat", value: formatCurrency(stats.avgAmount), icon: <BarChart3 className="w-5 h-5" />, color: '#3B82F6', delay: 'stagger-5' },
         ].map((card, i) => (
           <div key={i} className={`animate-fade-in ${card.delay}`}>
-            <div className="glass-strong rounded-[16px] p-4 card-hover-premium">
+            <div className="card bg-base-100 p-4 card-hover-premium">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.06em]">{card.title}</span>
+                <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-[0.06em]">{card.title}</span>
                 <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: `${card.color}18`, color: card.color }}>
                   {card.icon}
                 </div>
               </div>
-              <div className="text-[20px] font-extrabold text-[var(--text)] tabular-nums leading-none">{card.value}</div>
+              <div className="text-[20px] font-extrabold text-base-content tabular-nums leading-none">{card.value}</div>
               {card.delta != null && (
                 <div className="flex items-center gap-1.5 mt-2">
                   <span className={`text-[11px] font-bold ${card.delta >= 0 ? 'text-[#2ECC71]' : 'text-[#E8543E]'}`}>
                     {card.delta >= 0 ? '+' : ''}{card.delta.toFixed(1)}%
                   </span>
-                  <span className="text-[10px] text-[var(--text-muted)]">{card.deltaLabel}</span>
+                  <span className="text-[10px] text-base-content/45">{card.deltaLabel}</span>
                 </div>
               )}
             </div>
@@ -583,22 +583,22 @@ export default function Expenses() {
       </div>
 
       {/* ═══ Filter Toolbar ═══ */}
-      <div className="glass-strong rounded-[20px] overflow-hidden card-hover-premium">
+      <div className="card bg-base-100 overflow-hidden card-hover-premium">
         {/* Primary filter row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4">
           {/* Search */}
           <div className="relative flex-1 w-full sm:max-w-xs">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/45 pointer-events-none" />
             <input
               placeholder="Xarajatlarni qidirish..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 pl-10 pr-10 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
+              className="w-full h-10 pl-10 pr-10 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/45 hover:text-base-content transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -627,7 +627,7 @@ export default function Expenses() {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all [color-scheme:light] cursor-pointer"
+                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all [color-scheme:light] cursor-pointer"
               />
             </div>
             <div className="relative">
@@ -635,7 +635,7 @@ export default function Expenses() {
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all [color-scheme:light] cursor-pointer"
+                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all [color-scheme:light] cursor-pointer"
               />
             </div>
             <SelectFilter
@@ -652,14 +652,14 @@ export default function Expenses() {
               onClick={() => setFiltersExpanded(!filtersExpanded)}
               className={`flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] border text-[12px] font-semibold transition-all shrink-0 ${
                 filtersExpanded || hasActiveFilters
-                  ? 'border-[var(--green)] text-[var(--green)] bg-[var(--green-bg)]'
-                  : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'
+                  ? 'border-primary text-primary bg-primary/10'
+                  : 'border-base-300 text-base-content/70 hover:border-base-content/45'
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
               Filtrlar
               {hasActiveFilters && (
-                <span className="w-5 h-5 rounded-full bg-[var(--green)] text-[#141B10] text-[9px] font-bold flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full bg-primary text-[#141B10] text-[9px] font-bold flex items-center justify-center">
                   {[filter !== 'All', statusFilter !== 'All', !!search, !!dateFrom, !!dateTo, sortBy !== 'newest'].filter(Boolean).length}
                 </span>
               )}
@@ -695,14 +695,14 @@ export default function Expenses() {
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 placeholder="Dan"
-                className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] [color-scheme:light] transition-all"
+                className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary [color-scheme:light] transition-all"
               />
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
                 placeholder="Gacha"
-                className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] [color-scheme:light] transition-all"
+                className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary [color-scheme:light] transition-all"
               />
             </div>
             <SelectFilter
@@ -716,7 +716,7 @@ export default function Expenses() {
 
         {/* Category pills */}
         <div className="flex items-center gap-1.5 flex-wrap px-4 pb-4">
-          <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-[0.08em] mr-0.5">Kategoriya:</span>
+          <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em] mr-0.5">Kategoriya:</span>
           {CATEGORIES.map((cat) => {
             const isActive = filter === cat;
             const catColor = cat === 'All' ? 'var(--green)' : CATEGORY_COLORS[cat] || '#8FA283';
@@ -727,7 +727,7 @@ export default function Expenses() {
                 className={`px-3 py-1.5 rounded-[10px] text-[11px] font-semibold transition-all duration-200 ${
                   isActive
                     ? 'text-[#141B10] shadow-sm'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+                    : 'text-base-content/70 hover:text-base-content hover:bg-base-200'
                 }`}
                 style={{
                   background: isActive ? catColor : 'var(--surface)',
@@ -742,7 +742,7 @@ export default function Expenses() {
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[11px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all ml-auto shrink-0"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[11px] font-semibold text-base-content/45 hover:text-base-content hover:bg-base-200 transition-all ml-auto shrink-0"
             >
               <X className="w-3.5 h-3.5" />
               Tozalash
@@ -756,8 +756,8 @@ export default function Expenses() {
         {/* ═══ Left: Table ═══ */}
         <div className="min-w-0">
           {loading && expenses.length === 0 ? (
-            <div className="glass-strong rounded-[20px] overflow-hidden">
-              <div className="p-5 border-b border-[var(--border)]">
+            <div className="card bg-base-100 overflow-hidden">
+              <div className="p-5 border-b border-base-300">
                 <div className="flex gap-6">
                   <div className="skeleton h-3 w-24 rounded-[6px]" />
                   <div className="skeleton h-3 w-32 rounded-[6px]" />
@@ -781,15 +781,15 @@ export default function Expenses() {
               </div>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="glass-strong rounded-[20px]">
+            <div className="card bg-base-100">
               <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-[var(--surface)] flex items-center justify-center mb-4">
-                  <Banknote className="w-8 h-8 text-[var(--text-muted)]" />
+                <div className="w-16 h-16 rounded-full bg-base-100 flex items-center justify-center mb-4">
+                  <Banknote className="w-8 h-8 text-base-content/45" />
                 </div>
-                <h3 className="text-[15px] font-bold text-[var(--text)] mb-1.5">
+                <h3 className="text-[15px] font-bold text-base-content mb-1.5">
                   {search || hasActiveFilters ? "Natija topilmadi" : "Hozircha xarajatlar yo'q"}
                 </h3>
-                <p className="text-[12px] text-[var(--text-secondary)] max-w-[280px] mb-5">
+                <p className="text-[12px] text-base-content/70 max-w-[280px] mb-5">
                   {search || hasActiveFilters ? "Boshqa qidiruv yoki filtr sozlamalarini sinab ko'ring" : "Birinchi xarajatni qo'shish orqali boshlang"}
                 </p>
                 {!search && !hasActiveFilters && (
@@ -815,12 +815,12 @@ export default function Expenses() {
               </div>
             </div>
           ) : (
-            <div className="glass-strong rounded-[20px] overflow-hidden">
+            <div className="card bg-base-100 overflow-hidden">
               {/* Table wrapper */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--text-muted)] bg-[var(--surface)]">
+                    <tr className="text-[10px] font-bold uppercase tracking-[0.07em] text-base-content/45 bg-base-100">
                       <th className="px-5 py-4">Kategoriya</th>
                       <th className="px-5 py-4">Izoh</th>
                       <th className="px-5 py-4 text-right">Summa</th>
@@ -835,35 +835,35 @@ export default function Expenses() {
                     {filtered.map((e, idx) => (
                       <tr
                         key={e.id}
-                        className="group border-t border-[var(--border)] text-[13px] transition-all duration-150 hover:bg-[var(--surface-hover)]"
+                        className="group border-t border-base-300 text-[13px] transition-all duration-150 hover:bg-base-200"
                         style={{ animationDelay: `${idx * 0.025}s` }}
                       >
                         <td className="px-5 py-4">
                           <CategoryBadge category={e.category} />
                         </td>
                         <td className="px-5 py-4 max-w-[220px]">
-                          <span className="text-[var(--text)] font-medium truncate block" title={e.note || ''}>
-                            {e.note || <span className="text-[var(--text-muted)] italic">—</span>}
+                          <span className="text-base-content font-medium truncate block" title={e.note || ''}>
+                            {e.note || <span className="text-base-content/45 italic">—</span>}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-right font-bold text-[var(--text)] tabular-nums whitespace-nowrap text-[14px]">
+                        <td className="px-5 py-4 text-right font-bold text-base-content tabular-nums whitespace-nowrap text-[14px]">
                           {formatCurrency(e.amount)}
                         </td>
                         <td className="px-5 py-4">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-[11px] font-medium text-[var(--text-secondary)] bg-[var(--surface)] border border-[var(--border)]">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-[11px] font-medium text-base-content/70 bg-base-100 border border-base-300">
                             {getPaymentMethod(e)}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-[var(--text-secondary)] tabular-nums whitespace-nowrap text-[12px]">
+                        <td className="px-5 py-4 text-base-content/70 tabular-nums whitespace-nowrap text-[12px]">
                           <span className="flex items-center gap-1.5">
-                            <CalendarDays className="w-3 h-3 text-[var(--text-muted)]" />
+                            <CalendarDays className="w-3 h-3 text-base-content/45" />
                             {formatDate(e.spentAt)}
                           </span>
                         </td>
                         <td className="px-5 py-4">
                           <StatusBadge status={getStatusFromExpense(e)} />
                         </td>
-                        <td className="px-5 py-4 text-[var(--text-secondary)] text-[12px] hidden md:table-cell">
+                        <td className="px-5 py-4 text-base-content/70 text-[12px] hidden md:table-cell">
                           {getCreatedBy(e)}
                         </td>
                         <td className="px-5 py-4">
@@ -881,20 +881,20 @@ export default function Expenses() {
               </div>
 
               {/* Table footer */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-t border-[var(--border)] bg-[var(--surface)]">
+              <div className="flex items-center justify-between px-5 py-3.5 border-t border-base-300 bg-base-100">
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-[var(--text-muted)]">
+                  <span className="text-[11px] text-base-content/45">
                     {filtered.length} ta xarajat
                   </span>
                   {filtered.length !== expenses.length && (
-                    <span className="text-[10px] text-[var(--text-muted)] opacity-60">
+                    <span className="text-[10px] text-base-content/45 opacity-60">
                       ({expenses.length} ta umumiy)
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-[0.06em]">Jami:</span>
-                  <span className="text-[13px] font-extrabold text-[var(--text)] tabular-nums">
+                  <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Jami:</span>
+                  <span className="text-[13px] font-extrabold text-base-content tabular-nums">
                     {formatCurrency(filteredTotal)}
                   </span>
                 </div>
@@ -903,7 +903,7 @@ export default function Expenses() {
           )}
 
           {loading && expenses.length > 0 && (
-            <div className="flex items-center justify-center gap-2.5 py-4 text-[12px] text-[var(--text-muted)]">
+            <div className="flex items-center justify-center gap-2.5 py-4 text-[12px] text-base-content/45">
               <RefreshCw className="w-4 h-4 animate-spin" />
               Yangilanmoqda...
             </div>
@@ -913,10 +913,10 @@ export default function Expenses() {
         {/* ═══ Right: Chart Panel ═══ */}
         <div className="space-y-5">
           {/* Budget by Category */}
-          <div className="glass-strong rounded-[20px] p-5 card-hover-premium">
+          <div className="card bg-base-100 p-5 card-hover-premium">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[14px] font-bold text-[var(--text)]">Kategoriyalar bo'yicha</h3>
-              <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-[0.08em]">Byudjet</span>
+              <h3 className="text-[14px] font-bold text-base-content">Kategoriyalar bo'yicha</h3>
+              <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em]">Byudjet</span>
             </div>
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -929,17 +929,17 @@ export default function Expenses() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="mt-4 pt-4 border-t border-[var(--border)] space-y-2.5">
+            <div className="mt-4 pt-4 border-t border-base-300 space-y-2.5">
               {budgetData.filter((item) => item.amount > 0).length === 0 ? (
-                <p className="text-[11px] text-[var(--text-muted)] text-center py-2">Xarajat ma'lumotlari mavjud emas</p>
+                <p className="text-[11px] text-base-content/45 text-center py-2">Xarajat ma'lumotlari mavjud emas</p>
               ) : (
                 budgetData.filter((item) => item.amount > 0).map((item, i) => (
                   <div key={i} className="flex items-center justify-between text-[11px] group/chart">
                     <div className="flex items-center gap-2.5 flex-1">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: item.fill }} />
-                      <span className="text-[var(--text-secondary)] group-hover/chart:text-[var(--text)] transition-colors">{item.name}</span>
+                      <span className="text-base-content/70 group-hover/chart:text-base-content transition-colors">{item.name}</span>
                     </div>
-                    <span className="font-bold text-[var(--text)] tabular-nums">{formatCurrency(item.amount)}</span>
+                    <span className="font-bold text-base-content tabular-nums">{formatCurrency(item.amount)}</span>
                   </div>
                 ))
               )}
@@ -947,11 +947,11 @@ export default function Expenses() {
           </div>
 
           {/* Monthly Trend */}
-          <div className="glass-strong rounded-[20px] p-5 card-hover-premium">
-            <h3 className="text-[14px] font-bold text-[var(--text)] mb-5">Oylik trend</h3>
+          <div className="card bg-base-100 p-5 card-hover-premium">
+            <h3 className="text-[14px] font-bold text-base-content mb-5">Oylik trend</h3>
             {monthlyData.length === 0 ? (
               <div className="h-[140px] flex items-center justify-center">
-                <p className="text-[11px] text-[var(--text-muted)]">Trend ma'lumotlari mavjud emas</p>
+                <p className="text-[11px] text-base-content/45">Trend ma'lumotlari mavjud emas</p>
               </div>
             ) : (
               <div className="h-[140px]">
@@ -973,44 +973,44 @@ export default function Expenses() {
       {viewModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box glass-strong max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box card bg-base-100 max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajat tafsilotlari</h3>
+          <h3 className="font-bold text-[16px] text-base-content mb-4">Xarajat tafsilotlari</h3>
           {viewTarget && (
             <div className="space-y-5">
-              <div className="flex items-center gap-3 pb-4 border-b border-[var(--border)]">
+              <div className="flex items-center gap-3 pb-4 border-b border-base-300">
                 <CategoryBadge category={viewTarget.category} />
                 <StatusBadge status={getStatusFromExpense(viewTarget)} />
               </div>
 
               <div className="space-y-0">
-                <div className="flex justify-between items-center py-3 border-b border-[var(--border)]">
-                  <span className="text-[12px] text-[var(--text-secondary)] font-medium">Summa</span>
-                  <span className="text-[18px] font-extrabold text-[var(--text)] tabular-nums">{formatCurrency(viewTarget.amount)}</span>
+                <div className="flex justify-between items-center py-3 border-b border-base-300">
+                  <span className="text-[12px] text-base-content/70 font-medium">Summa</span>
+                  <span className="text-[18px] font-extrabold text-base-content tabular-nums">{formatCurrency(viewTarget.amount)}</span>
                 </div>
-                <div className="flex justify-between items-center py-3 border-b border-[var(--border)]">
-                  <span className="text-[12px] text-[var(--text-secondary)] font-medium">Sana</span>
-                  <span className="text-[13px] font-semibold text-[var(--text)]">{formatDate(viewTarget.spentAt)}</span>
+                <div className="flex justify-between items-center py-3 border-b border-base-300">
+                  <span className="text-[12px] text-base-content/70 font-medium">Sana</span>
+                  <span className="text-[13px] font-semibold text-base-content">{formatDate(viewTarget.spentAt)}</span>
                 </div>
                 {getPaymentMethod(viewTarget) !== '—' && (
-                  <div className="flex justify-between items-center py-3 border-b border-[var(--border)]">
-                    <span className="text-[12px] text-[var(--text-secondary)] font-medium">To'lov usuli</span>
-                    <span className="text-[13px] font-semibold text-[var(--text)]">{getPaymentMethod(viewTarget)}</span>
+                  <div className="flex justify-between items-center py-3 border-b border-base-300">
+                    <span className="text-[12px] text-base-content/70 font-medium">To'lov usuli</span>
+                    <span className="text-[13px] font-semibold text-base-content">{getPaymentMethod(viewTarget)}</span>
                   </div>
                 )}
                 {getCreatedBy(viewTarget) !== '—' && (
-                  <div className="flex justify-between items-center py-3 border-b border-[var(--border)]">
-                    <span className="text-[12px] text-[var(--text-secondary)] font-medium">Yaratgan</span>
-                    <span className="text-[13px] font-semibold text-[var(--text)]">{getCreatedBy(viewTarget)}</span>
+                  <div className="flex justify-between items-center py-3 border-b border-base-300">
+                    <span className="text-[12px] text-base-content/70 font-medium">Yaratgan</span>
+                    <span className="text-[13px] font-semibold text-base-content">{getCreatedBy(viewTarget)}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-start py-3">
-                  <span className="text-[12px] text-[var(--text-secondary)] font-medium pt-0.5">Izoh</span>
-                  <span className="text-[13px] text-[var(--text)] text-right max-w-[250px] leading-relaxed">{viewTarget.note || <span className="text-[var(--text-muted)] italic">Yo'q</span>}</span>
+                  <span className="text-[12px] text-base-content/70 font-medium pt-0.5">Izoh</span>
+                  <span className="text-[13px] text-base-content text-right max-w-[250px] leading-relaxed">{viewTarget.note || <span className="text-base-content/45 italic">Yo'q</span>}</span>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--border)]">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-base-300">
                 <button className="btn btn-ghost btn-sm" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
                   Yopish
                 </button>
@@ -1029,12 +1029,12 @@ export default function Expenses() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setModalOpen(false); }}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box glass-strong max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box card bg-base-100 max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setModalOpen(false)}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">{editingId ? 'Xarajatni tahrirlash' : 'Xarajat qo\'shish'}</h3>
+          <h3 className="font-bold text-[16px] text-base-content mb-4">{editingId ? 'Xarajatni tahrirlash' : 'Xarajat qo\'shish'}</h3>
           <div className="space-y-5">
             <div>
-              <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">Kategoriya *</label>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Kategoriya *</label>
               <div className="grid grid-cols-3 gap-2">
                 {CATEGORIES.filter((c) => c !== 'All').map((cat) => {
                   const isActive = formData.category === cat;
@@ -1060,28 +1060,28 @@ export default function Expenses() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">Summa *</label>
+                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Summa *</label>
                 <input
                   type="number"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   placeholder="500000"
-                  className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
+                  className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">Sana</label>
+                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Sana</label>
                 <input
                   type="date"
                   value={formData.spentAt}
                   onChange={(e) => setFormData({ ...formData, spentAt: e.target.value })}
-                  className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200 [color-scheme:light]"
+                  className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 [color-scheme:light]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">To'lov usuli</label>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">To'lov usuli</label>
               <div className="grid grid-cols-2 gap-2">
                 {PAYMENT_METHODS.map((method) => (
                   <button
@@ -1102,18 +1102,18 @@ export default function Expenses() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-[0.06em]">Izoh</label>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Izoh</label>
               <input
                 value={formData.note}
                 onChange={(e) => setFormData({ ...formData, note: e.target.value })}
                 placeholder="Xarajat haqida izoh"
-                className="w-full h-10 px-3.5 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200"
+                className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
               />
             </div>
 
             {error && (
               <div
-                className="text-[12px] text-[var(--danger)] font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
+                className="text-[12px] text-error font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
                 style={{ background: 'rgba(232,84,62,0.08)', border: '1px solid rgba(232,84,62,0.15)' }}
               >
                 <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -1141,19 +1141,19 @@ export default function Expenses() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setDeleteTarget(null); }}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box glass-strong max-w-md relative z-10" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box card bg-base-100 max-w-md relative z-10" onClick={(e) => e.stopPropagation()}>
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setDeleteTarget(null)}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-[var(--text)] mb-4">Xarajatni o'chirish</h3>
+          <h3 className="font-bold text-[16px] text-base-content mb-4">Xarajatni o'chirish</h3>
           <div className="space-y-5">
             <div className="flex items-start gap-4">
               <div className="w-11 h-11 rounded-[14px] bg-[rgba(232,84,62,0.12)] flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-[var(--danger)]" />
+                <AlertTriangle className="w-5 h-5 text-error" />
               </div>
               <div className="flex-1">
-                <p className="text-[14px] font-bold text-[var(--text)] mb-1.5">O'chirishni tasdiqlaysizmi?</p>
-                <p className="text-[12px] text-[var(--text-secondary)] leading-relaxed">
+                <p className="text-[14px] font-bold text-base-content mb-1.5">O'chirishni tasdiqlaysizmi?</p>
+                <p className="text-[12px] text-base-content/70 leading-relaxed">
                   <CategoryBadge category={deleteTarget?.category} />{' '}
-                  <span className="tabular-nums font-semibold text-[var(--text)]">{formatCurrency(deleteTarget?.amount)}</span>{' '}
+                  <span className="tabular-nums font-semibold text-base-content">{formatCurrency(deleteTarget?.amount)}</span>{' '}
                   xarajatni o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.
                 </p>
               </div>
@@ -1161,7 +1161,7 @@ export default function Expenses() {
 
             {error && (
               <div
-                className="text-[12px] text-[var(--danger)] font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
+                className="text-[12px] text-error font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
                 style={{ background: 'rgba(232,84,62,0.08)', border: '1px solid rgba(232,84,62,0.15)' }}
               >
                 <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -1169,7 +1169,7 @@ export default function Expenses() {
               </div>
             )}
 
-            <div className="flex justify-end gap-2.5 pt-2 border-t border-[var(--border)]">
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-base-300">
               <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Bekor qilish</button>
               <button className="btn btn-error btn-sm gap-1.5 text-white" onClick={handleDelete} disabled={saving}>
                 {saving ? (
@@ -1195,13 +1195,13 @@ function SelectFilter({ value, onChange, options, placeholder }) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none w-full sm:w-[145px] h-10 px-3.5 pr-9 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--text-secondary)] outline-none hover:border-[var(--text-muted)] focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] transition-all duration-200 cursor-pointer"
+        className="appearance-none w-full sm:w-[145px] h-10 px-3.5 pr-9 rounded-[12px] border border-base-300 bg-base-100 text-[12px] font-semibold text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 cursor-pointer"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}
       </select>
-      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
+      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-base-content/45 pointer-events-none" />
     </div>
   );
 }
