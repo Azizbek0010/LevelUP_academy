@@ -175,8 +175,22 @@ function AttendanceTab({ groupId, token }) {
 
   const dayResults = useQueries({ queries: attendanceQueries });
 
+  /* Стабильная подпись серверных данных: меняется ТОЛЬКО когда какой-то день
+     реально перезагрузился (`dataUpdatedAt` обновляется на успешный ответ), а не
+     на каждый ре-рендер. Раньше эффект ниже зависел от идентичности массива
+     `dayResults`, а useQueries отдаёт новую ссылку на многих ре-рендерах — из-за
+     чего build-эффект срабатывал на каждый клик и пересобирал карту из серверных
+     данных, ЗАТИРАЯ оптимистичную отметку. Клетка меняла цвет только через ~1с,
+     когда приходил ответ сохранения. Теперь эффект срабатывает лишь на свежих
+     данных, оптимистичное изменение видно сразу, а перезапрос (с тем же
+     значением) уже ничего не «дёргает». */
+  const dayResultsRef = useRef(dayResults);
+  dayResultsRef.current = dayResults;
+  const dataSignature = dayResults.map((r) => r.dataUpdatedAt ?? 0).join(',');
+
   // Build attendance map from all day results
   useEffect(() => {
+    const dr = dayResultsRef.current;
     const fullMap = {};
     // Initialize empty
     students.forEach((s) => {
@@ -185,15 +199,11 @@ function AttendanceTab({ groupId, token }) {
         fullMap[`${sid}_${year}-${pad(month + 1)}-${pad(d)}`] = null;
       });
     });
-    // Стартуем от уже накопленных пометок «исправлено админом», а не с нуля:
-    // между кликом и приходом свежих данных build-эффект успевает пересобрать
-    // карту, и без этого мержа только что поставленная админом пометка
-    // пропадала (пустой объект затирал оптимистичную отметку).
     const corrected = { ...correctedRef.current };
     // Fill from API data
     DAYS.forEach((d, idx) => {
       const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
-      const result = dayResults[idx];
+      const result = dr[idx];
       const records = result?.data?.data || result?.data || [];
       records.forEach((r) => {
         const sid = r.studentId || r.student_id;
@@ -208,7 +218,7 @@ function AttendanceTab({ groupId, token }) {
     mapRef.current = fullMap;
     setCorrectedMap(corrected);
     correctedRef.current = corrected;
-  }, [groupId, month, year, students, DAYS, dayResults]);
+  }, [groupId, month, year, students, DAYS, dataSignature]);
 
   // Reset on month/groupId change
   useEffect(() => {
