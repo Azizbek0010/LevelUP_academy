@@ -10,6 +10,7 @@ import { redis, closeRedis } from '../../src/config/redis.js';
 import { notificationQueue } from '../../src/queues/notification.queue.js';
 
 import * as overviewService from '../../src/modules/parent/overview/overview.service.js';
+import * as notificationsService from '../../src/modules/parent/notifications/notifications.service.js';
 import { changeCoins } from '../../src/modules/coins/coins.service.js';
 import { isoWeekKey, monthKey } from '../../src/shared/period.js';
 
@@ -90,6 +91,47 @@ async function main() {
     await expectAppError(
       () => overviewService.getChildOverview(parentId, mentorId),
       403,
+    );
+  });
+
+  // =======================================================================
+  // 5. Notifications feed — grades/attendance/payments, scoped to own children
+  // =======================================================================
+  await scenario(5, 'notifications feed merges grade/attendance/payment events, sorted desc, scoped to own children', async () => {
+    const items = await notificationsService.listForParent(parentId);
+
+    assert(items.length >= 5, `expected at least 5 events, got ${items.length}`);
+
+    const byType = (t) => items.filter((n) => n.type === t);
+    assertEqual(byType('grade').length, 2, 'one homework grade + one test grade');
+    assertEqual(byType('attendance').length, 2, 'one absent + one late (present is not notification-worthy)');
+    assertEqual(byType('payment').length, 2, 'one payment-received + one overdue invoice');
+
+    const hwEvent = items.find((n) => n.id.startsWith('hw:'));
+    assert(hwEvent && hwEvent.body.includes('88/100'), 'homework event should mention the score');
+
+    const testEvent = items.find((n) => n.id.startsWith('test:'));
+    assert(testEvent && testEvent.body.includes('100%'), 'test event should mention the percent score');
+
+    const lateEvent = items.find((n) => n.id.startsWith('att:') && n.title === 'Опоздание');
+    assert(lateEvent, 'a late-attendance event should be present');
+
+    const paidEvent = items.find((n) => n.id.startsWith('pay:'));
+    assert(paidEvent && paidEvent.body.includes('500') && paidEvent.body.includes('сум'), 'payment event should mention the amount');
+
+    const overdueEvent = items.find((n) => n.id.startsWith('overdue:'));
+    assert(overdueEvent && overdueEvent.body.includes('300'), 'overdue event should mention the outstanding amount');
+
+    assert(items.every((n) => n.read === false), 'read is always false — no mark-as-read exists yet');
+
+    const dates = items.map((n) => new Date(n.createdAt).getTime());
+    const sorted = [...dates].sort((a, b) => b - a);
+    assertEqual(JSON.stringify(dates), JSON.stringify(sorted), 'feed should be sorted by createdAt desc');
+
+    const otherItems = await notificationsService.listForParent(otherParentId);
+    assert(
+      otherItems.every((n) => !n.body.includes('Kid Test')),
+      'other parent\'s feed should never mention this parent\'s child',
     );
   });
 
