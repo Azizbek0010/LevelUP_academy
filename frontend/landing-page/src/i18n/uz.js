@@ -53,7 +53,7 @@ export default {
   home: {
     badge: "O'quv markazi uchun CRM",
     h1: "O'quv markazi — to'liq nazorat ostida",
-    lead: "To'lovlar, davomat, imtihonlar, motivatsiya va chatlar — bitta tizimda. Besh rol, onlayn hisoblagich va Telegram bildirishnomalari darhol ishlaydi.",
+    lead: "To'lovlar, davomat, imtihonlar, motivatsiya va chatlar — bitta tizimda. Olti rol, onlayn hisoblagich va Telegram bildirishnomalari darhol ishlaydi.",
     ctaPrimary: 'Ariza qoldirish',
     ctaSecondary: "Imkoniyatlarni ko'rish",
 
@@ -105,7 +105,7 @@ export default {
       {
         icon: 'grid',
         title: 'Hisobotlar va rollar',
-        text: "Tushum, qarzlar, mentorlar maoshi. 5 rol uchun RBAC va birinchi kundan ko'p filiallilik.",
+        text: "Tushum, qarzlar, mentorlar maoshi. 6 rol uchun RBAC va birinchi kundan ko'p filiallilik.",
       },
     ],
 
