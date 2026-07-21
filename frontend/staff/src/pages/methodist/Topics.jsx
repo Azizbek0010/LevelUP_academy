@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Layers, FileQuestion, ArrowLeft, Trash2 } from 'lucide-react';
+import { Plus, Layers, FileQuestion, ArrowLeft, Trash2, Pencil } from 'lucide-react';
 import { useTopics, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
@@ -20,6 +20,7 @@ export default function Topics() {
   const { data, isLoading } = useTopics(trainingTypeId);
   const invalidate = useInvalidate();
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -31,7 +32,15 @@ export default function Topics() {
   const topics = data?.data || [];
 
   const openCreate = () => {
+    setEditingId(null);
     reset({ name: '', description: '' });
+    setErr('');
+    setModalOpen(true);
+  };
+
+  const openEdit = (tp) => {
+    setEditingId(tp.id);
+    reset({ name: tp.name, description: tp.description || '' });
     setErr('');
     setModalOpen(true);
   };
@@ -39,7 +48,11 @@ export default function Topics() {
   const onSubmit = async (formData) => {
     setErr(''); setBusy(true);
     try {
-      await api.methodistCreateTopic(token, { trainingTypeId, ...formData });
+      if (editingId) {
+        await api.methodistUpdateTopic(token, editingId, formData);
+      } else {
+        await api.methodistCreateTopic(token, { trainingTypeId, ...formData });
+      }
       invalidate('topics', trainingTypeId);
       setModalOpen(false);
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
@@ -103,9 +116,14 @@ export default function Topics() {
                       <span className="flex items-center gap-1"><FileQuestion size={12} /> {tp.lessons_count || 0} уроков</span>
                     </div>
                   </div>
-                  <button className="btn btn-ghost btn-square btn-xs" onClick={() => archive(tp.id)} title="Удалить">
-                    <Trash2 size={14} className="text-error" />
-                  </button>
+                  <div className="flex gap-1">
+                    <button className="btn btn-ghost btn-square btn-xs" onClick={() => openEdit(tp)} title="Редактировать">
+                      <Pencil size={14} className="text-info" />
+                    </button>
+                    <button className="btn btn-ghost btn-square btn-xs" onClick={() => archive(tp.id)} title="Удалить">
+                      <Trash2 size={14} className="text-error" />
+                    </button>
+                  </div>
                 </div>
                 {tp.description && <p className="text-xs opacity-60 mt-2">{tp.description}</p>}
                 <Link to={`/methodist/topics/${tp.id}/lessons`}
@@ -122,7 +140,7 @@ export default function Topics() {
       {modalOpen && (
         <div className="modal modal-open">
           <div className="modal-box border border-[#E6EDD8] shadow-xl bg-white max-w-md">
-            <h3 className="font-bold text-lg">Новая тема</h3>
+            <h3 className="font-bold text-lg">{editingId ? 'Редактировать тему' : 'Новая тема'}</h3>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
               <label className="form-control w-full">
                 <span className="label-text mb-1 font-medium">Название *</span>
@@ -137,7 +155,7 @@ export default function Topics() {
               <div className="modal-action">
                 <button type="button" className="btn btn-ghost" onClick={() => setModalOpen(false)} disabled={busy}>Отмена</button>
                 <button type="submit" className="btn bg-[#C6FF34] text-[#141B10] border-none font-bold" disabled={busy}>
-                  {busy && <span className="loading loading-spinner loading-xs" />} Создать
+                  {busy && <span className="loading loading-spinner loading-xs" />} {editingId ? 'Сохранить' : 'Создать'}
                 </button>
               </div>
             </form>

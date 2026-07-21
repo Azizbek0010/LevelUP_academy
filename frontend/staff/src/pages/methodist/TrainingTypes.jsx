@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, BookOpen, Layers, Trash2 } from 'lucide-react';
+import { Plus, BookOpen, Layers, Trash2, Pencil } from 'lucide-react';
 import { useTrainingTypes, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
@@ -22,6 +22,7 @@ export default function TrainingTypes() {
   const { data, isLoading } = useTrainingTypes();
   const invalidate = useInvalidate();
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -33,7 +34,15 @@ export default function TrainingTypes() {
   const types = data?.data || [];
 
   const openCreate = () => {
+    setEditingId(null);
     reset({ name: '', description: '', icon: '📚' });
+    setErr('');
+    setModalOpen(true);
+  };
+
+  const openEdit = (tt) => {
+    setEditingId(tt.id);
+    reset({ name: tt.name, description: tt.description || '', icon: tt.icon || '📚' });
     setErr('');
     setModalOpen(true);
   };
@@ -42,7 +51,11 @@ export default function TrainingTypes() {
     setErr('');
     setBusy(true);
     try {
-      await api.methodistCreateTrainingType(token, formData);
+      if (editingId) {
+        await api.methodistUpdateTrainingType(token, editingId, formData);
+      } else {
+        await api.methodistCreateTrainingType(token, formData);
+      }
       invalidate('training-types');
       setModalOpen(false);
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
@@ -105,6 +118,9 @@ export default function TrainingTypes() {
                     </div>
                   </div>
                   <div className="flex gap-1">
+                    <button className="btn btn-ghost btn-square btn-xs" onClick={() => openEdit(tt)} title="Редактировать">
+                      <Pencil size={14} className="text-info" />
+                    </button>
                     <button className="btn btn-ghost btn-square btn-xs" onClick={() => archive(tt.id)} title="Удалить">
                       <Trash2 size={14} className="text-error" />
                     </button>
@@ -127,7 +143,7 @@ export default function TrainingTypes() {
       {modalOpen && (
         <div className="modal modal-open">
           <div className="modal-box border border-[#E6EDD8] shadow-xl bg-white max-w-md">
-            <h3 className="font-bold text-lg text-[#1D2417]">Новый тип обучения</h3>
+            <h3 className="font-bold text-lg text-[#1D2417]">{editingId ? 'Редактировать тип' : 'Новый тип обучения'}</h3>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
               <label className="form-control w-full">
                 <span className="label-text mb-1 font-medium">Название *</span>
@@ -147,7 +163,7 @@ export default function TrainingTypes() {
               <div className="modal-action">
                 <button type="button" className="btn btn-ghost" onClick={() => setModalOpen(false)} disabled={busy}>Отмена</button>
                 <button type="submit" className="btn bg-[#C6FF34] text-[#141B10] border-none font-bold" disabled={busy}>
-                  {busy && <span className="loading loading-spinner loading-xs" />} Создать
+                  {busy && <span className="loading loading-spinner loading-xs" />} {editingId ? 'Сохранить' : 'Создать'}
                 </button>
               </div>
             </form>
