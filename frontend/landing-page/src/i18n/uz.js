@@ -109,13 +109,14 @@ export default {
       },
     ],
 
-    rolesHead: 'Besh rol — besh kabinet',
+    rolesHead: 'Olti rol — olti kabinet',
     rolesLead:
       "Kirgandan so'ng tizim tokendagi rolga qarab kerakli kabinetni o'zi ochadi. Ortiqcha ma'lumotni hech kim ko'rmaydi — ruxsatni serverdagi RBAC hal qiladi.",
     roles: [
       { tag: 'SA', title: 'SuperAdmin', text: "Butun filiallar tarmog'i va filtrsiz umumiy hisobotlar." },
       { tag: 'A', title: 'Admin', text: "O'z filialining to'lovlari, guruhlari, o'quvchilari va hisobotlari." },
       { tag: 'M', title: 'Mentor', text: "Davomat, uy vazifasini tekshirish, koinlar, imtihonlar va o'z maoshi." },
+      { tag: 'ME', title: 'Metodist', text: "Ta'lim dasturi, mavzu va darslar video bilan, testlar uchun savollar banki." },
       { tag: 'P', title: 'Ota-ona', text: "Farzandining o'zlashtirishi, davomati, qarzi va to'g'ridan-to'g'ri chat." },
       { tag: 'S', title: "O'quvchi", text: "Testlar, uy vazifalari, video, koinlar do'koni va reyting." },
     ],
@@ -334,6 +335,17 @@ export default {
           'Uy vazifasi va taymerli imtihonlarni tekshirish',
           "Koinlar ± majburiy sabab bilan — hammasi jurnalda",
           "O'z maoshi va yuklamasi — shaffof",
+        ],
+      },
+      {
+        tag: 'ME',
+        title: "Metodist — o'quv materiallari tartibda",
+        text: "Ta'lim dasturini quradi: yo'nalishlar → mavzular → darslar, video va fayllar bilan. Testlar uchun savollar banki yig'adi va o'quvchilarga qaysi mavzular qiyinroq kelayotganini ko'radi.",
+        list: [
+          "Dastur: yo'nalishlar → mavzular → darslar bitta strukturada",
+          "Darsga video va fayl — to'g'ridan-to'g'ri S3'ga yuklash",
+          "Testlar uchun savollar banki, bir nechta darsga birdan (batch)",
+          "Qiyinlik hisoboti — qaysi mavzular o'quvchilarga qiyinroq ekani ko'rinadi",
         ],
       },
       {
@@ -1005,9 +1017,9 @@ export default {
         "To'lovlar, davomat, server taymerli testlar, uy vazifalari, koinlar, realtime chatlar, video darslar, hisobotlar va Telegram bot — LevelUp Academy'ning barcha modullari.",
     },
     roles: {
-      title: 'Rollar va ruxsatlar — 5 kabinet | LevelUp Academy',
+      title: 'Rollar va ruxsatlar — 6 kabinet | LevelUp Academy',
       description:
-        "SuperAdmin, Admin, Mentor, Ota-ona va O'quvchi — har bir rolning o'z kabineti. Ruxsatni serverdagi RBAC hal qiladi: ortiqchasini hech kim ko'rmaydi.",
+        "SuperAdmin, Admin, Mentor, Metodist, Ota-ona va O'quvchi — har bir rolning o'z kabineti. Ruxsatni serverdagi RBAC hal qiladi: ortiqchasini hech kim ko'rmaydi.",
     },
     finance: {
       title: "O'quvchilar to'lovi va qarzlar hisobi | LevelUp Academy",

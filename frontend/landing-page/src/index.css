@@ -556,7 +556,7 @@ h1, h2, h3, h4, .display {
 }
 
 .roles > * {
-  flex: 0 1 calc((100% - 64px) / 5);
+  flex: 0 1 calc((100% - 80px) / 6);
 }
 
 .role {
