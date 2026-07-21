@@ -23,6 +23,10 @@ export const listExpenses = asyncHandler(async (req, res) => {
   res.json(await service.listExpenses(branchId(req), req.query));
 });
 
+export const updateExpense = asyncHandler(async (req, res) => {
+  res.json({ expense: await service.updateExpense(branchId(req), req.params.id, req.body) });
+});
+
 export const deleteExpense = asyncHandler(async (req, res) => {
   await service.deleteExpense(branchId(req), req.params.id);
   res.status(204).end();
@@ -124,6 +128,31 @@ export const addGroupStudent = asyncHandler(async (req, res) => {
 export const removeGroupStudent = asyncHandler(async (req, res) => {
   await service.removeGroupStudent(branchId(req), req.params.id, req.params.studentId);
   res.status(204).end();
+});
+
+// ---------- рабочее пространство группы: davomat / ДЗ / фикр ----------
+export const groupAttendance = asyncHandler(async (req, res) => {
+  res.json(await service.getGroupAttendance(branchId(req), req.params.id, req.query.date));
+});
+
+export const markGroupAttendance = asyncHandler(async (req, res) => {
+  res.json(await service.markGroupAttendance(branchId(req), req.params.id, req.user.id, req.body));
+});
+
+export const groupHomework = asyncHandler(async (req, res) => {
+  res.json(await service.listGroupHomework(branchId(req), req.params.id));
+});
+
+export const createGroupHomework = asyncHandler(async (req, res) => {
+  res.status(201).json(await service.createGroupHomework(branchId(req), req.params.id, req.user.id, req.body));
+});
+
+export const groupFeedback = asyncHandler(async (req, res) => {
+  res.json(await service.listGroupFeedback(branchId(req), req.params.id));
+});
+
+export const createGroupFeedback = asyncHandler(async (req, res) => {
+  res.status(201).json(await service.createGroupFeedback(branchId(req), req.params.id, req.user.id, req.body));
 });
 
 // ---------- объявления ----------

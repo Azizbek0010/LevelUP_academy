@@ -133,6 +133,7 @@
 ## 🔗 Ссылки
 
 - [SEO.md](./SEO.md) — как устроен prerender / i18n / hreflang (технический гайд)
+- [GEO-OFFSITE.md](./GEO-OFFSITE.md) — off-site GEO/AEO задачи (соцсети, Reddit/Quora, каталоги, `sameAs`, мониторинг)
 - Artifact «карта запросов и контент-план»: https://claude.ai/code/artifact/20e09347-5615-4df4-907e-bb44d7558438
 - GSC: https://search.google.com/search-console?resource_id=sc-domain:levelup-academy.uz
 - Bing: https://www.bing.com/webmasters

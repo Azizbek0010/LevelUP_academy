@@ -1,7 +1,11 @@
-export function EmptyState({ icon = '📭', title = 'Пусто', message = 'Данных пока нет' }) {
+import Icon from './Icons.jsx';
+
+export function EmptyState({ icon = 'inbox', title = 'Пусто', message = 'Данных пока нет' }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <span className="text-5xl mb-4">{icon}</span>
+      <div className="w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center mb-4">
+        <Icon name={icon} className="w-8 h-8 text-base-content/25" />
+      </div>
       <h3 className="text-lg font-bold mb-1">{title}</h3>
       <p className="text-sm text-base-content/50 max-w-xs">{message}</p>
     </div>
@@ -11,11 +15,14 @@ export function EmptyState({ icon = '📭', title = 'Пусто', message = 'Д�
 export function ErrorState({ message = 'Произошла ошибка', onRetry }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <span className="text-5xl mb-4">⚠️</span>
+      <div className="w-16 h-16 rounded-2xl bg-error/10 flex items-center justify-center mb-4">
+        <Icon name="exclamation-circle" className="w-8 h-8 text-error" />
+      </div>
       <h3 className="text-lg font-bold mb-1">Ошибка</h3>
       <p className="text-sm text-base-content/50 max-w-xs mb-4">{message}</p>
       {onRetry && (
-        <button className="btn btn-primary btn-sm rounded-xl" onClick={onRetry}>
+        <button className="btn btn-primary btn-sm rounded-xl gap-2" onClick={onRetry}>
+          <Icon name="arrow-trending-up" className="w-4 h-4" />
           Попробовать снова
         </button>
       )}
@@ -59,14 +66,14 @@ export function ProgressBar({ value = 0, color = '#C6FF34', height = 6 }) {
 
 export function StatCard({ icon, label, value, sub, color, className = '' }) {
   return (
-    <div className={`card bg-base-100 hover:shadow-lg transition-shadow ${className}`}>
+    <div className={`card bg-base-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 ${className}`}>
       <div className="card-body p-4">
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
-            style={{ background: `${color}18`, color }}
+            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: `${color}15` }}
           >
-            {icon}
+            <Icon name={icon} className="w-5 h-5" style={{ color }} />
           </div>
           <div className="min-w-0">
             <p className="text-xs text-base-content/50 truncate">{label}</p>

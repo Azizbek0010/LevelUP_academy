@@ -1,7 +1,7 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 19.07.2026 22:56 (UTC+5, Toshkent vaqti)
-> Statistika: 135/200 task tugallangan (67%)
+> Oxirgi yangilanish: 21.07.2026 03:04 (UTC+5, Toshkent vaqti)
+> Statistika: 139/205 task tugallangan (67%)
 
 ---
 
@@ -92,6 +92,10 @@
 - [x] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
 - [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
 
+### Backend — YANGI TOPSHIRIQ (Abdulaziz) 🔥 2026-07-19, Karis bergan
+- [x] AB-EXPENSE-PATCH ✅ TUZATILDI (2026-07-21 audit): `PATCH /api/admin/expenses/:id`
+- [x] AB-VERIFY: Parent Chat — Socket.io realtime ✅ TASDIQLANDI (2026-07-21, Kama auditi):
+
 ### Backend — Infrastructure (Abdulaziz) ✅
 - [x] AB-INFRA: Scaffold + structure + deps + docker-compose
 - [x] AB-INFRA: config/ (env, db, redis, s3, mailer, sms, logger)
@@ -164,6 +168,9 @@
 - [x] ADMIN: Expenses CRUD — Expenses.jsx + PDF eksport (Abduloh, jspdf)
 - [x] ADMIN: Reports — Reports.jsx, GET /api/admin/reports ga ulangan
 
+### Frontend — YANGI TASKLAR: Sardor / Kozim / Alish 🆕 2026-07-19
+- [x] FE-CHAT-ADMIN ✅ BAJARILDI 2026-07-21 (Karis): chat endi HAQIQIY.
+
 ### Frontend — Mentor (Sardor, Kozim, Alish)
 - [x] MENTOR: Dashboard (groups, upcoming lessons)
 - [x] MENTOR: Attendance journal — Attendance.jsx (726 qator, api ga ulangan)
@@ -186,7 +193,7 @@
 - [x] PARENT: Davomat detali — Attendance.jsx
 - [x] PARENT: Baholar / uy vazifa natijalari — Grades.jsx
 - [x] PARENT: To'lov / qarz — Debt.jsx
-- [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ⚠️ Socket.io realtime ulanishi tekshirilmagan
+- [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ✅ Socket.io realtime tasdiqlandi (2026-07-21)
 - [x] PARENT: Bildirishnomalar — Notifications.jsx
 
 ### Frontend — Landing Page ✅
@@ -200,10 +207,13 @@
 - [x] METHODIST: Analytics
 - [x] METHODIST: Dashboard
 
+### Frontend — Design / UX 🆕 EGALARI BELGILANDI (2026-07-19)
+- [x] UI-SHARED ✅ BAJARILDI 2026-07-21 (Karis): admin sahifalari endi `mentor/_ui.jsx` dan
+
 ---
 
 ## Jamoa boyicha
 
-- Karis (Backend): 83 task
-- Abdulaziz (Backend): 57 task
-- Frontend jamoasi: 48 task
+- Karis (Backend): 85 task
+- Abdulaziz (Backend): 59 task
+- Frontend jamoasi: 50 task

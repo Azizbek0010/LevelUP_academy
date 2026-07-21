@@ -3,11 +3,12 @@ import { useAuth } from '../../auth.jsx';
 import { useAdminSettings, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
+import PageHeader from '../../components/PageHeader.jsx';
 import {
-  Building2, Palette, Bell, Shield, CreditCard, Globe,
+  Building2, Bell, Shield, CreditCard, Globe,
   CheckCircle2, AlertCircle, Eye, EyeOff,
   MessageSquare, Mail, Smartphone, Clock, Coins,
-  FileText, Languages, MapPin, Phone, Save, Sparkles,
+  FileText, Languages, MapPin, Phone, Save,
   KeyRound, Lock, Monitor, Zap, Globe2, Timer,
 } from 'lucide-react';
 
@@ -15,7 +16,6 @@ import {
 
 const TABS = [
   { key: 'general',       label: 'Общие',         icon: Building2,    color: '#3b82f6' },
-  { key: 'appearance',    label: 'Внешний вид',    icon: Palette,      color: '#8b5cf6' },
   { key: 'notifications', label: 'Уведомления',    icon: Bell,         color: '#f59e0b' },
   { key: 'security',      label: 'Безопасность',   icon: Shield,       color: '#ef4444' },
   { key: 'finance',       label: 'Финансы',        icon: CreditCard,   color: '#22c55e' },
@@ -30,10 +30,6 @@ const DEFAULTS = {
   branchPhone: '',
   branchEmail: '',
   branchWebsite: '',
-  theme: 'light',
-  accentColor: '#C6FF34',
-  compactMode: false,
-  showAvatars: true,
   notifyEmail: true,
   notifyTelegram: true,
   notifySms: false,
@@ -132,7 +128,7 @@ function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#22c55e' 
         }}
       >
         <span
-           className="absolute top-0.5 w-5 h-5 rounded-full bg-[var(--surface)] shadow-md transition-all duration-300"
+           className="absolute top-0.5 w-5 h-5 rounded-full bg-base-100 shadow-md transition-all duration-300"
           style={{
             left: checked ? 22 : 2,
             transform: checked ? 'scale(1)' : 'scale(0.85)',
@@ -146,7 +142,7 @@ function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#22c55e' 
 function PremiumInput({ value, onChange, placeholder, icon: Icon, type = 'text', disabled = false }) {
   return (
     <div
-      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
       style={{
         background: 'var(--surface)',
         borderColor: 'var(--border)',
@@ -169,7 +165,7 @@ function PremiumInput({ value, onChange, placeholder, icon: Icon, type = 'text',
 function PremiumSelect({ value, onChange, children, icon: Icon }) {
   return (
     <div
-      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
       style={{
         background: 'var(--surface)',
         borderColor: 'var(--border)',
@@ -285,39 +281,6 @@ function TabGeneral({ settings, onChange }) {
 
 // Выбор темы удалён вместе с самой тёмной темой (см. src/index.css):
 // переключатель остался бы кнопкой, которая ничего не меняет.
-function TabAppearance({ settings, onChange }) {
-  return (
-    <div className="space-y-5 animate-fade-in">
-      <SettingCard
-        icon={Sparkles}
-        title="Отображение"
-        subtitle="Настройте видимость элементов"
-        color="#ec4899"
-      >
-        <div className="space-y-1">
-          <Toggle
-            checked={settings.compactMode}
-            onChange={(v) => onChange({ compactMode: v })}
-            label="Компактный режим"
-            hint="Уменьшить отступы для большего количества информации"
-            icon={Zap}
-            color="#f59e0b"
-          />
-          <Divider />
-          <Toggle
-            checked={settings.showAvatars}
-            onChange={(v) => onChange({ showAvatars: v })}
-            label="Показывать аватары"
-            hint="Отображать фотографии студентов и сотрудников"
-            icon={Users}
-            color="#3b82f6"
-          />
-        </div>
-      </SettingCard>
-    </div>
-  );
-}
-
 /* ═══════════════════ Tab: Notifications ═══════════════════ */
 
 function TabNotifications({ settings, onChange }) {
@@ -484,7 +447,7 @@ function TabSecurity({ settings, onChange }) {
         <div className="space-y-4 max-w-md">
           <Field label="Текущий пароль">
             <div
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
               style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
             >
               <KeyRound size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
@@ -509,7 +472,7 @@ function TabSecurity({ settings, onChange }) {
 
           <Field label="Новый пароль" hint="Минимум 8 символов">
             <div
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
               style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
             >
               <Lock size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
@@ -814,13 +777,7 @@ export default function AdminSettings() {
   if (isLoading) {
     return (
       <div className="animate-page-enter">
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-1 h-6 rounded-full" style={{ background: '#C6FF34' }} />
-            <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Настройки</h1>
-          </div>
-          <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Загрузка настроек...</p>
-        </div>
+        <PageHeader title="Настройки" subtitle="Загрузка настроек..." />
         <SkeletonKpis count={2} className="grid-cols-1 md:grid-cols-2" />
       </div>
     );
@@ -831,39 +788,20 @@ export default function AdminSettings() {
   return (
     <div className="animate-page-enter">
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-1 h-6 rounded-full" style={{ background: '#C6FF34' }} />
-            <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Настройки</h1>
+      <PageHeader title="Настройки" subtitle="Управление параметрами филиала">
+        {saveMsg === 'success' && (
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold animate-slide-up bg-success/10 text-success border border-success/20">
+            <CheckCircle2 size={14} />
+            Сохранено
           </div>
-          <p className="text-[13px] ml-4" style={{ color: 'var(--text-muted)' }}>
-            Управление параметрами филиала
-          </p>
-        </div>
-
-        {/* Save status */}
-        <div className="flex items-center gap-3">
-          {saveMsg === 'success' && (
-            <div
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold animate-slide-up"
-              style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.2)' }}
-            >
-              <CheckCircle2 size={14} />
-              Сохранено
-            </div>
-          )}
-          {saveMsg === 'error' && (
-            <div
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold animate-slide-up"
-              style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)' }}
-            >
-              <AlertCircle size={14} />
-              Ошибка сохранения
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+        {saveMsg === 'error' && (
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold animate-slide-up bg-error/10 text-error border border-error/20">
+            <AlertCircle size={14} />
+            Ошибка сохранения
+          </div>
+        )}
+      </PageHeader>
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* ── Sidebar tabs ── */}
@@ -898,7 +836,6 @@ export default function AdminSettings() {
         {/* ── Tab content ── */}
         <div className="flex-1 min-w-0 pb-24">
           {activeTab === 'general' && <TabGeneral settings={settings} onChange={update} />}
-          {activeTab === 'appearance' && <TabAppearance settings={settings} onChange={update} />}
           {activeTab === 'notifications' && <TabNotifications settings={settings} onChange={update} />}
           {activeTab === 'security' && <TabSecurity settings={settings} onChange={update} />}
           {activeTab === 'finance' && <TabFinance settings={settings} onChange={update} />}

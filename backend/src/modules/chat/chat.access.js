@@ -137,15 +137,11 @@ export async function canStaffChatStudent(user, studentId, db = pool) {
     return rows.length > 0;
   }
 
-  if (user.role === 'admin') {
-    if (!user.branchId) return false;
-    const { rows } = await db.query(
-      `SELECT 1 FROM student_profiles sp
-        WHERE sp.user_id = $1 AND sp.branch_id = $2 LIMIT 1`,
-      [studentId, user.branchId],
-    );
-    return rows.length > 0;
-  }
+  // Админ филиала переписывается ТОЛЬКО с родителями, не с самими учениками
+  // (решение 2026-07-21): работа с учеником — забота ментора, админ общается со
+  // взрослой стороной. Поэтому прямой диалог админ↔ученик запрещён на уровне
+  // права, а не только скрыт из списка контактов.
+  if (user.role === 'admin') return false;
 
   if (!user.organizationId) return false;
   const { rows } = await db.query(

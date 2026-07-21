@@ -81,6 +81,39 @@ export function countExpenses({ branchId, from, to }, client = pool) {
     .then((r) => r.rows[0].n);
 }
 
+const EXPENSE_RETURN = 'id, category, amount, spent_at, note, created_at';
+
+/** Частичное обновление расхода в пределах филиала. */
+export function updateExpense(id, branchId, fields, client = pool) {
+  const cols = [];
+  const vals = [];
+  let i = 1;
+  for (const [key, col] of [
+    ['category', 'category'],
+    ['amount', 'amount'],
+    ['note', 'note'],
+  ]) {
+    if (fields[key] !== undefined) {
+      cols.push(`${col} = $${i++}`);
+      vals.push(fields[key]);
+    }
+  }
+  if (fields.spentAt !== undefined) {
+    cols.push(`spent_at = $${i++}::date`);
+    vals.push(fields.spentAt);
+  }
+  if (cols.length === 0) return Promise.resolve(null);
+  vals.push(id, branchId);
+  return client
+    .query(
+      `UPDATE expenses SET ${cols.join(', ')}, updated_at = now()
+        WHERE id = $${i++} AND branch_id = $${i} AND deleted_at IS NULL
+        RETURNING ${EXPENSE_RETURN}`,
+      vals,
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
 export function softDeleteExpense(id, branchId, client = pool) {
   return client
     .query(
@@ -590,6 +623,45 @@ export function removeStudentFromGroup(groupId, studentId, client = pool) {
       [groupId, studentId],
     )
     .then((r) => r.rows[0] ?? null);
+}
+
+// ==================== РАБОЧЕЕ ПРОСТРАНСТВО ГРУППЫ (davomat/ДЗ/фикр) ====================
+
+/** Сколько активных участников в группе — знаменатель для «сдано N/M» и статуса ДЗ. */
+export function countActiveGroupStudents(groupId, client = pool) {
+  return client
+    .query(
+      `SELECT count(*)::int AS n FROM group_students gs
+        WHERE gs.group_id = $1 AND gs.left_at IS NULL`,
+      [groupId],
+    )
+    .then((r) => r.rows[0].n);
+}
+
+export function insertGroupFeedback(
+  { branchId, groupId, type, authorName, content, rating, createdBy },
+  client = pool,
+) {
+  return client
+    .query(
+      `INSERT INTO group_feedback (branch_id, group_id, type, author_name, content, rating, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, type, author_name, content, rating, created_at`,
+      [branchId, groupId, type, authorName ?? null, content, rating, createdBy],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function listGroupFeedback(groupId, client = pool) {
+  return client
+    .query(
+      `SELECT id, type, author_name, content, rating, created_at
+         FROM group_feedback
+        WHERE group_id = $1 AND deleted_at IS NULL
+        ORDER BY created_at DESC`,
+      [groupId],
+    )
+    .then((r) => r.rows);
 }
 
 // ==================== ОБЪЯВЛЕНИЯ ====================
