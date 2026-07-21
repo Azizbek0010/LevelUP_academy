@@ -67,7 +67,6 @@ function buildMonthStrip(base) {
 
 /* ═══════════════ AttendanceTab — Calendar Table ═══════════════ */
 function AttendanceTab({ groupId, token }) {
-  const { user } = useAuth();
   const now = useMemo(() => new Date(), []);
   const todayStr = now.toLocaleDateString('en-CA');
 
@@ -186,7 +185,11 @@ function AttendanceTab({ groupId, token }) {
         fullMap[`${sid}_${year}-${pad(month + 1)}-${pad(d)}`] = null;
       });
     });
-    const corrected = {};
+    // Стартуем от уже накопленных пометок «исправлено админом», а не с нуля:
+    // между кликом и приходом свежих данных build-эффект успевает пересобрать
+    // карту, и без этого мержа только что поставленная админом пометка
+    // пропадала (пустой объект затирал оптимистичную отметку).
+    const corrected = { ...correctedRef.current };
     // Fill from API data
     DAYS.forEach((d, idx) => {
       const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
@@ -215,18 +218,16 @@ function AttendanceTab({ groupId, token }) {
     correctedRef.current = {};
   }, [groupId, month, year]);
 
-  // Живое обновление: если ментор (или ДРУГОЙ админ) правит журнал этой группы,
-  // перечитываем только ЗАТРОНУТЫЙ день. Свои же правки пропускаем: клетка уже
-  // изменена оптимистично, а перезапрос затирал бы её тем, что ещё не успело
-  // сохраниться (отсюда «медленно» — на каждый клик шёл шторм из ~14
-  // перезапросов всех дней с миганием).
+  // Живое обновление журнала. Перечитываем ТОЛЬКО затронутый день (1 запрос, а
+  // не все ~14 — из-за этого раньше правка тормозила). Свои правки тоже
+  // перечитываем: пометку «исправлено админом» подтверждает сервер
+  // (correctedByAdmin по marked_by), и один быстрый запрос надёжнее, чем
+  // полагаться только на оптимистику.
   useEffect(() => {
     if (!token || USING_MOCKS || !groupId) return undefined;
     const s = getSocket(token);
-    const myId = user?.id;
     const onUpdate = (payload) => {
       if (payload?.groupId && payload.groupId !== groupId) return;
-      if (myId && payload?.markedBy === myId) return; // своя правка — уже применена
       const day = payload?.lessonDate;
       qc.invalidateQueries({
         queryKey: day
@@ -240,7 +241,7 @@ function AttendanceTab({ groupId, token }) {
       s.off('attendance:updated', onUpdate);
       s.emit('attendance:unsubscribe', { groupId });
     };
-  }, [token, groupId, qc, user?.id]);
+  }, [token, groupId, qc]);
 
   const dateKeyFor = (day) => `${year}-${pad(month + 1)}-${pad(day)}`;
 
