@@ -67,6 +67,7 @@ function buildMonthStrip(base) {
 
 /* ═══════════════ AttendanceTab — Calendar Table ═══════════════ */
 function AttendanceTab({ groupId, token }) {
+  const { user } = useAuth();
   const now = useMemo(() => new Date(), []);
   const todayStr = now.toLocaleDateString('en-CA');
 
@@ -214,14 +215,24 @@ function AttendanceTab({ groupId, token }) {
     correctedRef.current = {};
   }, [groupId, month, year]);
 
-  // Живое обновление: если ментор (или другой админ) правит журнал этой группы,
-  // перечитываем затронутый день — клетка получит актуальный статус и пометку.
+  // Живое обновление: если ментор (или ДРУГОЙ админ) правит журнал этой группы,
+  // перечитываем только ЗАТРОНУТЫЙ день. Свои же правки пропускаем: клетка уже
+  // изменена оптимистично, а перезапрос затирал бы её тем, что ещё не успело
+  // сохраниться (отсюда «медленно» — на каждый клик шёл шторм из ~14
+  // перезапросов всех дней с миганием).
   useEffect(() => {
     if (!token || USING_MOCKS || !groupId) return undefined;
     const s = getSocket(token);
+    const myId = user?.id;
     const onUpdate = (payload) => {
       if (payload?.groupId && payload.groupId !== groupId) return;
-      qc.invalidateQueries({ queryKey: ['admin-group-attendance', groupId] });
+      if (myId && payload?.markedBy === myId) return; // своя правка — уже применена
+      const day = payload?.lessonDate;
+      qc.invalidateQueries({
+        queryKey: day
+          ? ['admin-group-attendance', groupId, day]
+          : ['admin-group-attendance', groupId],
+      });
     };
     s.emit('attendance:subscribe', { groupId });
     s.on('attendance:updated', onUpdate);
@@ -229,13 +240,16 @@ function AttendanceTab({ groupId, token }) {
       s.off('attendance:updated', onUpdate);
       s.emit('attendance:unsubscribe', { groupId });
     };
-  }, [token, groupId, qc]);
+  }, [token, groupId, qc, user?.id]);
 
   const dateKeyFor = (day) => `${year}-${pad(month + 1)}-${pad(day)}`;
 
-  /* ── Toggle cell: absent → present → late → absent (all days editable) ── */
+  /* ── Toggle cell: absent → present → late → absent.
+     Прошлое и сегодня — можно, будущее — нельзя: отмечать посещаемость ещё не
+     состоявшегося урока бессмысленно (и бэкенд его всё равно отклоняет 422). ── */
   const toggleDay = useCallback((studentId, day) => {
     const dateKey = dateKeyFor(day);
+    if (dateKey > todayStr) return; // будущий урок — не трогаем
     const key = `${studentId}_${dateKey}`;
     const cycle = { absent: 'present', present: 'late', late: 'absent' };
     const next = cycle[mapRef.current[key]] || 'present';
@@ -494,6 +508,8 @@ function AttendanceTab({ groupId, token }) {
                       const cellKey = `${sid}_${dateKey}`;
                       const status = attendanceMap[cellKey];
                       const corrected = correctedMap[cellKey];
+                      // Будущий урок — не редактируется (как и у ментора).
+                      const future = dateKey > todayStr;
                       return (
                         <td
                           key={d}
@@ -501,8 +517,12 @@ function AttendanceTab({ groupId, token }) {
                         >
                           <button
                             onClick={() => toggleDay(sid, d)}
-                            title={corrected ? 'Исправлено администратором' : undefined}
-                            className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors cursor-pointer hover:scale-105 active:scale-95 ${cellStyle(status)} ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''}`}
+                            disabled={future}
+                            title={
+                              future ? 'Будущий урок — отметить нельзя'
+                                : corrected ? 'Исправлено администратором' : undefined
+                            }
+                            className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status)} ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''} ${future ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'}`}
                           >
                             {cellIcon(status)}
                             {/* Отметка «исправлено администратором»: клетка держит
