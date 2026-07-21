@@ -48,5 +48,12 @@ LevelUp.
 - [Возможности](https://levelup-academy.uz/landing/features) — функции системы.
 - [Роли](https://levelup-academy.uz/landing/roles) — кабинеты и права доступа.
 - [Финансы](https://levelup-academy.uz/landing/finance) — оплаты, сплит-платежи, отчёты.
+- [Тарифы](https://levelup-academy.uz/landing/pricing) — до 30 учеников бесплатно, дальше от 199 000 сум/мес.
+- [Для языковой школы](https://levelup-academy.uz/landing/for-language-school) — группы по уровням (A1–C1, IELTS), посещаемость, оплаты.
+- [Для курсов и репетиторов](https://levelup-academy.uz/landing/for-courses) — группы и индивидуальные занятия, оплаты за курс.
 - [Геймификация](https://levelup-academy.uz/landing/gamification) — коины, магазин, лидерборды.
 - [Контакты](https://levelup-academy.uz/landing/contacts) — связь и заявка на подключение.
+- [База знаний](https://levelup-academy.uz/landing/blog) — статьи о переходе на CRM, контроле долгов и автоматизации.
+  - [Как перейти с Excel на CRM](https://levelup-academy.uz/landing/blog/excel-to-crm)
+  - [Как не терять деньги на долгах учеников](https://levelup-academy.uz/landing/blog/student-debts)
+  - [Как автоматизировать посещаемость (davomat)](https://levelup-academy.uz/landing/blog/attendance-automation)
