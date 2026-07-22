@@ -55,41 +55,61 @@ export default function Grades() {
         subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
       />
 
+      {/* Tabs */}
       <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit shadow-sm">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              tab === t.key
-                ? 'bg-primary text-primary-content shadow-sm'
-                : 'text-base-content/50 hover:bg-base-200'
-            }`}
-          >
-            <Icon name={t.icon} className="w-4 h-4" />
-            {t.label}
-          </button>
-        ))}
+        {TABS.map((t) => {
+          const count = t.key === 'homework' ? hw.length : tests.length;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                tab === t.key
+                  ? 'bg-primary text-primary-content shadow-sm'
+                  : 'text-base-content/50 hover:bg-base-200'
+              }`}
+            >
+              <Icon name={t.icon} className="w-4 h-4" />
+              {t.label}
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                tab === t.key ? 'bg-primary-content/20' : 'bg-base-200'
+              }`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
+      {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="card bg-base-100 p-4 text-center hover:shadow-md transition-shadow">
+        <div className="card bg-base-100 p-4 text-center hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center mx-auto mb-2">
             <Icon name="document-text" className="w-5 h-5 text-base-content/40" />
           </div>
           <p className="text-2xl font-extrabold">{list.length}</p>
           <p className="text-[11px] opacity-40 mt-1">Всего</p>
         </div>
-        <div className="card bg-base-100 p-4 text-center hover:shadow-md transition-shadow">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ background: avg >= 80 ? 'rgba(34,197,94,.1)' : avg >= 60 ? 'rgba(245,158,11,.1)' : 'rgba(239,68,68,.1)' }}>
-            <Icon name="chart-bar" className="w-5 h-5" style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }} />
+        <div className="card bg-base-100 p-4 text-center hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2"
+            style={{ background: avg >= 80 ? 'rgba(34,197,94,.1)' : avg >= 60 ? 'rgba(245,158,11,.1)' : 'rgba(239,68,68,.1)' }}
+          >
+            <Icon
+              name="chart-bar"
+              className="w-5 h-5"
+              style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }}
+            />
           </div>
-          <p className="text-2xl font-extrabold" style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }}>
+          <p
+            className="text-2xl font-extrabold"
+            style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }}
+          >
             {avg}%
           </p>
           <p className="text-[11px] opacity-40 mt-1">Средний</p>
         </div>
-        <div className="card bg-base-100 p-4 text-center hover:shadow-md transition-shadow">
+        <div className="card bg-base-100 p-4 text-center hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
             <Icon name="trophy" className="w-5 h-5 text-primary" />
           </div>
@@ -98,6 +118,7 @@ export default function Grades() {
         </div>
       </div>
 
+      {/* Grade List */}
       <div className="card bg-base-100">
         <div className="card-body">
           {list.length === 0 ? (
@@ -116,17 +137,17 @@ export default function Grades() {
                   <button
                     key={itemId}
                     onClick={() => setDetail({ type: tab === 'homework' ? 'hw' : 'test', id: g.id })}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-base-200/30 hover:bg-base-200/60 transition-all duration-200 group text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 p-3.5 rounded-xl bg-base-200/30 hover:bg-base-200/60 hover:-translate-y-0.5 transition-all duration-200 group text-left cursor-pointer"
                   >
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-transform group-hover:scale-105"
+                      className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-transform group-hover:scale-110"
                       style={{ background: `${color}15`, color }}
                     >
                       {pct}%
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{g.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1.5">
                         <ProgressBar value={pct} color={color} height={4} />
                         <span className="text-[11px] font-mono opacity-50">{g.score}/{g.maxScore}</span>
                       </div>

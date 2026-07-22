@@ -93,6 +93,7 @@ export default function Chat() {
         subtitle={selectedChild ? `${selectedChild.firstName} ${selectedChild.lastName}` : ''}
       />
 
+      {/* Room Tabs */}
       <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit shadow-sm">
         {ROOMS.map((r) => (
           <button
@@ -110,7 +111,9 @@ export default function Chat() {
         ))}
       </div>
 
+      {/* Chat Container */}
       <div className="card bg-base-100 flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 220px)', minHeight: '400px' }}>
+        {/* Chat Header */}
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-base-300 bg-base-200/30">
           <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
           <span className="text-xs font-medium opacity-60">Онлайн</span>
@@ -123,6 +126,7 @@ export default function Chat() {
           )}
         </div>
 
+        {/* Messages */}
         <div className="flex-1 overflow-auto p-4 space-y-4">
           {isLoading && messages.length === 0 && (
             <div className="text-center py-12">
@@ -182,6 +186,7 @@ export default function Chat() {
           <div ref={bottomRef} />
         </div>
 
+        {/* Input */}
         {canSend && (
           <div className="border-t border-base-300 p-3 bg-base-50">
             <div className="flex gap-2 items-end">

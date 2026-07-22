@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
@@ -12,6 +12,88 @@ const NAV = [
   { to: '/debt', label: 'Оплата', icon: 'wallet' },
   { to: '/chat', label: 'Чат', icon: 'chat' },
 ];
+
+function ChildSwitcher({ childList, selectedChild, selectChild }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  if (childList.length <= 1) {
+    if (!selectedChild) return null;
+    return (
+      <div className="px-4 pb-3">
+        <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/5 border border-white/5">
+          <Avatar name={`${selectedChild.firstName} ${selectedChild.lastName}`} size={34} />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate">{selectedChild.firstName}</p>
+            <p className="text-[11px] opacity-40 flex items-center gap-1">
+              <Icon name="user" className="w-3 h-3" />
+              Ребёнок
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 pb-3 relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200"
+      >
+        <div className="relative">
+          <Avatar name={`${selectedChild?.firstName || ''} ${selectedChild?.lastName || ''}`} size={34} />
+          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-primary rounded-full border-2 border-sidebar" />
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+          <p className="text-sm font-semibold truncate">{selectedChild?.firstName} {selectedChild?.lastName}</p>
+          <p className="text-[11px] opacity-40">{childList.length} ребёнка</p>
+        </div>
+        <Icon name="chevron-down" className={`w-4 h-4 opacity-50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-4 right-4 mt-1 bg-sidebar border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+          {childList.map((child) => {
+            const isActive = selectedChild?.id === child.id;
+            return (
+              <button
+                key={child.id}
+                onClick={() => { selectChild(child.id); setOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-150 ${
+                  isActive ? 'bg-primary/15' : 'hover:bg-white/5'
+                }`}
+              >
+                <div className="relative">
+                  <Avatar name={`${child.firstName} ${child.lastName}`} size={30} />
+                  {isActive && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-primary rounded-full border-2 border-sidebar" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className={`text-sm ${isActive ? 'font-bold text-primary' : 'font-medium'}`}>
+                    {child.firstName} {child.lastName}
+                  </p>
+                </div>
+                {isActive && (
+                  <Icon name="check" className="w-4 h-4 text-primary" strokeWidth={2.5} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -30,39 +112,11 @@ export default function Layout() {
         <img src="/logo-white.svg" alt="LevelUp" className="h-7 w-auto" />
       </div>
 
-      {childList.length > 1 && (
-        <div className="px-4 pb-3">
-          <div className="relative">
-            <select
-              className="select select-sm w-full bg-white/10 border-white/15 text-neutral-content text-sm font-medium appearance-none cursor-pointer rounded-xl pr-8"
-              value={selectedChild?.id || ''}
-              onChange={(e) => selectChild(e.target.value)}
-            >
-              {childList.map((c) => (
-                <option key={c.id} value={c.id} className="text-base-content">
-                  {c.firstName} {c.lastName}
-                </option>
-              ))}
-            </select>
-            <Icon name="chevron-down" className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
-          </div>
-        </div>
-      )}
-
-      {childList.length === 1 && selectedChild && (
-        <div className="px-4 pb-3">
-          <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/5 border border-white/5">
-            <Avatar name={`${selectedChild.firstName} ${selectedChild.lastName}`} size={34} />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold truncate">{selectedChild.firstName}</p>
-              <p className="text-[11px] opacity-40 flex items-center gap-1">
-                <Icon name="user" className="w-3 h-3" />
-                Ребёнок
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      <ChildSwitcher
+        childList={childList}
+        selectedChild={selectedChild}
+        selectChild={selectChild}
+      />
 
       <nav className="flex-1 px-3 py-2 space-y-1">
         {NAV.map((item) => (
