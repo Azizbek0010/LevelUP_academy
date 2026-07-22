@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, Snowflake, Sun, Trash2, KeyRound, GraduationCap, UserCheck, UserX,
+  Plus, Snowflake, Sun, Archive, KeyRound, GraduationCap, UserCheck, UserX,
   Copy, Check, Coins, LayoutGrid, List
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
@@ -22,7 +22,7 @@ const STATUS_COLORS = {
 
 /* ═══════════════ Stat Card ═══════════════ */
 /* ═══════════════ Student Card ═══════════════ */
-function StudentCard({ s, onFreeze, onDelete, onRegen, onNavigate }) {
+function StudentCard({ s, onFreeze, onArchive, onRegen, onNavigate }) {
   const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
   const groupNames = (s.groups || []).map((g) => g.name).filter(Boolean);
 
@@ -78,8 +78,8 @@ function StudentCard({ s, onFreeze, onDelete, onRegen, onNavigate }) {
             title={s.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => onFreeze(s)}>
             {s.status === 'frozen' ? <Sun size={14} /> : <Snowflake size={14} />}
           </button>
-          <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-error/10 hover:text-error transition-all" title="Удалить" onClick={() => onDelete(s)}>
-            <Trash2 size={14} />
+          <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-warning/10 hover:text-warning transition-all" title="Архивировать" onClick={() => onArchive(s)}>
+            <Archive size={14} />
           </button>
         </div>
       </div>
@@ -132,8 +132,8 @@ export default function AdminStudents() {
     try { await api.adminFreezeStudent(token, s.id, !frozen, ''); refetch(); }
     catch (e) { alert(e.message || 'Ошибка'); }
   };
-  const del = async (s) => {
-    if (!confirm(`Удалить студента ${fullName(s)}?`)) return;
+  const archive = async (s) => {
+    if (!confirm(`Архивировать студента ${fullName(s)}?\n\nСтудент будет скрыт из списка, но данные сохранятся.`)) return;
     try { await api.adminDeleteStudent(token, s.id); refetch(); }
     catch (e) { alert(e.message || 'Ошибка'); }
   };
@@ -234,7 +234,7 @@ export default function AdminStudents() {
         /* Card view */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filteredRows.map((s) => (
-            <StudentCard key={s.id} s={s} onFreeze={toggleFreeze} onDelete={del} onRegen={regen} onNavigate={(id) => navigate(`/students/${id}`)} />
+            <StudentCard key={s.id} s={s} onFreeze={toggleFreeze} onArchive={archive} onRegen={regen} onNavigate={(id) => navigate(`/students/${id}`)} />
           ))}
         </div>
       ) : (
@@ -298,8 +298,8 @@ export default function AdminStudents() {
                           title={s.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => toggleFreeze(s)}>
                           {s.status === 'frozen' ? <Sun size={12} /> : <Snowflake size={12} />}
                         </button>
-                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-base-content/45 hover:bg-error/10 hover:text-error transition-all" title="Удалить" onClick={() => del(s)}>
-                          <Trash2 size={12} />
+                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-base-content/45 hover:bg-warning/10 hover:text-warning transition-all" title="Архивировать" onClick={() => archive(s)}>
+                          <Archive size={12} />
                         </button>
                       </div>
                     </td>
