@@ -50,7 +50,8 @@ const LessonEditor = lazy(() => import('./pages/methodist/LessonEditor.jsx'));
 const MethodistAnalytics = lazy(() => import('./pages/methodist/Analytics.jsx'));
 
 function Protected({ children }) {
-  const { token } = useAuth();
+  const { token, loading } = useAuth();
+  if (loading) return <Splash />;
   return token ? children : <Navigate to="/login" replace />;
 }
 
