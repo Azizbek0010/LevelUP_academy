@@ -9,6 +9,11 @@ export const dashboard = asyncHandler(async (req, res) => {
   res.json(await service.dashboard(branchId(req)));
 });
 
+// ---------- настройки (длительность урока из организации, для формы группы) ----------
+export const settings = asyncHandler(async (req, res) => {
+  res.json(await service.getSettings(branchId(req)));
+});
+
 // ---------- расходы ----------
 export const createExpense = asyncHandler(async (req, res) => {
   res.status(201).json({ expense: await service.createExpense(req.scope, req.user.id, req.body) });
@@ -74,7 +79,10 @@ export const freezeMentor = asyncHandler(async (req, res) => {
 });
 
 export const updateMentor = asyncHandler(async (req, res) => {
-  res.json({ mentor: await service.updateMentor(branchId(req), req.params.id, req.body) });
+  // req.user.id — кто присвоил грейд, пишется в mentor_profiles.grade_set_by
+  res.json({
+    mentor: await service.updateMentor(branchId(req), req.params.id, req.body, req.user.id),
+  });
 });
 
 export const deleteMentor = asyncHandler(async (req, res) => {

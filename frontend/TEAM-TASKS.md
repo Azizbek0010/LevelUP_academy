@@ -37,8 +37,7 @@
 | Elyor | Auth | Super Admin, Admin, Mentor, Methodist |
 | Said Islom | Super Admin (дашборд) | Auth, Admin, Mentor, Methodist |
 | Aziz | Super Admin (филиалы) | Auth, Admin, Mentor, Methodist |
-| sxvs | Super Admin (админы) | Auth, Admin, Mentor, Methodist |
-| Abduloh | Admin (студенты) | Auth, Super Admin, Mentor, Methodist |
+| Abduloh | Admin (студенты) + **весь фронт** | 🔓 **ИСКЛЮЧЕНИЕ — ограничений нет** (см. ниже) |
 | Odil | Admin (группы) | Auth, Super Admin, Mentor, Methodist |
 | Hamidula | Admin (расходы) | Auth, Super Admin, Mentor, Methodist |
 | Sardor | Mentor (дашборд) | Auth, Super Admin, Admin, Methodist |
@@ -47,6 +46,17 @@
 | Azizbek | Methodist | Auth, Super Admin, Admin, Mentor |
 
 **Почему:** Каждая панель — отдельное Vite-приложение. Смешивание кода = конфликты + ломает рабочий процесс.
+
+#### 🔓 Исключение: Abduloh (решение Karis, 2026-07-20)
+
+На **Abduloh** запрет выше не распространяется — у него полный доступ ко всему `frontend/`: любая панель, любое из 5 Vite-приложений. Он может заходить в чужую панель и править код.
+
+При этом:
+
+- Владение задачами НЕ меняется — у каждого остаётся своя панель и свои таски. Доступ Abduloh это право чинить и дорабатывать, а не забрать панель себе.
+- ⛔ Затирать/удалять чужую работу нельзя даже с полным доступом. Конфликт решается через merge, а не через удаление чужого кода.
+- Правил `backend/` это не касается — туда по-прежнему нельзя.
+- Правил остальных это не касается — все остальные строки таблицы работают как раньше.
 
 ---
 
@@ -186,7 +196,7 @@ src/
 | Панель | Люди | Backend API | Канон-контракт |
 |--------|------|-------------|----------------|
 | **Auth** | Elyor | K-AUTH ✅ | §7 этого файла |
-| **Super Admin** | Said Islom, Aziz, sxvs | K-SUPER ✅ | §8 этого файла |
+| **Super Admin** | **Karis** (доводит/стилизует, закрыто для остальных) | K-SUPER ✅ | §8 этого файла |
 | **Admin** | Abduloh, Odil, Hamidula | K-ADMIN ✅ (платежи ⏳) | §9 этого файла |
 | **Mentor** | Sardor, Kozim, Alish | AB-MENTOR ✅ | §10 этого файла |
 | **Methodist** | Azizbek (Karis) | AB-METHODIST ✅ | §11 этого файла |
@@ -199,6 +209,12 @@ src/
 
 **Панель:** Auth (общая для всех ролей)
 **Backend:** Karis, K-AUTH — ✅ готов
+
+### 🆕 Открытые задачи (подтверждено Karis, 2026-07-15)
+
+- [ ] **Login-страницы (main/staff/member)** — доделать и запушить в свою ветку `elyor`; в `main` НЕ мержить сам → Karis вливает через `save-zone`.
+- [ ] **Auto-refresh `401 → refresh → retry`** — 🔴 важно: сейчас auth рефрешит токен только при загрузке страницы, интерцептора на 401 нет. Добавить в `api.js` (единый `refreshPromise`, `credentials:'include'`). Access-токен теперь живёт 1 час.
+- [ ] **Redux authSlice — НЕ нужен.** `useAuth()` context для auth достаточно; Redux только позже, если понадобится для socket/общего UI. Пока продолжать на context.
 
 ### Задачи
 
@@ -243,7 +259,9 @@ src/
 
 ---
 
-## 8. Super Admin — Said Islom, Aziz, sxvs
+## 8. Super Admin — Karis
+
+> 🔒 **Панель Super Admin — задача Karis.** Shohjahon её собрал (богатые страницы), Karis доводит/стилизует и закрывает. **Остальным не трогать** (Said Islom, Aziz переведены в Methodist). Разделы 8.1–8.2 ниже — исторический API-контракт, теперь под Karis.
 
 **Панель:** Super Admin (владелец организации, видит ВСЕ филиалы)
 **Backend:** Karis, K-SUPER — ✅ готов
@@ -295,29 +313,6 @@ src/
 - [ ] Архивация/разархивация корректно прячет/возвращает кнопки мутаций
 - [ ] После мутаций — инвалидация кэша TanStack Query
 
-### 8.3 sxvs — Админы + Отчёты
-
-#### Страницы
-
-- **Admins** (`/superadmin/admins`): CRUD админов, email+пароль задаёт Super Admin вручную, выбор филиала, freeze
-- **Org Reports** (`/superadmin/reports`): выручка и долги по филиалам из `/api/super/dashboard`
-- **Settings** (`/superadmin/settings`): профиль организации — заглушка (эндпоинта пока нет)
-
-#### API
-
-- `POST /api/super/admins` — `{ firstName, lastName, email, password, branchId, phone? }` → `201`
-- `GET /api/super/admins` → `{ admins:[...] }`
-- `PATCH /api/super/admins/:id` — `{ firstName?, lastName?, branchId?, phone? }` (правка/перенос)
-- `PATCH /api/super/admins/:id/freeze` — `{ frozen:true|false }`
-
-#### Definition of Done
-
-- [ ] CRUD админов + привязка/перенос к филиалу + freeze
-- [ ] Отчёты рисуют графики по `/api/super/dashboard` (revenue пока 0 — EmptyState ок)
-- [ ] Пустые состояния и skeleton на месте
-
----
-
 ## 9. Admin — Abduloh, Odil, Hamidula
 
 **Панель:** Admin (один филиал: финансы, студенты, группы)
@@ -358,12 +353,22 @@ src/
 - **Group Detail** (`/admin/groups/:id`): состав, ментор, add/remove студента, бейдж «Архив»
 - **Reports** (`/admin/reports`): выручка/долги/прибыль из `/api/admin/dashboard`
 
+#### 🆕 Форма группы — расписание (день + время, бэкенд готов)
+
+При создании/правке группы:
+- **Ментор** — обязателен (селектор из `GET /api/admin/mentors`).
+- **Дни:** быстрые пресеты **1-3-5** (`["mon","wed","fri"]`) и **2-4-6** (`["tue","thu","sat"]`) + кнопка «другие дни» → галочки `mon..sun` (любой набор).
+- **Время начала** — админ вводит (напр. `15:00`).
+- **Конец урока — НЕ вводится**, показывается превью: возьми длительность из `GET /api/admin/settings` → `{ lessonDurationMin }` (её задаёт Super Admin), посчитай `start + duration` (напр. 15:00 + 80 = 16:20). Реальный конец всё равно считает бэкенд — превью только для UX.
+- Позже день/время/ментора можно менять тем же PATCH.
+
 #### API
 
-- `GET /api/admin/groups?page&limit` → `{ groups, meta }`
-- `POST /api/admin/groups` — `{ name, subject, mentorId, monthlyPrice, schedule?, room? }` → `201`
+- `GET /api/admin/settings` → `{ lessonDurationMin }` — длительность урока для превью конца
+- `GET /api/admin/groups?page&limit` → `{ groups, meta }` (в группе теперь `days[]`, `startTime`, `endTime` + `schedule[]`)
+- `POST /api/admin/groups` — `{ name, subject, mentorId, monthlyPrice, days:["mon","wed","fri"], startTime:"15:00", room? }` → `201`
 - `GET /api/admin/groups/:id` → `{ group }` (+ `students[]`)
-- `PATCH /api/admin/groups/:id`
+- `PATCH /api/admin/groups/:id` — те же поля, `days` и `startTime` слать **только вместе**
 - `POST /api/admin/groups/:id/archive` · `POST /api/admin/groups/:id/unarchive`
 - `POST /api/admin/groups/:id/students` `{ studentId }` · `DELETE /api/admin/groups/:id/students/:studentId`
 - `GET /api/admin/mentors` — менторы для селектора
@@ -371,6 +376,9 @@ src/
 #### Definition of Done
 
 - [ ] CRUD групп + archive/unarchive (archiveGuard 403 ловится глобальным toast)
+- [ ] 🆕 Форма группы: обязательный ментор + дни (пресеты 1-3-5 / 2-4-6 + «другие дни» галочки) + время начала
+- [ ] 🆕 Превью конца урока = `startTime` + `lessonDurationMin` (из `/api/admin/settings`), пересчёт вживую
+- [ ] 🆕 Правка группы: менять день/время/ментора (`days`+`startTime` вместе)
 - [ ] Group Detail: состав, ментор, add/remove студента
 - [ ] Отчёты по филиалу из `/api/admin/dashboard`
 
@@ -481,65 +489,28 @@ src/
 
 ---
 
-## 11. Methodist — Azizbek
+## 11. Methodist — Said Islom & Aziz (Tech Lead)
 
 **Панель:** Methodist (методист: контент, тесты, ДЗ, аналитика)
 **Backend:** Abdulaziz, AB-METHODIST — ✅ готов
 
 > Methodist отвечает за создание и управление учебным контентом. Guard `allow={['methodist']}`.
+> Разработка ведется в ветке `save-zone` во `frontend/staff/src/pages/methodist`.
 
-### Задачи
+### Распределение задач
 
-#### 11.1 MethodistLayout (каркас панели)
+#### 👤 Said Islom (Визуализация, UI/UX и Адаптивность)
+- [ ] **Премиальный UI/UX**: Привести все страницы методиста к единой дизайн-системе (цвета `#1D2417`, `#C6FF34`, `#F6FBEA`, шрифты Manrope).
+- [ ] **Диаграммы в аналитике**: Нарисовать красивые интерактивные SVG-графики успеваемости на странице `Analytics.jsx`.
+- [ ] **Заглушки и Ошибки**: Реализовать Skeleton-загрузчики, EmptyState (пустые списки) и Error-компоненты с кнопкой перезагрузки на всех экранах методиста.
+- [ ] **Мобильная адаптация**: Адаптировать сетки под экраны 1280px / 768px / 375px без горизонтального скролла.
 
-- Сайдбар: Dashboard, Content, Tests, Homework, Analytics.
-- Topbar, профиль, логаут. `ErrorBoundary` + `lazy()`.
-
-#### 11.2 Dashboard (`/methodist`)
-
-- Обзор: количество тестов, ДЗ, студентов, средний балл.
-- Последние действия (что создано/отредактировано).
-
-#### 11.3 Content (`/methodist/content`)
-
-- Управление учебными материалами: создание, редактирование, удаление.
-- Привязка к группам/предметам.
-
-#### 11.4 Tests (`/methodist/tests`)
-
-- Конструктор тестов: вопросы, варианты, правильные ответы.
-- Расписание тестов (durationMin, startsAt, endsAt).
-- Результаты прохождения студентами.
-
-#### 11.5 Homework (`/methodist/homework`)
-
-- Создание ДЗ: заголовок, описание, дедлайн, maxScore, coinReward.
-- Просмотр сдач студентов, оценка.
-
-#### 11.6 Analytics (`/methodist/analytics`)
-
-- Статистика по предметам: средний балл, посещаемость, прогресс.
-- Сравнение групп.
-
-### API (ожидается от Abdulaziz)
-
-- `POST /api/methodist/content` — создание контента
-- `GET /api/methodist/content` — список контента
-- `POST /api/methodist/tests` — создание теста
-- `GET /api/methodist/tests` — список тестов
-- `POST /api/methodist/homework` — создание ДЗ
-- `GET /api/methodist/analytics` — аналитика
-
-> ⚠️ Точные пути API будут согласованы с Abdulaziz. Не выдумывай пути — жди контракт.
-
-### Definition of Done
-
-- [ ] Layout + сайдбар + guard (`allow={['methodist']}`)
-- [ ] Dashboard с общей статистикой
-- [ ] CRUD контента (создание, редактирование, удаление)
-- [ ] Конструктор тестов с вопросами и расписанием
-- [ ] Создание ДЗ с привязкой к группам
-- [ ] Аналитика: статистика по предметам и группам
+#### 👤 Aziz & Джава (Бизнес-логика, Редакторы и API)
+- [x] **Медиа-материалы**: Добавить поле «Видео-урок» (ссылки на YouTube/S3) в форму создания/редактирования уроков.
+- [x] **Загрузка ДЗ**: Реализовать привязку файлов (PDF, Архивы) к практическим урокам через S3-хранилище (presigned URLs).
+- [x] **Копирование уроков**: Реализовать функционал дублирования уроков между темами (`api.methodistCopyLesson`).
+- [x] **Редактор тестов**: Добавить сортировку вопросов в конструкторе (`LessonEditor.jsx`) стрелками вверх/вниз и настроить Zod-валидацию ответов.
+- [x] **E2E Интеграция**: Настроить TanStack Query cache invalidation для всех мутаций и проверить сквозные сценарии с реальным API.
 
 ---
 

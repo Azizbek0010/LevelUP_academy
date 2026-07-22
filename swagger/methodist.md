@@ -406,6 +406,67 @@ New lesson's title is suffixed with " (копия)". Target topic must belong to
 
 ---
 
+### GET `/api/methodist/lessons/{id}/upload-url`
+Presigned S3 upload url for a lesson's practical-task attachment
+
+Возвращает presigned PUT url + fileKey. Клиент грузит файл на uploadUrl, затем сохраняет ключ через PATCH /lessons/{id} { fileKey }.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** methodist (org-wide content)
+
+**Params:**
+- `id` (path, string) **(required)**
+- `filename` (query, string) **(required)**
+- `contentType` (query, string) (optional)
+
+**Responses:**
+
+- **200** — Presigned upload url
+  - `success`: boolean (optional) _e.g. true_
+  - `data` (optional):
+    - **LessonUploadUrl**:
+      - `uploadUrl`: string (optional) — Presigned S3 PUT url (клиент грузит файл сюда)
+      - `fileKey`: string (optional) — Ключ объекта; сохранить в урок через PATCH /lessons/:id { fileKey }
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
 ### GET `/api/methodist/lessons/{lessonId}/questions`
 List questions of a lesson
 

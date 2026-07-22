@@ -322,16 +322,38 @@ export async function setMentorFrozen(branchId, id, frozen) {
   return mapMentor(row);
 }
 
-export async function updateMentor(branchId, id, body) {
-  let row;
+/**
+ * Обновление ментора админом. Поля лежат в двух таблицах: имя/телефон в
+ * `users`, грейд в `mentor_profiles`. Обе записи в одной транзакции — иначе
+ * при падении второго запроса ментор остался бы с новым именем и старым
+ * уровнем, и понять это по ответу было бы нельзя.
+ */
+export async function updateMentor(branchId, id, body, adminId) {
+  const { grade, ...userFields } = body;
+
   try {
-    row = await repo.updateMentor(id, branchId, body);
+    await withTransaction(async (client) => {
+      // Принадлежность филиалу проверяем до записи: патч может состоять из
+      // одного грейда, и тогда UPDATE по users со своим WHERE не выполнится,
+      // а значит и чужого ментора никто бы не отсёк.
+      const mentor = await repo.findMentorInBranch(id, branchId, client);
+      if (!mentor) throw new AppError(404, 'Mentor not found in your branch');
+
+      if (Object.keys(userFields).length > 0) {
+        await repo.updateMentor(id, branchId, userFields, client);
+      }
+      if (grade !== undefined) {
+        await repo.upsertMentorGrade(id, grade, adminId, client);
+      }
+    });
   } catch (err) {
     if (err.code === '23505' && err.constraint === 'uq_users_phone') {
       throw new AppError(409, 'Phone already in use');
     }
     throw err;
   }
+
+  const row = await repo.findMentorWithProfile(id, branchId);
   if (!row) throw new AppError(404, 'Mentor not found in your branch');
   return mapMentor(row);
 }
@@ -354,16 +376,43 @@ function mapMentor(m) {
     email: m.email,
     phone: m.phone,
     status: m.status,
+    // Карточка: у ментора, который её не заполнял, строки в mentor_profiles
+    // нет вовсе — отдаём предсказуемые пустые значения, а не undefined.
+    grade: m.grade ?? null,
+    bio: m.bio ?? null,
+    skills: m.skills ?? [],
+    groups: m.groups !== undefined ? Number(m.groups) : undefined,
   };
 }
 
 // ==================== ГРУППЫ ====================
 
+// start ("15:00") + длительность (мин) → end ("16:20"). Оборачивается на 24ч.
+function addMinutes(hhmm, minutes) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const total = (((h * 60 + m + minutes) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+// Вариант B: admin даёт дни + время начала, конец считает бэкенд из
+// длительности урока организации (её задаёт Super Admin).
+async function buildSchedule(branchId, days, startTime) {
+  const durationMin = await repo.getOrgLessonDuration(branchId);
+  const end = addMinutes(startTime, durationMin);
+  return days.map((day) => ({ day, start: startTime, end }));
+}
+
 export async function createGroup(branchId, body) {
   const mentor = await repo.findMentorInBranch(body.mentorId, branchId);
   if (!mentor) throw new AppError(404, 'Mentor not found in your branch');
-  const row = await repo.insertGroup({ branchId, ...body });
+  const schedule = await buildSchedule(branchId, body.days, body.startTime);
+  const { days, startTime, ...rest } = body;
+  const row = await repo.insertGroup({ branchId, ...rest, schedule });
   return mapGroup(row);
+}
+
+export async function getSettings(branchId) {
+  return { lessonDurationMin: await repo.getOrgLessonDuration(branchId) };
 }
 
 export async function listGroups(branchId, query) {
@@ -415,7 +464,11 @@ export async function updateGroup(branchId, id, body) {
     const mentor = await repo.findMentorInBranch(body.mentorId, branchId);
     if (!mentor) throw new AppError(404, 'Mentor not found in your branch');
   }
-  const row = await repo.updateGroup(id, branchId, body);
+  const { days, startTime, ...patch } = body;
+  if (days !== undefined && startTime !== undefined) {
+    patch.schedule = await buildSchedule(branchId, days, startTime);
+  }
+  const row = await repo.updateGroup(id, branchId, patch);
   return mapGroup(row);
 }
 
@@ -443,12 +496,17 @@ export async function removeGroupStudent(branchId, groupId, studentId) {
 }
 
 function mapGroup(g) {
+  const schedule = g.schedule ?? [];
   return {
     id: g.id,
     name: g.name,
     subject: g.subject,
     monthlyPrice: Number(g.monthly_price),
-    schedule: g.schedule,
+    schedule,
+    // производные поля для фронта: дни группы + единое время начала/конца
+    days: schedule.map((s) => s.day),
+    startTime: schedule[0]?.start ?? null,
+    endTime: schedule[0]?.end ?? null,
     room: g.room,
     isArchived: g.is_archived,
     createdAt: g.created_at,

@@ -77,4 +77,29 @@ router.get('/', ctrl.myGroups);
  */
 router.get('/:groupId/students', validate({ params: groupParam }), ctrl.groupRoster);
 
+/**
+ * @openapi
+ * /api/mentor/groups/{groupId}/stats:
+ *   get:
+ *     tags: [Mentor Groups]
+ *     summary: Group statistics with per-student comparison
+ *     description: >
+ *       One call instead of a submissions/results request per assignment per
+ *       student. Returns the group averages, the spread of students across
+ *       performance bands, and a per-student row ranked by an overall score
+ *       (the mean of whichever of attendance / homework / tests that student
+ *       actually has — a newcomer with no tests yet is not penalised for it).
+ *       Scoped to the requesting mentor's own group; anything else answers 404.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: groupId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: Group statistics }
+ *       404: { description: Group not found or belongs to another mentor }
+ */
+router.get('/:groupId/stats', validate({ params: groupParam }), ctrl.groupStats);
+
 export default router;

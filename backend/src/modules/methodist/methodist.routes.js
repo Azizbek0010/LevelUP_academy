@@ -20,6 +20,7 @@ import {
   updateQuestionSchema,
   createQuestionsBatchSchema,
   copyLessonSchema,
+  lessonUploadUrlQuery,
 } from './content.schemas.js';
 import * as ctrl from './methodist.controller.js';
 
@@ -405,6 +406,47 @@ router.get('/topics/:topicId/lessons', validate({ params: idParam }), ctrl.listL
  */
 router.get('/lessons/:id', validate({ params: idParam }), ctrl.getLesson);
 router.patch('/lessons/:id', validate({ params: idParam, body: updateLessonSchema }), ctrl.updateLesson);
+
+/**
+ * @openapi
+ * /api/methodist/lessons/{id}/upload-url:
+ *   get:
+ *     tags: [Methodist]
+ *     summary: Presigned S3 upload url for a lesson's practical-task attachment
+ *     description: >
+ *       Возвращает presigned PUT url + fileKey. Клиент грузит файл на uploadUrl,
+ *       затем сохраняет ключ через PATCH /lessons/{id} { fileKey }.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *       - in: query
+ *         name: filename
+ *         required: true
+ *         schema: { type: string, maxLength: 255 }
+ *       - in: query
+ *         name: contentType
+ *         required: false
+ *         schema: { type: string, maxLength: 150 }
+ *     responses:
+ *       200:
+ *         description: Presigned upload url
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/LessonUploadUrl' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get(
+  '/lessons/:id/upload-url',
+  validate({ params: idParam, query: lessonUploadUrlQuery }),
+  ctrl.getLessonUploadUrl,
+);
 
 /**
  * @openapi

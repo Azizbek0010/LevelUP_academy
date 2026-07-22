@@ -21,6 +21,7 @@ import leadsRoutes from './modules/main/leads.routes.js';
 import superRoutes from './modules/super/super.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import methodistRoutes from './modules/methodist/methodist.routes.js';
+import telegramRoutes from './modules/telegram/telegram.routes.js';
 
 export function createApp() {
   const app = express();
@@ -95,6 +96,7 @@ export function createApp() {
   app.use('/api/mentor', mentorRoutes);     // AB-MENTOR: davomat, ДЗ, тесты, зарплата
   app.use('/api/student', studentRoutes);   // AB-STUDENT: home, магазин, ДЗ, тесты, видео, лидерборд
   app.use('/api/parent', parentRoutes);     // AB-PARENT: обзор ребёнка (посещаемость/оценки/долг/коины)
+  app.use('/api/telegram', telegramRoutes); // BILOL: привязка Telegram (bind-token)
 
   // 404 → errorHandler
   app.use((req, _res, next) => {

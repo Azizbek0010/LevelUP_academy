@@ -6,13 +6,24 @@
     <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
     <meta name="theme-color" content="#1d2417" />
 
+    <!-- Yandex.Webmaster ownership verification. Meta method (not the yandex_*.html
+         file): vercel.json cleanUrls:true 308-redirects .html paths, which breaks
+         Yandex's exact-URL file check. Same code across all verification methods. -->
+    <meta name="yandex-verification" content="3fad9273b6b005db" />
+
+    <!-- Warm up the GA connection early (DNS + TLS) so the async tag loads faster. -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="preconnect" href="https://www.google-analytics.com" crossorigin />
+
     <!-- Google Analytics (GA4) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RWCK0B6TXP"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-RWCK0B6TXP');
+      // SPA: automatic page_view fires only on the first load. We disable it here
+      // and emit every page_view manually from the router (src/lib/analytics.js).
+      gtag('config', 'G-RWCK0B6TXP', { send_page_view: false });
     </script>
 
     <!--
@@ -44,6 +55,7 @@
             "@type": "Organization",
             "@id": "https://levelup-academy.uz/#organization",
             "name": "LevelUp Academy",
+            "alternateName": ["LevelUp Academy CRM", "LevelUp Academy — CRM для учебных центров"],
             "url": "https://levelup-academy.uz",
             "logo": {
               "@type": "ImageObject",
@@ -51,25 +63,39 @@
               "width": 896,
               "height": 160
             },
-            "description": "SaaS-CRM для управления учебными центрами: финансы, посещаемость, экзамены, геймификация и Telegram-уведомления.",
-            "areaServed": "UZ"
+            "description": "LevelUp Academy — SaaS-платформа (программное обеспечение, CRM) для управления учебными центрами в Узбекистане. Это IT-продукт для владельцев учебных центров, а не сам учебный центр или IT-школа: финансы и сплит-платежи, посещаемость, тесты и домашние задания, геймификация, чаты и Telegram-уведомления в одной системе.",
+            "slogan": "CRM для учебного центра",
+            "knowsAbout": [
+              "CRM для учебных центров",
+              "автоматизация учебного центра",
+              "учёт оплат и сплит-платежи",
+              "посещаемость (davomat)",
+              "управление студентами и группами"
+            ],
+            "areaServed": { "@type": "Country", "name": "Узбекистан" },
+            "foundingLocation": { "@type": "Country", "name": "Узбекистан" }
           },
           {
             "@type": "WebSite",
             "@id": "https://levelup-academy.uz/#website",
             "url": "https://levelup-academy.uz",
             "name": "LevelUp Academy",
+            "alternateName": "LevelUp Academy CRM",
             "inLanguage": "ru",
             "publisher": { "@id": "https://levelup-academy.uz/#organization" }
           },
           {
             "@type": "SoftwareApplication",
+            "@id": "https://levelup-academy.uz/#software",
             "name": "LevelUp Academy",
+            "alternateName": "LevelUp Academy CRM",
             "applicationCategory": "BusinessApplication",
+            "applicationSubCategory": "CRM",
             "operatingSystem": "Web",
             "url": "https://levelup-academy.uz",
             "description": "CRM для учебного центра: оплаты и сплит-платежи, посещаемость (davomat), тесты с серверным таймером, коины и лидерборды, realtime-чаты, отчёты и Telegram-бот.",
             "inLanguage": "ru",
+            "publisher": { "@id": "https://levelup-academy.uz/#organization" },
             "offers": {
               "@type": "Offer",
               "price": "0",

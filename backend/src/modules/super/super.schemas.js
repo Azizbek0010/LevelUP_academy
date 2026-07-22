@@ -17,6 +17,12 @@ export const updateOrganizationSchema = z
         z.null(),
       ])
       .transform((v) => (v ? v : null)),
+    // длительность урока (минуты) — применяется ко всем группам организации
+    lessonDurationMin: z.coerce.number().int().min(10, 'Min 10 min').max(600, 'Max 600 min'),
+    /* Сколько коинов ментор вправе выдать одному ученику за месяц. Бюджет
+       группы = это число × её размер; 0 = раздача коинов запрещена. Потолок
+       здесь только чтобы отсечь опечатку вида «1000000». */
+    coinsPerStudent: z.coerce.number().int().min(0, 'Cannot be negative').max(1000, 'Max 1000'),
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });

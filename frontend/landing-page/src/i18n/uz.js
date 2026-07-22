@@ -12,11 +12,18 @@ export default {
     features: 'Imkoniyatlar',
     roles: 'Rollar',
     finance: 'Moliya',
+    pricing: 'Tariflar',
+    langSchool: 'Til markazlariga',
+    courses: 'Kurs va repetitorlarga',
+    blog: 'Bilimlar bazasi',
     gamification: 'Motivatsiya',
     contacts: 'Aloqa',
     home: 'Bosh sahifa',
     login: 'Kirish',
     menu: 'Menyu',
+    skipToContent: "Asosiy kontentga o'tish",
+    primaryLabel: 'Asosiy navigatsiya',
+    mobileLabel: 'Mobil menyu',
   },
 
   common: {
@@ -468,6 +475,399 @@ export default {
     ctaText: "Ariza qoldiring — LevelUp Academy to'lovlar va qarzdorlarni qanday yuritishini tushuntiramiz.",
   },
 
+  pricing: {
+    badge: 'Tariflar',
+    h1: 'Markazdagi tartib uchun halol narx',
+    lead: "Narx faol o'quvchilar soniga qarab belgilanadi — filiallar cheksiz kiradi. Har bir filial uchun qo'shimcha to'lov va yashirin foizlar yo'q.",
+    positioning:
+      "Biz eng arzon CRM emasmiz — va bo'lishga urinmaymiz ham. Narx — bu sifat: xavfsiz to'lovlar, har kunlik zaxira nusxa va bir haftada ishga tushirish. Markazingiz ishonchliligi uchun ikki marta to'lamaysiz.",
+
+    plansHead: "Tariflar — o'quvchilar soniga qarab",
+    plansLead:
+      "Faol o'quvchilar soniga mos tarifni tanlang. O'sib ketsangiz — keyingisiga o'tasiz, tarix saqlanadi.",
+    free: 'Bepul',
+    negotiable: 'Kelishuv asosida',
+    per: "so'm/oyiga",
+    popular: 'Ommabop',
+    cardCta: 'Ariza qoldirish',
+    plans: [
+      { id: 'free', name: 'Free', amount: 0, range: "0–30 o'quvchi" },
+      { id: 'start', name: 'Start', amount: 199000, range: "31–100 o'quvchi" },
+      { id: 'standard', name: 'Standard', amount: 349000, range: "101–300 o'quvchi", popular: true },
+      { id: 'pro', name: 'Pro', amount: 599000, range: "301–600 o'quvchi" },
+      { id: 'business', name: 'Business', amount: 799000, range: "601–1000 o'quvchi" },
+      { id: 'network', name: 'Network', amount: null, range: "1000+ o'quvchi" },
+    ],
+    perksHead: 'Har bir tarifga kiradi',
+    perks: [
+      'Filiallar cheksiz kiradi',
+      "Yillik to'lov — 15% chegirma",
+      "Birinchi hafta bepul, to'liq kirish",
+    ],
+
+    trialHead: 'Birinchi hafta — bepul',
+    trialLead: "Hammasini jonli sinab ko'ring — xavfsiz va kartasiz.",
+    trial: [
+      {
+        icon: 'check',
+        title: "To'liq funksiya",
+        text: "Barcha modullar cheklovsiz: to'lovlar, davomat, testlar, koinlar, chatlar va hisobotlar — pullik tarifdek.",
+      },
+      {
+        icon: 'shield',
+        title: 'Karta kerak emas',
+        text: "Kartani biriktirish va avto-yechishlar yo'q. Hafta tugaydi — hech narsa o'zi yechilmaydi.",
+      },
+    ],
+
+    guaranteeHead: 'Bizning kafolatlarimiz',
+    guaranteeLead: "Xavfni o'z zimmamizga olamiz — sizga faqat natija qoladi.",
+    guarantee: [
+      {
+        icon: 'refresh',
+        title: '30 kun ichida qaytarish',
+        text: "Yoqmadimi? 30 kun ichida to'lovni 100% qaytaramiz — hech qanday shartsiz.",
+      },
+      {
+        icon: 'shield',
+        title: "Ma'lumot yo'qolmaydi",
+        text: "Har kuni barcha ma'lumotlaringizning zaxira nusxasi. To'lovlar, baholar va o'quvchilar tarixi xavfsiz.",
+      },
+      {
+        icon: 'rocket',
+        title: 'Bir haftada ishga tushirish',
+        text: "Markazingizni 7 kunda sozlab ishga tushiramiz. Ulgurmasak — keyingi oy bepul.",
+      },
+    ],
+
+    extraHead: "Markaz uchun o'z brendingizda sayt",
+    extraText:
+      "Markazingizga o'z firma uslubida alohida sayt va dizayn qilib beramiz — bizning platformamizda. Alohida xizmat: markaz vazifalariga qarab individual kelishiladi.",
+    extraCta: 'Sayt haqida gaplashish',
+
+    faqHead: 'Narx haqida savollar',
+    faq: [
+      {
+        q: 'LevelUp Academy narxi qancha?',
+        a: "Narx faqat faol o'quvchilar soniga bog'liq: Free (30 tagacha) — bepul, Start (31–100) — 199 000 so'm/oyiga, Standard (101–300) — 349 000, Pro (301–600) — 599 000, Business (601–1000) — 799 000. 1000 dan ortiq o'quvchi — kelishuv asosida.",
+      },
+      {
+        q: "Filiallar soni narxga ta'sir qiladimi?",
+        a: "Yo'q. Filiallar har bir tarifga cheksiz kiradi — siz har bir filial uchun emas, faqat faol o'quvchilar soni uchun to'laysiz.",
+      },
+      {
+        q: 'Bepul davr bormi?',
+        a: "Ha, birinchi hafta to'liq funksiya bilan va cheklovsiz bepul. Karta kerak emas, avto-yechishlar yo'q.",
+      },
+      {
+        q: "Yillik to'lovda chegirma bormi?",
+        a: "Ha, yillik to'lovda tarif summasidan 15% chegirma qo'llaniladi.",
+      },
+      {
+        q: "Tizim to'g'ri kelmasa-chi?",
+        a: "Qaytarish kafolati amal qiladi: 30 kun ichida to'lovni 100% qaytaramiz, hech qanday shartsiz.",
+      },
+      {
+        q: "Ma'lumotlarimiz nima bo'ladi?",
+        a: "Biz har kuni zaxira nusxa olamiz. To'lovlar, baholar, davomat va o'quvchilar tarixi yo'qolmaydi — arxiv yozuvlari ham hisobotlar uchun ochiq qoladi.",
+      },
+    ],
+
+    ctaTitle: 'Tarifingizni hisoblashga tayyormisiz?',
+    ctaText:
+      "Ariza qoldiring — markazingiz hajmiga mos tarifni tanlaymiz va birinchi haftani bepul ulaymiz.",
+  },
+
+  langSchool: {
+    badge: 'Til markazlari uchun',
+    h1: 'Til markazi uchun CRM',
+    lead: "Darajali guruhlar, davomat, uy vazifalari, to'lovlar va o'quvchilar motivatsiyasi — bitta tizimda. LevelUp Academy til markazini to'liq yuritadi: o'quvchini yozishdan tushum hisobotigacha.",
+    intro:
+      "Ingliz tili, IELTS/CEFR, koreys, arab, rus tili — LevelUp Academy fanga bog'liq emas. Bu til asosiy yo'nalish bo'lgan o'quv markazi uchun tizim: ichida hech qanday «dasturlash» yo'q.",
+    pricingLink: "Tariflarni ko'rish",
+
+    fitHead: 'Til markaziga moslangan',
+    fitLead: "Til markazlari qo'lda qiladigan ishlar bu yerda o'zi ishlaydi.",
+    fit: [
+      {
+        icon: 'calendar',
+        title: 'Darajali guruhlar',
+        text: "A1–C1, boshlang'ich va davom etuvchi, IELTS va suhbat guruhlari — har biri mentor, jadval va narxi bilan. O'quvchi yuqori darajaga o'tsa, tarixi qoladi.",
+      },
+      {
+        icon: 'check',
+        title: 'Davomat',
+        text: "Mentor davomatni bir daqiqada belgilaydi. Ota-ona bola darsda bo'lganini ko'radi, kelmaslik esa darhol Telegram'ga uchadi — administrator qo'ng'iroq qilmaydi.",
+      },
+      {
+        icon: 'book',
+        title: 'Uy vazifalari',
+        text: "Fayl va deadline bilan uy vazifalari: esse, speaking uchun audio, grammatika. Fayllar telefondan yuklanadi, topshirilgani uchun o'quvchi koin oladi.",
+      },
+      {
+        icon: 'clock',
+        title: 'Testlar va imtihonlar',
+        text: "Server taymerli test konstruktori: lug'at, grammatika, sinov IELTS/CEFR. Deadline'dan keyin topshirish yopiladi — javoblarni soxtalashtirib bo'lmaydi.",
+      },
+      {
+        icon: 'coin',
+        title: "To'lovlar va qarzlar",
+        text: "Kurs uchun yoki oylik, naqd va karta, split-to'lov. To'lanmadi — o'quvchi avtomatik qarzdorlar ro'yxatida, qarz darhol ko'rinadi.",
+      },
+      {
+        icon: 'star',
+        title: "Til o'rganishga motivatsiya",
+        text: "Baho, davomat va topshirilgan vazifalar uchun koinlar, mukofotlar do'koni va reytinglar. Bolalar tilni majburan emas, qiziqish bilan o'rganadi.",
+      },
+    ],
+
+    howHead: 'Yozishdan hisobotgacha',
+    howLead: 'LevelUp Academy bilan til markazining bir kuni.',
+    how: [
+      {
+        title: "O'quvchini yozdik",
+        text: "Administrator o'quvchini kiritdi, daraja bo'yicha guruhga qo'shdi va kurs uchun to'lovni qabul qildi. Ota-ona kirish va Telegram bildirishnomalarini oldi.",
+      },
+      {
+        title: 'Darslarni yuritamiz',
+        text: "Mentor davomatni belgilaydi, uy vazifasi va testlar beradi, speaking'dagi faollik uchun koin qo'shadi. Ota-onalar progressni real vaqtda ko'radi.",
+      },
+      {
+        title: "Natijani ko'ramiz",
+        text: "Tushum, qarzlar va davomat — panelda. Qaysi o'quvchi kelmasliklar sabab tashlab ketish arafasida ekani kurs oxirida emas, oldindan ko'rinadi.",
+      },
+    ],
+
+    faqHead: "Ko'p beriladigan savollar",
+    faq: [
+      {
+        q: 'LevelUp Academy til maktabiga to\'g\'ri keladimi?',
+        a: "Ha. Bu har qanday yo'nalishdagi o'quv markazi uchun CRM: ingliz, IELTS, koreys, arab, rus tili. Darajali guruhlar, davomat, uy vazifalari, testlar, to'lovlar va motivatsiya — barchasi til markazi vazifalariga mos. Ichida aniq fanga bog'langan narsa yo'q.",
+      },
+      {
+        q: 'Darajali guruhlar (A1–C1, IELTS) yuritish mumkinmi?',
+        a: "Ha. Har bir guruh — o'z mentori, darajasi, jadvali va narxi bilan. O'quvchi keyingi darajaga o'tsa, davomat, baho va to'lovlar tarixi saqlanadi.",
+      },
+      {
+        q: 'Ota-onalar baho va kelmaslik haqida qanday biladi?',
+        a: "Telegram orqali. Ota-ona bir martalik kod bilan akkauntini bog'laydi va bildirishnoma oladi: kelmaslik, baho, qarz. Ilova o'rnatish shart emas.",
+      },
+      {
+        q: 'Til maktabining nechta filialini ulash mumkin?',
+        a: "Cheklovsiz. Har bir filial izolyatsiya qilingan, rahbar esa butun tarmoqni ko'radi: filiallar bo'yicha tushum, davomat va qarzlarni solishtiradi.",
+      },
+      {
+        q: 'Til maktabi uchun narxi qancha?',
+        a: "Narx faol o'quvchilar soniga qarab, filiallar cheksiz kiradi. Birinchi hafta — bepul, kartasiz. Batafsil — tariflar sahifasida.",
+      },
+    ],
+
+    ctaTitle: "Til markazida tartib o'rnatamizmi?",
+    ctaText:
+      "Ariza qoldiring — LevelUp Academy til markazida guruhlar, to'lovlar va motivatsiyani qanday yuritishini ko'rsatamiz. Birinchi hafta bepul.",
+  },
+
+  courses: {
+    badge: 'Kurslar va repetitorlar uchun',
+    h1: 'Kurslar va repetitorlik markazi uchun CRM',
+    lead: "Guruh va yakkama-yakka darslar, davomat, uy vazifalari, kurs uchun to'lovlar va motivatsiya — bitta tizimda. Oqim kurslariga ham, repetitorlarga ham mos.",
+    intro:
+      "IT va dasturlash, dizayn, imtihonga tayyorgarlik, maktab fanlari — LevelUp Academy yo'nalishga bog'liq emas. Katta oqimlarni ham, yakka repetitorlikni ham yuritadi.",
+    pricingLink: "Tariflarni ko'rish",
+
+    fitHead: 'Kurs va repetitorlikka moslangan',
+    fitLead: "Administrator va repetitorning vaqtini oladigan ishlar bu yerda avtomatlashtirilgan.",
+    fit: [
+      {
+        icon: 'calendar',
+        title: 'Guruh va yakkama-yakka',
+        text: "Oqim kurslari guruhlar bilan va yakkama-yakka darslar — har biri mentor, jadval va narxi bilan. O'quvchi modulni tugatsa yoki boshqa repetitorga o'tsa, tarix saqlanadi.",
+      },
+      {
+        icon: 'check',
+        title: 'Davomat',
+        text: "Mentor davomatni bir daqiqada belgilaydi. Ota-ona yoki o'quvchining o'zi kelmaslikni ko'radi, bildirishnoma esa darhol Telegram'ga ketadi.",
+      },
+      {
+        icon: 'book',
+        title: 'Uy vazifalari va loyihalar',
+        text: "Fayl va deadline bilan uy vazifalari va loyihalar. Fayllar telefondan yuklanadi, topshirilgani uchun o'quvchi koin oladi.",
+      },
+      {
+        icon: 'clock',
+        title: 'Testlar va imtihonlar',
+        text: "Server taymerli test konstruktori: oraliq, yakuniy, sinov. Deadline'dan keyin topshirish yopiladi — javoblarni soxtalashtirib bo'lmaydi.",
+      },
+      {
+        icon: 'coin',
+        title: "Kurs uchun to'lov va qarzlar",
+        text: "Kurs, modul yoki oylik uchun to'lov, naqd va karta, split-to'lov. To'lanmadi — o'quvchi avtomatik qarzdorlar ro'yxatida.",
+      },
+      {
+        icon: 'star',
+        title: "O'qishni tugatishga motivatsiya",
+        text: "Baho, davomat va topshirilgan vazifalar uchun koinlar, mukofotlar do'koni va reytinglar. Kursni yarmida kamroq tashlab ketishadi.",
+      },
+    ],
+
+    howHead: 'Yozishdan natijagacha',
+    howLead: 'LevelUp Academy bilan kursning bir oqimi.',
+    how: [
+      {
+        title: "Kursga yozdik",
+        text: "Administrator o'quvchini guruhga yoki repetitorga kiritdi va kurs uchun to'lovni qabul qildi. O'quvchi va ota-ona kirish va Telegram bildirishnomalarini oldi.",
+      },
+      {
+        title: 'Darslarni yuritamiz',
+        text: "Mentor davomatni belgilaydi, uy vazifasi va testlar beradi, faollik uchun koin qo'shadi. Progress real vaqtda ko'rinadi.",
+      },
+      {
+        title: "Natijani ko'ramiz",
+        text: "Tushum, qarzlar va davomat — panelda. Kim kelmasliklar sabab kursni tashlab ketish xavfida ekani oldindan ko'rinadi.",
+      },
+    ],
+
+    faqHead: "Ko'p beriladigan savollar",
+    faq: [
+      {
+        q: "LevelUp Academy kurslar va repetitorlarga to'g'ri keladimi?",
+        a: "Ha. Bu har qanday yo'nalishdagi o'quv markazi uchun CRM: IT-kurslar, dizayn, imtihonga tayyorgarlik, repetitorlik. Guruh va yakkama-yakka darslar, davomat, uy vazifalari, testlar, to'lovlar va motivatsiya — barchasi kurs va repetitorlik markazi vazifalariga mos.",
+      },
+      {
+        q: 'Guruh va yakkama-yakka darslarni ham yuritish mumkinmi?',
+        a: "Ha. Guruh yoki yakkama-yakka dars — har birining o'z mentori, jadvali va narxi bor. Guruh va repetitorlar o'rtasida o'tishda o'quvchi tarixi saqlanadi.",
+      },
+      {
+        q: "Kurs yoki modullar uchun to'lovni qanday qabul qilish mumkin?",
+        a: "Butun kurs, modul yoki oylik uchun — naqd, karta yoki split-to'lov. Qarzlar avtomatik hisoblanadi, qarzdorlar darhol ko'rinadi.",
+      },
+      {
+        q: 'Nechta kurs filialini ulash mumkin?',
+        a: "Cheklovsiz. Har bir filial izolyatsiya qilingan, rahbar esa butun tarmoqni ko'radi: filiallar bo'yicha tushum, davomat va qarzlar.",
+      },
+      {
+        q: 'Kurslar uchun narxi qancha?',
+        a: "Narx faol o'quvchilar soniga qarab, filiallar cheksiz kiradi. Birinchi hafta — bepul, kartasiz. Batafsil — tariflar sahifasida.",
+      },
+    ],
+
+    ctaTitle: "Kursingizda tartib o'rnatamizmi?",
+    ctaText:
+      "Ariza qoldiring — LevelUp Academy kurslar va repetitorlikda guruhlar, to'lovlar va motivatsiyani qanday yuritishini ko'rsatamiz. Birinchi hafta bepul.",
+  },
+
+  blog: {
+    badge: 'Bilimlar bazasi',
+    h1: "O'quv markazi uchun bilimlar bazasi",
+    lead: "Markazning hisobi, moliyasi va davomatida qanday tartib o'rnatish — quruq gapsiz, CRM tajribasiga asoslanib. O'qing va joriy eting.",
+    readMore: "O'qish",
+    minutesLabel: 'daq',
+    backToBlog: '← Bilimlar bazasiga',
+    tocLabel: 'Chop etilgan',
+    articles: {
+      'excel-to-crm': {
+        title: "Excel'dan o'quv markazi uchun CRM'ga qanday o'tish kerak",
+        seoTitle: "Excel'dan CRM'ga o'tish — o'quv markazi | LevelUp",
+        seoDescription:
+          "O'quv markazining Excel'dan CRM'ga bosqichma-bosqich o'tishi: nimani ko'chirish (o'quvchilar, guruhlar, to'lovlar, qarzlar), hech narsani yo'qotmaslik va nimadan boshlash. Migratsiya cheklisti.",
+        excerpt:
+          "Jadvallar ikkinchi yuz o'quvchida buziladi. CRM'ga nimani ko'chirish, hech narsani yo'qotmaslik va nimadan boshlashni ko'rib chiqamiz.",
+        date: '2026-07-16',
+        reading: 6,
+        body: [
+          { type: 'p', text: "Excel va Google Jadvallar o'quvchilar kam bo'lguncha ishlaydi. Lekin markaz o'sishi bilan jadvallar xatolar manbaiga aylanadi: raqamlar mos kelmaydi, qarzlar yo'qoladi, o'quvchi tarixi esa o'chirilgan qator bilan birga yo'qoladi. CRM'ga qanday o'tish va hech narsani yo'qotmaslikni ko'rib chiqamiz." },
+          { type: 'h2', text: 'Excel qayerda qiynay boshlaydi' },
+          { type: 'ul', items: [
+            "Dublikatlar va nomuvofiqlik: bir xil ma'lumot turli fayllarda farq qiladi.",
+            "Qarzlar faqat qo'lda ko'rinadi — ular haqida oy oxirida bilasiz.",
+            "O'quvchi qatorini o'chirdingiz — to'lov va baholar tarixini yo'qotdingiz.",
+            "Kirish huquqlari yo'q: fayli bor har kim hammasini ko'radi.",
+            "Ota-onalarga kelmaslik va qarz haqida avto-bildirishnoma yo'q.",
+          ] },
+          { type: 'h2', text: "CRM'ga birinchi navbatda nimani ko'chirish" },
+          { type: 'ul', items: [
+            "O'quvchilar va guruhlar (daraja, mentor va narx bilan).",
+            'Mentorlar va dars jadvali.',
+            "Joriy to'lovlar va, eng muhimi, ochiq qarzlar.",
+            "Kamida joriy davr uchun davomat tarixi.",
+          ] },
+          { type: 'h2', text: "Qanday o'tish va hech narsani yo'qotmaslik" },
+          { type: 'p', text: "Hammasini birdan ko'chirmang va Excel'ni birinchi kuni tashlamang. Eng xavfsiz yo'l — bir-ikki hafta parallel ishlatish: ma'lumotni CRM'ga kiritasiz va jadval bilan solishtirasiz, hammasi mos kelishiga ishonch hosil qilguncha." },
+          { type: 'ul', items: [
+            'Filiallar va guruhlarni yarating.',
+            "Faol o'quvchilarni ko'chiring va guruhlarga taqsimlang.",
+            "Ochiq qarzlarni kiriting — shunda haqiqiy manzarani darhol ko'rasiz.",
+            "Ota-onalarni bir martalik Telegram-kod bilan ulang.",
+            "Bir hafta Excel bilan parallel yuriting va tushum hamda qarzlarni solishtiring.",
+          ] },
+          { type: 'h2', text: 'Nimadan boshlash' },
+          { type: 'p', text: "Bitta guruhdan boshlang: uni yarating, bir-ikki to'lov qabul qiling, davomatni belgilang — va jadvaldagi bilan solishtiring. LevelUp Academy'da birinchi hafta bepul va kartasiz, shuning uchun migratsiyani xavfsiz sinab ko'rish mumkin." },
+        ],
+      },
+      'student-debts': {
+        title: "O'quvchilar qarzida pulni qanday yo'qotmaslik kerak",
+        seoTitle: "O'quvchilar qarzida pulni yo'qotmaslik | LevelUp",
+        seoDescription:
+          "O'quvchilar qarzi nega sezilmay o'sadi va uni qanday nazorat qilish: qarzdorlarning avtomatik ro'yxati, Telegram'da ota-onaga eslatma va tarixni yo'qotmasdan muzlatish.",
+        excerpt:
+          "O'quv markazida qarzlar jimgina yig'iladi va oy oxirida chiqadi. Ularni qanday ko'rinadigan qilish va nizosiz pulni qaytarish.",
+        date: '2026-07-16',
+        reading: 5,
+        body: [
+          { type: 'p', text: "Darslar uchun qarz kamdan-kam birdan paydo bo'ladi — u asta-sekin yig'iladi va summa allaqachon katta, ota-ona bilan suhbat esa yoqimsiz bo'lganda seziladi. Muammo ota-onalarda emas, qarz o'z vaqtida ko'rinmasligida. Buni qanday tuzatishni ko'ramiz." },
+          { type: 'h2', text: "Qarzlar nega sezilmay o'sadi" },
+          { type: 'ul', items: [
+            "«Oylik» to'lovni unutish oson — markazga ham, ota-onaga ham.",
+            "Jadvalda qarz o'zi hisoblanmaydi: kimdir raqamlarni qo'lda yig'ishi kerak.",
+            "Qarz hisoblanmaguncha o'quvchi qatnayveradi — summa o'sadi.",
+            "Eslatish noqulay: administrator pulni «undirishni» xohlamaydi.",
+          ] },
+          { type: 'h2', text: "Qarzni ko'rinadigan qiling" },
+          { type: 'p', text: "Asosiy qoida: qarz oy oxirida emas, hisob chiqarilgan paytda avtomatik hisoblanishi kerak. Shunda qarzdor ro'yxatda darhol paydo bo'ladi va siz summa kichik ekan reaksiya qilasiz." },
+          { type: 'ul', items: [
+            "Qarzdorlar ro'yxati o'zi yangilanadi — panelda ko'rinadi.",
+            "Ota-ona qarzni o'z kabinetida administratorsiz ko'radi.",
+            "Qarz haqida bildirishnoma Telegram'ga avtomatik ketadi.",
+          ] },
+          { type: 'h2', text: 'Nizosiz pulni qaytaring' },
+          { type: 'p', text: "Qarzlarning aksariyati birinchi eslatmadanoq yopiladi — agar u o'z vaqtida va shaxsiy tanbeh emas, tizimdan kelsa. Agar o'quvchi vaqtincha kelmasa, uni muzlatish mumkin: qarz o'smay qoladi, to'lovlar tarixi esa to'liq saqlanadi." },
+          { type: 'h2', text: 'Xulosa' },
+          { type: 'p', text: "Qarzlar — qattiqqo'llik emas, o'z vaqtidalik haqida. Markaz qarzdorni qarz paydo bo'lgan kuni ko'rsa, pul deyarli har doim qaytadi. LevelUp Academy'da bu darhol ishlaydi: birinchi haftani bepul sinab ko'ring." },
+        ],
+      },
+      'attendance-automation': {
+        title: "O'quv markazida davomatni qanday avtomatlashtirish kerak",
+        seoTitle: 'Markazda davomatni avtomatlashtirish (davomat) | LevelUp',
+        seoDescription:
+          "Davomatni qog'ozda yuritishni to'xtatish: bir daqiqada elektron davomat jurnali, Telegram'da ota-onaga kelmaslik haqida avto-bildirishnoma va admin uchun hisobotlar.",
+        excerpt:
+          "Qog'oz davomat jurnali vaqtni o'g'irlaydi va kelmaslikdan qutqarmaydi. Davomatni elektron ko'rinishga o'tkazish va ota-onalarni o'zingiz xabardor qilish.",
+        date: '2026-07-16',
+        reading: 5,
+        body: [
+          { type: 'p', text: "Davomat — mentorning vaqtini yeydigan va qog'ozda yuritilganda natijaga deyarli ta'sir qilmaydigan rutina. Ota-ona kelmaslik haqida kech biladi, administrator esa — o'quvchi tashlab ketish arafasida bo'lgandagina. Elektron jurnal buni o'zgartiradi." },
+          { type: 'h2', text: 'Qog\'oz jurnal nima bilan yomon' },
+          { type: 'ul', items: [
+            "Ma'lumot mentorning daftarida qoladi — administrator ko'rmaydi.",
+            "Ota-ona kelmaslik haqida kechqurun biladi yoki umuman bilmaydi.",
+            "Tarix yo'q: kim muntazam qoldirishini aniqlab bo'lmaydi.",
+            "Davomatni to'lovlar bilan qo'lda solishtirish deyarli imkonsiz.",
+          ] },
+          { type: 'h2', text: 'Elektron davomat qanday ishlaydi' },
+          { type: 'p', text: "Mentor guruhni to'g'ridan-to'g'ri telefondan bir daqiqada belgilaydi. Qolganini tizim qiladi: ota-ona bola darsda bo'lganini darhol ko'radi, kelmaslik esa administratorsiz Telegram'ga bildirishnoma bo'lib ketadi." },
+          { type: 'ul', items: [
+            "Guruhni bir necha bosishda, qog'ozsiz belgilash.",
+            "Kelmaslik haqida ota-onaga o'sha zahoti avto-bildirishnoma.",
+            "Davomat tarixi — kim muntazam qoldirishi ko'rinadi.",
+            "Ma'lumot to'lovlar va filial hisobotlari bilan bog'langan.",
+          ] },
+          { type: 'h2', text: 'Bu markazga nima beradi' },
+          { type: 'p', text: "Ota-onalar xotirjam, chunki xabardor. Administrator kim tashlab ketish arafasida ekanini oldindan ko'radi — va o'quvchini ushlab qolishga ulguradi. Mentor esa jurnalga o'n daqiqa emas, bir daqiqa sarflaydi. LevelUp Academy'da elektron davomatni birinchi hafta bepul sinash mumkin." },
+        ],
+      },
+    },
+  },
+
   gamification: {
     badge: 'Motivatsiya',
     h1: "O'quvchilar zerikib o'tirmaydi, musobaqalashadi",
@@ -595,9 +995,9 @@ export default {
 
   seo: {
     home: {
-      title: "LevelUp Academy — o'quv markazi uchun CRM",
+      title: "O'quv markazi uchun CRM — o'quvchilar hisobi | LevelUp",
       description:
-        "O'quv markazi uchun CRM: to'lovlar va split-to'lovlar, davomat, imtihonlar, motivatsiya va Telegram bildirishnomalari bitta tizimda. Birinchi hafta — bepul.",
+        "O'quvchilar hisobi dasturi: to'lovlar va qarzlar, davomat va elektron jurnal, testlar, motivatsiya, Telegram bildirishnomalari bitta CRM'da. Birinchi hafta bepul.",
     },
     features: {
       title: 'Imkoniyatlar — 12+ CRM moduli | LevelUp Academy',
@@ -610,9 +1010,29 @@ export default {
         "SuperAdmin, Admin, Mentor, Ota-ona va O'quvchi — har bir rolning o'z kabineti. Ruxsatni serverdagi RBAC hal qiladi: ortiqchasini hech kim ko'rmaydi.",
     },
     finance: {
-      title: "Markaz moliyasi va to'lovlari | LevelUp Academy",
+      title: "O'quvchilar to'lovi va qarzlar hisobi | LevelUp Academy",
       description:
-        "Naqd va karta bilan split-to'lovlar, invoyslar, bulutdagi cheklar, qarz nazorati va tushum bo'yicha jonli hisobotlar. O'quv markazi puli — bir tiyingacha.",
+        "O'quvchilar to'lovi va qarzlari hisobi: naqd va karta split-to'lovlar, invoyslar, bulutdagi cheklar va jonli tushum hisobotlari. Markaz moliyasi — bir tiyingacha.",
+    },
+    pricing: {
+      title: "Tariflar va narxlar — o'quv markazi uchun CRM | LevelUp",
+      description:
+        "LevelUp Academy narxlari: 30 o'quvchigacha bepul, keyin 199 000 so'm/oyidan. Narx o'quvchilar soniga qarab, filiallar cheksiz kiradi, birinchi hafta bepul.",
+    },
+    langSchool: {
+      title: "Til markazi uchun CRM — guruhlar, to'lovlar | LevelUp",
+      description:
+        "Til o'quv markazi uchun CRM: darajali guruhlar, davomat, uy vazifalari, testlar, to'lovlar va o'quvchilar motivatsiyasi bitta tizimda. Birinchi hafta bepul.",
+    },
+    courses: {
+      title: "Kurslar va repetitorlar uchun CRM | LevelUp Academy",
+      description:
+        "Kurslar va repetitorlik markazi uchun CRM: guruh va yakkama-yakka darslar, davomat, uy vazifalari, testlar, kurs uchun to'lovlar va motivatsiya. Birinchi hafta bepul.",
+    },
+    blog: {
+      title: "O'quv markazi uchun bilimlar bazasi | LevelUp Academy",
+      description:
+        "O'quv markazida tartib o'rnatish haqida maqolalar: Excel'dan CRM'ga o'tish, o'quvchilar qarzini nazorat qilish va davomatni avtomatlashtirish.",
     },
     gamification: {
       title: 'Motivatsiya va geymifikatsiya | LevelUp Academy',

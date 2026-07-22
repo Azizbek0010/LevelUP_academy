@@ -1,5 +1,10 @@
 import { AppError } from '../../utils/AppError.js';
+import { pool } from '../../config/db.js';
+import { emitTo } from '../../sockets/io.js';
 import * as chatRepository from './chat.repository.js';
+import {
+  canStaffChatPeer, dmRoom, userRoom, isUuid, DM_STAFF_ROLES,
+} from './chat.access.js';
 
 const MAX_BODY_LENGTH = 4000;
 
@@ -19,6 +24,81 @@ export async function saveMessage({ chatType, roomKey, senderId, branchId, body,
     body: trimmed,
     attachmentKey,
   });
+}
+
+/**
+ * Отправка личного сообщения — единственная реализация на оба транспорта.
+ *
+ * Сокет (`chat:dm:send` / `chat:dm:reply`) и REST (`POST /api/chat/dm`) зовут
+ * именно её: две копии проверки прав однажды разъедутся, и разъедется молча.
+ * Направление определяется ролью отправителя, а не полем в запросе — иначе
+ * клиент мог бы объявить себя сотрудником.
+ *
+ * Живая доставка идёт в личные комнаты `user:<id>` обоих участников, поэтому
+ * сообщение, отправленное через HTTP, доходит в открытую вкладку так же
+ * мгновенно, как отправленное сокетом.
+ */
+export async function sendDirectMessage({ sender, peerId, body }) {
+  if (!isUuid(peerId)) throw new AppError(400, 'peerId must be a uuid');
+
+  let staffId;
+  let otherId;
+
+  if (DM_STAFF_ROLES.has(sender.role)) {
+    // сотрудник → родитель или ученик
+    if (!(await canStaffChatPeer(sender, peerId))) {
+      throw new AppError(403, 'You may not message this person');
+    }
+    staffId = sender.id;
+    otherId = peerId;
+  } else if (sender.role === 'parent' || sender.role === 'student') {
+    // родитель/ученик → сотрудник, и только в уже разрешённый диалог:
+    // право проверяется со стороны сотрудника, первым писать они не могут.
+    const staff = await findStaff(peerId);
+    if (!staff || !(await canStaffChatPeer(staff, sender.id))) {
+      throw new AppError(403, 'You may not message this person');
+    }
+    staffId = peerId;
+    otherId = sender.id;
+  } else {
+    throw new AppError(403, 'Your role may not use direct messages');
+  }
+
+  const roomKey = dmRoom(staffId, otherId);
+  const message = await saveMessage({
+    chatType: 'direct',
+    roomKey,
+    senderId: sender.id,
+    branchId: sender.branchId,
+    body,
+  });
+
+  emitTo(userRoom(sender.id), 'chat:dm:message', message);
+  emitTo(userRoom(sender.id === staffId ? otherId : staffId), 'chat:dm:message', message);
+
+  return message;
+}
+
+/** Минимальный профиль сотрудника — для проверки прав со стороны собеседника. */
+async function findStaff(staffId) {
+  const { rows: [row] } = await pool.query(
+    `SELECT id, role, organization_id, branch_id
+       FROM users
+      WHERE id = $1 AND deleted_at IS NULL AND status = 'active'`,
+    [staffId],
+  );
+  if (!row || !DM_STAFF_ROLES.has(row.role)) return null;
+  return {
+    id: row.id,
+    role: row.role,
+    organizationId: row.organization_id,
+    branchId: row.branch_id,
+  };
+}
+
+/** Прочитано: доступ к комнате уже проверен middleware'ом requireRoomAccess. */
+export async function markRoomRead(roomKey, readerId) {
+  return chatRepository.markRoomRead(roomKey, readerId);
 }
 
 export async function getRoomHistory(roomKey, { limit, before }) {

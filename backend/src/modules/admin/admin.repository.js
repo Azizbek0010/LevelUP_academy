@@ -329,9 +329,11 @@ export function listMentors(branchId, client = pool) {
   return client
     .query(
       `SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.status, u.created_at,
+              mp.grade, mp.bio, mp.skills,
               (SELECT count(*) FROM groups g
                  WHERE g.mentor_id = u.id AND g.deleted_at IS NULL AND g.is_archived = false) AS groups
          FROM users u
+         LEFT JOIN mentor_profiles mp ON mp.user_id = u.id
         WHERE u.branch_id = $1 AND u.role = 'mentor' AND u.deleted_at IS NULL
         ORDER BY u.created_at DESC`,
       [branchId],
@@ -378,6 +380,42 @@ export function updateMentor(id, branchId, fields, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
+/**
+ * Грейд ментора. UPSERT: карточки может ещё не быть, если ментор её не
+ * заполнял, — грейд должен ставиться и в этом случае.
+ * `grade = null` снимает уровень, поэтому COALESCE тут неуместен: он не дал бы
+ * его обнулить.
+ */
+export function upsertMentorGrade(userId, grade, adminId, client = pool) {
+  return client
+    .query(
+      `INSERT INTO mentor_profiles (user_id, grade, grade_set_by, grade_set_at)
+            VALUES ($1, $2, $3, CASE WHEN $2::mentor_grade IS NULL THEN NULL ELSE now() END)
+       ON CONFLICT (user_id) DO UPDATE
+              SET grade        = $2,
+                  grade_set_by = $3,
+                  grade_set_at = CASE WHEN $2::mentor_grade IS NULL THEN NULL ELSE now() END,
+                  updated_at   = now()
+         RETURNING grade`,
+      [userId, grade, adminId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/** Один ментор филиала вместе с карточкой — для ответа после обновления. */
+export function findMentorWithProfile(id, branchId, client = pool) {
+  return client
+    .query(
+      `SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.status,
+              mp.grade, mp.bio, mp.skills
+         FROM users u
+         LEFT JOIN mentor_profiles mp ON mp.user_id = u.id
+        WHERE u.id = $1 AND u.branch_id = $2 AND u.role = 'mentor' AND u.deleted_at IS NULL`,
+      [id, branchId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
 /** Сколько живых неархивных групп ведёт ментор (нельзя удалить, пока ведёт). */
 export function countMentorActiveGroups(mentorId, branchId, client = pool) {
   return client
@@ -411,6 +449,19 @@ export function findMentorInBranch(mentorId, branchId, client = pool) {
       [mentorId, branchId],
     )
     .then((r) => r.rows[0] ?? null);
+}
+
+// длительность урока организации (её задаёт Super Admin) — по филиалу
+export function getOrgLessonDuration(branchId, client = pool) {
+  return client
+    .query(
+      `SELECT o.lesson_duration_min
+         FROM branches b
+         JOIN organizations o ON o.id = b.organization_id
+        WHERE b.id = $1`,
+      [branchId],
+    )
+    .then((r) => r.rows[0]?.lesson_duration_min ?? 60);
 }
 
 export function insertGroup(

@@ -51,11 +51,19 @@
 
 ## 4. Задачи Karis
 
-### K-AUTH — Auth + Authorization (моё)
-- [ ] `auth`: login (phone + argon2id), JWT access 15м `{sub, role, orgId, branchId}`
-- [ ] Refresh rotation (30д httpOnly cookie, reuse → revoke всю семью), logout, frozen-check (403)
-- [ ] SMS OTP forgot/reset password (Redis TTL 5м, no user enumeration, rate limit) + SMTP (письма OTP/смена пароля)
-- [ ] `authenticate` + `authorize` middlewares (RBAC + org+branch scope, A8)
+### K-AUTH — Auth + Authorization (моё) ✅ ЗАКРЫТО
+
+> ⚠️ Аудит 2026-07-19: галочки здесь были протухшие — всё это давно сделано и живёт в
+> `backend/src/modules/auth/`. Актуальный статус ведётся в корневом `TASK.md`, этот файл —
+> исторический (задачи по нему сверены и закрыты).
+> Изменение против плана: **SMS OTP отменён** (платный) → реализован **email OTP**.
+
+- [x] `auth`: login (3 endpoint: main/staff/member, argon2id), JWT access 15м `{sub, role, orgId, branchId}`
+- [x] Refresh rotation (30д httpOnly cookie, reuse → revoke всю семью), logout, frozen-check (403)
+- [x] ~~SMS~~ **Email** OTP forgot/reset password (rate limit `passwordResetLimiter`, zod-валидация) + SMTP (письма OTP/смена пароля).
+      ⚠️ Бэкенд готов, но **фронта у этого нет** — см. `AUTH-FORGOT` в корневом `TASK.md`
+- [x] `authenticate` + `authorize` middlewares (RBAC + org+branch scope, A8)
+- [x] Google OAuth (Firebase) для main_admin
 
 ### K-MAIN — Main Admin (платформа)
 - [ ] Приём заявки с лендинга: публичный endpoint формы → `leads`

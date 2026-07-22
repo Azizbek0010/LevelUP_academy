@@ -82,28 +82,38 @@ export const createMentorSchema = z.object({
 
 export const freezeMentorSchema = z.object({ frozen: z.boolean() });
 
+/**
+ * `grade` — уровень ментора (junior/middle/senior). Живёт именно здесь, а не в
+ * профиле самого ментора: себе уровень не присваивают. `null` снимает грейд.
+ */
 export const updateMentorSchema = z
   .object({
     firstName: name(),
     lastName: name(),
     phone,
+    grade: z.enum(['junior', 'middle', 'senior']).nullable(),
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
 
 // ---------- группы ----------
-const scheduleItem = z.object({
-  day: z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']),
-  start: z.string().regex(/^\d{2}:\d{2}$/, 'HH:MM'),
-  end: z.string().regex(/^\d{2}:\d{2}$/, 'HH:MM'),
-});
+// Admin выбирает дни недели + время начала; конец урока считает бэкенд
+// из длительности урока организации (Super Admin). См. admin.service.buildSchedule.
+const dayEnum = z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+const daysSchema = z
+  .array(dayEnum)
+  .min(1, 'Pick at least one day')
+  .max(7)
+  .refine((a) => new Set(a).size === a.length, 'Duplicate days');
+const startTimeSchema = z.string().regex(/^\d{2}:\d{2}$/, 'HH:MM');
 
 export const createGroupSchema = z.object({
   name: name(2, 120),
   subject: name(1, 120),
   mentorId: z.string().uuid('Invalid mentorId'),
   monthlyPrice: moneyNonNeg,
-  schedule: z.array(scheduleItem).max(14).optional(),
+  days: daysSchema,
+  startTime: startTimeSchema,
   room: z.string().trim().max(60).optional(),
 });
 
@@ -113,11 +123,16 @@ export const updateGroupSchema = z
     subject: name(1, 120),
     mentorId: z.string().uuid('Invalid mentorId'),
     monthlyPrice: moneyNonNeg,
-    schedule: z.array(scheduleItem).max(14),
+    days: daysSchema,
+    startTime: startTimeSchema,
     room: z.string().trim().max(60),
   })
   .partial()
-  .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
+  .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' })
+  // расписание меняется целиком: дни и время начала только вместе
+  .refine((o) => (o.days === undefined) === (o.startTime === undefined), {
+    message: 'days and startTime must be provided together',
+  });
 
 export const addGroupStudentSchema = z.object({
   studentId: z.string().uuid('Invalid studentId'),

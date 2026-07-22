@@ -10,6 +10,23 @@ export async function insertMessage({ chatType, roomKey, senderId, branchId, bod
   return message;
 }
 
+/**
+ * Пометить прочитанными чужие сообщения комнаты. Свои не трогаем — read_at
+ * означает «прочитано получателем», и отправитель получателем не является.
+ */
+export async function markRoomRead(roomKey, readerId) {
+  const { rowCount } = await pool.query(
+    `UPDATE chat_messages
+        SET read_at = now()
+      WHERE room_key = $1
+        AND sender_id <> $2
+        AND read_at IS NULL
+        AND deleted_at IS NULL`,
+    [roomKey, readerId],
+  );
+  return rowCount;
+}
+
 /** Cursor-пагинация: сообщения старше `before` (ISO timestamp), новые сверху. */
 export async function findByRoom(roomKey, { limit = 50, before = null } = {}) {
   const { rows } = await pool.query(
