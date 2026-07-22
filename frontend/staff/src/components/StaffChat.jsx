@@ -34,24 +34,22 @@ const MAX_LEN = 4000;
    не разводить `if (role === 'admin')` по всей разметке. */
 const COPY = {
   mentor: {
-    searchPlaceholder: "Ota-ona yoki o'quvchi...",
-    emptyTitle: "Hozircha ota-onalar yo'q",
-    emptyHint: "Guruhingizdagi o'quvchilarning ota-onalari shu yerda paydo bo'ladi.",
-    pickTitle: 'Ota-onani tanlang',
-    pickHint: "Chapdagi ro'yxatdan suhbatdoshni tanlasangiz, yozishma shu yerda ochiladi.",
-    composerIdle: "Yozish uchun chapdan ota-onani tanlang",
-    privacyTitle: "Bu yozishmani faqat siz va suhbatdosh ko'radi. Administrator ham ko'ra olmaydi.",
+    searchPlaceholder: "Родитель или ученик...",
+    emptyTitle: "Пока нет родителей",
+    emptyHint: "Родители учеников вашей группы появятся здесь.",
+    pickTitle: 'Выберите родителя',
+    pickHint: "Выберите собеседника из списка слева, чтобы открыть переписку.",
+    composerIdle: "Выберите родителя слева для начала переписки",
+    privacyTitle: "Эту переписку видите только вы и собеседник. Администратор не имеет доступа.",
   },
   admin: {
-    // Админ переписывается только с родителями (не с учениками) — см. бэкенд
-    // canStaffChatStudent / getContacts.
-    searchPlaceholder: 'Ota-onani qidirish...',
-    emptyTitle: "Hozircha ota-onalar yo'q",
-    emptyHint: "Filialdagi o'quvchilarning ota-onalari shu yerda paydo bo'ladi.",
-    pickTitle: 'Ota-onani tanlang',
-    pickHint: "Chapdagi ro'yxatdan ota-onani tanlasangiz, yozishma shu yerda ochiladi.",
-    composerIdle: "Yozish uchun chapdan ota-onani tanlang",
-    privacyTitle: "Bu yozishmani faqat siz va ota-ona ko'radi.",
+    searchPlaceholder: 'Поиск родителя...',
+    emptyTitle: "Пока нет родителей",
+    emptyHint: "Родители учеников филиала появятся здесь.",
+    pickTitle: 'Выберите родителя',
+    pickHint: "Выберите родителя из списка слева, чтобы открыть переписку.",
+    composerIdle: "Выберите родителя слева для начала переписки",
+    privacyTitle: "Эту переписку видите только вы и родитель.",
   },
 };
 
@@ -66,17 +64,17 @@ function formatTime(iso) {
   }
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Kecha';
+  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
 }
 
 function formatDayLabel(iso) {
   const d = new Date(iso);
   const today = new Date();
-  if (d.toDateString() === today.toDateString()) return 'Bugun';
+  if (d.toDateString() === today.toDateString()) return 'Сегодня';
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Kecha';
+  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long' });
 }
 
@@ -127,7 +125,7 @@ function Composer({ value, onChange, onSend, disabled, sending, placeholder }) {
             value={value}
             maxLength={MAX_LEN}
             disabled={disabled}
-            aria-label="Xabar matni"
+            aria-label="Текст сообщения"
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -152,8 +150,8 @@ function Composer({ value, onChange, onSend, disabled, sending, placeholder }) {
           className="btn btn-primary btn-circle shrink-0 disabled:!bg-base-200 disabled:!text-base-content/50 disabled:!border-base-300"
           onClick={onSend}
           disabled={disabled || sending || !value.trim()}
-          aria-label="Yuborish"
-          title="Enter — yuborish, Shift+Enter — yangi qator"
+          aria-label="Отправить"
+          title="Enter — отправить, Shift+Enter — новая строка"
         >
           {sending
             ? <span className="loading loading-spinner loading-xs" />
@@ -393,7 +391,7 @@ export default function StaffChat({ variant = 'mentor' }) {
       });
 
       if (!ack.ok) {
-        setError(ack.error === 'timeout' ? 'Server javob bermadi' : 'Xabar yuborilmadi');
+        setError(ack.error === 'timeout' ? 'Сервер не отвечает' : 'Сообщение не отправлено');
         return;
       }
       setDraft('');
@@ -406,7 +404,7 @@ export default function StaffChat({ variant = 'mentor' }) {
         qc.invalidateQueries({ queryKey: ['chat-history', ack.roomKey] });
       }
     } catch {
-      setError('Xabar yuborilmadi');
+      setError('Сообщение не отправлено');
     } finally {
       setSending(false);
     }
@@ -422,7 +420,7 @@ export default function StaffChat({ variant = 'mentor' }) {
       {!USING_MOCKS && !connected && (
         <div className="flex items-center gap-2 px-4 py-1.5 bg-warning/10 border-b border-warning/25 text-warning shrink-0">
           <WifiOff size={14} className="shrink-0" />
-          <span className="text-xs">Aloqa uzildi — qayta ulanmoqda...</span>
+          <span className="text-xs">Соединение потеряно — переподключение...</span>
         </div>
       )}
 
@@ -441,9 +439,9 @@ export default function StaffChat({ variant = 'mentor' }) {
         >
           <div className="px-3 py-3 border-b border-base-200 shrink-0">
             <div className="flex items-baseline justify-between mb-2.5">
-              <h1 className="text-base font-bold">Xabarlar</h1>
+              <h1 className="text-base font-bold">Сообщения</h1>
               {totalUnread > 0 && (
-                <span className="badge badge-primary badge-sm">{totalUnread} yangi</span>
+                <span className="badge badge-primary badge-sm">{totalUnread} новых</span>
               )}
             </div>
             <SearchInput
@@ -469,8 +467,8 @@ export default function StaffChat({ variant = 'mentor' }) {
             ) : filtered.length === 0 ? (
               <EmptyState
                 icon={MessageSquare}
-                title={search ? 'Hech kim topilmadi' : copy.emptyTitle}
-                hint={search ? "Boshqa ism bilan qidirib ko'ring." : copy.emptyHint}
+                title={search ? 'Никого не найдено' : copy.emptyTitle}
+                hint={search ? "Попробуйте другое имя." : copy.emptyHint}
               />
             ) : (
               <ul>
@@ -509,7 +507,7 @@ export default function StaffChat({ variant = 'mentor' }) {
                                   : 'bg-base-200 text-base-content/55'
                               }`}
                             >
-                              {c.peer_type === 'student' ? "O'quvchi" : 'Ota-ona'}
+                              {c.peer_type === 'student' ? "Ученик" : "Родитель"}
                             </span>
                             {c.child_names && (
                               <span className="text-[11px] text-base-content/45 truncate">
@@ -525,7 +523,7 @@ export default function StaffChat({ variant = 'mentor' }) {
                                 unread ? 'text-base-content font-medium' : 'text-base-content/50'
                               }`}
                             >
-                              {c.last_message || 'Yozishmalar boshlanmagan'}
+                              {c.last_message || "Переписка не начата"}
                             </span>
                             {unread > 0 && (
                               <span className="badge badge-primary badge-sm shrink-0 tabular-nums">
@@ -556,7 +554,7 @@ export default function StaffChat({ variant = 'mentor' }) {
                 <button
                   className="btn btn-ghost btn-circle md:hidden shrink-0 -ml-1"
                   onClick={() => setActiveId(null)}
-                  aria-label="Orqaga"
+                  aria-label="Назад"
                 >
                   <ChevronLeft size={22} />
                 </button>
@@ -573,11 +571,11 @@ export default function StaffChat({ variant = 'mentor' }) {
                   className="ml-auto flex items-center gap-1 text-[11px] text-base-content/40 shrink-0"
                   title={copy.privacyTitle}
                 >
-                  <Lock size={12} /> <span className="hidden sm:inline">Shaxsiy</span>
+                  <Lock size={12} /> <span className="hidden sm:inline">Личное</span>
                 </span>
               </>
             ) : (
-              <span className="text-sm text-base-content/40">Suhbatdosh tanlanmagan</span>
+              <span className="text-sm text-base-content/40">Собеседник не выбран</span>
             )}
           </header>
 
@@ -609,8 +607,8 @@ export default function StaffChat({ variant = 'mentor' }) {
                 <div className="h-full grid place-items-center">
                   <EmptyState
                     icon={MessageSquare}
-                    title="Hali xabar yo'q"
-                    hint="Birinchi bo'lib yozing — suhbatdosh bildirishnoma oladi."
+                    title="Пока нет сообщений"
+                    hint="Напишите первым — собеседник получит уведомление."
                   />
                 </div>
               ) : (
@@ -667,7 +665,7 @@ export default function StaffChat({ variant = 'mentor' }) {
               <button
                 onClick={scrollToBottom}
                 className="absolute bottom-4 right-4 btn btn-circle btn-sm bg-base-100 border-base-300 shadow-md"
-                aria-label="Oxirgi xabarga o'tish"
+                aria-label="К последнему сообщению"
               >
                 <ArrowDown size={16} />
               </button>
@@ -687,7 +685,7 @@ export default function StaffChat({ variant = 'mentor' }) {
             onSend={handleSend}
             disabled={!activeContact}
             sending={sending}
-            placeholder={activeContact ? 'Xabar yozing...' : copy.composerIdle}
+            placeholder={activeContact ? 'Напишите сообщение...' : copy.composerIdle}
           />
         </section>
       </div>

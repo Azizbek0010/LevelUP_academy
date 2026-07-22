@@ -23,24 +23,24 @@ const CATEGORY_COLORS_LIGHT = {
 
 const STATUSES = ['All', 'Paid', 'Pending', 'Rejected', 'Cancelled'];
 const STATUS_MAP = {
-  paid: { bg: 'rgba(46,204,113,0.14)', color: '#2ECC71', label: "To'langan", dot: '#2ECC71' },
-  pending: { bg: 'rgba(245,158,11,0.14)', color: '#F59E0B', label: 'Kutilmoqda', dot: '#F59E0B' },
-  rejected: { bg: 'rgba(232,84,62,0.14)', color: '#E8543E', label: "Rad etilgan", dot: '#E8543E' },
-  cancelled: { bg: 'rgba(143,162,131,0.14)', color: '#8FA283', label: 'Bekor qilingan', dot: '#8FA283' },
+  paid: { bg: 'rgba(46,204,113,0.14)', color: '#2ECC71', label: 'Оплачен', dot: '#2ECC71' },
+  pending: { bg: 'rgba(245,158,11,0.14)', color: '#F59E0B', label: 'Ожидает', dot: '#F59E0B' },
+  rejected: { bg: 'rgba(232,84,62,0.14)', color: '#E8543E', label: 'Отклонён', dot: '#E8543E' },
+  cancelled: { bg: 'rgba(143,162,131,0.14)', color: '#8FA283', label: 'Отменён', dot: '#8FA283' },
 };
 
 const SORT_OPTIONS = [
-  { value: 'newest', label: 'Eng yangi' },
-  { value: 'oldest', label: 'Eng eski' },
-  { value: 'amount-high', label: "Summa (katta)" },
-  { value: 'amount-low', label: "Summa (kichik)" },
-  { value: 'category', label: 'Kategoriya' },
+  { value: 'newest', label: 'Сначала новые' },
+  { value: 'oldest', label: 'Сначала старые' },
+  { value: 'amount-high', label: 'Сумма (большая)' },
+  { value: 'amount-low', label: 'Сумма (малая)' },
+  { value: 'category', label: 'Категория' },
 ];
 
-const PAYMENT_METHODS = ['Naqt', 'Karta', "O'tkazma", 'Bank'];
+const PAYMENT_METHODS = ['Наличные', 'Карта', 'Перевод', 'Банк'];
 
 function formatCurrency(n) {
-  return Number(n || 0).toLocaleString('uz-UZ') + " so'm";
+  return Number(n || 0).toLocaleString('ru-RU') + ' сум';
 }
 
 function formatDate(isoStr) {
@@ -61,10 +61,12 @@ function getStatusFromExpense(e) {
 
 function getPaymentMethod(e) {
   if (e.paymentMethod) return e.paymentMethod;
-  return e.note?.toLowerCase().includes('karta') ? 'Karta'
-    : e.note?.toLowerCase().includes('naqt') ? 'Naqt'
-    : e.note?.toLowerCase().includes('bank') ? 'Bank'
-    : '—';
+  const note = (e.note || '').toLowerCase();
+  if (note.includes('karta') || note.includes('карта')) return 'Карта';
+  if (note.includes('naqt') || note.includes('наличные')) return 'Наличные';
+  if (note.includes('bank') || note.includes('банк')) return 'Банк';
+  if (note.includes("o'tkazma") || note.includes('перевод')) return 'Перевод';
+  return '—';
 }
 
 function getCreatedBy(e) {
@@ -115,14 +117,14 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Eye className="w-4 h-4" /></span>
-            Ko'rish
+            Просмотр
           </button>
           <button
             onClick={() => { onEdit(expense); setOpen(false); }}
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Pencil className="w-4 h-4" /></span>
-            Tahrirlash
+            Редактировать
           </button>
           <div className="border-t border-base-300 my-1" />
           <button
@@ -130,7 +132,7 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-error hover:bg-[rgba(232,84,62,0.08)] transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Trash2 className="w-4 h-4" /></span>
-            O'chirish
+            Удалить
           </button>
         </div>
       )}
@@ -182,7 +184,7 @@ export default function Expenses() {
   const [editingId, setEditingId] = useState(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState(null);
-  const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', paymentMethod: 'Naqt' });
+  const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', paymentMethod: 'Наличные' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -202,7 +204,7 @@ export default function Expenses() {
       setExpenses(data.expenses || []);
     } catch (err) {
       console.error('Failed to load expenses:', err);
-      setError(err.response?.data?.message || err.message || 'Xarajatlarni yuklashda xatolik');
+      setError(err.response?.data?.message || err.message || 'Ошибка загрузки расходов');
       setExpenses([]);
     } finally {
       setLoading(false);
@@ -317,7 +319,7 @@ export default function Expenses() {
   // ─── Modal handlers ───
   const openModal = () => {
     const today = new Date().toISOString().split('T')[0];
-    setFormData({ category: 'Other', amount: '', spentAt: today, note: '', paymentMethod: 'Naqt' });
+    setFormData({ category: 'Other', amount: '', spentAt: today, note: '', paymentMethod: 'Наличные' });
     setEditingId(null);
     setError(null);
     setModalOpen(true);
@@ -334,7 +336,7 @@ export default function Expenses() {
       amount: String(expense.amount || ''),
       spentAt: expense.spentAt ? expense.spentAt.split('T')[0] : new Date().toISOString().split('T')[0],
       note: expense.note || '',
-      paymentMethod: getPaymentMethod(expense) !== '—' ? getPaymentMethod(expense) : 'Naqt',
+      paymentMethod: getPaymentMethod(expense) !== '—' ? getPaymentMethod(expense) : 'Наличные',
     });
     setEditingId(expense.id);
     setError(null);
@@ -366,9 +368,9 @@ export default function Expenses() {
       console.error('Save expense failed:', err);
       const msg = err.response?.data?.message || err.message;
       if (editingId && err.status === 404) {
-        setError("Tahrirlash hali ishlamaydi — backendda PATCH yo'q. Karisga xabar bering.");
+        setError("Редактирование пока не работает — на бэкенде нет PATCH. Сообщите Карису.");
       } else {
-        setError(msg || "Xarajatni saqlashda xatolik");
+        setError(msg || "Ошибка сохранения расхода");
       }
     } finally {
       setSaving(false);
@@ -386,7 +388,7 @@ export default function Expenses() {
       await loadExpenses();
     } catch (err) {
       console.error('Delete expense failed:', err);
-      setError(err.response?.data?.message || err.message || "O'chirishda xatolik");
+      setError(err.response?.data?.message || err.message || "Ошибка удаления");
     } finally {
       setSaving(false);
     }
@@ -409,30 +411,30 @@ export default function Expenses() {
       // Header
       doc.setFontSize(16);
       doc.setTextColor(30, 30, 30);
-      doc.text('Xarajatlar hisoboti', 14, 18);
+      doc.text('Отчёт по расходам', 14, 18);
       doc.setFontSize(9);
       doc.setTextColor(120, 120, 120);
-      doc.text(`Sana: ${dateStr}  |  Jami: ${formatCurrency(filteredTotal)}  |  Soni: ${filtered.length}`, 14, 25);
+      doc.text(`Дата: ${dateStr}  |  Итого: ${formatCurrency(filteredTotal)}  |  Кол-во: ${filtered.length}`, 14, 25);
 
       // Table
       const statusLabel = (s) => {
-        const m = { paid: "To'langan", pending: 'Kutilmoqda', rejected: 'Rad etilgan', cancelled: 'Bekor qilingan' };
+        const m = { paid: 'Оплачен', pending: 'Ожидает', rejected: 'Отклонён', cancelled: 'Отменён' };
         return m[s?.toLowerCase()] || s || '—';
       };
 
       autoTable.default(doc, {
         startY: 30,
-        head: [['#', 'Kategoriya', "Summa (so'm)", 'Sana', 'Izoh', 'Status', "To'lov usuli"]],
+        head: [['#', 'Категория', 'Сумма', 'Дата', 'Примечание', 'Статус', 'Способ оплаты']],
         body: filtered.map((e, i) => [
           i + 1,
           e.category || '—',
-          Number(e.amount || 0).toLocaleString('uz-UZ'),
+          Number(e.amount || 0).toLocaleString('ru-RU'),
           e.spentAt ? new Date(e.spentAt).toLocaleDateString('ru-RU') : '—',
           e.note || '—',
           statusLabel(getStatusFromExpense(e)),
           getPaymentMethod(e),
         ]),
-        foot: [['', 'JAMI', formatCurrency(filteredTotal), '', '', '', '']],
+        foot: [['', 'ИТОГО', formatCurrency(filteredTotal), '', '', '', '']],
         styles: {
           fontSize: 8,
           cellPadding: 3,
@@ -468,11 +470,11 @@ export default function Expenses() {
           const pageH = doc.internal.pageSize.getHeight();
           doc.setFontSize(7);
           doc.setTextColor(160, 160, 160);
-          doc.text(`LevelUp Academy  |  Sahifa ${doc.internal.getCurrentPageInfo().pageNumber}`, pageW / 2, pageH - 8, { align: 'center' });
+          doc.text(`LevelUp Academy  |  Стр. ${doc.internal.getCurrentPageInfo().pageNumber}`, pageW / 2, pageH - 8, { align: 'center' });
         },
       });
 
-      doc.save(`xarajatlar_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`расходы_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (err) {
       console.error('PDF export error:', err);
     } finally {
@@ -519,7 +521,7 @@ export default function Expenses() {
               className="flex items-center gap-1.5 px-3 h-7 rounded-[8px] text-[11px] font-semibold hover:bg-[rgba(232,84,62,0.12)] transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Qayta yuklash
+              Обновить
             </button>
             <button onClick={() => setError(null)} className="w-7 h-7 rounded-[8px] flex items-center justify-center hover:bg-[rgba(232,84,62,0.1)] transition-all shrink-0">
               <X className="w-4 h-4" />
@@ -532,20 +534,20 @@ export default function Expenses() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Xarajatlar</h1>
+            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Расходы</h1>
           </div>
           <p className="text-[13px] text-base-content/70">
-            Tashkilot xarajatlarini kuzatish, boshqarish va tahlil qilish
+            Учёт, управление и анализ расходов организации
           </p>
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <button className="btn btn-ghost btn-sm gap-1.5" onClick={handleExport} disabled={exporting || filtered.length === 0}>
             <Download className="w-4 h-4" />
-            {exporting ? 'Eksport...' : 'Eksport'}
+            {exporting ? 'Экспорт...' : 'Экспорт'}
           </button>
           <button className="btn btn-primary btn-sm gap-1.5" onClick={openModal}>
             <Plus className="w-4 h-4" />
-            Xarajat qo'shish
+            Добавить расход
           </button>
         </div>
       </div>
@@ -556,11 +558,11 @@ export default function Expenses() {
           оказывалась выше остальных четырёх, и ряд ехал. Теперь общий Kpi без
           тренда: все плитки одной высоты, как в панели ментора. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Kpi Icon={Banknote} title="Jami xarajatlar" value={formatCurrency(stats.total)} tone="neutral" />
-        <Kpi Icon={CalendarDays} title="Bu oy" value={formatCurrency(stats.thisMonth)} tone="neutral" />
-        <Kpi Icon={Clock} title="Kutilmoqda" value={formatCurrency(stats.pendingAmount)} tone="warning" />
-        <Kpi Icon={DollarSign} title="Tasdiqlangan" value={formatCurrency(stats.approvedAmount)} tone="success" />
-        <Kpi Icon={BarChart3} title="O'rtacha xarajat" value={formatCurrency(stats.avgAmount)} tone="neutral" />
+        <Kpi Icon={Banknote} title="Все расходы" value={formatCurrency(stats.total)} tone="neutral" />
+        <Kpi Icon={CalendarDays} title="В этом месяце" value={formatCurrency(stats.thisMonth)} tone="neutral" />
+        <Kpi Icon={Clock} title="Ожидает" value={formatCurrency(stats.pendingAmount)} tone="warning" />
+        <Kpi Icon={DollarSign} title="Одобрено" value={formatCurrency(stats.approvedAmount)} tone="success" />
+        <Kpi Icon={BarChart3} title="Средний расход" value={formatCurrency(stats.avgAmount)} tone="neutral" />
       </div>
 
       {/* ═══ Filter Toolbar ═══ */}
@@ -571,7 +573,7 @@ export default function Expenses() {
           <div className="relative flex-1 w-full sm:max-w-xs">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/45 pointer-events-none" />
             <input
-              placeholder="Xarajatlarni qidirish..."
+              placeholder="Поиск расходов..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full h-10 pl-10 pr-10 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
@@ -592,16 +594,16 @@ export default function Expenses() {
               value={filter}
               onChange={setFilter}
               options={CATEGORIES.map((cat) => ({ value: cat, label: `${cat} (${getCategoryCount(cat)})` }))}
-              placeholder="Kategoriya"
+              placeholder="Категория"
             />
             <SelectFilter
               value={statusFilter}
               onChange={setStatusFilter}
               options={STATUSES.map((s) => ({
                 value: s,
-                label: s === 'All' ? 'Barcha status' : `${STATUS_MAP[s.toLowerCase()]?.label || s} (${getStatusCount(s)})`,
+                label: s === 'All' ? 'Все статусы' : `${STATUS_MAP[s.toLowerCase()]?.label || s} (${getStatusCount(s)})`,
               }))}
-              placeholder="Status"
+              placeholder="Статус"
             />
             <div className="relative">
               <input
@@ -623,7 +625,7 @@ export default function Expenses() {
               value={sortBy}
               onChange={setSortBy}
               options={SORT_OPTIONS}
-              placeholder="Saralash"
+              placeholder="Сортировка"
             />
           </div>
 
@@ -638,7 +640,7 @@ export default function Expenses() {
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
-              Filtrlar
+              Фильтры
               {hasActiveFilters && (
                 <span className="w-5 h-5 rounded-full bg-primary text-[#141B10] text-[9px] font-bold flex items-center justify-center">
                   {[filter !== 'All', statusFilter !== 'All', !!search, !!dateFrom, !!dateTo, sortBy !== 'newest'].filter(Boolean).length}
@@ -658,16 +660,16 @@ export default function Expenses() {
                 value={filter}
                 onChange={setFilter}
                 options={CATEGORIES.map((cat) => ({ value: cat, label: `${cat} (${getCategoryCount(cat)})` }))}
-                placeholder="Kategoriya"
+                placeholder="Категория"
               />
               <SelectFilter
                 value={statusFilter}
                 onChange={setStatusFilter}
                 options={STATUSES.map((s) => ({
                   value: s,
-                  label: s === 'All' ? 'Barcha status' : `${STATUS_MAP[s.toLowerCase()]?.label || s} (${getStatusCount(s)})`,
+                  label: s === 'All' ? 'Все статусы' : `${STATUS_MAP[s.toLowerCase()]?.label || s} (${getStatusCount(s)})`,
                 }))}
-                placeholder="Status"
+                placeholder="Статус"
               />
             </div>
             <div className="grid grid-cols-2 gap-2.5">
@@ -675,14 +677,14 @@ export default function Expenses() {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                placeholder="Dan"
+                placeholder="С"
                 className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary [color-scheme:light] transition-all"
               />
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                placeholder="Gacha"
+                placeholder="По"
                 className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary [color-scheme:light] transition-all"
               />
             </div>
@@ -690,14 +692,14 @@ export default function Expenses() {
               value={sortBy}
               onChange={setSortBy}
               options={SORT_OPTIONS}
-              placeholder="Saralash"
+              placeholder="Сортировка"
             />
           </div>
         )}
 
         {/* Category pills */}
         <div className="flex items-center gap-1.5 flex-wrap px-4 pb-4">
-          <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em] mr-0.5">Kategoriya:</span>
+          <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em] mr-0.5">Категория:</span>
           {CATEGORIES.map((cat) => {
             const isActive = filter === cat;
             const catColor = cat === 'All' ? 'var(--green)' : CATEGORY_COLORS[cat] || '#8FA283';
@@ -726,7 +728,7 @@ export default function Expenses() {
               className="flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[11px] font-semibold text-base-content/45 hover:text-base-content hover:bg-base-200 transition-all ml-auto shrink-0"
             >
               <X className="w-3.5 h-3.5" />
-              Tozalash
+              Сбросить
             </button>
           )}
         </div>
@@ -768,15 +770,15 @@ export default function Expenses() {
                   <Banknote className="w-8 h-8 text-base-content/45" />
                 </div>
                 <h3 className="text-[15px] font-bold text-base-content mb-1.5">
-                  {search || hasActiveFilters ? "Natija topilmadi" : "Hozircha xarajatlar yo'q"}
+                  {search || hasActiveFilters ? 'Ничего не найдено' : 'Пока нет расходов'}
                 </h3>
                 <p className="text-[12px] text-base-content/70 max-w-[280px] mb-5">
-                  {search || hasActiveFilters ? "Boshqa qidiruv yoki filtr sozlamalarini sinab ko'ring" : "Birinchi xarajatni qo'shish orqali boshlang"}
+                  {search || hasActiveFilters ? 'Попробуйте изменить параметры поиска или фильтров' : 'Добавьте первый расход, чтобы начать'}
                 </p>
                 {!search && !hasActiveFilters && (
                   <button className="btn btn-primary btn-sm gap-1.5" onClick={openModal}>
                     <Plus className="w-4 h-4" />
-                    Xarajat qo'shish
+                    Добавить расход
                   </button>
                 )}
                 {!search && !hasActiveFilters && (
@@ -802,13 +804,13 @@ export default function Expenses() {
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-[10px] font-bold uppercase tracking-[0.07em] text-base-content/45 bg-base-100">
-                      <th className="px-5 py-4">Kategoriya</th>
-                      <th className="px-5 py-4">Izoh</th>
-                      <th className="px-5 py-4 text-right">Summa</th>
-                      <th className="px-5 py-4">To'lov usuli</th>
-                      <th className="px-5 py-4">Sana</th>
-                      <th className="px-5 py-4">Status</th>
-                      <th className="px-5 py-4 hidden md:table-cell">Yaratgan</th>
+                      <th className="px-5 py-4">Категория</th>
+                      <th className="px-5 py-4">Примечание</th>
+                      <th className="px-5 py-4 text-right">Сумма</th>
+                      <th className="px-5 py-4">Способ оплаты</th>
+                      <th className="px-5 py-4">Дата</th>
+                      <th className="px-5 py-4">Статус</th>
+                      <th className="px-5 py-4 hidden md:table-cell">Создал</th>
                       <th className="px-5 py-4 w-10"></th>
                     </tr>
                   </thead>
@@ -865,16 +867,16 @@ export default function Expenses() {
               <div className="flex items-center justify-between px-5 py-3.5 border-t border-base-300 bg-base-100">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-base-content/45">
-                    {filtered.length} ta xarajat
+                    {filtered.length} расходов
                   </span>
                   {filtered.length !== expenses.length && (
                     <span className="text-[10px] text-base-content/45 opacity-60">
-                      ({expenses.length} ta umumiy)
+                      ({expenses.length} всего)
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Jami:</span>
+                  <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Итого:</span>
                   <span className="text-[13px] font-extrabold text-base-content tabular-nums">
                     {formatCurrency(filteredTotal)}
                   </span>
@@ -886,7 +888,7 @@ export default function Expenses() {
           {loading && expenses.length > 0 && (
             <div className="flex items-center justify-center gap-2.5 py-4 text-[12px] text-base-content/45">
               <RefreshCw className="w-4 h-4 animate-spin" />
-              Yangilanmoqda...
+              Обновление...
             </div>
           )}
         </div>
@@ -896,8 +898,8 @@ export default function Expenses() {
           {/* Budget by Category */}
           <div className="card bg-base-100 p-5 card-hover-premium">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[14px] font-bold text-base-content">Kategoriyalar bo'yicha</h3>
-              <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em]">Byudjet</span>
+              <h3 className="text-[14px] font-bold text-base-content">По категориям</h3>
+              <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em]">Бюджет</span>
             </div>
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -912,7 +914,7 @@ export default function Expenses() {
             </div>
             <div className="mt-4 pt-4 border-t border-base-300 space-y-2.5">
               {budgetData.filter((item) => item.amount > 0).length === 0 ? (
-                <p className="text-[11px] text-base-content/45 text-center py-2">Xarajat ma'lumotlari mavjud emas</p>
+                <p className="text-[11px] text-base-content/45 text-center py-2">Данные о расходах отсутствуют</p>
               ) : (
                 budgetData.filter((item) => item.amount > 0).map((item, i) => (
                   <div key={i} className="flex items-center justify-between text-[11px] group/chart">
@@ -929,10 +931,10 @@ export default function Expenses() {
 
           {/* Monthly Trend */}
           <div className="card bg-base-100 p-5 card-hover-premium">
-            <h3 className="text-[14px] font-bold text-base-content mb-5">Oylik trend</h3>
+            <h3 className="text-[14px] font-bold text-base-content mb-5">Тренд по месяцам</h3>
             {monthlyData.length === 0 ? (
               <div className="h-[140px] flex items-center justify-center">
-                <p className="text-[11px] text-base-content/45">Trend ma'lumotlari mavjud emas</p>
+                <p className="text-[11px] text-base-content/45">Данные о тренде отсутствуют</p>
               </div>
             ) : (
               <div className="h-[140px]">
