@@ -1,16 +1,16 @@
 import { useState } from 'react';
+import { FileText, GraduationCap, BarChart3, Trophy, ChevronRight } from 'lucide-react';
 import { useParentOverview } from '../queries.js';
 import { useChild } from '../child-context.jsx';
 import { dateShort } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressBar } from '../components/ui.jsx';
-import Icon from '../components/Icons.jsx';
 import GradeDetail from '../components/GradeDetail.jsx';
 
 const TABS = [
-  { key: 'homework', label: 'Домашние задания', icon: 'document-text' },
-  { key: 'tests', label: 'Тесты', icon: 'academic' },
+  { key: 'homework', label: 'Домашние задания', Icon: FileText },
+  { key: 'tests', label: 'Тесты', Icon: GraduationCap },
 ];
 
 export default function Grades() {
@@ -55,6 +55,7 @@ export default function Grades() {
         subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
       />
 
+      {/* Tab switcher */}
       <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit shadow-sm">
         {TABS.map((t) => (
           <button
@@ -66,23 +67,27 @@ export default function Grades() {
                 : 'text-base-content/50 hover:bg-base-200'
             }`}
           >
-            <Icon name={t.icon} className="w-4 h-4" />
+            <t.Icon className="w-4 h-4" />
             {t.label}
           </button>
         ))}
       </div>
 
+      {/* Stat cards */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="card bg-base-100 p-4 text-center hover:shadow-md transition-shadow">
           <div className="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center mx-auto mb-2">
-            <Icon name="document-text" className="w-5 h-5 text-base-content/40" />
+            <FileText className="w-5 h-5 text-base-content/40" />
           </div>
           <p className="text-2xl font-extrabold">{list.length}</p>
           <p className="text-[11px] opacity-40 mt-1">Всего</p>
         </div>
         <div className="card bg-base-100 p-4 text-center hover:shadow-md transition-shadow">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ background: avg >= 80 ? 'rgba(34,197,94,.1)' : avg >= 60 ? 'rgba(245,158,11,.1)' : 'rgba(239,68,68,.1)' }}>
-            <Icon name="chart-bar" className="w-5 h-5" style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }} />
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2"
+            style={{ background: avg >= 80 ? 'rgba(34,197,94,.1)' : avg >= 60 ? 'rgba(245,158,11,.1)' : 'rgba(239,68,68,.1)' }}
+          >
+            <BarChart3 className="w-5 h-5" style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }} />
           </div>
           <p className="text-2xl font-extrabold" style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }}>
             {avg}%
@@ -91,13 +96,14 @@ export default function Grades() {
         </div>
         <div className="card bg-base-100 p-4 text-center hover:shadow-md transition-shadow">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
-            <Icon name="trophy" className="w-5 h-5 text-primary" />
+            <Trophy className="w-5 h-5 text-primary" />
           </div>
           <p className="text-2xl font-extrabold text-primary">{best}%</p>
           <p className="text-[11px] opacity-40 mt-1">Лучший</p>
         </div>
       </div>
 
+      {/* Grade list */}
       <div className="card bg-base-100">
         <div className="card-body">
           {list.length === 0 ? (
@@ -133,7 +139,7 @@ export default function Grades() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] opacity-30 whitespace-nowrap">{dateShort(g.gradedAt || g.finishedAt)}</span>
-                      <Icon name="chevron-right" className="w-4 h-4 opacity-20 group-hover:opacity-50 transition-opacity" />
+                      <ChevronRight className="w-4 h-4 opacity-20 group-hover:opacity-50 transition-opacity" />
                     </div>
                   </button>
                 );

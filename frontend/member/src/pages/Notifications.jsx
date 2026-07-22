@@ -3,14 +3,23 @@ import { useNotifications } from '../queries.js';
 import { timeAgo } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { EmptyState } from '../components/ui.jsx';
-import Icon from '../components/Icons.jsx';
+import {
+  GraduationCap,
+  CalendarCheck,
+  Wallet,
+  MessageCircle,
+  Bell,
+  Clock,
+  Inbox,
+  Filter,
+} from 'lucide-react';
 
 const ICON_MAP = {
-  grade: 'academic',
-  attendance: 'calendar-check',
-  payment: 'wallet',
-  chat: 'chat',
-  system: 'bell',
+  grade: GraduationCap,
+  attendance: CalendarCheck,
+  payment: Wallet,
+  chat: MessageCircle,
+  system: Bell,
 };
 
 const COLOR_MAP = {
@@ -36,69 +45,87 @@ export default function Notifications() {
         subtitle={unread > 0 ? `${unread} непрочитанных` : 'Все прочитаны'}
       />
 
-      <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit flex-wrap shadow-sm">
+      {/* Filter tabs */}
+      <div className="flex gap-1 mb-5 bg-base-100 p-1 rounded-xl w-fit flex-wrap shadow-sm">
         {[
-          { key: 'all', label: 'Все', count: items.length },
-          { key: 'grade', label: 'Оценки', count: items.filter((n) => n.type === 'grade').length },
-          { key: 'attendance', label: 'Посещаемость', count: items.filter((n) => n.type === 'attendance').length },
-          { key: 'payment', label: 'Оплата', count: items.filter((n) => n.type === 'payment').length },
-        ].map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-              filter === f.key
-                ? 'bg-primary text-primary-content shadow-sm'
-                : 'text-base-content/50 hover:bg-base-200'
-            }`}
-          >
-            {f.label}
-            {f.count > 0 && (
-              <span className="opacity-60">{f.count}</span>
-            )}
-          </button>
-        ))}
+          { key: 'all', label: 'Все', count: items.length, icon: Inbox },
+          { key: 'grade', label: 'Оценки', count: items.filter((n) => n.type === 'grade').length, icon: GraduationCap },
+          { key: 'attendance', label: 'Посещаемость', count: items.filter((n) => n.type === 'attendance').length, icon: CalendarCheck },
+          { key: 'payment', label: 'Оплата', count: items.filter((n) => n.type === 'payment').length, icon: Wallet },
+        ].map((f) => {
+          const IconComp = f.icon;
+          return (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                filter === f.key
+                  ? 'bg-primary text-primary-content shadow-sm'
+                  : 'text-base-content/50 hover:bg-base-200'
+              }`}
+            >
+              <IconComp className="w-3.5 h-3.5" />
+              {f.label}
+              {f.count > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                  filter === f.key ? 'bg-white/20' : 'bg-base-200'
+                }`}>
+                  {f.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
+      {/* Loading */}
       {isLoading && (
-        <div className="text-center py-12">
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
           <span className="loading loading-dots loading-md text-primary" />
+          <p className="text-sm text-base-content/40">Загрузка...</p>
         </div>
       )}
 
+      {/* Empty */}
       {!isLoading && filtered.length === 0 && (
         <EmptyState icon="bell" title="Нет уведомлений" message="Здесь будут важные события" />
       )}
 
+      {/* Notification list */}
       <div className="space-y-2">
         {filtered.map((n) => {
-          const iconName = ICON_MAP[n.type] || ICON_MAP.system;
+          const IconComp = ICON_MAP[n.type] || Bell;
           const color = COLOR_MAP[n.type] || COLOR_MAP.system;
           return (
             <div
               key={n.id}
-              className={`card bg-base-100 hover:shadow-md transition-all duration-200 cursor-pointer ${
-                !n.read ? 'ring-1 ring-primary/20' : ''
+              className={`card bg-base-100 hover:shadow-md transition-all duration-200 cursor-pointer group ${
+                !n.read ? 'ring-1 ring-primary/20 bg-primary/[0.02]' : ''
               }`}
             >
               <div className="card-body p-4">
                 <div className="flex items-start gap-3">
+                  {/* Icon */}
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110"
                     style={{ background: `${color}12` }}
                   >
-                    <Icon name={iconName} className="w-5 h-5" style={{ color }} />
+                    <IconComp className="w-5 h-5" style={{ color }} />
                   </div>
+
+                  {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-sm font-semibold">{n.title}</span>
+                      <span className={`text-sm ${!n.read ? 'font-bold' : 'font-semibold'}`}>
+                        {n.title}
+                      </span>
                       {!n.read && (
-                        <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                        <span className="w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse" />
                       )}
                     </div>
-                    <p className="text-sm opacity-60">{n.body}</p>
-                    <p className="text-[11px] opacity-30 mt-1 flex items-center gap-1">
-                      <Icon name="clock" className="w-3 h-3" />
+                    <p className="text-sm text-base-content/55 leading-relaxed">{n.body}</p>
+                    <p className="text-[11px] text-base-content/30 mt-1.5 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
                       {timeAgo(n.createdAt)}
                     </p>
                   </div>
