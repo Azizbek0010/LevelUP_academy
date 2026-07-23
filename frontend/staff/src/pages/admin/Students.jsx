@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Snowflake, Sun, Trash2, KeyRound, GraduationCap, UserCheck, UserX, Copy, Check, Coins, LayoutGrid, List, Filter } from 'lucide-react';
+import {
+  Plus, Snowflake, Sun, Archive, KeyRound, GraduationCap, UserCheck, UserX,
+  Copy, Check, Coins, LayoutGrid, List, AlertTriangle
+} from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, SearchInput, EmptyState, RowSkeleton } from '../mentor/_ui.jsx';
+import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput } from '../mentor/_ui.jsx';
 
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
@@ -18,38 +21,13 @@ const STATUS_COLORS = {
 };
 
 /* ═══════════════ Stat Card ═══════════════ */
-function StatCard({ Icon, label, value, color, gradient, delay }) {
-  return (
-    <div className={`animate-fade-in ${delay}`}>
-      <div className="glass-strong rounded-[16px] p-4 group relative overflow-hidden">
-        <div
-          className="absolute top-0 right-0 w-16 h-16 rounded-full blur-2xl opacity-15 group-hover:opacity-25 transition-opacity duration-500"
-          style={{ background: gradient }}
-        />
-        <div className="relative flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
-            style={{ background: `${color}15`, color }}
-          >
-            <Icon size={18} strokeWidth={2.2} />
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.05em]">{label}</div>
-            <div className="text-[20px] font-extrabold text-[var(--text)] tabular-nums leading-none mt-0.5">{value}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ═══════════════ Student Card ═══════════════ */
-function StudentCard({ s, onFreeze, onDelete, onRegen, onNavigate }) {
+function StudentCard({ s, onNavigate }) {
   const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
   const groupNames = (s.groups || []).map((g) => g.name).filter(Boolean);
 
   return (
-    <div className="glass-strong rounded-[16px] p-4 card-hover-premium group cursor-pointer" onClick={() => onNavigate?.(s.id)}>
+    <div className="card bg-base-100 p-4 card-hover-premium group cursor-pointer" onClick={() => onNavigate?.(s.id)}>
       <div className="flex items-start gap-3.5">
         {/* Avatar */}
         <div className="transition-transform duration-300 group-hover:scale-105">
@@ -59,14 +37,14 @@ function StudentCard({ s, onFreeze, onDelete, onRegen, onNavigate }) {
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-bold text-[var(--text)] truncate">{fullName(s)}</span>
+            <span className="text-[13px] font-bold text-base-content truncate">{fullName(s)}</span>
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
               style={{ background: status.bg, color: status.text }}>
               {status.label}
             </span>
           </div>
 
-          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[var(--text-muted)]">
+          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-base-content/45">
             {s.login_code || s.loginCode ? (
               <span className="font-mono flex items-center gap-1">
                 <KeyRound size={10} /> {s.login_code || s.loginCode}
@@ -74,7 +52,7 @@ function StudentCard({ s, onFreeze, onDelete, onRegen, onNavigate }) {
             ) : null}
             {s.phone && <span>{s.phone}</span>}
             {s.coins != null && s.coins > 0 && (
-              <span className="flex items-center gap-1 text-[var(--green)] font-semibold">
+              <span className="flex items-center gap-1 text-primary font-semibold">
                 <Coins size={10} /> {s.coins}
               </span>
             )}
@@ -83,26 +61,12 @@ function StudentCard({ s, onFreeze, onDelete, onRegen, onNavigate }) {
           {groupNames.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {groupNames.map((name, i) => (
-                <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-[6px] text-[10px] font-semibold bg-[var(--green-bg)] text-[var(--green)]">
+                <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-[6px] text-[10px] font-semibold bg-primary/10 text-primary">
                   {name}
                 </span>
               ))}
             </div>
           )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
-          <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-all" title="Сбросить пароль" onClick={() => onRegen(s)}>
-            <KeyRound size={14} />
-          </button>
-          <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-all"
-            title={s.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => onFreeze(s)}>
-            {s.status === 'frozen' ? <Sun size={14} /> : <Snowflake size={14} />}
-          </button>
-          <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger-light)] hover:text-[var(--danger)] transition-all" title="Удалить" onClick={() => onDelete(s)}>
-            <Trash2 size={14} />
-          </button>
         </div>
       </div>
     </div>
@@ -129,7 +93,14 @@ export default function AdminStudents() {
 
   const activeCount = rows.filter((s) => s.status !== 'frozen').length;
   const frozenCount = rows.filter((s) => s.status === 'frozen').length;
-  const filteredRows = statusFilter === 'all' ? rows : rows.filter(s => s.status === statusFilter);
+  const debtCount = rows.filter((s) => (s.debt || s.outstandingDebt || 0) > 0).length;
+  const filteredRows = (() => {
+    if (statusFilter === 'all') return rows;
+    if (statusFilter === 'active') return rows.filter(s => s.status !== 'frozen');
+    if (statusFilter === 'frozen') return rows.filter(s => s.status === 'frozen');
+    if (statusFilter === 'debt') return rows.filter(s => (s.debt || s.outstandingDebt || 0) > 0);
+    return rows;
+  })();
 
   const create = async () => {
     setBusy(true); setErr('');
@@ -154,8 +125,8 @@ export default function AdminStudents() {
     try { await api.adminFreezeStudent(token, s.id, !frozen, ''); refetch(); }
     catch (e) { alert(e.message || 'Ошибка'); }
   };
-  const del = async (s) => {
-    if (!confirm(`Удалить студента ${fullName(s)}?`)) return;
+  const archive = async (s) => {
+    if (!confirm(`Архивировать студента ${fullName(s)}?\n\nСтудент будет скрыт из списка, но данные сохранятся.`)) return;
     try { await api.adminDeleteStudent(token, s.id); refetch(); }
     catch (e) { alert(e.message || 'Ошибка'); }
   };
@@ -184,9 +155,9 @@ export default function AdminStudents() {
 
       {/* ═══ Stats ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard Icon={GraduationCap} label="Всего" value={rows.length} color="#3B82F6" gradient="linear-gradient(135deg,#3B82F6,#2980B9)" delay="stagger-1" />
-        <StatCard Icon={UserCheck} label="Активные" value={activeCount} color="#2ECC71" gradient="linear-gradient(135deg,#2ECC71,#27AE60)" delay="stagger-2" />
-        <StatCard Icon={UserX} label="Заморожены" value={frozenCount} color="#E8543E" gradient="linear-gradient(135deg,#E8543E,#C0392B)" delay="stagger-3" />
+        <Kpi Icon={GraduationCap} title="Всего" value={rows.length}  tone="neutral" />
+        <Kpi Icon={UserCheck} title="Активные" value={activeCount}  tone="success" />
+        <Kpi Icon={UserX} title="Заморожены" value={frozenCount}  tone="danger" />
       </div>
 
       {/* ═══ Search + View Toggle ═══ */}
@@ -203,14 +174,15 @@ export default function AdminStudents() {
             { key: 'all', label: 'Все', count: rows.length },
             { key: 'active', label: 'Активные', count: activeCount },
             { key: 'frozen', label: 'Заморожены', count: frozenCount },
+            { key: 'debt', label: 'Задолжен', count: debtCount },
           ].map(f => (
             <button
               key={f.key}
               onClick={() => setStatusFilter(f.key)}
               className="px-3 py-1.5 rounded-[12px] text-[11px] font-bold transition-all duration-200"
               style={{
-                background: statusFilter === f.key ? 'var(--green-bg)' : 'transparent',
-                color: statusFilter === f.key ? 'var(--green)' : 'var(--text-muted)',
+                background: statusFilter === f.key ? 'rgba(59,130,246,0.12)' : 'transparent',
+                color: statusFilter === f.key ? 'var(--primary)' : 'var(--text-muted)',
               }}
             >
               {f.label} ({f.count})
@@ -222,14 +194,14 @@ export default function AdminStudents() {
           <button
             onClick={() => setViewMode('card')}
             className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
-            style={{ background: viewMode === 'card' ? 'var(--green-bg)' : 'transparent', color: viewMode === 'card' ? 'var(--green)' : 'var(--text-muted)' }}
+            style={{ background: viewMode === 'card' ? 'rgba(59,130,246,0.12)' : 'transparent', color: viewMode === 'card' ? 'var(--primary)' : 'var(--text-muted)' }}
           >
             <LayoutGrid size={14} />
           </button>
           <button
             onClick={() => setViewMode('table')}
             className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
-            style={{ background: viewMode === 'table' ? 'var(--green-bg)' : 'transparent', color: viewMode === 'table' ? 'var(--green)' : 'var(--text-muted)' }}
+            style={{ background: viewMode === 'table' ? 'rgba(59,130,246,0.12)' : 'transparent', color: viewMode === 'table' ? 'var(--primary)' : 'var(--text-muted)' }}
           >
             <List size={14} />
           </button>
@@ -256,12 +228,12 @@ export default function AdminStudents() {
         /* Card view */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filteredRows.map((s) => (
-            <StudentCard key={s.id} s={s} onFreeze={toggleFreeze} onDelete={del} onRegen={regen} onNavigate={(id) => navigate(`/students/${id}`)} />
+            <StudentCard key={s.id} s={s} onNavigate={(id) => navigate(`/students/${id}`)} />
           ))}
         </div>
       ) : (
         /* Table view */
-        <div className="glass-strong rounded-[16px] overflow-hidden animate-fade-in">
+        <div className="card bg-base-100 overflow-hidden animate-fade-in">
           <div className="overflow-x-auto">
             <table className="table w-full text-[13px]">
               <thead>
@@ -272,35 +244,34 @@ export default function AdminStudents() {
                   <th>Группы</th>
                   <th>Коины</th>
                   <th>Статус</th>
-                  <th className="w-24"></th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRows.map(s => (
-                  <tr key={s.id} className="hover:bg-[var(--surface-hover)] cursor-pointer" onClick={() => navigate(`/students/${s.id}`)}>
+                  <tr key={s.id} className="hover:bg-base-200 cursor-pointer" onClick={() => navigate(`/students/${s.id}`)}>
                     <td>
                       <div className="flex items-center gap-2.5">
                         <Avatar name={fullName(s)} size="sm" />
-                        <span className="font-semibold text-[var(--text)]">{fullName(s)}</span>
+                        <span className="font-semibold text-base-content">{fullName(s)}</span>
                       </div>
                     </td>
-                    <td className="font-mono text-[var(--text-secondary)]">{s.login_code || s.loginCode || '—'}</td>
-                    <td className="text-[var(--text-muted)]">{s.phone || '—'}</td>
+                    <td className="font-mono text-base-content/70">{s.login_code || s.loginCode || '—'}</td>
+                    <td className="text-base-content/45">{s.phone || '—'}</td>
                     <td>
                       <div className="flex flex-wrap gap-1">
                         {(s.groups || []).slice(0, 2).map((g, i) => (
-                          <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-[var(--green-bg)] text-[var(--green)]">
+                          <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary">
                             {g.name}
                           </span>
                         ))}
                         {(s.groups || []).length > 2 && (
-                          <span className="text-[9px] text-[var(--text-muted)]">+{(s.groups || []).length - 2}</span>
+                          <span className="text-[9px] text-base-content/45">+{(s.groups || []).length - 2}</span>
                         )}
                       </div>
                     </td>
                     <td>
                       {s.coins != null && s.coins > 0 ? (
-                        <span className="flex items-center gap-1 text-[var(--green)] font-semibold text-[12px]">
+                        <span className="flex items-center gap-1 text-primary font-semibold text-[12px]">
                           <Coins size={11} /> {s.coins}
                         </span>
                       ) : '—'}
@@ -310,20 +281,6 @@ export default function AdminStudents() {
                         style={{ background: (STATUS_COLORS[s.status] || STATUS_COLORS.active).bg, color: (STATUS_COLORS[s.status] || STATUS_COLORS.active).text }}>
                         {(STATUS_COLORS[s.status] || STATUS_COLORS.active).label}
                       </span>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] transition-all" title="Сбросить пароль" onClick={() => regen(s)}>
-                          <KeyRound size={12} />
-                        </button>
-                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] transition-all"
-                          title={s.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => toggleFreeze(s)}>
-                          {s.status === 'frozen' ? <Sun size={12} /> : <Snowflake size={12} />}
-                        </button>
-                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger-light)] hover:text-[var(--danger)] transition-all" title="Удалить" onClick={() => del(s)}>
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}
@@ -336,7 +293,7 @@ export default function AdminStudents() {
       {/* ═══ Create Modal ═══ */}
       {form && (
         <dialog className="modal modal-open">
-          <div className="modal-box glass-strong border border-[var(--border)]">
+          <div className="modal-box card bg-base-100 border border-base-300">
             <h3 className="font-bold text-lg mb-4">Новый студент</h3>
             {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
             <div className="space-y-3">
@@ -355,13 +312,13 @@ export default function AdminStudents() {
               <input className="input input-bordered w-full" placeholder="Телефон родителя (необязательно)" value={form.parentPhone} onChange={(e) => setForm({ ...form, parentPhone: e.target.value })} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Коины</label>
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Коины</label>
                   <input className="input input-bordered w-full" type="number" min="0" value={form.coins} onChange={(e) => setForm({ ...form, coins: Number(e.target.value) })} />
                 </div>
                 <div className="flex items-end pb-1">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" className="checkbox checkbox-sm" checked={form.frozen} onChange={(e) => setForm({ ...form, frozen: e.target.checked })} />
-                    <span className="text-[13px] text-[var(--text)]">Заморожен</span>
+                    <span className="text-[13px] text-base-content">Заморожен</span>
                   </label>
                 </div>
               </div>
@@ -380,30 +337,30 @@ export default function AdminStudents() {
       {/* ═══ Credentials Modal ═══ */}
       {creds && (
         <dialog className="modal modal-open">
-          <div className="modal-box glass-strong border border-[var(--border)]">
+          <div className="modal-box card bg-base-100 border border-base-300">
             <h3 className="font-bold text-lg mb-2">Данные для входа</h3>
-            <p className="text-sm text-[var(--text-muted)] mb-4">Передайте студенту. Пароль показывается один раз.</p>
+            <p className="text-sm text-base-content/45 mb-4">Передайте студенту. Пароль показывается один раз.</p>
             <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 rounded-[12px] bg-[var(--surface)] border border-[var(--border)]">
-                <span className="text-[13px] text-[var(--text-secondary)]">Логин-код</span>
+              <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
+                <span className="text-[13px] text-base-content/70">Логин-код</span>
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-bold text-[14px]">{creds.login_code || '—'}</span>
                   {creds.login_code && (
-                    <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[var(--green-bg)] transition-colors"
+                    <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
                       onClick={() => copyToClipboard(creds.login_code, 'login')}>
-                      {copied === 'login' ? <Check size={12} className="text-[var(--green)]" /> : <Copy size={12} className="text-[var(--text-muted)]" />}
+                      {copied === 'login' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
                     </button>
                   )}
                 </div>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-[12px] bg-[var(--surface)] border border-[var(--border)]">
-                <span className="text-[13px] text-[var(--text-secondary)]">Пароль</span>
+              <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
+                <span className="text-[13px] text-base-content/70">Пароль</span>
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-bold text-[14px]">{creds.password || '—'}</span>
                   {creds.password && (
-                    <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[var(--green-bg)] transition-colors"
+                    <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
                       onClick={() => copyToClipboard(creds.password, 'pass')}>
-                      {copied === 'pass' ? <Check size={12} className="text-[var(--green)]" /> : <Copy size={12} className="text-[var(--text-muted)]" />}
+                      {copied === 'pass' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
                     </button>
                   )}
                 </div>

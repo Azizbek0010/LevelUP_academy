@@ -3,8 +3,8 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, FileQuestion, ClipboardCheck, ArrowLeft, Trash2, Copy, Play, Coins, Pencil } from 'lucide-react';
-import { useLessons, useInvalidate, useTrainingTypes, useTopics } from '../../queries.js';
+import { Plus, FileQuestion, ClipboardCheck, ArrowLeft, Trash2, Copy, Coins, Pencil } from 'lucide-react';
+import { useLessons, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
@@ -16,7 +16,6 @@ const schema = z.object({
   description: z.string().trim().max(2000).optional(),
   instruction: z.string().trim().max(2000).optional(),
   coinReward: z.coerce.number().int().min(0).default(0),
-  videoUrl: z.string().trim().url('Некорректная ссылка').or(z.literal('')).optional(),
 });
 
 function LessonTypeIcon({ type }) {
@@ -42,26 +41,16 @@ export default function Lessons() {
   const [err, setErr] = useState('');
   const [confirmArchive, setConfirmArchive] = useState(null);
 
-  const [copyingLesson, setCopyingLesson] = useState(null);
-  const [selectedTypeId, setSelectedTypeId] = useState('');
-  const [selectedTopicId, setSelectedTopicId] = useState('');
-  const [copyBusy, setCopyBusy] = useState(false);
-
-  const { data: ttData } = useTrainingTypes();
-  const trainingTypes = ttData?.data || [];
-  const { data: topicsData } = useTopics(selectedTypeId);
-  const topicsList = topicsData?.data || [];
-
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { title: '', lessonType: 'test', description: '', instruction: '', coinReward: 0, videoUrl: '' },
+    defaultValues: { title: '', lessonType: 'test', description: '', instruction: '', coinReward: 0 },
   });
 
   const lessons = data?.data || [];
   const lessonType = watch('lessonType');
 
   const openCreate = () => {
-    reset({ title: '', lessonType: 'test', description: '', instruction: '', coinReward: 0, videoUrl: '' });
+    reset({ title: '', lessonType: 'test', description: '', instruction: '', coinReward: 0 });
     setErr('');
     setModalOpen(true);
   };
@@ -87,21 +76,13 @@ export default function Lessons() {
     }
   };
 
-  const handleCopy = async (e) => {
-    e.preventDefault();
-    if (!selectedTopicId) return;
+  const copyLesson = async (id) => {
     setErr('');
-    setCopyBusy(true);
     try {
-      await api.methodistCopyLesson(token, copyingLesson.id, selectedTopicId);
+      await api.methodistCopyLesson(token, id, topicId);
       invalidate('lessons', topicId);
-      setCopyingLesson(null);
-      setSelectedTypeId('');
-      setSelectedTopicId('');
     } catch (e) {
       setErr(e.message);
-    } finally {
-      setCopyBusy(false);
     }
   };
 
@@ -111,9 +92,7 @@ export default function Lessons() {
     <div className="space-y-5">
       <div className="animate-fade-in">
         <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)] mb-3">
-          <Link to="/methodist/types" className="hover:text-[var(--green-dark,#a8e02c)] transition-colors font-medium">Типы</Link>
-          <span className="opacity-50">/</span>
-          <Link to="/methodist/types" className="hover:text-[var(--green-dark,#a8e02c)] transition-colors font-medium">Темы</Link>
+          <Link to="/methodist/types" className="hover:text-[var(--primary)] transition-colors font-medium">Типы</Link>
           <span className="opacity-50">/</span>
           <span className="text-[var(--text-secondary)] font-semibold">Уроки</span>
         </div>
@@ -125,7 +104,7 @@ export default function Lessons() {
             <ArrowLeft size={18} className="text-[var(--text-secondary)]" />
           </button>
           <button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-[var(--green)] text-[#141B10] text-[13px] font-bold hover:brightness-110 transition-all shadow-[0_4px_16px_rgba(198,255,52,0.25)]"
+            className="btn btn-primary gap-2 text-[13px]"
             onClick={openCreate}
           >
             <Plus size={16} strokeWidth={2.5} /> Создать урок
@@ -151,7 +130,7 @@ export default function Lessons() {
             <p className="text-[15px] font-bold text-[var(--text)] mb-1">Нет уроков</p>
             <p className="text-[13px] text-[var(--text-muted)] mb-5">Создайте первый тест или практическое задание</p>
             <button
-              className="flex items-center gap-2 px-5 py-2.5 rounded-[10px] bg-[var(--green)] text-[#141B10] text-[13px] font-bold hover:brightness-110 transition-all shadow-[0_4px_16px_rgba(198,255,52,0.25)]"
+              className="btn btn-primary gap-2 text-[13px]"
               onClick={openCreate}
             >
               <Plus size={16} strokeWidth={2.5} /> Создать урок
@@ -171,7 +150,7 @@ export default function Lessons() {
                   <div className="flex items-center gap-2 mb-1">
                     <Link
                       to={`/methodist/lessons/${ls.id}/edit`}
-                      className="text-[14px] font-bold text-[var(--text)] hover:text-[var(--green-dark,#a8e02c)] transition-colors truncate"
+                      className="text-[14px] font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors truncate"
                     >
                       {ls.title}
                     </Link>
@@ -193,20 +172,12 @@ export default function Lessons() {
                         <Coins size={11} /> +{ls.coin_reward}
                       </span>
                     )}
-                    {(ls.video_url || ls.videoUrl) && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-info">
-                        <Play size={11} /> Видео
-                      </span>
-                    )}
-                    {(ls.file_key || ls.fileKey) && (
-                      <span className="text-[11px] text-[var(--text-muted)]">📎 Файл</span>
-                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <button
                     className="w-8 h-8 rounded-[8px] grid place-items-center hover:bg-[rgba(59,130,246,0.08)] transition-colors"
-                    onClick={() => setCopyingLesson(ls)}
+                    onClick={() => copyLesson(ls.id)}
                     title="Копировать урок"
                   >
                     <Copy size={14} className="text-info" />
@@ -221,10 +192,10 @@ export default function Lessons() {
                 </div>
                 <Link
                   to={`/methodist/lessons/${ls.id}/edit`}
-                  className="w-9 h-9 rounded-[10px] bg-[var(--surface-hover)] grid place-items-center hover:bg-[rgba(198,255,52,0.12)] transition-all group/edit shrink-0"
+                  className="w-9 h-9 rounded-[10px] bg-[var(--surface-hover)] grid place-items-center hover:bg-[rgba(59,130,246,0.08)] transition-all group/edit shrink-0"
                   title="Редактировать"
                 >
-                  <Pencil size={14} className="text-[var(--text-muted)] group-hover/edit:text-[var(--green-dark,#a8e02c)] transition-colors" />
+                  <Pencil size={14} className="text-[var(--text-muted)] group-hover/edit:text-[var(--primary)] transition-colors" />
                 </Link>
               </div>
             </div>
@@ -288,7 +259,7 @@ export default function Lessons() {
                   type="text"
                   {...register('title')}
                   placeholder="Например: HTML Теги"
-                  className={`input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors ${errors.title ? 'input-error' : ''}`}
+                  className={`input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors ${errors.title ? 'input-error' : ''}`}
                 />
                 {errors.title && <span className="text-[11px] text-error mt-1">{errors.title.message}</span>}
               </label>
@@ -297,7 +268,7 @@ export default function Lessons() {
                 <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)]">Тип урока</span>
                 <select
                   {...register('lessonType')}
-                  className="select select-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
+                  className="select select-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
                 >
                   <option value="test">Тест (A/B/C/D)</option>
                   <option value="practical">Практическое задание</option>
@@ -310,7 +281,7 @@ export default function Lessons() {
                   <textarea
                     {...register('description')}
                     placeholder="Опишите задание для студента..."
-                    className="textarea textarea-bordered w-full rounded-[10px] text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
+                    className="textarea textarea-bordered w-full rounded-[10px] text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
                     rows={3}
                   />
                 </label>
@@ -321,20 +292,9 @@ export default function Lessons() {
                 <textarea
                   {...register('instruction')}
                   placeholder="Краткое объяснение темы..."
-                  className="textarea textarea-bordered w-full rounded-[10px] text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
+                  className="textarea textarea-bordered w-full rounded-[10px] text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
                   rows={2}
                 />
-              </label>
-
-              <label className="form-control w-full">
-                <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)]">Видео-урок (YouTube/S3 ссылка)</span>
-                <input
-                  type="text"
-                  {...register('videoUrl')}
-                  placeholder="https://youtube.com/watch?v=..."
-                  className={`input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors ${errors.videoUrl ? 'input-error' : ''}`}
-                />
-                {errors.videoUrl && <span className="text-[11px] text-error mt-1">{errors.videoUrl.message}</span>}
               </label>
 
               <label className="form-control w-full">
@@ -342,7 +302,7 @@ export default function Lessons() {
                 <input
                   type="number"
                   {...register('coinReward')}
-                  className="input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
+                  className="input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
                 />
               </label>
 
@@ -357,7 +317,7 @@ export default function Lessons() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 h-11 rounded-[10px] bg-[var(--green)] text-[#141B10] text-[13px] font-bold hover:brightness-110 transition-all shadow-[0_4px_16px_rgba(198,255,52,0.25)] flex items-center justify-center gap-2"
+                  className="btn btn-primary h-11 text-[13px] flex items-center justify-center gap-2"
                   disabled={busy}
                 >
                   {busy ? <span className="loading loading-spinner loading-xs" /> : 'Создать и редактировать'}
@@ -366,43 +326,6 @@ export default function Lessons() {
             </form>
           </div>
         </dialog>
-      )}
-
-      {copyingLesson && (
-        <div className="modal modal-open">
-          <div className="modal-box border border-[#E6EDD8] shadow-xl bg-white max-w-md">
-            <h3 className="font-bold text-lg">Копировать урок</h3>
-            <p className="text-sm opacity-60 mt-1">«{copyingLesson.title}»</p>
-            <form onSubmit={handleCopy} className="space-y-4 mt-4">
-              <label className="form-control w-full">
-                <span className="label-text mb-1 font-medium">Направление обучения</span>
-                <select value={selectedTypeId} onChange={(e) => { setSelectedTypeId(e.target.value); setSelectedTopicId(''); }} className="select select-bordered w-full" required>
-                  <option value="">Выберите направление...</option>
-                  {trainingTypes.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="form-control w-full">
-                <span className="label-text mb-1 font-medium">Тема-получатель</span>
-                <select value={selectedTopicId} onChange={(e) => setSelectedTopicId(e.target.value)} className="select select-bordered w-full" disabled={!selectedTypeId} required>
-                  <option value="">Выберите тему...</option>
-                  {topicsList.map((tp) => (
-                    <option key={tp.id} value={tp.id}>{tp.name}</option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="modal-action">
-                <button type="button" className="btn btn-ghost" onClick={() => { setCopyingLesson(null); setSelectedTypeId(''); setSelectedTopicId(''); }} disabled={copyBusy}>Отмена</button>
-                <button type="submit" className="btn bg-[#C6FF34] text-[#141B10] border-none font-bold" disabled={copyBusy || !selectedTopicId}>
-                  {copyBusy ? <span className="loading loading-spinner loading-xs" /> : 'Копировать'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
       )}
     </div>
   );

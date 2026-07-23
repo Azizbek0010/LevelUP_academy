@@ -44,12 +44,19 @@ export async function deleteMarks(groupId, lessonDate, studentIds) {
   );
 }
 
-/** Отметки группы на конкретную дату урока. */
+/** Отметки группы на конкретную дату урока.
+   `marked_by_role` нужен, чтобы отличить отметку, поставленную/исправленную
+   администратором, от менторской: клетка сохраняет цвет статуса, но получает
+   пометку «исправлено администратором». LEFT JOIN — отметившего могли удалить. */
 export async function findByGroupAndDate(groupId, lessonDate) {
   const { rows } = await pool.query(
-    `SELECT a.*, u.first_name, u.last_name
+    `SELECT a.*, u.first_name, u.last_name,
+            m.role       AS marked_by_role,
+            m.first_name AS marked_by_first_name,
+            m.last_name  AS marked_by_last_name
        FROM attendance a
        JOIN users u ON u.id = a.student_id
+       LEFT JOIN users m ON m.id = a.marked_by
       WHERE a.group_id = $1 AND a.lesson_date = $2
       ORDER BY u.last_name, u.first_name`,
     [groupId, lessonDate],
@@ -65,6 +72,7 @@ export async function findByGroupAndRange(groupId, from, to) {
        LEFT JOIN, а не JOIN: сотрудника могли удалить (soft-delete), и из-за
        обычного JOIN отметка пропала бы из журнала целиком. */
     `SELECT a.*, u.first_name, u.last_name,
+            m.role       AS marked_by_role,
             m.first_name AS marked_by_first_name,
             m.last_name  AS marked_by_last_name
        FROM attendance a

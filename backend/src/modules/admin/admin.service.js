@@ -10,6 +10,8 @@ import * as repo from './admin.repository.js';
 // новых таблиц под них не заводим (решение команды 2026-07-19).
 import * as attendanceRepo from '../mentor/attendance/attendance.repository.js';
 import * as homeworkRepo from '../homework/homework.repository.js';
+import { emitTo } from '../../sockets/io.js';
+import { attendanceRoom } from '../../sockets/attendance.js';
 
 const hash = (pwd) => argon2.hash(pwd, { type: argon2.argon2id });
 
@@ -546,6 +548,11 @@ async function requireGroup(branchId, groupId) {
  * (null, если не отмечен). Именно ростер, а не только отмеченные строки, — иначе
  * в свежий день журнал был бы пустым и отмечать было бы некого.
  */
+// Роли, чья отметка считается «исправлением администратора»: всё, что выше
+// ментора. Клетка с такой отметкой сохраняет цвет статуса, но помечается как
+// поправленная админом — это видят и ментор, и админ.
+const ADMIN_MARK_ROLES = new Set(['admin', 'superadmin', 'main_admin']);
+
 export async function getGroupAttendance(branchId, groupId, date) {
   await requireGroup(branchId, groupId);
   const [students, marks] = await Promise.all([
@@ -555,11 +562,16 @@ export async function getGroupAttendance(branchId, groupId, date) {
   const byStudent = new Map(marks.map((m) => [m.student_id, m]));
   return students.map((s) => {
     const m = byStudent.get(s.id);
+    const correctedByAdmin = !!m && ADMIN_MARK_ROLES.has(m.marked_by_role);
     return {
       id: m?.id ?? null,
       studentId: s.id,
       studentName: fullName(s.first_name, s.last_name),
       status: m?.status ?? null,
+      correctedByAdmin,
+      markedByName: m?.marked_by_first_name
+        ? fullName(m.marked_by_first_name, m.marked_by_last_name)
+        : null,
     };
   });
 }
@@ -592,7 +604,24 @@ export async function markGroupAttendance(branchId, groupId, adminId, { lessonDa
     await attendanceRepo.deleteMarks(groupId, lessonDate, toClear);
   }
 
-  return getGroupAttendance(branchId, groupId, lessonDate);
+  const result = await getGroupAttendance(branchId, groupId, lessonDate);
+
+  // Живое обновление журнала: если у ментора этой группы открыта вкладка
+  // davomat, правка админа появляется у него сразу (с пометкой «исправлено
+  // администратором»), а не после перезагрузки. Событие то же, что шлёт
+  // ментор — обе панели слушают attendanceRoom(groupId). `byAdmin` говорит
+  // клиенту пометить эти клетки как исправленные админом; `records` в форме,
+  // которую панель ментора применяет к таблице напрямую (student_id + status,
+  // status=null у снятых отметок).
+  emitTo(attendanceRoom(groupId), 'attendance:updated', {
+    groupId,
+    lessonDate,
+    markedBy: adminId,
+    byAdmin: true,
+    records: records.map((r) => ({ student_id: r.studentId, status: r.status ?? null })),
+  });
+
+  return result;
 }
 
 // -------- ДЗ --------

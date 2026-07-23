@@ -1,10 +1,10 @@
+import { Star, Wallet, Trophy, BarChart3, GraduationCap, Users, CalendarClock, BookOpen, TrendingUp, ChevronRight } from 'lucide-react';
 import { useParentOverview } from '../queries.js';
 import { useChild } from '../child-context.jsx';
 import { fmt, money, dateShort, timeAgo, ATTENDANCE_STATUS } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressRing, StatCard } from '../components/ui.jsx';
-import Icon from '../components/Icons.jsx';
 
 export default function Dashboard() {
   const { selectedChild } = useChild();
@@ -48,6 +48,7 @@ export default function Dashboard() {
     <>
       <PageHeader title={`Обзор — ${d.child.firstName}`} subtitle="Информация об ученике" />
 
+      {/* Hero card — child summary */}
       <div className="card bg-gradient-to-br from-sidebar via-[#1a2e12] to-[#0f1a0a] text-white mb-6 overflow-hidden relative">
         <div className="absolute top-0 right-0 w-40 h-40 bg-primary/8 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/5 rounded-full translate-y-1/3 -translate-x-1/4 blur-xl" />
@@ -60,10 +61,10 @@ export default function Dashboard() {
             <div className="flex-1">
               <h2 className="text-xl font-extrabold">{d.child.firstName} {d.child.lastName}</h2>
               <p className="text-sm opacity-50 mt-1 flex items-center gap-2">
-                <Icon name="academic" className="w-4 h-4" />
+                <GraduationCap className="w-4 h-4" />
                 {d.groups?.length || 0} групп
                 <span className="opacity-30">·</span>
-                <Icon name="trophy" className="w-4 h-4" />
+                <Trophy className="w-4 h-4" />
                 Рейтинг {d.rank?.rank ? `#${d.rank.rank}` : '—'}
               </p>
             </div>
@@ -71,6 +72,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <StatCard icon="star" label="Коины" value={fmt(d.coins)} color="#C6FF34" sub="Заработанные баллы" />
         <StatCard
@@ -84,11 +86,13 @@ export default function Dashboard() {
         <StatCard icon="chart-bar" label="Посещаемость" value={`${attPct}%`} color="#3b82f6" sub={`${att.present || 0} из ${attTotal}`} />
       </div>
 
+      {/* Attendance + Groups */}
       <div className="grid lg:grid-cols-2 gap-4 mb-6">
+        {/* Attendance */}
         <div className="card bg-base-100">
           <div className="card-body">
             <h3 className="card-title text-sm gap-2">
-              <Icon name="calendar-check" className="w-4 h-4 text-primary" />
+              <CalendarClock className="w-4 h-4 text-primary" />
               Посещаемость (30 дней)
             </h3>
             <div className="flex items-center gap-6 mt-3">
@@ -120,10 +124,11 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Groups */}
         <div className="card bg-base-100">
           <div className="card-body">
             <h3 className="card-title text-sm gap-2">
-              <Icon name="academic" className="w-4 h-4 text-primary" />
+              <Users className="w-4 h-4 text-primary" />
               Группы
             </h3>
             {d.groups?.length === 0 ? (
@@ -144,7 +149,7 @@ export default function Dashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate">{g.name}</p>
                         <p className="text-xs opacity-40 flex items-center gap-1">
-                          <Icon name="user" className="w-3 h-3" />
+                          <BookOpen className="w-3 h-3" />
                           {g.mentorName}
                         </p>
                       </div>
@@ -158,10 +163,11 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Recent lessons */}
       <div className="card bg-base-100 mb-6">
         <div className="card-body">
           <h3 className="card-title text-sm gap-2">
-            <Icon name="clock" className="w-4 h-4 text-primary" />
+            <CalendarClock className="w-4 h-4 text-primary" />
             Последние занятия
           </h3>
           {d.attendance?.recent?.length === 0 ? (
@@ -191,11 +197,12 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Recent grades */}
       <div className="card bg-base-100">
         <div className="card-body">
           <div className="flex items-center justify-between mb-1">
             <h3 className="card-title text-sm gap-2">
-              <Icon name="document-text" className="w-4 h-4 text-primary" />
+              <BarChart3 className="w-4 h-4 text-primary" />
               Последние оценки
             </h3>
             {allGrades.length > 0 && (

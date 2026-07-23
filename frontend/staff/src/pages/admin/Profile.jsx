@@ -86,14 +86,14 @@ export default function Profile() {
       <PageHeader title="Мой профиль" subtitle="Управление личными данными и безопасностью" />
 
       {/* Profile avatar + role badge */}
-      <div className="glass-strong rounded-[20px] p-6 animate-fade-in">
+      <div className="card bg-base-100 p-6 animate-fade-in">
         <div className="flex items-center gap-5">
           <div
             className="w-20 h-20 rounded-[18px] flex items-center justify-center text-2xl font-black shrink-0"
             style={{
-              background: 'linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%)',
-              color: '#111',
-              boxShadow: '0 0 30px rgba(198, 255, 52, 0.2)',
+              background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, #2563eb) 100%)',
+              color: '#fff',
+              boxShadow: '0 0 30px rgba(59, 130, 246, 0.25)',
             }}
           >
             {user?.firstName?.[0] ?? 'U'}{user?.lastName?.[0] ?? ''}
@@ -106,7 +106,7 @@ export default function Profile() {
             <div className="flex items-center gap-2 mt-2">
               <span
                 className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg"
-                style={{ background: 'var(--green-bg)', color: 'var(--green)' }}
+                style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--primary)' }}
               >
                 <BadgeCheck size={12} />
                 {ROLE_LABELS[user?.role] || user?.role}
@@ -121,8 +121,8 @@ export default function Profile() {
         <div
           className={`flex items-center gap-2.5 px-4 py-3 rounded-[12px] text-[13px] font-medium animate-slide-up ${
             msg.type === 'ok'
-              ? 'bg-[var(--success-light)] text-[var(--success)] border border-[var(--success)]/20'
-              : 'bg-[var(--danger-light)] text-[var(--danger)] border border-[var(--danger)]/20'
+              ? 'bg-success/10 text-success border border-success/20'
+              : 'bg-error/10 text-error border border-error/20'
           }`}
         >
           {msg.type === 'ok' ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
@@ -131,9 +131,8 @@ export default function Profile() {
       )}
 
       {/* Personal info form */}
-      <form onSubmit={handleSaveProfile} className="glass-strong rounded-[20px] p-6 animate-fade-in stagger-1">
+      <form onSubmit={handleSaveProfile} className="card bg-base-100 p-6 animate-fade-in stagger-1">
         <div className="flex items-center gap-2.5 mb-5">
-          <div className="w-1 h-6 rounded-full bg-[var(--green)]" />
           <h2 className="text-[15px] font-extrabold" style={{ color: 'var(--text)' }}>Личные данные</h2>
         </div>
 
@@ -149,7 +148,7 @@ export default function Profile() {
                 type="text"
                 value={form.firstName}
                 onChange={e => set('firstName', e.target.value)}
-                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)]"
+                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary"
                 style={{
                   background: 'var(--surface)',
                   borderColor: 'var(--border)',
@@ -170,7 +169,7 @@ export default function Profile() {
                 type="text"
                 value={form.lastName}
                 onChange={e => set('lastName', e.target.value)}
-                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)]"
+                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary"
                 style={{
                   background: 'var(--surface)',
                   borderColor: 'var(--border)',
@@ -192,7 +191,7 @@ export default function Profile() {
                 value={form.nickname}
                 onChange={e => set('nickname', e.target.value)}
                 placeholder="Отображаемое имя"
-                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] placeholder:text-[var(--text-muted)]"
+                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-base-content/45"
                 style={{
                   background: 'var(--surface)',
                   borderColor: 'var(--border)',
@@ -216,7 +215,7 @@ export default function Profile() {
                 value={form.age}
                 onChange={e => set('age', e.target.value)}
                 placeholder="25"
-                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] placeholder:text-[var(--text-muted)]"
+                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-base-content/45"
                 style={{
                   background: 'var(--surface)',
                   borderColor: 'var(--border)',
@@ -253,7 +252,7 @@ export default function Profile() {
             type="submit"
             disabled={saving}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-[13px] font-bold transition-all duration-200 hover:brightness-110 disabled:opacity-50"
-            style={{ background: 'var(--green)', color: '#111' }}
+            style={{ background: 'var(--primary)', color: '#fff' }}
           >
             {saving ? <span className="loading loading-spinner loading-sm" /> : <Save size={14} />}
             Сохранить
@@ -262,9 +261,8 @@ export default function Profile() {
       </form>
 
       {/* Change password form */}
-      <form onSubmit={handleChangePassword} className="glass-strong rounded-[20px] p-6 animate-fade-in stagger-2">
+      <form onSubmit={handleChangePassword} className="card bg-base-100 p-6 animate-fade-in stagger-2">
         <div className="flex items-center gap-2.5 mb-5">
-          <div className="w-1 h-6 rounded-full bg-[var(--danger)]" />
           <h2 className="text-[15px] font-extrabold" style={{ color: 'var(--text)' }}>Смена пароля</h2>
         </div>
 
@@ -280,7 +278,7 @@ export default function Profile() {
                 type={showPassword ? 'text' : 'password'}
                 value={form.currentPassword}
                 onChange={e => set('currentPassword', e.target.value)}
-                className="w-full h-10 pl-9 pr-10 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)]"
+                className="w-full h-10 pl-9 pr-10 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary"
                 style={{
                   background: 'var(--surface)',
                   borderColor: 'var(--border)',
@@ -302,7 +300,7 @@ export default function Profile() {
                 value={form.newPassword}
                 onChange={e => set('newPassword', e.target.value)}
                 placeholder="Минимум 6 символов"
-                className="w-full h-10 pl-9 pr-10 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] placeholder:text-[var(--text-muted)]"
+                className="w-full h-10 pl-9 pr-10 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-base-content/45"
                 style={{
                   background: 'var(--surface)',
                   borderColor: 'var(--border)',
@@ -324,7 +322,7 @@ export default function Profile() {
                 value={form.confirmPassword}
                 onChange={e => set('confirmPassword', e.target.value)}
                 placeholder="Повторите пароль"
-                className="w-full h-10 pl-9 pr-10 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)] placeholder:text-[var(--text-muted)]"
+                className="w-full h-10 pl-9 pr-10 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-base-content/45"
                 style={{
                   background: 'var(--surface)',
                   borderColor: 'var(--border)',

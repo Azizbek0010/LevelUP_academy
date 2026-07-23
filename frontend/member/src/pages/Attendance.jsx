@@ -1,11 +1,11 @@
 import { useState } from 'react';
+import { CalendarClock, Clock, MessageSquare } from 'lucide-react';
 import { useParentOverview } from '../queries.js';
 import { useChild } from '../child-context.jsx';
 import { dateShort, ATTENDANCE_STATUS } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressRing } from '../components/ui.jsx';
-import Icon from '../components/Icons.jsx';
 
 export default function Attendance() {
   const { selectedChild } = useChild();
@@ -42,6 +42,7 @@ export default function Attendance() {
         subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
       />
 
+      {/* Summary card */}
       <div className="card bg-base-100 mb-6">
         <div className="card-body">
           <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -57,16 +58,17 @@ export default function Attendance() {
                 {['present', 'absent', 'late', 'excused'].map((s) => {
                   const st = ATTENDANCE_STATUS[s];
                   const count = summary[s] || 0;
+                  const isActive = filter === s;
                   return (
                     <button
                       key={s}
                       onClick={() => setFilter(filter === s ? 'all' : s)}
-                      className={`p-3 rounded-xl text-center transition-all duration-200 ${
-                        filter === s
-                          ? 'ring-2 ring-offset-2 shadow-sm'
-                          : 'hover:bg-base-200'
+                      className={`p-3 rounded-xl text-center transition-all duration-200 border ${
+                        isActive
+                          ? 'ring-2 shadow-sm border-transparent'
+                          : 'border-base-200 hover:border-base-300 hover:bg-base-200/50'
                       }`}
-                      style={filter === s ? { borderColor: st?.color, background: st?.bg, ringColor: st?.color } : {}}
+                      style={isActive ? { borderColor: st?.color, background: st?.bg, ringColor: st?.color } : {}}
                     >
                       <p className="text-xl font-extrabold" style={{ color: st?.color }}>{count}</p>
                       <p className="text-[10px] opacity-50 mt-0.5">{st?.label}</p>
@@ -79,10 +81,11 @@ export default function Attendance() {
         </div>
       </div>
 
+      {/* History table */}
       <div className="card bg-base-100">
         <div className="card-body">
           <h3 className="card-title text-sm gap-2">
-            <Icon name="clock" className="w-4 h-4 text-primary" />
+            <Clock className="w-4 h-4 text-primary" />
             История посещений
           </h3>
           {filtered.length === 0 ? (

@@ -107,7 +107,7 @@ function Loaded({ data, onlineCount }) {
                   key={b.id}
                   value={Number(b.revenue)}
                   max={maxRevenue}
-                  color="#C6FF34"
+                  color="#3b82f6"
                   label={b.name}
                   rightLabel={`${fmt(b.revenue)} ${cur}`}
                 />

@@ -1038,17 +1038,24 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
           totalStudents: 142,
           activeStudents: 128,
           frozenStudents: 14,
+          groups: 8,
           totalGroups: 8,
+          mentors: 6,
           totalMentors: 6,
           totalRevenue: 42500000,
           totalExpenses: 8200000,
           outstandingDebt: 3400000,
+          debts: 3400000,
+          overdueInvoices: 5,
+          income: 42500000,
+          expenses: 8200000,
           currency: 'UZS',
         },
         thisMonth: {
           newStudents: 12,
           revenue: 6800000,
           expenses: 1500000,
+          profit: 5300000,
           payments: 23,
         },
         recentActivity: [
@@ -1865,7 +1872,40 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
         });
       });
       const students = [...seenStudents.values()];
-      return { success: true, data: [...parents, ...students] };
+
+      /* Менторы — только для роля admin/superadmin. Ментор не должен видеть
+         других менторов в списке контактов (он пишет родителям/ученикам). */
+      const me = JSON.parse(localStorage.getItem('mock_user') || localStorage.getItem('mock_me') || 'null');
+      const myRole = me?.role ?? 'mentor';
+      const mentors = (myRole === 'admin' || myRole === 'superadmin')
+        ? (() => {
+            let list = JSON.parse(localStorage.getItem('mock_admin_mentors') || '[]');
+            if (list.length === 0) {
+              list = [
+                { id: 'm1', firstName: 'Ilhom', lastName: 'Karimov', status: 'active', groups: ['Frontend React', 'Mobile Flutter'] },
+                { id: 'm2', firstName: 'Jasur', lastName: 'Usmanov', status: 'active', groups: ['Python Bootcamp'] },
+                { id: 'm3', firstName: 'Malika', lastName: 'Sharipova', status: 'active', groups: ['UI/UX Design'] },
+                { id: 'm4', firstName: 'Sardor', lastName: 'Rakhimov', status: 'active', groups: ['Backend Node.js'] },
+                { id: 'm5', firstName: 'Dilnoza', lastName: 'Karimova', status: 'active', groups: ['English Basic'] },
+              ];
+              localStorage.setItem('mock_admin_mentors', JSON.stringify(list));
+            }
+            return list
+              .filter((m) => m.status !== 'deleted')
+              .map((m) => ({
+                id: m.id,
+                first_name: m.firstName,
+                last_name: m.lastName,
+                avatar_key: null,
+                child_names: m.groups?.join(', ') ?? null,
+                room_key: `dm:mock-me:${m.id}`,
+                ...mockRoomSummary(`dm:mock-me:${m.id}`),
+                peer_type: 'mentor',
+              }));
+          })()
+        : [];
+
+      return { success: true, data: [...mentors, ...parents, ...students] };
     }
 
     if (path.match(/^\/chat\/([^/]+)\/read$/) && method === 'POST') {
@@ -2170,6 +2210,7 @@ export const api = {
   adminExpenses: (token, qs = '') => request(`/admin/expenses${qs}`, { token }),
   adminCreateExpense: (token, body) => request('/admin/expenses', { method: 'POST', token, body }),
   adminDeleteExpense: (token, id) => request(`/admin/expenses/${id}`, { method: 'DELETE', token }),
+  adminUpdateExpense: (token, id, body) => request(`/admin/expenses/${id}`, { method: 'PATCH', token, body }),
   adminStudents: (token, qs = '') => request(`/admin/students${qs}`, { token }),
   adminCreateStudent: (token, body) => request('/admin/students', { method: 'POST', token, body }),
   adminStudentDetail: (token, id) => request(`/admin/students/${id}`, { token }),

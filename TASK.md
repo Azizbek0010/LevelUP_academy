@@ -299,11 +299,11 @@
 - [ ] AB-SUPER-REPORTS: `GET /api/super/reports` — organizatsiya bo'yicha HAQIQIY hisobot
       (filiallar kesimida tushum, qarz, o'quvchi harakati). Hozir front Dashboard datasini ko'rsatyapti.
       Front tomoni: FE-SUPER-REPORTS (Aziz)
-- [ ] AB-EXPENSE-PATCH 🆕 (audit 2026-07-19): `PATCH`/`PUT /api/admin/expenses/:id` YO'Q —
-      faqat POST, GET va DELETE bor (`admin.routes.js:181`). Ya'ni **xarajatni TAHRIRLAB bo'lmaydi**,
-      faqat o'chirib qaytadan yozish mumkin. Front buni bilib turibdi:
-      `Expenses.jsx:339` da "TODO: Backend has no PATCH/PUT endpoint" deb yozilgan.
-      ⚠️ TASK.md da "K-ADMIN: Expenses CRUD" [x] deb turgan edi — CRUD emas, U (Update) yo'q
+- [x] AB-EXPENSE-PATCH ✅ TUZATILDI (2026-07-21 audit): `PATCH /api/admin/expenses/:id`
+      qo'shildi (`admin.routes.js:223`, controller→service→repository to'liq zanjir).
+      Front (`Expenses.jsx:358`) `editingId` bo'lsa `api.adminUpdateExpense()` chaqiradi,
+      aks holda create. Kozim TG'da qayta topgan edi — tekshirilganda allaqachon yopilgan
+      ekan (parallel commit `460914b` — "expense edit" — bilan kelgan)
 - [ ] AB-MAIN-REVENUE: `main-admin/Revenue.jsx` (454 qator) `useDashboard` da o'tiribdi —
       real tushumga ULANMAGAN. Platforma tushumi uchun alohida endpoint kerak.
       ⚠️ Pul jadvallariga faqat **SELECT** — yozish YO'Q (AB-V1 dagi "Partner profit" bilan bir xil qoida).
@@ -313,7 +313,8 @@
 
 - [ ] AB-VERIFY: `VITE_USE_MOCKS=false` bilan real backend'da Student va Parent panellarini E2E tekshirish
       (ikkalasi ham uning zonasi). Hozir ikkalasi ham faqat mock rejimida ko'rilgan
-- [ ] AB-VERIFY: Parent Chat — Socket.io realtime ulanishi hech qachon tekshirilmagan (`Chat.jsx`, 16 chaqiruv)
+- [x] AB-VERIFY: Parent Chat — Socket.io realtime ✅ TASDIQLANDI (2026-07-21, Kama auditi):
+      `member/Chat.jsx` `getSocket()` + `chat:global:send` orqali real ishlaydi
 
 ## Telegram bot (Bilol) ⚠️ TASK.md ga 2026-07-19 da QO'SHILDI
 
@@ -425,19 +426,23 @@
 
 ### 🔴 AUTH — haqiqiy ochiq tirqish (auditda topildi 2026-07-19)
 
-- [ ] AUTH-FORGOT 🔥: **Parolni tiklash FRONTDA umuman yo'q.** Backend tayyor va ishlaydi
-      (`POST /api/auth/forgot-password` + `POST /api/auth/reset-password`, passwordResetLimiter,
-      zod validatsiya, email OTP), lekin frontend da `*forgot*` / `*reset*` / `*otp*` fayl **0 ta**.
-      Ya'ni foydalanuvchi parolini unutса — interfeys orqali tiklay olmaydi.
-      Ochiq savol: `member` (Student/Parent) login-kod bilan kiradi va email'i bo'lmasligi mumkin →
-      ularga tiklash admin orqalimi yoki umuman formasiz? Qaror kerak.
+- [ ] AUTH-FORGOT 🔥 QISMAN TUZATILDI (2026-07-21 audit): avvalgi yozuv NOTO'G'RI edi —
+      "frontend da fayl 0 ta" audit fayl NOMI bo'yicha qidirgan edi, `ForgotForm` esa `Login.jsx`
+      ICHIDA yozilgan, alohida fayl emas. Haqiqatda `ForgotForm` (`staff` + `main-admin`,
+      `Login.jsx`) real backendga TO'G'RI ulangan (`forgotPassword`/`resetPassword`, `api.js:2162-63`).
+      **Qolgan haqiqiy tirqish:** `USE_MOCKS=true` bo'lganda `api.js` mock-blokida
+      `/auth/forgot-password` va `/auth/reset-password` uchun case yo'q → "Mock route not
+      implemented" (dev/mock rejimida ishlamaydi, real backendda ishlaydi). Tuzatish: mock
+      blokiga (`/auth/logout`dan keyin, ~2018-qator atrofida) ikkita `if` case qo'shish.
+      Ochiq savol qoladi: `member` (Student/Parent) login-kod bilan kiradi, email bo'lmasligi
+      mumkin → ularga tiklash admin orqalimi yoki umuman formasiz? Qaror kerak.
 - [ ] AUTH-ELYOR-4: Elyor 2026-07-16 da 4 ta muammoni topgan, lekin ular umumiy fayllarda
       (`api.js`, `auth.jsx`, `main.jsx`, `vite.config.js`) — o'z chegarasidan tashqari bo'lgani uchun
-      TEGMAGAN va Karis'ga uzatgan (`frontend/staff/elyor-log.md`). **Hech kim olmagan, osilib qolgan:**
-      1) admin dashboard `api.adminDashboard is not a function`
-      2) Google login COOP konsol xatosi
-      3) «Забыли пароль» mock ishlamaydi (AUTH-FORGOT bilan bir xil ildiz)
-      4) React Router v7 future-flag warning
+      TEGMAGAN va Karis'ga uzatgan (`frontend/staff/elyor-log.md`). 2026-07-21 qayta tekshirildi:
+      1) [x] admin dashboard `api.adminDashboard is not a function` — TUZATILGAN (`api.js:2166` bor)
+      2) [ ] «Забыли пароль» mock ishlamaydi — hali OCHIQ (AUTH-FORGOT bilan bir xil ildiz)
+      3) [ ] Google login COOP konsol xatosi — hali OCHIQ (FE-COOP)
+      4) [ ] React Router v7 future-flag warning — hali OCHIQ (FE-ROUTER-FLAG), past prioritet
 
 ## Frontend — Super Admin ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 
@@ -514,7 +519,16 @@
 
 ### 🔴 KOZIM — admin/Chat.jsx ni jonlantirish (eng katta ish, BLOKLANMAGAN)
 
-- [ ] FE-CHAT-ADMIN: `staff/src/pages/admin/Chat.jsx` (1275 qator) — **soxta chat**.
+- [x] FE-CHAT-ADMIN ✅ BAJARILDI 2026-07-21 (Karis): chat endi HAQIQIY.
+      Yechim — nusxa ko'chirish EMAS, umumiy komponent: `components/StaffChat.jsx`
+      ni mentor va admin BIRGA ishlatadi (`variant` faqat matnlarni almashtiradi).
+      Sabab: rollar farqi faqat qamrovda, uni backend hisoblaydi
+      (`listStaffContacts` — mentorga guruhlari, adminga butun filial).
+      Jonli tekshirildi: kontaktlar BD dan keladi, yuborilgan xabar socket orqali
+      `chat_messages` ga admin `sender_id` bilan yozildi. Jami −1934 qator.
+      ⚠️ Olib tashlangan soxta funksiyalar (backend ularni QO'LLAB-QUVVATLAMAYDI):
+      xabarga javob, "yozmoqda" indikatori, yozishmani o'chirish, tarix bo'yicha qidiruv
+- [~] ~~FE-CHAT-ADMIN~~ (tarix uchun): `staff/src/pages/admin/Chat.jsx` (1275 qator) — **soxta chat**.
       Ichida 7 ta TODO va hardcode kontaktlar:
       ```js
       const initialContacts = [
@@ -531,7 +545,7 @@
 ### 🔴 SARDOR — o'lik kod va konsol tozalash
 
 - [ ] FE-DEAD-CODE: repo'da router'ga UMUMAN ulanmagan kod yotibdi, hammani chalg'itadi:
-      • `staff/src/pages/mentor/mentoor/` — 13 fayl, 98K, o'z tailwind.config.js si bilan
+      • ~~`staff/src/pages/mentor/mentoor/`~~ ✅ O'CHIRILDI 2026-07-21 (Karis, Kozim bilan kelishilgan)
       • `staff/src/pages/super/ComingSoon.jsx` — App.jsx da ishlatilmaydi
       • `main-admin/src/pages/Placeholder.jsx` — App.jsx da ishlatilmaydi
       ⚠️ `mentoor/` — Kozim'ning ishi. O'chirishdan OLDIN Karis va Kozim bilan kelishilsin
@@ -583,10 +597,23 @@
 - [x] PARENT: Davomat detali — Attendance.jsx
 - [x] PARENT: Baholar / uy vazifa natijalari — Grades.jsx
 - [x] PARENT: To'lov / qarz — Debt.jsx
-- [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ⚠️ Socket.io realtime ulanishi tekshirilmagan
+- [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ✅ Socket.io realtime tasdiqlandi (2026-07-21)
 - [x] PARENT: Bildirishnomalar — Notifications.jsx
 - [ ] PARENT: jonli E2E — mock o'chirilgan holda real parent login bilan tekshirish
 - [ ] PARENT: Design-system — laym #C6FF34, Manrope, 3 holat (Skeleton/Empty/Error), responsive 1280/768/375, TanStack Query
+
+### 🔴 PARENT (Kama) — auditda topilgan yangi kamchiliklar (2026-07-21)
+
+- [ ] AB-PARENT-NOTIF: `GET /api/parent/notifications` backendda YO'Q — `parent.routes.js`
+      faqat `overviewRoutes`ni ulaydi. Hozir front faqat mock bilan ishlaydi. Egasi: Abdulaziz (backend)
+- [ ] FE-PARENT-DEBT: `member/Debt.jsx:57` — progress-bar qiymati hardcode `value={0}`,
+      to'langan/kutilayotgan ulush hech qachon hisoblanmaydi. Egasi: Kama
+- [ ] FE-PARENT-PROFILE-PREF: `member/Profile.jsx:100,112` — toggle'lar `defaultChecked`,
+      `onChange` yo'q, saqlanmaydi. Backendda preference API ham yo'q. Egasi: Kama (front) + Abdulaziz (backend, kerak bo'lsa)
+- [ ] FE-PARENT-SIDEBAR-NOTIF: desktop sidebar'da bildirishnomalarga link yo'q — faqat mobil
+      qo'ng'iroq ikonkasi orqali ochiladi. Egasi: Kama
+- [ ] FE-PARENT-PAGINATION: ro'yxatlarda (Attendance/Grades/Notifications) pagination yo'q,
+      faqat oz miqdordagi yozuv ko'rsatiladi. Egasi: Kama
 
 ## Frontend — Landing Page ✅
 
@@ -611,14 +638,27 @@
 
 - [ ] UI-DS (Sardor): Har bir panel FRONTEND-DESIGN-SYSTEM.md ga qat'iy rioya qiladi
       (laym #C6FF34, Manrope, qorong'i sidebar #1D2417, kartochka soyalari) — o'zboshimcha ranglar TAQIQLANADI
+      ✅ ADMIN QISMI BAJARILDI 2026-07-21 (Karis): admin panelida 651 ta klass-daraja
+      `var(--...)` mavzu tokenlariga o'tkazildi, `glass-strong` → `card bg-base-100`.
+      **Ildiz sabab topildi:** `index.css` `:root` da DaisyUI mavzusidagi AYNI qiymatlar
+      qayta e'lon qilingan edi (`--green` #40833B == `primary`, `--text` #1D2417 ==
+      `base-content`, `--surface` #fff == `base-100`, `--danger` #dc2626 == `error`) —
+      ya'ni bitta palitraning ikkita nusxasi. Brend rangini o'zgartirish ikki joyni
+      tahrirlashni talab qilardi. Yana `src/pages/admin/style.md` da Abdullohning
+      alohida "style guide"i yotgan edi (docs/archive ga ko'chirildi) — dizayn
+      shuning uchun ikkiga bo'lingan
+      ⚠️ QOLDI: ~105 ta inline `style={{ ... 'var(--x)' }}`. Ular BIR XIL ko'rinadi
+      (qiymatlar bir xil), lekin hali `index.css` ga bog'liq. Har birini `className` ga
+      ko'chirish kerak — skript bilan ko'r-ko'rona qilinmadi
 - [ ] UI-STATES (HAR KIM o'z paneli bo'yicha): har sahifada 3 holat — Skeleton (yuklanish),
       EmptyState (bo'sh ma'lumot), Error (xato + retry). Bu markazlashgan vazifa EMAS:
       kim qaysi sahifada ishlayotgan bo'lsa, o'sha sahifaning uch holatini o'zi yopadi
-- [ ] UI-SHARED (Abduloh): Umumiy komponentlar bitta joyda — har panel o'zinikini YASAMAYDI.
-      ⚠️ Audit 2026-07-19: tayyor komponentlar `frontend/staff/src/pages/mentor/_ui.jsx` da
-      (Panel, EmptyState, RowSkeleton, Avatar, SearchInput, GroupSelect), lekin **admin sahifalari
-      bu fayldan UMUMAN foydalanmayapti** — har biri o'zinikini yasagan, dizayn shuning uchun har xil.
-      (Eski matnda "main-admin dagi namunadan" deyilgan edi — bu eskirgan, manba endi `_ui.jsx`)
+- [x] UI-SHARED ✅ BAJARILDI 2026-07-21 (Karis): admin sahifalari endi `mentor/_ui.jsx` dan
+      foydalanadi. KPI-plitka OLTI nusxada yotgan edi — `StatCard` Students/Groups/Mentors/
+      Payments da (bayt-ma-bayt bir xil) + deyarli xuddi shunday `KpiCard` Dashboard/Reports da.
+      Bittasi `_ui.jsx` ga ko'chirildi. Nusxalar xom hex qabul qilardi: 13 ta qotirilgan rang,
+      ba'zisi turli registrda takrorlangan (`#8B5CF6` va `#8b5cf6`). Endi `tone`
+      (neutral/success/warning/danger) → mavzu tokeni
 - [ ] UI-RESPONSIVE (Alish): 1280 / 768 / 375 px kengliklar, gorizontal scroll yo'q
 - [ ] UI-TABLES (Hamidula): tabular-nums raqamlar, hover-podsvetka, status-pilyulalar (design-system bo'yicha)
 - [ ] UI-CACHE (Kozim): barcha mutatsiyalardan keyin TanStack Query cache invalidation +

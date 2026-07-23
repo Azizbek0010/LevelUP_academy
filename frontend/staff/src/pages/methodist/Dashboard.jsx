@@ -43,16 +43,16 @@ function QuickLink({ to, icon, label, count }) {
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 p-3.5 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] hover:border-[rgba(198,255,52,0.3)] transition-all duration-200 group"
+      className="flex items-center gap-3 p-3.5 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] hover:border-[rgba(59,130,246,0.3)] transition-all duration-200 group"
     >
-      <span className="w-10 h-10 rounded-[10px] bg-[rgba(198,255,52,0.1)] grid place-items-center text-lg group-hover:scale-110 transition-transform">
+      <span className="w-10 h-10 rounded-[10px] bg-[rgba(59,130,246,0.1)] grid place-items-center text-lg group-hover:scale-110 transition-transform">
         {icon}
       </span>
       <div className="flex-1 min-w-0">
         <div className="text-[13px] font-semibold text-[var(--text)] truncate">{label}</div>
         <div className="text-[11px] text-[var(--text-muted)]">{count} тем</div>
       </div>
-      <ArrowRight size={16} className="text-[var(--text-muted)] group-hover:text-[var(--green)] group-hover:translate-x-0.5 transition-all" />
+      <ArrowRight size={16} className="text-[var(--text-muted)] group-hover:text-[var(--primary)] group-hover:translate-x-0.5 transition-all" />
     </Link>
   );
 }
@@ -100,8 +100,8 @@ export default function MethodistDashboard() {
       {tests.length > 0 && (
         <div className="glass-strong rounded-[20px] p-5 animate-slide-up stagger-5">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-[14px] bg-[rgba(198,255,52,0.1)] grid place-items-center shrink-0">
-              <Sparkles size={24} className="text-[var(--green-dark,#a8e02c)]" />
+            <div className="w-14 h-14 rounded-[14px] bg-[rgba(59,130,246,0.1)] grid place-items-center shrink-0">
+              <Sparkles size={24} className="text-[var(--primary)]" />
             </div>
             <div className="flex-1">
               <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--text-secondary)] mb-1">Средний балл по тестам</div>
@@ -128,21 +128,21 @@ export default function MethodistDashboard() {
           <h2 className="text-[15px] font-bold text-[var(--text)]">Типы обучения</h2>
           <Link
             to="/methodist/types"
-            className="text-[12px] font-semibold text-[var(--green-dark,#a8e02c)] hover:text-[var(--green)] transition-colors flex items-center gap-1"
+            className="text-[12px] font-semibold text-[var(--primary)] hover:opacity-80 transition-colors flex items-center gap-1"
           >
             Все типы <ArrowRight size={14} />
           </Link>
         </div>
         {ttList.length === 0 ? (
           <div className="text-center py-10">
-            <div className="w-16 h-16 rounded-[16px] bg-[rgba(198,255,52,0.08)] grid place-items-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-[16px] bg-[rgba(59,130,246,0.1)] grid place-items-center mx-auto mb-4">
               <BookOpen size={28} className="text-[var(--text-muted)]" />
             </div>
             <p className="text-[14px] font-semibold text-[var(--text)] mb-1">Нет типов обучения</p>
             <p className="text-[12px] text-[var(--text-muted)] mb-4">Создайте первый тип, чтобы начать</p>
             <Link
               to="/methodist/types"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] bg-[var(--green)] text-[#141B10] text-[13px] font-bold hover:brightness-110 transition-all shadow-[0_4px_16px_rgba(198,255,52,0.25)]"
+              className="btn btn-primary btn-sm gap-2"
             >
               <BookOpen size={16} /> Создать тип
             </Link>

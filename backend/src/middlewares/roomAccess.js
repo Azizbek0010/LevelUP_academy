@@ -41,10 +41,12 @@ export async function requireRoomAccess(req, _res, next) {
     if (!UUID_RE.test(id)) return next(new AppError(400, 'Invalid room key'));
 
     if (type === 'group') {
-      // управленцы видят любые группы; ментор/студент — только свои
-      if (user.role === 'main_admin' || user.role === 'superadmin' || user.role === 'admin') {
-        return next();
-      }
+      // Комнату группы видят ТОЛЬКО её участники: ведущий ментор и ученики
+      // группы. Раньше admin/superadmin/main_admin пропускались без проверки —
+      // то есть управленец мог читать всё общение ментора с учениками в чате
+      // группы. Это ровно тот надзор, которого быть не должно: личные диалоги
+      // (`dm:`) уже закрыты (assertDmAccess), а групповой чат оставался щелью.
+      // Теперь и он проверяется по фактическому участию, как для ментора.
       const { rows } = await pool.query(
         `SELECT 1
            FROM groups g

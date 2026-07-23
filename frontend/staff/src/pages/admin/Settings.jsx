@@ -3,11 +3,12 @@ import { useAuth } from '../../auth.jsx';
 import { useAdminSettings, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
+import PageHeader from '../../components/PageHeader.jsx';
 import {
-  Building2, Palette, Bell, Shield, CreditCard, Globe,
+  Building2, Bell, Shield, CreditCard, Globe,
   CheckCircle2, AlertCircle, Eye, EyeOff,
   MessageSquare, Mail, Smartphone, Clock, Coins,
-  FileText, Languages, MapPin, Phone, Save, Sparkles,
+  FileText, Languages, MapPin, Phone, Save,
   KeyRound, Lock, Monitor, Zap, Globe2, Timer,
 } from 'lucide-react';
 
@@ -15,10 +16,9 @@ import {
 
 const TABS = [
   { key: 'general',       label: 'Общие',         icon: Building2,    color: '#3b82f6' },
-  { key: 'appearance',    label: 'Внешний вид',    icon: Palette,      color: '#8b5cf6' },
   { key: 'notifications', label: 'Уведомления',    icon: Bell,         color: '#f59e0b' },
   { key: 'security',      label: 'Безопасность',   icon: Shield,       color: '#ef4444' },
-  { key: 'finance',       label: 'Финансы',        icon: CreditCard,   color: '#22c55e' },
+  { key: 'finance',       label: 'Финансы',        icon: CreditCard,   color: '#3b82f6' },
   { key: 'localization',  label: 'Локализация',    icon: Globe,        color: '#06b6d4' },
 ];
 
@@ -30,10 +30,6 @@ const DEFAULTS = {
   branchPhone: '',
   branchEmail: '',
   branchWebsite: '',
-  theme: 'light',
-  accentColor: '#C6FF34',
-  compactMode: false,
-  showAvatars: true,
   notifyEmail: true,
   notifyTelegram: true,
   notifySms: false,
@@ -73,9 +69,9 @@ function SettingCard({ icon: Icon, title, subtitle, color, children, className =
             {Icon && (
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: `${color || '#22c55e'}15` }}
+                style={{ background: `${color || '#3b82f6'}15` }}
               >
-                <Icon size={17} style={{ color: color || '#22c55e' }} />
+                <Icon size={17} style={{ color: color || '#3b82f6' }} />
               </div>
             )}
             <div>
@@ -106,7 +102,7 @@ function Field({ label, hint, children }) {
   );
 }
 
-function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#22c55e' }) {
+function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#3b82f6' }) {
   return (
     <div className="flex items-center justify-between py-2.5">
       <div className="flex items-center gap-3 min-w-0">
@@ -132,7 +128,7 @@ function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#22c55e' 
         }}
       >
         <span
-           className="absolute top-0.5 w-5 h-5 rounded-full bg-[var(--surface)] shadow-md transition-all duration-300"
+           className="absolute top-0.5 w-5 h-5 rounded-full bg-base-100 shadow-md transition-all duration-300"
           style={{
             left: checked ? 22 : 2,
             transform: checked ? 'scale(1)' : 'scale(0.85)',
@@ -146,7 +142,7 @@ function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#22c55e' 
 function PremiumInput({ value, onChange, placeholder, icon: Icon, type = 'text', disabled = false }) {
   return (
     <div
-      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
       style={{
         background: 'var(--surface)',
         borderColor: 'var(--border)',
@@ -169,7 +165,7 @@ function PremiumInput({ value, onChange, placeholder, icon: Icon, type = 'text',
 function PremiumSelect({ value, onChange, children, icon: Icon }) {
   return (
     <div
-      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
       style={{
         background: 'var(--surface)',
         borderColor: 'var(--border)',
@@ -197,10 +193,10 @@ function OptionGroup({ options, value, onChange, columns = false }) {
           onClick={() => onChange(val)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border transition-all duration-200"
           style={{
-            background: value === val ? 'var(--green)' : 'var(--surface)',
-            color: value === val ? '#141B10' : 'var(--text-secondary)',
-            borderColor: value === val ? 'var(--green)' : 'var(--border)',
-            boxShadow: value === val ? '0 4px 12px var(--green-glow)' : 'none',
+            background: value === val ? 'var(--primary)' : 'var(--surface)',
+            color: value === val ? '#fff' : 'var(--text-secondary)',
+            borderColor: value === val ? 'var(--primary)' : 'var(--border)',
+            boxShadow: value === val ? '0 4px 12px rgba(59,130,246,0.3)' : 'none',
           }}
         >
           {Icon && <Icon size={15} />}
@@ -224,57 +220,30 @@ function TabGeneral({ settings, onChange }) {
     <div className="space-y-5 animate-fade-in">
       <SettingCard
         icon={Building2}
-        title="Информация о филиале"
-        subtitle="Основные данные вашего учебного центра"
+        title="Основные настройки"
+        subtitle="Общие параметры панели"
         color="#3b82f6"
       >
         <div className="space-y-4">
-          <Field label="Название филиала">
+          <Field label="Префикс инвойсов" hint="Добавляется перед номером счёта">
             <PremiumInput
-              value={settings.branchName}
-              onChange={(e) => onChange({ branchName: e.target.value })}
-              placeholder="LevelUp Academy — Downtown"
-              icon={Building2}
+              value={settings.invoicePrefix}
+              onChange={(e) => onChange({ invoicePrefix: e.target.value.toUpperCase() })}
+              placeholder="INV"
+              icon={FileText}
             />
           </Field>
 
-          <Field label="Адрес">
-            <PremiumInput
-              value={settings.branchAddress}
-              onChange={(e) => onChange({ branchAddress: e.target.value })}
-              placeholder="Ташкент, ул. Амира Темура, 108"
-              icon={MapPin}
-            />
-          </Field>
+          <Divider />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Телефон">
-              <PremiumInput
-                value={settings.branchPhone}
-                onChange={(e) => onChange({ branchPhone: e.target.value })}
-                placeholder="+998 90 123 45 67"
-                icon={Phone}
-              />
-            </Field>
-            <Field label="Email">
-              <PremiumInput
-                value={settings.branchEmail}
-                onChange={(e) => onChange({ branchEmail: e.target.value })}
-                placeholder="info@levelup.uz"
-                icon={Mail}
-                type="email"
-              />
-            </Field>
-          </div>
-
-          <Field label="Веб-сайт" hint="URL сайта филиала (если есть)">
-            <PremiumInput
-              value={settings.branchWebsite}
-              onChange={(e) => onChange({ branchWebsite: e.target.value })}
-              placeholder="https://levelup.uz"
-              icon={Globe2}
-            />
-          </Field>
+          <Toggle
+            checked={settings.autoGenerateInvoice}
+            onChange={(v) => onChange({ autoGenerateInvoice: v })}
+            label="Автогенерация инвойсов"
+            hint="Создавать инвойс автоматически при начале месяца"
+            icon={Zap}
+            color="#3b82f6"
+          />
         </div>
       </SettingCard>
     </div>
@@ -285,51 +254,18 @@ function TabGeneral({ settings, onChange }) {
 
 // Выбор темы удалён вместе с самой тёмной темой (см. src/index.css):
 // переключатель остался бы кнопкой, которая ничего не меняет.
-function TabAppearance({ settings, onChange }) {
-  return (
-    <div className="space-y-5 animate-fade-in">
-      <SettingCard
-        icon={Sparkles}
-        title="Отображение"
-        subtitle="Настройте видимость элементов"
-        color="#ec4899"
-      >
-        <div className="space-y-1">
-          <Toggle
-            checked={settings.compactMode}
-            onChange={(v) => onChange({ compactMode: v })}
-            label="Компактный режим"
-            hint="Уменьшить отступы для большего количества информации"
-            icon={Zap}
-            color="#f59e0b"
-          />
-          <Divider />
-          <Toggle
-            checked={settings.showAvatars}
-            onChange={(v) => onChange({ showAvatars: v })}
-            label="Показывать аватары"
-            hint="Отображать фотографии студентов и сотрудников"
-            icon={Users}
-            color="#3b82f6"
-          />
-        </div>
-      </SettingCard>
-    </div>
-  );
-}
-
 /* ═══════════════════ Tab: Notifications ═══════════════════ */
 
 function TabNotifications({ settings, onChange }) {
   const channels = [
     { key: 'notifyEmail',     label: 'Email-уведомления',   hint: 'Отправлять уведомления на email',      icon: Mail,          color: '#3b82f6' },
-    { key: 'notifyTelegram',  label: 'Telegram-уведомления', hint: 'Через Telegram-бота',                 icon: MessageSquare, color: '#22c55e' },
+    { key: 'notifyTelegram',  label: 'Telegram-уведомления', hint: 'Через Telegram-бота',                 icon: MessageSquare, color: '#3b82f6' },
     { key: 'notifySms',       label: 'SMS-уведомления',      hint: 'Только для критических событий',       icon: Smartphone,   color: '#f59e0b' },
   ];
 
   const events = [
     { key: 'notifyOverduePayments', label: 'Просроченные платежи', hint: 'Уведомлять о просроченных инвойсах', icon: Timer,         color: '#ef4444' },
-    { key: 'notifyNewStudents',     label: 'Новые студенты',       hint: 'Уведомлять о регистрации новых студентов', icon: Mail,     color: '#22c55e' },
+    { key: 'notifyNewStudents',     label: 'Новые студенты',       hint: 'Уведомлять о регистрации новых студентов', icon: Mail,     color: '#3b82f6' },
     { key: 'notifyAttendance',      label: 'Посещаемость',         hint: 'Уведомлять о пропусках',             icon: Clock,         color: '#f59e0b' },
     { key: 'notifyDailyReport',     label: 'Ежедневный отчёт',     hint: 'Сводка за день в конце рабочего времени', icon: FileText, color: '#3b82f6' },
   ];
@@ -484,7 +420,7 @@ function TabSecurity({ settings, onChange }) {
         <div className="space-y-4 max-w-md">
           <Field label="Текущий пароль">
             <div
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
               style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
             >
               <KeyRound size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
@@ -509,7 +445,7 @@ function TabSecurity({ settings, onChange }) {
 
           <Field label="Новый пароль" hint="Минимум 8 символов">
             <div
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-[var(--green)] focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
               style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
             >
               <Lock size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
@@ -572,17 +508,7 @@ function TabSecurity({ settings, onChange }) {
           )}
 
           <button
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200"
-            style={{
-              background: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
-                ? 'var(--surface-hover)' : 'var(--green)',
-              color: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
-                ? 'var(--text-muted)' : '#141B10',
-              cursor: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
-                ? 'not-allowed' : 'pointer',
-              boxShadow: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
-                ? 'none' : '0 4px 12px var(--green-glow)',
-            }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 btn btn-primary"
             disabled={!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy}
             onClick={handlePasswordChange}
           >
@@ -604,7 +530,7 @@ function TabFinance({ settings, onChange }) {
         icon={Coins}
         title="Валюта"
         subtitle="Настройки валюты и формата сумм"
-        color="#22c55e"
+        color="#3b82f6"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Валюта">
@@ -653,7 +579,7 @@ function TabFinance({ settings, onChange }) {
             label="Автогенерация инвойсов"
             hint="Создавать инвойс автоматически при начале месяца"
             icon={Zap}
-            color="#22c55e"
+            color="#3b82f6"
           />
 
           <Divider />
@@ -814,13 +740,7 @@ export default function AdminSettings() {
   if (isLoading) {
     return (
       <div className="animate-page-enter">
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-1 h-6 rounded-full" style={{ background: '#C6FF34' }} />
-            <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Настройки</h1>
-          </div>
-          <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Загрузка настроек...</p>
-        </div>
+        <PageHeader title="Настройки" subtitle="Загрузка настроек..." />
         <SkeletonKpis count={2} className="grid-cols-1 md:grid-cols-2" />
       </div>
     );
@@ -831,39 +751,20 @@ export default function AdminSettings() {
   return (
     <div className="animate-page-enter">
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-1 h-6 rounded-full" style={{ background: '#C6FF34' }} />
-            <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Настройки</h1>
+      <PageHeader title="Настройки" subtitle="Управление параметрами филиала">
+        {saveMsg === 'success' && (
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold animate-slide-up bg-success/10 text-success border border-success/20">
+            <CheckCircle2 size={14} />
+            Сохранено
           </div>
-          <p className="text-[13px] ml-4" style={{ color: 'var(--text-muted)' }}>
-            Управление параметрами филиала
-          </p>
-        </div>
-
-        {/* Save status */}
-        <div className="flex items-center gap-3">
-          {saveMsg === 'success' && (
-            <div
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold animate-slide-up"
-              style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.2)' }}
-            >
-              <CheckCircle2 size={14} />
-              Сохранено
-            </div>
-          )}
-          {saveMsg === 'error' && (
-            <div
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold animate-slide-up"
-              style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)' }}
-            >
-              <AlertCircle size={14} />
-              Ошибка сохранения
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+        {saveMsg === 'error' && (
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold animate-slide-up bg-error/10 text-error border border-error/20">
+            <AlertCircle size={14} />
+            Ошибка сохранения
+          </div>
+        )}
+      </PageHeader>
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* ── Sidebar tabs ── */}
@@ -898,7 +799,6 @@ export default function AdminSettings() {
         {/* ── Tab content ── */}
         <div className="flex-1 min-w-0 pb-24">
           {activeTab === 'general' && <TabGeneral settings={settings} onChange={update} />}
-          {activeTab === 'appearance' && <TabAppearance settings={settings} onChange={update} />}
           {activeTab === 'notifications' && <TabNotifications settings={settings} onChange={update} />}
           {activeTab === 'security' && <TabSecurity settings={settings} onChange={update} />}
           {activeTab === 'finance' && <TabFinance settings={settings} onChange={update} />}
@@ -931,12 +831,7 @@ export default function AdminSettings() {
             Отменить
           </button>
           <button
-            className="flex items-center gap-2 px-5 py-2 rounded-xl text-[13px] font-bold transition-all duration-200"
-            style={{
-              background: '#C6FF34',
-              color: '#141B10',
-              boxShadow: '0 4px 12px var(--green-glow)',
-            }}
+            className="flex items-center gap-2 px-5 py-2 rounded-xl text-[13px] font-bold transition-all duration-200 btn btn-primary"
             disabled={saving}
             onClick={handleSave}
           >
