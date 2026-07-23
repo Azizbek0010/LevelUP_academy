@@ -97,6 +97,22 @@ Rules: one unique `<title>` (≤60 chars) and one `<meta description>` (150–16
 
 ---
 
+## Favicons
+
+`index.html` links three icons, and the raster ones are not optional:
+
+| File | Why it exists |
+|---|---|
+| `public/favicon.ico` (16/32/48) | Yandex.Webmaster reports **"favicon not found"** for an SVG-only icon. It also fetches the icon relative to `/`, which 308-redirects here, so the file must exist at the root. |
+| `public/logo-mark.svg` | What modern browsers actually prefer — crisp at any size. |
+| `public/apple-touch-icon.png` (180×180) | iOS home-screen bookmarks. |
+
+The rasters are generated from `logo-mark.svg` (lime `#C6FF34` open ring on brand dark
+`#1d2417`, same geometry as the SVG) — regenerate with Pillow if the mark changes; do not
+hand-edit them. Same rule as `og:image`: **search engines want raster, not SVG.**
+
+---
+
 ## Hosting (`vercel.json`)
 
 - `/` → `/landing` is a **308 redirect**. A client-side redirect is a dead end for a crawler
