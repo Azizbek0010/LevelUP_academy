@@ -214,7 +214,7 @@ export default function AdminGroups() {
                         <span className="text-base-content/45"> / {MAX_STUDENTS}</span>
                       </td>
                       <td>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${archived ? 'bg-base-100 text-base-content/45' : 'bg-[#2ECC7115] text-[#2ECC71]'}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${archived ? 'bg-base-100 text-base-content/45' : 'bg-blue-500/15 text-blue-500'}`}>
                           {archived ? 'Архив' : 'Активна'}
                         </span>
                       </td>

@@ -13,11 +13,11 @@ import { SearchInput, RowSkeleton, Kpi } from '../mentor/_ui.jsx';
 
 const CATEGORIES = ['All', 'Rent', 'Salary', 'Materials', 'Utility', 'Other'];
 const CATEGORY_COLORS = {
-  Rent: '#3B82F6', Salary: '#2ECC71', Materials: '#F59E0B',
+  Rent: '#3B82F6', Salary: '#8B5CF6', Materials: '#F59E0B',
   Utility: '#E8543E', Other: '#8FA283',
 };
 const CATEGORY_COLORS_LIGHT = {
-  Rent: 'rgba(59,130,246,0.12)', Salary: 'rgba(46,204,113,0.12)', Materials: 'rgba(245,158,11,0.12)',
+  Rent: 'rgba(59,130,246,0.12)', Salary: 'rgba(139,92,246,0.12)', Materials: 'rgba(245,158,11,0.12)',
   Utility: 'rgba(232,84,62,0.12)', Other: 'rgba(143,162,131,0.12)',
 };
 
@@ -312,7 +312,7 @@ export default function Expenses() {
       .map(([key, amount]) => {
         const [y, m] = key.split('-');
         const date = new Date(Number(y), Number(m) - 1);
-        return { name: getMonthName(date), amount, fill: 'var(--green)' };
+        return { name: getMonthName(date), amount, fill: 'var(--primary)' };
       });
   }, [expenses]);
 
@@ -702,7 +702,7 @@ export default function Expenses() {
           <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em] mr-0.5">Категория:</span>
           {CATEGORIES.map((cat) => {
             const isActive = filter === cat;
-            const catColor = cat === 'All' ? 'var(--green)' : CATEGORY_COLORS[cat] || '#8FA283';
+            const catColor = cat === 'All' ? 'var(--primary)' : CATEGORY_COLORS[cat] || '#8FA283';
             return (
               <button
                 key={cat}
@@ -943,7 +943,7 @@ export default function Expenses() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
                     <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--surface-hover)' }} />
-                    <Bar dataKey="amount" radius={[5, 5, 0, 0]} barSize={28} isAnimationActive={false} fill="var(--green)" />
+                    <Bar dataKey="amount" radius={[5, 5, 0, 0]} barSize={28} isAnimationActive={false} fill="var(--primary)" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1073,9 +1073,9 @@ export default function Expenses() {
                     onClick={() => setFormData({ ...formData, paymentMethod: method })}
                     className="px-4 py-2.5 rounded-[12px] text-[12px] font-semibold border transition-all duration-200"
                     style={{
-                      background: formData.paymentMethod === method ? 'var(--green)' : 'var(--surface)',
-                      color: formData.paymentMethod === method ? '#141B10' : 'var(--text-secondary)',
-                      borderColor: formData.paymentMethod === method ? 'var(--green)' : 'var(--border)',
+                      background: formData.paymentMethod === method ? 'var(--primary)' : 'var(--surface)',
+                      color: formData.paymentMethod === method ? '#fff' : 'var(--text-secondary)',
+                      borderColor: formData.paymentMethod === method ? 'var(--primary)' : 'var(--border)',
                     }}
                   >
                     {method}

@@ -114,7 +114,7 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
           </span>
           {inv.status !== 'paid' && inv.status !== 'cancelled' && (
             <button className="h-7 px-3 rounded-[8px] flex items-center gap-1 text-[11px] font-bold text-white transition-all hover:opacity-90 active:scale-95"
-              style={{ background: 'var(--green)' }} onClick={() => onPay(inv)}>
+              style={{ background: 'var(--primary)' }} onClick={() => onPay(inv)}>
               <Wallet size={12} /> {remaining > 0 ? money(remaining) : 'Оплатить'}
             </button>
           )}

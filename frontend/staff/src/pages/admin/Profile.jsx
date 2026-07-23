@@ -91,9 +91,9 @@ export default function Profile() {
           <div
             className="w-20 h-20 rounded-[18px] flex items-center justify-center text-2xl font-black shrink-0"
             style={{
-              background: 'linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%)',
-              color: '#111',
-              boxShadow: '0 0 30px rgba(198, 255, 52, 0.2)',
+              background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, #2563eb) 100%)',
+              color: '#fff',
+              boxShadow: '0 0 30px rgba(59, 130, 246, 0.25)',
             }}
           >
             {user?.firstName?.[0] ?? 'U'}{user?.lastName?.[0] ?? ''}
@@ -106,7 +106,7 @@ export default function Profile() {
             <div className="flex items-center gap-2 mt-2">
               <span
                 className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg"
-                style={{ background: 'var(--green-bg)', color: 'var(--green)' }}
+                style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--primary)' }}
               >
                 <BadgeCheck size={12} />
                 {ROLE_LABELS[user?.role] || user?.role}
@@ -252,7 +252,7 @@ export default function Profile() {
             type="submit"
             disabled={saving}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-[13px] font-bold transition-all duration-200 hover:brightness-110 disabled:opacity-50"
-            style={{ background: 'var(--green)', color: '#111' }}
+            style={{ background: 'var(--primary)', color: '#fff' }}
           >
             {saving ? <span className="loading loading-spinner loading-sm" /> : <Save size={14} />}
             Сохранить

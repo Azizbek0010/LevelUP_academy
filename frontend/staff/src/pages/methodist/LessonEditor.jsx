@@ -210,7 +210,7 @@ export default function LessonEditor() {
     <div className="space-y-5">
       <div className="animate-fade-in">
         <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)] mb-3">
-          <button onClick={() => navigate(-1)} className="hover:text-[var(--green-dark,#a8e02c)] transition-colors font-medium cursor-pointer">← Назад</button>
+          <button onClick={() => navigate(-1)} className="hover:text-[var(--primary)] transition-colors font-medium cursor-pointer">← Назад</button>
           <span className="opacity-50">/</span>
           <span className="text-[var(--text-secondary)] font-semibold">Редактор урока</span>
         </div>
@@ -314,8 +314,8 @@ export default function LessonEditor() {
       {/* Add question form */}
       <div className="glass-strong rounded-[20px] p-5 animate-slide-up stagger-3">
         <div className="flex items-center gap-2.5 mb-5">
-          <div className="w-9 h-9 rounded-[10px] bg-[rgba(198,255,52,0.1)] grid place-items-center">
-            {editingId ? <Pencil size={16} className="text-[var(--green-dark,#a8e02c)]" /> : <Plus size={16} className="text-[var(--green-dark,#a8e02c)]" />}
+          <div className="w-9 h-9 rounded-[10px] bg-[rgba(59,130,246,0.1)] grid place-items-center">
+            {editingId ? <Pencil size={16} className="text-[var(--primary)]" /> : <Plus size={16} className="text-[var(--primary)]" />}
           </div>
           <h3 className="text-[14px] font-bold text-[var(--text)]">
             {editingId ? 'Редактировать вопрос' : 'Добавить вопрос'}
@@ -328,7 +328,7 @@ export default function LessonEditor() {
               type="text"
               {...register('questionText')}
               placeholder="Какой тег используется для заголовка?"
-              className={`input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors ${errors.questionText ? 'input-error' : ''}`}
+              className={`input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors ${errors.questionText ? 'input-error' : ''}`}
             />
             {errors.questionText && <span className="text-[11px] text-error mt-1">{errors.questionText.message}</span>}
           </label>
@@ -345,7 +345,7 @@ export default function LessonEditor() {
                       type="text"
                       {...register(`option${letter}`)}
                       placeholder={`Вариант ${letter}`}
-                      className={`input input-bordered w-full pl-8 rounded-[10px] h-11 text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors ${errors[`option${letter}`] ? 'input-error' : ''}`}
+                      className={`input input-bordered w-full pl-8 rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors ${errors[`option${letter}`] ? 'input-error' : ''}`}
                     />
                   </div>
                 </label>
@@ -357,7 +357,7 @@ export default function LessonEditor() {
             <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)]">Правильный ответ *</span>
             <select
               {...register('correctAnswer')}
-              className="select select-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
+              className="select select-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
             >
               {OPTION_LETTERS.map(l => <option key={l} value={l}>{l}</option>)}
             </select>
@@ -366,7 +366,7 @@ export default function LessonEditor() {
           <div className="flex gap-2 pt-2">
             <button
               type="submit"
-              className="flex items-center gap-2 px-5 h-10 rounded-[10px] bg-[var(--green)] text-[#141B10] text-[13px] font-bold hover:brightness-110 transition-all shadow-[0_4px_16px_rgba(198,255,52,0.25)]"
+              className="btn btn-primary gap-2 h-10 text-[13px]"
               disabled={busy}
             >
               {busy ? <span className="loading loading-spinner loading-xs" /> : editingId ? 'Сохранить' : 'Добавить вопрос'}
@@ -399,7 +399,7 @@ export default function LessonEditor() {
             max={20}
             value={questionCount}
             onChange={(e) => setQuestionCount(Math.min(20, Math.max(1, Number(e.target.value))))}
-            className="input input-bordered input-sm w-20 rounded-[8px] h-9 text-[13px] text-center hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
+            className="input input-bordered input-sm w-20 rounded-[8px] h-9 text-[13px] text-center hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
           />
           <span className="text-[12px] text-[var(--text-muted)]">пустых вопросов</span>
           <button
@@ -423,7 +423,7 @@ export default function LessonEditor() {
         {questions.length === 0 ? (
           <div className="glass-strong rounded-[20px]">
             <div className="card-body items-center py-10">
-              <div className="w-14 h-14 rounded-[14px] bg-[rgba(198,255,52,0.06)] grid place-items-center mb-3">
+              <div className="w-14 h-14 rounded-[14px] bg-[rgba(59,130,246,0.06)] grid place-items-center mb-3">
                 <FileQuestion size={24} className="text-[var(--text-muted)]" />
               </div>
               <p className="text-[13px] text-[var(--text-muted)] font-medium">Нет вопросов. Добавьте первый вопрос выше.</p>
@@ -433,7 +433,7 @@ export default function LessonEditor() {
           questions.map((q, idx) => (
             <div
               key={q.id}
-              className={`glass-strong rounded-[16px] p-4 card-hover-premium group animate-slide-up ${editingId === q.id ? 'ring-2 ring-[var(--green)]/30' : ''}`}
+              className={`glass-strong rounded-[16px] p-4 card-hover-premium group animate-slide-up ${editingId === q.id ? 'ring-2 ring-[var(--primary)]/30' : ''}`}
             >
               <div className="flex items-start gap-3">
                 <span className="w-8 h-8 rounded-[8px] bg-[var(--surface-hover)] grid place-items-center shrink-0 text-[12px] font-bold text-[var(--text-muted)] tabular-nums mt-0.5">
@@ -537,7 +537,7 @@ export default function LessonEditor() {
 
               <div className="modal-action">
                 <button type="button" className="btn btn-ghost" onClick={() => setSettingsOpen(false)} disabled={busy}>Отмена</button>
-                <button type="submit" className="btn bg-[#C6FF34] text-[#141B10] border-none font-bold" disabled={busy}>
+                <button type="submit" className="btn btn-primary font-bold" disabled={busy}>
                   {busy ? <span className="loading loading-spinner loading-xs" /> : 'Сохранить'}
                 </button>
               </div>

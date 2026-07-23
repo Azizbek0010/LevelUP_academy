@@ -31,11 +31,9 @@ body {
    DESIGN TOKENS
    ═══════════════════════════════════════════════════════════════ */
 :root {
-  /* Brand */
+  /* Brand — kept for semantic green (online dot, today highlight, attendance) */
   --green: #40833B;
-  --green-dark: #35702f;
   --green-bg: rgba(64, 131, 59, 0.10);
-  --green-glow: rgba(64, 131, 59, 0.18);
 
   /* Surfaces */
   --surface: #ffffff;
@@ -147,9 +145,9 @@ body {
 }
 .modal .input-bordered:focus,
 .modal .select-bordered:focus {
-  border-color: var(--green) !important;
+  border-color: var(--primary) !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px var(--green-bg) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
 }
 .modal .btn-ghost {
   color: var(--text-secondary) !important;
@@ -159,9 +157,9 @@ body {
   background: var(--surface-hover) !important;
 }
 .modal .btn-primary {
-  --btn-color: var(--green);
-  background: var(--green) !important;
-  color: #16210f !important;
+  --btn-color: var(--primary);
+  background: var(--primary) !important;
+  color: #fff !important;
 }
 .modal label {
   color: var(--text-secondary) !important;
@@ -327,9 +325,9 @@ body {
   50%      { opacity: 0.5; }
 }
 
-/* Loading spinner — match sidebar green accent */
+/* Loading spinner — match sidebar primary accent */
 .loading-spinner {
-  color: var(--green) !important;
+  color: var(--primary) !important;
 }
 
 /* Green glow ring for focused/active elements */
@@ -379,7 +377,7 @@ html {
 /* Клавиатурная доступность: видимый фокус на всех интерактивных элементах.
    :focus-visible не срабатывает на клик мышью — визуального шума не добавляет. */
 :where(a, button, input, textarea, select, [tabindex]):focus-visible {
-  outline: 2px solid var(--green);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -390,7 +388,7 @@ html {
 }
 .card-hover-premium:hover {
   transform: translateY(-4px) scale(1.008);
-  box-shadow: 0 12px 40px rgba(29, 36, 23, 0.12), 0 0 0 1px rgba(198, 255, 52, 0.25) inset;
+  box-shadow: 0 12px 40px rgba(29, 36, 23, 0.12), 0 0 0 1px rgba(59, 130, 246, 0.20) inset;
 }
 
 /* ─── Scale in animation ─── */
@@ -417,15 +415,15 @@ html {
   100% { background-position: 400px 0; }
 }
 .shimmer {
-  background: linear-gradient(90deg, transparent 0%, rgba(198,255,52,0.06) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.06) 50%, transparent 100%);
   background-size: 800px 100%;
   animation: shimmer 1.8s infinite;
 }
 
-/* ─── Green glow ring ─── */
+/* ─── Blue glow ring ─── */
 @keyframes glow-ring {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(198,255,52,0); }
-  50%      { box-shadow: 0 0 0 8px rgba(198,255,52,0.15); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+  50%      { box-shadow: 0 0 0 8px rgba(59,130,246,0.15); }
 }
 .glow-ring {
   animation: glow-ring 2.5s ease-in-out infinite;
@@ -450,7 +448,7 @@ html {
 
 /* ─── Score gradient bar ─── */
 .score-bar {
-  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 45%, #22c55e 75%, #C6FF34 100%);
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 45%, #3b82f6 75%, #60a5fa 100%);
 }
 
 /* ─── Question option highlight ─── */

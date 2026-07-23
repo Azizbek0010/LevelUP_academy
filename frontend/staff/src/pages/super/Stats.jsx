@@ -14,10 +14,10 @@ import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
 import { fmt, money } from '../../format.js';
 
 // ---- Colors ----
-const PRIMARY = '#C6FF34';
+const PRIMARY = '#3b82f6';
 const TEAL    = 'oklch(75% 0.16 175)';
 const ERR     = 'oklch(62% 0.24 25)';
-const NEON    = ['#C6FF34', '#34D1FF', '#FF6B6B', '#A78BFA', '#34FFB0', '#FFB534'];
+const NEON    = ['#3b82f6', '#34D1FF', '#FF6B6B', '#A78BFA', '#34FFB0', '#FFB534'];
 
 // ---- Payment mock ----
 const PAYMENT_METHODS = [

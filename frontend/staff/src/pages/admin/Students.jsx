@@ -181,8 +181,8 @@ export default function AdminStudents() {
               onClick={() => setStatusFilter(f.key)}
               className="px-3 py-1.5 rounded-[12px] text-[11px] font-bold transition-all duration-200"
               style={{
-                background: statusFilter === f.key ? 'var(--green-bg)' : 'transparent',
-                color: statusFilter === f.key ? 'var(--green)' : 'var(--text-muted)',
+                background: statusFilter === f.key ? 'rgba(59,130,246,0.12)' : 'transparent',
+                color: statusFilter === f.key ? 'var(--primary)' : 'var(--text-muted)',
               }}
             >
               {f.label} ({f.count})
@@ -194,14 +194,14 @@ export default function AdminStudents() {
           <button
             onClick={() => setViewMode('card')}
             className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
-            style={{ background: viewMode === 'card' ? 'var(--green-bg)' : 'transparent', color: viewMode === 'card' ? 'var(--green)' : 'var(--text-muted)' }}
+            style={{ background: viewMode === 'card' ? 'rgba(59,130,246,0.12)' : 'transparent', color: viewMode === 'card' ? 'var(--primary)' : 'var(--text-muted)' }}
           >
             <LayoutGrid size={14} />
           </button>
           <button
             onClick={() => setViewMode('table')}
             className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
-            style={{ background: viewMode === 'table' ? 'var(--green-bg)' : 'transparent', color: viewMode === 'table' ? 'var(--green)' : 'var(--text-muted)' }}
+            style={{ background: viewMode === 'table' ? 'rgba(59,130,246,0.12)' : 'transparent', color: viewMode === 'table' ? 'var(--primary)' : 'var(--text-muted)' }}
           >
             <List size={14} />
           </button>

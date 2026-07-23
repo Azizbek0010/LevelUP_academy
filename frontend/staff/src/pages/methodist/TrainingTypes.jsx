@@ -80,7 +80,7 @@ export default function TrainingTypes() {
           <h1 className="text-2xl font-bold text-[#1D2417]">Типы обучения</h1>
           <p className="text-sm opacity-60">Например: Backend, Frontend, Python — направления подготовки</p>
         </div>
-        <button className="btn bg-[#C6FF34] text-[#141B10] border-none hover:bg-[#b0e62c] gap-2 font-bold" onClick={openCreate}>
+        <button className="btn btn-primary gap-2 font-bold" onClick={openCreate}>
           <Plus size={16} /> Добавить тип
         </button>
       </div>
@@ -93,7 +93,7 @@ export default function TrainingTypes() {
             <BookOpen size={48} className="opacity-20 mb-4" />
             <p className="text-base font-semibold">Нет типов обучения</p>
             <p className="text-sm opacity-50">Начните с добавления первого типа обучения</p>
-            <button className="btn bg-[#C6FF34] text-[#141B10] border-none hover:bg-[#b0e62c] mt-4 gap-2 font-bold" onClick={openCreate}>
+            <button className="btn btn-primary mt-4 gap-2 font-bold" onClick={openCreate}>
               <Plus size={16} /> Создать первый тип
             </button>
           </div>
@@ -162,7 +162,7 @@ export default function TrainingTypes() {
               </label>
               <div className="modal-action">
                 <button type="button" className="btn btn-ghost" onClick={() => setModalOpen(false)} disabled={busy}>Отмена</button>
-                <button type="submit" className="btn bg-[#C6FF34] text-[#141B10] border-none font-bold" disabled={busy}>
+                <button type="submit" className="btn btn-primary font-bold" disabled={busy}>
                   {busy && <span className="loading loading-spinner loading-xs" />} {editingId ? 'Сохранить' : 'Создать'}
                 </button>
               </div>

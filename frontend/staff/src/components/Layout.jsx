@@ -104,7 +104,7 @@ const ROLE_TITLE = {
 const ROLE_COLORS = {
   superadmin: '#8b5cf6',
   admin: '#3b82f6',
-  mentor: '#22c55e',
+  mentor: '#3b82f6',
   methodist: '#f59e0b',
 };
 
@@ -443,8 +443,8 @@ function Notifications() {
         aria-expanded={open}
         className={`relative w-10 h-10 rounded-full grid place-items-center transition-colors ${
           open
-            ? 'bg-[var(--green)]/10 text-[var(--green)]'
-            : 'text-[var(--text-secondary)] hover:bg-[var(--green-bg)]'
+            ? 'bg-[var(--primary)]/10 text-[var(--primary)]'
+            : 'text-[var(--text-secondary)] hover:bg-[rgba(59,130,246,0.08)]'
         }`}
       >
         <Bell size={18} />
@@ -469,7 +469,7 @@ function Notifications() {
             <h2 className="text-[15px] font-bold text-[var(--text)]">Bildirishnomalar</h2>
             <div className="flex items-center gap-1.5">
               {total > 0 && (
-                <span className="text-[11px] font-bold text-[var(--green)] bg-[var(--green-bg)] rounded-full px-2 py-0.5 tabular-nums">
+                <span className="text-[11px] font-bold text-[var(--primary)] bg-[rgba(59,130,246,0.1)] rounded-full px-2 py-0.5 tabular-nums">
                   {total} yangi
                 </span>
               )}
@@ -483,7 +483,7 @@ function Notifications() {
                 aria-label={soundOn ? "Ovozni o'chirish" : 'Ovozni yoqish'}
                 title={soundOn ? "Ovoz yoqilgan" : "Ovoz o'chirilgan"}
                 className={`w-7 h-7 rounded-lg grid place-items-center transition-colors ${
-                  soundOn ? 'text-[var(--green)] bg-[var(--green-bg)]' : 'text-[var(--text-muted)] hover:bg-[var(--green-bg)]'
+                  soundOn ? 'text-[var(--primary)] bg-[rgba(59,130,246,0.08)]' : 'text-[var(--text-muted)] hover:bg-[rgba(59,130,246,0.08)]'
                 }`}
               >
                 {soundOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
@@ -512,7 +512,7 @@ function Notifications() {
                     <li key={c.id}>
                       <button
                         onClick={() => openChat(c.id)}
-                        className="group w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-[var(--green-bg)] transition-colors"
+                        className="group w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-[rgba(59,130,246,0.08)] transition-colors"
                       >
                         <span className="relative shrink-0">
                           <Avatar name={name} size={40} />
@@ -550,7 +550,7 @@ function Notifications() {
           {unread.length > 0 && (
             <button
               onClick={() => openChat(null)}
-              className="w-full px-4 py-3 text-sm font-semibold text-[var(--green)] border-t border-[var(--border)] hover:bg-[var(--green-bg)] transition-colors flex items-center justify-center gap-1.5"
+              className="w-full px-4 py-3 text-sm font-semibold text-[var(--primary)] border-t border-[var(--border)] hover:bg-[rgba(59,130,246,0.08)] transition-colors flex items-center justify-center gap-1.5"
             >
               Barcha xabarlar <ChevronRight size={14} />
             </button>
@@ -660,7 +660,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
                   {user?.firstName} {user?.lastName}
                 </div>
                 <div className="text-[11px] text-[var(--text-muted)] truncate">{user?.email}</div>
-                <span className="inline-block mt-1 text-[10px] font-bold text-[var(--green)] bg-[var(--green-bg)] rounded-full px-2 py-0.5">
+                <span className="inline-block mt-1 text-[10px] font-bold text-[var(--primary)] bg-[rgba(59,130,246,0.1)] rounded-full px-2 py-0.5">
                   {ROLE_TITLE[role] || role}
                 </span>
               </div>
@@ -670,7 +670,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
               <button
                 role="menuitem"
                 onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--green-bg)] hover:text-[var(--text)] transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[rgba(59,130,246,0.08)] hover:text-[var(--text)] transition-colors"
               >
                 <span className="w-7 h-7 rounded-lg bg-[var(--surface-hover)] grid place-items-center shrink-0">
                   <UserIcon size={14} />

@@ -18,7 +18,7 @@ const TABS = [
   { key: 'general',       label: 'Общие',         icon: Building2,    color: '#3b82f6' },
   { key: 'notifications', label: 'Уведомления',    icon: Bell,         color: '#f59e0b' },
   { key: 'security',      label: 'Безопасность',   icon: Shield,       color: '#ef4444' },
-  { key: 'finance',       label: 'Финансы',        icon: CreditCard,   color: '#22c55e' },
+  { key: 'finance',       label: 'Финансы',        icon: CreditCard,   color: '#3b82f6' },
   { key: 'localization',  label: 'Локализация',    icon: Globe,        color: '#06b6d4' },
 ];
 
@@ -69,9 +69,9 @@ function SettingCard({ icon: Icon, title, subtitle, color, children, className =
             {Icon && (
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: `${color || '#22c55e'}15` }}
+                style={{ background: `${color || '#3b82f6'}15` }}
               >
-                <Icon size={17} style={{ color: color || '#22c55e' }} />
+                <Icon size={17} style={{ color: color || '#3b82f6' }} />
               </div>
             )}
             <div>
@@ -102,7 +102,7 @@ function Field({ label, hint, children }) {
   );
 }
 
-function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#22c55e' }) {
+function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#3b82f6' }) {
   return (
     <div className="flex items-center justify-between py-2.5">
       <div className="flex items-center gap-3 min-w-0">
@@ -142,7 +142,7 @@ function Toggle({ checked, onChange, label, hint, icon: Icon, color = '#22c55e' 
 function PremiumInput({ value, onChange, placeholder, icon: Icon, type = 'text', disabled = false }) {
   return (
     <div
-      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
       style={{
         background: 'var(--surface)',
         borderColor: 'var(--border)',
@@ -165,7 +165,7 @@ function PremiumInput({ value, onChange, placeholder, icon: Icon, type = 'text',
 function PremiumSelect({ value, onChange, children, icon: Icon }) {
   return (
     <div
-      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
       style={{
         background: 'var(--surface)',
         borderColor: 'var(--border)',
@@ -193,10 +193,10 @@ function OptionGroup({ options, value, onChange, columns = false }) {
           onClick={() => onChange(val)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border transition-all duration-200"
           style={{
-            background: value === val ? 'var(--green)' : 'var(--surface)',
-            color: value === val ? '#141B10' : 'var(--text-secondary)',
-            borderColor: value === val ? 'var(--green)' : 'var(--border)',
-            boxShadow: value === val ? '0 4px 12px var(--green-glow)' : 'none',
+            background: value === val ? 'var(--primary)' : 'var(--surface)',
+            color: value === val ? '#fff' : 'var(--text-secondary)',
+            borderColor: value === val ? 'var(--primary)' : 'var(--border)',
+            boxShadow: value === val ? '0 4px 12px rgba(59,130,246,0.3)' : 'none',
           }}
         >
           {Icon && <Icon size={15} />}
@@ -220,57 +220,30 @@ function TabGeneral({ settings, onChange }) {
     <div className="space-y-5 animate-fade-in">
       <SettingCard
         icon={Building2}
-        title="Информация о филиале"
-        subtitle="Основные данные вашего учебного центра"
+        title="Основные настройки"
+        subtitle="Общие параметры панели"
         color="#3b82f6"
       >
         <div className="space-y-4">
-          <Field label="Название филиала">
+          <Field label="Префикс инвойсов" hint="Добавляется перед номером счёта">
             <PremiumInput
-              value={settings.branchName}
-              onChange={(e) => onChange({ branchName: e.target.value })}
-              placeholder="LevelUp Academy — Downtown"
-              icon={Building2}
+              value={settings.invoicePrefix}
+              onChange={(e) => onChange({ invoicePrefix: e.target.value.toUpperCase() })}
+              placeholder="INV"
+              icon={FileText}
             />
           </Field>
 
-          <Field label="Адрес">
-            <PremiumInput
-              value={settings.branchAddress}
-              onChange={(e) => onChange({ branchAddress: e.target.value })}
-              placeholder="Ташкент, ул. Амира Темура, 108"
-              icon={MapPin}
-            />
-          </Field>
+          <Divider />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Телефон">
-              <PremiumInput
-                value={settings.branchPhone}
-                onChange={(e) => onChange({ branchPhone: e.target.value })}
-                placeholder="+998 90 123 45 67"
-                icon={Phone}
-              />
-            </Field>
-            <Field label="Email">
-              <PremiumInput
-                value={settings.branchEmail}
-                onChange={(e) => onChange({ branchEmail: e.target.value })}
-                placeholder="info@levelup.uz"
-                icon={Mail}
-                type="email"
-              />
-            </Field>
-          </div>
-
-          <Field label="Веб-сайт" hint="URL сайта филиала (если есть)">
-            <PremiumInput
-              value={settings.branchWebsite}
-              onChange={(e) => onChange({ branchWebsite: e.target.value })}
-              placeholder="https://levelup.uz"
-              icon={Globe2}
-            />
-          </Field>
+          <Toggle
+            checked={settings.autoGenerateInvoice}
+            onChange={(v) => onChange({ autoGenerateInvoice: v })}
+            label="Автогенерация инвойсов"
+            hint="Создавать инвойс автоматически при начале месяца"
+            icon={Zap}
+            color="#3b82f6"
+          />
         </div>
       </SettingCard>
     </div>
@@ -286,13 +259,13 @@ function TabGeneral({ settings, onChange }) {
 function TabNotifications({ settings, onChange }) {
   const channels = [
     { key: 'notifyEmail',     label: 'Email-уведомления',   hint: 'Отправлять уведомления на email',      icon: Mail,          color: '#3b82f6' },
-    { key: 'notifyTelegram',  label: 'Telegram-уведомления', hint: 'Через Telegram-бота',                 icon: MessageSquare, color: '#22c55e' },
+    { key: 'notifyTelegram',  label: 'Telegram-уведомления', hint: 'Через Telegram-бота',                 icon: MessageSquare, color: '#3b82f6' },
     { key: 'notifySms',       label: 'SMS-уведомления',      hint: 'Только для критических событий',       icon: Smartphone,   color: '#f59e0b' },
   ];
 
   const events = [
     { key: 'notifyOverduePayments', label: 'Просроченные платежи', hint: 'Уведомлять о просроченных инвойсах', icon: Timer,         color: '#ef4444' },
-    { key: 'notifyNewStudents',     label: 'Новые студенты',       hint: 'Уведомлять о регистрации новых студентов', icon: Mail,     color: '#22c55e' },
+    { key: 'notifyNewStudents',     label: 'Новые студенты',       hint: 'Уведомлять о регистрации новых студентов', icon: Mail,     color: '#3b82f6' },
     { key: 'notifyAttendance',      label: 'Посещаемость',         hint: 'Уведомлять о пропусках',             icon: Clock,         color: '#f59e0b' },
     { key: 'notifyDailyReport',     label: 'Ежедневный отчёт',     hint: 'Сводка за день в конце рабочего времени', icon: FileText, color: '#3b82f6' },
   ];
@@ -447,7 +420,7 @@ function TabSecurity({ settings, onChange }) {
         <div className="space-y-4 max-w-md">
           <Field label="Текущий пароль">
             <div
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
               style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
             >
               <KeyRound size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
@@ -472,7 +445,7 @@ function TabSecurity({ settings, onChange }) {
 
           <Field label="Новый пароль" hint="Минимум 8 символов">
             <div
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--green-glow)]"
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
               style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
             >
               <Lock size={15} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
@@ -535,17 +508,7 @@ function TabSecurity({ settings, onChange }) {
           )}
 
           <button
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200"
-            style={{
-              background: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
-                ? 'var(--surface-hover)' : 'var(--green)',
-              color: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
-                ? 'var(--text-muted)' : '#141B10',
-              cursor: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
-                ? 'not-allowed' : 'pointer',
-              boxShadow: (!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy)
-                ? 'none' : '0 4px 12px var(--green-glow)',
-            }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 btn btn-primary"
             disabled={!pwFields.current || !pwFields.newPw || pwFields.newPw.length < 8 || pwBusy}
             onClick={handlePasswordChange}
           >
@@ -567,7 +530,7 @@ function TabFinance({ settings, onChange }) {
         icon={Coins}
         title="Валюта"
         subtitle="Настройки валюты и формата сумм"
-        color="#22c55e"
+        color="#3b82f6"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Валюта">
@@ -616,7 +579,7 @@ function TabFinance({ settings, onChange }) {
             label="Автогенерация инвойсов"
             hint="Создавать инвойс автоматически при начале месяца"
             icon={Zap}
-            color="#22c55e"
+            color="#3b82f6"
           />
 
           <Divider />
@@ -868,12 +831,7 @@ export default function AdminSettings() {
             Отменить
           </button>
           <button
-            className="flex items-center gap-2 px-5 py-2 rounded-xl text-[13px] font-bold transition-all duration-200"
-            style={{
-              background: '#C6FF34',
-              color: '#141B10',
-              boxShadow: '0 4px 12px var(--green-glow)',
-            }}
+            className="flex items-center gap-2 px-5 py-2 rounded-xl text-[13px] font-bold transition-all duration-200 btn btn-primary"
             disabled={saving}
             onClick={handleSave}
           >

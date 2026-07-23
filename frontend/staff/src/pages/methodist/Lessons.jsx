@@ -92,7 +92,7 @@ export default function Lessons() {
     <div className="space-y-5">
       <div className="animate-fade-in">
         <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)] mb-3">
-          <Link to="/methodist/types" className="hover:text-[var(--green-dark,#a8e02c)] transition-colors font-medium">Типы</Link>
+          <Link to="/methodist/types" className="hover:text-[var(--primary)] transition-colors font-medium">Типы</Link>
           <span className="opacity-50">/</span>
           <span className="text-[var(--text-secondary)] font-semibold">Уроки</span>
         </div>
@@ -104,7 +104,7 @@ export default function Lessons() {
             <ArrowLeft size={18} className="text-[var(--text-secondary)]" />
           </button>
           <button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-[var(--green)] text-[#141B10] text-[13px] font-bold hover:brightness-110 transition-all shadow-[0_4px_16px_rgba(198,255,52,0.25)]"
+            className="btn btn-primary gap-2 text-[13px]"
             onClick={openCreate}
           >
             <Plus size={16} strokeWidth={2.5} /> Создать урок
@@ -130,7 +130,7 @@ export default function Lessons() {
             <p className="text-[15px] font-bold text-[var(--text)] mb-1">Нет уроков</p>
             <p className="text-[13px] text-[var(--text-muted)] mb-5">Создайте первый тест или практическое задание</p>
             <button
-              className="flex items-center gap-2 px-5 py-2.5 rounded-[10px] bg-[var(--green)] text-[#141B10] text-[13px] font-bold hover:brightness-110 transition-all shadow-[0_4px_16px_rgba(198,255,52,0.25)]"
+              className="btn btn-primary gap-2 text-[13px]"
               onClick={openCreate}
             >
               <Plus size={16} strokeWidth={2.5} /> Создать урок
@@ -150,7 +150,7 @@ export default function Lessons() {
                   <div className="flex items-center gap-2 mb-1">
                     <Link
                       to={`/methodist/lessons/${ls.id}/edit`}
-                      className="text-[14px] font-bold text-[var(--text)] hover:text-[var(--green-dark,#a8e02c)] transition-colors truncate"
+                      className="text-[14px] font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors truncate"
                     >
                       {ls.title}
                     </Link>
@@ -192,10 +192,10 @@ export default function Lessons() {
                 </div>
                 <Link
                   to={`/methodist/lessons/${ls.id}/edit`}
-                  className="w-9 h-9 rounded-[10px] bg-[var(--surface-hover)] grid place-items-center hover:bg-[rgba(198,255,52,0.12)] transition-all group/edit shrink-0"
+                  className="w-9 h-9 rounded-[10px] bg-[var(--surface-hover)] grid place-items-center hover:bg-[rgba(59,130,246,0.08)] transition-all group/edit shrink-0"
                   title="Редактировать"
                 >
-                  <Pencil size={14} className="text-[var(--text-muted)] group-hover/edit:text-[var(--green-dark,#a8e02c)] transition-colors" />
+                  <Pencil size={14} className="text-[var(--text-muted)] group-hover/edit:text-[var(--primary)] transition-colors" />
                 </Link>
               </div>
             </div>
@@ -259,7 +259,7 @@ export default function Lessons() {
                   type="text"
                   {...register('title')}
                   placeholder="Например: HTML Теги"
-                  className={`input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors ${errors.title ? 'input-error' : ''}`}
+                  className={`input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors ${errors.title ? 'input-error' : ''}`}
                 />
                 {errors.title && <span className="text-[11px] text-error mt-1">{errors.title.message}</span>}
               </label>
@@ -268,7 +268,7 @@ export default function Lessons() {
                 <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)]">Тип урока</span>
                 <select
                   {...register('lessonType')}
-                  className="select select-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
+                  className="select select-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
                 >
                   <option value="test">Тест (A/B/C/D)</option>
                   <option value="practical">Практическое задание</option>
@@ -281,7 +281,7 @@ export default function Lessons() {
                   <textarea
                     {...register('description')}
                     placeholder="Опишите задание для студента..."
-                    className="textarea textarea-bordered w-full rounded-[10px] text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
+                    className="textarea textarea-bordered w-full rounded-[10px] text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
                     rows={3}
                   />
                 </label>
@@ -292,7 +292,7 @@ export default function Lessons() {
                 <textarea
                   {...register('instruction')}
                   placeholder="Краткое объяснение темы..."
-                  className="textarea textarea-bordered w-full rounded-[10px] text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
+                  className="textarea textarea-bordered w-full rounded-[10px] text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
                   rows={2}
                 />
               </label>
@@ -302,7 +302,7 @@ export default function Lessons() {
                 <input
                   type="number"
                   {...register('coinReward')}
-                  className="input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--green)] focus:border-[var(--green)] transition-colors"
+                  className="input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
                 />
               </label>
 
@@ -317,7 +317,7 @@ export default function Lessons() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 h-11 rounded-[10px] bg-[var(--green)] text-[#141B10] text-[13px] font-bold hover:brightness-110 transition-all shadow-[0_4px_16px_rgba(198,255,52,0.25)] flex items-center justify-center gap-2"
+                  className="btn btn-primary h-11 text-[13px] flex items-center justify-center gap-2"
                   disabled={busy}
                 >
                   {busy ? <span className="loading loading-spinner loading-xs" /> : 'Создать и редактировать'}

@@ -12,7 +12,7 @@ import { useAuth } from '../../auth.jsx';
 import { useAdminReports } from '../../queries.js';
 import { Kpi, RowSkeleton } from '../mentor/_ui.jsx';
 
-const COLORS = ['#2ECC71', '#E8543E', '#3B82F6', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899'];
+const COLORS = ['#3B82F6', '#E8543E', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899', '#2ECC71'];
 
 /* ═══════════════ KPI Card ═══════════════ */
 /* ═══════════════ Custom Tooltip ═══════════════ */
@@ -348,7 +348,7 @@ export default function AdminReports() {
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <RechartsTooltip content={<ChartTooltip />} />
-                <Bar dataKey="revenue" name="Доход" fill="#2ECC71" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="revenue" name="Доход" fill="#3B82F6" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="debt" name="Долг" fill="#E8543E" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Plus, Snowflake, Sun, Trash2, Pencil, Users, UserCheck, UserX, Mail, Phone, Award } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Pencil, Users, UserCheck, UserX, Mail, Phone, Award, MessageCircle } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
@@ -47,7 +48,8 @@ function GradePicker({ value, onChange, busy }) {
 }
 
 /* ═══════════════ Mentor Card ═══════════════ */
-function MentorCard({ m, onEdit, onFreeze, onDelete, onGrade, gradeBusy }) {
+function MentorCard({ m, onEdit, onGrade, gradeBusy }) {
+  const navigate = useNavigate();
   const status = STATUS_COLORS[m.status] || STATUS_COLORS.active;
 
   return (
@@ -81,8 +83,7 @@ function MentorCard({ m, onEdit, onFreeze, onDelete, onGrade, gradeBusy }) {
             )}
           </div>
 
-          {/* Навыки — короткой строкой: админу важно понимать, кого он видит,
-              но карточка не должна превращаться в анкету. */}
+          {/* Навыки — короткой строкой */}
           {m.skills?.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {m.skills.slice(0, 3).map((s) => (
@@ -107,13 +108,12 @@ function MentorCard({ m, onEdit, onFreeze, onDelete, onGrade, gradeBusy }) {
               onClick={() => onEdit(m)}>
               <Pencil size={11} /> Изменить
             </button>
-            <button className="h-7 w-7 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-base-100 hover:text-base-content transition-all"
-              title={m.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => onFreeze(m)}>
-              {m.status === 'frozen' ? <Sun size={13} /> : <Snowflake size={13} />}
-            </button>
-            <button className="h-7 w-7 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-error/10 hover:text-error transition-all"
-              title="Удалить" onClick={() => onDelete(m)}>
-              <Trash2 size={13} />
+            <button
+              className="h-7 w-7 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-primary/10 hover:text-primary transition-all"
+              title="Написать в чат"
+              onClick={() => navigate('/chat')}
+            >
+              <MessageCircle size={13} />
             </button>
           </div>
         </div>
@@ -164,15 +164,6 @@ export default function AdminMentors() {
     }
   };
 
-  const toggleFreeze = async (m) => {
-    try { await api.adminFreezeMentor(token, m.id, m.status !== 'frozen'); refetch(); }
-    catch (e) { alert(e.message || 'Ошибка'); }
-  };
-  const del = async (m) => {
-    if (!confirm(`Удалить ментора ${fullName(m)}?`)) return;
-    try { await api.adminDeleteMentor(token, m.id); refetch(); }
-    catch (e) { alert(e.message || 'Нельзя удалить (ведёт группу)?'); }
-  };
   const edit = (m) => setForm({ id: m.id, firstName: m.firstName || m.first_name || '', lastName: m.lastName || m.last_name || '', phone: m.phone || '', email: m.email || '' });
 
   return (
@@ -208,8 +199,6 @@ export default function AdminMentors() {
               key={m.id}
               m={m}
               onEdit={edit}
-              onFreeze={toggleFreeze}
-              onDelete={del}
               onGrade={setGrade}
               gradeBusy={gradeBusy}
             />

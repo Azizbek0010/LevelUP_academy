@@ -82,7 +82,7 @@ export default function Topics() {
             <p className="text-sm opacity-60">Уроки и тесты внутри направления</p>
           </div>
         </div>
-        <button className="btn bg-[#C6FF34] text-[#141B10] border-none hover:bg-[#b0e62c] gap-2 font-bold" onClick={openCreate}>
+        <button className="btn btn-primary gap-2 font-bold" onClick={openCreate}>
           <Plus size={16} /> Добавить тему
         </button>
       </div>
@@ -95,7 +95,7 @@ export default function Topics() {
             <Layers size={48} className="opacity-20 mb-4" />
             <p className="text-base font-semibold">Нет тем</p>
             <p className="text-sm opacity-50">Создайте первую тему в этом типе обучения</p>
-            <button className="btn bg-[#C6FF34] text-[#141B10] border-none mt-4 gap-2 font-bold" onClick={openCreate}>
+            <button className="btn btn-primary mt-4 gap-2 font-bold" onClick={openCreate}>
               <Plus size={16} /> Создать тему
             </button>
           </div>
@@ -154,7 +154,7 @@ export default function Topics() {
               </label>
               <div className="modal-action">
                 <button type="button" className="btn btn-ghost" onClick={() => setModalOpen(false)} disabled={busy}>Отмена</button>
-                <button type="submit" className="btn bg-[#C6FF34] text-[#141B10] border-none font-bold" disabled={busy}>
+                <button type="submit" className="btn btn-primary font-bold" disabled={busy}>
                   {busy && <span className="loading loading-spinner loading-xs" />} {editingId ? 'Сохранить' : 'Создать'}
                 </button>
               </div>
