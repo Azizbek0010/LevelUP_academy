@@ -18,7 +18,7 @@ const emptyForm = { name: '', mentorId: '', maxStudents: MAX_STUDENTS };
    кнопка архива лежит поверх и гасит всплытие, чтобы архивация не открывала
    группу. Полоса заполнения раньше стояла на bg-base-100 (белая на белой
    карточке — не видно самого трека); фон дорожки исправлен на bg-base-200. */
-function GroupCard({ g, onArchive }) {
+function GroupCard({ g }) {
   const archived = isArchived(g);
   const studentsCount = g.studentsCount ?? g.students_count ?? (g.students?.length ?? 0);
   const mentorName = g.mentor?.name || g.mentorName || null;
@@ -44,15 +44,6 @@ function GroupCard({ g, onArchive }) {
             </span>
           </div>
         </div>
-
-        {/* preventDefault: клик по архиву не должен открывать группу. */}
-        <button
-          className="w-8 h-8 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-base-200 hover:text-base-content transition-all opacity-0 group-hover:opacity-100 shrink-0"
-          title={archived ? 'Вернуть из архива' : 'В архив'}
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onArchive(g); }}
-        >
-          {archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
-        </button>
       </div>
 
       <div className="flex items-center gap-4 text-[12px]">
@@ -187,7 +178,7 @@ export default function AdminGroups() {
       ) : viewMode === 'card' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredRows.map((g) => (
-            <GroupCard key={g.id} g={g} onArchive={toggleArchive} />
+            <GroupCard key={g.id} g={g} />
           ))}
         </div>
       ) : (
@@ -201,7 +192,6 @@ export default function AdminGroups() {
                   <th>Ментор</th>
                   <th>Студенты</th>
                   <th>Статус</th>
-                  <th className="w-20"></th>
                 </tr>
               </thead>
               <tbody>
@@ -227,17 +217,6 @@ export default function AdminGroups() {
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${archived ? 'bg-base-100 text-base-content/45' : 'bg-[#2ECC7115] text-[#2ECC71]'}`}>
                           {archived ? 'Архив' : 'Активна'}
                         </span>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            className="w-7 h-7 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-base-100 hover:text-base-content transition-all"
-                            title={archived ? 'Вернуть из архива' : 'В архив'}
-                            onClick={() => toggleArchive(g)}
-                          >
-                            {archived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   );

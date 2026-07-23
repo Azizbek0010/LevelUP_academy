@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Snowflake, Sun, Archive, KeyRound, GraduationCap, UserCheck, UserX,
-  Copy, Check, Coins, LayoutGrid, List
+  Copy, Check, Coins, LayoutGrid, List, AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudents } from '../../queries.js';
@@ -22,7 +22,7 @@ const STATUS_COLORS = {
 
 /* ═══════════════ Stat Card ═══════════════ */
 /* ═══════════════ Student Card ═══════════════ */
-function StudentCard({ s, onFreeze, onArchive, onRegen, onNavigate }) {
+function StudentCard({ s, onNavigate }) {
   const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
   const groupNames = (s.groups || []).map((g) => g.name).filter(Boolean);
 
@@ -68,20 +68,6 @@ function StudentCard({ s, onFreeze, onArchive, onRegen, onNavigate }) {
             </div>
           )}
         </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
-          <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-base-100 hover:text-base-content transition-all" title="Сбросить пароль" onClick={() => onRegen(s)}>
-            <KeyRound size={14} />
-          </button>
-          <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-base-100 hover:text-base-content transition-all"
-            title={s.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => onFreeze(s)}>
-            {s.status === 'frozen' ? <Sun size={14} /> : <Snowflake size={14} />}
-          </button>
-          <button className="w-8 h-8 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-warning/10 hover:text-warning transition-all" title="Архивировать" onClick={() => onArchive(s)}>
-            <Archive size={14} />
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -107,7 +93,14 @@ export default function AdminStudents() {
 
   const activeCount = rows.filter((s) => s.status !== 'frozen').length;
   const frozenCount = rows.filter((s) => s.status === 'frozen').length;
-  const filteredRows = statusFilter === 'all' ? rows : rows.filter(s => s.status === statusFilter);
+  const debtCount = rows.filter((s) => (s.debt || s.outstandingDebt || 0) > 0).length;
+  const filteredRows = (() => {
+    if (statusFilter === 'all') return rows;
+    if (statusFilter === 'active') return rows.filter(s => s.status !== 'frozen');
+    if (statusFilter === 'frozen') return rows.filter(s => s.status === 'frozen');
+    if (statusFilter === 'debt') return rows.filter(s => (s.debt || s.outstandingDebt || 0) > 0);
+    return rows;
+  })();
 
   const create = async () => {
     setBusy(true); setErr('');
@@ -181,6 +174,7 @@ export default function AdminStudents() {
             { key: 'all', label: 'Все', count: rows.length },
             { key: 'active', label: 'Активные', count: activeCount },
             { key: 'frozen', label: 'Заморожены', count: frozenCount },
+            { key: 'debt', label: 'Задолжен', count: debtCount },
           ].map(f => (
             <button
               key={f.key}
@@ -234,7 +228,7 @@ export default function AdminStudents() {
         /* Card view */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filteredRows.map((s) => (
-            <StudentCard key={s.id} s={s} onFreeze={toggleFreeze} onArchive={archive} onRegen={regen} onNavigate={(id) => navigate(`/students/${id}`)} />
+            <StudentCard key={s.id} s={s} onNavigate={(id) => navigate(`/students/${id}`)} />
           ))}
         </div>
       ) : (
@@ -250,7 +244,6 @@ export default function AdminStudents() {
                   <th>Группы</th>
                   <th>Коины</th>
                   <th>Статус</th>
-                  <th className="w-24"></th>
                 </tr>
               </thead>
               <tbody>
@@ -288,20 +281,6 @@ export default function AdminStudents() {
                         style={{ background: (STATUS_COLORS[s.status] || STATUS_COLORS.active).bg, color: (STATUS_COLORS[s.status] || STATUS_COLORS.active).text }}>
                         {(STATUS_COLORS[s.status] || STATUS_COLORS.active).label}
                       </span>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-base-content/45 hover:bg-base-200 hover:text-base-content transition-all" title="Сбросить пароль" onClick={() => regen(s)}>
-                          <KeyRound size={12} />
-                        </button>
-                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-base-content/45 hover:bg-base-200 hover:text-base-content transition-all"
-                          title={s.status === 'frozen' ? 'Разморозить' : 'Заморозить'} onClick={() => toggleFreeze(s)}>
-                          {s.status === 'frozen' ? <Sun size={12} /> : <Snowflake size={12} />}
-                        </button>
-                        <button className="w-7 h-7 rounded-[10px] flex items-center justify-center text-base-content/45 hover:bg-warning/10 hover:text-warning transition-all" title="Архивировать" onClick={() => archive(s)}>
-                          <Archive size={12} />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}

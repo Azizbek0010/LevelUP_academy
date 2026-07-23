@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
 import {
   Wallet, TriangleAlert, Receipt, TrendingUp, Users, GraduationCap, Clock,
-  Building2, CalendarDays, Sparkles, ChevronRight,
+  Building2, CalendarDays, Sparkles, ChevronRight, CreditCard, Coins,
 } from 'lucide-react';
-import { fmt, money } from '../../format.js';
-import { useAdminDashboard } from '../../queries.js';
+import { fmt, money, dateShort } from '../../format.js';
+import { useAdminDashboard, useAdminInvoices } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
-import { Kpi, Panel } from '../mentor/_ui.jsx';
+import { Kpi, Panel, Avatar } from '../mentor/_ui.jsx';
 
 /* Строка показателя внутри панели. С `to` становится ссылкой — та, что ведёт
    куда-то (студенты, группы, счета), это показывает: шеврон справа и подсветка
@@ -53,6 +53,7 @@ function StatRow({ Icon, label, value, danger, accent, to }) {
 
 export default function AdminDashboard() {
   const { data, isLoading, error } = useAdminDashboard();
+  const { data: invoicesData } = useAdminInvoices();
 
   const today = new Date().toLocaleDateString('ru-RU', {
     weekday: 'long', day: 'numeric', month: 'long',
@@ -80,18 +81,16 @@ export default function AdminDashboard() {
   const t = raw.totals || {};
   const m = raw.thisMonth || {};
 
+  /* Oxirgi to'lovlar — faqat oxirgi 5 ta */
+  const payRaw = invoicesData?.data || invoicesData || {};
+  const allPayments = payRaw.payments || payRaw.invoices || (Array.isArray(payRaw) ? payRaw : []);
+  const recentPayments = allPayments
+    .filter(p => p.status === 'paid' || p.status === 'completed')
+    .slice(0, 5);
+
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader title="Дашборд" subtitle={`Сегодня ${today} · обзор вашего филиала`} />
-
-      {/* Деньги филиала — за всё время. Плитки кликабельны: ведут туда, где с
-          этой цифрой можно что-то сделать. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Kpi Icon={TrendingUp} title="Общий доход" value={money(t.revenue)} tone="success" to="/payments" />
-        <Kpi Icon={TriangleAlert} title="Долги" value={money(t.outstandingDebt)} tone="warning" to="/payments" />
-        <Kpi Icon={Receipt} title="Расходы" value={money(t.expenses)} tone="danger" to="/expenses" />
-        <Kpi Icon={Wallet} title="Чистая прибыль" value={money(t.profit)} tone="neutral" to="/reports" />
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Операционные показатели — счётчики, а не деньги. */}
@@ -103,16 +102,45 @@ export default function AdminDashboard() {
           </div>
         </Panel>
 
-        {/* Деньги за текущий месяц — срез, которого нет в плитках сверху
-            (там суммы за всё время). */}
-        <Panel title="За этот месяц" icon={CalendarDays} bodyClass="p-4">
-          <div className="space-y-2">
-            <StatRow Icon={TrendingUp} label="Доход" value={money(m.revenue)} accent />
-            <StatRow Icon={Receipt} label="Расход" value={money(m.expenses)} />
-            <StatRow Icon={Sparkles} label="Прибыль" value={money(m.profit)} accent={m.profit > 0} danger={m.profit < 0} />
-          </div>
+        {/* Oxirgi to'lovlar */}
+        <Panel title="Последние оплаты" icon={CreditCard} bodyClass="p-4">
+          {recentPayments.length === 0 ? (
+            <p className="text-[13px] text-base-content/45 text-center py-4">Пока нет оплат</p>
+          ) : (
+            <div className="space-y-2">
+              {recentPayments.map((p) => (
+                <Link
+                  key={p.id}
+                  to="/payments"
+                  className="flex items-center justify-between rounded-xl px-3.5 py-3 border border-base-200 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors"
+                >
+                  <span className="flex items-center gap-2.5 text-[13px] text-base-content/70">
+                    <span className="w-7 h-7 rounded-lg grid place-items-center bg-success/10 text-success shrink-0">
+                      <Coins size={14} />
+                    </span>
+                    <span className="truncate">{p.studentName || p.student?.fullName || 'Студент'}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[15px] font-extrabold tabular-nums text-success">
+                      {money(p.amount)}
+                    </span>
+                    <ChevronRight size={15} className="text-base-content/30" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
         </Panel>
       </div>
+
+      {/* Oylik qisqacha */}
+      <Panel title="За этот месяц" icon={CalendarDays} bodyClass="p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatRow Icon={TrendingUp} label="Доход" value={money(m.revenue)} accent />
+          <StatRow Icon={Receipt} label="Расход" value={money(m.expenses)} />
+          <StatRow Icon={Sparkles} label="Прибыль" value={money(m.profit)} accent={m.profit > 0} danger={m.profit < 0} />
+        </div>
+      </Panel>
     </div>
   );
 }
