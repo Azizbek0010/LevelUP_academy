@@ -35,21 +35,21 @@ const MAX_LEN = 4000;
 const COPY = {
   mentor: {
     searchPlaceholder: "Родитель или ученик...",
-    emptyTitle: "Пока нет родителей",
+    emptyTitle: "Пока нет контактов",
     emptyHint: "Родители учеников вашей группы появятся здесь.",
-    pickTitle: 'Выберите родителя',
+    pickTitle: 'Выберите собеседника',
     pickHint: "Выберите собеседника из списка слева, чтобы открыть переписку.",
-    composerIdle: "Выберите родителя слева для начала переписки",
+    composerIdle: "Выберите собеседника слева для начала переписки",
     privacyTitle: "Эту переписку видите только вы и собеседник. Администратор не имеет доступа.",
   },
   admin: {
-    searchPlaceholder: 'Поиск родителя...',
-    emptyTitle: "Пока нет родителей",
-    emptyHint: "Родители учеников филиала появятся здесь.",
-    pickTitle: 'Выберите родителя',
-    pickHint: "Выберите родителя из списка слева, чтобы открыть переписку.",
-    composerIdle: "Выберите родителя слева для начала переписки",
-    privacyTitle: "Эту переписку видите только вы и родитель.",
+    searchPlaceholder: 'Поиск по имени...',
+    emptyTitle: "Пока нет контактов",
+    emptyHint: "Менторы, родители и ученики филиала появятся здесь.",
+    pickTitle: 'Выберите собеседника',
+    pickHint: "Выберите ментора, родителя или ученика из списка слева, чтобы открыть переписку.",
+    composerIdle: "Выберите собеседника слева для начала переписки",
+    privacyTitle: "Эту переписку видите только вы и собеседник.",
   },
 };
 
@@ -344,6 +344,22 @@ export default function StaffChat({ variant = 'mentor' }) {
       || (c.child_names ?? '').toLowerCase().includes(q);
   });
 
+  /* Группировка по типу для отрисовки секций: Менторы → Родители → Ученики.
+     В режиме ментора секции не нужны — там только родители и ученики. */
+  const groupedSections = useMemo(() => {
+    if (variant !== 'admin') return [{ label: null, items: filtered }];
+    const order = ['mentor', 'parent', 'student'];
+    const labels = { mentor: 'Менторы', parent: 'Родители', student: 'Ученики' };
+    const groups = new Map(order.map((t) => [t, []]));
+    filtered.forEach((c) => {
+      const bucket = groups.get(c.peer_type);
+      if (bucket) bucket.push(c);
+    });
+    return order
+      .filter((t) => groups.get(t).length > 0)
+      .map((t) => ({ label: labels[t], items: groups.get(t) }));
+  }, [filtered, variant]);
+
   const handleSend = useCallback(async () => {
     const body = draft.trim();
     if (!body || !activeContact || sending) return;
@@ -472,70 +488,82 @@ export default function StaffChat({ variant = 'mentor' }) {
               />
             ) : (
               <ul>
-                {filtered.map((c) => {
-                  const active = activeId === c.id;
-                  const unread = c.unread_count ?? 0;
-                  return (
-                    <li key={c.id}>
-                      <button
-                        onClick={() => { setActiveId(c.id); setError(''); setAtBottom(true); }}
-                        aria-current={active ? 'true' : undefined}
-                        className={`w-full text-left px-3 py-3 flex items-start gap-3 transition-colors border-l-2 ${
-                          active
-                            ? 'bg-primary/8 border-primary'
-                            : 'border-transparent hover:bg-base-200/60'
-                        }`}
-                      >
-                        <Avatar name={fullName(c)} size="lg" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className={`text-sm truncate ${unread ? 'font-bold' : 'font-semibold'}`}>
-                              {fullName(c)}
-                            </span>
-                            <span className="text-[10px] text-base-content/40 shrink-0 tabular-nums">
-                              {formatTime(c.last_message_at)}
-                            </span>
-                          </div>
-                          {/* Кто это — ученик или родитель. Без пометки мать и
-                              её ребёнок стоят в списке рядом с одной фамилией,
-                              и понять, кому пишешь, невозможно. */}
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span
-                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
-                                c.peer_type === 'student'
-                                  ? 'bg-primary/10 text-primary'
-                                  : 'bg-base-200 text-base-content/55'
+                {groupedSections.map((section) => (
+                  <li key={section.label ?? '__all__'} role="presentation">
+                    {/* Заголовок секции — только когда есть label
+                        (т.е. admin-режим с несколькими типами). */}
+                    {section.label && (
+                      <div className="px-3 pt-3 pb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-base-content/40">
+                          {section.label}
+                        </span>
+                      </div>
+                    )}
+                    <ul>
+                      {section.items.map((c) => {
+                        const active = activeId === c.id;
+                        const unread = c.unread_count ?? 0;
+                        return (
+                          <li key={c.id}>
+                            <button
+                              onClick={() => { setActiveId(c.id); setError(''); setAtBottom(true); }}
+                              aria-current={active ? 'true' : undefined}
+                              className={`w-full text-left px-3 py-3 flex items-start gap-3 transition-colors border-l-2 ${
+                                active
+                                  ? 'bg-primary/8 border-primary'
+                                  : 'border-transparent hover:bg-base-200/60'
                               }`}
                             >
-                              {c.peer_type === 'student' ? "Ученик" : "Родитель"}
-                            </span>
-                            {c.child_names && (
-                              <span className="text-[11px] text-base-content/45 truncate">
-                                {c.child_names}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between gap-2 mt-1">
-                            {/* Непрочитанное — плотнее и темнее: список читают
-                                боковым зрением, вес важнее цвета. */}
-                            <span
-                              className={`text-xs truncate ${
-                                unread ? 'text-base-content font-medium' : 'text-base-content/50'
-                              }`}
-                            >
-                              {c.last_message || "Переписка не начата"}
-                            </span>
-                            {unread > 0 && (
-                              <span className="badge badge-primary badge-sm shrink-0 tabular-nums">
-                                {unread}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
+                              <Avatar name={fullName(c)} size="lg" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline justify-between gap-2">
+                                  <span className={`text-sm truncate ${unread ? 'font-bold' : 'font-semibold'}`}>
+                                    {fullName(c)}
+                                  </span>
+                                  <span className="text-[10px] text-base-content/40 shrink-0 tabular-nums">
+                                    {formatTime(c.last_message_at)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span
+                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                                      c.peer_type === 'mentor'
+                                        ? 'bg-accent/10 text-accent'
+                                        : c.peer_type === 'student'
+                                          ? 'bg-primary/10 text-primary'
+                                          : 'bg-base-200 text-base-content/55'
+                                    }`}
+                                  >
+                                    {c.peer_type === 'mentor' ? 'Ментор' : c.peer_type === 'student' ? 'Ученик' : 'Родитель'}
+                                  </span>
+                                  {c.child_names && (
+                                    <span className="text-[11px] text-base-content/45 truncate">
+                                      {c.child_names}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center justify-between gap-2 mt-1">
+                                  <span
+                                    className={`text-xs truncate ${
+                                      unread ? 'text-base-content font-medium' : 'text-base-content/50'
+                                    }`}
+                                  >
+                                    {c.last_message || "Переписка не начата"}
+                                  </span>
+                                  {unread > 0 && (
+                                    <span className="badge badge-primary badge-sm shrink-0 tabular-nums">
+                                      {unread}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
@@ -563,7 +591,9 @@ export default function StaffChat({ variant = 'mentor' }) {
                   <div className="text-sm font-bold truncate">{fullName(activeContact)}</div>
                   {activeContact.child_names && (
                     <div className="text-[11px] text-base-content/45 truncate">
-                      {activeContact.child_names}
+                      {activeContact.peer_type === 'mentor'
+                        ? activeContact.child_names
+                        : activeContact.child_names}
                     </div>
                   )}
                 </div>
