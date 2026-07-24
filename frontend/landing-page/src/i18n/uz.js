@@ -15,6 +15,7 @@ export default {
     pricing: 'Tariflar',
     langSchool: 'Til markazlariga',
     courses: 'Kurs va repetitorlarga',
+    vsExcel: "Excel o'rniga CRM",
     blog: 'Bilimlar bazasi',
     gamification: 'Motivatsiya',
     contacts: 'Aloqa',
@@ -768,6 +769,145 @@ export default {
       "Ariza qoldiring — LevelUp Academy kurslar va repetitorlikda guruhlar, to'lovlar va motivatsiyani qanday yuritishini ko'rsatamiz. Birinchi hafta bepul.",
   },
 
+  vsExcel: {
+    badge: "Excel o'rniga CRM",
+    h1: "O'quv markazi uchun Excel o'rniga CRM",
+    lead: "Jadvallar o'quvchi yuztadan kam bo'lgunicha ishlaydi. Keyin — yo'qolgan qarzlar, bir-biriga mos kelmaydigan raqamlar va hisobot yig'ishga ketgan kechalar.",
+    intro:
+      "LevelUp Academy «jadval + daftar + chatlar» to'plamini bitta tizimga almashtiradi: to'lovlar, davomat, uy vazifalari va ota-onalarga bildirishnomalar bir joyda turadi va o'zi hisoblanadi.",
+    pricingLink: "Tariflarni ko'rish",
+
+    painHead: 'Jadvallar qayerda sinadi',
+    painLead: "Excel yomon bo'lgani uchun emas — unda rollar, tarix va eslatmalar yo'q.",
+    pain: [
+      {
+        icon: 'swap',
+        title: 'Raqamlar mos kelmaydi',
+        text: "Bitta o'quvchi uchta faylda: administratorda, mentorda va moliya jadvalida. Bir oydan keyin uchta har xil summa chiqadi va ularning birortasi to'g'ri emas.",
+      },
+      {
+        icon: 'coin',
+        title: "Qarzlar oy oxirida ko'rinadi",
+        text: "Jadvalda qarz o'zi hisoblanmaydi — kimdir o'tirib yig'ishi kerak. Yig'ilmaguncha o'quvchi qatnayveradi, summa esa o'sib boradi.",
+      },
+      {
+        icon: 'shield',
+        title: "Qatorni o'chirdingiz — tarixni yo'qotdingiz",
+        text: "O'quvchi ketdi, qatori tozalandi. U bilan birga to'lovlar, baholar va davomat ham yo'qoldi: yarim yildan keyingi bahsda isbot qoladigan narsa yo'q.",
+      },
+      {
+        icon: 'lock',
+        title: "Faylni hamma ko'radi",
+        text: "Ruxsatlar yo'q: havolasi bor odam tushumni, maoshlarni va ota-onalar telefonini ko'radi. Mentor ham egasi ko'rgan narsani ko'radi.",
+      },
+      {
+        icon: 'send',
+        title: 'Ota-onaga hech kim yozmaydi',
+        text: "Jadval kelmaganlik yoki qarz haqida bildirishnoma yubormaydi. Har bir eslatma — administratorning qo'l mehnati.",
+      },
+      {
+        icon: 'clock',
+        title: 'Hisobot bir kechaga tushadi',
+        text: "Oylik tushum bir-ikki kun yig'iladi va baribir xato bilan chiqadi. Raqam tayyor bo'lguncha esa u eskirgan bo'ladi.",
+      },
+    ],
+
+    compareHead: "Excel va LevelUp Academy — vazifalar bo'yicha",
+    compare: {
+      task: 'Vazifa',
+      before: 'Excel va jadvallar',
+      after: 'LevelUp Academy',
+      rows: [
+        {
+          task: "O'quvchi kartochkasi",
+          before: 'Fayldagi qator, dubl va xatolar',
+          after: 'Tarix, guruh va holati bilan profil',
+        },
+        {
+          task: "O'quvchi qarzi",
+          before: "Qo'lda yig'iladi, oy oxirida ko'rinadi",
+          after: "Hisob-faktura chiqarilganda o'zi qayta hisoblanadi",
+        },
+        {
+          task: 'Davomat',
+          before: "Mentor daftari — administrator ko'rmaydi",
+          after: "Elektron jurnal, admin va ota-ona ko'radi",
+        },
+        {
+          task: 'Ota-onaga bildirishnoma',
+          before: "Administratorning qo'ng'iroqlari",
+          after: 'Telegram orqali avtomatik',
+        },
+        {
+          task: 'Kirish huquqlari',
+          before: "Fayli bor odam hammasini ko'radi",
+          after: 'Yettita rol, ruxsatni server hal qiladi',
+        },
+        {
+          task: 'Tushum hisoboti',
+          before: "Bir-ikki kun yig'iladi, xatolar bilan",
+          after: 'Panelda jonli raqam',
+        },
+        {
+          task: "O'quvchi ketgandan keyingi tarix",
+          before: "Qator o'chirildi — ma'lumot yo'q",
+          after: "Faqat o'qish uchun arxiv: hammasi saqlanadi",
+        },
+        {
+          task: 'Telefondan ishlash',
+          before: "Jadvalni telefonda tahrirlab bo'lmaydi",
+          after: "Mentor, o'quvchi va ota-ona kabineti",
+        },
+      ],
+    },
+
+    howHead: "O'tish bir hafta oladi",
+    howLead: "Butun tarixni ko'chirish shart emas — jadvallarni birinchi kuniyoq tashlash ham.",
+    how: [
+      {
+        title: 'Tuzilmani yaratamiz',
+        text: "Filiallar, guruhlar, mentorlar va narxlar — yarim soatlik ish. Faqat hozir amalda bo'lgani ko'chiriladi, uch yillik arxiv emas.",
+      },
+      {
+        title: "O'quvchilar va qarzlarni ko'chiramiz",
+        text: "Faol o'quvchilar guruhlar bo'yicha va ochiq qarzlar. Qarzlarni kiritish shart: ularsiz birinchi solishtirishning o'zi mos kelmaydi.",
+      },
+      {
+        title: 'Bir hafta parallel yuritamiz',
+        text: "Jadval sug'urta bo'lib qoladi: bir hafta tushum va qarzlarni solishtiramiz. Mos keldi — jadvallarni yopish mumkin.",
+      },
+    ],
+    guideLink: "Excel'dan o'tish bo'yicha bosqichma-bosqich qo'llanma",
+
+    faqHead: "Ko'p beriladigan savollar",
+    faq: [
+      {
+        q: "O'quv markazi uchun CRM Excel'dan nimasi bilan yaxshi?",
+        a: "Excel ma'lumotni saqlaydi, lekin qarzni hisoblamaydi, ruxsatlarni ajratmaydi va ota-onaga yozmaydi. CRM buni o'zi qiladi: qarz hisob-faktura chiqarilgan payt qayta hisoblanadi, davomatni administrator ham, ota-ona ham ko'radi, bildirishnomalar Telegram'ga ketadi, o'quvchi tarixi esa o'chirilgan qator bilan birga yo'qolmaydi.",
+      },
+      {
+        q: "Excel'dan CRM'ga o'tish qancha vaqt oladi?",
+        a: "Odatda bir hafta. Avval filiallar, guruhlar va mentorlar kiritiladi, keyin faol o'quvchilar va ochiq qarzlar. Bir hafta markaz jadval bilan parallel ishlaydi va tushum hamda qarzlarni solishtiradi — mos kelgandan keyin jadvallarni yopish mumkin.",
+      },
+      {
+        q: "Excel'dan ma'lumotlarni ko'chirish mumkinmi?",
+        a: "Ha. Faol o'quvchilar, guruhlar va ochiq qarzlarni ko'chirish kerak — o'tgan yillardagi butun tarixni ko'chirish shart emas, u jadvalda arxiv sifatida qoladi. Bosqichma-bosqich tartib o'tish qo'llanmasida yozilgan.",
+      },
+      {
+        q: "O'tgandan keyin eski jadvallar bilan nima qilish kerak?",
+        a: "Ularni arxiv sifatida faqat o'qish uchun qoldiring. LevelUp Academy'da ma'lumot jismonan o'chirilmaydi: o'quvchi arxivga o'tadi, uning to'lovlari, baholari va davomati to'liq saqlanadi.",
+      },
+      {
+        q: "Excel'ni CRM'ga almashtirish qancha turadi?",
+        a: "30 o'quvchigacha — bepul, keyin narx faol o'quvchilar soniga qarab belgilanadi, filiallar cheksiz kiradi. Birinchi hafta bepul, kartasiz. Batafsil — tariflar sahifasida.",
+      },
+    ],
+
+    ctaTitle: 'Jadvallardan voz kechish vaqti keldimi?',
+    ctaText:
+      "Ariza qoldiring — markaz Excel'siz qanday ko'rinishini o'z ma'lumotlaringizda ko'rsatamiz. Birinchi hafta bepul, kartasiz.",
+  },
+
   blog: {
     badge: 'Bilimlar bazasi',
     h1: "O'quv markazi uchun bilimlar bazasi",
@@ -1040,6 +1180,11 @@ export default {
       title: "Kurslar va repetitorlar uchun CRM | LevelUp Academy",
       description:
         "Kurslar va repetitorlik markazi uchun CRM: guruh va yakkama-yakka darslar, davomat, uy vazifalari, testlar, kurs uchun to'lovlar va motivatsiya. Birinchi hafta bepul.",
+    },
+    vsExcel: {
+      title: "Excel o'rniga CRM — o'quv markazi uchun | LevelUp",
+      description:
+        "O'quv markazlari nega Excel'dan CRM'ga o'tadi: qarzlar o'zi hisoblanadi, davomat va to'lovlar bitta tizimda, ota-onalar bildirishnoma oladi. O'tish bir haftada.",
     },
     blog: {
       title: "O'quv markazi uchun bilimlar bazasi | LevelUp Academy",
