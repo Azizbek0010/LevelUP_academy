@@ -4,6 +4,7 @@ import { useAdminSettings, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
+import { Tip } from '../mentor/_ui.jsx';
 import {
   Building2, Bell, Shield, CreditCard, Globe,
   CheckCircle2, AlertCircle, Eye, EyeOff,

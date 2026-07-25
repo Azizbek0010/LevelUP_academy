@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminInvoices, useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, Kpi, RowSkeleton } from '../mentor/_ui.jsx';
+import { Avatar, Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
 
 const STATUS = {
   paid: { label: 'Оплачен', bg: '#2ECC7115', text: '#2ECC71', icon: CheckCircle2 },

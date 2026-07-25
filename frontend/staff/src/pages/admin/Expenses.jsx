@@ -9,7 +9,7 @@ import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminExpenses } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SearchInput, RowSkeleton, Kpi } from '../mentor/_ui.jsx';
+import { SearchInput, RowSkeleton, Kpi, Tip } from '../mentor/_ui.jsx';
 
 const CATEGORIES = ['All', 'Rent', 'Salary', 'Materials', 'Utility', 'Other'];
 const CATEGORY_COLORS = {
