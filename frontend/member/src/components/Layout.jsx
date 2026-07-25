@@ -83,7 +83,7 @@ function Sidebar({
               onChange={(e) => selectChild(e.target.value)}
             >
               {childList.map((c) => (
-                <option key={c.id} value={c.id} className="text-base-content">
+                <option key={c.id} value={c.id} style={{ color: '#1D2417', background: '#ffffff' }}>
                   {c.firstName} {c.lastName}
                 </option>
               ))}
@@ -362,7 +362,7 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg, #f8faf8)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* Desktop Sidebar */}
       {isDesktop && (
         <Sidebar

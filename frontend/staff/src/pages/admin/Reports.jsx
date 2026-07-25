@@ -10,7 +10,7 @@ import {
 import { money, fmt } from '../../format.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminReports } from '../../queries.js';
-import { Kpi, RowSkeleton } from '../mentor/_ui.jsx';
+import { Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
 
 const COLORS = ['#3B82F6', '#E8543E', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899', '#2ECC71'];
 

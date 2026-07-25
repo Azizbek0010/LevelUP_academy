@@ -7,7 +7,7 @@ import { useAuth } from '../auth.jsx';
 import { api, USING_MOCKS } from '../api.js';
 import { getSocket } from '../socket.js';
 import { useChatContacts, useChatHistory } from '../queries.js';
-import { Avatar, SearchInput, EmptyState } from '../pages/mentor/_ui.jsx';
+import { Avatar, SearchInput, EmptyState, Tip } from '../pages/mentor/_ui.jsx';
 
 /**
  * Личная переписка сотрудника с учениками и их родителями.

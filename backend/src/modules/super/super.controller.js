@@ -104,14 +104,6 @@ export const deleteAnnouncement = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
-// --- reminders: заглушка (нужна запись из воркера, AB-SUPER-REM) ---
-export const listReminders = asyncHandler(async (_req, res) => {
-  res.json(await service.listReminders());
-});
-export const notImplemented = asyncHandler(async (_req, res) => {
-  res.status(501).json({ message: 'Not implemented yet — needs DB table/migration' });
-});
-
 // --- аудит-лог ---
 export const listAudit = asyncHandler(async (req, res) => {
   res.json(await service.listAudit(orgId(req)));

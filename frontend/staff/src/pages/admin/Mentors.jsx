@@ -5,7 +5,7 @@ import { useAuth } from '../../auth.jsx';
 import { useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, EmptyState, Kpi, RowSkeleton } from '../mentor/_ui.jsx';
+import { Avatar, EmptyState, Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
 
 const fullName = (m) =>
   [m.firstName || m.first_name, m.lastName || m.last_name].filter(Boolean).join(' ') || '—';

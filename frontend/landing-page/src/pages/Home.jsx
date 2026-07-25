@@ -21,7 +21,7 @@ const bars = [
 ];
 
 const stats = [
-  { value: '5', key: 'roles' },
+  { value: '6', key: 'roles' },
   { value: '12+', key: 'modules' },
   { value: 'Live', key: 'live' },
   { value: '24/7', key: 'telegram' },
