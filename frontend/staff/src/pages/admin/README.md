@@ -1,5 +1,11 @@
 # Admin Panel — LevelUp Academy
 
+> ⚠️ **Texnik hujjat, vazifa ro'yxati EMAS (belgi qo'yildi 2026-07-26).**
+> Admin panelining ochiq vazifalari va holati — korneviy `TASK.md`,
+> `## Frontend — Admin` bo'limida. Bu yerda tuzilma va API tavsifi.
+> ⚠️ Bu fayl `src/` ICHIDA yotibdi — bandlga tushmaydi, lekin kod papkasida
+> hujjat saqlash yaxshi amaliyot emas. Keyinchalik `docs/` ga ko'chirilsin.
+
 > `frontend/staff/src/pages/admin/` — Admin role pages inside the Staff SPA
 
 ---

@@ -1,4 +1,9 @@
-# PARENT Panel — Task List (iface9808-sketch)
+# PARENT Panel — Task List (Kama, git: iface9808)
+
+> ⚠️ **Bu fayl — DUBLIKAT, holat manbai EMAS (2026-07-26).**
+> Parent panelining rasmiy vazifalari va holati — korneviy `TASK.md`,
+> `## Frontend — Parent` bo'limida. Ikki joyda ikki xil galochka turmasin.
+> Bu yerda faqat Kama'ning ichki eslatmalari qoladi.
 
 > Backend tayyor: `AB-PARENT` ✅ (child overview + assertParentOwnsChild guard)
 > Panel: `frontend/member` — parent tomoni
