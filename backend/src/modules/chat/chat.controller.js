@@ -13,9 +13,13 @@ import { listStaffContacts, listStaffStudentContacts } from './chat.access.js';
  * список молчащих родителей.
  */
 export const getContacts = asyncHandler(async (req, res) => {
+  // Админ филиала — только родители (решение 2026-07-21): прямого диалога
+  // админ↔ученик нет (см. canStaffChatStudent), поэтому и в список учеников
+  // не добавляем. Ментор по-прежнему видит и учеников, и родителей.
+  const includeStudents = req.user.role !== 'admin';
   const [parents, students] = await Promise.all([
     listStaffContacts(req.user),
-    listStaffStudentContacts(req.user),
+    includeStudents ? listStaffStudentContacts(req.user) : Promise.resolve([]),
   ]);
 
   const data = [

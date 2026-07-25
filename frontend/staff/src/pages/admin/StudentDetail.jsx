@@ -9,16 +9,11 @@ import { useAuth } from '../../auth.jsx';
 import { useAdminStudentDetail } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SkeletonTable } from '../../components/Skeleton.jsx';
+import { Avatar, RowSkeleton } from '../mentor/_ui.jsx';
 
 /* ─── helpers ─── */
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
-const initials = (s) => {
-  const f = s.firstName || s.first_name || '';
-  const l = s.lastName || s.last_name || '';
-  return ((f[0] || '') + (l[0] || '')).toUpperCase() || '?';
-};
 const formatMoney = (n) =>
   n != null ? n.toLocaleString('ru-RU') + ' UZS' : '—';
 const formatDate = (d) => {
@@ -137,7 +132,7 @@ export default function AdminStudentDetail() {
     return (
       <div>
         <PageHeader title="Talaba" />
-        <div className="mt-6"><SkeletonTable cols={2} /></div>
+        <div className="mt-6"><RowSkeleton count={2} /></div>
       </div>
     );
   }
@@ -147,10 +142,10 @@ export default function AdminStudentDetail() {
     return (
       <div>
         <PageHeader title="Talaba" />
-        <div className="glass-strong rounded-[16px] p-8 text-center">
+        <div className="card bg-base-100 p-8 text-center">
           <AlertCircle size={40} className="mx-auto mb-3 text-red-400" />
-          <p className="text-[14px] font-bold text-[var(--text)]">Xatolik yuz berdi</p>
-          <p className="text-[12px] text-[var(--text-muted)] mt-1">{error.message}</p>
+          <p className="text-[14px] font-bold text-base-content">Xatolik yuz berdi</p>
+          <p className="text-[12px] text-base-content/45 mt-1">{error.message}</p>
           <Link to="/students" className="btn btn-primary btn-sm mt-4">
             <ArrowLeft size={14} /> Ortga
           </Link>
@@ -163,9 +158,9 @@ export default function AdminStudentDetail() {
     return (
       <div>
         <PageHeader title="Talaba" />
-        <div className="glass-strong rounded-[16px] p-8 text-center">
-          <User size={40} className="mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
-          <p className="text-[14px] font-bold text-[var(--text)]">Talaba topilmadi</p>
+        <div className="card bg-base-100 p-8 text-center">
+          <User size={40} className="mx-auto mb-3 text-base-content/45 opacity-30" />
+          <p className="text-[14px] font-bold text-base-content">Talaba topilmadi</p>
           <Link to="/students" className="btn btn-primary btn-sm mt-4">
             <ArrowLeft size={14} /> Ortga
           </Link>
@@ -181,7 +176,7 @@ export default function AdminStudentDetail() {
       {/* Back link */}
       <Link
         to="/students"
-        className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-muted)] hover:text-[var(--green)] transition-colors animate-fade-in"
+        className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-base-content/45 hover:text-primary transition-colors animate-fade-in"
       >
         <ArrowLeft size={16} /> Talabalarga
       </Link>
@@ -218,7 +213,7 @@ export default function AdminStudentDetail() {
       </PageHeader>
 
       {/* ═══ Stats Bar ═══ */}
-      <div className="glass-strong rounded-[16px] p-5 animate-fade-in stagger-1">
+      <div className="card bg-base-100 p-5 animate-fade-in stagger-1">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Status */}
           <div className="flex items-center gap-3">
@@ -228,7 +223,7 @@ export default function AdminStudentDetail() {
               {isActive ? <User size={18} /> : <Snowflake size={18} />}
             </div>
             <div>
-              <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Holat</div>
+              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Holat</div>
               <div className={`text-[14px] font-extrabold ${isActive ? 'text-emerald-600' : 'text-red-500'}`}>
                 {isActive ? 'Aktiv' : 'Muzlatilgan'}
               </div>
@@ -237,12 +232,12 @@ export default function AdminStudentDetail() {
 
           {/* Coins */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[10px] flex items-center justify-center bg-[var(--green-bg)] text-[var(--green)]">
+            <div className="w-10 h-10 rounded-[10px] flex items-center justify-center bg-primary/10 text-primary">
               <Coins size={18} />
             </div>
             <div>
-              <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Koinlar</div>
-              <div className="text-[14px] font-extrabold text-[var(--text)] tabular-nums">
+              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Koinlar</div>
+              <div className="text-[14px] font-extrabold text-base-content tabular-nums">
                 {student.coins ?? 0}
               </div>
             </div>
@@ -254,8 +249,8 @@ export default function AdminStudentDetail() {
               <Wallet size={18} />
             </div>
             <div>
-              <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Balans</div>
-              <div className="text-[14px] font-extrabold text-[var(--text)] tabular-nums">
+              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Balans</div>
+              <div className="text-[14px] font-extrabold text-base-content tabular-nums">
                 {formatMoney(student.balance)}
               </div>
             </div>
@@ -267,8 +262,8 @@ export default function AdminStudentDetail() {
               <Users size={18} />
             </div>
             <div>
-              <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Guruhlar</div>
-              <div className="text-[14px] font-extrabold text-[var(--text)] tabular-nums">
+              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Guruhlar</div>
+              <div className="text-[14px] font-extrabold text-base-content tabular-nums">
                 {groups.length || (student.groupName ? 1 : 0)}
               </div>
             </div>
@@ -277,22 +272,18 @@ export default function AdminStudentDetail() {
       </div>
 
       {/* ═══ Personal Info Card ═══ */}
-      <div className="glass-strong rounded-[16px] p-5 animate-fade-in stagger-2">
+      <div className="card bg-base-100 p-5 animate-fade-in stagger-2">
         <div className="flex items-center gap-2 mb-4">
-          <Shield size={16} className="text-[var(--green)]" />
-          <h3 className="text-[14px] font-bold text-[var(--text)]">Shaxsiy ma'lumotlar</h3>
+          <Shield size={16} className="text-primary" />
+          <h3 className="text-[14px] font-bold text-base-content">Shaxsiy ma'lumotlar</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Avatar + Name */}
-          <div className="flex items-center gap-4 p-4 rounded-[12px] bg-[var(--surface)] border border-[var(--border)]">
-            <div className={`w-14 h-14 rounded-full flex items-center justify-center text-[18px] font-extrabold ${
-              isActive ? 'bg-[var(--green-bg)] text-[var(--green)]' : 'bg-red-50 text-red-500'
-            }`}>
-              {initials(student)}
-            </div>
+          <div className="flex items-center gap-4 p-4 rounded-[12px] bg-base-100 border border-base-300">
+            <Avatar name={fullName(student)} size="lg" />
             <div className="min-w-0">
-              <p className="text-[16px] font-extrabold text-[var(--text)] truncate">{fullName(student)}</p>
+              <p className="text-[16px] font-extrabold text-base-content truncate">{fullName(student)}</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                   isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'
@@ -300,12 +291,12 @@ export default function AdminStudentDetail() {
                   {isActive ? 'Aktiv' : 'Muzlatilgan'}
                 </span>
                 {student.gender && (
-                  <span className="text-[11px] text-[var(--text-muted)]">
+                  <span className="text-[11px] text-base-content/45">
                     {student.gender === 'male' ? 'Erkak' : 'Ayol'}
                   </span>
                 )}
                 {student.age && (
-                  <span className="text-[11px] text-[var(--text-muted)]">
+                  <span className="text-[11px] text-base-content/45">
                     {student.age} yosh
                   </span>
                 )}
@@ -316,70 +307,70 @@ export default function AdminStudentDetail() {
           {/* Contact Info */}
           <div className="space-y-3">
             {/* Phone */}
-            <div className="flex items-center justify-between p-3 rounded-[10px] bg-[var(--surface)] border border-[var(--border)]">
+            <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-100 border border-base-300">
               <div className="flex items-center gap-2.5">
-                <Phone size={14} className="text-[var(--text-muted)]" />
+                <Phone size={14} className="text-base-content/45" />
                 <div>
-                  <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Telefon</div>
-                  <div className="text-[13px] font-semibold text-[var(--text)]">{student.phone || "Ko'rsatilmagan"}</div>
+                  <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Telefon</div>
+                  <div className="text-[13px] font-semibold text-base-content">{student.phone || "Ko'rsatilmagan"}</div>
                 </div>
               </div>
               {student.phone && (
                 <button
-                  className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[var(--green-bg)] transition-colors"
+                  className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
                   onClick={() => copyToClipboard(student.phone, 'phone')}
                 >
-                  {copied === 'phone' ? <Check size={12} className="text-[var(--green)]" /> : <Copy size={12} className="text-[var(--text-muted)]" />}
+                  {copied === 'phone' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
                 </button>
               )}
             </div>
 
             {/* Login Code */}
-            <div className="flex items-center justify-between p-3 rounded-[10px] bg-[var(--surface)] border border-[var(--border)]">
+            <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-100 border border-base-300">
               <div className="flex items-center gap-2.5">
-                <Hash size={14} className="text-[var(--text-muted)]" />
+                <Hash size={14} className="text-base-content/45" />
                 <div>
-                  <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Login-kod</div>
-                  <div className="text-[13px] font-mono font-bold text-[var(--text)]">
+                  <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Login-kod</div>
+                  <div className="text-[13px] font-mono font-bold text-base-content">
                     {student.login_code || student.loginCode || "Yo'q"}
                   </div>
                 </div>
               </div>
               {(student.login_code || student.loginCode) && (
                 <button
-                  className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[var(--green-bg)] transition-colors"
+                  className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
                   onClick={() => copyToClipboard(student.login_code || student.loginCode, 'login')}
                 >
-                  {copied === 'login' ? <Check size={12} className="text-[var(--green)]" /> : <Copy size={12} className="text-[var(--text-muted)]" />}
+                  {copied === 'login' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
                 </button>
               )}
             </div>
 
             {/* Parent Phone */}
             {student.parentPhone && (
-              <div className="flex items-center justify-between p-3 rounded-[10px] bg-[var(--surface)] border border-[var(--border)]">
+              <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-100 border border-base-300">
                 <div className="flex items-center gap-2.5">
-                  <Phone size={14} className="text-[var(--text-muted)]" />
+                  <Phone size={14} className="text-base-content/45" />
                   <div>
-                    <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Ota-ona telefoni</div>
-                    <div className="text-[13px] font-semibold text-[var(--text)]">{student.parentPhone}</div>
+                    <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Ota-ona telefoni</div>
+                    <div className="text-[13px] font-semibold text-base-content">{student.parentPhone}</div>
                   </div>
                 </div>
                 <button
-                  className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-[var(--green-bg)] transition-colors"
+                  className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
                   onClick={() => copyToClipboard(student.parentPhone, 'parent')}
                 >
-                  {copied === 'parent' ? <Check size={12} className="text-[var(--green)]" /> : <Copy size={12} className="text-[var(--text-muted)]" />}
+                  {copied === 'parent' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
                 </button>
               </div>
             )}
 
             {/* Created At */}
-            <div className="flex items-center gap-2.5 p-3 rounded-[10px] bg-[var(--surface)] border border-[var(--border)]">
-              <CalendarDays size={14} className="text-[var(--text-muted)]" />
+            <div className="flex items-center gap-2.5 p-3 rounded-[10px] bg-base-100 border border-base-300">
+              <CalendarDays size={14} className="text-base-content/45" />
               <div>
-                <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Qo'shilgan sana</div>
-                <div className="text-[13px] font-semibold text-[var(--text)]">{formatDate(student.createdAt)}</div>
+                <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Qo'shilgan sana</div>
+                <div className="text-[13px] font-semibold text-base-content">{formatDate(student.createdAt)}</div>
               </div>
             </div>
           </div>
@@ -387,35 +378,35 @@ export default function AdminStudentDetail() {
       </div>
 
       {/* ═══ Groups Section ═══ */}
-      <div className="glass-strong rounded-[16px] p-5 animate-fade-in stagger-3">
+      <div className="card bg-base-100 p-5 animate-fade-in stagger-3">
         <div className="flex items-center gap-2 mb-4">
-          <GraduationCap size={16} className="text-[var(--green)]" />
-          <h3 className="text-[14px] font-bold text-[var(--text)]">Guruhlar</h3>
-          <span className="text-[12px] text-[var(--text-muted)] ml-auto">
+          <GraduationCap size={16} className="text-primary" />
+          <h3 className="text-[14px] font-bold text-base-content">Guruhlar</h3>
+          <span className="text-[12px] text-base-content/45 ml-auto">
             {groups.length || (student.groupName ? 1 : 0)} ta
           </span>
         </div>
 
         {groups.length === 0 && !student.groupName ? (
           <div className="text-center py-8">
-            <Users size={32} className="mx-auto mb-2 text-[var(--text-muted)] opacity-30" />
-            <p className="text-[13px] text-[var(--text-muted)]">Guruhga biriktirilmagan</p>
+            <Users size={32} className="mx-auto mb-2 text-base-content/45 opacity-30" />
+            <p className="text-[13px] text-base-content/45">Guruhga biriktirilmagan</p>
           </div>
         ) : (
           <div className="space-y-2">
             {/* Mock groups from student data */}
             {(groups.length > 0 ? groups : [{ id: 'g1', name: student.groupName, subject: '—' }]).map((g) => (
-              <div key={g.id} className="flex items-center gap-3 p-3 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--green)] transition-all">
-                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[var(--green-bg)] text-[var(--green)]">
+              <div key={g.id} className="flex items-center gap-3 p-3 rounded-[12px] border border-base-300 bg-base-100 hover:border-primary transition-all">
+                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-primary/10 text-primary">
                   <GraduationCap size={16} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-[13px] font-bold text-[var(--text)] block truncate">{g.name}</span>
-                  <span className="text-[11px] text-[var(--text-muted)]">{g.subject}</span>
+                  <span className="text-[13px] font-bold text-base-content block truncate">{g.name}</span>
+                  <span className="text-[11px] text-base-content/45">{g.subject}</span>
                 </div>
                 <Link
                   to={`/groups/${g.id}`}
-                  className="text-[11px] font-semibold text-[var(--green)] hover:underline"
+                  className="text-[11px] font-semibold text-primary hover:underline"
                 >
                   Ko'rish
                 </Link>
@@ -426,38 +417,38 @@ export default function AdminStudentDetail() {
       </div>
 
       {/* ═══ Payments Section ═══ */}
-      <div className="glass-strong rounded-[16px] p-5 animate-fade-in stagger-4">
+      <div className="card bg-base-100 p-5 animate-fade-in stagger-4">
         <div className="flex items-center gap-2 mb-4">
-          <CreditCard size={16} className="text-[var(--green)]" />
-          <h3 className="text-[14px] font-bold text-[var(--text)]">To'lovlar tarixi</h3>
-          <span className="text-[12px] text-[var(--text-muted)] ml-auto">
+          <CreditCard size={16} className="text-primary" />
+          <h3 className="text-[14px] font-bold text-base-content">To'lovlar tarixi</h3>
+          <span className="text-[12px] text-base-content/45 ml-auto">
             {payments.length} ta
           </span>
         </div>
 
         {payments.length === 0 ? (
           <div className="text-center py-8">
-            <CreditCard size={32} className="mx-auto mb-2 text-[var(--text-muted)] opacity-30" />
-            <p className="text-[13px] text-[var(--text-muted)]">To'lovlar mavjud emas</p>
+            <CreditCard size={32} className="mx-auto mb-2 text-base-content/45 opacity-30" />
+            <p className="text-[13px] text-base-content/45">To'lovlar mavjud emas</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="table w-full text-[13px]">
               <thead>
                 <tr>
-                  <th className="text-[var(--text-secondary)]">Sana</th>
-                  <th className="text-[var(--text-secondary)]">Summa</th>
-                  <th className="text-[var(--text-secondary)]">Usul</th>
-                  <th className="text-[var(--text-secondary)]">Holat</th>
+                  <th className="text-base-content/70">Sana</th>
+                  <th className="text-base-content/70">Summa</th>
+                  <th className="text-base-content/70">Usul</th>
+                  <th className="text-base-content/70">Holat</th>
                 </tr>
               </thead>
               <tbody>
                 {payments.map((p) => (
-                  <tr key={p.id} className="hover:bg-[var(--surface-hover)]">
-                    <td className="font-semibold text-[var(--text)]">{formatDate(p.date)}</td>
-                    <td className="font-bold text-[var(--text)] tabular-nums">{formatMoney(p.amount)}</td>
+                  <tr key={p.id} className="hover:bg-base-200">
+                    <td className="font-semibold text-base-content">{formatDate(p.date)}</td>
+                    <td className="font-bold text-base-content tabular-nums">{formatMoney(p.amount)}</td>
                     <td>
-                      <span className="inline-flex items-center gap-1 text-[var(--text-secondary)]">
+                      <span className="inline-flex items-center gap-1 text-base-content/70">
                         <CreditCard size={11} />
                         {PAYMENT_TYPE_LABELS[p.type] || p.type}
                       </span>
@@ -476,9 +467,9 @@ export default function AdminStudentDetail() {
 
         {/* Total */}
         {payments.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-[var(--border)] flex items-center justify-between">
-            <span className="text-[12px] font-bold text-[var(--text-secondary)]">Jami to'langan</span>
-            <span className="text-[14px] font-extrabold text-[var(--green)] tabular-nums">
+          <div className="mt-3 pt-3 border-t border-base-300 flex items-center justify-between">
+            <span className="text-[12px] font-bold text-base-content/70">Jami to'langan</span>
+            <span className="text-[14px] font-extrabold text-primary tabular-nums">
               {formatMoney(payments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + (p.amount || 0), 0))}
             </span>
           </div>
@@ -486,14 +477,14 @@ export default function AdminStudentDetail() {
       </div>
 
       {/* ═══ Quick Actions ═══ */}
-      <div className="glass-strong rounded-[16px] p-5 animate-fade-in stagger-5">
+      <div className="card bg-base-100 p-5 animate-fade-in stagger-5">
         <div className="flex items-center gap-2 mb-4">
-          <Clock size={16} className="text-[var(--green)]" />
-          <h3 className="text-[14px] font-bold text-[var(--text)]">Tezkor amallar</h3>
+          <Clock size={16} className="text-primary" />
+          <h3 className="text-[14px] font-bold text-base-content">Tezkor amallar</h3>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <button
-            className="flex items-center gap-3 p-3 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--green)] hover:shadow-sm transition-all text-left group"
+            className="flex items-center gap-3 p-3 rounded-[12px] border border-base-300 bg-base-100 hover:border-primary hover:shadow-sm transition-all text-left group"
             onClick={handleRegen}
             disabled={busy}
           >
@@ -501,13 +492,13 @@ export default function AdminStudentDetail() {
               <KeyRound size={16} />
             </div>
             <div>
-              <div className="text-[12px] font-bold text-[var(--text)]">Parolni yangilash</div>
-              <div className="text-[10px] text-[var(--text-muted)]">Yangi login-kod</div>
+              <div className="text-[12px] font-bold text-base-content">Parolni yangilash</div>
+              <div className="text-[10px] text-base-content/45">Yangi login-kod</div>
             </div>
           </button>
 
           <button
-            className="flex items-center gap-3 p-3 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--green)] hover:shadow-sm transition-all text-left group"
+            className="flex items-center gap-3 p-3 rounded-[12px] border border-base-300 bg-base-100 hover:border-primary hover:shadow-sm transition-all text-left group"
             onClick={toggleFreeze}
             disabled={busy}
           >
@@ -517,17 +508,17 @@ export default function AdminStudentDetail() {
               {isActive ? <Snowflake size={16} /> : <Sun size={16} />}
             </div>
             <div>
-              <div className="text-[12px] font-bold text-[var(--text)]">
+              <div className="text-[12px] font-bold text-base-content">
                 {isActive ? 'Muzlatish' : 'Tiklash'}
               </div>
-              <div className="text-[10px] text-[var(--text-muted)]">
+              <div className="text-[10px] text-base-content/45">
                 {isActive ? 'Kirishni cheklash' : 'Kirishni tiklash'}
               </div>
             </div>
           </button>
 
           <button
-            className="flex items-center gap-3 p-3 rounded-[12px] border border-[var(--border)] bg-[var(--surface)] hover:border-red-300 hover:bg-red-50 transition-all text-left group"
+            className="flex items-center gap-3 p-3 rounded-[12px] border border-base-300 bg-base-100 hover:border-red-300 hover:bg-red-50 transition-all text-left group"
             onClick={handleDelete}
             disabled={busy}
           >
@@ -535,8 +526,8 @@ export default function AdminStudentDetail() {
               <Trash2 size={16} />
             </div>
             <div>
-              <div className="text-[12px] font-bold text-[var(--text)]">O'chirish</div>
-              <div className="text-[10px] text-[var(--text-muted)]">Butunlay o'chirish</div>
+              <div className="text-[12px] font-bold text-base-content">O'chirish</div>
+              <div className="text-[10px] text-base-content/45">Butunlay o'chirish</div>
             </div>
           </button>
         </div>
@@ -545,12 +536,12 @@ export default function AdminStudentDetail() {
       {/* ═══ Edit Modal ═══ */}
       {editing && (
         <dialog className="modal modal-open">
-          <div className="modal-box glass-strong border border-[var(--border)]">
+          <div className="modal-box card bg-base-100 border border-base-300">
             <h3 className="font-bold text-lg mb-4">Talabani tahrirlash</h3>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Ism</label>
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Ism</label>
                   <input
                     className="input input-bordered w-full"
                     placeholder="Ism"
@@ -559,7 +550,7 @@ export default function AdminStudentDetail() {
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Familiya</label>
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Familiya</label>
                   <input
                     className="input input-bordered w-full"
                     placeholder="Familiya"
@@ -569,7 +560,7 @@ export default function AdminStudentDetail() {
                 </div>
               </div>
               <div>
-                <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Telefon</label>
+                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Telefon</label>
                 <input
                   className="input input-bordered w-full"
                   placeholder="+998 XX XXX XX XX"
@@ -578,7 +569,7 @@ export default function AdminStudentDetail() {
                 />
               </div>
               <div>
-                <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Ota-ona telefoni</label>
+                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Ota-ona telefoni</label>
                 <input
                   className="input input-bordered w-full"
                   placeholder="+998 XX XXX XX XX"
@@ -588,7 +579,7 @@ export default function AdminStudentDetail() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Yosh</label>
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Yosh</label>
                   <input
                     className="input input-bordered w-full"
                     type="number"
@@ -600,7 +591,7 @@ export default function AdminStudentDetail() {
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Jins</label>
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Jins</label>
                   <select
                     className="select select-bordered w-full"
                     value={form.gender}

@@ -50,7 +50,8 @@ const LessonEditor = lazy(() => import('./pages/methodist/LessonEditor.jsx'));
 const MethodistAnalytics = lazy(() => import('./pages/methodist/Analytics.jsx'));
 
 function Protected({ children }) {
-  const { token } = useAuth();
+  const { token, loading } = useAuth();
+  if (loading) return <Splash />;
   return token ? children : <Navigate to="/login" replace />;
 }
 
@@ -131,11 +132,13 @@ export default function App() {
         </Route>
 
         {/* Methodist routes */}
-        <Route path="/methodist/types" element={<SW><TrainingTypes /></SW>} />
-        <Route path="/methodist/types/:trainingTypeId/topics" element={<SW><Topics /></SW>} />
-        <Route path="/methodist/topics/:topicId/lessons" element={<SW><Lessons /></SW>} />
-        <Route path="/methodist/lessons/:lessonId/edit" element={<SW><LessonEditor /></SW>} />
-        <Route path="/methodist/analytics" element={<SW><MethodistAnalytics /></SW>} />
+        <Route element={<RoleGuard allow={['methodist']} />}>
+          <Route path="/methodist/types" element={<SW><TrainingTypes /></SW>} />
+          <Route path="/methodist/types/:trainingTypeId/topics" element={<SW><Topics /></SW>} />
+          <Route path="/methodist/topics/:topicId/lessons" element={<SW><Lessons /></SW>} />
+          <Route path="/methodist/lessons/:lessonId/edit" element={<SW><LessonEditor /></SW>} />
+          <Route path="/methodist/analytics" element={<SW><MethodistAnalytics /></SW>} />
+        </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -121,6 +121,32 @@ hand-edit them. Same rule as `og:image`: **search engines want raster, not SVG.*
   (`public/404.html`) instead of a soft-404 rendering the homepage. This matters: AI
   assistants send users to hallucinated URLs ~2.9× more often than Google does.
 
+### Security headers
+
+The `/(.*)` rule sends `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
+`Permissions-Policy` and a CSP. The CSP allowlist is **derived from what the app actually
+loads**, not copied from a template — widen it only after checking the build:
+
+| Directive | Why these hosts |
+|---|---|
+| `script-src` | `googletagmanager.com` (GA4 tag) + `'unsafe-inline'` — `index.html` carries an inline `gtag()` bootstrap and Vercel serves static files, so there is no nonce to issue. |
+| `connect-src` | `api.levelup-academy.uz` (the lead form) and `*.google-analytics.com` — GA4 posts to regional hosts like `region1.`, so the wildcard is required. |
+| `style-src` | `'unsafe-inline'` — React `style={{…}}` props compile to inline style attributes. |
+| `font-src 'self'` | Manrope ships in the bundle (`@fontsource-variable/manrope`), nothing is fetched from Google Fonts. |
+
+`frame-ancestors 'none'` duplicates `X-Frame-Options` on purpose: the latter is what older
+crawlers and scanners still look for.
+
+**HSTS is deliberately not set here.** Vercel already sends
+`Strict-Transport-Security: max-age=63072000`; overriding it would only lower the max-age, and
+adding `includeSubDomains` would bind `api.`, `staff.` and `member.` for two years — a call for
+the Team Lead, not a landing-page commit.
+
+Vercel applies headers server-side, so a plain static server proves nothing about them. To test
+a CSP change before deploying, serve `dist/` through something that reads the same
+`vercel.json` and watch the console for violations — they surface as console errors, and a
+clean console after a reload is the pass condition.
+
 ---
 
 ## Verifying a change

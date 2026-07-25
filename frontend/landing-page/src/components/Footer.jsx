@@ -22,6 +22,7 @@ export default function Footer() {
             <Link to={lp('/landing/pricing')}>{t.nav.pricing}</Link>
             <Link to={lp('/landing/for-language-school')}>{t.nav.langSchool}</Link>
             <Link to={lp('/landing/for-courses')}>{t.nav.courses}</Link>
+            <Link to={lp('/landing/crm-vs-excel')}>{t.nav.vsExcel}</Link>
             <Link to={lp('/landing/blog')}>{t.nav.blog}</Link>
           </div>
           <div className="footer__col">
@@ -33,7 +34,7 @@ export default function Footer() {
           <div className="footer__col">
             <h4>{t.footer.contact}</h4>
             <Link to={lp('/landing/contacts')}>{t.footer.writeUs}</Link>
-            <a href="https://t.me/" target="_blank" rel="noreferrer">
+            <a href="https://t.me/levelupacademycrm" target="_blank" rel="noreferrer">
               Telegram
             </a>
           </div>

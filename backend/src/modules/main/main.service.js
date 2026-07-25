@@ -122,6 +122,52 @@ export async function platformDashboard() {
   return { totals, pricing: getPricing(), partners };
 }
 
+/**
+ * Выручка платформы (наш доход). Наш доход = сумма месячных счетов партнёров
+ * (computeBill по числу учеников). Отдельный от дашборда endpoint, ориентированный
+ * на деньги. Только чтение денежных данных — ничего не пишет.
+ */
+export async function platformRevenue() {
+  const partners = await listPartners();
+  const totals = partners.reduce(
+    (acc, p) => {
+      acc.ourMonthlyIncome += p.monthlyBill;
+      acc.partnersRevenue += p.revenue;
+      acc.partnersExpenses += p.expenses;
+      acc.partnersProfit += p.profit;
+      acc.students += p.students;
+      acc.branches += p.branches;
+      if (p.status === 'active') acc.activePartners += 1;
+      return acc;
+    },
+    {
+      partners: partners.length,
+      activePartners: 0,
+      students: 0,
+      branches: 0,
+      ourMonthlyIncome: 0,
+      partnersRevenue: 0,
+      partnersExpenses: 0,
+      partnersProfit: 0,
+    },
+  );
+  totals.currency = 'UZS';
+  return {
+    totals,
+    partners: partners.map((p) => ({
+      id: p.id,
+      name: p.name,
+      status: p.status,
+      tier: p.tier,
+      students: p.students,
+      branches: p.branches,
+      monthlyBill: p.monthlyBill,
+      revenue: p.revenue,
+    })),
+    pricing: getPricing(),
+  };
+}
+
 // ---------- управление партнёром ----------
 
 export async function setPartnerStatus(id, status) {

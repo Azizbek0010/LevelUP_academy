@@ -50,7 +50,7 @@ function GradeBadge({ grade }) {
   if (!g) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-base-300 text-base-content/45">
-        Daraja belgilanmagan
+        Уровень не установлен
       </span>
     );
   }
@@ -81,7 +81,7 @@ function SkillsInput({ value, onChange, max = 20 }) {
     <div>
       <div className="flex flex-wrap gap-2 mb-2.5">
         {value.length === 0 && (
-          <span className="text-xs text-base-content/40 py-1">Hali ko'nikma qo'shilmagan</span>
+          <span className="text-xs text-base-content/40 py-1">Навыки пока не добавлены</span>
         )}
         {value.map((s) => (
           <span
@@ -92,7 +92,7 @@ function SkillsInput({ value, onChange, max = 20 }) {
             <button
               onClick={() => onChange(value.filter((x) => x !== s))}
               className="w-5 h-5 rounded grid place-items-center hover:bg-primary/20 transition-colors"
-              aria-label={`${s} — o'chirish`}
+              aria-label={`${s} — удалить`}
             >
               <X size={12} />
             </button>
@@ -103,7 +103,7 @@ function SkillsInput({ value, onChange, max = 20 }) {
       <div className="flex gap-2">
         <input
           className="input input-bordered input-sm flex-1"
-          placeholder="Masalan: IELTS, Grammar..."
+          placeholder="Например: IELTS, Грамматика..."
           value={draft}
           maxLength={40}
           disabled={value.length >= max}
@@ -124,11 +124,11 @@ function SkillsInput({ value, onChange, max = 20 }) {
           onClick={() => add(draft)}
           disabled={!draft.trim() || value.length >= max}
         >
-          <Plus size={14} /> Qo'shish
+          <Plus size={14} /> Добавить
         </button>
       </div>
       <div className="text-[11px] text-base-content/40 mt-1.5">
-        {value.length}/{max} · Enter yoki vergul bilan qo'shiladi
+        {value.length}/{max} · Нажмите Enter или запятую для добавления
       </div>
     </div>
   );
@@ -187,9 +187,9 @@ export default function MentorProfile() {
   );
 
   const validate = () => {
-    if (!firstName.trim()) return 'Ismni kiriting';
-    if (!lastName.trim()) return 'Familiyani kiriting';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return "Email noto'g'ri";
+    if (!firstName.trim()) return 'Введите имя';
+    if (!lastName.trim()) return 'Введите фамилию';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Некорректный email';
     return '';
   };
 
@@ -214,7 +214,7 @@ export default function MentorProfile() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
-      setError(err.message || 'Saqlanmadi');
+      setError(err.message || 'Не удалось сохранить');
     } finally {
       setSaving(false);
     }
@@ -292,16 +292,16 @@ export default function MentorProfile() {
             {/* Показатели: профиль без единой цифры выглядит анкетой,
                 а не рабочим экраном. */}
             <div className="flex border-t border-base-200 py-3.5">
-              <Stat icon={BookOpen} value={groups.length} label="Guruh" />
+              <Stat icon={BookOpen} value={groups.length} label="Групп" />
               <div className="w-px bg-base-200" />
-              <Stat icon={Users} value={studentsTotal} label="O'quvchi" />
+              <Stat icon={Users} value={studentsTotal} label="Учеников" />
             </div>
 
             <div className="divide-y divide-base-200 border-t border-base-200">
               <InfoRow icon={Mail} label="Email" value={me?.email ?? user?.email} />
-              <InfoRow icon={Phone} label="Telefon" value={me?.phone} />
-              <InfoRow icon={Building2} label="Filial" value={me?.branchName} />
-              <InfoRow icon={CalendarDays} label="Ro'yxatdan" value={formatDate(me?.createdAt)} />
+              <InfoRow icon={Phone} label="Телефон" value={me?.phone} />
+              <InfoRow icon={Building2} label="Филиал" value={me?.branchName} />
+              <InfoRow icon={CalendarDays} label="Зарегистрирован" value={formatDate(me?.createdAt)} />
             </div>
           </section>
         </div>
@@ -312,15 +312,15 @@ export default function MentorProfile() {
         <div className="space-y-5">
           <section className="card bg-base-100">
             <header className="px-5 py-4 border-b border-base-200">
-              <h2 className="font-bold">Shaxsiy ma'lumotlar</h2>
+              <h2 className="font-bold">Личные данные</h2>
               <p className="text-xs text-base-content/45 mt-0.5">
-                Bu ma'lumotlar ota-onalar va administratorga ko'rinadi.
+                Эти данные видят родители и администратор.
               </p>
             </header>
 
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="form-control">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Ism</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Имя</span>
                 <input
                   className="input input-bordered"
                   value={firstName}
@@ -330,7 +330,7 @@ export default function MentorProfile() {
                 />
               </label>
               <label className="form-control">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Familiya</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Фамилия</span>
                 <input
                   className="input input-bordered"
                   value={lastName}
@@ -350,25 +350,25 @@ export default function MentorProfile() {
                   disabled={isLoading}
                 />
                 <span className="text-[11px] text-base-content/45 mt-1.5">
-                  Shu email bilan tizimga kirasiz, parolni tiklash kodi ham shu manzilga keladi.
+                  Вы входите в систему с этим email, код восстановления пароля также приходит на этот адрес.
                 </span>
               </label>
 
               {/* ── Профессиональная часть ── */}
               <div className="sm:col-span-2 border-t border-base-200 pt-4 mt-1">
-                <h3 className="text-sm font-bold">Kasbiy ma'lumotlar</h3>
+                <h3 className="text-sm font-bold">Профессиональная информация</h3>
                 <p className="text-xs text-base-content/45 mt-0.5">
-                  Bu ma'lumotlar ota-onalar sizni tanishi uchun ko'rsatiladi.
+                  Эти данные показываются родителям для знакомства с вами.
                 </p>
               </div>
 
               <label className="form-control sm:col-span-2">
                 <span className="text-xs font-semibold text-base-content/55 mb-1.5">
-                  O'zingiz haqingizda
+                  О себе
                 </span>
                 <textarea
                   className="textarea textarea-bordered min-h-[104px] leading-relaxed"
-                  placeholder="Tajribangiz, o'qitish uslubingiz, yutuqlaringiz..."
+                  placeholder="Ваш опыт, стиль преподавания, достижения..."
                   value={bio}
                   maxLength={1000}
                   onChange={(e) => { setBio(e.target.value); setError(''); }}
@@ -381,7 +381,7 @@ export default function MentorProfile() {
 
               <div className="form-control sm:col-span-2">
                 <span className="text-xs font-semibold text-base-content/55 mb-1.5">
-                  Ko'nikmalar
+                  Навыки
                 </span>
                 <SkillsInput
                   value={skills}
@@ -394,12 +394,12 @@ export default function MentorProfile() {
                   выглядит сломанным. */}
               <div className="form-control sm:col-span-2">
                 <span className="text-xs font-semibold text-base-content/55 mb-1.5 flex items-center gap-1.5">
-                  <Lock size={11} /> Daraja
+                  <Lock size={11} /> Уровень
                 </span>
                 <div className="flex items-center gap-3 flex-wrap px-3.5 py-3 rounded-lg bg-base-200/50 border border-base-200">
                   <GradeBadge grade={me?.grade} />
                   <span className="text-xs text-base-content/50">
-                    Darajani administrator belgilaydi — uni o'zingiz o'zgartira olmaysiz.
+                    Уровень устанавливает администратор — вы не можете изменить его самостоятельно.
                   </span>
                 </div>
               </div>
@@ -415,17 +415,17 @@ export default function MentorProfile() {
                   </span>
                 ) : saved ? (
                   <span className="flex items-center gap-1.5 text-success font-semibold">
-                    <Check size={14} /> Saqlandi
+                    <Check size={14} /> Сохранено
                   </span>
                 ) : dirty ? (
-                  <span className="text-base-content/50">Saqlanmagan o'zgarishlar bor</span>
+                  <span className="text-base-content/50">Есть несохранённые изменения</span>
                 ) : null}
               </span>
 
               <span className="flex items-center gap-2 shrink-0">
                 {dirty && (
                   <button className="btn btn-ghost btn-sm" onClick={reset} disabled={saving}>
-                    Bekor qilish
+                    Отмена
                   </button>
                 )}
                 <button
@@ -434,7 +434,7 @@ export default function MentorProfile() {
                   disabled={saving || !dirty}
                 >
                   {saving ? <span className="loading loading-spinner loading-xs" /> : <Check size={15} />}
-                  Saqlash
+                  Сохранить
                 </button>
               </span>
             </footer>
@@ -442,25 +442,25 @@ export default function MentorProfile() {
 
           <section className="card bg-base-100">
             <header className="px-5 py-4 border-b border-base-200">
-              <h2 className="font-bold">Xavfsizlik</h2>
+              <h2 className="font-bold">Безопасность</h2>
             </header>
 
             <div className="divide-y divide-base-200">
               <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
-                    <KeyRound size={15} className="text-base-content/40" /> Parol
+                    <KeyRound size={15} className="text-base-content/40" /> Пароль
                   </div>
                   <p className="text-xs text-base-content/50 mt-1 max-w-md">
-                    Xavfsizlik uchun parol shu yerdan almashtirilmaydi — u emailingizga
-                    keladigan tasdiqlash kodi orqali tiklanadi.
+                    В целях безопасности пароль не изменяется здесь — он
+                    восстанавливается через код подтверждения, отправляемый на ваш email.
                   </p>
                 </div>
                 <button
                   className="btn btn-outline btn-sm shrink-0"
                   onClick={() => navigate('/login?reset=1')}
                 >
-                  Parolni tiklash
+                  Восстановить пароль
                 </button>
               </div>
 
@@ -469,14 +469,14 @@ export default function MentorProfile() {
               <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
-                    <LogOut size={15} className="text-base-content/40" /> Seansni yakunlash
+                    <LogOut size={15} className="text-base-content/40" /> Завершить сеанс
                   </div>
                   <p className="text-xs text-base-content/50 mt-1">
-                    Bu qurilmada akkauntdan chiqasiz.
+                    Вы выйдете из аккаунта на этом устройстве.
                   </p>
                 </div>
                 <button className="btn btn-outline btn-error btn-sm shrink-0" onClick={onLogout}>
-                  Chiqish
+                  Выйти
                 </button>
               </div>
             </div>

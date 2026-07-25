@@ -28,8 +28,8 @@ export default function MentorGroupsIndex() {
       <div className="card bg-base-100">
         <EmptyState
           icon={BookOpen}
-          title="Sizda hali guruhlar yo'q"
-          hint="Guruh biriktirilgach, u chapdagi ro'yxatda paydo bo'ladi."
+          title="У вас пока нет групп"
+          hint="Когда группа будет назначена, она появится в списке слева."
         />
       </div>
     );

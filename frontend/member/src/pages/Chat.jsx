@@ -1,19 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Globe, MessageCircle, Send, Info, Circle } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
 import { useChatMessages } from '../queries.js';
 import { getSocket } from '../socket.js';
-import { datetimeShort, timeAgo } from '../format.js';
+import { timeAgo } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { EmptyState } from '../components/ui.jsx';
 
 const ROOMS = [
-  { key: 'global', label: 'Общий чат', icon: '🌐', desc: 'Чат для всех родителей и сотрудников' },
-  { key: 'direct', label: 'От staff', icon: '💬', desc: 'Личные сообщения от менторов и администраторов' },
+  { key: 'global', label: 'Общий чат', Icon: Globe, desc: 'Чат для всех родителей и сотрудников' },
+  { key: 'direct', label: 'От staff', Icon: MessageCircle, desc: 'Личные сообщения от менторов и администраторов' },
 ];
-
-const QUICK_REACTIONS = ['👍', '❤️', '😊', '🙏', '💪', '✅'];
 
 export default function Chat() {
   const { token, user } = useAuth();
@@ -22,7 +21,6 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [showReactions, setShowReactions] = useState(null);
   const bottomRef = useRef(null);
   const socketRef = useRef(null);
   const inputRef = useRef(null);
@@ -41,16 +39,7 @@ export default function Chat() {
     if (!token) return;
     const s = getSocket(token);
     socketRef.current = s;
-
-    const onConnect = () => {};
-    const onDisconnect = () => {};
-    s.on('connect', onConnect);
-    s.on('disconnect', onDisconnect);
-
-    return () => {
-      s.off('connect', onConnect);
-      s.off('disconnect', onDisconnect);
-    };
+    return () => {};
   }, [token]);
 
   useEffect(() => {
@@ -104,33 +93,40 @@ export default function Chat() {
         subtitle={selectedChild ? `${selectedChild.firstName} ${selectedChild.lastName}` : ''}
       />
 
-      <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit">
+      {/* Room tabs */}
+      <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit shadow-sm">
         {ROOMS.map((r) => (
           <button
             key={r.key}
-            onClick={() => { setActiveRoom(r.key); setMessages([]); setShowReactions(null); }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            onClick={() => { setActiveRoom(r.key); setMessages([]); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               activeRoom === r.key
                 ? 'bg-primary text-primary-content shadow-sm'
                 : 'text-base-content/50 hover:bg-base-200'
             }`}
           >
-            <span className="mr-1.5">{r.icon}</span>
+            <r.Icon className="w-4 h-4" />
             {r.label}
           </button>
         ))}
       </div>
 
+      {/* Chat area */}
       <div className="card bg-base-100 flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 220px)', minHeight: '400px' }}>
+        {/* Header bar */}
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-base-300 bg-base-200/30">
           <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
           <span className="text-xs font-medium opacity-60">Онлайн</span>
           <span className="text-[11px] opacity-30 ml-1">· {roomInfo?.desc}</span>
           {activeRoom === 'direct' && (
-            <span className="ml-auto text-[11px] opacity-30 bg-base-200 px-2 py-0.5 rounded-full">Только чтение</span>
+            <span className="ml-auto text-[11px] opacity-30 bg-base-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Info className="w-3 h-3" />
+              Только чтение
+            </span>
           )}
         </div>
 
+        {/* Messages */}
         <div className="flex-1 overflow-auto p-4 space-y-4">
           {isLoading && messages.length === 0 && (
             <div className="text-center py-12">
@@ -139,7 +135,7 @@ export default function Chat() {
           )}
 
           {!isLoading && messages.length === 0 && (
-            <EmptyState icon="💬" title="Пока нет сообщений" message="Начните общение первым" />
+            <EmptyState icon="chat" title="Пока нет сообщений" message="Начните общение первым" />
           )}
 
           {messages.map((msg, idx) => {
@@ -190,6 +186,7 @@ export default function Chat() {
           <div ref={bottomRef} />
         </div>
 
+        {/* Input */}
         {canSend && (
           <div className="border-t border-base-300 p-3 bg-base-50">
             <div className="flex gap-2 items-end">
@@ -207,9 +204,7 @@ export default function Chat() {
                 onClick={handleSend}
                 disabled={!input.trim() || sending}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                </svg>
+                <Send className="w-5 h-5" />
               </button>
             </div>
           </div>

@@ -27,12 +27,16 @@ import { Avatar, EmptyState } from '../_ui.jsx';
  */
 
 const MONTHS = [
-  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
-  'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr',
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
 ];
 
 /** Пауза после последнего клика, по истечении которой уходит пачка. */
 const AUTOSAVE_DELAY = 700;
+
+// Роли, чья отметка = «исправление администратора»: клетка держит цвет статуса,
+// но получает пометку. Ментор видит её так же, как админ.
+const ADMIN_MARK_ROLES = new Set(['admin', 'superadmin', 'main_admin']);
 
 const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
@@ -112,15 +116,15 @@ function SaveIndicator({ state, onRetry }) {
         onClick={onRetry}
         className="flex items-center gap-1.5 text-xs font-semibold text-error hover:underline"
       >
-        <CloudOff size={14} /> Saqlanmadi — qayta urinish
+        <CloudOff size={14} /> Не сохранено — попробовать снова
       </button>
     );
   }
 
   const view = {
-    pending: { Icon: Loader2, text: 'Saqlanmoqda...', spin: true },
-    saving: { Icon: Loader2, text: 'Saqlanmoqda...', spin: true },
-    saved: { Icon: Cloud, text: 'Saqlandi', spin: false },
+    pending: { Icon: Loader2, text: 'Сохранение...', spin: true },
+    saving: { Icon: Loader2, text: 'Сохранение...', spin: true },
+    saved: { Icon: Cloud, text: 'Сохранено', spin: false },
   }[state];
 
   return (
@@ -148,6 +152,9 @@ export default function AttendanceTab({ groupId, group }) {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [attendanceMap, setAttendanceMap] = useState({});
+  // Клетки, чью отметку поставил/исправил админ — показываем пометкой.
+  const [correctedMap, setCorrectedMap] = useState({});
+  const correctedRef = useRef({});
   const [coinDrafts, setCoinDrafts] = useState({});   // studentId -> строка из инпута
   const [coinBusyId, setCoinBusyId] = useState(null);
 
@@ -247,6 +254,14 @@ export default function AttendanceTab({ groupId, group }) {
     mapRef.current = next;
     setAttendanceMap(next);
 
+    // Правку внёс админ → помечаем эти клетки как исправленные администратором.
+    if (payload?.byAdmin) {
+      const corr = { ...correctedRef.current };
+      Object.keys(patch).forEach((k) => { corr[k] = true; });
+      correctedRef.current = corr;
+      setCorrectedMap(corr);
+    }
+
     /* Ростер здесь НЕ перезапрашивается, и это важно.
        Раньше стоял invalidateQueries по ученикам группы — «вдруг коины
        изменились». Отметка посещаемости коины не трогает (их меняет отдельная
@@ -259,6 +274,8 @@ export default function AttendanceTab({ groupId, group }) {
 
   useEffect(() => {
     setAttendanceMap({});
+    setCorrectedMap({});
+    correctedRef.current = {};
   }, [groupId, month, year]);
 
   useEffect(() => {
@@ -268,14 +285,20 @@ export default function AttendanceTab({ groupId, group }) {
         fullMap[`${s.id}_${year}-${pad(month + 1)}-${pad(d)}`] = null;
       });
     });
+    const corr = {};
     attendance.forEach((a) => {
       const attDate = a.date ?? a.lesson_date; // бэкенд: lesson_date, моки: date
       if (!attDate) return;
       const key = `${a.student_id}_${attDate}`;
-      if (fullMap[key] !== undefined) fullMap[key] = a.status;
+      if (fullMap[key] !== undefined) {
+        fullMap[key] = a.status;
+        if (ADMIN_MARK_ROLES.has(a.marked_by_role)) corr[key] = true;
+      }
     });
     setAttendanceMap(fullMap);
     mapRef.current = fullMap;   // держим зеркало в согласии с данными сервера
+    setCorrectedMap(corr);
+    correctedRef.current = corr;
   }, [students, month, year, attendance, DAYS]);
 
   const dateKeyFor = (day) => `${year}-${pad(month + 1)}-${pad(day)}`;
@@ -319,7 +342,7 @@ export default function AttendanceTab({ groupId, group }) {
         pendingRef.current.set(date, existing);
       }
       setSaveState('error');
-      setToast({ message: err.message || 'Saqlanmadi — internetni tekshiring', type: 'error' });
+      setToast({ message: err.message || 'Не сохранено — проверьте подключение', type: 'error' });
     }
   }, [token, groupId, qc]);
 
@@ -381,14 +404,14 @@ export default function AttendanceTab({ groupId, group }) {
       /* groupId обязателен, когда ученик состоит в двух группах этого ментора:
          сервер иначе не знает, из какого месячного лимита списывать. */
       await api.mentorGrantCoins(token, {
-        studentId: student.id, amount, reason: 'Dars', groupId,
+        studentId: student.id, amount, reason: 'Урок', groupId,
       });
       qc.invalidateQueries({ queryKey: ['mentor-group-students', groupId] });
       qc.invalidateQueries({ queryKey: ['mentor-coin-budget', groupId] });
       setCoinDrafts((prev) => ({ ...prev, [student.id]: '' }));
       setToast({ message: `${student.first_name}: ${amount > 0 ? '+' : ''}${amount} coin`, type: 'success' });
     } catch (err) {
-      setToast({ message: err.message || 'Xatolik yuz berdi', type: 'error' });
+      setToast({ message: err.message || 'Произошла ошибка', type: 'error' });
     } finally {
       setCoinBusyId(null);
     }
@@ -435,9 +458,9 @@ export default function AttendanceTab({ groupId, group }) {
   };
 
   const statusLabel = (status) => {
-    if (status === 'present') return 'keldi';
-    if (status === 'absent') return 'kelmadi';
-    return 'belgilanmagan';
+    if (status === 'present') return 'Был';
+    if (status === 'absent') return 'Не был';
+    return 'Не отмечено';
   };
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
@@ -483,19 +506,25 @@ export default function AttendanceTab({ groupId, group }) {
             <span className="w-6 h-6 rounded-lg border grid place-items-center bg-success/12 text-success border-success/35">
               <Check size={13} strokeWidth={3} />
             </span>
-            keldi
+            Был
           </li>
           <li className="flex items-center gap-1.5">
             <span className="w-6 h-6 rounded-lg border grid place-items-center bg-error text-white border-error">
               <X size={13} strokeWidth={3} />
             </span>
-            kelmadi
+            Не был
           </li>
           <li className="flex items-center gap-1.5">
             <span className="w-6 h-6 rounded-lg border border-base-200 grid place-items-center text-base-content/15">
               <Minus size={13} />
             </span>
-            belgilanmagan
+            Не отмечено
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className="relative w-6 h-6 rounded-lg border border-base-200 grid place-items-center ring-2 ring-indigo-500 ring-offset-1">
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-base-100" />
+            </span>
+            Исправлено администратором
           </li>
         </ul>
         <div className="flex items-center gap-3">
@@ -504,7 +533,7 @@ export default function AttendanceTab({ groupId, group }) {
           <SaveIndicator state={saveState} onRetry={flush} />
           {isCurrentMonth && students.length > 0 && DAYS.includes(now.getDate()) && (
             <button className="btn btn-ghost btn-sm gap-1.5 text-success" onClick={markAllPresentToday}>
-              <Check size={14} /> Bugun hammasi keldi
+              <Check size={14} /> Сегодня все были
             </button>
           )}
         </div>
@@ -522,7 +551,7 @@ export default function AttendanceTab({ groupId, group }) {
             {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-14 w-full rounded-xl" />)}
           </div>
         ) : students.length === 0 ? (
-          <EmptyState icon={Users} title="Bu guruhda o'quvchilar yo'q" />
+          <EmptyState icon={Users} title="В этой группе нет учеников" />
         ) : (
           <table className="table min-w-max border-collapse">
             <thead>
@@ -532,7 +561,7 @@ export default function AttendanceTab({ groupId, group }) {
                     между именами и первым днём зияла пустая полоса в пол-экрана.
                     Остаток теперь забирает колонка коинов (ниже, `w-full`). */}
                 <th className="sticky left-0 top-0 z-20 bg-base-100 w-[160px] sm:w-[240px] min-w-[160px] sm:min-w-[240px] px-3 sm:px-4 py-3 text-left">
-                  O'quvchi
+                   Ученик
                 </th>
                 {DAYS.map((d) => {
                   const key = dateKeyFor(d);
@@ -568,7 +597,7 @@ export default function AttendanceTab({ groupId, group }) {
                         {pad(d)}.{pad(month + 1)}
                       </div>
                       <div className="text-[8px] uppercase mt-0.5 opacity-70">
-                        {new Date(year, month, d).toLocaleDateString('uz-UZ', { weekday: 'short' })}
+                        {new Date(year, month, d).toLocaleDateString('ru-RU', { weekday: 'short' })}
                       </div>
                       {/* Кто вёл этот урок. У группы бывает подменный
                           преподаватель — по колонке видно, чья это отметка. */}
@@ -590,8 +619,8 @@ export default function AttendanceTab({ groupId, group }) {
                       «сегодня» и «всего» — разные величины, и без заголовков
                       два числа подряд читаются как одно составное. */}
                   <div className="flex items-center justify-end gap-2">
-                    <span className="w-11 text-center">Bugun</span>
-                    <span className="w-14 text-right">Jami</span>
+                    <span className="w-11 text-center">Сегодня</span>
+                    <span className="w-14 text-right">Всего</span>
                     {/* Остаток месячного лимита. Стоит именно здесь, над самой
                         кнопкой выдачи: ментор видит, сколько ему ещё можно
                         раздать, ровно в тот момент, когда собирается это
@@ -612,7 +641,7 @@ export default function AttendanceTab({ groupId, group }) {
                           className={`inline-flex items-center gap-1.5 text-sm font-extrabold tabular-nums ${
                             budget.remaining === 0 ? 'text-error' : 'text-primary'
                           }`}
-                          title={`Bu oy uchun: ${budget.allocated} coin (${budget.students} o'quvchi × ${budget.coinsPerStudent}). Sarflandi: ${budget.spent}`}
+                           title={`На месяц: ${budget.allocated} коинов (${budget.students} учеников × ${budget.coinsPerStudent}). Потрачено: ${budget.spent}`}
                         >
                           {/* Только остаток. Дробь «97/110» заставляла вычитать
                               в уме, чтобы ответить на единственный интересующий
@@ -642,7 +671,7 @@ export default function AttendanceTab({ groupId, group }) {
                         </div>
                         {s.status && s.status !== 'active' && (
                           <span className="text-[11px] text-error font-medium">
-                            {s.status === 'frozen' ? 'Muzlatilgan' : s.status}
+                            {s.status === 'frozen' ? 'Заморожен' : s.status}
                           </span>
                         )}
                       </div>
@@ -651,7 +680,9 @@ export default function AttendanceTab({ groupId, group }) {
 
                   {DAYS.map((d) => {
                     const dateKey = dateKeyFor(d);
-                    const status = attendanceMap[`${s.id}_${dateKey}`];
+                    const cellKey = `${s.id}_${dateKey}`;
+                    const status = attendanceMap[cellKey];
+                    const corrected = correctedMap[cellKey];
                     const isWeekend = new Date(year, month, d).getDay() === 0;
                     // Отмечать можно только сегодняшний урок — остальные дни
                     // показываем как есть, но трогать не даём.
@@ -666,15 +697,18 @@ export default function AttendanceTab({ groupId, group }) {
                         <button
                           onClick={() => toggleDay(s.id, d)}
                           disabled={!editable}
-                          aria-label={`${s.first_name} ${s.last_name}, ${d}-kun: ${statusLabel(status)}${
-                            editable ? '' : ' (o\'zgartirib bo\'lmaydi)'
-                          }`}
-                          title={editable ? undefined : "Faqat bugungi davomatni belgilash mumkin"}
-                          className={`mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status, editable)} ${
+                          aria-label={`${s.first_name} ${s.last_name}, ${d}-е число: ${statusLabel(status)}${
+                            corrected ? ', исправлено администратором' : ''
+                          }${editable ? '' : ' (нельзя изменить)'}`}
+                          title={corrected ? 'Исправлено администратором' : editable ? undefined : 'Отмечать можно только текущий день'}
+                          className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status, editable)} ${
                             editable ? 'cursor-pointer' : 'cursor-default'
-                          }`}
+                          } ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''}`}
                         >
                           {cellIcon(status)}
+                          {corrected && (
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-base-100" />
+                          )}
                         </button>
                       </td>
                     );
@@ -695,7 +729,7 @@ export default function AttendanceTab({ groupId, group }) {
                             className={`text-[13px] font-bold tabular-nums ${
                               (s.coins_today ?? 0) > 0 ? 'text-primary' : 'text-error'
                             }`}
-                            title="Bugun berilgan coinlar"
+                            title="Начислено сегодня"
                           >
                             {(s.coins_today ?? 0) > 0 ? '+' : ''}{s.coins_today}
                           </span>
@@ -705,7 +739,7 @@ export default function AttendanceTab({ groupId, group }) {
                           пришли: приглушён, чтобы не спорить с полем ввода. */}
                       <span
                         className="w-14 flex items-center justify-end gap-1 text-[13px] font-semibold text-base-content/70 tabular-nums"
-                        title="Jami balans"
+                        title="Общий баланс"
                       >
                         <Coins size={12} className="text-warning/60" />
                         {s.coin_balance ?? 0}
@@ -726,7 +760,7 @@ export default function AttendanceTab({ groupId, group }) {
                         )}
                         onKeyDown={(e) => { if (e.key === 'Enter') submitCoins(s); }}
                         placeholder="0"
-                        aria-label={`${s.first_name} uchun coin miqdori`}
+                        aria-label={`Количество коинов для ${s.first_name}`}
                         className="input input-sm h-8 w-16 text-center tabular-nums border border-base-300 bg-base-100 text-base-content font-semibold placeholder:text-base-content/25 focus:border-primary focus:outline-none"
                       />
                       {/* Иконка вместо слова «Coin». Слово повторялось в
@@ -742,7 +776,7 @@ export default function AttendanceTab({ groupId, group }) {
                         onClick={() => submitCoins(s)}
                         disabled={coinBusyId === s.id || !Number(coinDrafts[s.id])}
                         aria-label={`${s.first_name} ga coin berish`}
-                        title="Coin berish"
+                        title="Начислить коины"
                         className="w-8 h-8 shrink-0 grid place-items-center rounded-lg bg-primary text-primary-content transition-colors hover:bg-primary/90 disabled:bg-primary/[0.07] disabled:text-primary/30"
                       >
                         {coinBusyId === s.id

@@ -36,6 +36,20 @@ export function useNotifications() {
   return useAuthedQuery(['notifications'], () => api.notifications(token));
 }
 
+export function useHomeworkDetail(homeworkId) {
+  const { token } = useAuth();
+  return useAuthedQuery(['homework-detail', homeworkId], () => api.parentHomeworkDetail(token, homeworkId), {
+    enabled: !!homeworkId,
+  });
+}
+
+export function useTestDetail(testId) {
+  const { token } = useAuth();
+  return useAuthedQuery(['test-detail', testId], () => api.parentTestDetail(token, testId), {
+    enabled: !!testId,
+  });
+}
+
 export function useInvalidate() {
   const qc = useQueryClient();
   return (...keys) => keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));

@@ -9,12 +9,14 @@ import { notificationWorker } from './src/queues/workers/notification.worker.js'
 import { overdueWorker, scheduleOverdueCron } from './src/queues/workers/overdue.worker.js';
 import { billingWorker, scheduleBillingCron } from './src/queues/workers/billing.worker.js';
 import { dueSoonWorker, scheduleDueSoonCron } from './src/queues/workers/dueSoon.worker.js';
+import { startReminderLogging, stopReminderLogging } from './src/modules/super/reminders/reminders.listener.js';
 
 await scheduleOverdueCron();
 await scheduleBillingCron();
 await scheduleDueSoonCron();
+startReminderLogging(); // AB-SUPER-REM: логирует payment.due/due_soon/debt.overdue в reminders (Super Admin)
 logger.info(
-  'Worker started: notifications + overdue cron (09:00 daily) + billing cron (charge 1st 00:05, overdue 09:30 daily) + due-soon cron (08:00 daily)',
+  'Worker started: notifications + overdue cron (09:00 daily) + billing cron (charge 1st 00:05, overdue 09:30 daily) + due-soon cron (08:00 daily) + reminder logging',
 );
 
 let shuttingDown = false;
@@ -30,6 +32,7 @@ async function shutdown(signal) {
       overdueWorker.close(),
       billingWorker.close(),
       dueSoonWorker.close(),
+      stopReminderLogging(),
     ]);
     await pool.end();
     await closeRedis();

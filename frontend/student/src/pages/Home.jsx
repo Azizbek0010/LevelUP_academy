@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Coins, Wallet, Trophy, Users, BookOpen } from 'lucide-react';
+import { Coins, Wallet, Trophy, Users, BookOpen, ArrowRight } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { useToast } from '../components/toast.jsx';
-import { Skeleton, EmptyState, ErrorState } from '../components/ui.jsx';
+import {
+  PageHeader, StatCard, Panel, Pill, Skeleton, EmptyState, ErrorState,
+} from '../components/ui.jsx';
 import { fmtNum, fmtMoney, fmtDateTime, deadlineLabel } from '../format.js';
 
 export default function Home() {
@@ -42,96 +44,81 @@ export default function Home() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Привет, {user?.firstName}! 👋</h1>
-          <p>Твой прогресс за эту неделю</p>
-        </div>
-      </div>
+      <PageHeader title={`Привет, ${user?.firstName || 'студент'}! 👋`} subtitle="Твой прогресс за эту неделю" />
 
       {loading ? (
         <Skeleton h={96} count={3} />
       ) : error ? (
-        <ErrorState message={error} onRetry={() => setReloadKey((k) => k + 1)} />
+        <div className="card bg-base-100"><ErrorState message={error} onRetry={() => setReloadKey((k) => k + 1)} /></div>
       ) : (
         <>
-          <div className="stat-grid">
-            <div className="stat-card">
-              <div className="stat-card__label">
-                <Coins size={16} /> Коины
-              </div>
-              <div className="stat-card__value num">{fmtNum(data?.coins)}</div>
-              <div className="stat-card__hint">потрать их в магазине</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card__label">
-                <Trophy size={16} /> Место в рейтинге
-              </div>
-              <div className="stat-card__value num">
-                {data?.rank?.rank ? `#${data.rank.rank}` : '—'}
-              </div>
-              <div className="stat-card__hint">
-                {data?.rank?.rank
-                  ? `${fmtNum(data.rank.coins)} коинов за неделю`
-                  : 'заработай коины, чтобы попасть в топ'}
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card__label">
-                <Wallet size={16} /> Задолженность
-              </div>
-              <div className="stat-card__value num" style={debt > 0 ? { color: 'var(--danger)' } : undefined}>
-                {debt > 0 ? fmtMoney(debt) : 'Нет 🎉'}
-              </div>
-              {debt > 0 && <div className="stat-card__hint">уточни оплату у администратора</div>}
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard Icon={Coins} label="Коины" value={fmtNum(data?.coins)} hint="потрать их в магазине" />
+            <StatCard
+              Icon={Trophy}
+              label="Место в рейтинге"
+              value={data?.rank?.rank ? `#${data.rank.rank}` : '—'}
+              hint={data?.rank?.rank ? `${fmtNum(data.rank.coins)} коинов за неделю` : 'заработай коины, чтобы попасть в топ'}
+            />
+            <StatCard
+              Icon={Wallet}
+              label="Задолженность"
+              tone={debt > 0 ? 'danger' : 'neutral'}
+              value={debt > 0 ? fmtMoney(debt) : 'Нет 🎉'}
+              valueClass={debt > 0 ? 'text-error' : ''}
+              hint={debt > 0 ? 'уточни оплату у администратора' : undefined}
+            />
           </div>
 
-          <div className="grid-2">
-            <div className="card">
-              <div className="card__title">
-                Ближайшие дедлайны
-                <Link to="/homework" className="pill pill--muted">все ДЗ →</Link>
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-6 items-start">
+            <Panel
+              title="Ближайшие дедлайны"
+              icon={BookOpen}
+              action={
+                <Link to="/homework" className="btn btn-ghost btn-xs gap-1 text-primary">
+                  все ДЗ <ArrowRight size={13} />
+                </Link>
+              }
+            >
               {data?.upcomingHomework?.length ? (
-                data.upcomingHomework.map((hw) => (
-                  <div key={hw.id} className="row">
-                    <div className="row__body">
-                      <div className="row__title">{hw.title}</div>
-                      <div className="row__sub">до {fmtDateTime(hw.deadline)}</div>
-                    </div>
-                    <span
-                      className={`pill ${deadlineLabel(hw.deadline) === 'сегодня' ? 'pill--danger' : 'pill--lime'}`}
-                    >
-                      {deadlineLabel(hw.deadline)}
-                    </span>
-                  </div>
-                ))
+                <div className="space-y-2">
+                  {data.upcomingHomework.map((hw) => {
+                    const label = deadlineLabel(hw.deadline);
+                    return (
+                      <div key={hw.id} className="flex items-center gap-3 rounded-xl bg-base-200/50 border border-base-200 px-4 py-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-bold truncate">{hw.title}</div>
+                          <div className="text-xs text-base-content/45 mt-0.5">до {fmtDateTime(hw.deadline)}</div>
+                        </div>
+                        <Pill tone={label === 'сегодня' || label === 'просрочено' ? 'danger' : 'primary'}>{label}</Pill>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
                 <EmptyState icon={BookOpen} title="Всё сдано!" text="Новых дедлайнов пока нет." />
               )}
-            </div>
+            </Panel>
 
-            <div className="card">
-              <div className="card__title">Мои группы</div>
+            <Panel title="Мои группы" icon={Users}>
               {data?.groups?.length ? (
-                data.groups.map((g) => (
-                  <div key={g.id} className="row">
-                    <div className="avatar" style={{ borderRadius: 10 }}>
-                      <Users size={16} />
-                    </div>
-                    <div className="row__body">
-                      <div className="row__title">{g.name}</div>
-                      <div className="row__sub">
-                        {g.subject} · {g.mentorName}
+                <div className="space-y-2">
+                  {data.groups.map((g) => (
+                    <div key={g.id} className="flex items-center gap-3 rounded-xl bg-base-200/50 border border-base-200 px-4 py-3">
+                      <span className="w-9 h-9 rounded-lg bg-primary/12 text-primary grid place-items-center shrink-0">
+                        <Users size={16} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold truncate">{g.name}</div>
+                        <div className="text-xs text-base-content/45 mt-0.5 truncate">{g.subject} · {g.mentorName}</div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               ) : (
-                <EmptyState title="Пока нет групп" text="Администратор добавит тебя в группу." />
+                <EmptyState icon={Users} title="Пока нет групп" text="Администратор добавит тебя в группу." />
               )}
-            </div>
+            </Panel>
           </div>
         </>
       )}
