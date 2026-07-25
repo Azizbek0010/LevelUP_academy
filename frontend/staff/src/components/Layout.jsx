@@ -78,7 +78,7 @@ const adminNav = [
 const mentorNav = [
   { to: '/',     label: 'Дашборд',  Icon: HiOutlineSquares2X2, end: true },
   { type: 'mentor-groups' },
-  { to: '/chat', label: 'Xabarlar', Icon: HiOutlineChatBubbleLeftRight },
+  { to: '/chat', label: 'Чат', Icon: HiOutlineChatBubbleLeftRight },
 ];
 
 const methodistNav = [
@@ -131,7 +131,7 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
     <div>
       <button
         onClick={toggle}
-        title={collapsed ? 'Guruhlar' : undefined}
+        title={collapsed ? 'Группы' : undefined}
         aria-expanded={collapsed ? false : open}
         className={`group w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-sm ${
           collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
@@ -144,7 +144,7 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
         <HiOutlineUserGroup size={18} strokeWidth={insideGroup ? 2.2 : 1.8} className="shrink-0" />
         {!collapsed && (
           <>
-            <span className="flex-1 text-left font-medium">Guruhlar</span>
+            <span className="flex-1 text-left font-medium">Группы</span>
             <span
               className="text-[10px] font-bold px-1.5 py-0.5 rounded"
               style={{ background: 'rgba(64,131,59,0.12)', color: 'rgba(64,131,59,0.75)' }}
@@ -164,7 +164,7 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
         <ul className="mt-1 space-y-0.5 pl-3 border-l ml-4" style={{ borderColor: 'rgba(64,131,59,0.15)' }}>
           {groups.length === 0 ? (
             <li className="px-3 py-2 text-[11px]" style={{ color: 'rgba(232,239,226,0.3)' }}>
-              Guruh yo'q
+              Групп нет
             </li>
           ) : (
             groups.map((g) => {
@@ -335,13 +335,13 @@ function Sidebar({
             color: 'rgba(232,239,226,0.35)',
             background: 'rgba(64,131,59,0.06)',
           }}
-          title={pinned ? "Panelni yig'ish" : 'Panelni ochiq qoldirish'}
+          title={pinned ? 'Свернуть панель' : 'Закрепить панель'}
           aria-pressed={pinned}
         >
           {pinned ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
           {!collapsed && (
             <span className="font-medium">
-              {pinned ? "Yig'ish" : 'Mahkamlash'}
+              {pinned ? 'Свернуть' : 'Закрепить'}
             </span>
           )}
         </button>
@@ -370,7 +370,7 @@ function formatWhen(iso) {
   }
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Kecha';
+  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
 }
 
@@ -439,7 +439,7 @@ function Notifications() {
           unlockSound();
           setOpen((v) => !v);
         }}
-        aria-label={total > 0 ? `Bildirishnomalar: ${total} ta yangi` : 'Bildirishnomalar'}
+        aria-label={total > 0 ? `Уведомления: ${total} новых` : 'Уведомления'}
         aria-expanded={open}
         className={`relative w-10 h-10 rounded-full grid place-items-center transition-colors ${
           open
@@ -458,7 +458,7 @@ function Notifications() {
       {open && (
         <div
           role="dialog"
-          aria-label="Bildirishnomalar"
+          aria-label="Уведомления"
           /* На телефоне панель шириной 320px, привязанная к правому краю
              кнопки, уезжала левым краем за экран (замер: left = -26px).
              Там она растягивается по ширине окна с отступами, на sm+ —
@@ -466,11 +466,11 @@ function Notifications() {
           className="popover-surface fixed sm:absolute left-3 right-3 top-[4.25rem] sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[360px] overflow-hidden animate-scale-in z-50"
         >
           <header className="flex items-center justify-between gap-2 px-4 py-3.5 border-b border-[var(--border)]">
-            <h2 className="text-[15px] font-bold text-[var(--text)]">Bildirishnomalar</h2>
+            <h2 className="text-[15px] font-bold text-[var(--text)]">Уведомления</h2>
             <div className="flex items-center gap-1.5">
               {total > 0 && (
                 <span className="text-[11px] font-bold text-[var(--primary)] bg-[rgba(59,130,246,0.1)] rounded-full px-2 py-0.5 tabular-nums">
-                  {total} yangi
+                  {total} новых
                 </span>
               )}
               <button
@@ -480,8 +480,8 @@ function Notifications() {
                   setSoundOn(next);
                   if (next) { unlockSound(); playNotificationSound(); }
                 }}
-                aria-label={soundOn ? "Ovozni o'chirish" : 'Ovozni yoqish'}
-                title={soundOn ? "Ovoz yoqilgan" : "Ovoz o'chirilgan"}
+                aria-label={soundOn ? 'Выключить звук' : 'Включить звук'}
+                title={soundOn ? 'Звук включён' : 'Звук выключен'}
                 className={`w-7 h-7 rounded-lg grid place-items-center transition-colors ${
                   soundOn ? 'text-[var(--primary)] bg-[rgba(59,130,246,0.08)]' : 'text-[var(--text-muted)] hover:bg-[rgba(59,130,246,0.08)]'
                 }`}
@@ -498,10 +498,10 @@ function Notifications() {
                   <Bell size={22} />
                 </span>
                 <p className="text-sm font-semibold text-[var(--text)]">
-                  Yangi bildirishnoma yo'q
+                  Нет новых уведомлений
                 </p>
                 <p className="text-xs mt-1 text-[var(--text-muted)] max-w-[220px] mx-auto">
-                  O'qilmagan xabarlar shu yerda ko'rinadi.
+                  Непрочитанные сообщения появятся здесь.
                 </p>
               </div>
             ) : (
@@ -532,7 +532,7 @@ function Notifications() {
                           )}
                           <span className="flex items-center justify-between gap-2 mt-0.5">
                             <span className="text-xs text-[var(--text-secondary)] truncate">
-                              {c.last_message || 'Yangi xabar'}
+                              {c.last_message || 'Новое сообщение'}
                             </span>
                             <span className="badge badge-primary badge-sm shrink-0 tabular-nums">
                               {c.unread_count}
@@ -552,7 +552,7 @@ function Notifications() {
               onClick={() => openChat(null)}
               className="w-full px-4 py-3 text-sm font-semibold text-[var(--primary)] border-t border-[var(--border)] hover:bg-[rgba(59,130,246,0.08)] transition-colors flex items-center justify-center gap-1.5"
             >
-              Barcha xabarlar <ChevronRight size={14} />
+              Все сообщения <ChevronRight size={14} />
             </button>
           )}
         </div>
@@ -620,7 +620,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
         <button
           onClick={() => setShowUserMenu(!showUserMenu)}
           aria-expanded={showUserMenu}
-          aria-label="Akkaunt menyusi"
+          aria-label="Меню аккаунта"
           /* Было hover:scale — от наведения дёргался весь блок вместе с
              текстом. Подсветка фона спокойнее и не сдвигает соседей. */
           className={`flex items-center gap-2.5 p-1 sm:pr-3 rounded-full transition-colors ${
@@ -675,7 +675,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
                 <span className="w-7 h-7 rounded-lg bg-[var(--surface-hover)] grid place-items-center shrink-0">
                   <UserIcon size={14} />
                 </span>
-                Profil va sozlamalar
+                Профиль
               </button>
               <button
                 role="menuitem"
@@ -685,7 +685,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
                 <span className="w-7 h-7 rounded-lg bg-[var(--danger-light)] grid place-items-center shrink-0">
                   <LogOut size={14} />
                 </span>
-                Chiqish
+                Выйти
               </button>
             </div>
           </div>

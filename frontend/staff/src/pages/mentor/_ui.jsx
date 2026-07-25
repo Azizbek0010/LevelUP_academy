@@ -223,3 +223,19 @@ export function RowSkeleton({ count = 3, height = 'h-14' }) {
     </div>
   );
 }
+
+/* ── Тултип ────────────────────────────────────────────────────────────
+   DaisyUI `tooltip` — нативный CSS, без JS-библиотек. Обёртка добавляет
+   `data-tip` и класс позиционирования. Позиция: по умолчанию сверху.
+
+   Использование:
+     <Tip text="Сохранить"><button className="btn">OK</button></Tip>
+     <Tip text="Удалить" position="bottom"><Trash2 size={16}/></Tip> */
+export function Tip({ text, position = 'top', children, className = '' }) {
+  if (!text) return children;
+  return (
+    <div className={`tooltip tooltip-${position} ${className}`} data-tip={text}>
+      {children}
+    </div>
+  );
+}
