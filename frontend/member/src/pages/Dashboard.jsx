@@ -55,7 +55,7 @@ export default function Dashboard() {
         <div className="card-body relative z-10">
           <div className="flex items-center gap-5">
             <div className="relative">
-              <ProgressRing value={attPct} size={76} stroke={5} color="#C6FF34" bg="rgba(255,255,255,.12)" />
+              <ProgressRing value={attPct} size={76} stroke={5} color="#40833B" bg="rgba(255,255,255,.12)" />
               <span className="absolute inset-0 flex items-center justify-center text-base font-bold">{attPct}%</span>
             </div>
             <div className="flex-1">
@@ -74,7 +74,7 @@ export default function Dashboard() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <StatCard icon="star" label="Коины" value={fmt(d.coins)} color="#C6FF34" sub="Заработанные баллы" />
+        <StatCard icon="star" label="Коины" value={fmt(d.coins)} color="#40833B" sub="Заработанные баллы" />
         <StatCard
           icon="wallet"
           label="Долг"
@@ -136,7 +136,7 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-2 mt-2">
                 {d.groups?.map((g, i) => {
-                  const colors = ['#C6FF34', '#3b82f6', '#a855f7', '#f59e0b'];
+                  const colors = ['#40833B', '#3b82f6', '#a855f7', '#f59e0b'];
                   const c = colors[i % colors.length];
                   return (
                     <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl bg-base-200/40 hover:bg-base-200 transition-all duration-200 group">
