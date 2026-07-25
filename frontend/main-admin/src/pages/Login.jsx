@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { api } from '../api.js';
@@ -86,6 +86,8 @@ function LoginForm({ onForgot }) {
 }
 
 // ---- сброс пароля: email → код на почту → новый пароль ----
+const RESEND_SECONDS = 60;
+
 function ForgotForm({ onBack }) {
   const [stage, setStage] = useState('request'); // request | confirm | done
   const [email, setEmail] = useState('');
@@ -93,14 +95,48 @@ function ForgotForm({ onBack }) {
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
 
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
+  // Бэкенд держит на этом маршруте passwordResetLimiter — при частых попытках
+  // прилетает 429. Раньше он показывался сырым текстом; теперь объясняем причину.
   const sendCode = async (e) => {
     e.preventDefault();
     setError(''); setBusy(true);
     try {
       await api.forgotPassword(email.trim());
       setStage('confirm'); // ответ всегда нейтральный (не раскрывает, есть ли аккаунт)
-    } catch (err) { setError(err.message); } finally { setBusy(false); }
+      setResendIn(RESEND_SECONDS);
+    } catch (err) {
+      setError(
+        err.status === 429
+          ? 'Слишком много запросов кода — подождите пару минут'
+          : err.message,
+      );
+    } finally { setBusy(false); }
+  };
+
+  // Повторная отправка: раньше кнопка просто возвращала на первый шаг, и человек
+  // мог долбить её подряд, упираясь в лимитер. Теперь отсчёт до следующей попытки.
+  const resend = async () => {
+    if (resendIn > 0 || busy) return;
+    setError(''); setBusy(true);
+    try {
+      await api.forgotPassword(email.trim());
+      setOtp('');
+      setResendIn(RESEND_SECONDS);
+    } catch (err) {
+      setError(
+        err.status === 429
+          ? 'Слишком много запросов кода — подождите пару минут'
+          : err.message,
+      );
+    } finally { setBusy(false); }
   };
 
   const reset = async (e) => {
@@ -147,9 +183,19 @@ function ForgotForm({ onBack }) {
           <button className="btn btn-primary w-full" disabled={busy}>
             {busy ? <span className="loading loading-spinner loading-sm" /> : 'Сменить пароль'}
           </button>
-          <button type="button" className="link link-primary text-xs" onClick={() => setStage('request')}>
-            Отправить код заново
-          </button>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              className="link link-primary text-xs disabled:no-underline disabled:opacity-40"
+              onClick={resend}
+              disabled={resendIn > 0 || busy}
+            >
+              {resendIn > 0 ? `Отправить заново через ${resendIn} с` : 'Отправить код заново'}
+            </button>
+            <button type="button" className="link text-xs opacity-60" onClick={() => setStage('request')}>
+              Другой email
+            </button>
+          </div>
         </form>
       )}
 

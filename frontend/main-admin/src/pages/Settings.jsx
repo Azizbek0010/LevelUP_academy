@@ -22,7 +22,7 @@ function Row({ label, value }) {
 }
 
 export default function Settings() {
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, patchUser } = useAuth();
   const { data } = useDashboard();
   const { data: pricing } = usePricing();
 
@@ -59,22 +59,25 @@ export default function Settings() {
     setEditBusy(true);
     setEditError('');
     try {
-      await api.updateProfile(token, {
+      const { profile } = await api.updateProfile(token, {
         firstName: editForm.firstName.trim(),
         lastName: editForm.lastName.trim(),
       });
+      // Кладём ответ сервера в контекст, а не то, что напечатали в форме:
+      // сервер тримит и нормализует поля, и шапка должна показывать сохранённое.
+      patchUser({ firstName: profile.firstName, lastName: profile.lastName });
       setEditSuccess(true);
       setEditMode(false);
       setTimeout(() => setEditSuccess(false), 3000);
     } catch (err) {
-      // Graceful: если API нет — показываем локально успех
-      if (err?.status === 404 || err?.status === 500 || err?.status === 0) {
-        setEditSuccess(true);
-        setEditMode(false);
-        setTimeout(() => setEditSuccess(false), 3000);
-      } else {
-        setEditError(err.message);
-      }
+      // Раньше здесь 404/500 подменялись «успехом»: эндпоинта PATCH /main/profile
+      // не существовало, и пользователь видел «сохранено», хотя не сохранялось ничего.
+      // Эндпоинт написан — глушить ошибки больше нельзя, иначе поломка снова станет невидимой.
+      setEditError(
+        err?.status === 409
+          ? 'Такой email или телефон уже заняты'
+          : err?.message || 'Не удалось сохранить',
+      );
     } finally {
       setEditBusy(false);
     }

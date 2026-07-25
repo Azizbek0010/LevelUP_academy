@@ -1,306 +1,236 @@
 import { useMemo, useState } from 'react';
 import {
-  AlertTriangle, Wallet, CheckCircle2, Clock, Send, X, User, Building2, CalendarDays, Coins,
+  AlertTriangle, Wallet, Building2, UserX, Info, Search,
 } from 'lucide-react';
-import { useDashboard } from '../queries.js';
-import { useAuth } from '../auth.jsx';
+import { usePenalties } from '../queries.js';
 import { fmt, dateShort } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
-import Avatar from '../components/Avatar.jsx';
+import { SkeletonKpis, SkeletonTable } from '../components/Skeleton.jsx';
 
-const REASONS = [
-  'Опоздание',
-  'Прогул',
-  'Ненормативная лексика',
-  'Нарушение дресс-кода',
-  'Другое',
-];
+/**
+ * Дисциплина по всем партнёрам — ТОЛЬКО ЧТЕНИЕ.
+ *
+ * Раньше страница показывала `initialMock` — шесть выдуманных партнёров и штрафов,
+ * ноль обращений к API — и предлагала форму «выписать штраф», которой не
+ * соответствовал ни один эндпоинт.
+ *
+ * Формы выписки здесь нет и не будет: по матрице прав (CAN_ISSUE в модуле
+ * discipline) main_admin не выписывает взыскания НИКОМУ. Их выдают Super Admin
+ * и Admin внутри своей организации. Владелец платформы может только видеть
+ * картину целиком — это и есть назначение страницы.
+ *
+ * Источник: GET /api/main/penalties (SELECT по staff_penalties, без записи).
+ */
 
-const STATUS = {
-  pending: { label: 'Ожидает', cls: 'badge-warning', Icon: Clock },
-  paid: { label: 'Оплачен', cls: 'badge-success', Icon: CheckCircle2 },
-  disputed: { label: 'Оспорен', cls: 'badge-error', Icon: AlertTriangle },
+const TYPE_META = {
+  shtraf: { label: 'Штраф', cls: 'badge-warning', Icon: Wallet },
+  qora: { label: 'Увольнение', cls: 'badge-error', Icon: UserX },
 };
 
-const sanitize = (v) => String(v ?? '').replace(/[^\d]/g, '');
+const ROLE_LABEL = {
+  admin: 'Администратор',
+  mentor: 'Ментор',
+  methodist: 'Методист',
+  superadmin: 'Super Admin',
+};
 
-const initialMock = [
-  { id: 'f1', partnerName: 'EduCenter Chilanzar', employee: 'Собиров А.А.', reason: 'Опоздание', amount: 150000, date: '2026-06-28', status: 'paid' },
-  { id: 'f2', partnerName: 'LingoPro Yunusabad', employee: 'Каримова М.', reason: 'Нарушение дресс-кода', amount: 100000, date: '2026-07-02', status: 'pending' },
-  { id: 'f3', partnerName: 'IT-School Mirzo', employee: 'Тошев Ш.', reason: 'Ненормативная лексика', amount: 300000, date: '2026-07-05', status: 'disputed' },
-  { id: 'f4', partnerName: 'MathLab Sergeli', employee: 'Абдуллаев Р.', reason: 'Прогул', amount: 500000, date: '2026-07-08', status: 'pending' },
-  { id: 'f5', partnerName: 'EduCenter Chilanzar', employee: 'Юлдашева Д.', reason: 'Опоздание', amount: 100000, date: '2026-07-10', status: 'paid' },
-  { id: 'f6', partnerName: 'EnglishLab Yakkasaray', employee: 'Хамидов Б.', reason: 'Другое', amount: 250000, date: '2026-07-12', status: 'pending' },
-];
-
-export default function Fines() {
-  const { token } = useAuth();
-  const { data: dash } = useDashboard();
-  const partners = dash?.partners || [];
-  const cur = dash?.totals?.currency || 'UZS';
-
-  const [fines, setFines] = useState(initialMock);
-  const [partnerId, setPartnerId] = useState('');
-  const [employee, setEmployee] = useState('');
-  const [reason, setReason] = useState(REASONS[0]);
-  const [details, setDetails] = useState('');
-  const [amount, setAmount] = useState('');
-  const [incidentDate, setIncidentDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [busy, setBusy] = useState(false);
-  const [toast, setToast] = useState(null);
-
-  const canSubmit = partnerId && employee.trim().length >= 2 && Number(amount) > 0;
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!canSubmit) return;
-    setBusy(true);
-    try {
-      // graceful degradation: API не существует
-      try {
-        await fetch('/api/main/fines', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({
-            partnerId, employee: employee.trim(), reason, details, amount: Number(amount), incidentDate,
-          }),
-        });
-      } catch { /* ignore */ }
-
-      const partner = partners.find((p) => p.id === partnerId);
-      const item = {
-        id: `f-${Date.now()}`,
-        partnerName: partner?.name || 'Партнёр',
-        employee: employee.trim(),
-        reason,
-        amount: Number(amount),
-        date: incidentDate,
-        status: 'pending',
-      };
-      setFines((prev) => [item, ...prev]);
-      setToast({ kind: 'success', text: `Штраф на ${fmt(amount)} ${cur} выписан (в очереди — функция скоро будет доступна)` });
-      // reset form
-      setPartnerId('');
-      setEmployee('');
-      setReason(REASONS[0]);
-      setDetails('');
-      setAmount('');
-    } catch {
-      setToast({ kind: 'success', text: 'Штраф поставлен в очередь (функция скоро будет доступна).' });
-    } finally {
-      setBusy(false);
-      setTimeout(() => setToast(null), 5000);
-    }
-  };
-
-  const kpi = useMemo(() => {
-    const total = fines.length;
-    const totalSum = fines.reduce((s, f) => s + f.amount, 0);
-    const paidSum = fines.filter((f) => f.status === 'paid').reduce((s, f) => s + f.amount, 0);
-    const pending = fines.filter((f) => f.status === 'pending').length;
-    return { total, totalSum, paidSum, pending };
-  }, [fines]);
-
+function Kpi({ Icon, tint, title, value, unit }) {
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title={
-          <span className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-xl bg-rose-500 text-white grid place-items-center">
-              <AlertTriangle size={20} strokeWidth={2.3} />
-            </span>
-            Штрафы сотрудникам
+    <div className="card bg-base-100 shadow-sm border border-base-200/60">
+      <div className="card-body p-5">
+        <div className="flex items-center gap-3">
+          <span
+            className="w-10 h-10 rounded-xl grid place-items-center shrink-0"
+            style={{ background: tint.bg, color: tint.fg }}
+          >
+            <Icon size={20} strokeWidth={2.2} />
           </span>
-        }
-        subtitle="Выписка штрафа сотруднику партнёра за нарушение"
-      />
-
-      {toast && (
-        <div className={`alert ${toast.kind === 'success' ? 'alert-success' : 'alert-error'} text-sm`}>
-          <CheckCircle2 size={16} />
-          <span>{toast.text}</span>
-          <button className="btn btn-ghost btn-xs btn-circle" onClick={() => setToast(null)}><X size={14} /></button>
-        </div>
-      )}
-
-      {/* KPI */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatMini Icon={AlertTriangle} tint={{ bg: '#FEE2E2', fg: '#991B1B' }} title="Всего штрафов" value={fmt(kpi.total)} />
-        <StatMini Icon={Wallet} tint={{ bg: '#FEF3C7', fg: '#92400E' }} title={`Общая сумма (${cur})`} value={fmt(kpi.totalSum)} />
-        <StatMini Icon={CheckCircle2} tint={{ bg: '#DCFCE7', fg: '#166534' }} title={`Оплачено (${cur})`} value={fmt(kpi.paidSum)} />
-        <StatMini Icon={Clock} tint={{ bg: '#E0F2FE', fg: '#075985' }} title="Ожидает оплаты" value={fmt(kpi.pending)} />
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-5">
-        {/* Form */}
-        <form onSubmit={submit} className="card bg-base-100 shadow-sm border border-base-200/60 overflow-hidden lg:col-span-1">
-          <div className="bg-gradient-to-r from-rose-100 via-rose-50 to-transparent px-6 py-4 border-b border-base-200">
-            <h2 className="font-extrabold text-base">Выписать штраф</h2>
-            <p className="text-xs text-base-content/60 mt-0.5">Штраф отобразится в панели партнёра</p>
-          </div>
-
-          <div className="card-body space-y-3.5">
-            <label className="form-control">
-              <span className="label-text mb-1.5 text-xs font-semibold uppercase tracking-wider text-base-content/60 flex items-center gap-1.5">
-                <Building2 size={12} /> Партнёр
-              </span>
-              <select
-                className="select select-bordered focus:border-rose-400 focus:outline-rose-200"
-                value={partnerId}
-                onChange={(e) => setPartnerId(e.target.value)}
-              >
-                <option value="">— выберите партнёра —</option>
-                {partners.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="form-control">
-              <span className="label-text mb-1.5 text-xs font-semibold uppercase tracking-wider text-base-content/60 flex items-center gap-1.5">
-                <User size={12} /> ФИО сотрудника
-              </span>
-              <input
-                type="text"
-                className="input input-bordered focus:border-rose-400 focus:outline-rose-200"
-                placeholder="Иванов И.И."
-                value={employee}
-                onChange={(e) => setEmployee(e.target.value)}
-              />
-            </label>
-
-            <label className="form-control">
-              <span className="label-text mb-1.5 text-xs font-semibold uppercase tracking-wider text-base-content/60">Причина</span>
-              <select
-                className="select select-bordered focus:border-rose-400 focus:outline-rose-200"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-              >
-                {REASONS.map((r) => <option key={r}>{r}</option>)}
-              </select>
-            </label>
-
-            <label className="form-control">
-              <span className="label-text mb-1.5 text-xs font-semibold uppercase tracking-wider text-base-content/60">Детали</span>
-              <textarea
-                className="textarea textarea-bordered min-h-20 focus:border-rose-400 focus:outline-rose-200"
-                placeholder="Подробности инцидента…"
-                value={details}
-                onChange={(e) => setDetails(e.target.value)}
-                maxLength={500}
-              />
-            </label>
-
-            <div className="grid grid-cols-2 gap-3">
-              <label className="form-control">
-                <span className="label-text mb-1.5 text-xs font-semibold uppercase tracking-wider text-base-content/60 flex items-center gap-1.5">
-                  <Coins size={12} /> Сумма ({cur})
-                </span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  className="input input-bordered font-bold focus:border-rose-400 focus:outline-rose-200"
-                  placeholder="0"
-                  value={amount}
-                  onChange={(e) => setAmount(sanitize(e.target.value))}
-                />
-              </label>
-              <label className="form-control">
-                <span className="label-text mb-1.5 text-xs font-semibold uppercase tracking-wider text-base-content/60 flex items-center gap-1.5">
-                  <CalendarDays size={12} /> Дата
-                </span>
-                <input
-                  type="date"
-                  className="input input-bordered focus:border-rose-400 focus:outline-rose-200"
-                  value={incidentDate}
-                  onChange={(e) => setIncidentDate(e.target.value)}
-                />
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 gap-2 mt-2 disabled:opacity-50"
-              disabled={!canSubmit || busy}
-            >
-              {busy ? <span className="loading loading-spinner loading-sm" /> : <><Send size={16} /> Выписать штраф</>}
-            </button>
-          </div>
-        </form>
-
-        {/* Table */}
-        <div className="card bg-base-100 shadow-sm border border-base-200/60 lg:col-span-2">
-          <div className="card-body">
-            <h2 className="card-title text-base mb-2">Все штрафы</h2>
-            <div className="overflow-x-auto">
-              <table className="table table-sm">
-                <thead>
-                  <tr>
-                    <th>Партнёр</th>
-                    <th>Сотрудник</th>
-                    <th>Причина</th>
-                    <th className="text-right">Сумма</th>
-                    <th>Дата</th>
-                    <th>Статус</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fines.length === 0 ? (
-                    <tr><td colSpan={6} className="text-center py-10 text-base-content/40">Штрафов пока нет</td></tr>
-                  ) : (
-                    fines.map((f) => {
-                      const s = STATUS[f.status] || STATUS.pending;
-                      return (
-                        <tr key={f.id} className="hover">
-                          <td>
-                            <div className="flex items-center gap-2">
-                              <Avatar name={f.partnerName} size={28} />
-                              <span className="font-medium text-sm truncate max-w-[160px]">{f.partnerName}</span>
-                            </div>
-                          </td>
-                          <td className="text-sm">{f.employee}</td>
-                          <td className="text-sm text-base-content/70">{f.reason}</td>
-                          <td className="text-right font-bold tabular-nums text-rose-600">{fmt(f.amount)}</td>
-                          <td className="whitespace-nowrap text-xs text-base-content/60">{dateShort(f.date)}</td>
-                          <td>
-                            <span className={`badge badge-sm gap-1 ${s.cls}`}>
-                              <s.Icon size={10} />
-                              {s.label}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider leading-tight text-base-content/45">
+            {title}
           </div>
         </div>
+        <div className="text-3xl font-extrabold mt-3 leading-none">{value}</div>
+        {unit && <div className="text-xs mt-1.5 text-base-content/45">{unit}</div>}
       </div>
     </div>
   );
 }
 
-function StatMini({ Icon, tint, title, value }) {
+export default function Fines() {
+  const { data, isLoading, error } = usePenalties();
+
+  const [q, setQ] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+
+  const items = data?.items ?? [];
+  const totals = data?.totals;
+  const cur = totals?.currency || 'UZS';
+
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return items.filter((p) => {
+      if (typeFilter !== 'all' && p.type !== typeFilter) return false;
+      if (!needle) return true;
+      return (
+        (p.partnerName || '').toLowerCase().includes(needle)
+        || (p.employeeName || '').toLowerCase().includes(needle)
+        || (p.reason || '').toLowerCase().includes(needle)
+      );
+    });
+  }, [items, q, typeFilter]);
+
+  if (error && error.status !== 401) {
+    return <div className="alert alert-error text-sm"><span>{error.message}</span></div>;
+  }
+
   return (
-    <div className="card bg-base-100 shadow-sm border border-base-200/60">
-      <div className="card-body p-4">
-        <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl grid place-items-center shrink-0" style={{ background: tint.bg, color: tint.fg }}>
-            <Icon size={18} strokeWidth={2.3} />
-          </span>
-          <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 truncate">{title}</div>
-            <div className="text-2xl font-extrabold leading-tight mt-0.5 truncate">{value}</div>
-          </div>
-        </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Дисциплина партнёров"
+        subtitle="Взыскания сотрудников по всем учебным центрам — обзор платформы"
+      />
+
+      <div className="alert bg-base-200/60 border-0 text-sm">
+        <Info size={16} className="shrink-0" />
+        <span>
+          Только просмотр. Взыскания выписывают Super Admin и Admin внутри своей
+          организации — у владельца платформы такого права нет по матрице прав.
+        </span>
       </div>
+
+      {isLoading ? (
+        <>
+          <SkeletonKpis count={4} />
+          <SkeletonTable rows={6} cols={5} />
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Kpi
+              Icon={Wallet}
+              tint={{ bg: '#FEF3C7', fg: '#92400E' }}
+              title="Сумма штрафов"
+              value={fmt(totals?.shtrafAmount ?? 0)}
+              unit={cur}
+            />
+            <Kpi
+              Icon={AlertTriangle}
+              tint={{ bg: '#FEF3C7', fg: '#92400E' }}
+              title="Штрафов"
+              value={fmt(totals?.shtrafCount ?? 0)}
+              unit="записей"
+            />
+            <Kpi
+              Icon={UserX}
+              tint={{ bg: '#FEE2E2', fg: '#991B1B' }}
+              title="Увольнений"
+              value={fmt(totals?.qoraCount ?? 0)}
+              unit="чёрных меток"
+            />
+            <Kpi
+              Icon={Building2}
+              tint={{ bg: '#E0F2FE', fg: '#075985' }}
+              title="Затронуто центров"
+              value={fmt(totals?.orgsAffected ?? 0)}
+              unit="организаций"
+            />
+          </div>
+
+          <div className="card bg-base-100 shadow-sm border border-base-200/60">
+            <div className="card-body">
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <label className="input input-bordered input-sm flex items-center gap-2 w-full max-w-xs">
+                  <Search size={14} className="opacity-50" />
+                  <input
+                    type="text"
+                    className="grow"
+                    placeholder="Центр, сотрудник, причина"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                  />
+                </label>
+                <div className="join">
+                  {[
+                    { key: 'all', label: 'Все' },
+                    { key: 'shtraf', label: 'Штрафы' },
+                    { key: 'qora', label: 'Увольнения' },
+                  ].map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      className={`join-item btn btn-sm ${typeFilter === t.key ? 'bg-lime-400 hover:bg-lime-500 border-0 text-lime-950' : 'btn-outline'}`}
+                      onClick={() => setTypeFilter(t.key)}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-xs text-base-content/50 ml-auto">
+                  {filtered.length} из {items.length}
+                </span>
+              </div>
+
+              {items.length === 0 ? (
+                <div className="text-center py-16 text-base-content/40">
+                  <AlertTriangle size={32} className="mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">Взысканий пока нет ни у одного партнёра</p>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="text-center py-12 text-base-content/40 text-sm">
+                  Ничего не найдено
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Центр</th>
+                        <th>Сотрудник</th>
+                        <th>Причина</th>
+                        <th>Кто выдал</th>
+                        <th className="text-right">Сумма</th>
+                        <th className="text-right">Дата</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((p) => {
+                        const meta = TYPE_META[p.type] ?? TYPE_META.shtraf;
+                        return (
+                          <tr key={p.id}>
+                            <td className="font-medium">{p.partnerName ?? '—'}</td>
+                            <td>
+                              <div>{p.employeeName}</div>
+                              <div className="text-xs text-base-content/45">
+                                {ROLE_LABEL[p.employeeRole] ?? p.employeeRole}
+                              </div>
+                            </td>
+                            <td>
+                              <span className={`badge badge-sm ${meta.cls} mr-2`}>{meta.label}</span>
+                              <span className="text-sm">{p.reason}</span>
+                            </td>
+                            <td className="text-sm">
+                              {p.issuerName ?? '—'}
+                              <div className="text-xs text-base-content/45">
+                                {ROLE_LABEL[p.issuerRole] ?? p.issuerRole}
+                              </div>
+                            </td>
+                            <td className="text-right tabular-nums font-semibold">
+                              {p.amount == null ? '—' : `${fmt(p.amount)} ${cur}`}
+                            </td>
+                            <td className="text-right text-sm whitespace-nowrap">
+                              {dateShort(p.createdAt)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
