@@ -22,6 +22,7 @@ export default function Footer() {
             <Link to={lp('/landing/pricing')}>{t.nav.pricing}</Link>
             <Link to={lp('/landing/for-language-school')}>{t.nav.langSchool}</Link>
             <Link to={lp('/landing/for-courses')}>{t.nav.courses}</Link>
+            <Link to={lp('/landing/crm-vs-excel')}>{t.nav.vsExcel}</Link>
             <Link to={lp('/landing/blog')}>{t.nav.blog}</Link>
           </div>
           <div className="footer__col">

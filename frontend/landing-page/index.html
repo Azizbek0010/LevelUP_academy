@@ -3,7 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- favicon.ico must exist and be linked: Yandex.Webmaster reports "favicon not
+         found" for an SVG-only icon, and it fetches the root of the site (which
+         308-redirects here), so the raster file is the only signal it accepts.
+         Modern browsers still prefer the SVG below. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#1d2417" />
 
     <!-- Yandex.Webmaster ownership verification. Meta method (not the yandex_*.html

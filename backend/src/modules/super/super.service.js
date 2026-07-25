@@ -381,13 +381,6 @@ export async function deleteAnnouncement(orgId, id) {
   return { id: row.id };
 }
 
-// ---------- reminders: заглушка (нужна запись из воркера) ----------
-// Таблицы напоминаний ещё нет: они пишутся notification-воркером при отправке
-// платёжных уведомлений — отдельная задача (AB-SUPER-REM).
-export async function listReminders() {
-  return { reminders: [], items: [], total: 0 };
-}
-
 // ---------- аудит-лог организации (Super Audit) ----------
 
 function mapAudit(a) {

@@ -18,6 +18,7 @@ import {
 } from './super.schemas.js';
 import * as ctrl from './super.controller.js';
 import * as discipline from '../discipline/discipline.controller.js';
+import * as reminders from './reminders/reminders.controller.js';
 import {
   issuePenaltySchema,
   upsertCharterSchema,
@@ -436,58 +437,91 @@ router.delete('/announcements/:id', validate({ params: idParam }), ctrl.deleteAn
  * /api/super/reminders:
  *   get:
  *     tags: [Super Admin]
- *     summary: "⚠️ STUB — always returns an empty list"
- *     description: NOT IMPLEMENTED. No reminders table yet; returns an empty list so the page renders.
+ *     summary: History of automated payment reminders (payment.due / payment.due_soon / debt.overdue)
+ *     description: >
+ *       Not written by an HTTP handler — a BullMQ QueueEvents listener
+ *       (reminders/reminders.listener.js) logs each reminder job as it
+ *       completes or fails on the shared 'notifications' queue. Scoped to
+ *       this organization, newest first.
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
- *         description: Always empty
+ *         description: Reminder history
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 reminders: { type: array, items: { type: object }, example: [] }
- *                 items: { type: array, items: { type: object }, example: [] }
- *                 total: { type: integer, example: 0 }
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string, format: uuid }
+ *                       studentName: { type: string }
+ *                       parentName: { type: string }
+ *                       message: { type: string }
+ *                       status: { type: string, enum: [pending, sent, failed] }
+ *                       error: { type: string, nullable: true }
+ *                       sentAt: { type: string, format: date-time, nullable: true }
+ *                       createdAt: { type: string, format: date-time }
+ *                 total: { type: integer }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
-router.get('/reminders', ctrl.listReminders);
+router.get('/reminders', reminders.list);
 
 /**
  * @openapi
  * /api/super/reminders/{id}/resend:
  *   post:
  *     tags: [Super Admin]
- *     summary: "⚠️ NOT IMPLEMENTED — always 501"
+ *     summary: Re-queue the same reminder job (same payload) — history is not overwritten, a new entry appears once it settles
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string }
+ *         schema: { type: string, format: uuid }
  *     responses:
- *       501: { $ref: '#/components/responses/NotImplemented' }
+ *       200:
+ *         description: Re-queued
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Reminder not found in your organization
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.post('/reminders/:id/resend', ctrl.notImplemented);
+router.post('/reminders/:id/resend', validate({ params: idParam }), reminders.resend);
 
 /**
  * @openapi
  * /api/super/reminders/{id}:
  *   delete:
  *     tags: [Super Admin]
- *     summary: "⚠️ NOT IMPLEMENTED — always 501"
+ *     summary: Delete a reminder history entry
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string }
+ *         schema: { type: string, format: uuid }
  *     responses:
- *       501: { $ref: '#/components/responses/NotImplemented' }
+ *       200:
+ *         description: Deleted
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Reminder not found in your organization
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.delete('/reminders/:id', ctrl.notImplemented);
+router.delete('/reminders/:id', validate({ params: idParam }), reminders.remove);
 
 /**
  * @openapi

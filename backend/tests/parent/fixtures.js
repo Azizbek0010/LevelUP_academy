@@ -108,10 +108,30 @@ export async function setupFixtures() {
     [test.id, childId],
   );
 
+  // A paid invoice with a completed transaction (-> payment-received notification)
+  const { rows: [paidInvoice] } = await pool.query(
+    `INSERT INTO invoices (branch_id, student_id, group_id, status, total_amount, paid_amount, due_date, created_by)
+     VALUES ($1, $2, $3, 'paid', 500000, 500000, CURRENT_DATE, $4) RETURNING id`,
+    [branchId, childId, groupId, mentorId],
+  );
+  const { rows: [transaction] } = await pool.query(
+    `INSERT INTO transactions (branch_id, invoice_id, method, status, amount, processed_by)
+     VALUES ($1, $2, 'cash', 'completed', 500000, $3) RETURNING id`,
+    [branchId, paidInvoice.id, mentorId],
+  );
+
+  // An overdue invoice (-> overdue notification)
+  const { rows: [overdueInvoice] } = await pool.query(
+    `INSERT INTO invoices (branch_id, student_id, group_id, status, total_amount, paid_amount, due_date, created_by)
+     VALUES ($1, $2, $3, 'overdue', 300000, 0, CURRENT_DATE - 10, $4) RETURNING id`,
+    [branchId, childId, groupId, mentorId],
+  );
+
   return {
     organizationId, branchId,
     parentId, otherParentId, mentorId,
     childId, outsiderChildId, groupId, hwId: hw.id, testId: test.id,
+    paidInvoiceId: paidInvoice.id, transactionId: transaction.id, overdueInvoiceId: overdueInvoice.id,
     ts,
   };
 }
@@ -119,7 +139,8 @@ export async function setupFixtures() {
 export async function teardownFixtures(ctx) {
   if (!ctx) return;
   const { organizationId, branchId, groupId, hwId, testId,
-    parentId, otherParentId, mentorId, childId, outsiderChildId } = ctx;
+    parentId, otherParentId, mentorId, childId, outsiderChildId,
+    paidInvoiceId, transactionId, overdueInvoiceId } = ctx;
   const userIds = [parentId, otherParentId, mentorId, childId, outsiderChildId];
   const childIds = [childId, outsiderChildId];
 
@@ -128,6 +149,8 @@ export async function teardownFixtures(ctx) {
     () => pool.query(`DELETE FROM tests WHERE id = $1`, [testId]),
     () => pool.query(`DELETE FROM homework_submissions WHERE homework_id = $1`, [hwId]),
     () => pool.query(`DELETE FROM homework WHERE id = $1`, [hwId]),
+    () => pool.query(`DELETE FROM transactions WHERE id = $1`, [transactionId]),
+    () => pool.query(`DELETE FROM invoices WHERE id = ANY($1::uuid[])`, [[paidInvoiceId, overdueInvoiceId]]),
     () => pool.query(`DELETE FROM attendance WHERE group_id = $1`, [groupId]),
     () => pool.query(`DELETE FROM coin_history WHERE branch_id = $1`, [branchId]),
     () => pool.query(`DELETE FROM group_students WHERE group_id = $1`, [groupId]),
