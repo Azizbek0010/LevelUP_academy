@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   User, Shield, CreditCard, Building2, GraduationCap, Wallet,
   Info, ExternalLink, GitBranch, TrendingUp,
-  Activity, Settings2, Pencil, LogOut, Megaphone, AlertTriangle, Check,
+  Activity, Settings2, Pencil, LogOut, Megaphone, Check,
 } from 'lucide-react';
 import { useDashboard, usePricing } from '../queries.js';
 import { useAuth } from '../auth.jsx';
@@ -408,27 +408,32 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Quick links */}
+      {/* Разделы, которых нет в меню.
+          Сайдбар сокращён до ежедневной работы (дашборд, партнёры, заявки),
+          а редкие экраны собраны здесь. Шесть разных пастельных заливок убраны:
+          цвет не нёс смысла — «Доход» был зелёным, а «Анонсы» бирюзовыми просто
+          по очереди в списке. Ссылка на «Штрафы» удалена вместе со страницей:
+          дисциплина сотрудников — зона Super Admin. */}
       <div className="card bg-base-100 border border-base-200/60 shadow-sm">
         <div className="card-body">
-          <h2 className="card-title text-base mb-4">Быстрая навигация</h2>
+          <h2 className="card-title text-base mb-4">Ещё разделы</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {[
-              { to: '/leads', Icon: Activity, title: 'Заявки', desc: 'Новые учебные центры', color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100 hover:border-blue-300' },
-              { to: '/organizations', Icon: Building2, title: 'Партнёры', desc: 'Управление центрами', color: 'text-purple-600', bg: 'bg-purple-50 border-purple-100 hover:border-purple-300' },
-              { to: '/revenue', Icon: TrendingUp, title: 'Доход', desc: 'Аналитика выручки', color: 'text-lime-700', bg: 'bg-lime-50 border-lime-100 hover:border-lime-300' },
-              { to: '/billing', Icon: Wallet, title: 'Биллинг', desc: 'Тарифы и счета', color: 'text-orange-600', bg: 'bg-orange-50 border-orange-100 hover:border-orange-300' },
-              { to: '/announcements', Icon: Megaphone, title: 'Анонсы', desc: 'Сообщения партнёрам', color: 'text-teal-600', bg: 'bg-teal-50 border-teal-100 hover:border-teal-300' },
-              { to: '/fines', Icon: AlertTriangle, title: 'Штрафы', desc: 'Нарушения сотрудников', color: 'text-red-600', bg: 'bg-red-50 border-red-100 hover:border-red-300' },
-            ].map(({ to, Icon, title, desc, color, bg }) => (
+              { to: '/revenue', Icon: TrendingUp, title: 'Доход', desc: 'Наш счёт партнёрам' },
+              { to: '/billing', Icon: Wallet, title: 'Тарифы', desc: 'Бакеты по числу учеников' },
+              { to: '/announcements', Icon: Megaphone, title: 'Анонсы', desc: 'Сообщения партнёрам' },
+            ].map(({ to, Icon, title, desc }) => (
               <Link
                 key={to}
                 to={to}
-                className={`flex items-center gap-3 p-4 rounded-xl border transition-all group ${bg}`}
+                className="flex items-center gap-3 p-4 rounded-xl border border-base-200/60 bg-base-100
+                           hover:border-primary/40 transition-colors"
               >
-                <Icon size={20} className={color} />
+                <span className="w-9 h-9 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0">
+                  <Icon size={17} />
+                </span>
                 <div>
-                  <div className={`font-semibold text-sm ${color}`}>{title}</div>
+                  <div className="font-semibold text-sm">{title}</div>
                   <div className="text-xs text-base-content/45">{desc}</div>
                 </div>
               </Link>

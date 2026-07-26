@@ -207,9 +207,6 @@ router.get('/dashboard', ctrl.dashboard);
  *                     students: { type: integer }
  *                     branches: { type: integer }
  *                     ourMonthlyIncome: { type: number }
- *                     partnersRevenue: { type: number }
- *                     partnersExpenses: { type: number }
- *                     partnersProfit: { type: number }
  *                     currency: { type: string, example: UZS }
  *                 partners:
  *                   type: array
@@ -478,39 +475,7 @@ router.delete('/announcements/:id', validate({ params: idParam }), ctrl.deleteAn
 router.get('/profile', ctrl.getProfile);
 router.patch('/profile', validate({ body: updateProfileSchema }), ctrl.updateProfile);
 
-/**
- * @openapi
- * /api/main/penalties:
- *   get:
- *     tags: [Main Admin]
- *     summary: Дисциплина по всем партнёрам (только чтение)
- *     description: >
- *       Сводка штрафов и увольнений по всем организациям. Создавать записи отсюда
- *       нельзя: по матрице прав (CAN_ISSUE) main_admin не выписывает взыскания никому —
- *       это делают Super Admin и Admin внутри своей организации.
- *     security: [{ bearerAuth: [] }]
- *     responses:
- *       200:
- *         description: Список и итоги
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 items:
- *                   type: array
- *                   items: { $ref: '#/components/schemas/PlatformPenalty' }
- *                 totals:
- *                   type: object
- *                   properties:
- *                     shtrafCount: { type: integer }
- *                     qoraCount: { type: integer }
- *                     shtrafAmount: { type: number }
- *                     orgsAffected: { type: integer }
- *                     currency: { type: string, example: UZS }
- *       401: { $ref: '#/components/responses/Unauthorized' }
- *       403: { $ref: '#/components/responses/Forbidden' }
- */
-router.get('/penalties', ctrl.listPenalties);
+/* GET /api/main/penalties удалён: платформе незачем видеть, кого из сотрудников
+ * партнёра наказали и за что. Дисциплина — /api/super/penalties. */
 
 export default router;

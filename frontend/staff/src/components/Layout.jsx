@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Bell, ChevronDown, ChevronRight,
@@ -7,20 +7,17 @@ import {
 } from 'lucide-react';
 import {
   HiOutlineSquares2X2, HiOutlineBuildingOffice2, HiOutlineUsers,
-  HiOutlineAcademicCap, HiOutlineUserGroup, HiOutlineCalendarDays,
-  HiOutlineChartBar, HiOutlineChartPie, HiOutlineMegaphone,
-  HiOutlineBellAlert, HiOutlineShieldExclamation, HiOutlineCog,
+  HiOutlineAcademicCap, HiOutlineUserGroup,
+  HiOutlineChartBar, HiOutlineExclamationTriangle, HiOutlineCog,
   HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
-  HiOutlineClipboardDocumentCheck, HiOutlineCurrencyDollar,
-  HiOutlineDocumentText,
 } from 'react-icons/hi2';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
 import Avatar from './Avatar.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { disconnectSocket, getSocket } from '../socket.js';
-import { useMentorGroups, useChatContacts } from '../queries.js';
+import { useMentorGroups, useSuperBranches, useChatContacts } from '../queries.js';
 import {
   playNotificationSound, unlockSound, isSoundEnabled, setSoundEnabled,
 } from '../lib/notificationSound.js';
@@ -38,19 +35,61 @@ function useMediaQuery(query) {
 }
 
 /* ──────────────────── NAV CONFIG ──────────────────── */
+/**
+ * Меню Super Admin: тринадцать пунктов свёрнуты в семь.
+ *
+ * Две проблемы были одновременно. Первая — длина: одиннадцать ссылок подряд,
+ * где ежедневный дашборд стоял наравне с аудитом, который открывают раз в
+ * месяц. Вторая, хуже, — семь пунктов носили бейдж «soon», хотя страницы за
+ * ними давно написаны и зовут настоящий API (Студенты, Группы, Посещаемость,
+ * Статистика, Объявления, Напоминания, Аудит — у каждой есть useQuery к своему
+ * эндпоинту). Партнёр читал «этого ещё нет» о работающем разделе. Бейджи убраны
+ * вместе с флагом, а не перекрашены.
+ *
+ * Структура повторяет панель ментора: главная сущность — филиал — разворачивается
+ * прямо в меню, а редкие разделы собраны в группы, чтобы не занимать строку
+ * каждый. Ничего не спрятано глубже двух клика.
+ */
 const superNav = [
-  { to: '/',              label: 'Дашборд',       Icon: HiOutlineSquares2X2, end: true },
-  { to: '/branches',      label: 'Филиалы',        Icon: HiOutlineBuildingOffice2 },
-  { to: '/admins',        label: 'Сотрудники',     Icon: HiOutlineUsers },
-  { to: '/students',      label: 'Студенты',       Icon: HiOutlineAcademicCap,  soon: true },
-  { to: '/groups',        label: 'Группы',         Icon: HiOutlineUserGroup,     soon: true },
-  { to: '/attendance',    label: 'Посещаемость',   Icon: HiOutlineCalendarDays,  soon: true },
-  { to: '/reports',       label: 'Аналитика',      Icon: HiOutlineChartBar },
-  { to: '/stats',         label: 'Статистика',     Icon: HiOutlineChartPie,       soon: true },
-  { to: '/announcements', label: 'Объявления',     Icon: HiOutlineMegaphone,      soon: true },
-  { to: '/reminders',     label: 'Напоминания',    Icon: HiOutlineBellAlert,      soon: true },
-  { to: '/audit',         label: 'Аудит',          Icon: HiOutlineShieldExclamation, soon: true },
-  { to: '/settings',      label: 'Настройки',      Icon: HiOutlineCog },
+  { to: '/',           label: 'Дашборд',    Icon: HiOutlineSquares2X2, end: true },
+  { type: 'super-branches' },
+  { to: '/admins',     label: 'Сотрудники', Icon: HiOutlineUsers },
+  {
+    type: 'group',
+    key: 'study',
+    label: 'Учёба',
+    Icon: HiOutlineAcademicCap,
+    items: [
+      { to: '/students',   label: 'Студенты' },
+      { to: '/groups',     label: 'Группы' },
+      { to: '/attendance', label: 'Посещаемость' },
+    ],
+  },
+  {
+    type: 'group',
+    key: 'analytics',
+    label: 'Аналитика',
+    Icon: HiOutlineChartBar,
+    items: [
+      { to: '/reports', label: 'Отчёты' },
+      { to: '/stats',   label: 'Статистика' },
+    ],
+  },
+  // Дисциплина переехала сюда из панели Main Admin: штрафы и увольнения
+  // сотрудников — внутреннее дело организации, а не платформы
+  { to: '/discipline', label: 'Дисциплина', Icon: HiOutlineExclamationTriangle },
+  {
+    type: 'group',
+    key: 'more',
+    label: 'Ещё',
+    Icon: HiOutlineCog,
+    items: [
+      { to: '/announcements', label: 'Объявления' },
+      { to: '/reminders',     label: 'Напоминания' },
+      { to: '/audit',         label: 'Аудит' },
+      { to: '/settings',      label: 'Настройки' },
+    ],
+  },
 ];
 
 const adminNav = [
@@ -193,6 +232,176 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
   );
 }
 
+/* ──────────────────── SUPER ADMIN: список филиалов ────────────────────
+   То же решение, что у ментора с группами: филиал — главная сущность
+   Super Admin, и выбирать его логично один раз в меню, а не заходить сначала
+   в список, потом в карточку. Хук вызывается только под этой ролью —
+   у остальных /super/branches вернул бы 403. */
+function SuperBranchesNav({ collapsed, onExpandSidebar }) {
+  const { data } = useSuperBranches();
+  const location = useLocation();
+  const branches = data?.branches ?? [];
+
+  const inside = location.pathname.startsWith('/branches');
+  const [open, setOpen] = useState(true);
+
+  const toggle = () => {
+    if (collapsed) { onExpandSidebar(); setOpen(true); return; }
+    setOpen((v) => !v);
+  };
+
+  return (
+    <div>
+      <button
+        onClick={toggle}
+        title={collapsed ? 'Филиалы' : undefined}
+        aria-expanded={collapsed ? false : open}
+        className={`group w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-sm ${
+          collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
+        }`}
+        style={{
+          color: inside ? '#40833B' : 'rgba(232, 239, 226, 0.55)',
+          background: inside ? 'rgba(64, 131, 59, 0.1)' : 'transparent',
+        }}
+      >
+        <HiOutlineBuildingOffice2 size={18} strokeWidth={inside ? 2.2 : 1.8} className="shrink-0" />
+        {!collapsed && (
+          <>
+            <span className="flex-1 text-left font-medium">Филиалы</span>
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+              style={{ background: 'rgba(64,131,59,0.12)', color: 'rgba(64,131,59,0.75)' }}
+            >
+              {branches.length}
+            </span>
+            <ChevronDown
+              size={14}
+              className="shrink-0 transition-transform duration-200"
+              style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+            />
+          </>
+        )}
+      </button>
+
+      {!collapsed && open && (
+        <ul className="mt-1 space-y-0.5 pl-3 border-l ml-4" style={{ borderColor: 'rgba(64,131,59,0.15)' }}>
+          <li>
+            <NavLink
+              to="/branches"
+              end
+              className="block rounded-lg px-3 py-2 text-[12px] transition-colors"
+              style={({ isActive }) => ({
+                color: isActive ? '#40833B' : 'rgba(232, 239, 226, 0.4)',
+                background: isActive ? 'rgba(64, 131, 59, 0.08)' : 'transparent',
+                fontWeight: isActive ? 600 : 400,
+              })}
+            >
+              Все филиалы
+            </NavLink>
+          </li>
+          {branches.map((b) => {
+            const active = location.pathname === `/branches/${b.id}`;
+            return (
+              <li key={b.id}>
+                <NavLink
+                  to={`/branches/${b.id}`}
+                  title={b.name}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-colors"
+                  style={{
+                    color: active ? '#40833B' : 'rgba(232, 239, 226, 0.5)',
+                    background: active ? 'rgba(64, 131, 59, 0.08)' : 'transparent',
+                    fontWeight: active ? 600 : 400,
+                  }}
+                >
+                  <span className="truncate">{b.name}</span>
+                  {b.isMain && (
+                    <span
+                      className="text-[9px] font-bold px-1 py-0.5 rounded shrink-0"
+                      style={{ background: 'rgba(64,131,59,0.12)', color: 'rgba(64,131,59,0.7)' }}
+                    >
+                      осн
+                    </span>
+                  )}
+                </NavLink>
+              </li>
+            );
+          })}
+          {branches.length === 0 && (
+            <li className="px-3 py-2 text-[11px]" style={{ color: 'rgba(232,239,226,0.3)' }}>
+              Филиалов нет
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────── Сворачиваемая группа пунктов ────────────────────
+   Нужна, чтобы редкие разделы (отчёты, аудит, рассылки) не занимали по строке
+   в меню каждый. Раскрыта, если пользователь уже внутри одного из её пунктов —
+   иначе после перехода группа схлопывалась бы и прятала текущую страницу. */
+function NavGroup({ label, Icon, items, collapsed, onExpandSidebar }) {
+  const location = useLocation();
+  const inside = items.some((i) => location.pathname === i.to);
+  const [open, setOpen] = useState(inside);
+
+  const toggle = () => {
+    if (collapsed) { onExpandSidebar(); setOpen(true); return; }
+    setOpen((v) => !v);
+  };
+
+  return (
+    <div>
+      <button
+        onClick={toggle}
+        title={collapsed ? label : undefined}
+        aria-expanded={collapsed ? false : open}
+        className={`group w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-sm ${
+          collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
+        }`}
+        style={{
+          color: inside ? '#40833B' : 'rgba(232, 239, 226, 0.55)',
+          background: inside ? 'rgba(64, 131, 59, 0.1)' : 'transparent',
+        }}
+      >
+        <Icon size={18} strokeWidth={inside ? 2.2 : 1.8} className="shrink-0" />
+        {!collapsed && (
+          <>
+            <span className="flex-1 text-left font-medium">{label}</span>
+            <ChevronDown
+              size={14}
+              className="shrink-0 transition-transform duration-200"
+              style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+            />
+          </>
+        )}
+      </button>
+
+      {!collapsed && open && (
+        <ul className="mt-1 space-y-0.5 pl-3 border-l ml-4" style={{ borderColor: 'rgba(64,131,59,0.15)' }}>
+          {items.map((i) => (
+            <li key={i.to}>
+              <NavLink
+                to={i.to}
+                end
+                className="block rounded-lg px-3 py-2 text-[13px] transition-colors truncate"
+                style={({ isActive }) => ({
+                  color: isActive ? '#40833B' : 'rgba(232, 239, 226, 0.5)',
+                  background: isActive ? 'rgba(64, 131, 59, 0.08)' : 'transparent',
+                  fontWeight: isActive ? 600 : 400,
+                })}
+              >
+                {i.label}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /* ──────────────────── SIDEBAR ──────────────────── */
 function Sidebar({
   role,
@@ -254,6 +463,27 @@ function Sidebar({
             return (
               <MentorGroupsNav
                 key="mentor-groups"
+                collapsed={collapsed}
+                onExpandSidebar={onExpandSidebar}
+              />
+            );
+          }
+          if (item.type === 'super-branches') {
+            return (
+              <SuperBranchesNav
+                key="super-branches"
+                collapsed={collapsed}
+                onExpandSidebar={onExpandSidebar}
+              />
+            );
+          }
+          if (item.type === 'group') {
+            return (
+              <NavGroup
+                key={item.key}
+                label={item.label}
+                Icon={item.Icon}
+                items={item.items}
                 collapsed={collapsed}
                 onExpandSidebar={onExpandSidebar}
               />

@@ -67,7 +67,4 @@ export const updateProfile = asyncHandler(async (req, res) => {
   res.json({ profile: await service.updateProfile(req.user.id, req.body) });
 });
 
-// --- дисциплина по платформе (только чтение) ---
-export const listPenalties = asyncHandler(async (_req, res) => {
-  res.json(await service.listPenalties());
-});
+// дисциплина сотрудников — зона Super Admin (/api/super/penalties), не платформы

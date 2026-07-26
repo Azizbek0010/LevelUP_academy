@@ -81,9 +81,18 @@ export function setOrgOwner(orgId, userId, client = pool) {
 }
 
 /**
- * Список партнёров с числом филиалов/студентов и их доход/расход (для дашборда/списка).
- * revenue/expenses — деньги партнёра (его студенты платят ему), не наш доход от партнёра.
- * Money-таблицы (transactions, expenses) — чужая зона (Karis), здесь только SELECT.
+ * Список партнёров с числом филиалов и студентов.
+ *
+ * Здесь СОЗНАТЕЛЬНО нет выручки и расходов партнёра. Раньше запрос тянул
+ * SUM(transactions.amount) и SUM(expenses.amount) по всем филиалам организации,
+ * то есть оборот и траты чужого бизнеса, и отдавал их наружу в /main/dashboard
+ * и /main/revenue. В интерфейсе эти числа не показывались, но лежали в ответе —
+ * владелец платформы мог открыть devtools и посмотреть, сколько зарабатывает
+ * каждый учебный центр.
+ *
+ * Нам как платформе нужно ровно одно денежное число — сколько партнёр должен
+ * НАМ, а оно считается из числа активных учеников (computeBill), а не из его
+ * оборота. Поэтому количество студентов остаётся, деньги партнёра — нет.
  */
 export function listPartners(client = pool) {
   return client
@@ -92,13 +101,7 @@ export function listPartners(client = pool) {
               (SELECT count(*) FROM branches b
                  WHERE b.organization_id = o.id AND b.deleted_at IS NULL) AS branches,
               (SELECT count(*) FROM users u
-                 WHERE u.organization_id = o.id AND u.role = 'student' AND u.deleted_at IS NULL) AS students,
-              (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t
-                 JOIN branches b ON b.id = t.branch_id
-                WHERE b.organization_id = o.id AND t.status = 'completed') AS revenue,
-              (SELECT COALESCE(SUM(e.amount), 0) FROM expenses e
-                 JOIN branches b ON b.id = e.branch_id
-                WHERE b.organization_id = o.id AND e.deleted_at IS NULL) AS expenses
+                 WHERE u.organization_id = o.id AND u.role = 'student' AND u.deleted_at IS NULL) AS students
          FROM organizations o
         WHERE o.deleted_at IS NULL
         ORDER BY o.created_at DESC`,
@@ -308,41 +311,6 @@ export function updateProfile(id, fields, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
-// ---------- штрафы по платформе (Main Admin → «Штрафы», только чтение) ----------
-
-/**
- * Сводка штрафов сотрудников по ВСЕМ организациям.
- * Main Admin по матрице прав (CAN_ISSUE) не выписывает штрафы никому —
- * поэтому здесь только SELECT, никаких вставок. Это платформенный обзор.
- */
-export function listPlatformPenalties({ limit = 200 } = {}, client = pool) {
-  return client
-    .query(
-      `SELECT p.id, p.type, p.amount, p.reason, p.created_at,
-              p.target_role, p.issuer_role,
-              o.name AS partner_name,
-              (t.first_name || ' ' || t.last_name) AS employee_name,
-              (i.first_name || ' ' || i.last_name) AS issuer_name
-         FROM staff_penalties p
-         JOIN users t         ON t.id = p.target_user_id
-         LEFT JOIN users i    ON i.id = p.issued_by
-         LEFT JOIN organizations o ON o.id = p.organization_id
-        ORDER BY p.created_at DESC
-        LIMIT $1`,
-      [limit],
-    )
-    .then((r) => r.rows);
-}
-
-/** Итоги по штрафам платформы: суммы и количества (для KPI-плиток). */
-export function platformPenaltyTotals(client = pool) {
-  return client
-    .query(
-      `SELECT count(*) FILTER (WHERE type = 'shtraf')::int      AS shtraf_count,
-              count(*) FILTER (WHERE type = 'qora')::int        AS qora_count,
-              COALESCE(SUM(amount) FILTER (WHERE type = 'shtraf'), 0) AS shtraf_amount,
-              count(DISTINCT organization_id)::int              AS orgs_affected
-         FROM staff_penalties`,
-    )
-    .then((r) => r.rows[0]);
-}
+/* Запросы по staff_penalties отсюда убраны: платформа не читает дисциплину
+ * сотрудников партнёров. Эти данные принадлежат организации и доступны её
+ * Super Admin через /api/super/penalties. */
