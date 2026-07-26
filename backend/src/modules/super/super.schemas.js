@@ -33,6 +33,8 @@ export const updateBranchSchema = z
     name: z.string().trim().min(2).max(120),
     address: z.string().trim().max(500),
     phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone'),
+    lat: z.coerce.number().min(-90).max(90),
+    lng: z.coerce.number().min(-180).max(180),
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
@@ -56,6 +58,11 @@ export const createBranchSchema = z.object({
   name: z.string().trim().min(2, 'Too short').max(120),
   address: z.string().trim().max(500).optional(),
   phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').optional(),
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lng: z.coerce.number().min(-180).max(180).optional(),
+}).refine((b) => (b.lat === undefined) === (b.lng === undefined), {
+  message: 'Координаты нужны обе сразу',
+  path: ['lat'],
 });
 
 // Super Admin создаёт админа и назначает в свой филиал.
