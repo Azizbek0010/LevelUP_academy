@@ -26,20 +26,26 @@ import telegramRoutes from './modules/telegram/telegram.routes.js';
 /**
  * Кто имеет право звать API из браузера.
  *
- * Было `cors({ origin: true, credentials: true })` — то есть сервер отражал
- * ЛЮБОЙ присланный Origin и при этом разрешал слать учётные данные. Проверено
- * на боевом API: запрос с `Origin: https://evil-example.com` получал в ответ
- * `Access-Control-Allow-Origin: https://evil-example.com` и
- * `Access-Control-Allow-Credentials: true`. От захвата сессии спасал только
- * `SameSite=lax` у refresh-куки — браузер не прикладывает её к кросс-сайтовым
- * запросам. То есть безопасность держалась на одной настройке в другом файле:
- * поставь кто-нибудь `SameSite=none` (а к этому подталкивает то, что панели на
- * *.vercel.app и API на другом домене — это разные сайты), и любая страница в
- * интернете смогла бы дёрнуть /api/auth/refresh с куками жертвы и прочитать
- * оттуда свежий access-token.
+ * Два режима, переключаются переменной CORS_MODE без правки кода:
  *
- * Теперь список закрытый. Свои превью-домены Vercel оставлены по суффиксу
- * аккаунта — иначе ветки команды перестали бы открываться.
+ *   open       (по умолчанию) — отражаем любой присланный Origin. Так было
+ *              изначально и так оставлено СОЗНАТЕЛЬНО на время командной
+ *              работы: у четырнадцати человек свои превью-домены и локальные
+ *              порты, и закрытый список блокировал бы их по очереди.
+ *   allowlist  — пускаем только известные домены (список ниже) плюс то, что
+ *              перечислено в ALLOWED_ORIGINS.
+ *
+ * ⚠️ Чем `open` опасен. Вместе с `credentials: true` сервер отвечает
+ * `Access-Control-Allow-Origin: <origin запросившего>` кому угодно — проверено
+ * на боевом API запросом с `Origin: https://evil-example.com`. Единственное,
+ * что мешает чужой странице дёрнуть /api/auth/refresh с куками жертвы и
+ * прочитать оттуда свежий access-token, — это `sameSite: 'lax'` у refresh-куки
+ * (modules/auth/auth.controller.js). Пока режим `open`, эту настройку менять
+ * НЕЛЬЗЯ: `SameSite=none` вместе с открытым CORS = захват аккаунта с любого
+ * сайта. Панели на *.vercel.app кросс-сайтовые с API, поэтому соблазн поставить
+ * `none` будет — правильный ответ не он, а поддомены levelup-academy.uz.
+ *
+ * Когда команда закончит: `CORS_MODE=allowlist` в переменных Render.
  */
 const PROD_ORIGINS = new Set([
   'https://levelup-academy.uz',
@@ -60,6 +66,9 @@ const PROD_ORIGINS = new Set([
 const VERCEL_PREVIEW = /^https:\/\/[a-z0-9-]+-azizbek0010s-projects\.vercel\.app$/;
 
 function corsOrigin(origin, cb) {
+  // открытый режим: команда работает с превью-доменов и локальных портов
+  if (env.CORS_MODE !== 'allowlist') return cb(null, true);
+
   // без Origin приходят curl, Postman, серверные вызовы и same-origin навигация —
   // CORS к ним не применяется, блокировать нечего
   if (!origin) return cb(null, true);
