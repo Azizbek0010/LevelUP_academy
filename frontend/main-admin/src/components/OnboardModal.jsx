@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PhoneInput from './PhoneInput.jsx';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { Copy, Check, AlertTriangle, Building2, User } from 'lucide-react';
@@ -218,11 +219,10 @@ export default function OnboardModal({ lead, onClose, onDone }) {
                 </label>
                 <label className="form-control">
                   <span className="label-text mb-1">Телефон <span className="opacity-50">(необязательно)</span></span>
-                  <input
+                  <PhoneInput
                     className="input input-bordered"
                     value={form.phone}
-                    onChange={set('phone')}
-                    placeholder="+998901234567"
+                    onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
                   />
                 </label>
                 <div className="modal-action mt-6">

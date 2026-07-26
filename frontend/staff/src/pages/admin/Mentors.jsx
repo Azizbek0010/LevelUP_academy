@@ -4,6 +4,7 @@ import { Plus, Pencil, Users, UserCheck, UserX, Mail, Phone, Award, MessageCircl
 import { useAuth } from '../../auth.jsx';
 import { useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
+import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Avatar, EmptyState, Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
 
@@ -215,7 +216,7 @@ export default function AdminMentors() {
             <div className="space-y-3">
               <input className="input input-bordered w-full" placeholder="Имя" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
               <input className="input input-bordered w-full" placeholder="Фамилия" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
-              <input className="input input-bordered w-full" placeholder="Телефон" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <PhoneInput className="input input-bordered w-full" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
               {!form.id && (
                 <input className="input input-bordered w-full" type="email" placeholder="Email (для входа)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               )}

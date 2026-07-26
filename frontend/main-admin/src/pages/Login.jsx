@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { api } from '../api.js';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 function GoogleIcon() {
   return (
@@ -60,7 +61,7 @@ function LoginForm({ onForgot }) {
         </label>
         <label className="form-control w-full">
           <span className="label-text mb-1">Пароль</span>
-          <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+          <PasswordInput required value={password} onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••" className="input input-bordered w-full" />
         </label>
         <button type="submit" className="btn btn-primary w-full" disabled={busy}>
@@ -177,7 +178,7 @@ function ForgotForm({ onBack }) {
           <input inputMode="numeric" maxLength={6} required value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
             placeholder="Код из письма (6 цифр)" className="input input-bordered w-full tracking-widest" />
-          <input type="password" required minLength={8} value={newPassword}
+          <PasswordInput required minLength={8} value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="Новый пароль (мин. 8)" className="input input-bordered w-full" />
           <button className="btn btn-primary w-full" disabled={busy}>

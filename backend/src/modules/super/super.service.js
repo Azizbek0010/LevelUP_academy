@@ -30,6 +30,9 @@ export async function listBranches(orgId) {
     isMain: b.is_main,
     admins: Number(b.admins),
     students: Number(b.students),
+    // NUMERIC приезжает строкой; карта ждёт числа
+    lat: b.lat === null || b.lat === undefined ? null : Number(b.lat),
+    lng: b.lng === null || b.lng === undefined ? null : Number(b.lng),
     createdAt: b.created_at,
   }));
 }
@@ -42,6 +45,9 @@ function mapBranch(b) {
     phone: b.phone,
     isMain: b.is_main,
     isArchived: b.is_archived,
+    // NUMERIC приезжает строкой; карта ждёт числа
+    lat: b.lat === null || b.lat === undefined ? null : Number(b.lat),
+    lng: b.lng === null || b.lng === undefined ? null : Number(b.lng),
     createdAt: b.created_at,
   };
 }

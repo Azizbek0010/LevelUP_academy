@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Building2, MapPin, Phone, DoorOpen, AlertTriangle } from 'lucide-react';
@@ -11,6 +11,7 @@ import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import YMapPicker from '../../components/YMapPicker.jsx';
+import PhoneInput from '../../components/PhoneInput.jsx';
 
 const branchSchema = z.object({
   name:      z.string().trim().min(1, 'Название обязательно').max(80, 'Макс. 80 символов'),
@@ -35,6 +36,8 @@ export default function SuperBranches() {
   const [currentId, setCurrentId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [location, setLocation] = useState(null);
+  // без ключа Яндекса карта не грузится — тогда координаты не требуем
+  const mapAvailable = Boolean(import.meta.env.VITE_YANDEX_KEY);
 
   // Стейты подтверждения архивации
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -61,6 +64,7 @@ export default function SuperBranches() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(branchSchema),
@@ -97,6 +101,17 @@ export default function SuperBranches() {
 
   const onFormSubmit = async (formData) => {
     setErr('');
+
+    /* Точка на карте обязательна при создании — по ней потом строятся маршруты
+       для родителей и разбор «в каком филиале что происходит». При правке
+       старого филиала не требуем: он мог быть заведён до появления карты.
+       Если ключ Яндекса не подключён, карта показать себя не может — тогда
+       требовать координаты бессмысленно, и филиал создаётся без них. */
+    if (modalMode === 'create' && mapAvailable && !location) {
+      setErr('Отметьте филиал на карте — без точки его не найдут ни родители, ни курьер');
+      return;
+    }
+
     setBusy(true);
     try {
       const body = {
@@ -349,7 +364,7 @@ export default function SuperBranches() {
               {/* Map picker */}
               <div>
                 <span className="label-text mb-1 block">
-                  Местоположение на карте
+                  Местоположение на карте{mapAvailable && modalMode === 'create' && ' *'}
                   {location && (
                     <button
                       type="button"
@@ -365,10 +380,17 @@ export default function SuperBranches() {
 
               <label className="form-control w-full">
                 <span className="label-text mb-1">Телефон</span>
-                <input
-                  {...register('phone')}
-                  placeholder="+998901234567"
-                  className={`input input-bordered w-full rounded-xl ${errors.phone ? 'input-error' : ''}`}
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <PhoneInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      className={`input input-bordered w-full rounded-xl ${errors.phone ? 'input-error' : ''}`}
+                    />
+                  )}
                 />
                 {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
               </label>

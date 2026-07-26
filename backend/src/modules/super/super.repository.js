@@ -12,13 +12,13 @@ export function countBranches(orgId, client = pool) {
     .then((r) => r.rows[0].n);
 }
 
-export function insertBranch({ orgId, name, address, phone, isMain }, client = pool) {
+export function insertBranch({ orgId, name, address, phone, isMain, lat, lng }, client = pool) {
   return client
     .query(
-      `INSERT INTO branches (organization_id, name, address, phone, is_main)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, name, address, phone, is_main, created_at`,
-      [orgId, name, address ?? null, phone ?? null, isMain ?? false],
+      `INSERT INTO branches (organization_id, name, address, phone, is_main, lat, lng)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, name, address, phone, is_main, lat, lng, created_at`,
+      [orgId, name, address ?? null, phone ?? null, isMain ?? false, lat ?? null, lng ?? null],
     )
     .then((r) => r.rows[0]);
 }
@@ -27,7 +27,7 @@ export function insertBranch({ orgId, name, address, phone, isMain }, client = p
 export function listBranches(orgId, client = pool) {
   return client
     .query(
-      `SELECT b.id, b.name, b.address, b.phone, b.is_main, b.created_at,
+      `SELECT b.id, b.name, b.address, b.phone, b.is_main, b.lat, b.lng, b.created_at,
               (SELECT count(*) FROM users u
                  WHERE u.branch_id = b.id AND u.role = 'admin' AND u.deleted_at IS NULL) AS admins,
               (SELECT count(*) FROM users u
@@ -51,7 +51,7 @@ export function findBranchInOrg(branchId, orgId, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
-const BRANCH_RETURN = 'id, name, address, phone, is_main, is_archived, created_at';
+const BRANCH_RETURN = 'id, name, address, phone, is_main, is_archived, lat, lng, created_at';
 
 /** Частичное обновление филиала в пределах своей орг. */
 export function updateBranch(id, orgId, fields, client = pool) {
@@ -62,6 +62,8 @@ export function updateBranch(id, orgId, fields, client = pool) {
     ['name', 'name'],
     ['address', 'address'],
     ['phone', 'phone'],
+    ['lat', 'lat'],
+    ['lng', 'lng'],
   ]) {
     if (fields[key] !== undefined) {
       cols.push(`${col} = $${i++}`);
