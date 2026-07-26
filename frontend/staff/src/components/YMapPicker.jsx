@@ -22,7 +22,12 @@ function loadYMapsScript(key) {
     scriptLoading = true;
 
     const script = document.createElement('script');
-    script.src = `https://api-maps.yandex.ru/3.0/?lang=ru_RU&apikey=${key}&theme=light`;
+    /* Без `theme`: JS API 3.0 такого параметра не знает и отвечает
+       400 Bad Request — `Error validating query: "theme" is not allowed`.
+       То есть скрипт карт не загружался вообще, независимо от ключа.
+       Проверено запросом к api-maps.yandex.ru: с `theme` — 400, без него
+       ключ доходит до проверки прав. */
+    script.src = `https://api-maps.yandex.ru/3.0/?lang=ru_RU&apikey=${key}`;
     script.async = true;
     script.onload = () => {
       scriptLoaded = true;
@@ -66,8 +71,17 @@ export default function YMapPicker({ value, onChange, height = 260 }) {
       .then(() => {
         if (!cancelled) setReady(true);
       })
-      .catch((e) => {
-        if (!cancelled) setError('Не удалось загрузить Yandex Maps');
+      .catch(() => {
+        /* Самая частая причина — не сам код, а ключ: у JS API 3.0 обязательны
+           ограничения по HTTP referer, и пока они не заданы, Яндекс отвечает
+           429 «limited», а с чужого домена — 403 «Invalid api key».
+           Пишем это прямо, иначе поиск причины начинается с кода. */
+        if (!cancelled) {
+          setError(
+            'Карта не загрузилась. Проверьте ключ Яндекса: в кабинете разработчика ' +
+            'у него должны быть заданы ограничения по HTTP referer для этого домена.',
+          );
+        }
       });
 
     return () => {
