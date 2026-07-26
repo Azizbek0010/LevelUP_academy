@@ -4,7 +4,7 @@ import {
   Wallet, Building2, GraduationCap, Store, RefreshCw, ArrowRight,
   Inbox, Crown, Sparkles, PhoneCall, CheckCircle2, XCircle,
   X, TrendingUp, Snowflake, Zap, PieChart as PieIcon,
-  Calculator, Percent, Award, ChevronRight, Power, Pause, Bell,
+  Calculator, Percent, Award, ChevronRight, Power, Pause,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -175,24 +175,17 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
   const [modal, setModal] = useState(null); // 'income' | 'partners' | 'students' | 'branches' | { type:'partner', p }
   const [barModal, setBarModal] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [err, setErr] = useState('');
   const { token } = useAuth();
   const invalidate = useInvalidate();
 
-  // Партнёры с приближающейся датой разморозки (сегодня или завтра)
-  const thawingSoon = useMemo(() => {
-    return partners.filter((p) => {
-      if (p.status !== 'frozen') return false;
-      let meta;
-      try {
-        meta = JSON.parse(localStorage.getItem(`freeze_meta_${p.id}`) || 'null');
-      } catch {
-        meta = null;
-      }
-      if (!meta?.until) return false;
-      const daysLeft = Math.ceil((new Date(meta.until) - Date.now()) / 86400000);
-      return daysLeft <= 1;
-    });
-  }, [partners]);
+  /* Здесь был блок «Скоро разморозка»: он читал дату разморозки из
+     localStorage браузера. Ни база, ни API такого поля не хранят — напоминание
+     видел только тот, кто сам нажал «Заморозить», на своей же машине, и оно
+     исчезало вместе с очисткой кэша. Убрано вместе с формой причины и срока
+     заморозки (см. Organizations.jsx). Если напоминание нужно по-настоящему —
+     это поля frozen_until/frozen_reason у organizations плюс отдача их в
+     /main/dashboard, то есть работа на бэкенде, а не в браузере. */
 
   const barPartner = barModal ? partners.find((p) => p.id === barModal.id) : null;
 
@@ -232,16 +225,16 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
     if (!p) return;
     const next = p.status === 'active' ? 'frozen' : 'active';
     setBusyId(p.id);
+    setErr('');
     try {
       await api.setPartnerStatus(token, p.id, next);
-      if (next === 'active') {
-        localStorage.removeItem(`freeze_meta_${p.id}`);
-      }
       invalidate('dashboard');
       setModal(null);
       setBarModal(null);
-    } catch (err) {
-      alert(err.message);
+    } catch (e) {
+      // было alert(): единственное место в панели, где ошибка выпадала
+      // системным окном поверх интерфейса — везде остальное показывается в вёрстке
+      setErr(e.message);
     } finally {
       setBusyId(null);
     }
@@ -249,6 +242,12 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
 
   return (
     <>
+      {err && (
+        <div className="alert alert-error mb-4 text-sm">
+          <span>{err}</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi
           Icon={Wallet}
@@ -288,33 +287,6 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
           onClick={() => setModal('branches')}
         />
       </div>
-
-      {thawingSoon.length > 0 && (
-        <div className="alert bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl">
-          <Bell size={16} className="text-amber-500 shrink-0" />
-          <div>
-            <div className="font-bold text-sm">Скоро разморозка</div>
-            {thawingSoon.map((p) => {
-              let meta;
-              try {
-                meta = JSON.parse(localStorage.getItem(`freeze_meta_${p.id}`) || 'null');
-              } catch {
-                meta = null;
-              }
-              if (!meta?.until) return null;
-              const daysLeft = Math.ceil((new Date(meta.until) - Date.now()) / 86400000);
-              return (
-                <div key={p.id} className="text-xs mt-0.5">
-                  <span className="font-semibold">{p.name}</span>
-                  {' — '}
-                  {daysLeft <= 0 ? 'сегодня нужно разморозить' : 'завтра нужно разморозить'}
-                  {' '}(до {new Date(meta.until).toLocaleDateString('ru-RU')})
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="card bg-base-100 shadow-sm border border-base-200/60 lg:col-span-2">

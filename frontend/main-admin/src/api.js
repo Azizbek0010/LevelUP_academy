@@ -77,6 +77,7 @@ export const api = {
   // auth
   loginMain: (login, password) =>
     request('/auth/main/login', { method: 'POST', body: { login, password } }),
+  // используется в auth.jsx при загрузке — восстановление сессии по refresh-cookie
   refresh: () => request('/auth/refresh', { method: 'POST' }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   googleLogin: (idToken) => request('/auth/main/google', { method: 'POST', body: { idToken } }),
@@ -88,7 +89,7 @@ export const api = {
   revenue: (token) => request('/main/revenue', { token }),
   mainPenalties: (token) => request('/main/penalties', { token }),
   getProfile: (token) => request('/main/profile', { token }),
-  partners: (token) => request('/main/partners', { token }),
+  // список партнёров отдельно не запрашиваем — он приходит внутри /main/dashboard
   setPartnerStatus: (token, id, status) =>
     request(`/main/partners/${id}/status`, { method: 'PATCH', token, body: { status } }),
   onboardPartner: (token, body) =>
@@ -100,9 +101,9 @@ export const api = {
   updateLead: (token, id, body) =>
     request(`/main/leads/${id}`, { method: 'PATCH', token, body }),
 
-  // pricing
+  // pricing (только чтение: PUT /main/pricing на бэкенде ничего не записывает,
+  // тарифы лежат в backend/src/config/plans.js — правка через БД это v2)
   getPricing: (token) => request('/main/pricing', { token }),
-  updatePricing: (token, body) => request('/main/pricing', { method: 'PUT', token, body }),
 
   // main announcements
   mainAnnouncements: (token) => request('/main/announcements', { token }),
