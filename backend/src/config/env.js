@@ -10,6 +10,9 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1),
   // managed Postgres (Neon и т.п.) требует TLS — на локальном docker оставляем false
   DB_SSL: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
+  // ожидание подключения к БД: локальный docker отвечает мгновенно, а спящий
+  // Neon сначала будит compute — см. комментарий в config/db.js
+  DB_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
   // Дефолт нужен только локально. В production он опасен: если переменную забыли
   // задать, приложение молча уходит на localhost, Redis там нет, и чат, presence
   // и очереди BullMQ тихо не работают — падают только логи, HTTP отвечает 200.

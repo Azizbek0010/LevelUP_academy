@@ -11,6 +11,7 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts';
 import { fmt, dateShort, LEAD_STATUS, ORG_STATUS } from '../format.js';
+import { tierRange, tierPriceLabel } from '../lib/pricing.js';
 import { useDashboard, useLeads, useInvalidate } from '../queries.js';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
@@ -549,11 +550,18 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
             </div>
           </div>
 
+          {/* Тарифы — бакеты по числу активных учеников. Здесь стояла старая
+              формула (база + доп. филиал + за ученика): бэкенд этих полей не
+              отдаёт, и все три строки печатали пустое значение. */}
           <div className="rounded-xl bg-base-200/50 p-4 space-y-2">
-            <div className="text-xs font-semibold text-base-content/60 uppercase mb-1">Формула ценообразования</div>
-            <div className="flex justify-between text-sm"><span>Первый филиал (база)</span><span className="font-bold tabular-nums">{fmt(pricing.baseFirstBranch)} {cur}</span></div>
-            <div className="flex justify-between text-sm"><span>Доп. филиал</span><span className="font-bold tabular-nums">{fmt(pricing.perExtraBranch)} {cur}</span></div>
-            <div className="flex justify-between text-sm"><span>За ученика</span><span className="font-bold tabular-nums">{fmt(pricing.perStudent)} {cur}</span></div>
+            <div className="text-xs font-semibold text-base-content/60 uppercase mb-1">Тарифы по числу учеников</div>
+            {(pricing.tiers ?? []).map((t) => (
+              <div key={t.id} className="flex justify-between text-sm">
+                <span>{t.label} <span className="text-base-content/45">· {tierRange(t)}</span></span>
+                <span className="font-bold tabular-nums">{tierPriceLabel(t, cur)}</span>
+              </div>
+            ))}
+            <div className="text-xs text-base-content/45 pt-1">Филиалы входят в тариф без доплаты</div>
           </div>
 
           <Link to="/revenue" className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 w-full gap-2" onClick={() => setModal(null)}>
