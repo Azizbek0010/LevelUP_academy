@@ -18,16 +18,11 @@ export function useDashboard() {
   return useAuthedQuery(['dashboard'], () => api.dashboard(token));
 }
 
-// Платформенный доход. Отдельный endpoint, не дашборд: у него свои поля
-// (activePartners, partnersRevenue/Expenses/Profit, tier у каждого партнёра).
+// Платформенный доход — наш счёт партнёрам. Отдельный endpoint, не дашборд:
+// у него свои поля (activePartners, tier у каждого партнёра).
 export function useRevenue() {
   const { token } = useAuth();
   return useAuthedQuery(['revenue'], () => api.revenue(token));
-}
-
-export function usePenalties() {
-  const { token } = useAuth();
-  return useAuthedQuery(['penalties'], () => api.mainPenalties(token));
 }
 
 export function useProfile() {

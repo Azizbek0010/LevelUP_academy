@@ -18,49 +18,17 @@ import { useAuth } from '../auth.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { SkeletonKpis, SkeletonList } from '../components/Skeleton.jsx';
+import { Kpi } from '../components/_ui.jsx';
 
 const PIE_COLORS = { active: '#A3E635', trial: '#FCD34D', frozen: '#F87171' };
 const PIE_LABELS = { active: 'Активные', trial: 'Триал', frozen: 'Заморожены' };
 const STATUS_ICON = { new: Sparkles, contacted: PhoneCall, onboarded: CheckCircle2, rejected: XCircle };
 
-function Kpi({ Icon, tint, title, value, unit, accent, onClick, hint }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`card shadow-sm border transition-all hover:shadow-md hover:-translate-y-0.5 text-left cursor-pointer group ${
-        accent
-          ? 'bg-gradient-to-br from-lime-400 to-lime-500 border-lime-400'
-          : 'bg-base-100 border-base-200/60 hover:border-lime-300'
-      }`}
-    >
-      <div className="card-body p-5">
-        <div className="flex items-center gap-3">
-          <span
-            className="w-11 h-11 rounded-xl grid place-items-center shrink-0"
-            style={accent ? { background: 'rgba(0,0,0,0.12)', color: '#1a2e05' } : { background: tint.bg, color: tint.fg }}
-          >
-            <Icon size={20} strokeWidth={2.2} />
-          </span>
-          <div className={`text-[11px] font-semibold uppercase tracking-wider leading-tight ${accent ? 'text-lime-950/60' : 'text-base-content/45'}`}>
-            {title}
-          </div>
-          <ChevronRight
-            size={16}
-            className={`ml-auto opacity-0 group-hover:opacity-100 transition-opacity ${accent ? 'text-lime-950/60' : 'text-base-content/40'}`}
-          />
-        </div>
-        <div className={`text-3xl font-extrabold mt-3 leading-none ${accent ? 'text-lime-950' : ''}`}>{value}</div>
-        {unit && <div className={`text-xs mt-1.5 ${accent ? 'text-lime-950/55' : 'text-base-content/45'}`}>{unit}</div>}
-        {hint && (
-          <div className={`text-[10.5px] mt-2 font-semibold ${accent ? 'text-lime-950/70' : 'text-lime-600'}`}>
-            {hint} →
-          </div>
-        )}
-      </div>
-    </button>
-  );
-}
+/* Локальная Kpi-плитка убрана — теперь общая из components/_ui.jsx.
+   Здесь она принимала сырой hex на каждую плитку (четыре разных пастельных
+   фона) плюс отдельный «accent» с лаймовым градиентом для дохода. Разница
+   цветов ничего не значила: доход был зелёным не потому, что это деньги, а
+   потому что он первый. Плитки различает иконка и подпись. */
 
 const CustomBar = ({ x, y, width, height }) => (
   <rect x={x} y={y} width={width} height={height} rx={6} fill="url(#lime-grad)" />
@@ -251,39 +219,30 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi
           Icon={Wallet}
-          tint={{ bg: '#ECFCCB', fg: '#365314' }}
           title="Наш доход / мес"
           value={fmt(t.ourMonthlyIncome)}
-          unit={cur}
-          accent
-          hint="разбивка"
+          unit={`${cur} · разбивка`}
           onClick={() => setModal('income')}
         />
         <Kpi
           Icon={Building2}
-          tint={{ bg: '#E0F2FE', fg: '#075985' }}
           title="Партнёры"
           value={fmt(t.partners)}
-          unit="учебных центров"
-          hint="по статусам"
+          unit="учебных центров · по статусам"
           onClick={() => setModal('partners')}
         />
         <Kpi
           Icon={GraduationCap}
-          tint={{ bg: '#EDE9FE', fg: '#5B21B6' }}
           title="Ученики"
           value={fmt(t.students)}
-          unit="по платформе"
-          hint="топ 5"
+          unit="по платформе · топ 5"
           onClick={() => setModal('students')}
         />
         <Kpi
           Icon={Store}
-          tint={{ bg: '#FFEDD5', fg: '#9A3412' }}
           title="Филиалы"
           value={fmt(t.branches)}
-          unit="всего"
-          hint="распределение"
+          unit="всего · распределение"
           onClick={() => setModal('branches')}
         />
       </div>

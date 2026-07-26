@@ -55,11 +55,17 @@ export async function onboardPartner({ organizationName, domain, admin, leadId }
   });
 }
 
+/**
+ * Что владелец платформы знает о партнёре.
+ *
+ * Граница простая: нам видно то, из чего считается НАШ счёт, и не видно то,
+ * как партнёр зарабатывает. Число учеников — основание тарифа, поэтому оно
+ * здесь. Оборот, расходы и прибыль партнёра убраны: это деньги чужого бизнеса,
+ * и платформе они не нужны ни для биллинга, ни для поддержки.
+ */
 function decoratePartner(row) {
   const students = Number(row.students);
   const branches = Number(row.branches);
-  const revenue = Number(row.revenue);
-  const expenses = Number(row.expenses);
   const tier = tierForStudents(students);
   return {
     id: row.id,
@@ -72,9 +78,6 @@ function decoratePartner(row) {
     students,
     tier: tier.label, // тариф по числу учеников (Free/Start/…)
     monthlyBill: computeBill({ students }), // сколько партнёр платит нам (сумы), филиалы не влияют
-    revenue, // доход партнёра (оплаты его студентов по всем филиалам)
-    expenses, // расходы партнёра
-    profit: revenue - expenses,
   };
 }
 
@@ -95,17 +98,15 @@ export async function listPartners() {
   return rows.map((row) => decoratePartner(row));
 }
 
-/** Платформенный дашборд: наш доход = сумма счетов партнёров; плюс сводная прибыль партнёров. */
+/** Платформенный дашборд: наш доход = сумма счетов партнёров. */
 export async function platformDashboard() {
   const partners = await listPartners();
+  // сводных partnersRevenue/Expenses/Profit здесь больше нет — см. decoratePartner
   const totals = partners.reduce(
     (acc, p) => {
       acc.students += p.students;
       acc.branches += p.branches;
       acc.ourMonthlyIncome += p.monthlyBill;
-      acc.partnersRevenue += p.revenue;
-      acc.partnersExpenses += p.expenses;
-      acc.partnersProfit += p.profit;
       return acc;
     },
     {
@@ -113,9 +114,6 @@ export async function platformDashboard() {
       students: 0,
       branches: 0,
       ourMonthlyIncome: 0,
-      partnersRevenue: 0,
-      partnersExpenses: 0,
-      partnersProfit: 0,
     },
   );
   totals.currency = 'UZS';
@@ -132,9 +130,6 @@ export async function platformRevenue() {
   const totals = partners.reduce(
     (acc, p) => {
       acc.ourMonthlyIncome += p.monthlyBill;
-      acc.partnersRevenue += p.revenue;
-      acc.partnersExpenses += p.expenses;
-      acc.partnersProfit += p.profit;
       acc.students += p.students;
       acc.branches += p.branches;
       if (p.status === 'active') acc.activePartners += 1;
@@ -146,9 +141,6 @@ export async function platformRevenue() {
       students: 0,
       branches: 0,
       ourMonthlyIncome: 0,
-      partnersRevenue: 0,
-      partnersExpenses: 0,
-      partnersProfit: 0,
     },
   );
   totals.currency = 'UZS';
@@ -162,7 +154,6 @@ export async function platformRevenue() {
       students: p.students,
       branches: p.branches,
       monthlyBill: p.monthlyBill,
-      revenue: p.revenue,
       // createdAt нужен карточке партнёра («активен N дней»). Без него фронт
       // считал дни от Invalid Date и печатал «Активен NaN дн.» — поймано
       // при живой проверке 2026-07-26, когда Revenue.jsx перевели с дашборда сюда.
@@ -285,38 +276,11 @@ export async function updateProfile(userId, fields) {
   return mapProfile(user);
 }
 
-// ---------- штрафы платформы (только чтение) ----------
-
-/**
- * Обзор дисциплины по всем партнёрам.
- * Main Admin по матрице CAN_ISSUE не выписывает штрафы никому — поэтому
- * здесь нет и не должно быть create/update. Страница только показывает,
- * что происходит у партнёров.
- */
-export async function listPenalties() {
-  const [rows, totals] = await Promise.all([
-    repo.listPlatformPenalties(),
-    repo.platformPenaltyTotals(),
-  ]);
-  return {
-    items: rows.map((p) => ({
-      id: p.id,
-      type: p.type,                       // 'shtraf' | 'qora'
-      amount: p.amount === null ? null : Number(p.amount),
-      reason: p.reason,
-      partnerName: p.partner_name ?? null,
-      employeeName: p.employee_name,
-      employeeRole: p.target_role,
-      issuerName: p.issuer_name ?? null,
-      issuerRole: p.issuer_role,
-      createdAt: p.created_at,
-    })),
-    totals: {
-      shtrafCount: totals.shtraf_count,
-      qoraCount: totals.qora_count,
-      shtrafAmount: Number(totals.shtraf_amount),
-      orgsAffected: totals.orgs_affected,
-      currency: 'UZS',
-    },
-  };
-}
+/* Обзор штрафов по всем партнёрам убран намеренно.
+ *
+ * Он показывал, кого из сотрудников партнёра наказали, за что, на какую сумму
+ * и кто выписал — то есть внутреннюю кадровую историю чужой организации.
+ * Платформе это не нужно: по матрице CAN_ISSUE (discipline.service.js)
+ * main_admin не выписывает штрафы никому, а дисциплина сотрудников — дело
+ * Super Admin филиала. Соответствующий экран живёт в панели Super Admin,
+ * где есть и просмотр, и выписывание: GET/POST /api/super/penalties. */

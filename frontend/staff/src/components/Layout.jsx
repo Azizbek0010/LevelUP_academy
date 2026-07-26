@@ -9,7 +9,7 @@ import {
   HiOutlineSquares2X2, HiOutlineBuildingOffice2, HiOutlineUsers,
   HiOutlineAcademicCap, HiOutlineUserGroup, HiOutlineCalendarDays,
   HiOutlineChartBar, HiOutlineChartPie, HiOutlineMegaphone,
-  HiOutlineBellAlert, HiOutlineShieldExclamation, HiOutlineCog,
+  HiOutlineBellAlert, HiOutlineShieldExclamation, HiOutlineExclamationTriangle, HiOutlineCog,
   HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
   HiOutlineClipboardDocumentCheck, HiOutlineCurrencyDollar,
@@ -50,6 +50,9 @@ const superNav = [
   { to: '/announcements', label: 'Объявления',     Icon: HiOutlineMegaphone,      soon: true },
   { to: '/reminders',     label: 'Напоминания',    Icon: HiOutlineBellAlert,      soon: true },
   { to: '/audit',         label: 'Аудит',          Icon: HiOutlineShieldExclamation, soon: true },
+  // Дисциплина переехала сюда из панели Main Admin: штрафы и увольнения
+  // сотрудников — внутреннее дело организации, а не платформы
+  { to: '/discipline',    label: 'Дисциплина',     Icon: HiOutlineExclamationTriangle },
   { to: '/settings',      label: 'Настройки',      Icon: HiOutlineCog },
 ];
 

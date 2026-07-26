@@ -87,7 +87,6 @@ export const api = {
   // dashboard / partners
   dashboard: (token) => request('/main/dashboard', { token }),
   revenue: (token) => request('/main/revenue', { token }),
-  mainPenalties: (token) => request('/main/penalties', { token }),
   getProfile: (token) => request('/main/profile', { token }),
   // список партнёров отдельно не запрашиваем — он приходит внутри /main/dashboard
   setPartnerStatus: (token, id, status) =>

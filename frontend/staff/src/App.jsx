@@ -19,6 +19,7 @@ const SuperStats = lazy(() => import('./pages/super/Stats.jsx'));
 const SuperAnnouncements = lazy(() => import('./pages/super/Announcements.jsx'));
 const SuperReminders = lazy(() => import('./pages/super/Reminders.jsx'));
 const SuperAudit = lazy(() => import('./pages/super/Audit.jsx'));
+const SuperDiscipline = lazy(() => import('./pages/super/Discipline.jsx'));
 const SuperAttendance = lazy(() => import('./pages/super/Attendance.jsx'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="/announcements" element={<SW><SuperAnnouncements /></SW>} />
           <Route path="/reminders" element={<SW><SuperReminders /></SW>} />
           <Route path="/audit" element={<SW><SuperAudit /></SW>} />
+        <Route path="/discipline" element={<SW><SuperDiscipline /></SW>} />
         </Route>
 
         {/* Methodist routes */}
