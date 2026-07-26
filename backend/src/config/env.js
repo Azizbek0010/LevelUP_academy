@@ -5,6 +5,12 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
+  // 'open' — отражать любой Origin (нужно, пока команда работает с превью-доменов),
+  // 'allowlist' — пускать только известные домены. Подробности и риски — в app.js
+  CORS_MODE: z.enum(['open', 'allowlist']).default('open'),
+  // дополнительные разрешённые Origin через запятую — на случай нового домена
+  // без передеплоя кода (список по умолчанию живёт в app.js)
+  ALLOWED_ORIGINS: z.string().optional().or(z.literal('')),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
   DATABASE_URL: z.string().min(1),
