@@ -56,23 +56,16 @@ const superNav = [
   { to: '/admins',     label: 'Сотрудники', Icon: HiOutlineUsers },
   {
     type: 'group',
-    key: 'study',
-    label: 'Учёба',
-    Icon: HiOutlineAcademicCap,
-    items: [
-      { to: '/students',   label: 'Студенты' },
-      { to: '/groups',     label: 'Группы' },
-      { to: '/attendance', label: 'Посещаемость' },
-    ],
-  },
-  {
-    type: 'group',
     key: 'analytics',
     label: 'Аналитика',
     Icon: HiOutlineChartBar,
     items: [
       { to: '/reports', label: 'Отчёты' },
       { to: '/stats',   label: 'Статистика' },
+      // общие срезы по всей организации; разбор по одному филиалу — внутри него
+      { to: '/students',   label: 'Все ученики' },
+      { to: '/groups',     label: 'Все группы' },
+      { to: '/attendance', label: 'Посещаемость' },
     ],
   },
   // Дисциплина переехала сюда из панели Main Admin: штрафы и увольнения
