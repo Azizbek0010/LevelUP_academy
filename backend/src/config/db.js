@@ -21,12 +21,20 @@ import { logger } from './logger.js';
  */
 pg.types.setTypeParser(1082, (value) => value);
 
+/**
+ * connectionTimeoutMillis: 5 с хватает локальному докеру, но не managed-базе,
+ * которая спит. Neon на бесплатном плане останавливает compute при простое, и
+ * первое подключение будит его — это занимает больше пяти секунд. Итог был
+ * виден на проде: первый запрос после паузы падал с «Connection terminated due
+ * to connection timeout», пользователь получал 500 на входе, а повторная
+ * попытка сразу проходила. Для базы с холодным стартом ждём дольше.
+ */
 export const pool = new pg.Pool({
   connectionString: env.DATABASE_URL,
   ssl: env.DB_SSL ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
+  connectionTimeoutMillis: env.DB_CONNECT_TIMEOUT_MS,
 });
 
 pool.on('error', (err) => {

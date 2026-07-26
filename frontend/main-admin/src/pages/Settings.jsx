@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   User, Shield, CreditCard, Building2, GraduationCap, Wallet,
-  Info, ExternalLink, GitBranch, Landmark, TrendingUp,
+  Info, ExternalLink, GitBranch, TrendingUp,
   Activity, Settings2, Pencil, LogOut, Megaphone, AlertTriangle, Check,
 } from 'lucide-react';
 import { useDashboard, usePricing } from '../queries.js';
 import { useAuth } from '../auth.jsx';
 import { api } from '../api.js';
 import { fmt, ORG_STATUS } from '../format.js';
+import { tierRange, tierPriceLabel } from '../lib/pricing.js';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 
@@ -312,28 +313,27 @@ export default function Settings() {
               <div className="flex justify-center py-6"><span className="loading loading-spinner opacity-40" /></div>
             ) : (
               <>
+                {/* Бакеты по числу активных учеников. Раньше здесь стояли
+                    база за филиал / доп. филиал / за ученика — полей с такими
+                    именами бэкенд не отдаёт, поэтому все три были пустыми. */}
                 <div className="space-y-2.5 mb-4">
-                  <div className="flex items-center justify-between p-3 bg-base-200/40 rounded-xl text-sm">
-                    <span className="flex items-center gap-2 text-base-content/60">
-                      <Landmark size={13} className="text-blue-500" /> 1-й филиал (база)
-                    </span>
-                    <span className="font-bold">{fmt(pricing.baseFirstBranch)} {cur}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-base-200/40 rounded-xl text-sm">
-                    <span className="flex items-center gap-2 text-base-content/60">
-                      <GitBranch size={13} className="text-purple-500" /> Доп. филиал
-                    </span>
-                    <span className="font-bold">{fmt(pricing.perExtraBranch)} {cur}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-base-200/40 rounded-xl text-sm">
-                    <span className="flex items-center gap-2 text-base-content/60">
-                      <GraduationCap size={13} className="text-green-500" /> За ученика
-                    </span>
-                    <span className="font-bold">{fmt(pricing.perStudent)} {cur}</span>
+                  {(pricing.tiers ?? []).map((t) => (
+                    <div key={t.id} className="flex items-center justify-between p-3 bg-base-200/40 rounded-xl text-sm">
+                      <span className="flex items-center gap-2 text-base-content/60">
+                        <GraduationCap size={13} className="text-green-500" /> {t.label}
+                        <span className="text-base-content/40">· {tierRange(t)} уч.</span>
+                      </span>
+                      <span className="font-bold">{tierPriceLabel(t, cur)}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2 px-3 text-xs text-base-content/45">
+                    <GitBranch size={12} className="text-purple-500" /> Филиалы входят в тариф без доплаты
                   </div>
                 </div>
+                {/* Тарифы зашиты в backend/src/config/plans.js, правка через БД — v2,
+                    поэтому ссылка ведёт на просмотр, а не на редактирование. */}
                 <Link to="/billing" className="btn btn-sm btn-outline gap-1.5 w-full">
-                  <ExternalLink size={13} /> Редактировать тарифы
+                  <ExternalLink size={13} /> Открыть тарифы
                 </Link>
               </>
             )}

@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { useDashboard, usePricing } from '../queries.js';
 import { fmt } from '../format.js';
+import { tierForStudents, tierRange, tierPriceLabel } from '../lib/pricing.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../components/Skeleton.jsx';
 
@@ -20,29 +21,6 @@ import { SkeletonKpis, SkeletonTable } from '../components/Skeleton.jsx';
  * через БД это задача v2. Раньше кнопка «Сохранить» рапортовала успех, хотя
  * ничего не сохраняла. Пока источник правды — конфиг, страница только читает.
  */
-
-// Зеркало tierForStudents() из backend/src/config/plans.js.
-// Дублирование намеренное: калькулятор должен считать мгновенно, без запроса.
-// Сами тарифы при этом приходят с сервера — здесь только правило выбора бакета.
-function tierForStudents(tiers, students) {
-  const s = Math.max(0, Number(students) || 0);
-  return (
-    tiers.find((t) => s >= t.minStudents && (t.maxStudents == null || s <= t.maxStudents)) ??
-    tiers[tiers.length - 1] ??
-    null
-  );
-}
-
-function tierRange(t) {
-  if (t.maxStudents == null) return `${fmt(t.minStudents)}+`;
-  return `${fmt(t.minStudents)}–${fmt(t.maxStudents)}`;
-}
-
-function tierPriceLabel(t, cur) {
-  if (t.price == null) return 'договорная';
-  if (t.price === 0) return 'бесплатно';
-  return `${fmt(t.price)} ${cur}`;
-}
 
 function Kpi({ Icon, tint, title, value, unit, accent }) {
   return (
