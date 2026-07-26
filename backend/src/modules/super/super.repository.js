@@ -27,11 +27,22 @@ export function insertBranch({ orgId, name, address, phone, isMain, lat, lng }, 
 export function listBranches(orgId, client = pool) {
   return client
     .query(
-      `SELECT b.id, b.name, b.address, b.phone, b.is_main, b.lat, b.lng, b.created_at,
+      `SELECT b.id, b.name, b.address, b.phone, b.is_main, b.is_archived, b.lat, b.lng, b.created_at,
               (SELECT count(*) FROM users u
                  WHERE u.branch_id = b.id AND u.role = 'admin' AND u.deleted_at IS NULL) AS admins,
               (SELECT count(*) FROM users u
-                 WHERE u.branch_id = b.id AND u.role = 'student' AND u.deleted_at IS NULL) AS students
+                 WHERE u.branch_id = b.id AND u.role = 'student' AND u.deleted_at IS NULL) AS students,
+              (SELECT count(*) FROM users u
+                 WHERE u.branch_id = b.id AND u.role = 'mentor' AND u.deleted_at IS NULL) AS mentors,
+              (SELECT count(*) FROM groups g
+                 WHERE g.branch_id = b.id AND g.deleted_at IS NULL) AS groups,
+              -- деньги филиала: сколько получено с учеников и сколько потрачено
+              (SELECT COALESCE(SUM(i.paid_amount), 0) FROM invoices i
+                 WHERE i.branch_id = b.id) AS revenue,
+              (SELECT COALESCE(SUM(e.amount), 0) FROM expenses e
+                 WHERE e.branch_id = b.id AND e.deleted_at IS NULL) AS expenses,
+              (SELECT COALESCE(SUM(sp.total_debt), 0) FROM student_profiles sp
+                 WHERE sp.branch_id = b.id) AS debt
          FROM branches b
         WHERE b.organization_id = $1 AND b.deleted_at IS NULL
         ORDER BY b.is_main DESC, b.created_at DESC`,
@@ -116,17 +127,84 @@ export function listBranchAdmins(branchId, client = pool) {
     .then((r) => r.rows);
 }
 
-/** Группы филиала (сводка). */
+/**
+ * Группы филиала: с ментором и числом учеников.
+ *
+ * Раньше отдавались только имя, предмет и цена — а на карточке филиала нужно
+ * понимать, живая группа или пустая, и кто её ведёт.
+ */
 export function listBranchGroups(branchId, client = pool) {
   return client
     .query(
-      `SELECT id, name, subject, monthly_price
-         FROM groups
-        WHERE branch_id = $1 AND deleted_at IS NULL
+      `SELECT g.id, g.name, g.subject, g.monthly_price,
+              g.mentor_id,
+              (m.first_name || ' ' || m.last_name) AS mentor_name,
+              (SELECT count(*) FROM group_students gs
+                 WHERE gs.group_id = g.id) AS students
+         FROM groups g
+         LEFT JOIN users m ON m.id = g.mentor_id
+        WHERE g.branch_id = $1 AND g.deleted_at IS NULL
+        ORDER BY g.created_at DESC`,
+      [branchId],
+    )
+    .then((r) => r.rows);
+}
+
+/** Ученики филиала — для вкладки «Ученики» в карточке филиала. */
+export function listBranchStudents(branchId, client = pool) {
+  return client
+    .query(
+      `SELECT u.id, u.first_name, u.last_name, u.phone, u.status,
+              sp.total_debt, sp.coin_balance
+         FROM users u
+         LEFT JOIN student_profiles sp ON sp.user_id = u.id
+        WHERE u.branch_id = $1 AND u.role = 'student' AND u.deleted_at IS NULL
+        ORDER BY u.created_at DESC`,
+      [branchId],
+    )
+    .then((r) => r.rows);
+}
+
+/** Менторы филиала — сотрудники, которых не видно в списке админов. */
+export function listBranchMentors(branchId, client = pool) {
+  return client
+    .query(
+      `SELECT id, first_name, last_name, email, phone, status
+         FROM users
+        WHERE branch_id = $1 AND role = 'mentor' AND deleted_at IS NULL
         ORDER BY created_at DESC`,
       [branchId],
     )
     .then((r) => r.rows);
+}
+
+/**
+ * Показатели одного филиала.
+ *
+ * Те же выражения, что в branchBreakdown по всей организации, — карточка
+ * филиала показывала «Ученики», «Месячный доход» и «Общий долг», но сервер
+ * этих чисел не отдавал вовсе, и на экране всегда стояли нули.
+ */
+export function branchStats(branchId, client = pool) {
+  return client
+    .query(
+      `SELECT
+         (SELECT count(*) FROM users u
+            WHERE u.branch_id = $1 AND u.role = 'student'
+              AND u.status = 'active' AND u.deleted_at IS NULL)::int AS students,
+         (SELECT count(*) FROM users u
+            WHERE u.branch_id = $1 AND u.role = 'mentor' AND u.deleted_at IS NULL)::int AS mentors,
+         (SELECT count(*) FROM groups g
+            WHERE g.branch_id = $1 AND g.deleted_at IS NULL)::int AS groups,
+         (SELECT COALESCE(SUM(i.paid_amount), 0) FROM invoices i
+            WHERE i.branch_id = $1) AS revenue,
+         (SELECT COALESCE(SUM(e.amount), 0) FROM expenses e
+            WHERE e.branch_id = $1 AND e.deleted_at IS NULL) AS expenses,
+         (SELECT COALESCE(SUM(sp.total_debt), 0) FROM student_profiles sp
+            WHERE sp.branch_id = $1) AS debt`,
+      [branchId],
+    )
+    .then((r) => r.rows[0]);
 }
 
 // ---------- админы: правка / заморозка ----------

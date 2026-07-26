@@ -8,13 +8,16 @@ import * as repo from './super.repository.js';
 // ---------- филиалы ----------
 
 /** Первый филиал организации становится главным (is_main). */
-export async function createBranch(orgId, { name, address, phone }) {
+export async function createBranch(orgId, { name, address, phone, lat, lng }) {
   const existing = await repo.countBranches(orgId);
   const branch = await repo.insertBranch({
     orgId,
     name,
     address,
     phone,
+    // без этого координаты с карты доходили до сервиса и молча терялись здесь
+    lat,
+    lng,
     isMain: existing === 0,
   });
   return mapBranch(branch);
@@ -28,8 +31,16 @@ export async function listBranches(orgId) {
     address: b.address,
     phone: b.phone,
     isMain: b.is_main,
+    isArchived: b.is_archived,
     admins: Number(b.admins),
     students: Number(b.students),
+    mentors: Number(b.mentors),
+    groups: Number(b.groups),
+    // деньги филиала — по ним видно, какой зарабатывает, а какой проедает
+    revenue: Number(b.revenue),
+    expenses: Number(b.expenses),
+    profit: Number(b.revenue) - Number(b.expenses),
+    debt: Number(b.debt),
     // NUMERIC приезжает строкой; карта ждёт числа
     lat: b.lat === null || b.lat === undefined ? null : Number(b.lat),
     lng: b.lng === null || b.lng === undefined ? null : Number(b.lng),
@@ -65,15 +76,41 @@ export async function setBranchArchived(orgId, id, archived) {
 }
 
 /** Детали филиала: сам филиал + его админы + группы. */
+/**
+ * Всё о филиале в одном ответе: показатели, сотрудники, группы, ученики.
+ *
+ * Собрано одним запросом намеренно — карточка филиала показывает это на
+ * соседних вкладках, и четыре отдельных обращения ради одного экрана только
+ * добавили бы мигание при переключении.
+ *
+ * Раньше здесь были только админы и группы, а фронт при этом рисовал плитки
+ * «Ученики», «Месячный доход» и «Общий долг» — они всегда показывали нули,
+ * потому что таких полей в ответе не было.
+ */
 export async function branchDetail(orgId, id) {
   const branch = await repo.findBranchFull(id, orgId);
   if (!branch) throw new AppError(404, 'Branch not found in your organization');
-  const [admins, groups] = await Promise.all([
+  const [admins, groups, students, mentors, stats] = await Promise.all([
     repo.listBranchAdmins(id),
     repo.listBranchGroups(id),
+    repo.listBranchStudents(id),
+    repo.listBranchMentors(id),
+    repo.branchStats(id),
   ]);
   return {
     ...mapBranch(branch),
+    stats: {
+      students: stats.students,
+      mentors: stats.mentors,
+      groups: stats.groups,
+      admins: admins.length,
+      revenue: Number(stats.revenue),
+      expenses: Number(stats.expenses),
+      // прибыль филиала = что пришло от учеников минус его же траты
+      profit: Number(stats.revenue) - Number(stats.expenses),
+      debt: Number(stats.debt),
+      currency: 'UZS',
+    },
     admins: admins.map((a) => ({
       id: a.id,
       firstName: a.first_name,
@@ -81,11 +118,31 @@ export async function branchDetail(orgId, id) {
       email: a.email,
       status: a.status,
     })),
+    mentors: mentors.map((m) => ({
+      id: m.id,
+      firstName: m.first_name,
+      lastName: m.last_name,
+      email: m.email,
+      phone: m.phone,
+      status: m.status,
+    })),
+    students: students.map((s) => ({
+      id: s.id,
+      firstName: s.first_name,
+      lastName: s.last_name,
+      phone: s.phone,
+      status: s.status,
+      debt: Number(s.total_debt ?? 0),
+      coins: Number(s.coin_balance ?? 0),
+    })),
     groups: groups.map((g) => ({
       id: g.id,
       name: g.name,
       subject: g.subject,
       monthlyPrice: Number(g.monthly_price),
+      mentorId: g.mentor_id,
+      mentorName: g.mentor_name,
+      students: Number(g.students),
     })),
   };
 }
