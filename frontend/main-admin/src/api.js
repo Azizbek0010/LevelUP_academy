@@ -85,6 +85,9 @@ export const api = {
 
   // dashboard / partners
   dashboard: (token) => request('/main/dashboard', { token }),
+  revenue: (token) => request('/main/revenue', { token }),
+  mainPenalties: (token) => request('/main/penalties', { token }),
+  getProfile: (token) => request('/main/profile', { token }),
   partners: (token) => request('/main/partners', { token }),
   setPartnerStatus: (token, id, status) =>
     request(`/main/partners/${id}/status`, { method: 'PATCH', token, body: { status } }),

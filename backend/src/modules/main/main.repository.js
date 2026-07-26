@@ -185,3 +185,164 @@ export function markLeadOnboarded(id, orgId, client = pool) {
     [id, orgId],
   );
 }
+
+// ---------- объявления платформы (Main Admin → «Анонсы») ----------
+
+/**
+ * Сколько адресатов у объявления на момент отправки.
+ * `all-partners` — активные организации (адресат = центр как таковой),
+ * `all-superadmins` — активные владельцы организаций (адресат = человек).
+ * Считаем в момент создания и сохраняем: список меняется, а «кому отправили»
+ * должно остаться историческим фактом.
+ */
+export function countAnnouncementRecipients(targetType, client = pool) {
+  if (targetType === 'all-superadmins') {
+    return client
+      .query(
+        `SELECT count(*)::int AS n FROM users
+          WHERE role = 'superadmin' AND status = 'active' AND deleted_at IS NULL`,
+      )
+      .then((r) => r.rows[0].n);
+  }
+  return client
+    .query(
+      `SELECT count(*)::int AS n FROM organizations
+        WHERE status = 'active' AND deleted_at IS NULL`,
+    )
+    .then((r) => r.rows[0].n);
+}
+
+export function insertAnnouncement({ senderId, title, body, targetType, recipientCount }, client = pool) {
+  return client
+    .query(
+      `INSERT INTO platform_announcements
+         (sender_id, title, body, target_type, recipient_count)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, title, body, target_type, recipient_count, created_at`,
+      [senderId, title, body, targetType, recipientCount],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function listAnnouncements(client = pool) {
+  return client
+    .query(
+      `SELECT a.id, a.title, a.body, a.target_type, a.recipient_count, a.created_at,
+              (s.first_name || ' ' || s.last_name) AS sender_name
+         FROM platform_announcements a
+         LEFT JOIN users s ON s.id = a.sender_id
+        WHERE a.deleted_at IS NULL
+        ORDER BY a.created_at DESC`,
+    )
+    .then((r) => r.rows);
+}
+
+export function softDeleteAnnouncement(id, client = pool) {
+  return client
+    .query(
+      `UPDATE platform_announcements SET deleted_at = now()
+        WHERE id = $1 AND deleted_at IS NULL
+        RETURNING id`,
+      [id],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+// ---------- профиль main_admin ----------
+
+const PROFILE_COLS = 'id, first_name, last_name, email, phone, role';
+
+export function findUserById(id, client = pool) {
+  return client
+    .query(`SELECT ${PROFILE_COLS} FROM users WHERE id = $1 AND deleted_at IS NULL`, [id])
+    .then((r) => r.rows[0] ?? null);
+}
+
+/**
+ * Занят ли email/телефон кем-то другим.
+ * В БД на это стоят `uq_users_email` (частичный, среди живых) и `uq_users_phone`.
+ * Проверяем заранее, чтобы отдать понятную 409, а не сырую ошибку уникальности.
+ */
+export function emailTakenByOther(email, userId, client = pool) {
+  return client
+    .query(
+      `SELECT 1 FROM users
+        WHERE lower(email) = lower($1) AND id <> $2 AND deleted_at IS NULL
+        LIMIT 1`,
+      [email, userId],
+    )
+    .then((r) => r.rowCount > 0);
+}
+
+export function phoneTakenByOther(phone, userId, client = pool) {
+  return client
+    .query(`SELECT 1 FROM users WHERE phone = $1 AND id <> $2 LIMIT 1`, [phone, userId])
+    .then((r) => r.rowCount > 0);
+}
+
+/** Частичное обновление профиля: только переданные поля. */
+export function updateProfile(id, fields, client = pool) {
+  const cols = [];
+  const vals = [];
+  let i = 1;
+  for (const [key, col] of [
+    ['firstName', 'first_name'],
+    ['lastName', 'last_name'],
+    ['email', 'email'],
+    ['phone', 'phone'],
+  ]) {
+    if (fields[key] !== undefined) {
+      cols.push(`${col} = $${i++}`);
+      vals.push(fields[key]);
+    }
+  }
+  if (cols.length === 0) return findUserById(id, client);
+  vals.push(id);
+  return client
+    .query(
+      `UPDATE users SET ${cols.join(', ')}, updated_at = now()
+        WHERE id = $${i} AND deleted_at IS NULL
+        RETURNING ${PROFILE_COLS}`,
+      vals,
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+// ---------- штрафы по платформе (Main Admin → «Штрафы», только чтение) ----------
+
+/**
+ * Сводка штрафов сотрудников по ВСЕМ организациям.
+ * Main Admin по матрице прав (CAN_ISSUE) не выписывает штрафы никому —
+ * поэтому здесь только SELECT, никаких вставок. Это платформенный обзор.
+ */
+export function listPlatformPenalties({ limit = 200 } = {}, client = pool) {
+  return client
+    .query(
+      `SELECT p.id, p.type, p.amount, p.reason, p.created_at,
+              p.target_role, p.issuer_role,
+              o.name AS partner_name,
+              (t.first_name || ' ' || t.last_name) AS employee_name,
+              (i.first_name || ' ' || i.last_name) AS issuer_name
+         FROM staff_penalties p
+         JOIN users t         ON t.id = p.target_user_id
+         LEFT JOIN users i    ON i.id = p.issued_by
+         LEFT JOIN organizations o ON o.id = p.organization_id
+        ORDER BY p.created_at DESC
+        LIMIT $1`,
+      [limit],
+    )
+    .then((r) => r.rows);
+}
+
+/** Итоги по штрафам платформы: суммы и количества (для KPI-плиток). */
+export function platformPenaltyTotals(client = pool) {
+  return client
+    .query(
+      `SELECT count(*) FILTER (WHERE type = 'shtraf')::int      AS shtraf_count,
+              count(*) FILTER (WHERE type = 'qora')::int        AS qora_count,
+              COALESCE(SUM(amount) FILTER (WHERE type = 'shtraf'), 0) AS shtraf_amount,
+              count(DISTINCT organization_id)::int              AS orgs_affected
+         FROM staff_penalties`,
+    )
+    .then((r) => r.rows[0]);
+}

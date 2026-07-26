@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 26.07.2026 02:07 (UTC+5, Toshkent vaqti)
-> Statistika: 154/215 task tugallangan (71%)
+> Oxirgi yangilanish: 26.07.2026 02:48 (UTC+5, Toshkent vaqti)
+> Statistika: 161/215 task tugallangan (74%)
 
 ---
 
-## Progress: [##############......] 71%
+## Progress: [##############......] 74%
 
 ## Tugallangan vazifalar
 
@@ -71,6 +71,7 @@
 - [x] ~~BUG-STACK~~ ✅ TUZATILGAN (2026-07-19 auditda tekshirildi, TASK.md eskirgan edi): `render.yaml:19-20` da `NODE_ENV=production` O'RNATILGAN, `errorHandler.js:41` stack'ni faqat `env.NODE_ENV === 'development'` da qaytaradi (qat'iy tenglik — yangi hostingda o'zgaruvchi unutilsa ham stack chiqmaydi). Bundan tashqari 5xx da `details` ham berkitildi, o'rniga `errorId` (pino req.id) qaytadi — commit `5a1f177`
 - [x] ~~BUG-LOCAL-PROD-DB~~ ✅ TUZATILGAN — **DUBLIKAT yozuv edi, 2026-07-26 da yopildi.**
 - [x] BUG-TESTS-RED ✅ TUZATILDI 2026-07-19 (commit `b22c3e4`):
+- [x] ~~BUG-BILLING~~ ✅ YOPILDI 2026-07-26 (Karis): `Billing.jsx` bakit modeliga o'tkazildi,
 
 ### Swagger / API hujjatlari (Karis) ✅ 2026-07-18
 - [x] DOCS: Barcha route'lar auditi — 158 route topildi, 139 tasi hujjatlashtirilgan edi, 19 tasi YO'Q edi (16 super + 2 admin + 1 telegram)
@@ -166,12 +167,18 @@
 - [x] SUPER (front): CRUD admins
 - [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
 
-### Frontend — Main Admin (Shohjahon) 🔥 YANGI — to'liq egasi
+### Main Admin (Karis) 🔥 to'liq egasi — 2026-07-26 dan, front + backend
 - [x] MAIN: Dashboard — KPI + grafiklar (Dashboard.jsx, 805 qator)
 - [x] MAIN: Leads — ro'yxat / filtr / status o'zgartirish, OnboardModal (temp-parol), Qabul / Rad etish
 - [x] MAIN: Organizations (hamkorlar) — ro'yxat / qidiruv, freeze / activate (855 qator)
 - [x] MAIN: Org-detail sahifasi — OrgDetail.jsx qurilgan
+- [x] MAIN: Billing ✅ TUZATILDI 2026-07-26 (Karis) — BUG-BILLING yopildi.
+- [x] MAIN: Revenue ✅ ULANDI 2026-07-26 (Karis).
 - [x] MAIN: Settings — ✅ audit 2026-07-19: "zaglushka" deb yozilgani NOTO'G'RI edi.
+- [x] MAIN-404-BACKEND ✅ YOPILDI 2026-07-26 (Karis) — endpointlar YOZILDI.
+- [x] MAIN-FINES-MOCK ✅ YOPILDI 2026-07-26 (Karis) — mok o'chirildi, sahifa qayta yozildi.
+- [x] MAIN: Forgot-password ✅ POLISH QILINDI 2026-07-26 (Karis).
+- [x] MAIN: Design-system ✅ TEKSHIRILDI 2026-07-26 (Karis), jonli brauzerda.
 - [x] ~~MAIN-FINES~~ — dublikat, yuqoridagi `MAIN-FINES-MOCK` ga birlashtirildi (2026-07-26)
 - [x] ~~MAIN-UNTRACKED~~ ✅ ANIQLANDI 2026-07-26: `Fines.jsx` va `Announcements.jsx` ni
 
@@ -231,6 +238,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 95 task
+- Karis (Backend): 102 task
 - Abdulaziz (Backend): 67 task
-- Frontend jamoasi: 53 task
+- Frontend jamoasi: 46 task

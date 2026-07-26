@@ -1,43 +1,48 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
-  Wallet, Building2, Users, Landmark, GitBranch, GraduationCap, Download, Check, Sparkles,
+  Wallet, Building2, Users, GraduationCap, Download, Info, Lock, Sparkles,
 } from 'lucide-react';
-import { api } from '../api.js';
-import { useAuth } from '../auth.jsx';
-import { useDashboard, usePricing, useInvalidate } from '../queries.js';
+import { useDashboard, usePricing } from '../queries.js';
 import { fmt } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../components/Skeleton.jsx';
 
-const FIELDS = [
-  {
-    key: 'baseFirstBranch',
-    label: 'Первый филиал',
-    hint: 'базовая цена за 1-й филиал партнёра',
-    Icon: Landmark,
-    tint: { bg: '#ECFCCB', fg: '#365314' },
-    previewLabel: (v, cur) => `1 филиал = ${fmt(v)} ${cur}`,
-  },
-  {
-    key: 'perExtraBranch',
-    label: 'Доп. филиал',
-    hint: 'за каждый дополнительный филиал',
-    Icon: GitBranch,
-    tint: { bg: '#E0F2FE', fg: '#075985' },
-    previewLabel: (v, cur) => `+3 доп. филиала = ${fmt(v * 3)} ${cur}`,
-  },
-  {
-    key: 'perStudent',
-    label: 'За ученика',
-    hint: 'за каждого ученика в месяц',
-    Icon: GraduationCap,
-    tint: { bg: '#EDE9FE', fg: '#5B21B6' },
-    previewLabel: (v, cur) => `за 10 учеников = ${fmt(v * 10)} ${cur}`,
-  },
-];
+/**
+ * Тарифы платформы.
+ *
+ * Модель с 2026-07-16: фиксированная цена по бакету активных учеников,
+ * филиалы включены безлимитом. Старая формула (первый филиал + доп. филиалы +
+ * за ученика) ОТМЕНЕНА — страница была построена на ней и показывала нули,
+ * потому что бэкенд таких полей больше не отдаёт.
+ *
+ * Почему нет формы сохранения: `PUT /api/main/pricing` на бэкенде ничего не
+ * пишет — тарифы зашиты в `backend/src/config/plans.js` (TIERS), а правка их
+ * через БД это задача v2. Раньше кнопка «Сохранить» рапортовала успех, хотя
+ * ничего не сохраняла. Пока источник правды — конфиг, страница только читает.
+ */
 
-// разрешаем только цифры при вводе текста
-const sanitize = (v) => String(v ?? '').replace(/[^\d]/g, '');
+// Зеркало tierForStudents() из backend/src/config/plans.js.
+// Дублирование намеренное: калькулятор должен считать мгновенно, без запроса.
+// Сами тарифы при этом приходят с сервера — здесь только правило выбора бакета.
+function tierForStudents(tiers, students) {
+  const s = Math.max(0, Number(students) || 0);
+  return (
+    tiers.find((t) => s >= t.minStudents && (t.maxStudents == null || s <= t.maxStudents)) ??
+    tiers[tiers.length - 1] ??
+    null
+  );
+}
+
+function tierRange(t) {
+  if (t.maxStudents == null) return `${fmt(t.minStudents)}+`;
+  return `${fmt(t.minStudents)}–${fmt(t.maxStudents)}`;
+}
+
+function tierPriceLabel(t, cur) {
+  if (t.price == null) return 'договорная';
+  if (t.price === 0) return 'бесплатно';
+  return `${fmt(t.price)} ${cur}`;
+}
 
 function Kpi({ Icon, tint, title, value, unit, accent }) {
   return (
@@ -61,13 +66,11 @@ function Kpi({ Icon, tint, title, value, unit, accent }) {
   );
 }
 
-function exportCsv(partners, pricing, cur) {
-  const header = ['Партнёр', 'Филиалы', 'Ученики', 'Базовый', 'Доп. филиалы', 'Ученики (сумма)', 'Итого/мес', 'Валюта'];
+function exportCsv(partners, tiers, cur) {
+  const header = ['Партнёр', 'Филиалы', 'Ученики', 'Тариф', 'Итого/мес', 'Валюта'];
   const rows = partners.map((p) => {
-    const base = Number(pricing?.baseFirstBranch || 0);
-    const extra = Math.max(0, (p.branches || 1) - 1) * Number(pricing?.perExtraBranch || 0);
-    const studCost = (p.students || 0) * Number(pricing?.perStudent || 0);
-    return [p.name, p.branches, p.students, base, extra, studCost, p.monthlyBill || (base + extra + studCost), cur];
+    const t = tierForStudents(tiers, p.students);
+    return [p.name, p.branches, p.students, t?.label ?? '—', p.monthlyBill ?? 0, cur];
   });
   const csv = [header, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -80,72 +83,40 @@ function exportCsv(partners, pricing, cur) {
 }
 
 export default function Billing() {
-  const { token } = useAuth();
-  const invalidate = useInvalidate();
-  const { data: pricing, isLoading: pLoading } = usePricing();
+  const { data: pricing, isLoading: pLoading, error: pError } = usePricing();
   const { data: dash } = useDashboard();
-  const partners = dash?.partners || [];
+
+  const tiers = pricing?.tiers ?? [];
+  const partners = dash?.partners ?? [];
   const cur = pricing?.currency || dash?.totals?.currency || 'UZS';
 
-  const [form, setForm] = useState({});
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [previewStudents, setPreviewStudents] = useState(120);
+  const previewTier = tiers.length ? tierForStudents(tiers, previewStudents) : null;
 
-  const [previewStudents, setPreviewStudents] = useState(20);
-  const [previewBranches, setPreviewBranches] = useState(2);
+  const totalIncome = dash?.totals?.ourMonthlyIncome
+    ?? partners.reduce((s, p) => s + (p.monthlyBill || 0), 0);
 
-  useEffect(() => { if (pricing) setForm(pricing); }, [pricing]);
-
-  const save = async (e) => {
-    e.preventDefault();
-    setBusy(true); setError(''); setSaved(false);
-    try {
-      await api.updatePricing(token, {
-        baseFirstBranch: Number(form.baseFirstBranch) || 0,
-        perExtraBranch: Number(form.perExtraBranch) || 0,
-        perStudent: Number(form.perStudent) || 0,
-      });
-      invalidate('pricing', 'dashboard');
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      setError(err.status === 422 ? 'Цены — целые числа ≥ 0' : err.message);
-    } finally { setBusy(false); }
-  };
-
-  const previewCalc = () => {
-    const base = Number(form.baseFirstBranch || 0);
-    const extra = Math.max(0, previewBranches - 1) * Number(form.perExtraBranch || 0);
-    const stud = previewStudents * Number(form.perStudent || 0);
-    return { base, extra, stud, total: base + extra + stud };
-  };
-
-  const totalIncome = partners.reduce((s, p) => s + (p.monthlyBill || 0), 0);
-  const preview = previewCalc();
+  if (pError && pError.status !== 401) {
+    return <div className="alert alert-error text-sm"><span>{pError.message}</span></div>;
+  }
 
   return (
     <div className="space-y-5">
       <PageHeader
         title="Тарифы и биллинг"
-        subtitle={`Ценообразование платформы — счёт рассчитывается по факту (в ${cur})`}
+        subtitle={`Цена зависит от числа активных учеников, филиалы включены безлимитом (в ${cur})`}
       >
-        {partners.length > 0 && (
-          <button
-            className="btn btn-outline btn-sm gap-2"
-            onClick={() => exportCsv(partners, pricing, cur)}
-          >
+        {partners.length > 0 && tiers.length > 0 && (
+          <button className="btn btn-outline btn-sm gap-2" onClick={() => exportCsv(partners, tiers, cur)}>
             <Download size={15} /> Экспорт CSV
           </button>
         )}
       </PageHeader>
 
-      {error && <div className="alert alert-error text-sm"><span>{error}</span></div>}
-
       {pLoading ? (
         <>
           <SkeletonKpis count={3} />
-          <SkeletonTable rows={4} cols={4} />
+          <SkeletonTable rows={6} cols={4} />
         </>
       ) : (
         <>
@@ -158,7 +129,13 @@ export default function Billing() {
               unit={cur}
               accent
             />
-            <Kpi Icon={Building2} tint={{ bg: '#E0F2FE', fg: '#075985' }} title="Партнёров на биллинге" value={fmt(partners.length)} unit="учебных центров" />
+            <Kpi
+              Icon={Building2}
+              tint={{ bg: '#E0F2FE', fg: '#075985' }}
+              title="Партнёров на биллинге"
+              value={fmt(partners.length)}
+              unit="учебных центров"
+            />
             <Kpi
               Icon={Users}
               tint={{ bg: '#EDE9FE', fg: '#5B21B6' }}
@@ -168,144 +145,135 @@ export default function Billing() {
             />
           </div>
 
-          {/* Pricing form — premium look */}
-          <form onSubmit={save} className="card bg-base-100 shadow-sm border border-base-200/60 overflow-hidden">
+          {/* Тарифная сетка — только чтение */}
+          <div className="card bg-base-100 shadow-sm border border-base-200/60 overflow-hidden">
             <div className="bg-gradient-to-r from-lime-100 via-lime-50 to-transparent px-6 py-5 border-b border-base-200 flex items-center gap-3">
               <span className="w-11 h-11 rounded-xl bg-lime-400 text-lime-950 grid place-items-center shrink-0">
                 <Sparkles size={20} strokeWidth={2.4} />
               </span>
-              <div>
-                <h2 className="font-extrabold text-lg leading-tight">Тарифы платформы</h2>
-                <p className="text-xs text-base-content/60 mt-0.5">Изменение цен применяется сразу ко всем партнёрам</p>
+              <div className="min-w-0">
+                <h2 className="font-extrabold text-lg leading-tight">Тарифная сетка</h2>
+                <p className="text-xs text-base-content/60 mt-0.5">
+                  Партнёр попадает в тариф по числу активных учеников
+                </p>
               </div>
+              <span className="ml-auto badge badge-ghost gap-1.5 shrink-0">
+                <Lock size={12} /> только чтение
+              </span>
             </div>
 
             <div className="card-body">
-              <div className="grid md:grid-cols-3 gap-4">
-                {FIELDS.map((f) => {
-                  const val = form[f.key];
-                  const numeric = Number(val || 0);
-                  return (
-                    <div key={f.key} className="rounded-2xl border border-base-200 hover:border-lime-300 transition-colors p-4 bg-gradient-to-br from-base-100 to-base-100/60 flex flex-col">
-                      <div className="flex items-center gap-2.5 mb-3">
-                        <span className="w-10 h-10 rounded-xl grid place-items-center shrink-0" style={{ background: f.tint.bg, color: f.tint.fg }}>
-                          <f.Icon size={18} strokeWidth={2.3} />
-                        </span>
-                        <div className="min-w-0">
-                          <div className="font-bold text-sm truncate">{f.label}</div>
-                          <div className="text-[10.5px] text-base-content/50 truncate">{f.hint}</div>
-                        </div>
-                      </div>
+              {tiers.length === 0 ? (
+                <div className="text-center py-10 text-base-content/40 text-sm">
+                  Сервер не вернул тарифы
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Тариф</th>
+                        <th>Учеников</th>
+                        <th className="text-right">Цена / мес</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tiers.map((t) => {
+                        const isPreview = previewTier?.id === t.id;
+                        return (
+                          <tr key={t.id} className={isPreview ? 'bg-lime-50' : undefined}>
+                            <td className="font-semibold">
+                              {t.label}
+                              {isPreview && (
+                                <span className="ml-2 badge badge-sm bg-lime-400 border-0 text-lime-950">
+                                  подходит
+                                </span>
+                              )}
+                            </td>
+                            <td className="tabular-nums">{tierRange(t)}</td>
+                            <td className="text-right tabular-nums font-semibold">
+                              {tierPriceLabel(t, cur)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
-                      <div className="relative">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          className="input input-bordered w-full text-lg font-bold tracking-tight pr-14 focus:border-lime-400 focus:outline-lime-200"
-                          placeholder="0"
-                          value={val ?? ''}
-                          onChange={(e) => setForm((s) => ({ ...s, [f.key]: sanitize(e.target.value) }))}
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-base-content/40 pointer-events-none">
-                          {cur}
-                        </span>
-                      </div>
-
-                      <div className="mt-3 rounded-lg bg-lime-50 px-3 py-1.5 text-[11px] font-semibold text-lime-800 self-start">
-                        {f.previewLabel(numeric, cur)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center gap-3 mt-5 pt-4 border-t border-base-200">
-                <button
-                  className={`btn border-0 text-lime-950 gap-2 px-6 transition-all ${
-                    saved ? 'bg-emerald-400 hover:bg-emerald-500' : 'bg-lime-400 hover:bg-lime-500 hover:shadow-lg'
-                  }`}
-                  disabled={busy}
-                >
-                  {busy ? (
-                    <span className="loading loading-spinner loading-sm" />
-                  ) : saved ? (
-                    <><Check size={16} strokeWidth={3} /> Сохранено!</>
-                  ) : (
-                    'Сохранить тарифы'
-                  )}
-                </button>
-                <span className="text-xs text-base-content/50">
-                  Тарифы применятся к следующему счёту всех партнёров
+              <div className="alert bg-base-200/60 border-0 text-sm mt-4">
+                <Info size={16} className="shrink-0" />
+                <span>
+                  Тарифы заданы в <code className="text-xs">backend/src/config/plans.js</code> и
+                  меняются только вместе с кодом. Редактирование из панели — задача v2;
+                  до неё формы сохранения здесь нет намеренно, чтобы страница не делала вид,
+                  что что-то сохранила.
                 </span>
-              </div>
-            </div>
-          </form>
-
-          {/* Calculator */}
-          <div className="card bg-base-100 shadow-sm border border-base-200/60">
-            <div className="card-body">
-              <h2 className="card-title text-base mb-1">Калькулятор счёта</h2>
-              <p className="text-sm text-base-content/50 mb-4">Проверка тарифов на примере партнёра</p>
-              <div className="grid md:grid-cols-2 gap-5">
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="form-control">
-                    <span className="label-text mb-1 text-xs font-semibold text-base-content/60 uppercase tracking-wider">Студентов</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      className="input input-bordered"
-                      value={previewStudents}
-                      onChange={(e) => setPreviewStudents(Number(sanitize(e.target.value)) || 0)}
-                    />
-                  </label>
-                  <label className="form-control">
-                    <span className="label-text mb-1 text-xs font-semibold text-base-content/60 uppercase tracking-wider">Филиалов</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      className="input input-bordered"
-                      value={previewBranches}
-                      onChange={(e) => setPreviewBranches(Math.max(1, Number(sanitize(e.target.value)) || 1))}
-                    />
-                  </label>
-                </div>
-                <div className="bg-base-200/50 rounded-xl p-4 space-y-2.5">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-base-content/60 flex items-center gap-1.5"><Landmark size={12} className="text-lime-600" /> 1-й филиал (база)</span>
-                    <span className="font-semibold tabular-nums">{fmt(preview.base)} {cur}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-base-content/60 flex items-center gap-1.5">
-                      <GitBranch size={12} className="text-lime-600" />
-                      {Math.max(0, previewBranches - 1) > 0
-                        ? `${Math.max(0, previewBranches - 1)} доп. филиала`
-                        : 'Доп. филиалы (нет)'}
-                    </span>
-                    <span className="font-semibold tabular-nums">{fmt(preview.extra)} {cur}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-base-content/60 flex items-center gap-1.5">
-                      <GraduationCap size={12} className="text-lime-600" />
-                      {previewStudents} учеников × {fmt(form.perStudent || 0)}
-                    </span>
-                    <span className="font-semibold tabular-nums">{fmt(preview.stud)} {cur}</span>
-                  </div>
-                  <div className="border-t border-base-300 pt-2.5 flex justify-between">
-                    <span className="font-bold">Итого / месяц</span>
-                    <span className="text-xl font-extrabold text-lime-600 tabular-nums">{fmt(preview.total)} {cur}</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
 
-          {partners.length > 0 && (
-            <div className="card bg-base-100 shadow-sm border border-base-200/60">
-              <div className="card-body">
-                <h2 className="card-title text-base mb-1">Счета партнёров ({cur}/мес)</h2>
+          {/* Калькулятор */}
+          <div className="card bg-base-100 shadow-sm border border-base-200/60">
+            <div className="card-body">
+              <h2 className="card-title text-base mb-1">Калькулятор счёта</h2>
+              <p className="text-xs text-base-content/55 mb-4">
+                Сколько заплатит центр с таким числом учеников
+              </p>
+
+              <label className="form-control w-full max-w-xs">
+                <span className="label-text text-xs mb-1 flex items-center gap-1.5">
+                  <GraduationCap size={13} /> Активных учеников
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  className="input input-bordered input-sm tabular-nums"
+                  value={previewStudents}
+                  onChange={(e) => setPreviewStudents(Math.max(0, Number(e.target.value) || 0))}
+                />
+              </label>
+
+              {previewTier && (
+                <div className="mt-5 rounded-xl border border-base-200 divide-y divide-base-200">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-base-content/60">Тариф</span>
+                    <span className="font-semibold">
+                      {previewTier.label} · {tierRange(previewTier)} учеников
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-base-content/60">Филиалы</span>
+                    <span className="font-semibold">включены безлимитом</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3 bg-base-200/40">
+                    <span className="font-bold">Итого / месяц</span>
+                    <span className="text-xl font-extrabold text-lime-600 tabular-nums">
+                      {tierPriceLabel(previewTier, cur)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {previewTier?.price == null && (
+                <p className="text-xs text-base-content/55 mt-3">
+                  На этом объёме цена обсуждается индивидуально — в автоматический счёт
+                  попадёт 0, сумму выставляем вручную.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Счета партнёров */}
+          <div className="card bg-base-100 shadow-sm border border-base-200/60">
+            <div className="card-body">
+              <h2 className="card-title text-base mb-3">Счета партнёров ({cur}/мес)</h2>
+              {partners.length === 0 ? (
+                <div className="text-center py-10 text-base-content/40 text-sm">
+                  Партнёров пока нет
+                </div>
+              ) : (
                 <div className="overflow-x-auto">
                   <table className="table table-sm">
                     <thead>
@@ -313,38 +281,37 @@ export default function Billing() {
                         <th>Партнёр</th>
                         <th className="text-right">Филиалы</th>
                         <th className="text-right">Ученики</th>
-                        <th className="text-right">К оплате / мес</th>
-                        <th className="text-right">Доля</th>
+                        <th>Тариф</th>
+                        <th className="text-right">Итого / мес</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {[...partners]
-                        .sort((a, b) => (b.monthlyBill || 0) - (a.monthlyBill || 0))
-                        .map((p) => {
-                          const share = totalIncome > 0 ? ((p.monthlyBill / totalIncome) * 100).toFixed(1) : '0.0';
-                          return (
-                            <tr key={p.id} className="hover">
-                              <td className="font-medium">{p.name}</td>
-                              <td className="text-right tabular-nums">{fmt(p.branches)}</td>
-                              <td className="text-right tabular-nums">{fmt(p.students)}</td>
-                              <td className="text-right font-semibold tabular-nums text-lime-700">{fmt(p.monthlyBill)}</td>
-                              <td className="text-right text-xs text-base-content/50 tabular-nums">{share}%</td>
-                            </tr>
-                          );
-                        })}
+                      {partners.map((p) => {
+                        const t = tiers.length ? tierForStudents(tiers, p.students) : null;
+                        return (
+                          <tr key={p.id}>
+                            <td className="font-medium">{p.name}</td>
+                            <td className="text-right tabular-nums">{fmt(p.branches ?? 0)}</td>
+                            <td className="text-right tabular-nums">{fmt(p.students ?? 0)}</td>
+                            <td>{t?.label ?? '—'}</td>
+                            <td className="text-right tabular-nums font-semibold">
+                              {fmt(p.monthlyBill ?? 0)}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                     <tfoot>
-                      <tr className="font-bold border-t-2 border-base-300">
-                        <td colSpan={3} className="text-right text-sm opacity-60">Итого:</td>
-                        <td className="text-right text-lime-600 tabular-nums">{fmt(totalIncome)}</td>
-                        <td className="text-right text-xs text-base-content/40">100%</td>
+                      <tr>
+                        <td colSpan={4} className="text-right text-sm opacity-60">Итого:</td>
+                        <td className="text-right font-extrabold tabular-nums">{fmt(totalIncome)}</td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
         </>
       )}
     </div>

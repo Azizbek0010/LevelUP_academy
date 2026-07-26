@@ -54,8 +54,13 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // Профиль правится на странице настроек (PATCH /api/main/profile). Без этого
+  // шапка и инициалы продолжали бы показывать старое имя до перелогина —
+  // сохранение выглядело бы не сработавшим.
+  const patchUser = (fields) => setUser((u) => (u ? { ...u, ...fields } : u));
+
   return (
-    <AuthCtx.Provider value={{ token, user, loading, login, loginWithGoogle, logout }}>
+    <AuthCtx.Provider value={{ token, user, loading, login, loginWithGoogle, logout, patchUser }}>
       {children}
     </AuthCtx.Provider>
   );
