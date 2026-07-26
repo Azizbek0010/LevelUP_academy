@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ShoppingBag, Coins, Gift, History } from 'lucide-react';
 import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { Skeleton, EmptyState, Modal } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, Modal, Pill, Tabs } from '../components/ui.jsx';
 import { fmtNum, fmtDateTime } from '../format.js';
 
 export default function Shop() {
@@ -41,52 +41,51 @@ export default function Shop() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Магазин</h1>
-          <p>Обменяй заработанные коины на призы</p>
-        </div>
-        {balance !== null && (
-          <span className="pill pill--lime" style={{ fontSize: 14, padding: '9px 18px' }}>
-            <Coins size={15} /> {fmtNum(balance)} коинов
-          </span>
-        )}
-      </div>
+      <PageHeader
+        title="Магазин"
+        subtitle="Обменяй заработанные коины на призы"
+        actions={
+          balance !== null && (
+            <Pill tone="primary" className="text-sm px-3.5 py-2">
+              <Coins size={15} /> {fmtNum(balance)} коинов
+            </Pill>
+          )
+        }
+      />
 
-      <div className="tabs" style={{ marginBottom: 20 }}>
-        <button className={tab === 'items' ? 'active' : ''} onClick={() => setTab('items')}>
-          Витрина
-        </button>
-        <button className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}>
-          Мои покупки
-        </button>
+      <div className="mb-5">
+        <Tabs
+          value={tab}
+          onChange={setTab}
+          items={[{ value: 'items', label: 'Витрина' }, { value: 'orders', label: 'Мои покупки' }]}
+        />
       </div>
 
       {tab === 'items' ? (
         !items ? (
           <Skeleton h={180} count={2} />
         ) : items.length === 0 ? (
-          <div className="card">
+          <div className="card bg-base-100">
             <EmptyState icon={ShoppingBag} title="Витрина пуста" text="Товары скоро появятся — копи коины!" />
           </div>
         ) : (
-          <div className="shop-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => {
               const affordable = balance === null || balance >= item.coin_price;
               return (
-                <div key={item.id} className="shop-item">
-                  <div className="shop-item__img">
-                    {item.image_key ? <img src={item.image_key} alt="" /> : <Gift size={38} />}
+                <div key={item.id} className="card bg-base-100 card-hover-premium p-4 flex flex-col gap-3">
+                  <div className="h-28 rounded-xl bg-base-200 border border-base-300 grid place-items-center text-primary/70 overflow-hidden">
+                    {item.image_key ? <img src={item.image_key} alt="" className="w-full h-full object-cover" /> : <Gift size={38} />}
                   </div>
-                  <div className="shop-item__name">{item.name}</div>
-                  <div className="shop-item__meta">
-                    <span className="pill pill--lime num">
+                  <div className="font-bold text-[15px] flex-1 leading-snug">{item.name}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <Pill tone="primary" className="tabular-nums">
                       <Coins size={13} /> {fmtNum(item.coin_price)}
-                    </span>
-                    <span className="shop-item__stock num">осталось {item.stock}</span>
+                    </Pill>
+                    <span className="text-xs text-base-content/45 tabular-nums">осталось {item.stock}</span>
                   </div>
                   <button
-                    className="btn btn--dark btn--sm"
+                    className="btn btn-sm btn-neutral w-full"
                     disabled={!affordable}
                     onClick={() => setConfirm(item)}
                   >
@@ -100,22 +99,22 @@ export default function Shop() {
       ) : !orders ? (
         <Skeleton h={64} count={3} />
       ) : orders.length === 0 ? (
-        <div className="card">
+        <div className="card bg-base-100">
           <EmptyState icon={History} title="Покупок пока нет" text="Всё заработанное — впереди." />
         </div>
       ) : (
-        <div className="card">
+        <div className="card bg-base-100 divide-y divide-base-200">
           {orders.map((o) => (
-            <div key={o.id} className="row">
-              <div className="avatar" style={{ borderRadius: 10 }}>
-                <Gift size={16} />
+            <div key={o.id} className="flex items-center gap-3 px-4 py-3.5">
+              <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
+                <Gift size={17} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold truncate">{o.item_name}</div>
+                <div className="text-xs text-base-content/45 mt-0.5">{fmtDateTime(o.created_at)}</div>
               </div>
-              <div className="row__body">
-                <div className="row__title">{o.item_name}</div>
-                <div className="row__sub">{fmtDateTime(o.created_at)}</div>
-              </div>
-              <span className="row__score num">
-                −{fmtNum(o.coin_price)} <span>коинов</span>
+              <span className="text-sm font-extrabold tabular-nums whitespace-nowrap">
+                −{fmtNum(o.coin_price)} <span className="text-primary">коинов</span>
               </span>
             </div>
           ))}
@@ -124,19 +123,17 @@ export default function Shop() {
 
       {confirm && (
         <Modal title="Подтверди покупку" onClose={() => !busy && setConfirm(null)}>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14.5, marginBottom: 6 }}>
-            Купить <b style={{ color: 'var(--text)' }}>«{confirm.name}»</b> за{' '}
-            <b style={{ color: 'var(--text)' }}>{fmtNum(confirm.coin_price)} коинов</b>?
+          <p className="text-sm text-base-content/60 mb-1.5">
+            Купить <b className="text-base-content">«{confirm.name}»</b> за{' '}
+            <b className="text-base-content">{fmtNum(confirm.coin_price)} коинов</b>?
           </p>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+          <p className="text-xs text-base-content/45">
             Коины спишутся сразу, приз выдаст администратор филиала.
           </p>
-          <div className="modal__actions">
-            <button className="btn btn--ghost" onClick={() => setConfirm(null)} disabled={busy}>
-              Отмена
-            </button>
-            <button className="btn btn--accent" onClick={buy} disabled={busy}>
-              {busy ? 'Покупаем…' : 'Купить'}
+          <div className="flex justify-end gap-2.5 mt-6">
+            <button className="btn btn-ghost" onClick={() => setConfirm(null)} disabled={busy}>Отмена</button>
+            <button className="btn btn-primary" onClick={buy} disabled={busy}>
+              {busy ? <span className="loading loading-spinner loading-sm" /> : 'Купить'}
             </button>
           </div>
         </Modal>

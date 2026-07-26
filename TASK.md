@@ -150,7 +150,13 @@
       ya'ni prodda panellar soxta localStorage datasini ko'rsatardi.
       `main-admin` bu bug'dan jabrlanmagan (uning `api.js` da bu pattern yo'q)
 - [x] ~~BUG-STACK~~ ✅ TUZATILGAN (2026-07-19 auditda tekshirildi, TASK.md eskirgan edi): `render.yaml:19-20` da `NODE_ENV=production` O'RNATILGAN, `errorHandler.js:41` stack'ni faqat `env.NODE_ENV === 'development'` da qaytaradi (qat'iy tenglik — yangi hostingda o'zgaruvchi unutilsa ham stack chiqmaydi). Bundan tashqari 5xx da `details` ham berkitildi, o'rniga `errorId` (pino req.id) qaytadi — commit `5a1f177`
-- [ ] BUG-LOCAL-PROD-DB 🔥🔥 ENG XAVFLISI (2026-07-19 auditda topildi): `backend/.env` dagi
+- [x] ~~BUG-LOCAL-PROD-DB~~ ✅ TUZATILGAN — **DUBLIKAT yozuv edi, 2026-07-26 da yopildi.**
+      Yuqorida "Backend — Integration" bo'limida AYNI shu bug allaqachon `[x]` bilan turgan edi
+      (19.07 da tuzatilgan), bu yerda esa hali `[ ]` ochiq turardi — bitta ish ikki joyda,
+      biri qarama-qarshi holatda. Kod tekshirildi 2026-07-26: `backend/.env` da
+      `DATABASE_URL=postgresql://...@localhost:5432/levelup` — lokal, Neon EMAS.
+      Quyidagi matn tarix uchun qoldirildi:
+      ~~`backend/.env` dagi
       `DATABASE_URL` **to'g'ridan-to'g'ri PROD Neon bazasiga** qaragan
       (`ep-empty-wind-ai4drexy...neon.tech`), lokal Docker postgres'ga EMAS —
       holbuki `levelup-postgres` konteyneri 22 soatdan beri ishlab turibdi va ishlatilmayapti.
@@ -159,8 +165,12 @@
       Hozircha omad: prodda demo guruhlar yo'q (13 org, 15 filial, 58 user, 6 guruh — real data).
       Lekin bu vaqt masalasi.
       **Tuzatish:** lokal `.env` `postgresql://postgres:postgres@localhost:5432/levelup` ga o'tsin,
-      prod URL faqat Render dashboard'ida qolsin. Jamoaga ham aytilsin
+      prod URL faqat Render dashboard'ida qolsin. Jamoaga ham aytilsin~~
 - [ ] BUG-NO-WORKER 🔥🔥🔥 ENG KATTASI (2026-07-19 auditda topildi): **prodda BIRORTA worker ishlamayapti.**
+      ⚠️ **2026-07-26 da qayta tekshirildi — HALI OCHIQ.** `render.yaml` da bitta `type: web`,
+      `type: worker` yo'q. Fayl sarlavhasidagi izohda ham to'g'ridan-to'g'ri yozilgan:
+      "Фоновый worker (BullMQ) и cron 09:00 на free НЕ запускаются — только API".
+      Ya'ni bu bilib turib qoldirilgan holat, unutilgan emas — lekin mijoz uchun farqi yo'q
 
       `worker.js` 4 ta worker va 3 ta cron ko'taradi:
       `notificationWorker` · `overdueWorker` + cron 09:00 · **`billingWorker` + oylik cron** · `dueSoonWorker`
@@ -216,6 +226,7 @@
       va oxirida umumiy natija chiqsin
 
 - [ ] BUG-REDIS-SILENT 🔥 (2026-07-19): `env.js` da `REDIS_URL: z.string().min(1).default('redis://localhost:6379')`.
+      ⚠️ **2026-07-26 da qayta tekshirildi — HALI OCHIQ**, `env.js:13` da default o'z joyida turibdi.
       Ya'ni Render'da bu o'zgaruvchi qo'yilmasa — server JIMGINA ko'tariladi va localhost'ga urinaveradi.
       Log'da `Redis error` chiqadi, lekin process yiqilmaydi. Natijada socket (chat, davomat live) va
       barcha queue'lar ishlamaydi, sabab esa ko'rinmaydi.
@@ -268,27 +279,44 @@
 > Auditda topilgan ochiq backend ishlar. Hammasi `backend/` zonasida — Abdulaziz'ning zonasi.
 > Tartib MUHIM: AB-INT-GROUP birinchi, chunki u boshqa odamni (Abduloh) BLOKLAB turibdi.
 
-### AB-INT-GROUP 🔴 1-NAVBAT (Abdulohni bloklayapti)
+### AB-INT-GROUP ✅ YOPILDI (2026-07-26 auditda aniqlandi)
 
-- [ ] AB-INT-GROUP: admin GroupDetail uchun 6 ta endpoint YO'Q, front (Abduloh) ularni allaqachon chaqiryapti va mock'dan olyapti:
-      `GET/POST /api/admin/groups/:id/attendance`, `.../homework`, `.../feedback`.
-      **Avval qaror kerak:** attendance va homework — mentor jadvallaridan REUSE qilinsinmi
-      (yagona manba, tavsiya shu) yoki alohida? feedback — YANGI migratsiya + CRUD kerak (jadval yo'q).
-      Qarorni Karis bilan kelishib, keyin yozish. Kontrakt: `frontend/TEAM-TASKS.md`
+- [x] AB-INT-GROUP ✅ **BAJARILGAN — Abdulaziz 2026-07-20 da yopgan, TASK.md yangilanmagan edi.**
+      Kod tekshirildi 2026-07-26: oltala route ham `admin.routes.js` da o'z joyida —
+      `GET/POST /groups/:id/attendance` (983, 988), `GET/POST /groups/:id/homework` (1050, 1052),
+      `GET/POST /groups/:id/feedback` (1110, 1112). Kontroller (`admin.controller.js:134-155`)
+      va servis (`markGroupAttendance:585`, `createGroupFeedback:700`) yozilgan, zaglushka emas.
+      `feedback` uchun yangi jadval ham bor: migratsiya `1783860000000_group-feedback.js`
+      (commit `5a70184`, 2026-07-20).
+      Qaror bo'yicha ham to'g'ri qilingan: attendance/homework mentor jadvallaridan REUSE,
+      faqat feedback yangi jadval.
+      ⚠️ **Abduloh bu paytdan beri bekorga bloklangan deb hisoblab yurgan** — unga aytilsin.
+      Qolgan ish endi faqat frontda: `GroupDetail.jsx` hali mock'dan olyapti, real API ga o'tsin
 
-### AB-SUPER-STUB — Super Admin 3 ta zaglushka (jadval YO'Q, 501 qaytaradi)
+### AB-SUPER-STUB ✅ TO'RTALASI HAM YOPILDI (2026-07-26 auditda aniqlandi)
 
-> Hozir `super.service.js:342-348` bo'sh massiv qaytaradi, `super.controller.js:67` esa 501.
-> Front (Shohjahon qurgan) sahifalar bor, lekin data yo'q — ya'ni sahifalar bo'm-bo'sh turibdi.
+> ⚠️ Bu blok "zaglushka, 501 qaytaradi" deb turgan edi — **ESKIRGAN**. Abdulaziz hammasini
+> 2026-07-20/21 da yozib bo'lgan (`460914b`, `870d1c5`), lekin TASK.md yangilanmagan.
+> Kod tekshirildi 2026-07-26: `super.routes.js` da route'lar bor, `super.controller.js`
+> real servis chaqiradi, 501 tashlaydigan joy qolmagan.
 
-- [ ] AB-SUPER-ANN: `GET/POST/DELETE /api/super/announcements` — e'lonlar.
-      Migratsiya + CRUD + `notificationQueue` ga ulash (POST bo'lganda xodimlarga/ota-onalarga ketsin).
-      Bilol'ning TG-boti shu queue'ni o'qiydi — `AB-V1` dagi `/api/admin/announcements` bilan bir xil pattern, undan namuna ol
-- [ ] AB-SUPER-REM: `GET /api/super/reminders` (+ resend / delete) — eslatmalar. Migratsiya + CRUD
-- [ ] AB-SUPER-AUDIT: `GET /api/super/audit` — audit log. Migratsiya (kim / nima / qachon / qaysi org) +
-      yozuvni MUHIM mutatsiyalarga ulash (branch/admin CRUD, freeze, shtraf). Faqat o'qish uchun, o'chirib bo'lmaydi
-- [ ] AB-SUPER-STATS: `GET /api/super/stats` — route umuman YO'Q. KPI + grafik data (recharts uchun).
-      ⚠️ Front `Stats.jsx` ham statik — api chaqirmaydi, ya'ni ikkala tomon ham kerak
+- [x] AB-SUPER-ANN ✅ 2026-07-20 (`460914b`): `GET/POST/DELETE /api/super/announcements`
+      (`super.routes.js:415,416,433`), controller `listAnnouncements/createAnnouncement/deleteAnnouncement`,
+      migratsiya `1783870000000_super-announcements.js`. Create'da audit yozuvi ham qo'yilgan
+- [x] AB-SUPER-REM ✅ 2026-07-21 (`870d1c5`): `GET /api/super/reminders` +
+      `POST /reminders/:id/resend` + `DELETE /reminders/:id` (`super.routes.js:472,498,524`),
+      alohida `reminders` moduli, migratsiya `1783890000000_org-reminders.js`
+- [x] AB-SUPER-AUDIT ✅ 2026-07-20 (`460914b`): `GET /api/super/audit` (`super.routes.js:547`),
+      migratsiya `1783880000000_audit-log.js`, yozuv MUHIM mutatsiyalarga ulangan (`audit(req, ...)`)
+- [x] AB-SUPER-STATS ✅ 2026-07-20 (`460914b`): `GET /api/super/stats` (`super.routes.js:586`,
+      `period` query validatsiyasi bilan), controller → `service.stats(orgId, period)`
+      ⚠️ **Front tomoni HALI OCHIQ** — `super/Stats.jsx` da `PAYMENT_METHODS` hardcode
+      (Наличные 65 / Карта 30 / Online 5) 2026-07-26 da ham joyida turibdi va u haqiqiy
+      grafik bo'lib chiziladi. FE-SUPER-STATS ga qara — endi backend kutilmaydi, ish faqat frontda
+- [ ] AB-SUPER-SWAGGER 🆕 (2026-07-26): `super.routes.js:409-431` da e'lonlar uchun swagger izohi
+      hali "⚠️ NOT IMPLEMENTED — always 501" deb turibdi, holbuki endpoint ishlaydi.
+      Hujjat kodga zid → front yana eski hujjatga qarab noto'g'ri qurishi mumkin (BUG-BILLING
+      aynan shunday tug'ilgan edi). Swagger izohi yangilansin va `swagger/*.md` qayta generatsiya qilinsin
 
 ### AB-SUPER-REPORTS + AB-MAIN-REVENUE 🆕 (2026-07-19 auditda topildi)
 
@@ -296,18 +324,21 @@
 > `super/Reports.jsx` — uchalasi ham `useSuperDashboard` ni chaqiradi. Stats va Reports'ning
 > o'z ma'lumoti YO'Q, ya'ni ular Dashboard'ning nusxasi bo'lib qolgan.
 
-- [ ] AB-SUPER-REPORTS: `GET /api/super/reports` — organizatsiya bo'yicha HAQIQIY hisobot
-      (filiallar kesimida tushum, qarz, o'quvchi harakati). Hozir front Dashboard datasini ko'rsatyapti.
-      Front tomoni: FE-SUPER-REPORTS (Aziz)
+- [x] AB-SUPER-REPORTS ✅ 2026-07-20 (`460914b`): `GET /api/super/reports` yozilgan
+      (`super.routes.js:619` → `ctrl.reports` → `service.reports(orgId)`).
+      ⚠️ **Front tomoni HALI OCHIQ** — `super/Reports.jsx` baribir `useSuperDashboard` ni
+      chaqiradi, ya'ni Dashboard datasini ko'rsatishda davom etyapti. FE-SUPER-REPORTS (Aziz)
 - [x] AB-EXPENSE-PATCH ✅ TUZATILDI (2026-07-21 audit): `PATCH /api/admin/expenses/:id`
       qo'shildi (`admin.routes.js:223`, controller→service→repository to'liq zanjir).
       Front (`Expenses.jsx:358`) `editingId` bo'lsa `api.adminUpdateExpense()` chaqiradi,
       aks holda create. Kozim TG'da qayta topgan edi — tekshirilganda allaqachon yopilgan
       ekan (parallel commit `460914b` — "expense edit" — bilan kelgan)
-- [ ] AB-MAIN-REVENUE: `main-admin/Revenue.jsx` (454 qator) `useDashboard` da o'tiribdi —
-      real tushumga ULANMAGAN. Platforma tushumi uchun alohida endpoint kerak.
-      ⚠️ Pul jadvallariga faqat **SELECT** — yozish YO'Q (AB-V1 dagi "Partner profit" bilan bir xil qoida).
-      Front tomoni Shohjahon'da (MAIN: Revenue — uning ochiq vazifasi)
+- [x] AB-MAIN-REVENUE ✅ **BACKEND BAJARILGAN** 2026-07-20 (`460914b`):
+      `GET /api/main/revenue` (`main.routes.js:219` → `ctrl.revenue` → `platformRevenue()`,
+      `main.service.js:130`). Qoida ham bajarilgan: pul jadvallariga faqat SELECT.
+      ⚠️ **Front tomoni HALI OCHIQ va u Shohjahon'da:** `main-admin/src/api.js` da `revenue`
+      metodi umuman yozilmagan, `Revenue.jsx` esa `useDashboard` da o'tiribdi va davrni
+      ko'paytirish koeffitsiyenti bilan "hisoblab" ko'rsatyapti (MAIN: Revenue ga qara)
 
 ### AB-VERIFY — jonli tekshiruv (mock'siz)
 
@@ -324,14 +355,25 @@
 > polling qilmayotgan edi, o'sha tuzatilgan). Ya'ni fayl real holatdan orqada.
 > Bitta manba bo'lishi kerak — shuning uchun bu yerga ko'rsatkich qo'yildi.
 
-- [ ] TG-SYNC 🔴 (Bilol): `docs/TASK-telegram-bot.md` ni REAL holatga keltirsin —
-      bajarilganlarini [x] qilsin. Hozir 12+ vazifa ochiq ko'rinadi, aslida bir qismi tayyor
-- [ ] TG-BIND (Bilol): `POST /api/telegram/bind-token` + deep-link orqali `/start` bilan
-      hisobni bog'lash (Redis `GETDEL` bilan atomar tekshiruv) + `/stop` uzish
-- [ ] TG-DUE (Bilol): `payment.due_soon` handler — ota-onaga to'lov muddati haqida eslatma.
-      Payload formati Karis bilan kelishilsin
-- [ ] TG-ANN (Bilol): `announcement` handler — filial/guruh ota-onalariga e'lon tarqatish,
-      qabul qiluvchilarni resolve qilish + katta ro'yxatga bo'lib yuborish
+- [x] TG-SYNC ✅ BAJARILDI 2026-07-26 (Karis): `docs/TASK-telegram-bot.md` kod bilan sverka
+      qilindi, 8 ta vazifa `[x]` ga o'tkazildi va fayl boshiga sverka jadvali qo'yildi.
+      Bilol'ning ishi yozilmay qolgani sabab u "hech narsa qilmagan"dek ko'rinardi — bu noto'g'ri edi
+- [x] TG-BIND ✅ BAJARILGAN (Bilol; 2026-07-26 auditda tasdiqlandi):
+      `POST /api/telegram/bind-token` (`telegram.routes.js:42`) + `bind-token.service.js`
+      (Redis `SET ... EX NX`, atomar `GETDEL`) + `/start` payload bilan va payloadsiz
+      (`bot.handlers.js:10`) + `/stop` (`bot.handlers.js:54`) + `bot.start()` polling (`bot.js:22`)
+- [x] TG-DUE ✅ BAJARILGAN (Bilol): `payment.due_soon` handler `notification.worker.js:21` da,
+      payload `{ studentId, amount, dueDate, daysLeft }`.
+      ⚠️ Producer (payment_schedules'dan N kun oldin queue'ga qo'yish) — **Karis'da**, hali yozilmagan
+- [x] TG-ANN ✅ BAJARILGAN (Bilol): `announcement.created` handler `notification.worker.js:37` da.
+      Producer'lar ham to'g'ri nom bilan yozadi (`admin.service.js:724`, `super.service.js:371`)
+- [ ] TG-DUE-PRODUCER 🆕 (Karis): `payment.due_soon` ni queue'ga qo'yadigan job YO'Q.
+      Bilol tomoni tayyor, lekin uni hech kim chaqirmaydi → eslatma hech qachon ketmaydi.
+      `payment_schedules` dan muddatdan N kun oldin tanlab, idempotent tarzda qo'yilsin
+- [ ] TG-PROD-DEAD 🔴🆕 (Karis): butun TG zanjiri **prodda o'lik** — `BUG-NO-WORKER`.
+      `render.yaml` da `type: worker` yo'q → `worker.js` yugurmaydi → `notifications` navbatini
+      hech kim o'qimaydi. Bot `/start` ni qabul qiladi, lekin BIRORTA bildirishnoma yetib bormaydi.
+      Bilol'ning 14 commit'i shu sababli mijozga ko'rinmayapti — bu uning aybi emas
 - [ ] TG-FRONT (kim bo'shasa): kabinetda "Telegramni bog'lash" tugmasi —
       `bind-token` ni chaqirib deep-link ko'rsatadi. Front tomoni hech kimga berilmagan
 
@@ -468,16 +510,22 @@
       ```
       Bu hardcode haqiqiy grafik bo'lib chiziladi — hamkor "65% naqd" degan raqamni ko'radi,
       lekin uni HECH KIM hisoblamagan. Bu eng xavflisi: sahifa ishlayotgandek ko'rinadi.
-      Hardcode o'chirilsin, `GET /api/super/stats` ga ulansin (backend — AB-SUPER-STATS).
-      ⚠️ Sahifa hozir `useSuperDashboard` ni chaqiryapti — bu Dashboard'ning endpointi, Stats'niki EMAS
+      Hardcode o'chirilsin, `GET /api/super/stats` ga ulansin.
+      🟢 **2026-07-26: backend TAYYOR** — `GET /api/super/stats` `super.routes.js:586` da bor
+      (`period` query bilan). Kutiladigan hech narsa yo'q, ish to'liq frontda.
+      ⚠️ Sahifa hozir `useSuperDashboard` ni chaqiryapti — bu Dashboard'ning endpointi, Stats'niki EMAS.
+      Hardcode 2026-07-26 da ham `Stats.jsx` da joyida turibdi (qayta tekshirildi)
 - [ ] FE-SUPER-REPORTS (Aziz): `super/Reports.jsx` ham `useSuperDashboard` da o'tiribdi — o'z ma'lumoti yo'q.
       Ya'ni Dashboard / Stats / Reports — uchtasi BITTA endpointdan oziqlanyapti.
-      O'z endpointiga ulansin (backend — AB-SUPER-REPORTS)
-- [ ] FE-SUPER-WIRE (Said Islom + Aziz): Announcements (359 qator) / Reminders (257) / Audit (293) —
-      front yozilgan va `api` ni chaqiradi, lekin backend 501 yoki bo'sh ro'yxat qaytaradi →
-      **909 qator kod hech qachon hech narsa ko'rsatolmaydi**.
-      Abdulaziz backendni yopgach (AB-SUPER-ANN/REM/AUDIT) — real data bilan tekshirilsin,
-      Skeleton / EmptyState / Error uch holati ishlashiga ishonch hosil qilinsin
+      🟢 **2026-07-26: backend TAYYOR** — `GET /api/super/reports` `super.routes.js:619` da bor.
+      Ish faqat frontda: `useSuperDashboard` o'rniga o'z endpointiga o'tsin
+- [ ] FE-SUPER-WIRE (Said Islom + Aziz): Announcements (359 qator) / Reminders (257) / Audit (293).
+      🟢 **BLOKER OLINDI (2026-07-26 auditda aniqlandi):** backend endi 501 qaytarmaydi —
+      Abdulaziz uchala endpointni ham 2026-07-20/21 da yozib bo'lgan
+      (`460914b`, `870d1c5`; AB-SUPER-ANN / REM / AUDIT ga qara). Ya'ni bu 909 qator kod
+      **bugundan boshlab real data ko'rsatishi mumkin** — kutish shart emas.
+      Qilinadigan ish: real superadmin login bilan uchala sahifani ochib tekshirish +
+      Skeleton / EmptyState / Error uch holati ishlashiga ishonch hosil qilish
 
 ## Frontend — Main Admin (Shohjahon) 🔥 YANGI — to'liq egasi
 
@@ -489,33 +537,70 @@
 - [x] MAIN: Organizations (hamkorlar) — ro'yxat / qidiruv, freeze / activate (855 qator)
 - [x] MAIN: Org-detail sahifasi — OrgDetail.jsx qurilgan
 - [ ] MAIN (Shohjahon) 🔴: Billing — sahifa hali ESKI modelda (`baseFirstBranch`/`perStudent`), backend `{ tiers, currency }` qaytaradi → SAHIFA BUZILGAN, shoshilinch (BUG-BILLING)
+      ⚠️ **2026-07-26 audit — tasdiqlandi va yomonroq chiqdi.** `main.service.js:83` `getPricing()`
+      `{ tiers, currency }` qaytaradi; `Billing.jsx:67,69` esa `pricing?.baseFirstBranch` va
+      `pricing?.perStudent` o'qiydi → ikkalasi `undefined` → `Number(undefined || 0)` = **0**,
+      ya'ni tariflar ham, kalkulyator ham nol ko'rsatadi.
+      Ustiga: `main.service.js:88` `updatePricing()` **hech narsa yozmaydi** (`return getPricing()`),
+      lekin `Billing.jsx:104` `api.updatePricing()` chaqirib "saqlandi" deb rapor beradi —
+      foydalanuvchiga jim yolg'on. Narx v1 da `config/plans.js` da qotirilgan (DB-editable = v2, PRICE bo'limiga qara),
+      shuning uchun to'g'ri yechim: **saqlash formasini olib tashlab, tariflarni faqat o'qish qilib ko'rsatish**
 - [ ] MAIN: Revenue — Revenue.jsx bor (454 qator) lekin api chaqiruvi deyarli yo'q, real tushumga ulanmagan
+      ⚠️ **2026-07-26 audit — aniq sabab topildi.** Backendda endpoint BOR:
+      `GET /api/main/revenue` (`main.routes.js:219` → `platformRevenue()`), lekin
+      `frontend/main-admin/src/api.js` da `revenue` metodi **umuman yo'q** — ya'ni front uni
+      hech qachon chaqirmaydi. Sahifa `useDashboard()` dan oladi.
+      🔴 Bundan battari: "oy / chorak / yil" tugmalari real data emas — `Revenue.jsx:146` da
+      `mult` koeffitsiyenti olinadi va OYLIK summa shunga ko'paytiriladi. Ya'ni "yillik tushum" =
+      oylik × 12, o'ylab topilgan ekstrapolyatsiya, lekin haqiqiy raqamdek ko'rinadi.
+      Bu shunchaki "ulanmagan" emas — bu **noto'g'ri ma'lumot ko'rsatish**
 - [x] MAIN: Settings — ✅ audit 2026-07-19: "zaglushka" deb yozilgani NOTO'G'RI edi.
       438 qator, `useDashboard` + `usePricing` + `api.updateProfile` — real ishlaydi
+- [ ] MAIN-404-BACKEND 🔴🆕 (2026-07-26 audit, Karis): **front mavjud bo'lmagan endpointlarni chaqiryapti.**
+      `backend/src/modules/main/main.routes.js` da ROSA 8 ta route bor:
+      `POST/GET /partners`, `PATCH /partners/:id/status`, `GET /dashboard`, `GET /revenue`,
+      `GET/PUT /pricing`, `GET /leads`, `PATCH /leads/:id`. Boshqa hech narsa yo'q.
+      Lekin `main-admin/src/api.js` quyidagilarni chaqiradi:
+      • `GET/POST/DELETE /main/announcements` → **404**. `Announcements.jsx` (364 qator, 9 chaqiruv)
+        butunlay o'lik. Announcements moduli faqat `super` va `admin` da bor, `main` da YO'Q
+      • `PATCH /main/profile` → **404**. `Settings.jsx` dagi profil saqlash ishlamaydi —
+        yuqoridagi `[x] MAIN: Settings` galochkasi shu qismda NOTO'G'RI
+      Egasi: backend tomoni **Karis** (main moduli uning zonasi), front tomoni Shohjahon
+- [ ] MAIN-FINES-MOCK 🔴 (2026-07-19 da topilgan, 2026-07-26 da tasdiqlangan): `Fines.jsx:27`
+      `initialMock` — 6 ta o'ylab topilgan hamkor va jarima (`EduCenter Chilanzar`, `Собиров А.А.` ...),
+      `useState(initialMock)`, sahifada **0 ta API chaqiruvi**. Backendda jarima endpointi yo'q
+      (xodimlar shtrafi `discipline` modulida, u super/admin uchun, main_admin esa CAN_ISSUE da HECH KIMGA).
+      Ya'ni sahifa mavjud bo'lmagan funksiyani ko'rsatyapti → yo olib tashlansin, yo `discipline` ga ulansin
 - [ ] MAIN: Google OAuth — jonli E2E login testi (Firebase levelup-1c059)
 - [ ] MAIN: Forgot-password — sikl polish
 - [ ] MAIN: Design-system — laym #C6FF34, Manrope, 3 holat (Skeleton/Empty/Error), responsive 1280/768/375, TanStack Query cache invalidation
 - [ ] MAIN: Test organizatsiyalarni tozalash (Karis bilan kelishib)
-- [ ] MAIN-FINES 🆕 (audit 2026-07-19): `Fines.jsx:27` da `initialMock` hardcode —
-      sahifa soxta jarima ro'yxatini ko'rsatyapti. Real endpointga ulansin yoki olib tashlansin
-- [ ] MAIN-UNTRACKED 🆕: `Fines.jsx` (306 qator) va `Announcements.jsx` (364 qator) kodda BOR,
-      lekin TASK.md da umuman yozilmagan edi — kim qurgani va holati noma'lum, aniqlashtirilsin
+- [x] ~~MAIN-FINES~~ — dublikat, yuqoridagi `MAIN-FINES-MOCK` ga birlashtirildi (2026-07-26)
+- [x] ~~MAIN-UNTRACKED~~ ✅ ANIQLANDI 2026-07-26: `Fines.jsx` va `Announcements.jsx` ni
+      **Shohjahon** qurgan — `a7185cb` ("interactive charts, freeze modal, partner analysis, new pages",
+      2026-07-16) va `3eb01ed` ("announcements redesign", 2026-07-16).
+      Holati ham aniq: ikkalasi ham ishlamaydi — `MAIN-404-BACKEND` va `MAIN-FINES-MOCK` ga qara
 
 ## Frontend — Admin (Abduloh, Odil, Hamidula)
 
 - [x] ADMIN: rey/xob admin_page ishini staff strukturasiga ko'chirish (alohida Vite-app EMAS — staff ichida sahifalar; merge REVIEW dan keyin)
 - [x] ADMIN: Dashboard (income + expenses = profit) — Dashboard.jsx, api ga ulangan
 - [x] ADMIN: Students CRUD (xob integratsiyasi bor — reviewdan o'tkazish) — Students.jsx + StudentDetail.jsx
-- [x] ADMIN: Groups CRUD — Groups.jsx + GroupDetail.jsx ⚠️ GroupDetail 6 endpointni mock'dan oladi (K-INT ga qara)
+- [x] ADMIN: Groups CRUD — Groups.jsx + GroupDetail.jsx
+- [ ] ADMIN 🆕 (Abduloh): `GroupDetail.jsx` ni real API ga ulash — attendance / homework / feedback
+      hali mock'dan olinyapti. 🟢 **Bloker olindi:** oltala backend endpoint 2026-07-20 dan beri
+      TAYYOR (AB-INT-GROUP ga qara), Abduloh esa hali kutayotgan bo'lishi mumkin — unga xabar berilsin
 - [ ] ADMIN (Odil): 🆕 Guruh formasi — mentor majburiy + kunlar (1-3-5/2-4-6 preset yoki boshqa kunlar galochka) + boshlanish vaqti + tugash vaqti AVTO (GET /api/admin/settings) → POST/PATCH { days, startTime }; kontrakt TEAM-TASKS §9.2
 - [x] ADMIN: Payments UI (full/split modal; K-PAY chiqqach ulanadi) — Payments.jsx (775 qator)
 - [x] ADMIN: Expenses CRUD — Expenses.jsx + PDF eksport (Abduloh, jspdf)
 - [x] ADMIN: Reports — Reports.jsx, GET /api/admin/reports ga ulangan
 
-## Frontend — YANGI TASKLAR: Sardor / Kozim / Alish 🆕 2026-07-19
+## Frontend — YANGI TASKLAR: Kozim / Alish 🆕 2026-07-19 (2026-07-26 da yangilandi)
 
 > Mentor paneli Karis'ga o'tdi (jamoa bilan kelishilgan) → uchalasi bo'shadi.
 > Quyidagilar auditda topilgan HAQIQIY ishlar — har birining isboti bor, o'ylab topilgani yo'q.
+> 🔄 **2026-07-26:** Sardor bu bo'limdan chiqarildi — u endi `Frontend — Student` panelining
+> to'liq egasi. Uning vazifalari Kozim'ga (tozalash) va Kama'ga (`member/` sahifalari) berildi.
 
 ### 🔴 KOZIM — admin/Chat.jsx ni jonlantirish (eng katta ish, BLOKLANMAGAN)
 
@@ -542,7 +627,10 @@
       📌 Namuna yonida: `pages/mentor/Chat.jsx` — xuddi shu ish u yerda ishlaydigan qilib yozilgan, ko'chir
       💡 Kozim'ga berildi: u o'z panelida chat qilgan, mavzuni biladi
 
-### 🔴 SARDOR — o'lik kod va konsol tozalash
+### 🔴 KOZIM — o'lik kod va konsol tozalash ⬅️ 2026-07-26 da Sardor'dan o'tdi
+
+> Sardor to'liq Student paneliga o'tdi (Karis qarori 2026-07-26), shuning uchun
+> bu uchta vazifa Kozim'ga berildi — u chat integratsiyasidan keyin bo'sh.
 
 - [ ] FE-DEAD-CODE: repo'da router'ga UMUMAN ulanmagan kod yotibdi, hammani chalg'itadi:
       • ~~`staff/src/pages/mentor/mentoor/`~~ ✅ O'CHIRILDI 2026-07-21 (Karis, Kozim bilan kelishilgan)
@@ -555,13 +643,14 @@
 - [ ] FE-COOP: Google login COOP konsol xatosi (`firebase.js` / `vite.config.js`) —
       bu ham Elyor ro'yxatidan, hech kim olmagan
 
-### 🔴 ALISH — member va student panellarini mentor darajasiga chiqarish
+### 🔴 ALISH — `member/` panelini mentor darajasiga chiqarish
 
-> ⚠️ Zona: `member/` Kama'da, `student/` Abdulaziz'da. Karis ruxsat bergandan KEYIN boshlansin.
+> ⚠️ Zona: `member/` Kama'da — Karis ruxsat bergandan KEYIN boshlansin.
+> 🔄 **2026-07-26:** `student/` qismi bu vazifadan OLIB TASHLANDI — u endi Sardor'da
+> (`Frontend — Student` bo'limiga qara). Alish'da faqat `member/` qoldi.
 
 - [ ] FE-THIN-PAGES: bu sahifalar juda "yupqa" — mentor paneli darajasidan ancha past:
-      `student/Videos.jsx` 69 qator · `student/Tests.jsx` 79 · `student/Leaderboard.jsx` 90 ·
-      `member/Debt.jsx` 108 · `member/Notifications.jsx` 112 · `member/Attendance.jsx` 122
+      `member/Debt.jsx` 108 qator · `member/Notifications.jsx` 112 · `member/Attendance.jsx` 122
       Uch holat (Skeleton / EmptyState / Error), bo'sh holat matnlari, xatoda retry —
       `pages/mentor/_ui.jsx` dagi tayyor komponentlar bilan
 
@@ -574,7 +663,13 @@
 - [x] MENTOR: Coins (assign/deduct)
 - [x] MENTOR: Chat — shaxsiy dm: xonalar, Socket.io + tarix, faqat xodim va ota-ona ko‘radi (2026-07-18)
 
-## Frontend — Student (Abdulaziz)
+## Frontend — Student (Sardor) 🔥 to'liq egasi — 2026-07-26 dan
+
+> 🔄 **Egasi almashdi (2026-07-26, Karis qarori):** panel Abdulaziz'dan Sardor'ga o'tdi.
+> Abdulaziz **faqat backend**da qoladi (`Backend — Student`, `Backend — Mentor`,
+> `Backend — Parent`, `Backend — Infrastructure`, SEO) — frontendda uning zonasi yo'q.
+> Sardor'ning eski vazifalari (FE-DEAD-CODE / FE-ROUTER-FLAG / FE-COOP / UI-DS)
+> boshqalarga berildi — u endi FAQAT shu panel bilan shug'ullanadi.
 
 > ⚠️ Barcha sahifalar QURILGAN va api kontraktiga ulangan, LEKIN mock rejimida ishlaydi
 > (BUG-PROD-MOCKS ga qara). Jonli E2E qilinmagan.
@@ -585,7 +680,14 @@
 - [x] STUDENT: Shop
 - [x] STUDENT: Videos
 - [x] STUDENT: Leaderboard
-- [ ] STUDENT: jonli E2E — VITE_USE_MOCKS=false bilan real backend'da tekshirish
+- [x] STUDENT: staff design-system'ga ko'chirildi (Tailwind + DaisyUI) — 2026-07-25, Karis (`a458c1b`)
+- [ ] STUDENT (Sardor): jonli E2E — VITE_USE_MOCKS=false bilan real backend'da tekshirish
+- [ ] STUDENT (Sardor): "yupqa" sahifalarni to'ldirish — `Videos.jsx` 69 qator ·
+      `Tests.jsx` 79 · `Leaderboard.jsx` 90. Uch holat (Skeleton / EmptyState / Error),
+      bo'sh holat matnlari, xatoda retry — `pages/mentor/_ui.jsx` tayyor komponentlari bilan.
+      ⬅️ Alish'ning FE-THIN-PAGES vazifasidan `student/` qismi shu yerga ko'chirildi
+- [ ] STUDENT (Sardor): UI-STATES — o'z panelidagi har bir sahifada 3 holat
+- [ ] STUDENT (Sardor): design-system — laym #C6FF34, Manrope, responsive 1280/768/375
 
 ## Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
 
@@ -623,6 +725,11 @@
 ## Frontend — Methodist (Said Islom, Aziz — Super Admin'dan o'tkazildi) ✅ karkas
 
 > Panel karkasi tayyor (Karis). Said Islom + Aziz endi Methodist jamoasida — qo'shimcha ish + MVP2 kontent-menejer + support/maintenance.
+> ⚠️ **2026-07-26:** bu bo'limda ochiq vazifa YO'Q, lekin ikkalasining REAL ochiq ishi bor —
+> `Frontend — Super Admin` bo'limidagi FE-SUPER-STATS / FE-SUPER-REPORTS / FE-SUPER-WIRE.
+> Git-hisobotda ular shu sababli endi "Super Admin" panelida ko'rinadi (ilgari "Methodist · 0 vazifa"
+> deb turardi, Super Admin esa egasiz ko'rinardi — ikkalasi ham noto'g'ri manzara berardi).
+> Methodist ishi qaytadan boshlansa (MVP2 kontent-menejer) — hisobotdagi panel qaytariladi.
 
 - [x] METHODIST: Training Types (CRUD)
 - [x] METHODIST: Topics (CRUD)
@@ -636,7 +743,8 @@
 > Egasiz vazifa = hech kim qilmaydigan vazifa. Endi mentor jamoasi bo'shadi
 > (mentor panelni Karis o'zi oldi, jamoa bilan kelishilgan) — shular oladi.
 
-- [ ] UI-DS (Sardor): Har bir panel FRONTEND-DESIGN-SYSTEM.md ga qat'iy rioya qiladi
+- [ ] UI-DS (HAR KIM o'z paneli bo'yicha — 2026-07-26 da Sardor'dan taqsimlandi):
+      Har bir panel FRONTEND-DESIGN-SYSTEM.md ga qat'iy rioya qiladi
       (laym #C6FF34, Manrope, qorong'i sidebar #1D2417, kartochka soyalari) — o'zboshimcha ranglar TAQIQLANADI
       ✅ ADMIN QISMI BAJARILDI 2026-07-21 (Karis): admin panelida 651 ta klass-daraja
       `var(--...)` mavzu tokenlariga o'tkazildi, `glass-strong` → `card bg-base-100`.
