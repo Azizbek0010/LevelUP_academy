@@ -288,20 +288,23 @@ export default function SuperBranchDetail() {
               знаков после запятой человеку ничего не говорят, а карта отвечает
               на настоящий вопрос «это вообще где». */}
           <Panel title="Контакты и адрес" icon={Building2}>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
+            {/* Контакты строкой сверху, карта под ними во всю ширину: рядом с
+                текстом ей доставалась половина панели, а половина оставалась
+                пустой — читать на такой карте нечего. */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm">
+                <span className="flex items-center gap-2">
                   <MapPin size={14} className="text-base-content/40 shrink-0" />
-                  <span>{branch.address || 'Адрес не указан'}</span>
-                </div>
-                <div className="flex items-center gap-2">
+                  {branch.address || 'Адрес не указан'}
+                </span>
+                <span className="flex items-center gap-2">
                   <Phone size={14} className="text-base-content/40 shrink-0" />
                   {/* тем же видом, что и в поле ввода: +998 90 123 45 67,
                       а не слитной строкой из базы */}
-                  <span>{branch.phone ? phoneDisplay(branch.phone) : 'Телефон не указан'}</span>
-                </div>
+                  {branch.phone ? phoneDisplay(branch.phone) : 'Телефон не указан'}
+                </span>
                 {hasPoint && (
-                  <div className="flex items-center gap-2 pt-1">
+                  <span className="flex items-center gap-3">
                     <span className="text-xs font-mono text-base-content/50 tabular-nums">
                       {Number(branch.lat).toFixed(6)}, {Number(branch.lng).toFixed(6)}
                     </span>
@@ -313,14 +316,18 @@ export default function SuperBranchDetail() {
                     >
                       открыть в Картах <ExternalLink size={11} />
                     </a>
-                  </div>
+                  </span>
                 )}
               </div>
 
               {hasPoint ? (
-                <YMapPicker value={{ lat: Number(branch.lat), lng: Number(branch.lng) }} height={190} readOnly />
+                <YMapPicker
+                  value={{ lat: Number(branch.lat), lng: Number(branch.lng) }}
+                  height="min(46vh, 380px)"
+                  readOnly
+                />
               ) : (
-                <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-base-300 text-center p-6">
+                <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-base-300 text-center p-10">
                   <MapPin size={22} className="text-base-content/25" />
                   <p className="text-xs text-base-content/50">Точка на карте не отмечена</p>
                   <button className="btn btn-ghost btn-xs" onClick={() => setSettingsOpen(true)}>
