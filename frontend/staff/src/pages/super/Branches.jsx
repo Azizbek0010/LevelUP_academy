@@ -13,6 +13,17 @@ import { SkeletonTable } from '../../components/Skeleton.jsx';
 import YMapPicker from '../../components/YMapPicker.jsx';
 import PhoneInput from '../../components/PhoneInput.jsx';
 
+/**
+ * Координаты храним с шестью знаками после запятой — столько же в базе
+ * (NUMERIC(9,6)), это примерно 11 сантиметров на местности.
+ *
+ * Округлять обязательно: клик по карте отдаёт полную точность вроде
+ * 41.366643253779706, и браузер отказывался принимать такое значение в поле
+ * с шагом 0.000001 — «введите допустимое значение». То есть после клика по
+ * карте форму нельзя было сохранить вообще.
+ */
+const round6 = (n) => (n == null || Number.isNaN(Number(n)) ? null : Math.round(Number(n) * 1e6) / 1e6);
+
 const branchSchema = z.object({
   name:      z.string().trim().min(1, 'Название обязательно').max(80, 'Макс. 80 символов'),
   address:   z.string().trim().max(160, 'Макс. 160 символов').or(z.literal('')),
@@ -442,7 +453,12 @@ export default function SuperBranches() {
                     </button>
                   )}
                 </span>
-                <YMapPicker value={location} onChange={setLocation} height={260} onUnavailable={setMapBroken} />
+                <YMapPicker
+                  value={location}
+                  onChange={(p) => setLocation(p ? { lat: round6(p.lat), lng: round6(p.lng) } : null)}
+                  height={260}
+                  onUnavailable={setMapBroken}
+                />
 
                 {/* Ручной ввод координат.
                     Нужен по двум причинам. Первая: карта может быть недоступна
@@ -457,14 +473,14 @@ export default function SuperBranches() {
                     </span>
                     <input
                       type="number"
-                      step="0.000001"
+                      step="any"
                       min="-90"
                       max="90"
                       className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
                       placeholder="41.311081"
                       value={location?.lat ?? ''}
                       onChange={(e) => {
-                        const lat = e.target.value === '' ? null : Number(e.target.value);
+                        const lat = e.target.value === '' ? null : round6(e.target.value);
                         setLocation(lat === null && location?.lng == null
                           ? null
                           : { lat, lng: location?.lng ?? null });
@@ -477,14 +493,14 @@ export default function SuperBranches() {
                     </span>
                     <input
                       type="number"
-                      step="0.000001"
+                      step="any"
                       min="-180"
                       max="180"
                       className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
                       placeholder="69.240562"
                       value={location?.lng ?? ''}
                       onChange={(e) => {
-                        const lng = e.target.value === '' ? null : Number(e.target.value);
+                        const lng = e.target.value === '' ? null : round6(e.target.value);
                         setLocation(lng === null && location?.lat == null
                           ? null
                           : { lat: location?.lat ?? null, lng });
