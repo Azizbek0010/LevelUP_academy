@@ -126,12 +126,12 @@ img { max-width: 100%; display: block; }
    KEYFRAMES + ANIMATIONS (набор staff)
    ═══════════════════════════════════════════════════════════════ */
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slide-right { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes scale-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-@keyframes page-enter { from { opacity: 0; transform: translateY(8px) scale(0.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes slide-right { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+@keyframes scale-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: none; } }
+@keyframes page-enter { from { opacity: 0; transform: translateY(8px) scale(0.99); } to { opacity: 1; transform: none; } }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 .animate-fade-in { animation: fade-in 0.35s ease-out both; }
 .animate-slide-up { animation: slide-up 0.4s ease-out both; }
@@ -225,4 +225,18 @@ html { scrollbar-color: var(--scrollbar-thumb) transparent; scrollbar-width: thi
 .option-correct {
   background: rgba(34, 197, 94, 0.08);
   border-color: rgba(34, 197, 94, 0.35) !important;
+}
+
+/* Затемнение модального окна должно накрывать ЭКРАН, а не область контента.
+   У DaisyUI `.modal` это `position: fixed; inset: 0; width: 100%; height: 100%`,
+   и проценты считаются от предка, если у того осталась трансформация — так и
+   выходило: сверху и справа оставались непокрытые полосы. Трансформации в
+   конечных кадрах анимаций убраны (см. @keyframes выше — теперь `transform: none`),
+   а здесь размеры заданы в единицах экрана, чтобы случай не повторился.
+   dvh, а не vh: на телефоне адресная строка съедает часть vh. */
+.modal {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
 }

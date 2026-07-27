@@ -2323,6 +2323,15 @@ export const api = {
   // -------- SUPER ADMIN: Attendance --------
   superAttendance: (token, qs = '') => request(`/super/attendance${qs}`, { token }),
 
+  // -------- SUPER ADMIN: Discipline (штрафы и увольнения сотрудников) --------
+  // Раньше эти данные показывались в панели Main Admin — платформе незачем знать,
+  // кого из сотрудников партнёра наказали. Дисциплина принадлежит организации.
+  superPenalties: (token, qs = '') => request(`/super/penalties${qs}`, { token }),
+  superIssuePenalty: (token, body) => request('/super/penalties', { method: 'POST', token, body }),
+  superCharter: (token) => request('/super/charter', { token }),
+  superUpsertCharter: (token, body) => request('/super/charter', { method: 'PUT', token, body }),
+  superReactivateStaff: (token, id) => request(`/super/staff/${id}/reactivate`, { method: 'POST', token }),
+
   // -------- METHODIST CONTENT --------
   methodistTrainingTypes: (token) => request('/methodist/training-types', { token }),
   methodistCreateTrainingType: (token, body) => request('/methodist/training-types', { method: 'POST', token, body }),

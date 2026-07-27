@@ -233,8 +233,10 @@
       `REDIS_URL` `sync: false` — ya'ni faylda yo'q, faqat dashboard'da. Tekshirilsin va prodda default olib tashlansin
       (production'da majburiy bo'lsin, dev'da default qolsin)
 
-- [ ] BUG-BILLING: `main-admin/src/pages/Billing.jsx` hali ESKI narx modelida (`baseFirstBranch`/`perStudent`), backend 2026-07-16 dan `{ tiers, currency }` qaytaradi → sahifa buzilgan. Egasi: Shohjahon (pastda MAIN bo'limida ham bor).
-      SABABI TOPILDI: swagger `PlatformPricing` sxemasi ham eski modelda qolgan edi — Shohjahon hujjatga qarab qurgan. Sxema 2026-07-18 da tuzatildi (tiers), endi front ni ham moslashtirish kerak
+- [x] ~~BUG-BILLING~~ ✅ YOPILDI 2026-07-26 (Karis): `Billing.jsx` bakit modeliga o'tkazildi,
+      saqlash formasi olib tashlandi (bekend baribir yozmaydi). Tarixiy tavsif:
+      ~~`main-admin/src/pages/Billing.jsx` hali ESKI narx modelida (`baseFirstBranch`/`perStudent`), backend 2026-07-16 dan `{ tiers, currency }` qaytaradi → sahifa buzilgan. Egasi: Shohjahon (pastda MAIN bo'limida ham bor).
+      SABABI TOPILDI: swagger `PlatformPricing` sxemasi ham eski modelda qolgan edi — Shohjahon hujjatga qarab qurgan. Sxema 2026-07-18 da tuzatildi (tiers), endi front ni ham moslashtirish kerak~~
 
 ## Swagger / API hujjatlari (Karis) ✅ 2026-07-18
 
@@ -527,54 +529,96 @@
       Qilinadigan ish: real superadmin login bilan uchala sahifani ochib tekshirish +
       Skeleton / EmptyState / Error uch holati ishlashiga ishonch hosil qilish
 
-## Frontend — Main Admin (Shohjahon) 🔥 YANGI — to'liq egasi
+## Main Admin (Karis) 🔥 to'liq egasi — 2026-07-26 dan, front + backend
 
-> Shohjahon Super Admin panelini to'liq tugatdi → endi Main Admin paneli (`frontend/main-admin`) uning zonasi.
-> Hamma kerakli ish shu yerda. Baza tayyor (Karis qurgan), Shohjahon egalik qiladi va yakunlaydi.
+> 🔄 **Egasi almashdi (2026-07-26, Karis qarori):** panel Shohjahon'dan Karis'ga o'tdi.
+> Sabab: panelning to'rtta sahifasi mavjud bo'lmagan endpointlarga urilardi, ya'ni ish
+> frontda emas, ikki tomonda edi — `main` moduli esa baribir Karis'ning zonasi.
+> Endi front ham, backend ham bitta odamda: chegara yo'q, kutish yo'q.
+> Shohjahon'ning 16.07 gacha qilgan ishi joyida qoladi (Dashboard / Leads / Organizations
+> / OrgDetail) — u qayta yozilmadi.
 
 - [x] MAIN: Dashboard — KPI + grafiklar (Dashboard.jsx, 805 qator)
 - [x] MAIN: Leads — ro'yxat / filtr / status o'zgartirish, OnboardModal (temp-parol), Qabul / Rad etish
 - [x] MAIN: Organizations (hamkorlar) — ro'yxat / qidiruv, freeze / activate (855 qator)
 - [x] MAIN: Org-detail sahifasi — OrgDetail.jsx qurilgan
-- [ ] MAIN (Shohjahon) 🔴: Billing — sahifa hali ESKI modelda (`baseFirstBranch`/`perStudent`), backend `{ tiers, currency }` qaytaradi → SAHIFA BUZILGAN, shoshilinch (BUG-BILLING)
-      ⚠️ **2026-07-26 audit — tasdiqlandi va yomonroq chiqdi.** `main.service.js:83` `getPricing()`
-      `{ tiers, currency }` qaytaradi; `Billing.jsx:67,69` esa `pricing?.baseFirstBranch` va
-      `pricing?.perStudent` o'qiydi → ikkalasi `undefined` → `Number(undefined || 0)` = **0**,
-      ya'ni tariflar ham, kalkulyator ham nol ko'rsatadi.
-      Ustiga: `main.service.js:88` `updatePricing()` **hech narsa yozmaydi** (`return getPricing()`),
-      lekin `Billing.jsx:104` `api.updatePricing()` chaqirib "saqlandi" deb rapor beradi —
-      foydalanuvchiga jim yolg'on. Narx v1 da `config/plans.js` da qotirilgan (DB-editable = v2, PRICE bo'limiga qara),
-      shuning uchun to'g'ri yechim: **saqlash formasini olib tashlab, tariflarni faqat o'qish qilib ko'rsatish**
-- [ ] MAIN: Revenue — Revenue.jsx bor (454 qator) lekin api chaqiruvi deyarli yo'q, real tushumga ulanmagan
-      ⚠️ **2026-07-26 audit — aniq sabab topildi.** Backendda endpoint BOR:
-      `GET /api/main/revenue` (`main.routes.js:219` → `platformRevenue()`), lekin
-      `frontend/main-admin/src/api.js` da `revenue` metodi **umuman yo'q** — ya'ni front uni
-      hech qachon chaqirmaydi. Sahifa `useDashboard()` dan oladi.
-      🔴 Bundan battari: "oy / chorak / yil" tugmalari real data emas — `Revenue.jsx:146` da
-      `mult` koeffitsiyenti olinadi va OYLIK summa shunga ko'paytiriladi. Ya'ni "yillik tushum" =
-      oylik × 12, o'ylab topilgan ekstrapolyatsiya, lekin haqiqiy raqamdek ko'rinadi.
-      Bu shunchaki "ulanmagan" emas — bu **noto'g'ri ma'lumot ko'rsatish**
+- [x] MAIN: Billing ✅ TUZATILDI 2026-07-26 (Karis) — BUG-BILLING yopildi.
+      `Billing.jsx` butunlay qayta yozildi: eski formula (`baseFirstBranch`/`perExtraBranch`/
+      `perStudent`) o'rniga bakit modeli — `pricing.tiers` serverdan olinadi, jadval qilib
+      ko'rsatiladi, kalkulyator o'quvchi soniga qarab tarifni tanlaydi (`tierForStudents`
+      qoidasi frontda takrorlangan, tariflar esa serverdan — hisob bir zumda ishlaydi).
+      **Saqlash formasi ATAYIN olib tashlandi:** `PUT /api/main/pricing` bekendda hech narsa
+      yozmaydi (`return getPricing()`), tariflar `config/plans.js` da. Ilgari tugma "saqlandi"
+      deb yolg'on rapor berardi. Sahifada endi "faqat o'qish" belgisi va sabab yozilgan.
+      DB-editable tariflar — v2 (PRICE bo'limiga qara).
+- [x] MAIN: Revenue ✅ ULANDI 2026-07-26 (Karis).
+      `api.js` ga `revenue` metodi qo'shildi, `queries.js` ga `useRevenue()`; `Revenue.jsx`
+      endi `GET /api/main/revenue` dan oladi (ilgari `useDashboard` da o'tirardi).
+      Umumiy summa server javobidan olinadi (`totals.ourMonthlyIncome`), frontda qayta
+      hisoblanmaydi — aks holda tarif o'zgarganda ikki tomon jimgina ajralib ketardi.
+      🔴 **Eng muhimi:** "chorak / yil" tugmalari endi ochiq **PROGNOZ** deb belgilangan
+      ("Prognoz na:", "oylik × N, hamkorlar tarkibi o'zgarmasa", KPI'da "оценка").
+      Ilgari oylik summa jimgina koeffitsiyentga ko'paytirilib "Доход / год" deb
+      yozilardi — o'ylab topilgan raqam haqiqiydek ko'rinardi. Fakt bo'yicha davr
+      kesimi uchun hisob-faktura tarixi kerak, u platformada hali yo'q.
 - [x] MAIN: Settings — ✅ audit 2026-07-19: "zaglushka" deb yozilgani NOTO'G'RI edi.
       438 qator, `useDashboard` + `usePricing` + `api.updateProfile` — real ishlaydi
-- [ ] MAIN-404-BACKEND 🔴🆕 (2026-07-26 audit, Karis): **front mavjud bo'lmagan endpointlarni chaqiryapti.**
-      `backend/src/modules/main/main.routes.js` da ROSA 8 ta route bor:
-      `POST/GET /partners`, `PATCH /partners/:id/status`, `GET /dashboard`, `GET /revenue`,
-      `GET/PUT /pricing`, `GET /leads`, `PATCH /leads/:id`. Boshqa hech narsa yo'q.
-      Lekin `main-admin/src/api.js` quyidagilarni chaqiradi:
-      • `GET/POST/DELETE /main/announcements` → **404**. `Announcements.jsx` (364 qator, 9 chaqiruv)
-        butunlay o'lik. Announcements moduli faqat `super` va `admin` da bor, `main` da YO'Q
-      • `PATCH /main/profile` → **404**. `Settings.jsx` dagi profil saqlash ishlamaydi —
-        yuqoridagi `[x] MAIN: Settings` galochkasi shu qismda NOTO'G'RI
-      Egasi: backend tomoni **Karis** (main moduli uning zonasi), front tomoni Shohjahon
-- [ ] MAIN-FINES-MOCK 🔴 (2026-07-19 da topilgan, 2026-07-26 da tasdiqlangan): `Fines.jsx:27`
-      `initialMock` — 6 ta o'ylab topilgan hamkor va jarima (`EduCenter Chilanzar`, `Собиров А.А.` ...),
-      `useState(initialMock)`, sahifada **0 ta API chaqiruvi**. Backendda jarima endpointi yo'q
-      (xodimlar shtrafi `discipline` modulida, u super/admin uchun, main_admin esa CAN_ISSUE da HECH KIMGA).
-      Ya'ni sahifa mavjud bo'lmagan funksiyani ko'rsatyapti → yo olib tashlansin, yo `discipline` ga ulansin
-- [ ] MAIN: Google OAuth — jonli E2E login testi (Firebase levelup-1c059)
-- [ ] MAIN: Forgot-password — sikl polish
-- [ ] MAIN: Design-system — laym #C6FF34, Manrope, 3 holat (Skeleton/Empty/Error), responsive 1280/768/375, TanStack Query cache invalidation
-- [ ] MAIN: Test organizatsiyalarni tozalash (Karis bilan kelishib)
+- [x] MAIN-404-BACKEND ✅ YOPILDI 2026-07-26 (Karis) — endpointlar YOZILDI.
+      Ilgari front mavjud bo'lmagan 4 ta yo'lga urilardi. Endi ular bor:
+      • `GET/POST/DELETE /api/main/announcements` — platforma e'lonlari.
+        Yangi migratsiya `1783900000000_platform-announcements` (`platform_announcements`
+        jadvali + `platform_announcement_target` enum: `all-partners` / `all-superadmins`).
+        Super'nikidan alohida: u yerda auditoriya bitta tashkilot ichida, bu yerda —
+        hamkorlarning o'zi, qiymatlar kesishmaydi.
+        ⚠️ Navbatga (`notificationQueue`) ATAYIN qo'yilmaydi: qabul qiluvchilar xodimlar,
+        `telegram_accounts` esa faqat student/parent uchun to'ladi — worker chat_id topolmay
+        vazifani jimgina tashlab yuborardi.
+      • `GET /api/main/profile` + `PATCH /api/main/profile` — profil. Email va telefon
+        bandligi oldindan tekshiriladi → tushunarli 409, xom BD xatosi emas.
+      **Frontda ham tuzatildi:** `Settings.jsx` da `catch` bloki 404/500 ni "muvaffaqiyat"
+      qilib ko'rsatardi ("graceful degradation") — ya'ni saqlanmaganini yashirardi.
+      Olib tashlandi, endi xato ko'rinadi, 409 esa alohida matn bilan.
+      **Jonli tekshirildi** (lokal BD, seed): 201 create → GET ro'yxatda ko'rinadi →
+      DELETE 200 → ikkinchi DELETE 404; yaroqsiz `targetType` → 422; band email → 409;
+      bo'sh body → 422; tokensiz → 401.
+- [x] MAIN-FINES-MOCK ✅ YOPILDI 2026-07-26 (Karis) — mok o'chirildi, sahifa qayta yozildi.
+      `initialMock` (6 ta o'ylab topilgan hamkor va jarima) butunlay olib tashlandi.
+      **Qaror: shtraf yozish formasi olib tashlandi, sahifa faqat ko'rish uchun.**
+      Sabab kod bilan tasdiqlangan: `discipline` modulidagi CAN_ISSUE matritsasida
+      `main_admin` HECH KIMGA jazo bera olmaydi — jazoni Super Admin va Admin o'z
+      tashkiloti ichida beradi. Ya'ni "jarima yozish" tugmasi tamoyil bo'yicha ishlay
+      olmasdi, uni backendga ulash mumkin emas edi.
+      O'rniga: `GET /api/main/penalties` — barcha hamkorlar bo'yicha intizom sharhi
+      (KPI: shtraflar summasi/soni, ishdan bo'shatishlar, qamrab olingan tashkilotlar;
+      jadval: markaz / xodim / sabab / kim bergan / summa / sana; qidiruv va tur filtri).
+      Faqat SELECT — yozish yo'q. Sahifada nega forma yo'qligi izohlangan.
+      **Jonli tekshirildi:** test yozuv qo'yilgach JOIN to'g'ri ishladi —
+      markaz nomi, xodim, kim bergani va summa to'g'ri qaytdi.
+- [x] MAIN: Forgot-password ✅ POLISH QILINDI 2026-07-26 (Karis).
+      Sikl o'zi to'liq edi (3 bosqich: kod so'rash → kod+yangi parol → tayyor).
+      Tuzatilgani: 1) `POST /auth/forgot-password` da **429 ishlanmasdi** — bekendda
+      `passwordResetLimiter` turibdi, tez-tez bosilganda xom xabar chiqardi; endi
+      "Слишком много запросов кода" deb tushuntiriladi. 2) "Kodni qayta yuborish"
+      tugmasi aslida QAYTA YUBORMASDI — birinchi bosqichga qaytarardi xolos, odam
+      uni ketma-ket bosib limitga urilardi; endi haqiqiy qayta yuborish + 60 sekundlik
+      hisob ("Отправить заново через N с"), yonida alohida "Другой email" havolasi
+- [x] MAIN: Design-system ✅ TEKSHIRILDI 2026-07-26 (Karis), jonli brauzerda.
+      Laym `#C6FF34` va Manrope `tailwind.config.js` da (`limebrand`, `primary`, `sans`) — joyida.
+      Uch holat barcha data-sahifalarda bor (Skeleton / EmptyState / Error) — yangi
+      Billing va Fines ga ham qo'yildi.
+      **Responsive jonli o'lchandi** (Playwright, `scrollWidth > clientWidth` tekshiruvi):
+      375 / 768 / 1280 px — oltala sahifada ham gorizontal scroll YO'Q.
+      Sahifa matnida `NaN` yoki `undefined` chiqmaydi (avtomatik tekshirildi).
+      TanStack invalidation: e'lon yaratilganda ro'yxat darhol yangilanadi (UI orqali tasdiqlandi)
+- [ ] MAIN: Test organizatsiyalarni tozalash — **BAJARILMADI, ataylab.**
+      Bu PROD Neon bazasidan yozuv o'chirish demak. Qaysi organizatsiya "test" ekanini
+      faqat egasi biladi (13 org bor, ba'zisi real mijoz bo'lishi mumkin), va noto'g'ri
+      o'chirilgan tenant bilan birga uning filiallari, o'quvchilari va to'lovlari ketadi.
+      Buni avtomat qilish mumkin emas — ro'yxat tasdiqlansin, keyin o'chiriladi.
+- [ ] MAIN: Google OAuth — jonli E2E login testi — **BAJARILMADI.**
+      Haqiqiy Google hisobiga kirish kerak (Firebase `levelup-1c059`), parol menda yo'q
+      va u brauzerda qo'lda kiritiladi. Kod tomoni joyida (`loginWithGoogle`,
+      `POST /auth/main/google`), lekin "tekshirildi" deb yozish yolg'on bo'lardi.
 - [x] ~~MAIN-FINES~~ — dublikat, yuqoridagi `MAIN-FINES-MOCK` ga birlashtirildi (2026-07-26)
 - [x] ~~MAIN-UNTRACKED~~ ✅ ANIQLANDI 2026-07-26: `Fines.jsx` va `Announcements.jsx` ni
       **Shohjahon** qurgan — `a7185cb` ("interactive charts, freeze modal, partner analysis, new pages",

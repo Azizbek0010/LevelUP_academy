@@ -8,6 +8,8 @@ import {
   leadListQuery,
   leadUpdateSchema,
   partnerStatusSchema,
+  createAnnouncementSchema,
+  updateProfileSchema,
   idParam,
 } from './main.schemas.js';
 import * as ctrl from './main.controller.js';
@@ -205,9 +207,6 @@ router.get('/dashboard', ctrl.dashboard);
  *                     students: { type: integer }
  *                     branches: { type: integer }
  *                     ourMonthlyIncome: { type: number }
- *                     partnersRevenue: { type: number }
- *                     partnersExpenses: { type: number }
- *                     partnersProfit: { type: number }
  *                     currency: { type: string, example: UZS }
  *                 partners:
  *                   type: array
@@ -328,5 +327,155 @@ router.get('/leads', validate({ query: leadListQuery }), ctrl.listLeads);
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.patch('/leads/:id', validate({ params: idParam, body: leadUpdateSchema }), ctrl.updateLead);
+
+/**
+ * @openapi
+ * /api/main/announcements:
+ *   get:
+ *     tags: [Main Admin]
+ *     summary: Объявления платформы
+ *     description: >
+ *       Анонсы, которые владелец платформы рассылает партнёрам.
+ *       Отличаются от объявлений организации (`/api/super/announcements`):
+ *       здесь аудитория — сами партнёры, а не сотрудники одного центра.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Список объявлений
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/PlatformAnnouncement' }
+ *                 total: { type: integer }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *   post:
+ *     tags: [Main Admin]
+ *     summary: Создать объявление платформы
+ *     description: >
+ *       В очередь уведомлений НЕ кладётся: адресаты — сотрудники, а привязка к
+ *       Telegram-боту есть только у student/parent. Объявление показывается в панели.
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, body, targetType]
+ *             properties:
+ *               title: { type: string, maxLength: 200 }
+ *               body: { type: string }
+ *               targetType:
+ *                 type: string
+ *                 enum: [all-partners, all-superadmins]
+ *     responses:
+ *       201:
+ *         description: Создано
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/PlatformAnnouncement' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get('/announcements', ctrl.listAnnouncements);
+router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
+
+/**
+ * @openapi
+ * /api/main/announcements/{id}:
+ *   delete:
+ *     tags: [Main Admin]
+ *     summary: Удалить объявление платформы (soft-delete)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Удалено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id: { type: string, format: uuid }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Объявление не найдено
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ */
+router.delete('/announcements/:id', validate({ params: idParam }), ctrl.deleteAnnouncement);
+
+/**
+ * @openapi
+ * /api/main/profile:
+ *   get:
+ *     tags: [Main Admin]
+ *     summary: Профиль владельца платформы
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Профиль
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 profile: { $ref: '#/components/schemas/MainProfile' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *   patch:
+ *     tags: [Main Admin]
+ *     summary: Изменить профиль владельца платформы
+ *     description: >
+ *       Частичное обновление. Email и телефон уникальны среди пользователей —
+ *       при конфликте возвращается 409, а не сырая ошибка БД.
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             minProperties: 1
+ *             properties:
+ *               firstName: { type: string, maxLength: 80 }
+ *               lastName: { type: string, maxLength: 80 }
+ *               email: { type: string, format: email }
+ *               phone: { type: string, example: "+998901234567" }
+ *     responses:
+ *       200:
+ *         description: Обновлено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 profile: { $ref: '#/components/schemas/MainProfile' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       409:
+ *         description: Email или телефон уже заняты
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get('/profile', ctrl.getProfile);
+router.patch('/profile', validate({ body: updateProfileSchema }), ctrl.updateProfile);
+
+/* GET /api/main/penalties удалён: платформе незачем видеть, кого из сотрудников
+ * партнёра наказали и за что. Дисциплина — /api/super/penalties. */
 
 export default router;

@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
   Search, Building2, CheckCircle2, Clock, PauseCircle, UserPlus, ArrowRight,
-  GraduationCap, Wallet, LayoutGrid, List, Play, Pause, Globe, TrendingUp,
-  Snowflake, AlertTriangle, X, Calendar, CheckCircle, RefreshCw,
+  GraduationCap, Wallet, LayoutGrid, List, Play, Pause, Globe,
+  Snowflake, X, Calendar, CheckCircle, RefreshCw,
   Megaphone, Percent, StickyNote, FileText,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -30,23 +30,6 @@ const SORT_OPTIONS = [
   { key: 'date_desc', label: 'По дате ↓' },
   { key: 'name_asc', label: 'По названию ↑' },
 ];
-
-const FREEZE_REASONS = [
-  'Нарушение условий договора',
-  'Задержка оплаты',
-  'Технические проблемы',
-  'Проверка деятельности',
-  'По запросу партнёра',
-  'Другое',
-];
-
-function readFreezeMeta(id) {
-  try {
-    return JSON.parse(localStorage.getItem(`freeze_meta_${id}`) || 'null');
-  } catch {
-    return null;
-  }
-}
 
 function StatCard({ Icon, tint, title, value, unit }) {
   return (
@@ -158,10 +141,20 @@ function PartnerCard({ p, cur, maxBill, totalIncome, onToggle, busyId, onCardCli
   );
 }
 
+/**
+ * Подтверждение заморозки.
+ *
+ * Раньше форма ТРЕБОВАЛА причину и дату разморозки и обещала напоминание на
+ * дашборде. Оба поля уходили в localStorage браузера: ни organizations, ни
+ * /main/partners/:id/status их не хранят и не принимают (frozen_at и
+ * frozen_reason в схеме есть, но у student_profiles, к организациям отношения
+ * не имеют). Значит причина заморозки партнёра пропадала при чистке кэша и была
+ * не видна больше никому. Обязательные поля, которые никуда не сохраняются,
+ * хуже, чем их отсутствие, — поэтому здесь осталось только подтверждение.
+ * Чтобы вернуть причину и срок по-настоящему, нужны колонки у organizations,
+ * приём их в PATCH статуса и отдача в дашборде.
+ */
 function FreezeModal({ partner, onConfirm, onClose, busy }) {
-  const [reason, setReason] = useState('');
-  const [until, setUntil] = useState('');
-
   return (
     <div className="modal modal-open">
       <div className="modal-box max-w-md">
@@ -170,45 +163,15 @@ function FreezeModal({ partner, onConfirm, onClose, busy }) {
           Заморозить партнёра
         </h3>
         <p className="text-sm text-base-content/60 mb-4">
-          <span className="font-semibold">{partner.name}</span> — укажите причину и срок
+          <span className="font-semibold">{partner.name}</span> — доступ к платформе будет
+          закрыт до момента, пока вы не активируете партнёра обратно
         </p>
-        <div className="space-y-4">
-          <label className="form-control">
-            <span className="label-text mb-1">Причина заморозки *</span>
-            <select
-              className="select select-bordered w-full"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              required
-            >
-              <option value="">— выберите причину —</option>
-              {FREEZE_REASONS.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-          </label>
-          <label className="form-control">
-            <span className="label-text mb-1">Дата разморозки *</span>
-            <input
-              type="date"
-              className="input input-bordered w-full"
-              value={until}
-              onChange={(e) => setUntil(e.target.value)}
-              min={new Date().toISOString().slice(0, 10)}
-              required
-            />
-            <span className="text-xs opacity-50 mt-1">За 1 день до этой даты появится напоминание на дашборде</span>
-          </label>
-        </div>
         <div className="modal-action">
           <button className="btn btn-ghost" onClick={onClose} disabled={busy}>Отмена</button>
           <button
             className="btn bg-blue-500 hover:bg-blue-600 border-0 text-white gap-2"
-            disabled={!reason || !until || busy}
-            onClick={() => {
-              if (!reason || !until) return;
-              onConfirm({ reason, until });
-            }}
+            disabled={busy}
+            onClick={onConfirm}
           >
             {busy ? (
               <span className="loading loading-spinner loading-xs" />
@@ -227,7 +190,6 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
   const s = ORG_STATUS[partner.status] || { label: partner.status, cls: 'badge-ghost' };
   const StatusIcon = STATUS_ICON[partner.status];
   const frozen = partner.status === 'frozen';
-  const meta = frozen ? readFreezeMeta(partner.id) : null;
 
   const [detailTab, setDetailTab] = useState('overview');
   const [notes, setNotes] = useState('');
@@ -351,38 +313,12 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
                 </div>
               </div>
 
-              {/* Freeze meta shown in overview if frozen */}
-              {frozen && meta && (
-                <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4">
-                  <div className="text-xs font-semibold text-blue-700 uppercase mb-2 flex items-center gap-1.5">
-                    <Snowflake size={12} /> Данные заморозки
-                  </div>
-                  <div className="space-y-1.5 text-sm">
-                    {meta.reason && (
-                      <div className="flex justify-between gap-3">
-                        <span className="text-base-content/60 shrink-0">Причина:</span>
-                        <span className="font-semibold text-right">{meta.reason}</span>
-                      </div>
-                    )}
-                    {meta.frozenAt && (
-                      <div className="flex justify-between gap-3">
-                        <span className="text-base-content/60 shrink-0">Заморожен:</span>
-                        <span className="font-semibold">{new Date(meta.frozenAt).toLocaleDateString('ru-RU')}</span>
-                      </div>
-                    )}
-                    {meta.until && (
-                      <div className="flex justify-between gap-3">
-                        <span className="text-base-content/60 shrink-0">До:</span>
-                        <span className="font-semibold">{new Date(meta.until).toLocaleDateString('ru-RU')}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              {frozen && !meta && (
-                <div className="alert bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs">
-                  <AlertTriangle size={14} className="text-amber-500 shrink-0" />
-                  <span>Партнёр заморожен, но локальные данные о причине не найдены</span>
+              {frozen && (
+                <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 flex items-center gap-2">
+                  <Snowflake size={14} className="text-blue-500 shrink-0" />
+                  <span className="text-sm text-blue-800">
+                    Партнёр заморожен — вход на платформу для него закрыт
+                  </span>
                 </div>
               )}
             </>
@@ -577,7 +513,6 @@ export default function Organizations() {
     setErr('');
     try {
       await api.setPartnerStatus(token, p.id, 'active');
-      localStorage.removeItem(`freeze_meta_${p.id}`);
       invalidate('dashboard');
       if (detailPartner?.id === p.id) setDetailPartner(null);
     } catch (e) {
@@ -587,17 +522,14 @@ export default function Organizations() {
     }
   };
 
-  const confirmFreeze = async ({ reason, until }) => {
+  const confirmFreeze = async () => {
     if (!freezeTarget) return;
     const p = freezeTarget;
     setBusyId(p.id);
     setErr('');
     try {
-      localStorage.setItem(`freeze_meta_${p.id}`, JSON.stringify({
-        reason,
-        until,
-        frozenAt: new Date().toISOString(),
-      }));
+      // запись в localStorage стояла ДО запроса: если сервер отвечал ошибкой,
+      // партнёр оставался активным, а интерфейс уже показывал его замороженным
       await api.setPartnerStatus(token, p.id, 'frozen');
       invalidate('dashboard');
       setFreezeTarget(null);

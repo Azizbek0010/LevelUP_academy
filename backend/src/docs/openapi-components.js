@@ -259,6 +259,66 @@ export const components = {
         lessonDurationMin: { type: 'integer', minimum: 10, maximum: 600 },
       },
     },
+    PlatformAnnouncement: {
+      type: 'object',
+      description:
+        'Announcement sent by the platform owner to partners. Distinct from the ' +
+        'organization-level announcement (/api/super/announcements): audience here is ' +
+        'the partner centres themselves, not the staff of one centre. Not pushed to the ' +
+        'notification queue — recipients are staff and only student/parent accounts are ' +
+        'linked to the Telegram bot.',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        title: { type: 'string' },
+        body: { type: 'string' },
+        targetType: { type: 'string', enum: ['all-partners', 'all-superadmins'] },
+        recipientCount: {
+          type: 'integer',
+          description: 'Counted at send time and frozen — the audience changes later.',
+        },
+        readCount: {
+          type: 'integer',
+          description: 'Always 0 — read receipts do not exist in the system yet.',
+        },
+        senderName: { type: 'string', nullable: true },
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
+    MainProfile: {
+      type: 'object',
+      description: 'Profile of the platform owner (main_admin).',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        firstName: { type: 'string' },
+        lastName: { type: 'string' },
+        email: { type: 'string', format: 'email', nullable: true },
+        phone: { type: 'string', nullable: true },
+        role: { type: 'string', example: 'main_admin' },
+      },
+    },
+    PlatformPenalty: {
+      type: 'object',
+      description:
+        'Staff penalty seen from the platform level. READ-ONLY for main_admin: by the ' +
+        'CAN_ISSUE matrix the platform owner issues penalties to nobody — they are issued ' +
+        'by Super Admin and Admin inside their own organization.',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        type: { type: 'string', enum: ['shtraf', 'qora'] },
+        amount: {
+          type: 'number',
+          nullable: true,
+          description: 'UZS. null for "qora" (dismissal) — it carries no amount.',
+        },
+        reason: { type: 'string' },
+        partnerName: { type: 'string', nullable: true },
+        employeeName: { type: 'string' },
+        employeeRole: { type: 'string' },
+        issuerName: { type: 'string', nullable: true },
+        issuerRole: { type: 'string' },
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
     PlatformPricing: {
       type: 'object',
       description:

@@ -5,11 +5,24 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
+  // 'open' — отражать любой Origin (нужно, пока команда работает с превью-доменов),
+  // 'allowlist' — пускать только известные домены. Подробности и риски — в app.js
+  CORS_MODE: z.enum(['open', 'allowlist']).default('open'),
+  // дополнительные разрешённые Origin через запятую — на случай нового домена
+  // без передеплоя кода (список по умолчанию живёт в app.js)
+  ALLOWED_ORIGINS: z.string().optional().or(z.literal('')),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
   DATABASE_URL: z.string().min(1),
   // managed Postgres (Neon и т.п.) требует TLS — на локальном docker оставляем false
   DB_SSL: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
+  // ожидание подключения к БД: локальный docker отвечает мгновенно, а спящий
+  // Neon сначала будит compute — см. комментарий в config/db.js
+  DB_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
+  // Дефолт нужен только локально. В production он опасен: если переменную забыли
+  // задать, приложение молча уходит на localhost, Redis там нет, и чат, presence
+  // и очереди BullMQ тихо не работают — падают только логи, HTTP отвечает 200.
+  // Поэтому ниже (superRefine) в production дефолт запрещён.
   REDIS_URL: z.string().min(1).default('redis://localhost:6379'),
 
   JWT_ACCESS_SECRET: z.string().min(32),
@@ -43,6 +56,20 @@ const schema = z.object({
   SEED_MAIN_ADMIN_EMAIL: z.string().email().default('hp8187081014laptop@gmail.com'),
   SEED_MAIN_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),
   SEED_SUPERADMIN_EMAIL: z.string().email().default('azizbekamangeldiev.2010@gmail.com'),
+}).superRefine((cfg, ctx) => {
+  if (cfg.NODE_ENV !== 'production') return;
+
+  // BUG-REDIS-SILENT: на проде подключение к localhost заведомо мусорное —
+  // значит переменную не задали. Лучше не подняться совсем, чем работать
+  // с мёртвыми очередями и чатом, делая вид, что всё в порядке.
+  if (/\/\/(localhost|127\.0\.0\.1)[:/]/.test(cfg.REDIS_URL)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['REDIS_URL'],
+      message:
+        'в production REDIS_URL обязателен и не может указывать на localhost — задайте внешний Redis (Upstash и т.п.) в переменных окружения',
+    });
+  }
 });
 
 const parsed = schema.safeParse(process.env);

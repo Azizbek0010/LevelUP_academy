@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Edit2, ShieldAlert, Users, BookOpen } from 'lucide-react';
@@ -10,6 +10,8 @@ import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
+import PhoneInput from '../../components/PhoneInput.jsx';
+import PasswordInput from '../../components/PasswordInput.jsx';
 
 // ─── Schemas ───────────────────────────────────────────────
 const phoneRegex = /^\+?\d{7,20}$/;
@@ -58,7 +60,7 @@ function AdminsTab() {
   const [busy, setBusy] = useState(false);
 
   const schema = modalMode === 'create' ? adminCreateSchema : adminEditSchema;
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
   const admins = adminsData?.admins || [];
   const branches = branchesData?.branches || [];
@@ -224,7 +226,7 @@ function AdminsTab() {
                   </label>
                   <label className="form-control w-full">
                     <span className="label-text mb-1">Пароль (мин. 8) *</span>
-                    <input type="password" {...register('password')} placeholder="••••••••" className={`input input-bordered w-full ${errors.password ? 'input-error' : ''}`} />
+                    <PasswordInput {...register('password')} placeholder="••••••••" className={`input input-bordered w-full ${errors.password ? 'input-error' : ''}`} />
                     {errors.password && <span className="text-xs text-error mt-1">{errors.password.message}</span>}
                   </label>
                 </>
@@ -244,7 +246,18 @@ function AdminsTab() {
               </label>
               <label className="form-control w-full">
                 <span className="label-text mb-1">Телефон</span>
-                <input {...register('phone')} placeholder="+998901234567" className={`input input-bordered w-full ${errors.phone ? 'input-error' : ''}`} />
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <PhoneInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      className={`input input-bordered w-full ${errors.phone ? 'input-error' : ''}`}
+                    />
+                  )}
+                />
                 {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
               </label>
               <div className="modal-action">
@@ -276,7 +289,7 @@ function MethodistsTab() {
   const [busy, setBusy] = useState(false);
 
   const schema = modalMode === 'create' ? methodistCreateSchema : methodistEditSchema;
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
   const methodists = methodistsData?.methodists || [];
 
@@ -435,7 +448,7 @@ function MethodistsTab() {
                   </label>
                   <label className="form-control w-full">
                     <span className="label-text mb-1">Пароль (мин. 8) *</span>
-                    <input type="password" {...register('password')} placeholder="••••••••" className={`input input-bordered w-full ${errors.password ? 'input-error' : ''}`} />
+                    <PasswordInput {...register('password')} placeholder="••••••••" className={`input input-bordered w-full ${errors.password ? 'input-error' : ''}`} />
                     {errors.password && <span className="text-xs text-error mt-1">{errors.password.message}</span>}
                   </label>
                 </>
@@ -446,7 +459,18 @@ function MethodistsTab() {
               )}
               <label className="form-control w-full">
                 <span className="label-text mb-1">Телефон</span>
-                <input {...register('phone')} placeholder="+998901234567" className={`input input-bordered w-full ${errors.phone ? 'input-error' : ''}`} />
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <PhoneInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      className={`input input-bordered w-full ${errors.phone ? 'input-error' : ''}`}
+                    />
+                  )}
+                />
                 {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
               </label>
               <div className="modal-action">
