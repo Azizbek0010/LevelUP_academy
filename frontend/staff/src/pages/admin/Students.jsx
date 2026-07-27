@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
+import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip } from '../mentor/_ui.jsx';
 
@@ -308,7 +309,7 @@ export default function AdminStudents() {
                   <option value="female">Женский</option>
                 </select>
               </div>
-              <input className="input input-bordered w-full" placeholder="Телефон студента" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <PhoneInput className="input input-bordered w-full" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
               <input className="input input-bordered w-full" placeholder="Телефон родителя (необязательно)" value={form.parentPhone} onChange={(e) => setForm({ ...form, parentPhone: e.target.value })} />
               <div className="grid grid-cols-2 gap-3">
                 <div>

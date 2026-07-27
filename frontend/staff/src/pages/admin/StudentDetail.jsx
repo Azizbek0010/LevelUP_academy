@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudentDetail } from '../../queries.js';
 import { api } from '../../api.js';
+import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Avatar, RowSkeleton } from '../mentor/_ui.jsx';
 
@@ -561,20 +562,18 @@ export default function AdminStudentDetail() {
               </div>
               <div>
                 <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Telefon</label>
-                <input
+                <PhoneInput
                   className="input input-bordered w-full"
-                  placeholder="+998 XX XXX XX XX"
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={(v) => setForm({ ...form, phone: v })}
                 />
               </div>
               <div>
                 <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Ota-ona telefoni</label>
-                <input
+                <PhoneInput
                   className="input input-bordered w-full"
-                  placeholder="+998 XX XXX XX XX"
                   value={form.parentPhone}
-                  onChange={(e) => setForm({ ...form, parentPhone: e.target.value })}
+                  onChange={(v) => setForm({ ...form, parentPhone: v })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">

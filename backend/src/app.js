@@ -23,6 +23,72 @@ import adminRoutes from './modules/admin/admin.routes.js';
 import methodistRoutes from './modules/methodist/methodist.routes.js';
 import telegramRoutes from './modules/telegram/telegram.routes.js';
 
+/**
+ * Кто имеет право звать API из браузера.
+ *
+ * Два режима, переключаются переменной CORS_MODE без правки кода:
+ *
+ *   open       (по умолчанию) — отражаем любой присланный Origin. Так было
+ *              изначально и так оставлено СОЗНАТЕЛЬНО на время командной
+ *              работы: у четырнадцати человек свои превью-домены и локальные
+ *              порты, и закрытый список блокировал бы их по очереди.
+ *   allowlist  — пускаем только известные домены (список ниже) плюс то, что
+ *              перечислено в ALLOWED_ORIGINS.
+ *
+ * ⚠️ Чем `open` опасен. Вместе с `credentials: true` сервер отвечает
+ * `Access-Control-Allow-Origin: <origin запросившего>` кому угодно — проверено
+ * на боевом API запросом с `Origin: https://evil-example.com`. Единственное,
+ * что мешает чужой странице дёрнуть /api/auth/refresh с куками жертвы и
+ * прочитать оттуда свежий access-token, — это `sameSite: 'lax'` у refresh-куки
+ * (modules/auth/auth.controller.js). Пока режим `open`, эту настройку менять
+ * НЕЛЬЗЯ: `SameSite=none` вместе с открытым CORS = захват аккаунта с любого
+ * сайта. Панели на *.vercel.app кросс-сайтовые с API, поэтому соблазн поставить
+ * `none` будет — правильный ответ не он, а поддомены levelup-academy.uz.
+ *
+ * Когда команда закончит: `CORS_MODE=allowlist` в переменных Render.
+ */
+const PROD_ORIGINS = new Set([
+  'https://levelup-academy.uz',
+  'https://www.levelup-academy.uz',
+  'https://student.levelup-academy.uz',
+  'https://staff-levelup.vercel.app',
+  'https://owner-levelup.vercel.app',
+  'https://member-levelup.vercel.app',
+  'https://level-up-academy.vercel.app',
+  'https://levelup-staff.vercel.app',
+  'https://levelup-owner.vercel.app',
+  'https://levelup-member.vercel.app',
+  'https://levelup-student.vercel.app',
+  'https://levelup-landing.vercel.app',
+]);
+
+// превью-деплои того же аккаунта: <project>-<hash>-azizbek0010s-projects.vercel.app
+const VERCEL_PREVIEW = /^https:\/\/[a-z0-9-]+-azizbek0010s-projects\.vercel\.app$/;
+
+function corsOrigin(origin, cb) {
+  // открытый режим: команда работает с превью-доменов и локальных портов
+  if (env.CORS_MODE !== 'allowlist') return cb(null, true);
+
+  // без Origin приходят curl, Postman, серверные вызовы и same-origin навигация —
+  // CORS к ним не применяется, блокировать нечего
+  if (!origin) return cb(null, true);
+
+  const extra = (env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (PROD_ORIGINS.has(origin) || extra.includes(origin)) return cb(null, true);
+  if (VERCEL_PREVIEW.test(origin)) return cb(null, true);
+  // локальная разработка: любой порт localhost, но только вне production
+  if (env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+    return cb(null, true);
+  }
+
+  logger.warn({ origin }, 'CORS: origin отклонён');
+  return cb(null, false); // не бросаем ошибку: cors просто не выставит заголовок
+}
+
 export function createApp() {
   const app = express();
 
@@ -41,10 +107,7 @@ export function createApp() {
     next();
   });
 
-  // credentials: true требует конкретный Origin в ответе, а не '*' (браузер иначе блокирует
-  // credentialed-запросы) — origin: true отражает Origin запроса динамически, то есть фактически
-  // открыто для любого фронта, но остаётся совместимо с httpOnly refresh-cookie.
-  app.use(cors({ origin: true, credentials: true }));
+  app.use(cors({ origin: corsOrigin, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
   app.use(pinoHttp({ logger, autoLogging: env.NODE_ENV !== 'test' }));
   app.use(createRateLimiter({ keyPrefix: 'rl:api', points: 300, duration: 60 }));

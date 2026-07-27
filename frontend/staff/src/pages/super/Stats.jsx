@@ -15,16 +15,13 @@ import { fmt, money } from '../../format.js';
 
 // ---- Colors ----
 const PRIMARY = '#3b82f6';
-const TEAL    = 'oklch(75% 0.16 175)';
 const ERR     = 'oklch(62% 0.24 25)';
 const NEON    = ['#3b82f6', '#34D1FF', '#FF6B6B', '#A78BFA', '#34FFB0', '#FFB534'];
 
-// ---- Payment mock ----
-const PAYMENT_METHODS = [
-  { name: 'Наличные', value: 65 },
-  { name: 'Карта',    value: 30 },
-  { name: 'Online',   value: 5  },
-];
+// Блок «Способы оплаты» убран намеренно: /api/super/dashboard не отдаёт разбивку
+// по способам оплаты (см. super.service.js dashboard() — только totals + branches),
+// а на его месте стояли зашитые 65/30/5%. Партнёр принимал их за свои цифры.
+// Вернуть, когда в дашборде появится реальная агрегация по transactions.method.
 
 // ---- Delta chip ----
 function DeltaChip({ delta }) {
@@ -295,45 +292,6 @@ export default function SuperStats() {
         </div>
       </div>
 
-      {/* Payment methods pie */}
-      <div className="card bg-base-100 shadow-sm">
-        <div className="card-body p-6">
-          <h2 className="text-base font-bold mb-4">Способы оплаты</h2>
-          <div className="flex flex-col sm:flex-row items-center gap-8">
-            <ResponsiveContainer width={200} height={200}>
-              <PieChart>
-                <Pie
-                  data={PAYMENT_METHODS}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={4}
-                  dataKey="value"
-                  nameKey="name"
-                >
-                  <Cell fill={PRIMARY} />
-                  <Cell fill={TEAL} />
-                  <Cell fill={ERR} />
-                </Pie>
-                <Tooltip formatter={(v) => `${v}%`} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="space-y-3">
-              {PAYMENT_METHODS.map((pm, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span
-                    className="w-3 h-3 rounded-full shrink-0"
-                    style={{ background: [PRIMARY, TEAL, ERR][i] }}
-                  />
-                  <span className="text-sm font-medium">{pm.name}</span>
-                  <span className="text-sm font-bold tabular-nums">{pm.value}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

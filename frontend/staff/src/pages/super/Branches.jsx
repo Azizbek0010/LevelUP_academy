@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Building2, MapPin, Phone, DoorOpen, AlertTriangle } from 'lucide-react';
-import { fmt, money, dateShort } from '../../format.js';
+import { Plus, Building2, MapPin, Phone, AlertTriangle } from 'lucide-react';
+import { fmt, money } from '../../format.js';
 import { useSuperBranches, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import YMapPicker from '../../components/YMapPicker.jsx';
+import PhoneInput from '../../components/PhoneInput.jsx';
 
 const branchSchema = z.object({
   name:      z.string().trim().min(1, 'Название обязательно').max(80, 'Макс. 80 символов'),
@@ -35,6 +36,12 @@ export default function SuperBranches() {
   const [currentId, setCurrentId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [location, setLocation] = useState(null);
+  /* Карта считается доступной, только если она реально поднялась.
+     Одного ключа мало: он может быть не настроен по HTTP referer, а сервис —
+     отвечать 503. Тогда точку поставить нечем, и требовать её означало бы
+     запретить создание филиалов совсем. */
+  const [mapBroken, setMapBroken] = useState(!import.meta.env.VITE_YANDEX_KEY);
+  const mapAvailable = !mapBroken;
 
   // Стейты подтверждения архивации
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -61,6 +68,7 @@ export default function SuperBranches() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(branchSchema),
@@ -73,6 +81,18 @@ export default function SuperBranches() {
       b.name.toLowerCase().includes(q.toLowerCase()) ||
       (b.address || '').toLowerCase().includes(q.toLowerCase()),
   );
+
+
+  /* Лидеры по деньгам. Считаем по всем филиалам, а не по отфильтрованным:
+     ответ на вопрос «какой филиал больше зарабатывает» не должен меняться
+     от того, что набрано в поиске. Архивные не участвуют — они не работают. */
+  const active = branches.filter((b) => !b.isArchived);
+  const topEarner = active.length
+    ? active.reduce((a, b) => ((b.revenue || 0) > (a.revenue || 0) ? b : a))
+    : null;
+  const topSpender = active.length
+    ? active.reduce((a, b) => ((b.expenses || 0) > (a.expenses || 0) ? b : a))
+    : null;
 
   const openCreate = () => {
     setModalMode('create');
@@ -97,6 +117,25 @@ export default function SuperBranches() {
 
   const onFormSubmit = async (formData) => {
     setErr('');
+
+    /* Точка на карте обязательна при создании — по ней потом строятся маршруты
+       для родителей и разбор «в каком филиале что происходит». При правке
+       старого филиала не требуем: он мог быть заведён до появления карты.
+       Если ключ Яндекса не подключён, карта показать себя не может — тогда
+       требовать координаты бессмысленно, и филиал создаётся без них. */
+    const hasPoint = location?.lat != null && location?.lng != null;
+    const halfPoint = !hasPoint && (location?.lat != null || location?.lng != null);
+
+    // одна координата без второй — почти всегда недописанный ввод, а не намерение
+    if (halfPoint) {
+      setErr('Укажите обе координаты: широту и долготу');
+      return;
+    }
+    if (modalMode === 'create' && mapAvailable && !hasPoint) {
+      setErr('Отметьте филиал на карте — без точки его не найдут ни родители, ни курьер');
+      return;
+    }
+
     setBusy(true);
     try {
       const body = {
@@ -104,7 +143,14 @@ export default function SuperBranches() {
         address: formData.address.trim(),
         phone: formData.phone.trim(),
         ...(formData.roomCount !== '' && formData.roomCount != null ? { roomCount: Number(formData.roomCount) } : {}),
-        ...(location ? { lat: location.lat, lng: location.lng } : {}),
+        /* При создании координаты шлём только когда они есть. При правке шлём
+           всегда: null — это осознанное «снять точку», и без него отметку
+           можно было поставить и подвинуть, но не убрать. */
+        ...(hasPoint
+          ? { lat: location.lat, lng: location.lng }
+          : modalMode === 'edit'
+            ? { lat: null, lng: null }
+            : {}),
       };
       if (modalMode === 'create') {
         await api.superCreateBranch(token, body);
@@ -178,12 +224,36 @@ export default function SuperBranches() {
             <SkeletonTable rows={5} cols={6} />
           ) : (
             <div className="space-y-5">
-              <input
-                className="input input-bordered input-sm max-w-xs"
-                placeholder="Поиск филиалов…"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
+              <div className="flex flex-wrap items-center gap-3 justify-between">
+                <input
+                  className="input input-bordered input-sm max-w-xs"
+                  placeholder="Поиск филиалов…"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                />
+                {topEarner && (topEarner.revenue > 0 || (topSpender && topSpender.expenses > 0)) && (
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
+                    {topEarner.revenue > 0 && (
+                      <span className="text-base-content/60">
+                        Больше всех зарабатывает:{' '}
+                        <Link to={`/branches/${topEarner.id}`} className="font-bold text-success hover:underline">
+                          {topEarner.name}
+                        </Link>{' '}
+                        <span className="tabular-nums">{money(topEarner.revenue)}</span>
+                      </span>
+                    )}
+                    {topSpender && topSpender.expenses > 0 && (
+                      <span className="text-base-content/60">
+                        Больше всех тратит:{' '}
+                        <Link to={`/branches/${topSpender.id}`} className="font-bold hover:underline">
+                          {topSpender.name}
+                        </Link>{' '}
+                        <span className="tabular-nums">{money(topSpender.expenses)}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {rows.length === 0 ? (
                 <div className="card bg-base-100 shadow-sm border border-dashed border-base-300">
@@ -255,19 +325,31 @@ export default function SuperBranches() {
                           </div>
                         </div>
 
-                        {/* Stats 2x2 with slightly improved layout */}
-                        <div className="grid grid-cols-2 gap-3 mt-1 bg-base-200/30 border border-base-200/50 rounded-xl p-3 text-xs">
+                        {/* Показатели филиала: люди сверху, деньги снизу.
+                            Расход стоит рядом с доходом намеренно — по одному
+                            доходу не видно, какой филиал себя окупает. */}
+                        <div className="grid grid-cols-3 gap-3 mt-1 bg-base-200/30 border border-base-200/50 rounded-xl p-3 text-xs">
                           <div>
                             <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Ученики</div>
                             <div className="text-sm font-extrabold mt-0.5 tabular-nums text-base-content/80">{fmt(b.students)}</div>
                           </div>
                           <div>
-                            <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Админы</div>
-                            <div className="text-sm font-extrabold mt-0.5 tabular-nums text-base-content/80">{fmt(b.admins)}</div>
+                            <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Группы</div>
+                            <div className="text-sm font-extrabold mt-0.5 tabular-nums text-base-content/80">{fmt(b.groups)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Сотрудники</div>
+                            <div className="text-sm font-extrabold mt-0.5 tabular-nums text-base-content/80" title={`Админы: ${fmt(b.admins)} · Менторы: ${fmt(b.mentors)}`}>
+                              {fmt((b.admins || 0) + (b.mentors || 0))}
+                            </div>
                           </div>
                           <div>
                             <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Доход</div>
                             <div className="text-sm font-extrabold mt-0.5 text-success tabular-nums">{money(b.revenue)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Расход</div>
+                            <div className="text-sm font-extrabold mt-0.5 tabular-nums text-base-content/70">{money(b.expenses)}</div>
                           </div>
                           <div>
                             <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Долг</div>
@@ -349,7 +431,7 @@ export default function SuperBranches() {
               {/* Map picker */}
               <div>
                 <span className="label-text mb-1 block">
-                  Местоположение на карте
+                  Местоположение на карте{mapAvailable && modalMode === 'create' && ' *'}
                   {location && (
                     <button
                       type="button"
@@ -360,15 +442,74 @@ export default function SuperBranches() {
                     </button>
                   )}
                 </span>
-                <YMapPicker value={location} onChange={setLocation} height={260} />
+                <YMapPicker value={location} onChange={setLocation} height={260} onUnavailable={setMapBroken} />
+
+                {/* Ручной ввод координат.
+                    Нужен по двум причинам. Первая: карта может быть недоступна
+                    (нет ключа, не применились ограничения, сервис отвечает 503) —
+                    и тогда без этих полей точку не задать и не поправить вообще.
+                    Вторая: координаты часто присылают текстом из Яндекс/Google
+                    Карт, и вбить их точнее, чем попасть пальцем по карте. */}
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <label className="form-control">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">
+                      Широта
+                    </span>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      min="-90"
+                      max="90"
+                      className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
+                      placeholder="41.311081"
+                      value={location?.lat ?? ''}
+                      onChange={(e) => {
+                        const lat = e.target.value === '' ? null : Number(e.target.value);
+                        setLocation(lat === null && location?.lng == null
+                          ? null
+                          : { lat, lng: location?.lng ?? null });
+                      }}
+                    />
+                  </label>
+                  <label className="form-control">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">
+                      Долгота
+                    </span>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      min="-180"
+                      max="180"
+                      className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
+                      placeholder="69.240562"
+                      value={location?.lng ?? ''}
+                      onChange={(e) => {
+                        const lng = e.target.value === '' ? null : Number(e.target.value);
+                        setLocation(lng === null && location?.lat == null
+                          ? null
+                          : { lat: location?.lat ?? null, lng });
+                      }}
+                    />
+                  </label>
+                </div>
+                <span className="text-xs text-base-content/45 mt-1 block">
+                  Можно отметить на карте или вставить координаты из Яндекс Карт — например 41.311081, 69.240562
+                </span>
               </div>
 
               <label className="form-control w-full">
                 <span className="label-text mb-1">Телефон</span>
-                <input
-                  {...register('phone')}
-                  placeholder="+998901234567"
-                  className={`input input-bordered w-full rounded-xl ${errors.phone ? 'input-error' : ''}`}
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <PhoneInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      className={`input input-bordered w-full rounded-xl ${errors.phone ? 'input-error' : ''}`}
+                    />
+                  )}
                 />
                 {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
               </label>

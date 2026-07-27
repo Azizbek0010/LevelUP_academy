@@ -2,20 +2,16 @@ import { useEffect, useState } from 'react';
 import { BookOpen, Paperclip, Coins } from 'lucide-react';
 import { api, uploadToPresignedUrl } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { Skeleton, EmptyState, Modal } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, Modal, Pill } from '../components/ui.jsx';
 import { fmtDateTime, deadlineLabel } from '../format.js';
 
-function statusPill(hw) {
+function StatusPill({ hw }) {
   if (hw.submission_status === 'graded')
-    return <span className="pill pill--success">Оценено · {hw.score}/{hw.max_score}</span>;
-  if (hw.submission_status === 'late') return <span className="pill pill--danger">Сдано с опозданием</span>;
-  if (hw.submission_status === 'submitted') return <span className="pill pill--lime">На проверке</span>;
+    return <Pill tone="success">Оценено · {hw.score}/{hw.max_score}</Pill>;
+  if (hw.submission_status === 'late') return <Pill tone="danger">Сдано с опозданием</Pill>;
+  if (hw.submission_status === 'submitted') return <Pill tone="primary">На проверке</Pill>;
   const overdue = hw.deadline && Date.now() > new Date(hw.deadline).getTime();
-  return overdue ? (
-    <span className="pill pill--danger">Просрочено</span>
-  ) : (
-    <span className="pill pill--muted">{deadlineLabel(hw.deadline)}</span>
-  );
+  return overdue ? <Pill tone="danger">Просрочено</Pill> : <Pill tone="muted">{deadlineLabel(hw.deadline)}</Pill>;
 }
 
 export default function Homework() {
@@ -73,40 +69,37 @@ export default function Homework() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Домашние задания</h1>
-          <p>Сдавай до дедлайна — после оценки пересдача закрыта</p>
-        </div>
-      </div>
+      <PageHeader title="Домашние задания" subtitle="Сдавай до дедлайна — после оценки пересдача закрыта" />
 
       {!list ? (
         <Skeleton h={80} count={4} />
       ) : list.length === 0 ? (
-        <div className="card">
+        <div className="card bg-base-100">
           <EmptyState icon={BookOpen} title="Заданий пока нет" text="Ментор ещё не выдал домашки твоим группам." />
         </div>
       ) : (
-        <div className="card">
+        <div className="card bg-base-100 divide-y divide-base-200">
           {list.map((hw) => {
             const canSubmit = hw.submission_status !== 'graded';
             return (
-              <div key={hw.id} className="row">
-                <div className="row__body">
-                  <div className="row__title">{hw.title}</div>
-                  <div className="row__sub">
-                    до {fmtDateTime(hw.deadline)} · макс. {hw.max_score} баллов
+              <div key={hw.id} className="flex items-center gap-3 px-4 py-3.5 flex-wrap sm:flex-nowrap">
+                <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
+                  <BookOpen size={18} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold truncate">{hw.title}</div>
+                  <div className="text-xs text-base-content/45 mt-0.5 flex items-center gap-1 flex-wrap">
+                    <span>до {fmtDateTime(hw.deadline)} · макс. {hw.max_score} баллов</span>
                     {hw.coin_reward > 0 && (
-                      <>
-                        {' · '}
-                        <Coins size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> +{hw.coin_reward}
-                      </>
+                      <span className="inline-flex items-center gap-0.5 text-primary font-semibold">
+                        · <Coins size={12} /> +{hw.coin_reward}
+                      </span>
                     )}
                   </div>
                 </div>
-                {statusPill(hw)}
+                <StatusPill hw={hw} />
                 {canSubmit && (
-                  <button className="btn btn--dark btn--sm" onClick={() => openSubmit(hw)}>
+                  <button className="btn btn-sm btn-neutral" onClick={() => openSubmit(hw)}>
                     {hw.submission_status ? 'Пересдать' : 'Сдать'}
                   </button>
                 )}
@@ -119,32 +112,38 @@ export default function Homework() {
       {active && (
         <Modal title={`Сдать: ${active.title}`} onClose={() => !busy && setActive(null)}>
           {active.description && (
-            <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 16 }}>{active.description}</p>
+            <p className="text-sm text-base-content/55 mb-4">{active.description}</p>
           )}
-          <form onSubmit={submit}>
-            <div className="field">
-              <label htmlFor="hw-text">Текст ответа</label>
+          <form onSubmit={submit} className="space-y-4">
+            <div>
+              <label htmlFor="hw-text" className="block text-[13px] font-bold mb-1.5">Текст ответа</label>
               <textarea
                 id="hw-text"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Опиши решение или вставь ссылку…"
                 maxLength={10000}
+                rows={4}
+                className="textarea textarea-bordered w-full text-base sm:text-sm resize-y"
               />
             </div>
-            <div className="field">
-              <label htmlFor="hw-file">
-                <Paperclip size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> Файл решения
-                (необязательно)
+            <div>
+              <label htmlFor="hw-file" className="flex items-center gap-1.5 text-[13px] font-bold mb-1.5">
+                <Paperclip size={13} /> Файл решения (необязательно)
               </label>
-              <input id="hw-file" type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              <input
+                id="hw-file"
+                type="file"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="file-input file-input-bordered file-input-sm w-full"
+              />
             </div>
-            <div className="modal__actions">
-              <button type="button" className="btn btn--ghost" onClick={() => setActive(null)} disabled={busy}>
+            <div className="flex justify-end gap-2.5 pt-1">
+              <button type="button" className="btn btn-ghost" onClick={() => setActive(null)} disabled={busy}>
                 Отмена
               </button>
-              <button className="btn btn--accent" disabled={busy}>
-                {busy ? 'Отправляем…' : 'Отправить'}
+              <button className="btn btn-primary" disabled={busy}>
+                {busy ? <span className="loading loading-spinner loading-sm" /> : 'Отправить'}
               </button>
             </div>
           </form>

@@ -1,5 +1,18 @@
 # Elyor — ish jurnali (frontend/staff, auth qismi)
 
+> ⚠️ **2026-07-26 sverka (Karis).** Bu jurnaldagi 4 ta muammoning holati bugungi kunda:
+> 1. `api.adminDashboard is not a function` — ✅ TUZATILGAN (`api.js:2166`)
+> 2. «Забыли пароль» mock ishlamaydi — ❌ HALI OCHIQ. `api.js` mock blokida
+>    `/auth/forgot-password` va `/auth/reset-password` uchun `if` case yo'q (faqat
+>    login/google/refresh/logout bor) → `Mock route not implemented`. Real backendda ishlaydi
+> 3. Google login COOP xatosi — ❌ HALI OCHIQ (`FE-COOP`, egasi Kozim)
+> 4. React Router v7 future-flag — ❌ HALI OCHIQ, 4 ta app'ning hech birida flag qo'yilmagan
+>    (tekshirildi: `v7_startTransition` / `v7_relativeSplatPath` — 0 ta topildi). `FE-ROUTER-FLAG`, egasi Kozim
+>
+> Elyor to'g'ri qilgan: bu fayllar uning chegarasidan tashqarida edi. Vazifalar endi
+> korneviy `TASK.md` da (`AUTH-FORGOT`, `AUTH-ELYOR-4`, `FE-COOP`, `FE-ROUTER-FLAG`) —
+> holat faqat o'sha yerdan o'qilsin, bu jurnal tarix uchun.
+
 _Faqat frontend (login/register) o'zgarishlari shu yerga yoziladi. Backendga tegilmaydi._
 
 ## 2026-07-16

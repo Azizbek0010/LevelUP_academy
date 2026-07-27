@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   User, Shield, CreditCard, Building2, GraduationCap, Wallet,
-  Info, ExternalLink, GitBranch, Landmark, TrendingUp,
-  Activity, Settings2, Pencil, LogOut, Megaphone, AlertTriangle, Check,
+  Info, ExternalLink, GitBranch, TrendingUp,
+  Activity, Settings2, Pencil, LogOut, Megaphone, Check,
 } from 'lucide-react';
 import { useDashboard, usePricing } from '../queries.js';
 import { useAuth } from '../auth.jsx';
 import { api } from '../api.js';
 import { fmt, ORG_STATUS } from '../format.js';
+import { tierRange, tierPriceLabel } from '../lib/pricing.js';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 
@@ -22,7 +23,7 @@ function Row({ label, value }) {
 }
 
 export default function Settings() {
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, patchUser } = useAuth();
   const { data } = useDashboard();
   const { data: pricing } = usePricing();
 
@@ -59,22 +60,25 @@ export default function Settings() {
     setEditBusy(true);
     setEditError('');
     try {
-      await api.updateProfile(token, {
+      const { profile } = await api.updateProfile(token, {
         firstName: editForm.firstName.trim(),
         lastName: editForm.lastName.trim(),
       });
+      // Кладём ответ сервера в контекст, а не то, что напечатали в форме:
+      // сервер тримит и нормализует поля, и шапка должна показывать сохранённое.
+      patchUser({ firstName: profile.firstName, lastName: profile.lastName });
       setEditSuccess(true);
       setEditMode(false);
       setTimeout(() => setEditSuccess(false), 3000);
     } catch (err) {
-      // Graceful: если API нет — показываем локально успех
-      if (err?.status === 404 || err?.status === 500 || err?.status === 0) {
-        setEditSuccess(true);
-        setEditMode(false);
-        setTimeout(() => setEditSuccess(false), 3000);
-      } else {
-        setEditError(err.message);
-      }
+      // Раньше здесь 404/500 подменялись «успехом»: эндпоинта PATCH /main/profile
+      // не существовало, и пользователь видел «сохранено», хотя не сохранялось ничего.
+      // Эндпоинт написан — глушить ошибки больше нельзя, иначе поломка снова станет невидимой.
+      setEditError(
+        err?.status === 409
+          ? 'Такой email или телефон уже заняты'
+          : err?.message || 'Не удалось сохранить',
+      );
     } finally {
       setEditBusy(false);
     }
@@ -309,28 +313,27 @@ export default function Settings() {
               <div className="flex justify-center py-6"><span className="loading loading-spinner opacity-40" /></div>
             ) : (
               <>
+                {/* Бакеты по числу активных учеников. Раньше здесь стояли
+                    база за филиал / доп. филиал / за ученика — полей с такими
+                    именами бэкенд не отдаёт, поэтому все три были пустыми. */}
                 <div className="space-y-2.5 mb-4">
-                  <div className="flex items-center justify-between p-3 bg-base-200/40 rounded-xl text-sm">
-                    <span className="flex items-center gap-2 text-base-content/60">
-                      <Landmark size={13} className="text-blue-500" /> 1-й филиал (база)
-                    </span>
-                    <span className="font-bold">{fmt(pricing.baseFirstBranch)} {cur}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-base-200/40 rounded-xl text-sm">
-                    <span className="flex items-center gap-2 text-base-content/60">
-                      <GitBranch size={13} className="text-purple-500" /> Доп. филиал
-                    </span>
-                    <span className="font-bold">{fmt(pricing.perExtraBranch)} {cur}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-base-200/40 rounded-xl text-sm">
-                    <span className="flex items-center gap-2 text-base-content/60">
-                      <GraduationCap size={13} className="text-green-500" /> За ученика
-                    </span>
-                    <span className="font-bold">{fmt(pricing.perStudent)} {cur}</span>
+                  {(pricing.tiers ?? []).map((t) => (
+                    <div key={t.id} className="flex items-center justify-between p-3 bg-base-200/40 rounded-xl text-sm">
+                      <span className="flex items-center gap-2 text-base-content/60">
+                        <GraduationCap size={13} className="text-green-500" /> {t.label}
+                        <span className="text-base-content/40">· {tierRange(t)} уч.</span>
+                      </span>
+                      <span className="font-bold">{tierPriceLabel(t, cur)}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2 px-3 text-xs text-base-content/45">
+                    <GitBranch size={12} className="text-purple-500" /> Филиалы входят в тариф без доплаты
                   </div>
                 </div>
+                {/* Тарифы зашиты в backend/src/config/plans.js, правка через БД — v2,
+                    поэтому ссылка ведёт на просмотр, а не на редактирование. */}
                 <Link to="/billing" className="btn btn-sm btn-outline gap-1.5 w-full">
-                  <ExternalLink size={13} /> Редактировать тарифы
+                  <ExternalLink size={13} /> Открыть тарифы
                 </Link>
               </>
             )}
@@ -405,27 +408,32 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Quick links */}
+      {/* Разделы, которых нет в меню.
+          Сайдбар сокращён до ежедневной работы (дашборд, партнёры, заявки),
+          а редкие экраны собраны здесь. Шесть разных пастельных заливок убраны:
+          цвет не нёс смысла — «Доход» был зелёным, а «Анонсы» бирюзовыми просто
+          по очереди в списке. Ссылка на «Штрафы» удалена вместе со страницей:
+          дисциплина сотрудников — зона Super Admin. */}
       <div className="card bg-base-100 border border-base-200/60 shadow-sm">
         <div className="card-body">
-          <h2 className="card-title text-base mb-4">Быстрая навигация</h2>
+          <h2 className="card-title text-base mb-4">Ещё разделы</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {[
-              { to: '/leads', Icon: Activity, title: 'Заявки', desc: 'Новые учебные центры', color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100 hover:border-blue-300' },
-              { to: '/organizations', Icon: Building2, title: 'Партнёры', desc: 'Управление центрами', color: 'text-purple-600', bg: 'bg-purple-50 border-purple-100 hover:border-purple-300' },
-              { to: '/revenue', Icon: TrendingUp, title: 'Доход', desc: 'Аналитика выручки', color: 'text-lime-700', bg: 'bg-lime-50 border-lime-100 hover:border-lime-300' },
-              { to: '/billing', Icon: Wallet, title: 'Биллинг', desc: 'Тарифы и счета', color: 'text-orange-600', bg: 'bg-orange-50 border-orange-100 hover:border-orange-300' },
-              { to: '/announcements', Icon: Megaphone, title: 'Анонсы', desc: 'Сообщения партнёрам', color: 'text-teal-600', bg: 'bg-teal-50 border-teal-100 hover:border-teal-300' },
-              { to: '/fines', Icon: AlertTriangle, title: 'Штрафы', desc: 'Нарушения сотрудников', color: 'text-red-600', bg: 'bg-red-50 border-red-100 hover:border-red-300' },
-            ].map(({ to, Icon, title, desc, color, bg }) => (
+              { to: '/revenue', Icon: TrendingUp, title: 'Доход', desc: 'Наш счёт партнёрам' },
+              { to: '/billing', Icon: Wallet, title: 'Тарифы', desc: 'Бакеты по числу учеников' },
+              { to: '/announcements', Icon: Megaphone, title: 'Анонсы', desc: 'Сообщения партнёрам' },
+            ].map(({ to, Icon, title, desc }) => (
               <Link
                 key={to}
                 to={to}
-                className={`flex items-center gap-3 p-4 rounded-xl border transition-all group ${bg}`}
+                className="flex items-center gap-3 p-4 rounded-xl border border-base-200/60 bg-base-100
+                           hover:border-primary/40 transition-colors"
               >
-                <Icon size={20} className={color} />
+                <span className="w-9 h-9 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0">
+                  <Icon size={17} />
+                </span>
                 <div>
-                  <div className={`font-semibold text-sm ${color}`}>{title}</div>
+                  <div className="font-semibold text-sm">{title}</div>
                   <div className="text-xs text-base-content/45">{desc}</div>
                 </div>
               </Link>
