@@ -15,8 +15,8 @@ export async function getChildIdsForParent(parentId) {
   return rows.map((r) => r.user_id);
 }
 
-/** Недавно оценённые ДЗ детей родителя. */
-export async function getHomeworkGradeEvents(childIds, limit) {
+/** Недавно оценённые ДЗ детей родителя. `before` (FE-PARENT-PAGINATION) — курсор для "загрузить ещё". */
+export async function getHomeworkGradeEvents(childIds, limit, before) {
   if (childIds.length === 0) return [];
   const { rows } = await pool.query(
     `SELECT hs.id, hs.student_id, u.first_name, u.last_name,
@@ -25,15 +25,16 @@ export async function getHomeworkGradeEvents(childIds, limit) {
        JOIN homework hw ON hw.id = hs.homework_id
        JOIN users u ON u.id = hs.student_id
       WHERE hs.student_id = ANY($1) AND hs.status = 'graded' AND hs.graded_at IS NOT NULL
+        AND ($3::timestamptz IS NULL OR hs.graded_at < $3)
       ORDER BY hs.graded_at DESC
       LIMIT $2`,
-    [childIds, limit],
+    [childIds, limit, before ?? null],
   );
   return rows;
 }
 
 /** Недавно завершённые тесты детей родителя. */
-export async function getTestGradeEvents(childIds, limit) {
+export async function getTestGradeEvents(childIds, limit, before) {
   if (childIds.length === 0) return [];
   const { rows } = await pool.query(
     `SELECT tr.id, tr.student_id, u.first_name, u.last_name,
@@ -42,15 +43,16 @@ export async function getTestGradeEvents(childIds, limit) {
        JOIN tests t ON t.id = tr.test_id
        JOIN users u ON u.id = tr.student_id
       WHERE tr.student_id = ANY($1) AND tr.finished_at IS NOT NULL
+        AND ($3::timestamptz IS NULL OR tr.finished_at < $3)
       ORDER BY tr.finished_at DESC
       LIMIT $2`,
-    [childIds, limit],
+    [childIds, limit, before ?? null],
   );
   return rows;
 }
 
 /** Недавние опоздания/пропуски детей родителя (только то, что требует внимания). */
-export async function getAttendanceEvents(childIds, limit) {
+export async function getAttendanceEvents(childIds, limit, before) {
   if (childIds.length === 0) return [];
   const { rows } = await pool.query(
     `SELECT a.id, a.student_id, u.first_name, u.last_name,
@@ -59,15 +61,16 @@ export async function getAttendanceEvents(childIds, limit) {
        JOIN groups g ON g.id = a.group_id
        JOIN users u ON u.id = a.student_id
       WHERE a.student_id = ANY($1) AND a.status IN ('absent', 'late')
+        AND ($3::timestamptz IS NULL OR a.created_at < $3)
       ORDER BY a.created_at DESC
       LIMIT $2`,
-    [childIds, limit],
+    [childIds, limit, before ?? null],
   );
   return rows;
 }
 
 /** Недавно принятые платежи по счетам детей родителя. */
-export async function getPaymentReceivedEvents(childIds, limit) {
+export async function getPaymentReceivedEvents(childIds, limit, before) {
   if (childIds.length === 0) return [];
   const { rows } = await pool.query(
     `SELECT t.id, i.student_id, u.first_name, u.last_name, t.amount, t.created_at
@@ -75,15 +78,16 @@ export async function getPaymentReceivedEvents(childIds, limit) {
        JOIN invoices i ON i.id = t.invoice_id
        JOIN users u ON u.id = i.student_id
       WHERE i.student_id = ANY($1) AND t.status = 'completed'
+        AND ($3::timestamptz IS NULL OR t.created_at < $3)
       ORDER BY t.created_at DESC
       LIMIT $2`,
-    [childIds, limit],
+    [childIds, limit, before ?? null],
   );
   return rows;
 }
 
 /** Просроченные счета детей родителя. */
-export async function getOverdueInvoiceEvents(childIds, limit) {
+export async function getOverdueInvoiceEvents(childIds, limit, before) {
   if (childIds.length === 0) return [];
   const { rows } = await pool.query(
     `SELECT i.id, i.student_id, u.first_name, u.last_name,
@@ -91,9 +95,10 @@ export async function getOverdueInvoiceEvents(childIds, limit) {
        FROM invoices i
        JOIN users u ON u.id = i.student_id
       WHERE i.student_id = ANY($1) AND i.status = 'overdue' AND i.deleted_at IS NULL
+        AND ($3::timestamptz IS NULL OR i.updated_at < $3)
       ORDER BY i.updated_at DESC
       LIMIT $2`,
-    [childIds, limit],
+    [childIds, limit, before ?? null],
   );
   return rows;
 }

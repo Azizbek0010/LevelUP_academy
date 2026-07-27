@@ -385,32 +385,42 @@ router.get('/attendance', ctrl.attendance);
  * /api/super/announcements:
  *   get:
  *     tags: [Super Admin]
- *     summary: "⚠️ STUB — always returns an empty list"
- *     description: >
- *       NOT IMPLEMENTED. There is no announcements table in the schema yet.
- *       The endpoint exists only so the Announcements page can render its
- *       EmptyState. Real implementation = migration + notificationQueue.
+ *     summary: List organization announcements (migration 1783870000000_super-announcements)
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
- *         description: Always empty
+ *         description: Announcements
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 announcements: { type: array, items: { type: object }, example: [] }
- *                 items: { type: array, items: { type: object }, example: [] }
- *                 total: { type: integer, example: 0 }
+ *                 announcements: { type: array, items: { type: object } }
+ *                 items: { type: array, items: { type: object } }
+ *                 total: { type: integer }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  *   post:
  *     tags: [Super Admin]
- *     summary: "⚠️ NOT IMPLEMENTED — always 501"
- *     description: Needs an announcements table + migration. Do not wire the UI to this yet.
+ *     summary: Create an announcement — queues Telegram delivery for parent/student audiences
  *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, body, targetType]
+ *             properties:
+ *               title: { type: string, maxLength: 200 }
+ *               body: { type: string, maxLength: 4000 }
+ *               targetType: { type: string, enum: [all-staff, all-admins, all-mentors, all-parents, all-students] }
  *     responses:
- *       501: { $ref: '#/components/responses/NotImplemented' }
+ *       201:
+ *         description: Created
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.get('/announcements', ctrl.listAnnouncements);
 router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
@@ -420,7 +430,7 @@ router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl
  * /api/super/announcements/{id}:
  *   delete:
  *     tags: [Super Admin]
- *     summary: "⚠️ NOT IMPLEMENTED — always 501"
+ *     summary: Soft-delete an announcement
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
@@ -428,7 +438,15 @@ router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl
  *         required: true
  *         schema: { type: string }
  *     responses:
- *       501: { $ref: '#/components/responses/NotImplemented' }
+ *       200:
+ *         description: Deleted
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Announcement not found in your organization
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
 router.delete('/announcements/:id', validate({ params: idParam }), ctrl.deleteAnnouncement);
 
@@ -528,19 +546,18 @@ router.delete('/reminders/:id', validate({ params: idParam }), reminders.remove)
  * /api/super/audit:
  *   get:
  *     tags: [Super Admin]
- *     summary: "⚠️ STUB — always returns an empty list"
- *     description: NOT IMPLEMENTED. No audit-log table yet; returns an empty list so the page renders.
+ *     summary: Organization audit log (migration 1783880000000_audit-log)
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
- *         description: Always empty
+ *         description: Audit entries
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 items: { type: array, items: { type: object }, example: [] }
- *                 total: { type: integer, example: 0 }
+ *                 items: { type: array, items: { type: object } }
+ *                 total: { type: integer }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  */

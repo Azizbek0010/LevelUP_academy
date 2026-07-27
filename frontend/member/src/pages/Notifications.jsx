@@ -29,10 +29,9 @@ const FILTERS = [
 ];
 
 export default function Notifications() {
-  const { data, isLoading } = useNotifications();
+  const { items, isLoading, isFetchingMore, hasMore, loadMore } = useNotifications();
   const [filter, setFilter] = useState('all');
 
-  const items = data?.data || [];
   const filtered = filter === 'all' ? items : items.filter((n) => n.type === filter);
   const unread = items.filter((n) => !n.read).length;
 
@@ -126,6 +125,19 @@ export default function Notifications() {
           );
         })}
       </div>
+
+      {/* FE-PARENT-PAGINATION: курсорная подгрузка — лента синтезируется из 5 источников на бэке, поэтому "ещё" */}
+      {!isLoading && hasMore && filter === 'all' && (
+        <div className="text-center mt-4">
+          <button
+            className="btn btn-sm btn-ghost"
+            onClick={loadMore}
+            disabled={isFetchingMore}
+          >
+            {isFetchingMore ? <span className="loading loading-spinner loading-xs" /> : 'Показать ещё'}
+          </button>
+        </div>
+      )}
     </>
   );
 }

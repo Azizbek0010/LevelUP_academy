@@ -10,6 +10,15 @@
           "value": "noindex, nofollow, noarchive, nosnippet, noimageindex"
         }
       ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        }
+      ]
     }
   ]
 }

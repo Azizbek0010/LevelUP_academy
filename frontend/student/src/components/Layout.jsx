@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Home,
@@ -7,10 +8,12 @@ import {
   ShoppingBag,
   Trophy,
   LogOut,
+  Send,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import { initials } from '../format.js';
 import { Avatar } from './ui.jsx';
+import { api } from '../api.js';
 
 const NAV = [
   { to: '/', label: 'Главная', icon: Home, end: true },
@@ -76,6 +79,20 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const name = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
 
+  // TG-FRONT: привязка Telegram-бота (напоминания об оплате, объявления центра)
+  const [tgBusy, setTgBusy] = useState(false);
+  const onBindTelegram = async () => {
+    setTgBusy(true);
+    try {
+      const res = await api.telegramBindToken();
+      window.open(res.data.deepLink, '_blank', 'noopener,noreferrer');
+    } catch {
+      // тихо: кнопка — необязательное удобство, не блокирующий флоу
+    } finally {
+      setTgBusy(false);
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* ── Desktop sidebar ── */}
@@ -109,6 +126,18 @@ export default function Layout() {
               Ученик
             </div>
           </div>
+          <button
+            onClick={onBindTelegram}
+            disabled={tgBusy}
+            title="Привязать Telegram"
+            aria-label="Привязать Telegram"
+            className="w-8 h-8 rounded-lg grid place-items-center transition-colors disabled:opacity-40"
+            style={{ color: 'rgba(232, 239, 226, 0.5)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#C6FF34'; e.currentTarget.style.background = 'rgba(198,255,52,0.12)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(232,239,226,0.5)'; e.currentTarget.style.background = 'transparent'; }}
+          >
+            <Send size={16} />
+          </button>
           <button
             onClick={logout}
             title="Выйти"

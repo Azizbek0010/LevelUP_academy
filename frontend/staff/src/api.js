@@ -585,6 +585,26 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       return { success: true };
     }
 
+    // AUTH-FORGOT: код в моке всегда '123456' (для ручного тестирования формы,
+    // без реального SMTP) — тот же цикл запрос → код → новый пароль, что на бэке.
+    if (path === '/auth/forgot-password') {
+      const email = String(body?.email || '').trim().toLowerCase();
+      localStorage.setItem(`mock_reset_otp_${email}`, '123456');
+      return { message: 'If the account exists, a reset code has been sent' };
+    }
+
+    if (path === '/auth/reset-password') {
+      const email = String(body?.email || '').trim().toLowerCase();
+      const savedOtp = localStorage.getItem(`mock_reset_otp_${email}`);
+      if (!savedOtp || savedOtp !== String(body?.otp || '').trim()) {
+        const err = new Error('Invalid or expired code');
+        err.status = 400;
+        throw err;
+      }
+      localStorage.removeItem(`mock_reset_otp_${email}`);
+      return { message: 'Password updated, please log in again' };
+    }
+
     // -------- SUPER ADMIN: Organization Settings --------
     if (path === '/super/organization') {
       let org = JSON.parse(localStorage.getItem('mock_organization'));

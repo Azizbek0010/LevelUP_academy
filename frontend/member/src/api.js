@@ -32,6 +32,7 @@ const MOCK_OVERVIEW = {
   child: { id: 'mock-child-001', firstName: 'Диёр', lastName: 'Собиров', avatarKey: null, frozen: false },
   coins: 350,
   totalDebt: '150000.00',
+  currentInvoice: { totalAmount: 200000, paidAmount: 50000 },
   rank: { rank: 3, coins: 350 },
   groups: [
     { id: 'g1', name: 'Математика A', subject: 'Математика', mentorName: 'Акбар Каримов' },
@@ -183,6 +184,38 @@ const MOCK_CHAT_MESSAGES = {
 
 let mockMsgCounter = 100;
 
+// FE-PARENT-PAGINATION: более длинные списки, чтобы в моке было что листать
+// (overview.recent/homework/tests короткие — там нужен только виджет обзора)
+const ATTENDANCE_GROUPS = ['Математика A', 'Английский B', 'Информатика'];
+const ATTENDANCE_STATUSES = ['present', 'present', 'present', 'late', 'absent', 'excused'];
+const MOCK_ATTENDANCE_HISTORY = Array.from({ length: 45 }, (_, i) => ({
+  lessonDate: new Date(Date.now() - 86400000 * i).toISOString().slice(0, 10),
+  status: ATTENDANCE_STATUSES[i % ATTENDANCE_STATUSES.length],
+  comment: null,
+  groupName: ATTENDANCE_GROUPS[i % ATTENDANCE_GROUPS.length],
+}));
+
+const NOTIF_TEMPLATES = [
+  { type: 'grade', title: 'Новая оценка', body: 'Диёр получил новую оценку' },
+  { type: 'attendance', title: 'Опоздание', body: 'Диёр опоздал на занятие' },
+  { type: 'payment', title: 'Напоминание об оплате', body: 'Срок оплаты приближается' },
+];
+const MOCK_NOTIFICATIONS = Array.from({ length: 12 }, (_, i) => ({
+  id: `n${i + 1}`,
+  ...NOTIF_TEMPLATES[i % NOTIF_TEMPLATES.length],
+  createdAt: new Date(Date.now() - 3600000 * 6 * i).toISOString(),
+  read: i > 1,
+}));
+
+/** page/limit из query-строки мок-пути, с теми же дефолтами, что и на бэке (page=1, limit=20). */
+function mockPageParams(path) {
+  const url = new URL(path, 'http://mock');
+  return {
+    page: Number(url.searchParams.get('page')) || 1,
+    limit: Number(url.searchParams.get('limit')) || 20,
+  };
+}
+
 // -------- MOCK REQUEST HANDLER --------
 async function mockRequest(path, { method = 'GET', body } = {}) {
   await delay();
@@ -239,6 +272,7 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
         child: { id: 'mock-child-002', firstName: 'Алия', lastName: 'Собирова', avatarKey: null, frozen: false },
         coins: 120,
         totalDebt: '0.00',
+        currentInvoice: null,
         rank: { rank: 12, coins: 120 },
       },
     };
@@ -288,36 +322,38 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
     return { data: { messages: MOCK_CHAT_MESSAGES.direct, nextCursor: null } };
   }
 
-  // NOTIFICATIONS
-  if (path === '/parent/notifications') {
-    return {
-      data: [
-        {
-          id: 'n1',
-          type: 'grade',
-          title: 'Новая оценка',
-          body: 'Диёр получил 88/100 по ДЗ #5',
-          createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-          read: false,
-        },
-        {
-          id: 'n2',
-          type: 'attendance',
-          title: 'Опоздание',
-          body: 'Диёр опоздал на занятие по Английскому',
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-          read: true,
-        },
-        {
-          id: 'n3',
-          type: 'payment',
-          title: 'Напоминание об оплате',
-          body: 'Срок оплаты — 25 июля',
-          createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-          read: true,
-        },
-      ],
-    };
+  // TG-FRONT
+  if (path === '/telegram/bind-token') {
+    return { data: { token: 'mock-bind-token', expiresIn: 300, deepLink: 'https://t.me/levelup_academy_bot?start=mock-bind-token' } };
+  }
+
+  // NOTIFICATIONS — FE-PARENT-PAGINATION: курсор `before` через query-string
+  if (path.startsWith('/parent/notifications')) {
+    const before = new URL(path, 'http://mock').searchParams.get('before');
+    const all = MOCK_NOTIFICATIONS.filter((n) => !before || new Date(n.createdAt) < new Date(before));
+    const PAGE = 3;
+    const items = all.slice(0, PAGE);
+    const nextCursor = items.length === PAGE && all.length > PAGE ? items[items.length - 1].createdAt : null;
+    return { data: { items, nextCursor } };
+  }
+
+  // ATTENDANCE (paginated) — FE-PARENT-PAGINATION
+  if (/^\/parent\/children\/[^/]+\/attendance/.test(path)) {
+    const { page, limit } = mockPageParams(path);
+    const start = (page - 1) * limit;
+    const items = MOCK_ATTENDANCE_HISTORY.slice(start, start + limit);
+    return { data: { items, total: MOCK_ATTENDANCE_HISTORY.length, page, pageCount: Math.max(1, Math.ceil(MOCK_ATTENDANCE_HISTORY.length / limit)) } };
+  }
+
+  // GRADES (paginated) — FE-PARENT-PAGINATION
+  if (/^\/parent\/children\/[^/]+\/grades/.test(path)) {
+    const url = new URL(path, 'http://mock');
+    const type = url.searchParams.get('type') || 'homework';
+    const { page, limit } = mockPageParams(path);
+    const source = type === 'tests' ? MOCK_OVERVIEW.grades.tests : MOCK_OVERVIEW.grades.homework;
+    const start = (page - 1) * limit;
+    const items = source.slice(start, start + limit);
+    return { data: { items, total: source.length, page, pageCount: Math.max(1, Math.ceil(source.length / limit)) } };
   }
 
   const err = new Error('Mock route not implemented: ' + path);
@@ -421,8 +457,18 @@ export const api = {
   parentHomeworkDetail: (token, homeworkId) => request(`/parent/homework/${homeworkId}`, { token }),
   parentTestDetail: (token, testId) => request(`/parent/tests/${testId}`, { token }),
 
+  // FE-PARENT-PAGINATION
+  parentAttendance: (token, childId, page = 1, limit = 20) =>
+    request(`/parent/children/${childId}/attendance?page=${page}&limit=${limit}`, { token }),
+  parentGrades: (token, childId, type = 'homework', page = 1, limit = 20) =>
+    request(`/parent/children/${childId}/grades?type=${type}&page=${page}&limit=${limit}`, { token }),
+
   chatMessages: (token, roomKey) =>
     request(`/chat/${encodeURIComponent(roomKey)}/messages`, { token }),
 
-  notifications: (token) => request('/parent/notifications', { token }),
+  // TG-FRONT
+  telegramBindToken: (token) => request('/telegram/bind-token', { method: 'POST', token }),
+
+  notifications: (token, before) =>
+    request(`/parent/notifications${before ? `?before=${encodeURIComponent(before)}` : ''}`, { token }),
 };

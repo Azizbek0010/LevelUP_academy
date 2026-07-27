@@ -58,19 +58,23 @@
       ⚠️ Ilgari "front jamoasiga" deb turgan edi — ISM yo'q edi, shuning uchun 2026-07-18 dan
       beri hech kim olmagan. Egasiz vazifa = qilinmaydigan vazifa.
       Hamidula tanlandi: yuki eng yengil edi (bitta UI-TABLES), forma ishi esa uning yo'nalishi.
+      🔄 **2026-07-28 (Karis): Admin panel qismi Abduloh'ga o'tkazildi** (pastda
+      `K-DISC-FRONT-ADMIN` ga qara) — Hamidula'da endi faqat Super + Mentor/Methodist qoldi.
 
       Nima qilinadi (backend TAYYOR, 10 endpoint, Swagger'da "Discipline" tegi ostida):
       • Super panelda: ustav tahrirlash formasi (`PUT /api/super/charter`) +
         shtraf berish formasi (`POST /api/super/penalties`) + ro'yxat (`GET`)
-      • Admin panelda: shtraf berish + ro'yxat (`POST/GET /api/admin/penalties`),
-        ustavni faqat o'qish (`GET /api/admin/charter`)
       • Mentor va Methodist panelida: FAQAT ko'rish — o'z shtraflari
         (`GET /api/users/me/penalties`) va ustav (`GET /api/users/me/charter`)
 
       ⚠️ Huquqlar matritsasi backendda qat'iy (CAN_ISSUE) — frontda tugmalarni shunga qarab yashir:
-      superadmin → admin/mentor/methodist ga; admin → mentor/methodist ga shtraf,
-      qora ro'yxat esa FAQAT mentor'ga; main_admin → HECH KIMGA.
+      superadmin → admin/mentor/methodist ga shtraf/qora; main_admin → HECH KIMGA.
       Backend baribir tekshiradi, lekin ishlamaydigan tugma ko'rsatish yomon UX
+- [ ] K-DISC-FRONT-ADMIN 🔄 EGASI: **ABDULOH** (Hamidula'dan o'tkazildi, 2026-07-28, Karis).
+      Admin panelda: shtraf berish formasi + ro'yxat (`POST/GET /api/admin/penalties`),
+      ustavni faqat o'qish (`GET /api/admin/charter`). Huquqlar matritsasi bo'yicha
+      admin → mentor/methodist'ga shtraf bera oladi, qora ro'yxat esa FAQAT mentor'ga —
+      backend tekshiradi, lekin frontda ham ishlamaydigan tugma ko'rsatilmasin
 - [ ] K-DISC: runtime tekshiruv — hali BD da yugurtirilmagan (npm run migrate + jonli test)
 
 ## Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
@@ -225,13 +229,9 @@
       Ya'ni bitta fail 49 ta sog'lom testni yashirib turgan. `&&` o'rniga har biri alohida ishlasin
       va oxirida umumiy natija chiqsin
 
-- [ ] BUG-REDIS-SILENT 🔥 (2026-07-19): `env.js` da `REDIS_URL: z.string().min(1).default('redis://localhost:6379')`.
-      ⚠️ **2026-07-26 da qayta tekshirildi — HALI OCHIQ**, `env.js:13` da default o'z joyida turibdi.
-      Ya'ni Render'da bu o'zgaruvchi qo'yilmasa — server JIMGINA ko'tariladi va localhost'ga urinaveradi.
-      Log'da `Redis error` chiqadi, lekin process yiqilmaydi. Natijada socket (chat, davomat live) va
-      barcha queue'lar ishlamaydi, sabab esa ko'rinmaydi.
-      `REDIS_URL` `sync: false` — ya'ni faylda yo'q, faqat dashboard'da. Tekshirilsin va prodda default olib tashlansin
-      (production'da majburiy bo'lsin, dev'da default qolsin)
+- [x] BUG-REDIS-SILENT ✅ **TASDIQLANDI 2026-07-28 (Karis)** — aslida allaqachon `7226ab6` (26.07)
+      da tuzatilgan edi, TASK.md eskirgan edi. `env.js` da `superRefine`: production'da
+      `REDIS_URL` localhost'ga qarasa — server umuman ko'tarilmaydi (fail-fast)
 
 - [x] ~~BUG-BILLING~~ ✅ YOPILDI 2026-07-26 (Karis): `Billing.jsx` bakit modeliga o'tkazildi,
       saqlash formasi olib tashlandi (bekend baribir yozmaydi). Tarixiy tavsif:
@@ -292,8 +292,10 @@
 - [x] AB-SUPER-REM — `GET /api/super/reminders` + resend/delete (`870d1c5`)
 - [x] AB-SUPER-AUDIT — `GET /api/super/audit` (`460914b`)
 - [x] AB-SUPER-STATS — `GET /api/super/stats` (`460914b`); front tomoni FE-SUPER-STATS'da
-- [ ] AB-SUPER-SWAGGER: `super.routes.js:409-431` izohi hali "501" deb eskirgan —
-      yangilansin + `swagger/*.md` qayta generatsiya
+- [x] AB-SUPER-SWAGGER ✅ TUZATILDI 2026-07-28 (Karis): announcements GET/POST/DELETE va
+      audit GET izohlari yangilandi (endi real ishlashini yozadi, "501/stub" emas).
+      Alohida `swagger/*.md` generatsiya skripti repoda yo'q ekan — hujjat swagger-jsdoc
+      orqali runtime'da JSDoc izohlaridan to'g'ridan-to'g'ri chiqadi
 
 ### AB-SUPER-REPORTS + AB-MAIN-REVENUE (Abdulaziz)
 
@@ -333,8 +335,9 @@
       `render.yaml` da `type: worker` yo'q → `worker.js` yugurmaydi → `notifications` navbatini
       hech kim o'qimaydi. Bot `/start` ni qabul qiladi, lekin BIRORTA bildirishnoma yetib bormaydi.
       Bilol'ning 14 commit'i shu sababli mijozga ko'rinmayapti — bu uning aybi emas
-- [ ] TG-FRONT (kim bo'shasa): kabinetda "Telegramni bog'lash" tugmasi —
-      `bind-token` ni chaqirib deep-link ko'rsatadi. Front tomoni hech kimga berilmagan
+- [x] TG-FRONT ✅ BAJARILDI 2026-07-28 (Karis): parent — `member/Profile.jsx` da karta
+      (bind-token → deep-link tugmasi); student — `student/Layout.jsx` sidebar footeriga
+      ikonka tugma qo'shildi (alohida sahifasi yo'q shu panelda, shuning uchun footerga)
 
 ## Backend — Infrastructure (Abdulaziz) ✅
 
@@ -413,23 +416,17 @@
 
 ### 🔴 AUTH — haqiqiy ochiq tirqish (auditda topildi 2026-07-19)
 
-- [ ] AUTH-FORGOT 🔥 QISMAN TUZATILDI (2026-07-21 audit): avvalgi yozuv NOTO'G'RI edi —
-      "frontend da fayl 0 ta" audit fayl NOMI bo'yicha qidirgan edi, `ForgotForm` esa `Login.jsx`
-      ICHIDA yozilgan, alohida fayl emas. Haqiqatda `ForgotForm` (`staff` + `main-admin`,
-      `Login.jsx`) real backendga TO'G'RI ulangan (`forgotPassword`/`resetPassword`, `api.js:2162-63`).
-      **Qolgan haqiqiy tirqish:** `USE_MOCKS=true` bo'lganda `api.js` mock-blokida
-      `/auth/forgot-password` va `/auth/reset-password` uchun case yo'q → "Mock route not
-      implemented" (dev/mock rejimida ishlamaydi, real backendda ishlaydi). Tuzatish: mock
-      blokiga (`/auth/logout`dan keyin, ~2018-qator atrofida) ikkita `if` case qo'shish.
-      Ochiq savol qoladi: `member` (Student/Parent) login-kod bilan kiradi, email bo'lmasligi
-      mumkin → ularga tiklash admin orqalimi yoki umuman formasiz? Qaror kerak.
-- [ ] AUTH-ELYOR-4: Elyor 2026-07-16 da 4 ta muammoni topgan, lekin ular umumiy fayllarda
-      (`api.js`, `auth.jsx`, `main.jsx`, `vite.config.js`) — o'z chegarasidan tashqari bo'lgani uchun
-      TEGMAGAN va Karis'ga uzatgan (`frontend/staff/elyor-log.md`). 2026-07-21 qayta tekshirildi:
-      1) [x] admin dashboard `api.adminDashboard is not a function` — TUZATILGAN (`api.js:2166` bor)
-      2) [ ] «Забыли пароль» mock ishlamaydi — hali OCHIQ (AUTH-FORGOT bilan bir xil ildiz)
-      3) [ ] Google login COOP konsol xatosi — hali OCHIQ (FE-COOP)
-      4) [ ] React Router v7 future-flag warning — hali OCHIQ (FE-ROUTER-FLAG), past prioritet
+- [x] AUTH-FORGOT ✅ TUZATILDI 2026-07-28 (Karis): `staff/api.js` mock-blokiga
+      `/auth/forgot-password` va `/auth/reset-password` case qo'shildi (kod mokda doim
+      `123456`, real oqim: so'rov → kod → yangi parol). Real backend ilgari ham to'g'ri
+      ulangan edi — faqat mock rejimi ishlamas edi.
+      ⚠️ Ochiq savol qoladi (qaror kerak, kod bilan yopilmaydi): `member` (Student/Parent)
+      login-kod bilan kiradi, email bo'lmasligi mumkin → ularga tiklash admin orqalimi yoki
+      umuman formasiz?
+- [x] AUTH-ELYOR-4 ✅ 4/4 YOPILDI 2026-07-28 (Karis): 1) admin dashboard — tuzatilgan
+      (avvalroq). 2) «Забыли пароль» mock — yuqoridagi AUTH-FORGOT bilan yopildi.
+      3) Google COOP — FE-COOP bilan yopildi. 4) React Router future-flag — FE-ROUTER-FLAG
+      bilan yopildi
 
 ## Frontend — Super Admin ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 
@@ -475,13 +472,12 @@
       Ya'ni Dashboard / Stats / Reports — uchtasi BITTA endpointdan oziqlanyapti.
       🟢 **2026-07-26: backend TAYYOR** — `GET /api/super/reports` `super.routes.js:619` da bor.
       Ish faqat frontda: `useSuperDashboard` o'rniga o'z endpointiga o'tsin
-- [ ] FE-SUPER-WIRE (Said Islom + Aziz): Announcements (359 qator) / Reminders (257) / Audit (293).
-      🟢 **BLOKER OLINDI (2026-07-26 auditda aniqlandi):** backend endi 501 qaytarmaydi —
-      Abdulaziz uchala endpointni ham 2026-07-20/21 da yozib bo'lgan
-      (`460914b`, `870d1c5`; AB-SUPER-ANN / REM / AUDIT ga qara). Ya'ni bu 909 qator kod
-      **bugundan boshlab real data ko'rsatishi mumkin** — kutish shart emas.
-      Qilinadigan ish: real superadmin login bilan uchala sahifani ochib tekshirish +
-      Skeleton / EmptyState / Error uch holati ishlashiga ishonch hosil qilish
+- [x] FE-SUPER-WIRE ✅ **TASDIQLANDI 2026-07-28 (Karis)** — kod tekshirildi: uchala sahifa
+      (`Announcements.jsx`, `Reminders.jsx`, `Audit.jsx`) allaqachon o'z real endpointlariga
+      ulangan (`api.superAnnouncements/superReminders/superAudit` va CRUD mutatsiyalar),
+      `useSuperDashboard` ga tayanib qolgan joy yo'q. Kim tomonidan yopilgani noaniq —
+      TASK.md eskirgan edi. Qolgan ish: jonli superadmin login bilan E2E (AB-VERIFY/
+      K-SUPER-INT blokiga qara), kod tomoni yopiq
 
 ## Main Admin (Karis) 🔥 to'liq egasi — 2026-07-26 dan, front + backend
 
@@ -585,10 +581,13 @@
 - [x] ADMIN: Dashboard (income + expenses = profit) — Dashboard.jsx, api ga ulangan
 - [x] ADMIN: Students CRUD (xob integratsiyasi bor — reviewdan o'tkazish) — Students.jsx + StudentDetail.jsx
 - [x] ADMIN: Groups CRUD — Groups.jsx + GroupDetail.jsx
-- [ ] ADMIN 🆕 (Abduloh): `GroupDetail.jsx` ni real API ga ulash — attendance / homework / feedback
-      hali mock'dan olinyapti. 🟢 **Bloker olindi:** oltala backend endpoint 2026-07-20 dan beri
-      TAYYOR (AB-INT-GROUP ga qara), Abduloh esa hali kutayotgan bo'lishi mumkin — unga xabar berilsin
-- [ ] ADMIN (Odil): 🆕 Guruh formasi — mentor majburiy + kunlar (1-3-5/2-4-6 preset yoki boshqa kunlar galochka) + boshlanish vaqti + tugash vaqti AVTO (GET /api/admin/settings) → POST/PATCH { days, startTime }; kontrakt TEAM-TASKS §9.2
+- [x] ADMIN ✅ (Abduloh) `GroupDetail.jsx` real API ga ulangan ekan — tekshirildi 2026-07-28
+      (Karis, `646060e`/27.07): attendance/homework/feedback oltala endpoint ham chaqirilyapti,
+      mock qolmagan. TASK.md eskirgan edi
+- [ ] ADMIN (Abduloh): 🔄 **Odil'dan o'tkazildi (2026-07-28, Karis qarori)** — Guruh formasi:
+      mentor majburiy + kunlar (1-3-5/2-4-6 preset yoki boshqa kunlar galochka) + boshlanish
+      vaqti + tugash vaqti AVTO (GET /api/admin/settings) → POST/PATCH { days, startTime };
+      kontrakt TEAM-TASKS §9.2
 - [x] ADMIN: Payments UI (full/split modal; K-PAY chiqqach ulanadi) — Payments.jsx (775 qator)
 - [x] ADMIN: Expenses CRUD — Expenses.jsx + PDF eksport (Abduloh, jspdf)
 - [x] ADMIN: Reports — Reports.jsx, GET /api/admin/reports ga ulangan
@@ -630,16 +629,14 @@
 > Sardor to'liq Student paneliga o'tdi (Karis qarori 2026-07-26), shuning uchun
 > bu uchta vazifa Kozim'ga berildi — u chat integratsiyasidan keyin bo'sh.
 
-- [ ] FE-DEAD-CODE: repo'da router'ga UMUMAN ulanmagan kod yotibdi, hammani chalg'itadi:
-      • ~~`staff/src/pages/mentor/mentoor/`~~ ✅ O'CHIRILDI 2026-07-21 (Karis, Kozim bilan kelishilgan)
-      • `staff/src/pages/super/ComingSoon.jsx` — App.jsx da ishlatilmaydi
-      • `main-admin/src/pages/Placeholder.jsx` — App.jsx da ishlatilmaydi
-      ⚠️ `mentoor/` — Kozim'ning ishi. O'chirishdan OLDIN Karis va Kozim bilan kelishilsin
-- [ ] FE-ROUTER-FLAG: React Router v7 future flag'lari 4 ta app'ning HECH BIRIDA qo'yilmagan →
-      konsol warning'lari to'lib ketgan. Elyor buni 2026-07-16 da aytgan, hech kim olmagan.
-      `main.jsx` larga `future={{ v7_startTransition: true, v7_relativeSplatPath: true }}`
-- [ ] FE-COOP: Google login COOP konsol xatosi (`firebase.js` / `vite.config.js`) —
-      bu ham Elyor ro'yxatidan, hech kim olmagan
+- [x] FE-DEAD-CODE ✅ hammasi allaqachon o'chirilgan ekan (tekshirildi 2026-07-28, Karis):
+      `mentoor/` — 2026-07-21 (yuqorida), `ComingSoon.jsx`/`Placeholder.jsx` —
+      `cd91467`/`df6344f` (2026-07-26). TASK.md eskirgan edi
+- [x] FE-ROUTER-FLAG ✅ QO'SHILDI 2026-07-28 (Karis): `future={{ v7_startTransition: true,
+      v7_relativeSplatPath: true }}` barcha 4 ta `main.jsx` da (staff/main-admin/member/student)
+- [x] FE-COOP ✅ TUZATILDI 2026-07-28 (Karis): `Cross-Origin-Opener-Policy:
+      same-origin-allow-popups` — dev (`vite.config.js` server.headers) va prod
+      (`vercel.json`) uchun `staff` va `main-admin` da
 
 ### 🔴 ALISH — `member/` panelini mentor darajasiga chiqarish
 
@@ -704,16 +701,22 @@
 
 ### 🔴 PARENT (Kama) — auditda topilgan yangi kamchiliklar (2026-07-21)
 
-- [ ] AB-PARENT-NOTIF: `GET /api/parent/notifications` backendda YO'Q — `parent.routes.js`
-      faqat `overviewRoutes`ni ulaydi. Hozir front faqat mock bilan ishlaydi. Egasi: Abdulaziz (backend)
-- [ ] FE-PARENT-DEBT: `member/Debt.jsx:57` — progress-bar qiymati hardcode `value={0}`,
-      to'langan/kutilayotgan ulush hech qachon hisoblanmaydi. Egasi: Kama
-- [ ] FE-PARENT-PROFILE-PREF: `member/Profile.jsx:100,112` — toggle'lar `defaultChecked`,
-      `onChange` yo'q, saqlanmaydi. Backendda preference API ham yo'q. Egasi: Kama (front) + Abdulaziz (backend, kerak bo'lsa)
-- [ ] FE-PARENT-SIDEBAR-NOTIF: desktop sidebar'da bildirishnomalarga link yo'q — faqat mobil
-      qo'ng'iroq ikonkasi orqali ochiladi. Egasi: Kama
-- [ ] FE-PARENT-PAGINATION: ro'yxatlarda (Attendance/Grades/Notifications) pagination yo'q,
-      faqat oz miqdordagi yozuv ko'rsatiladi. Egasi: Kama
+- [x] AB-PARENT-NOTIF ✅ allaqachon bajarilgan ekan (Abdulaziz, `870d1c5`, 2026-07-21) —
+      tekshirildi 2026-07-28 (Karis): `GET /api/parent/notifications` bor va front
+      (`member/api.js`) real endpointga ulangan, mock emas. TASK.md eskirgan edi
+- [x] FE-PARENT-DEBT ✅ TUZATILDI 2026-07-28 (Karis): backendga `overview.repository.js`
+      `getCurrentInvoice()` qo'shildi (joriy invoice `total_amount`/`paid_amount`),
+      `Debt.jsx` progress-bar endi haqiqiy nisbatni ko'rsatadi
+- [x] FE-PARENT-PROFILE-PREF ✅ TUZATILDI 2026-07-28 (Karis): haqiqiy push-bildirishnoma
+      infratuzilmasi (service worker/VAPID) loyihada umuman yo'q — shuning uchun soxta
+      bekend jadval o'rniga toggle'lar `localStorage` ga saqlanadi (haqiqiy klient
+      sozlamasi, backend kerak emas)
+- [x] FE-PARENT-SIDEBAR-NOTIF ✅ allaqachon yopilgan ekan — `Layout.jsx` umumiy
+      `sidebar` komponenti orqali desktop va mobilda bir xil link ishlatadi
+- [x] FE-PARENT-PAGINATION ✅ TUZATILDI 2026-07-28 (Karis): backendga ikkita yangi
+      endpoint (`GET /parent/children/:id/attendance`, `.../grades`, page/limit) +
+      `GET /parent/notifications` uchun kursor pagination (`before`, lenta 5 manbadan
+      birlashtiriladi — oddiy offset ishlamaydi). Frontda pager + "ko'proq ko'rsatish"
 
 ## Frontend — Landing Page ✅
 

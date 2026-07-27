@@ -9,6 +9,12 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 5174,
+      // FE-COOP: default COOP blocks Firebase signInWithPopup from polling
+      // popup.closed — console warning (google/firebase-js-sdk#7370).
+      // same-origin-allow-popups keeps isolation but allows our own popups.
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      },
       proxy: {
         '/api': {
           /* DEV_API_PROXY впереди VITE_API_URL намеренно.

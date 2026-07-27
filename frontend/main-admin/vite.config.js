@@ -14,6 +14,13 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 5273,
+      // FE-COOP: default COOP browsers apply to cross-origin window.open() blocks
+      // Firebase's signInWithPopup from polling popup.closed — console warning
+      // (google/firebase-js-sdk#7370). same-origin-allow-popups keeps isolation
+      // but explicitly permits interacting with popups we opened ourselves.
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      },
       proxy: {
         '/api': {
           target: env.DEV_API_PROXY || 'https://levelup-academy-1.onrender.com',
