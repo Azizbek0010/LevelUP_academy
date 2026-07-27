@@ -304,13 +304,13 @@ export default function StatsTab({ groupId }) {
                   <td><Bar value={s.attendanceRate} /></td>
                   <td>
                     <Bar value={s.homeworkRate} />
-                    <div className="text-[10px] text-base-content/40 mt-0.5">
+                    <div className="text-[10px] text-base-content/40 mt-0.5 tabular-nums">
                       {s.homeworkDone}/{s.homeworkTotal} сдано
                     </div>
                   </td>
                   <td>
                     <Bar value={s.testAvg} />
-                    <div className="text-[10px] text-base-content/40 mt-0.5">
+                    <div className="text-[10px] text-base-content/40 mt-0.5 tabular-nums">
                       {s.testsTaken}/{s.testsTotal} пройдено
                     </div>
                   </td>

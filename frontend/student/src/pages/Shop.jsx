@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ShoppingBag, Coins, Gift, History } from 'lucide-react';
 import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, Skeleton, EmptyState, Modal, Pill, Tabs } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill, Tabs } from '../components/ui.jsx';
 import { fmtNum, fmtDateTime } from '../format.js';
 
 export default function Shop() {
@@ -13,9 +13,11 @@ export default function Shop() {
   const [confirm, setConfirm] = useState(null); // товар для подтверждения
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState('items');
+  const [error, setError] = useState(null);
 
   const load = () => {
-    api.shopItems().then((d) => setItems(d.data)).catch((err) => toast(err.message, 'error'));
+    setError(null);
+    api.shopItems().then((d) => setItems(d.data)).catch((err) => { setError(err); toast(err.message, 'error'); });
     api.orders().then((d) => setOrders(d.data)).catch(() => {});
     api.home().then((d) => setBalance(d.data.coins)).catch(() => {});
   };
@@ -62,7 +64,9 @@ export default function Shop() {
       </div>
 
       {tab === 'items' ? (
-        !items ? (
+        error ? (
+          <ErrorState message={error.message} onRetry={load} />
+        ) : !items ? (
           <Skeleton h={180} count={2} />
         ) : items.length === 0 ? (
           <div className="card bg-base-100">

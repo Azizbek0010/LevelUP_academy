@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ClipboardCheck, Coins, ChevronRight } from 'lucide-react';
 import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, Skeleton, EmptyState, Pill } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Pill } from '../components/ui.jsx';
 import { fmtDateTime } from '../format.js';
 
 /** Статус теста для студента по данным списка. */
@@ -22,19 +22,25 @@ export default function Tests() {
   const navigate = useNavigate();
   const toast = useToast();
   const [tests, setTests] = useState(null);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setError(null);
     api
       .tests()
       .then((d) => setTests(d.data))
-      .catch((err) => toast(err.message, 'error'));
+      .catch((err) => { setError(err); toast(err.message, 'error'); });
   }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
 
   return (
     <>
       <PageHeader title="Тесты" subtitle="Сдай тест на 50% и выше — получишь коины" />
 
-      {!tests ? (
+      {error ? (
+        <ErrorState message={error.message} onRetry={load} />
+      ) : !tests ? (
         <Skeleton h={72} count={4} />
       ) : tests.length === 0 ? (
         <div className="card bg-base-100">

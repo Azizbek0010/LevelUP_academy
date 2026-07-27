@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Trophy } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, Skeleton, EmptyState, Tabs, Avatar } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Tabs, Avatar } from '../components/ui.jsx';
 import { fmtNum } from '../format.js';
 
 const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -34,14 +34,18 @@ export default function Leaderboard() {
   const toast = useToast();
   const [period, setPeriod] = useState('week');
   const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setData(null);
+    setError(null);
     api
       .leaderboard(period)
       .then((d) => setData(d.data))
-      .catch((err) => toast(err.message, 'error'));
+      .catch((err) => { setError(err); toast(err.message, 'error'); });
   }, [period, toast]);
+
+  useEffect(() => { load(); }, [load]);
 
   const inTop = data?.top?.some((r) => r.studentId === user?.id);
 
@@ -59,7 +63,9 @@ export default function Leaderboard() {
         }
       />
 
-      {!data ? (
+      {error ? (
+        <ErrorState message={error.message} onRetry={load} />
+      ) : !data ? (
         <Skeleton h={64} count={5} />
       ) : data.top.length === 0 ? (
         <div className="card bg-base-100">

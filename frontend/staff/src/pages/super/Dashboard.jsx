@@ -128,7 +128,7 @@ function Loaded({ data, onlineCount }) {
             <p className="text-base-content/40 text-sm py-6 text-center">Филиалов пока нет</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="table table-sm">
+              <table className="table table-sm tabular-nums">
                 <thead>
                   <tr>
                     <th>Филиал</th>
