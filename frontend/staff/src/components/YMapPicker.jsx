@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MapPin } from 'lucide-react';
 
 const YANDEX_KEY = import.meta.env.VITE_YANDEX_KEY;
+const TASHKENT = [69.2401, 41.2995];
 
 let scriptLoaded = false;
 let scriptLoading = false;
@@ -43,20 +44,44 @@ function loadYMapsScript(key) {
   });
 }
 
+function markerElement() {
+  const el = document.createElement('div');
+  el.innerHTML = '<div style="font-size:28px;margin-top:-28px;margin-left:-14px">📍</div>';
+  return el;
+}
+
 /**
- * `onUnavailable` — сообщить наверх, что карта не поднялась.
+ * Карта Яндекса с одной точкой: выбор точки или её показ.
  *
- * Нужно, чтобы форма филиала не превращалась в тупик: точку на карте мы
- * требуем при создании, но если сам сервис недоступен (нет ключа, не
- * применились ограничения, Яндекс отвечает 503), поставить её физически
- * нечем — и тогда требование надо снимать, иначе филиал не создать вообще.
+ * `readOnly` — только показать. Тогда карта не слушает клики (случайно
+ * сдвинуть филиал на странице просмотра нельзя) и не перехватывает колесо
+ * мыши, иначе прокрутка страницы застревала бы на карте.
+ *
+ * `onUnavailable` — сообщить наверх, что карта не поднялась. Нужно, чтобы
+ * форма филиала не превращалась в тупик: точку мы требуем при создании, но
+ * если сам сервис недоступен (нет ключа, не применились ограничения, Яндекс
+ * отвечает 503), поставить её физически нечем — и требование надо снимать,
+ * иначе филиал не создать вообще.
  */
-export default function YMapPicker({ value, onChange, height = 260, onUnavailable }) {
+export default function YMapPicker({ value, onChange, height = 260, onUnavailable, readOnly = false }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const [ready, setReady] = useState(false);
+  const [mapLive, setMapLive] = useState(false);
   const [error, setError] = useState(null);
+
+  /* Обработчик и текущее значение — через ref: карта создаётся один раз и
+     замыкает в себе то, что было на момент создания. Без этого клик по карте
+     звал бы первый onChange, а метка не двигалась бы вслед за координатами,
+     набранными руками в полях. */
+  const onChangeRef = useRef(onChange);
+  const valueRef = useRef(value);
+  const fromMapRef = useRef(false);
+  const prevRef = useRef(null);
+
+  useEffect(() => { onChangeRef.current = onChange; });
+  valueRef.current = value;
 
   if (!YANDEX_KEY) {
     onUnavailable?.(true);
@@ -99,65 +124,52 @@ export default function YMapPicker({ value, onChange, height = 260, onUnavailabl
     };
   }, []);
 
+  // создание карты
   useEffect(() => {
-    if (!ready || !containerRef.current) return;
+    if (!ready || !containerRef.current) return undefined;
 
     const ymaps3 = window.ymaps3;
-
     let destroyed = false;
 
     ymaps3.ready.then(() => {
       if (destroyed || !containerRef.current) return;
 
-      const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapListener, YMapMarker } = ymaps3;
-
-      const center = value ? [value.lng, value.lat] : [69.2401, 41.2995];
-      const zoom = value ? 15 : 11;
+      const { YMap, YMapDefaultSchemeLayer, YMapDefaultFeaturesLayer, YMapListener } = ymaps3;
+      const v = valueRef.current;
 
       const map = new YMap(containerRef.current, {
-        location: { center, zoom },
+        location: {
+          center: v?.lat != null && v?.lng != null ? [v.lng, v.lat] : TASHKENT,
+          zoom: v?.lat != null && v?.lng != null ? 16 : 11,
+        },
+        // на странице просмотра карта не должна воровать прокрутку страницы
+        ...(readOnly ? { behaviors: ['drag', 'pinchZoom', 'dblClick'] } : {}),
       });
 
       map.addChild(new YMapDefaultSchemeLayer({}));
       map.addChild(new YMapDefaultFeaturesLayer({}));
 
-      // Marker element
-      const markerEl = document.createElement('div');
-      markerEl.innerHTML = '<div style="font-size:28px;margin-top:-28px;margin-left:-14px">📍</div>';
-
-      let marker = null;
-
-      if (value) {
-        marker = new YMapMarker({ coordinates: [value.lng, value.lat] }, markerEl);
-        map.addChild(marker);
-        markerRef.current = marker;
+      if (!readOnly) {
+        map.addChild(new YMapListener({
+          layer: 'any',
+          onClick(_, event) {
+            const [lng, lat] = event.coordinates;
+            // метку ставит эффект синхронизации — по значению сверху, а не тут,
+            // иначе на карте была бы одна точка, а в полях другая
+            fromMapRef.current = true;
+            onChangeRef.current?.({ lat, lng });
+          },
+        }));
       }
 
-      const listener = new YMapListener({
-        layer: 'any',
-        onClick(_, event) {
-          const [lng, lat] = event.coordinates;
-
-          if (marker) {
-            map.removeChild(marker);
-          }
-
-          const newEl = document.createElement('div');
-          newEl.innerHTML = '<div style="font-size:28px;margin-top:-28px;margin-left:-14px">📍</div>';
-          marker = new YMapMarker({ coordinates: [lng, lat] }, newEl);
-          map.addChild(marker);
-          markerRef.current = marker;
-
-          if (onChange) onChange({ lat, lng });
-        },
-      });
-
-      map.addChild(listener);
       mapRef.current = map;
+      setMapLive(true);
     });
 
     return () => {
       destroyed = true;
+      markerRef.current = null;
+      setMapLive(false);
       if (mapRef.current) {
         try {
           mapRef.current.destroy();
@@ -165,15 +177,48 @@ export default function YMapPicker({ value, onChange, height = 260, onUnavailabl
         mapRef.current = null;
       }
     };
-  }, [ready]);
+  }, [ready, readOnly]);
+
+  // метка следует за значением: и за кликом, и за координатами из полей
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLive) return;
+
+    const lat = value?.lat;
+    const lng = value?.lng;
+    const has = lat != null && lng != null;
+
+    if (markerRef.current) {
+      try { map.removeChild(markerRef.current); } catch (_) {}
+      markerRef.current = null;
+    }
+
+    if (has) {
+      const marker = new window.ymaps3.YMapMarker({ coordinates: [lng, lat] }, markerElement());
+      map.addChild(marker);
+      markerRef.current = marker;
+
+      /* Подвинуть карту к точке — только если точка приехала не с самой карты
+         и прыжок заметный: иначе карта дёргалась бы под курсором на каждый
+         клик и на каждую цифру, набранную в поле координат. */
+      const prev = prevRef.current;
+      const jumped = !prev || Math.abs(prev.lat - lat) > 0.02 || Math.abs(prev.lng - lng) > 0.02;
+      if (!fromMapRef.current && jumped) {
+        try { map.setLocation({ center: [lng, lat], zoom: 16, duration: 300 }); } catch (_) {}
+      }
+    }
+
+    prevRef.current = has ? { lat, lng } : null;
+    fromMapRef.current = false;
+  }, [value?.lat, value?.lng, mapLive]);
 
   if (error) {
     return (
       <div
         style={{ height }}
-        className="flex items-center justify-center bg-base-200 rounded-xl border border-error/30"
+        className="flex items-center justify-center bg-base-200 rounded-xl border border-error/30 p-4"
       >
-        <p className="text-sm text-error">{error}</p>
+        <p className="text-sm text-error text-center">{error}</p>
       </div>
     );
   }
