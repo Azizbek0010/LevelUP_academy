@@ -504,7 +504,14 @@
 
 ### 🔴 FE-SUPER (Said Islom + Aziz) — auditda topilgan xatolar
 
-- [ ] FE-SUPER-STATS 🔥 (Said Islom): `super/Stats.jsx:22-27` da **O'YLAB TOPILGAN raqamlar** bor:
+- [x] FE-SUPER-STATS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/stats?period=` ga
+      ulandi. 7/30/90 tugmalari endi haqiqiy so'rov yuboradi (avval faqat tugma rangini
+      o'zgartirardi), "Выручка по дням" haqiqiy `revenueSeries` bo'yicha chiziladi (avval o'q
+      bo'ylab filiallar turardi), "Способы оплаты" bloki haqiqiy `paymentMethods` bilan qaytdi.
+      Backendga `totals.periodRevenue` qo'shildi: KPI "Выручка" hamma vaqt uchun edi grafiklar esa
+      7 kun uchun — bitta ekranda ikkita har xil raqam turardi. Lokal bazada tekshirildi:
+      period=7d → 2 400 000, period=30d → 9 750 000, naqd/karta/o'tkazma 32/37/31 foiz
+      Asl vazifa matni (Said Islom uchun yozilgan edi): `super/Stats.jsx:22-27` da **O'YLAB TOPILGAN raqamlar** bor edi:
       ```js
       const PAYMENT_METHODS = [
         { name: 'Наличные', value: 65 }, { name: 'Карта', value: 30 }, { name: 'Online', value: 5 },
@@ -517,7 +524,11 @@
       (`period` query bilan). Kutiladigan hech narsa yo'q, ish to'liq frontda.
       ⚠️ Sahifa hozir `useSuperDashboard` ni chaqiryapti — bu Dashboard'ning endpointi, Stats'niki EMAS.
       Hardcode 2026-07-26 da ham `Stats.jsx` da joyida turibdi (qayta tekshirildi)
-- [ ] FE-SUPER-REPORTS (Aziz): `super/Reports.jsx` ham `useSuperDashboard` da o'tiribdi — o'z ma'lumoti yo'q.
+- [x] FE-SUPER-REPORTS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/reports` ga
+      o'tkazildi. Filialning ulushi endi serverdan keladi (`branch.share`), razmetkada qayta
+      hisoblanmaydi — aks holda formulani serverda o'zgartirsak ikki joyda ikki xil raqam chiqardi.
+      O'rtacha tushum ham serverdan. Lokal bazada tekshirildi: 9 750 000 · ulush 100 foiz · 1 admin.
+      Asl vazifa matni (Aziz uchun): `super/Reports.jsx` ham `useSuperDashboard` da o'tirardi — o'z ma'lumoti yo'q edi.
       Ya'ni Dashboard / Stats / Reports — uchtasi BITTA endpointdan oziqlanyapti.
       🟢 **2026-07-26: backend TAYYOR** — `GET /api/super/reports` `super.routes.js:619` da bor.
       Ish faqat frontda: `useSuperDashboard` o'rniga o'z endpointiga o'tsin

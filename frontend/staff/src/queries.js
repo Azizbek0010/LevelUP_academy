@@ -18,6 +18,18 @@ export function useSuperDashboard() {
   return useAuthedQuery(['super-dashboard'], () => api.superDashboard(token));
 }
 
+/** Статистика организации за период: 7d / 30d / 90d. */
+export function useSuperStats(period = '30d') {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-stats', period], () => api.superStats(token, period));
+}
+
+/** Сводный отчёт: те же филиалы, но с долей в выручке от сервера. */
+export function useSuperReports() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-reports'], () => api.superReports(token));
+}
+
 export function useSuperBranches() {
   const { token } = useAuth();
   return useAuthedQuery(['super-branches'], () => api.superBranches(token));

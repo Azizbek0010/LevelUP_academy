@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 26.07.2026 02:48 (UTC+5, Toshkent vaqti)
-> Statistika: 161/215 task tugallangan (74%)
+> Oxirgi yangilanish: 27.07.2026 23:32 (UTC+5, Toshkent vaqti)
+> Statistika: 163/215 task tugallangan (75%)
 
 ---
 
-## Progress: [##############......] 74%
+## Progress: [###############.....] 75%
 
 ## Tugallangan vazifalar
 
@@ -166,6 +166,8 @@
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
 - [x] SUPER (front): CRUD admins
 - [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
+- [x] FE-SUPER-STATS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/stats?period=` ga
+- [x] FE-SUPER-REPORTS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/reports` ga
 
 ### Main Admin (Karis) 🔥 to'liq egasi — 2026-07-26 dan, front + backend
 - [x] MAIN: Dashboard — KPI + grafiklar (Dashboard.jsx, 805 qator)
@@ -238,6 +240,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 102 task
+- Karis (Backend): 104 task
 - Abdulaziz (Backend): 67 task
-- Frontend jamoasi: 46 task
+- Frontend jamoasi: 48 task

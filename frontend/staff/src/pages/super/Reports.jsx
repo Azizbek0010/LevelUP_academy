@@ -1,12 +1,21 @@
 import { Download, TrendingUp, CreditCard, Landmark, Users, Percent } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { fmt, money } from '../../format.js';
-import { useSuperDashboard } from '../../queries.js';
+import { useSuperReports } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
 
+/**
+ * Сводный отчёт организации.
+ *
+ * Страница сидела на `/super/dashboard` — вместе с Дашбордом и Статистикой на
+ * одном эндпоинте. Долю филиала в выручке приходилось считать здесь же, в
+ * разметке, и она расходилась бы с любым другим отчётом, если бы формулу
+ * поменяли на сервере. Свой эндпоинт `GET /api/super/reports` отдаёт и долю, и
+ * среднюю выручку уже посчитанными.
+ */
 export default function SuperReports() {
-  const { data, isLoading, error } = useSuperDashboard();
+  const { data, isLoading, error } = useSuperReports();
 
   if (isLoading || !data) return <div className="space-y-6"><PageHeader title="Аналитика" /><SkeletonKpis count={4} /><SkeletonTable /></div>;
   if (error && error.status !== 401) return <div className="alert alert-error text-sm"><span>{error.message}</span></div>;
@@ -14,7 +23,7 @@ export default function SuperReports() {
   const t = data.totals || {};
   const cur = t.currency || 'UZS';
   const branches = data.branches || [];
-  const avgRevenue = t.branches > 0 ? t.revenue / t.branches : 0;
+  const avgRevenue = t.avgRevenue ?? 0;
   const avgDebt = t.branches > 0 ? (t.outstandingDebt || 0) / t.branches : 0;
   const maxRevenue = Math.max(...branches.map((b) => Number(b.revenue || 0)), 1);
   const maxDebt = Math.max(...branches.map((b) => Number(b.debt || 0)), 1);
@@ -28,8 +37,7 @@ export default function SuperReports() {
     csv += `${t.branches},${t.activeStudents},${t.admins},${t.revenue},${t.outstandingDebt || 0},${Math.round(avgRevenue)}\n\n`;
     csv += `"Филиал","Ученики","Админы","Выручка","Долг","Доля %"\n`;
     branches.forEach((b) => {
-      const share = t.revenue > 0 ? ((b.revenue / t.revenue) * 100).toFixed(1) : '0.0';
-      csv += `"${b.name}",${b.students},${b.admins},${b.revenue},${b.debt || 0},${share}%\n`;
+      csv += `"${b.name}",${b.students},${b.admins},${b.revenue},${b.debt || 0},${(b.share ?? 0).toFixed(1)}%\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -156,7 +164,8 @@ export default function SuperReports() {
               </thead>
               <tbody>
                 {branches.map((b) => {
-                  const share = t.revenue > 0 ? ((b.revenue / t.revenue) * 100).toFixed(1) : '0.0';
+                  // доля приходит с сервера — здесь её больше не пересчитываем
+                  const share = (b.share ?? 0).toFixed(1);
                   return (
                     <tr key={b.id} className="hover">
                       <td className="font-semibold"><Link to={`/branches/${b.id}`} className="hover:underline">{b.name}</Link></td>

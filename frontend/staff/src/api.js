@@ -2278,6 +2278,11 @@ export const api = {
 
   // -------- SUPER ADMIN --------
   superDashboard: (token) => request('/super/dashboard', { token }),
+  /* Статистика и отчёт — отдельные эндпоинты, а не дашборд: у первого есть
+     ряд выручки по дням и разбивка по способам оплаты, у второго — доля
+     филиала в выручке, посчитанная на сервере. */
+  superStats: (token, period = '30d') => request(`/super/stats?period=${period}`, { token }),
+  superReports: (token) => request('/super/reports', { token }),
   superBranches: (token) => request('/super/branches', { token }),
   superBranchDetail: (token, id) => request(`/super/branches/${id}`, { token }),
   superCreateBranch: (token, body) => request('/super/branches', { method: 'POST', token, body }),
