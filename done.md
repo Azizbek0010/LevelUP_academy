@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 28.07.2026 03:06 (UTC+5, Toshkent vaqti)
-> Statistika: 178/206 task tugallangan (86%)
+> Oxirgi yangilanish: 28.07.2026 03:28 (UTC+5, Toshkent vaqti)
+> Statistika: 178/207 task tugallangan (85%)
 
 ---
 
-## Progress: [#################...] 86%
+## Progress: [#################...] 85%
 
 ## Tugallangan vazifalar
 

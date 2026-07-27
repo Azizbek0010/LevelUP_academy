@@ -58,19 +58,23 @@
       ⚠️ Ilgari "front jamoasiga" deb turgan edi — ISM yo'q edi, shuning uchun 2026-07-18 dan
       beri hech kim olmagan. Egasiz vazifa = qilinmaydigan vazifa.
       Hamidula tanlandi: yuki eng yengil edi (bitta UI-TABLES), forma ishi esa uning yo'nalishi.
+      🔄 **2026-07-28 (Karis): Admin panel qismi Abduloh'ga o'tkazildi** (pastda
+      `K-DISC-FRONT-ADMIN` ga qara) — Hamidula'da endi faqat Super + Mentor/Methodist qoldi.
 
       Nima qilinadi (backend TAYYOR, 10 endpoint, Swagger'da "Discipline" tegi ostida):
       • Super panelda: ustav tahrirlash formasi (`PUT /api/super/charter`) +
         shtraf berish formasi (`POST /api/super/penalties`) + ro'yxat (`GET`)
-      • Admin panelda: shtraf berish + ro'yxat (`POST/GET /api/admin/penalties`),
-        ustavni faqat o'qish (`GET /api/admin/charter`)
       • Mentor va Methodist panelida: FAQAT ko'rish — o'z shtraflari
         (`GET /api/users/me/penalties`) va ustav (`GET /api/users/me/charter`)
 
       ⚠️ Huquqlar matritsasi backendda qat'iy (CAN_ISSUE) — frontda tugmalarni shunga qarab yashir:
-      superadmin → admin/mentor/methodist ga; admin → mentor/methodist ga shtraf,
-      qora ro'yxat esa FAQAT mentor'ga; main_admin → HECH KIMGA.
+      superadmin → admin/mentor/methodist ga shtraf/qora; main_admin → HECH KIMGA.
       Backend baribir tekshiradi, lekin ishlamaydigan tugma ko'rsatish yomon UX
+- [ ] K-DISC-FRONT-ADMIN 🔄 EGASI: **ABDULOH** (Hamidula'dan o'tkazildi, 2026-07-28, Karis).
+      Admin panelda: shtraf berish formasi + ro'yxat (`POST/GET /api/admin/penalties`),
+      ustavni faqat o'qish (`GET /api/admin/charter`). Huquqlar matritsasi bo'yicha
+      admin → mentor/methodist'ga shtraf bera oladi, qora ro'yxat esa FAQAT mentor'ga —
+      backend tekshiradi, lekin frontda ham ishlamaydigan tugma ko'rsatilmasin
 - [ ] K-DISC: runtime tekshiruv — hali BD da yugurtirilmagan (npm run migrate + jonli test)
 
 ## Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
