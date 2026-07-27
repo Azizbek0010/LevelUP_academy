@@ -253,7 +253,6 @@
 - [x] AB-V1: due-soon worker (to'lov muddatidan N kun oldin ota-onaga eslatma, payment.due_soon)
 - [x] AB-V1: Partner profit main dashboardda (income - expenses; pul jadvallariga faqat SELECT)
 - [x] AB-V1: Integration testlar: payments full/split + auth flow (login -> refresh -> reuse-detect -> OTP)
-- [ ] AB-V1: SEO — pastdagi "SEO — Landing + platforma (Abdulaziz)" bo'limiga ko'chirildi va kengaytirildi
 
 ## Backend — Super Admin Integratsiya (Karis) 🔥 hozirgi fokus
 
@@ -281,73 +280,31 @@
 > Auditda topilgan ochiq backend ishlar. Hammasi `backend/` zonasida — Abdulaziz'ning zonasi.
 > Tartib MUHIM: AB-INT-GROUP birinchi, chunki u boshqa odamni (Abduloh) BLOKLAB turibdi.
 
-### AB-INT-GROUP ✅ YOPILDI (2026-07-26 auditda aniqlandi)
+### AB-INT-GROUP ✅ YOPILDI (Abdulaziz, 2026-07-20)
 
-- [x] AB-INT-GROUP ✅ **BAJARILGAN — Abdulaziz 2026-07-20 da yopgan, TASK.md yangilanmagan edi.**
-      Kod tekshirildi 2026-07-26: oltala route ham `admin.routes.js` da o'z joyida —
-      `GET/POST /groups/:id/attendance` (983, 988), `GET/POST /groups/:id/homework` (1050, 1052),
-      `GET/POST /groups/:id/feedback` (1110, 1112). Kontroller (`admin.controller.js:134-155`)
-      va servis (`markGroupAttendance:585`, `createGroupFeedback:700`) yozilgan, zaglushka emas.
-      `feedback` uchun yangi jadval ham bor: migratsiya `1783860000000_group-feedback.js`
-      (commit `5a70184`, 2026-07-20).
-      Qaror bo'yicha ham to'g'ri qilingan: attendance/homework mentor jadvallaridan REUSE,
-      faqat feedback yangi jadval.
-      ⚠️ **Abduloh bu paytdan beri bekorga bloklangan deb hisoblab yurgan** — unga aytilsin.
-      Qolgan ish endi faqat frontda: `GroupDetail.jsx` hali mock'dan olyapti, real API ga o'tsin
+- [x] AB-INT-GROUP — attendance/homework/feedback endpointlar `admin.routes.js` da,
+      `feedback` uchun yangi jadval (migratsiya `1783860000000`, commit `5a70184`).
+      Qolgan ish frontda: `GroupDetail.jsx` hali mock'dan olyapti, real API ga o'tsin (Abduloh)
 
-### AB-SUPER-STUB ✅ TO'RTALASI HAM YOPILDI (2026-07-26 auditda aniqlandi)
+### AB-SUPER-STUB ✅ barchasi yopildi (Abdulaziz, 2026-07-20/21)
 
-> ⚠️ Bu blok "zaglushka, 501 qaytaradi" deb turgan edi — **ESKIRGAN**. Abdulaziz hammasini
-> 2026-07-20/21 da yozib bo'lgan (`460914b`, `870d1c5`), lekin TASK.md yangilanmagan.
-> Kod tekshirildi 2026-07-26: `super.routes.js` da route'lar bor, `super.controller.js`
-> real servis chaqiradi, 501 tashlaydigan joy qolmagan.
+- [x] AB-SUPER-ANN — `GET/POST/DELETE /api/super/announcements` (`460914b`)
+- [x] AB-SUPER-REM — `GET /api/super/reminders` + resend/delete (`870d1c5`)
+- [x] AB-SUPER-AUDIT — `GET /api/super/audit` (`460914b`)
+- [x] AB-SUPER-STATS — `GET /api/super/stats` (`460914b`); front tomoni FE-SUPER-STATS'da
+- [ ] AB-SUPER-SWAGGER: `super.routes.js:409-431` izohi hali "501" deb eskirgan —
+      yangilansin + `swagger/*.md` qayta generatsiya
 
-- [x] AB-SUPER-ANN ✅ 2026-07-20 (`460914b`): `GET/POST/DELETE /api/super/announcements`
-      (`super.routes.js:415,416,433`), controller `listAnnouncements/createAnnouncement/deleteAnnouncement`,
-      migratsiya `1783870000000_super-announcements.js`. Create'da audit yozuvi ham qo'yilgan
-- [x] AB-SUPER-REM ✅ 2026-07-21 (`870d1c5`): `GET /api/super/reminders` +
-      `POST /reminders/:id/resend` + `DELETE /reminders/:id` (`super.routes.js:472,498,524`),
-      alohida `reminders` moduli, migratsiya `1783890000000_org-reminders.js`
-- [x] AB-SUPER-AUDIT ✅ 2026-07-20 (`460914b`): `GET /api/super/audit` (`super.routes.js:547`),
-      migratsiya `1783880000000_audit-log.js`, yozuv MUHIM mutatsiyalarga ulangan (`audit(req, ...)`)
-- [x] AB-SUPER-STATS ✅ 2026-07-20 (`460914b`): `GET /api/super/stats` (`super.routes.js:586`,
-      `period` query validatsiyasi bilan), controller → `service.stats(orgId, period)`
-      ⚠️ **Front tomoni HALI OCHIQ** — `super/Stats.jsx` da `PAYMENT_METHODS` hardcode
-      (Наличные 65 / Карта 30 / Online 5) 2026-07-26 da ham joyida turibdi va u haqiqiy
-      grafik bo'lib chiziladi. FE-SUPER-STATS ga qara — endi backend kutilmaydi, ish faqat frontda
-- [ ] AB-SUPER-SWAGGER 🆕 (2026-07-26): `super.routes.js:409-431` da e'lonlar uchun swagger izohi
-      hali "⚠️ NOT IMPLEMENTED — always 501" deb turibdi, holbuki endpoint ishlaydi.
-      Hujjat kodga zid → front yana eski hujjatga qarab noto'g'ri qurishi mumkin (BUG-BILLING
-      aynan shunday tug'ilgan edi). Swagger izohi yangilansin va `swagger/*.md` qayta generatsiya qilinsin
+### AB-SUPER-REPORTS + AB-MAIN-REVENUE (Abdulaziz)
 
-### AB-SUPER-REPORTS + AB-MAIN-REVENUE 🆕 (2026-07-19 auditda topildi)
+- [x] AB-SUPER-REPORTS — `GET /api/super/reports` (`460914b`); front FE-SUPER-REPORTS'da
+- [x] AB-EXPENSE-PATCH — `PATCH /api/admin/expenses/:id` qo'shildi
+- [x] AB-MAIN-REVENUE — `GET /api/main/revenue` (`460914b`); front tomoni Shohjahon'da (MAIN: Revenue)
 
-> Muammo: bitta endpoint uchta sahifani boqyapti. `super/Dashboard.jsx`, `super/Stats.jsx` va
-> `super/Reports.jsx` — uchalasi ham `useSuperDashboard` ni chaqiradi. Stats va Reports'ning
-> o'z ma'lumoti YO'Q, ya'ni ular Dashboard'ning nusxasi bo'lib qolgan.
+### AB-VERIFY
 
-- [x] AB-SUPER-REPORTS ✅ 2026-07-20 (`460914b`): `GET /api/super/reports` yozilgan
-      (`super.routes.js:619` → `ctrl.reports` → `service.reports(orgId)`).
-      ⚠️ **Front tomoni HALI OCHIQ** — `super/Reports.jsx` baribir `useSuperDashboard` ni
-      chaqiradi, ya'ni Dashboard datasini ko'rsatishda davom etyapti. FE-SUPER-REPORTS (Aziz)
-- [x] AB-EXPENSE-PATCH ✅ TUZATILDI (2026-07-21 audit): `PATCH /api/admin/expenses/:id`
-      qo'shildi (`admin.routes.js:223`, controller→service→repository to'liq zanjir).
-      Front (`Expenses.jsx:358`) `editingId` bo'lsa `api.adminUpdateExpense()` chaqiradi,
-      aks holda create. Kozim TG'da qayta topgan edi — tekshirilganda allaqachon yopilgan
-      ekan (parallel commit `460914b` — "expense edit" — bilan kelgan)
-- [x] AB-MAIN-REVENUE ✅ **BACKEND BAJARILGAN** 2026-07-20 (`460914b`):
-      `GET /api/main/revenue` (`main.routes.js:219` → `ctrl.revenue` → `platformRevenue()`,
-      `main.service.js:130`). Qoida ham bajarilgan: pul jadvallariga faqat SELECT.
-      ⚠️ **Front tomoni HALI OCHIQ va u Shohjahon'da:** `main-admin/src/api.js` da `revenue`
-      metodi umuman yozilmagan, `Revenue.jsx` esa `useDashboard` da o'tiribdi va davrni
-      ko'paytirish koeffitsiyenti bilan "hisoblab" ko'rsatyapti (MAIN: Revenue ga qara)
-
-### AB-VERIFY — jonli tekshiruv (mock'siz)
-
-- [ ] AB-VERIFY: `VITE_USE_MOCKS=false` bilan real backend'da Student va Parent panellarini E2E tekshirish
-      (ikkalasi ham uning zonasi). Hozir ikkalasi ham faqat mock rejimida ko'rilgan
-- [x] AB-VERIFY: Parent Chat — Socket.io realtime ✅ TASDIQLANDI (2026-07-21, Kama auditi):
-      `member/Chat.jsx` `getSocket()` + `chat:global:send` orqali real ishlaydi
+- [ ] AB-VERIFY: `VITE_USE_MOCKS=false` bilan Student/Parent panellarini jonli E2E tekshirish
+- [x] AB-VERIFY: Parent Chat — Socket.io realtime tasdiqlandi (2026-07-21)
 
 ## Telegram bot (Bilol) ⚠️ TASK.md ga 2026-07-19 da QO'SHILDI
 
@@ -378,20 +335,6 @@
       Bilol'ning 14 commit'i shu sababli mijozga ko'rinmayapti — bu uning aybi emas
 - [ ] TG-FRONT (kim bo'shasa): kabinetda "Telegramni bog'lash" tugmasi —
       `bind-token` ni chaqirib deep-link ko'rsatadi. Front tomoni hech kimga berilmagan
-
-## SEO — Landing + platforma (Abdulaziz / abdulazizSEO) 🔥 full
-
-> abdulazizSEO rejimi: ikkala zonada (frontend + backend) faqat SEO ishlari.
-> ⚠️ QISMAN BAJARILGAN (origin'da bor): landing prerender/SSG, barcha private panellar (staff/main-admin/member/student) + api noindex, FAQPage schema. Abdulaziz qolganini belgilasin.
-
-- [ ] AB-SEO: Meta teglar har sahifada (title/description/keywords) + Open Graph + Twitter Card
-- [ ] AB-SEO: sitemap.xml (barcha public sahifalar) + robots.txt (AI-crawler qoidalari)
-- [ ] AB-SEO: Structured data JSON-LD (Organization, WebSite, FAQPage, BreadcrumbList) — GEO/AEO
-- [ ] AB-SEO: Semantik razmetka (h1-h6 ierarxiya, alt-textlar, aria-labellar)
-- [ ] AB-SEO: Canonical URL + hreflang (ko'p til bo'lsa)
-- [ ] AB-SEO: Page speed — Lighthouse 90+ (LCP/CLS/TBT), rasm optimizatsiya, lazy-load
-- [ ] AB-SEO: GA4 event'lar (SPA navigatsiya + konversiyalar) — G-RWCK0B6TXP
-- [ ] AB-SEO: SSR/prerender kerak bo'lsa (public landing sahifalar uchun)
 
 ## Backend — Infrastructure (Abdulaziz) ✅
 
@@ -504,7 +447,14 @@
 
 ### 🔴 FE-SUPER (Said Islom + Aziz) — auditda topilgan xatolar
 
-- [ ] FE-SUPER-STATS 🔥 (Said Islom): `super/Stats.jsx:22-27` da **O'YLAB TOPILGAN raqamlar** bor:
+- [x] FE-SUPER-STATS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/stats?period=` ga
+      ulandi. 7/30/90 tugmalari endi haqiqiy so'rov yuboradi (avval faqat tugma rangini
+      o'zgartirardi), "Выручка по дням" haqiqiy `revenueSeries` bo'yicha chiziladi (avval o'q
+      bo'ylab filiallar turardi), "Способы оплаты" bloki haqiqiy `paymentMethods` bilan qaytdi.
+      Backendga `totals.periodRevenue` qo'shildi: KPI "Выручка" hamma vaqt uchun edi grafiklar esa
+      7 kun uchun — bitta ekranda ikkita har xil raqam turardi. Lokal bazada tekshirildi:
+      period=7d → 2 400 000, period=30d → 9 750 000, naqd/karta/o'tkazma 32/37/31 foiz
+      Asl vazifa matni (Said Islom uchun yozilgan edi): `super/Stats.jsx:22-27` da **O'YLAB TOPILGAN raqamlar** bor edi:
       ```js
       const PAYMENT_METHODS = [
         { name: 'Наличные', value: 65 }, { name: 'Карта', value: 30 }, { name: 'Online', value: 5 },
@@ -517,7 +467,11 @@
       (`period` query bilan). Kutiladigan hech narsa yo'q, ish to'liq frontda.
       ⚠️ Sahifa hozir `useSuperDashboard` ni chaqiryapti — bu Dashboard'ning endpointi, Stats'niki EMAS.
       Hardcode 2026-07-26 da ham `Stats.jsx` da joyida turibdi (qayta tekshirildi)
-- [ ] FE-SUPER-REPORTS (Aziz): `super/Reports.jsx` ham `useSuperDashboard` da o'tiribdi — o'z ma'lumoti yo'q.
+- [x] FE-SUPER-REPORTS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/reports` ga
+      o'tkazildi. Filialning ulushi endi serverdan keladi (`branch.share`), razmetkada qayta
+      hisoblanmaydi — aks holda formulani serverda o'zgartirsak ikki joyda ikki xil raqam chiqardi.
+      O'rtacha tushum ham serverdan. Lokal bazada tekshirildi: 9 750 000 · ulush 100 foiz · 1 admin.
+      Asl vazifa matni (Aziz uchun): `super/Reports.jsx` ham `useSuperDashboard` da o'tirardi — o'z ma'lumoti yo'q edi.
       Ya'ni Dashboard / Stats / Reports — uchtasi BITTA endpointdan oziqlanyapti.
       🟢 **2026-07-26: backend TAYYOR** — `GET /api/super/reports` `super.routes.js:619` da bor.
       Ish faqat frontda: `useSuperDashboard` o'rniga o'z endpointiga o'tsin

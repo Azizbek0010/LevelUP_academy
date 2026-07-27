@@ -127,6 +127,14 @@ body {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+/* Из редизайна родительской панели: этим классом открываются выпадающие меню
+   в Layout. Правило жило в его версии index.css, а здесь осталась наша — без
+   него меню появлялись бы рывком. */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-in { animation: fadeInDown 0.15s ease-out; }
 @keyframes slide-up {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: none; }

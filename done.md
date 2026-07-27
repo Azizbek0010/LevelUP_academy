@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 26.07.2026 02:48 (UTC+5, Toshkent vaqti)
-> Statistika: 161/215 task tugallangan (74%)
+> Oxirgi yangilanish: 28.07.2026 02:04 (UTC+5, Toshkent vaqti)
+> Statistika: 163/206 task tugallangan (79%)
 
 ---
 
-## Progress: [##############......] 74%
+## Progress: [###############.....] 79%
 
 ## Tugallangan vazifalar
 
@@ -95,15 +95,15 @@
 - [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
 
 ### Backend — YANGI TOPSHIRIQ (Abdulaziz) 🔥 2026-07-19, Karis bergan
-- [x] AB-INT-GROUP ✅ **BAJARILGAN — Abdulaziz 2026-07-20 da yopgan, TASK.md yangilanmagan edi.**
-- [x] AB-SUPER-ANN ✅ 2026-07-20 (`460914b`): `GET/POST/DELETE /api/super/announcements`
-- [x] AB-SUPER-REM ✅ 2026-07-21 (`870d1c5`): `GET /api/super/reminders` +
-- [x] AB-SUPER-AUDIT ✅ 2026-07-20 (`460914b`): `GET /api/super/audit` (`super.routes.js:547`),
-- [x] AB-SUPER-STATS ✅ 2026-07-20 (`460914b`): `GET /api/super/stats` (`super.routes.js:586`,
-- [x] AB-SUPER-REPORTS ✅ 2026-07-20 (`460914b`): `GET /api/super/reports` yozilgan
-- [x] AB-EXPENSE-PATCH ✅ TUZATILDI (2026-07-21 audit): `PATCH /api/admin/expenses/:id`
-- [x] AB-MAIN-REVENUE ✅ **BACKEND BAJARILGAN** 2026-07-20 (`460914b`):
-- [x] AB-VERIFY: Parent Chat — Socket.io realtime ✅ TASDIQLANDI (2026-07-21, Kama auditi):
+- [x] AB-INT-GROUP — attendance/homework/feedback endpointlar `admin.routes.js` da,
+- [x] AB-SUPER-ANN — `GET/POST/DELETE /api/super/announcements` (`460914b`)
+- [x] AB-SUPER-REM — `GET /api/super/reminders` + resend/delete (`870d1c5`)
+- [x] AB-SUPER-AUDIT — `GET /api/super/audit` (`460914b`)
+- [x] AB-SUPER-STATS — `GET /api/super/stats` (`460914b`); front tomoni FE-SUPER-STATS'da
+- [x] AB-SUPER-REPORTS — `GET /api/super/reports` (`460914b`); front FE-SUPER-REPORTS'da
+- [x] AB-EXPENSE-PATCH — `PATCH /api/admin/expenses/:id` qo'shildi
+- [x] AB-MAIN-REVENUE — `GET /api/main/revenue` (`460914b`); front tomoni Shohjahon'da (MAIN: Revenue)
+- [x] AB-VERIFY: Parent Chat — Socket.io realtime tasdiqlandi (2026-07-21)
 
 ### Telegram bot (Bilol) ⚠️ TASK.md ga 2026-07-19 da QO'SHILDI
 - [x] TG-SYNC ✅ BAJARILDI 2026-07-26 (Karis): `docs/TASK-telegram-bot.md` kod bilan sverka
@@ -166,6 +166,8 @@
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
 - [x] SUPER (front): CRUD admins
 - [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
+- [x] FE-SUPER-STATS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/stats?period=` ga
+- [x] FE-SUPER-REPORTS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/reports` ga
 
 ### Main Admin (Karis) 🔥 to'liq egasi — 2026-07-26 dan, front + backend
 - [x] MAIN: Dashboard — KPI + grafiklar (Dashboard.jsx, 805 qator)
@@ -238,6 +240,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 102 task
+- Karis (Backend): 104 task
 - Abdulaziz (Backend): 67 task
-- Frontend jamoasi: 46 task
+- Frontend jamoasi: 48 task

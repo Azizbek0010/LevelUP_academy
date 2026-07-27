@@ -497,10 +497,17 @@ export async function stats(orgId, period = '30d') {
   const revenue = Number(t.revenue);
   const debt = Number(t.outstanding_debt);
   const branchCount = Number(t.branches);
+  /* Выручка именно за выбранный период. Без неё страница противоречила себе:
+     сверху стояла карточка «Выручка» за всё время, а графики под ней — за
+     7 дней, и партнёр видел на одном экране два разных числа про одно и то же.
+     Считаем по уже полученному ряду по дням — лишнего запроса в базу нет. */
+  const periodRevenue = series.reduce((sum, r) => sum + Number(r.revenue), 0);
   return {
     period,
     totals: {
       revenue,
+      periodRevenue,
+      periodAvgRevenue: branchCount > 0 ? periodRevenue / branchCount : 0,
       outstandingDebt: debt,
       activeStudents: Number(t.active_students),
       admins: Number(t.admins),

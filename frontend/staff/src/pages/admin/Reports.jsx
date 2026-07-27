@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import {
   BarChart3, TrendingUp, Users, AlertTriangle, Activity, Filter, Search,
   Download, X, RefreshCw, Banknote
@@ -11,6 +11,7 @@ import { money, fmt } from '../../format.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminReports } from '../../queries.js';
 import { Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
+import ExportDialog from '../../components/ExportDialog.jsx';
 
 const COLORS = ['#3B82F6', '#E8543E', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899', '#2ECC71'];
 
@@ -36,12 +37,16 @@ export default function AdminReports() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [search, setSearch] = useState('');
-  const [exporting, setExporting] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   // Build query string for backend period filter
-  const qs = from || to
-    ? `?${from ? `from=${encodeURIComponent(from)}` : ''}${from && to ? '&' : ''}${to ? `to=${encodeURIComponent(to)}` : ''}`
-    : '';
+  const qs = useMemo(() => {
+    if (!from && !to) return '';
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    return `?${params.toString()}`;
+  }, [from, to]);
 
   const { data, isLoading, error, refetch } = useAdminReports(qs);
 
@@ -89,81 +94,6 @@ export default function AdminReports() {
     setTo('');
     setSearch('');
   };
-
-  /* ── PDF Export ── */
-  const handleExport = useCallback(async () => {
-    setExporting(true);
-    try {
-      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-        import('jspdf'),
-        import('jspdf-autotable'),
-      ]);
-
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-      const pageW = doc.internal.pageSize.getWidth();
-      const dateStr = new Date().toLocaleDateString('ru-RU');
-
-      doc.setFontSize(16);
-      doc.setTextColor(30, 30, 30);
-      doc.text('Отчёт — Доходы и долги', 14, 18);
-      doc.setFontSize(9);
-      doc.setTextColor(120, 120, 120);
-      doc.text(`Дата: ${dateStr}  |  Общий доход: ${money(totalRevenue)}  |  Групп: ${byGroup.length}`, 14, 25);
-
-      autoTable.default(doc, {
-        startY: 30,
-        head: [['#', 'Группа', 'Ученики', "Доход (сум)", "Долг (сум)"]],
-        body: byGroup.map((g, i) => [
-          i + 1,
-          g.name || g.groupName || '—',
-          fmt(g.students ?? g.studentsCount ?? 0),
-          fmt(g.revenue || 0),
-          fmt(g.debt || g.outstandingDebt || 0),
-        ]),
-        foot: [['', 'ИТОГО', fmt(totalStudents), fmt(totalRevenue), fmt(totalDebt)]],
-        styles: {
-          fontSize: 8,
-          cellPadding: 3,
-          textColor: [30, 30, 30],
-          lineColor: [220, 229, 212],
-          lineWidth: 0.3,
-        },
-        headStyles: {
-          fillColor: [67, 137, 62],
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-          fontSize: 8,
-        },
-        footStyles: {
-          fillColor: [245, 248, 241],
-          textColor: [30, 30, 30],
-          fontStyle: 'bold',
-          fontSize: 8,
-        },
-        alternateRowStyles: { fillColor: [248, 251, 245] },
-        columnStyles: {
-          0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 24, halign: 'center' },
-          3: { cellWidth: 40, halign: 'right' },
-          4: { cellWidth: 40, halign: 'right' },
-        },
-        margin: { left: 14, right: 14 },
-        didDrawPage: (data) => {
-          const pageH = doc.internal.pageSize.getHeight();
-          doc.setFontSize(7);
-          doc.setTextColor(160, 160, 160);
-          doc.text(`LevelUp Academy  |  Стр. ${doc.internal.getCurrentPageInfo().pageNumber}`, pageW / 2, pageH - 8, { align: 'center' });
-        },
-      });
-
-      doc.save(`отчёт_${new Date().toISOString().split('T')[0]}.pdf`);
-    } catch (err) {
-      console.error('PDF export error:', err);
-    } finally {
-      setExporting(false);
-    }
-  }, [byGroup, totalRevenue, totalDebt, totalStudents]);
 
   /* ═══ Loading ═══ */
   if (isLoading) {
@@ -233,11 +163,11 @@ export default function AdminReports() {
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             className="btn btn-ghost btn-sm gap-1.5"
-            onClick={handleExport}
-            disabled={exporting || byGroup.length === 0}
+            onClick={() => setShowExport(true)}
+            disabled={byGroup.length === 0}
           >
             <Download className="w-4 h-4" />
-            {exporting ? 'Экспорт...' : 'PDF'}
+            Экспорт
           </button>
         </div>
       </div>
@@ -483,6 +413,13 @@ export default function AdminReports() {
           </div>
         )}
       </div>
+
+      <ExportDialog
+        open={showExport}
+        onClose={() => setShowExport(false)}
+        pageKey="reports"
+        data={byGroup}
+      />
     </div>
   );
 }
