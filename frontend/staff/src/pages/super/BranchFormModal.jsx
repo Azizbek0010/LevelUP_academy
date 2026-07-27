@@ -63,10 +63,19 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
   const [mapBroken, setMapBroken] = useState(!import.meta.env.VITE_YANDEX_KEY);
   const mapAvailable = !mapBroken;
 
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, control, setValue, getValues, formState: { errors } } = useForm({
     resolver: zodResolver(branchSchema),
     defaultValues: EMPTY,
   });
+
+  /* Адрес из найденной подсказки подставляем только в пустое поле: человек мог
+     написать своё — «Чиланзар 12, 3 этаж, офис 5», — и терять это, потому что
+     он потом двигал точку на карте, нельзя. */
+  const fillAddress = (text) => {
+    if (text && !getValues('address')?.trim()) {
+      setValue('address', text, { shouldValidate: true });
+    }
+  };
 
   /* Заполняем форму при открытии, а не на каждое обновление `branch`:
      фоновый рефетч не должен стирать то, что человек уже набрал. */
@@ -91,7 +100,9 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
 
   useEffect(() => {
     if (!open) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
+    /* Esc в полноэкранной карте закрывает карту, а не всё окно: иначе один
+       нажатый Esc выкидывал бы из формы вместе с набранным. */
+    const onKey = (e) => { if (e.key === 'Escape' && !document.fullscreenElement) onClose?.(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
@@ -169,7 +180,7 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
     <div className="modal modal-open">
       {/* Две колонки: слева поля, справа карта. В одну колонку карта уезжала
           за нижний край и до кнопок приходилось прокручивать форму. */}
-      <div className="modal-box max-w-3xl rounded-2xl border border-base-200">
+      <div className={`modal-box rounded-2xl border border-base-200 ${confirmArchive ? 'max-w-md' : 'max-w-6xl'}`}>
         {confirmArchive ? (
           <>
             <h3 className="font-bold text-base">
@@ -204,7 +215,10 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
             {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
 
             <form onSubmit={handleSubmit(onSubmit)} className="mt-4">
-              <div className="grid md:grid-cols-2 gap-x-5 gap-y-3">
+              {/* Карте отдана большая часть окна: на ней работают, а поля
+                  заполняют один раз. Слева фиксированная колонка, чтобы карта
+                  забирала всё оставшееся место. */}
+              <div className="grid md:grid-cols-[300px_minmax(0,1fr)] gap-x-5 gap-y-3">
                 <div className="space-y-3">
                   <label className="form-control w-full">
                     <span className="text-xs text-base-content/60 mb-1">Название *</span>
@@ -243,34 +257,6 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
                     />
                     {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
                   </label>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-base-content/60">
-                      На карте{mapAvailable && mode === 'create' && ' *'}
-                    </span>
-                    {location ? (
-                      <button
-                        type="button"
-                        className="text-xs text-base-content/45 hover:text-error"
-                        onClick={() => setLocation(null)}
-                      >
-                        сбросить
-                      </button>
-                    ) : (
-                      /* Подсказка строкой у заголовка, а не плашкой поверх карты:
-                         плашка закрывала часть карты и спорила с её же контролами. */
-                      <span className="text-xs text-base-content/40">кликните по карте</span>
-                    )}
-                  </div>
-
-                  <YMapPicker
-                    value={location}
-                    onChange={(p) => setLocation(p ? { lat: round6(p.lat), lng: round6(p.lng) } : null)}
-                    height={232}
-                    onUnavailable={setMapBroken}
-                  />
 
                   {/* Координаты полями — на случай, когда карта недоступна
                       (нет ключа, ограничения не применились), и чтобы вставить
@@ -309,6 +295,35 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
                       }}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs text-base-content/60">
+                      На карте{mapAvailable && mode === 'create' && ' *'}
+                    </span>
+                    {location ? (
+                      <button
+                        type="button"
+                        className="text-xs text-base-content/45 hover:text-error"
+                        onClick={() => setLocation(null)}
+                      >
+                        сбросить
+                      </button>
+                    ) : (
+                      /* Подсказка строкой у заголовка, а не плашкой поверх карты:
+                         плашка закрывала часть карты и спорила с её же контролами. */
+                      <span className="text-xs text-base-content/40">найдите адрес или кликните по карте</span>
+                    )}
+                  </div>
+
+                  <YMapPicker
+                    value={location}
+                    onChange={(p) => setLocation(p ? { lat: round6(p.lat), lng: round6(p.lng) } : null)}
+                    height="min(58vh, 520px)"
+                    onUnavailable={setMapBroken}
+                    onPickAddress={fillAddress}
+                  />
                 </div>
               </div>
 
