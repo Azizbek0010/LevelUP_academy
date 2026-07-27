@@ -440,7 +440,9 @@
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
 - [x] SUPER (front): CRUD admins
 - [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
-- [ ] SUPER (front): 🆕 Dars davomiyligi sozlamasi — Settings da PATCH /api/super/organization lessonDurationMin (Karis o'zi qiladi)
+- [x] SUPER (front) ✅ BAJARILDI 2026-07-28 (Karis): Settings sahifasiga "Длительность урока"
+      maydoni qo'shildi (10-600 min, zod validatsiya), PATCH /api/super/organization
+      lessonDurationMin bilan birga yuboriladi
 
 ### 🔴 FE-SUPER (Said Islom + Aziz) — auditda topilgan xatolar
 
@@ -644,10 +646,10 @@
 > 🔄 **2026-07-26:** `student/` qismi bu vazifadan OLIB TASHLANDI — u endi Sardor'da
 > (`Frontend — Student` bo'limiga qara). Alish'da faqat `member/` qoldi.
 
-- [ ] FE-THIN-PAGES: bu sahifalar juda "yupqa" — mentor paneli darajasidan ancha past:
-      `member/Debt.jsx` 108 qator · `member/Notifications.jsx` 112 · `member/Attendance.jsx` 122
-      Uch holat (Skeleton / EmptyState / Error), bo'sh holat matnlari, xatoda retry —
-      `pages/mentor/_ui.jsx` dagi tayyor komponentlar bilan
+- [x] FE-THIN-PAGES ✅ BAJARILDI 2026-07-28 (Karis): `member/Debt.jsx` 108→142 qator (haqiqiy
+      to'lov progress-bar FE-PARENT-DEBT bilan birga), `Attendance.jsx` 122→228 (pagination
+      bilan birga), `Notifications.jsx` 112→152 (kursor pagination + qo'shilgan ErrorState).
+      Uchala sahifada ham endi Skeleton/EmptyState/Error + retry bor
 
 ## Frontend — Mentor (Sardor, Kozim, Alish)
 
@@ -677,11 +679,13 @@
 - [x] STUDENT: Leaderboard
 - [x] STUDENT: staff design-system'ga ko'chirildi (Tailwind + DaisyUI) — 2026-07-25, Karis (`a458c1b`)
 - [ ] STUDENT (Sardor): jonli E2E — VITE_USE_MOCKS=false bilan real backend'da tekshirish
-- [ ] STUDENT (Sardor): "yupqa" sahifalarni to'ldirish — `Videos.jsx` 69 qator ·
-      `Tests.jsx` 79 · `Leaderboard.jsx` 90. Uch holat (Skeleton / EmptyState / Error),
-      bo'sh holat matnlari, xatoda retry — `pages/mentor/_ui.jsx` tayyor komponentlari bilan.
-      ⬅️ Alish'ning FE-THIN-PAGES vazifasidan `student/` qismi shu yerga ko'chirildi
-- [ ] STUDENT (Sardor): UI-STATES — o'z panelidagi har bir sahifada 3 holat
+- [x] STUDENT ✅ BAJARILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan) —
+      `Videos.jsx`/`Tests.jsx`/`Leaderboard.jsx` da yo'q edi: xato bo'lsa `list`/`data`
+      null qolib qolardi va Skeleton abadiy aylanaverardi (retry yo'q). Endi uchalasida
+      ham `ErrorState onRetry` bor. Bo'sh holat matnlari va Skeleton ilgari ham bor edi
+- [x] STUDENT UI-STATES ✅ 2026-07-28 (Karis): audit qilindi — `Home.jsx` va `TestTake.jsx`
+      da allaqachon bor edi, `Homework.jsx` va `Shop.jsx` da yo'q edi (xuddi shu "abadiy
+      Skeleton" bagi) — tuzatildi. Endi student panelidagi barcha 7 sahifada 3 holat ham bor
 - [ ] STUDENT (Sardor): design-system — laym #C6FF34, Manrope, responsive 1280/768/375
 
 ## Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
@@ -769,6 +773,11 @@
       ba'zisi turli registrda takrorlangan (`#8B5CF6` va `#8b5cf6`). Endi `tone`
       (neutral/success/warning/danger) → mavzu tokeni
 - [ ] UI-RESPONSIVE (Alish): 1280 / 768 / 375 px kengliklar, gorizontal scroll yo'q
-- [ ] UI-TABLES (Hamidula): tabular-nums raqamlar, hover-podsvetka, status-pilyulalar (design-system bo'yicha)
-- [ ] UI-CACHE (Kozim): barcha mutatsiyalardan keyin TanStack Query cache invalidation +
-      optimistic/loading tugma holatlari. Kozim'ga berildi — u api integratsiyasida ishlagan tajribasi bor
+- [x] UI-TABLES ✅ AUDIT + TUZATILDI 2026-07-28 (Karis): 162 ta `tabular-nums` ishlatilishi
+      allaqachon bor edi, hover/pilyulalar deyarli hamma joyda. 5 ta haqiqiy tirqish topildi
+      va tuzatildi: `admin/Groups.jsx`, `admin/Students.jsx`, `mentor/StatsTab.jsx`,
+      `super/Attendance.jsx`, `super/Dashboard.jsx` — raqamli ustunlarda `tabular-nums` yo'q edi
+- [x] UI-CACHE ✅ AUDIT 2026-07-28 (Karis): barcha admin/mentor/methodist/super sahifalari
+      tekshirildi — qayerda mutatsiya bo'lsa, o'sha yerda `invalidate()`/`invalidateQueries`/
+      `refetch()` bor. Chat va Attendance (mentor) — sokat orqali live yangilanadi,
+      alohida invalidatsiya kerak emas. Tuzatishga hojat topilmadi

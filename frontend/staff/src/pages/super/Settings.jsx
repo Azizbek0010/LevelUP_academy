@@ -20,6 +20,7 @@ const settingsSchema = z.object({
     .toLowerCase()
     .regex(domainRegex, 'Неверный формат (например, levelup.uz)')
     .or(z.literal('')),
+  lessonDurationMin: z.coerce.number().int().min(10, 'Мин. 10 мин').max(600, 'Макс. 600 мин'),
 });
 
 export default function SuperSettings() {
@@ -34,8 +35,8 @@ export default function SuperSettings() {
 
   const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { name: org?.name || '', domain: org?.domain || '' },
-    values: org ? { name: org.name || '', domain: org.domain || '' } : undefined,
+    defaultValues: { name: org?.name || '', domain: org?.domain || '', lessonDurationMin: org?.lessonDurationMin || 60 },
+    values: org ? { name: org.name || '', domain: org.domain || '', lessonDurationMin: org.lessonDurationMin || 60 } : undefined,
   });
 
   const onSubmit = async (formData) => {
@@ -45,6 +46,7 @@ export default function SuperSettings() {
       await api.superUpdateOrganization(token, {
         name: formData.name.trim(),
         domain: formData.domain.trim() || null,
+        lessonDurationMin: formData.lessonDurationMin,
       });
       invalidate('super-organization');
       setSuccessMsg('Настройки сохранены!');
@@ -139,6 +141,20 @@ export default function SuperSettings() {
                     Домен для брендирования кабинетов студентов и преподавателей.
                   </span>
                   {errors.domain && <span className="text-xs text-error mt-1">{errors.domain.message}</span>}
+                </label>
+                <label className="form-control w-full max-w-[220px]">
+                  <span className="label-text mb-1.5 font-medium">Длительность урока (мин)</span>
+                  <input
+                    type="number"
+                    min={10}
+                    max={600}
+                    {...register('lessonDurationMin')}
+                    className={`input input-bordered w-full ${errors.lessonDurationMin ? 'input-error' : ''}`}
+                  />
+                  <span className="text-[11px] text-base-content/40 mt-1">
+                    Используется для авторасчёта конца занятия в форме группы (Admin-панель).
+                  </span>
+                  {errors.lessonDurationMin && <span className="text-xs text-error mt-1">{errors.lessonDurationMin.message}</span>}
                 </label>
                 <div className="flex justify-end pt-4">
                   <button type="submit" className="btn btn-primary" disabled={!isDirty || busy}>

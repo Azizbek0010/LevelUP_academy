@@ -90,7 +90,8 @@ export function useNotifications() {
     isFetchingMore: q.isFetching && loadedOnce,
     hasMore: Boolean(nextCursor),
     loadMore: () => nextCursor && setCursor(nextCursor),
-    error: q.error,
+    error: loadedOnce ? null : q.error,
+    refetch: q.refetch,
   };
 }
 

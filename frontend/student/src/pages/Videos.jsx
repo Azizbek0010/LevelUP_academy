@@ -1,21 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { PlayCircle } from 'lucide-react';
 import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, Skeleton, EmptyState, Modal, Pill } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill } from '../components/ui.jsx';
 import { fmtDate, fmtDuration } from '../format.js';
 
 export default function Videos() {
   const toast = useToast();
   const [list, setList] = useState(null);
+  const [error, setError] = useState(null);
   const [playing, setPlaying] = useState(null); // { video, streamUrl }
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setError(null);
     api
       .videos()
       .then((d) => setList(d.data))
-      .catch((err) => toast(err.message, 'error'));
+      .catch((err) => { setError(err); toast(err.message, 'error'); });
   }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
 
   const play = async (video) => {
     try {
@@ -30,7 +34,9 @@ export default function Videos() {
     <>
       <PageHeader title="Видеоуроки" subtitle="Записи занятий твоих групп" />
 
-      {!list ? (
+      {error ? (
+        <ErrorState message={error.message} onRetry={load} />
+      ) : !list ? (
         <Skeleton h={72} count={4} />
       ) : list.length === 0 ? (
         <div className="card bg-base-100">

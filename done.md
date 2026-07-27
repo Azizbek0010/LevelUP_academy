@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 28.07.2026 03:28 (UTC+5, Toshkent vaqti)
-> Statistika: 178/207 task tugallangan (85%)
+> Oxirgi yangilanish: 28.07.2026 04:13 (UTC+5, Toshkent vaqti)
+> Statistika: 184/207 task tugallangan (88%)
 
 ---
 
-## Progress: [#################...] 85%
+## Progress: [#################...] 88%
 
 ## Tugallangan vazifalar
 
@@ -171,6 +171,7 @@
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
 - [x] SUPER (front): CRUD admins
 - [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
+- [x] SUPER (front) ✅ BAJARILDI 2026-07-28 (Karis): Settings sahifasiga "Длительность урока"
 - [x] FE-SUPER-STATS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/stats?period=` ga
 - [x] FE-SUPER-REPORTS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/reports` ga
 - [x] FE-SUPER-WIRE ✅ **TASDIQLANDI 2026-07-28 (Karis)** — kod tekshirildi: uchala sahifa
@@ -205,6 +206,7 @@
 - [x] FE-DEAD-CODE ✅ hammasi allaqachon o'chirilgan ekan (tekshirildi 2026-07-28, Karis):
 - [x] FE-ROUTER-FLAG ✅ QO'SHILDI 2026-07-28 (Karis): `future={{ v7_startTransition: true,
 - [x] FE-COOP ✅ TUZATILDI 2026-07-28 (Karis): `Cross-Origin-Opener-Policy:
+- [x] FE-THIN-PAGES ✅ BAJARILDI 2026-07-28 (Karis): `member/Debt.jsx` 108→142 qator (haqiqiy
 
 ### Frontend — Mentor (Sardor, Kozim, Alish)
 - [x] MENTOR: Dashboard (groups, upcoming lessons)
@@ -222,6 +224,8 @@
 - [x] STUDENT: Videos
 - [x] STUDENT: Leaderboard
 - [x] STUDENT: staff design-system'ga ko'chirildi (Tailwind + DaisyUI) — 2026-07-25, Karis (`a458c1b`)
+- [x] STUDENT ✅ BAJARILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan) —
+- [x] STUDENT UI-STATES ✅ 2026-07-28 (Karis): audit qilindi — `Home.jsx` va `TestTake.jsx`
 
 ### Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
 - [x] PARENT: Child overview — Dashboard.jsx (useParentOverview hook)
@@ -250,11 +254,13 @@
 
 ### Frontend — Design / UX 🆕 EGALARI BELGILANDI (2026-07-19)
 - [x] UI-SHARED ✅ BAJARILDI 2026-07-21 (Karis): admin sahifalari endi `mentor/_ui.jsx` dan
+- [x] UI-TABLES ✅ AUDIT + TUZATILDI 2026-07-28 (Karis): 162 ta `tabular-nums` ishlatilishi
+- [x] UI-CACHE ✅ AUDIT 2026-07-28 (Karis): barcha admin/mentor/methodist/super sahifalari
 
 ---
 
 ## Jamoa boyicha
 
-- Karis (Backend): 110 task
-- Abdulaziz (Backend): 73 task
-- Frontend jamoasi: 60 task
+- Karis (Backend): 111 task
+- Abdulaziz (Backend): 75 task
+- Frontend jamoasi: 66 task

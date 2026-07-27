@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BookOpen, Paperclip, Coins } from 'lucide-react';
 import { api, uploadToPresignedUrl } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, Skeleton, EmptyState, Modal, Pill } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill } from '../components/ui.jsx';
 import { fmtDateTime, deadlineLabel } from '../format.js';
 
 function StatusPill({ hw }) {
@@ -17,16 +17,19 @@ function StatusPill({ hw }) {
 export default function Homework() {
   const toast = useToast();
   const [list, setList] = useState(null);
+  const [error, setError] = useState(null);
   const [active, setActive] = useState(null); // ДЗ в модалке сдачи
   const [text, setText] = useState('');
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  const load = () =>
-    api
+  const load = () => {
+    setError(null);
+    return api
       .homework()
       .then((d) => setList(d.data))
-      .catch((err) => toast(err.message, 'error'));
+      .catch((err) => { setError(err); toast(err.message, 'error'); });
+  };
 
   useEffect(() => {
     load();
@@ -71,7 +74,9 @@ export default function Homework() {
     <>
       <PageHeader title="Домашние задания" subtitle="Сдавай до дедлайна — после оценки пересдача закрыта" />
 
-      {!list ? (
+      {error ? (
+        <ErrorState message={error.message} onRetry={load} />
+      ) : !list ? (
         <Skeleton h={80} count={4} />
       ) : list.length === 0 ? (
         <div className="card bg-base-100">

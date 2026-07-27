@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNotifications } from '../queries.js';
 import { timeAgo } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
-import { EmptyState } from '../components/ui.jsx';
+import { EmptyState, ErrorState } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
 
 const ICON_MAP = {
@@ -29,11 +29,20 @@ const FILTERS = [
 ];
 
 export default function Notifications() {
-  const { items, isLoading, isFetchingMore, hasMore, loadMore } = useNotifications();
+  const { items, isLoading, isFetchingMore, hasMore, loadMore, error, refetch } = useNotifications();
   const [filter, setFilter] = useState('all');
 
   const filtered = filter === 'all' ? items : items.filter((n) => n.type === filter);
   const unread = items.filter((n) => !n.read).length;
+
+  if (error) {
+    return (
+      <>
+        <PageHeader title="Уведомления" />
+        <ErrorState message={error.message} onRetry={refetch} />
+      </>
+    );
+  }
 
   return (
     <>
