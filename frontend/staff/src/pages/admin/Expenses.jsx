@@ -10,8 +10,12 @@ import { useAuth } from '../../auth.jsx';
 import { useAdminExpenses } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SearchInput, RowSkeleton, Kpi, Tip } from '../mentor/_ui.jsx';
+import ExportDialog from '../../components/ExportDialog.jsx';
 
 const CATEGORIES = ['All', 'Rent', 'Salary', 'Materials', 'Utility', 'Other'];
+const CATEGORY_LABELS = {
+  All: 'Все', Rent: 'Аренда', Salary: 'Зарплата', Materials: 'Материалы', Utility: 'Коммунальные', Other: 'Другое',
+};
 const CATEGORY_COLORS = {
   Rent: '#3B82F6', Salary: '#8B5CF6', Materials: '#F59E0B',
   Utility: '#E8543E', Other: '#8FA283',
@@ -22,6 +26,9 @@ const CATEGORY_COLORS_LIGHT = {
 };
 
 const STATUSES = ['All', 'Paid', 'Pending', 'Rejected', 'Cancelled'];
+const STATUS_LABELS = {
+  All: 'Все статусы', Paid: 'Оплачен', Pending: 'Ожидает', Rejected: 'Отклонён', Cancelled: 'Отменён',
+};
 const STATUS_MAP = {
   paid: { bg: 'rgba(46,204,113,0.14)', color: '#2ECC71', label: 'Оплачен', dot: '#2ECC71' },
   pending: { bg: 'rgba(245,158,11,0.14)', color: '#F59E0B', label: 'Ожидает', dot: '#F59E0B' },
@@ -164,7 +171,7 @@ function CategoryBadge({ category }) {
       style={{ background: bg, color }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
-      {category}
+      {CATEGORY_LABELS[category] || category}
     </span>
   );
 }
@@ -189,7 +196,7 @@ export default function Expenses() {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [exporting, setExporting] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const { token } = useAuth();
@@ -356,7 +363,7 @@ export default function Expenses() {
       };
 
       if (editingId) {
-        // Backendda hali PATCH /admin/expenses/:id yo'q — Karisga aytish kerak
+        // На бэкенде пока нет PATCH /admin/expenses/:id — нужно сообщить Карису
         await api.adminUpdateExpense(token, editingId, body);
       } else {
         await api.adminCreateExpense(token, body);
@@ -396,91 +403,7 @@ export default function Expenses() {
 
   const filteredTotal = useMemo(() => filtered.reduce((s, e) => s + (e.amount || 0), 0), [filtered]);
 
-  const handleExport = useCallback(async () => {
-    setExporting(true);
-    try {
-      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-        import('jspdf'),
-        import('jspdf-autotable'),
-      ]);
-
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-      const pageW = doc.internal.pageSize.getWidth();
-      const dateStr = new Date().toLocaleDateString('ru-RU');
-
-      // Header
-      doc.setFontSize(16);
-      doc.setTextColor(30, 30, 30);
-      doc.text('Отчёт по расходам', 14, 18);
-      doc.setFontSize(9);
-      doc.setTextColor(120, 120, 120);
-      doc.text(`Дата: ${dateStr}  |  Итого: ${formatCurrency(filteredTotal)}  |  Кол-во: ${filtered.length}`, 14, 25);
-
-      // Table
-      const statusLabel = (s) => {
-        const m = { paid: 'Оплачен', pending: 'Ожидает', rejected: 'Отклонён', cancelled: 'Отменён' };
-        return m[s?.toLowerCase()] || s || '—';
-      };
-
-      autoTable.default(doc, {
-        startY: 30,
-        head: [['#', 'Категория', 'Сумма', 'Дата', 'Примечание', 'Статус', 'Способ оплаты']],
-        body: filtered.map((e, i) => [
-          i + 1,
-          e.category || '—',
-          Number(e.amount || 0).toLocaleString('ru-RU'),
-          e.spentAt ? new Date(e.spentAt).toLocaleDateString('ru-RU') : '—',
-          e.note || '—',
-          statusLabel(getStatusFromExpense(e)),
-          getPaymentMethod(e),
-        ]),
-        foot: [['', 'ИТОГО', formatCurrency(filteredTotal), '', '', '', '']],
-        styles: {
-          fontSize: 8,
-          cellPadding: 3,
-          textColor: [30, 30, 30],
-          lineColor: [220, 229, 212],
-          lineWidth: 0.3,
-        },
-        headStyles: {
-          fillColor: [67, 137, 62],
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-          fontSize: 8,
-        },
-        footStyles: {
-          fillColor: [245, 248, 241],
-          textColor: [30, 30, 30],
-          fontStyle: 'bold',
-          fontSize: 8,
-        },
-        alternateRowStyles: { fillColor: [248, 251, 245] },
-        columnStyles: {
-          0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 28 },
-          2: { cellWidth: 32, halign: 'right' },
-          3: { cellWidth: 22, halign: 'center' },
-          4: { cellWidth: 'auto' },
-          5: { cellWidth: 26, halign: 'center' },
-          6: { cellWidth: 24, halign: 'center' },
-        },
-        margin: { left: 14, right: 14 },
-        didDrawPage: (data) => {
-          // Footer on every page
-          const pageH = doc.internal.pageSize.getHeight();
-          doc.setFontSize(7);
-          doc.setTextColor(160, 160, 160);
-          doc.text(`LevelUp Academy  |  Стр. ${doc.internal.getCurrentPageInfo().pageNumber}`, pageW / 2, pageH - 8, { align: 'center' });
-        },
-      });
-
-      doc.save(`расходы_${new Date().toISOString().split('T')[0]}.pdf`);
-    } catch (err) {
-      console.error('PDF export error:', err);
-    } finally {
-      setExporting(false);
-    }
-  }, [filtered, filteredTotal]);
+  // handleExport removed — replaced by ExportDialog (Excel/PDF/CSV)
 
   const clearFilters = () => {
     setSearch('');
@@ -541,9 +464,9 @@ export default function Expenses() {
           </p>
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
-          <button className="btn btn-ghost btn-sm gap-1.5" onClick={handleExport} disabled={exporting || filtered.length === 0}>
+          <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={filtered.length === 0}>
             <Download className="w-4 h-4" />
-            {exporting ? 'Экспорт...' : 'Экспорт'}
+            Экспорт
           </button>
           <button className="btn btn-primary btn-sm gap-1.5" onClick={openModal}>
             <Plus className="w-4 h-4" />
@@ -552,7 +475,7 @@ export default function Expenses() {
         </div>
       </div>
 
-      {/* ═══ Statistics Cards ═══ */}
+      {/* Статистические карточки */}
       {/* Раньше это была локальная копия KPI-плитки, и только у «Bu oy» была
           строка тренда «+0.0% o'tgan oyga nisbatan» — из-за неё одна карточка
           оказывалась выше остальных четырёх, и ряд ехал. Теперь общий Kpi без
@@ -593,7 +516,7 @@ export default function Expenses() {
             <SelectFilter
               value={filter}
               onChange={setFilter}
-              options={CATEGORIES.map((cat) => ({ value: cat, label: `${cat} (${getCategoryCount(cat)})` }))}
+              options={CATEGORIES.map((cat) => ({ value: cat, label: `${CATEGORY_LABELS[cat] || cat} (${getCategoryCount(cat)})` }))}
               placeholder="Категория"
             />
             <SelectFilter
@@ -601,7 +524,7 @@ export default function Expenses() {
               onChange={setStatusFilter}
               options={STATUSES.map((s) => ({
                 value: s,
-                label: s === 'All' ? 'Все статусы' : `${STATUS_MAP[s.toLowerCase()]?.label || s} (${getStatusCount(s)})`,
+                label: s === 'All' ? 'Все статусы' : `${STATUS_MAP[s.toLowerCase()]?.label || STATUS_LABELS[s] || s} (${getStatusCount(s)})`,
               }))}
               placeholder="Статус"
             />
@@ -659,7 +582,7 @@ export default function Expenses() {
               <SelectFilter
                 value={filter}
                 onChange={setFilter}
-                options={CATEGORIES.map((cat) => ({ value: cat, label: `${cat} (${getCategoryCount(cat)})` }))}
+                options={CATEGORIES.map((cat) => ({ value: cat, label: `${CATEGORY_LABELS[cat] || cat} (${getCategoryCount(cat)})` }))}
                 placeholder="Категория"
               />
               <SelectFilter
@@ -667,7 +590,7 @@ export default function Expenses() {
                 onChange={setStatusFilter}
                 options={STATUSES.map((s) => ({
                   value: s,
-                  label: s === 'All' ? 'Все статусы' : `${STATUS_MAP[s.toLowerCase()]?.label || s} (${getStatusCount(s)})`,
+                  label: s === 'All' ? 'Все статусы' : `${STATUS_MAP[s.toLowerCase()]?.label || STATUS_LABELS[s] || s} (${getStatusCount(s)})`,
                 }))}
                 placeholder="Статус"
               />
@@ -717,7 +640,7 @@ export default function Expenses() {
                   border: `1px solid ${isActive ? catColor : 'var(--border)'}`,
                 }}
               >
-                {cat}
+                {CATEGORY_LABELS[cat] || cat}
               </button>
             );
           })}
@@ -958,7 +881,7 @@ export default function Expenses() {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="modal-box card bg-base-100 max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-base-content mb-4">Xarajat tafsilotlari</h3>
+          <h3 className="font-bold text-[16px] text-base-content mb-4">Детали расхода</h3>
           {viewTarget && (
             <div className="space-y-5">
               <div className="flex items-center gap-3 pb-4 border-b border-base-300">
@@ -968,38 +891,38 @@ export default function Expenses() {
 
               <div className="space-y-0">
                 <div className="flex justify-between items-center py-3 border-b border-base-300">
-                  <span className="text-[12px] text-base-content/70 font-medium">Summa</span>
+                  <span className="text-[12px] text-base-content/70 font-medium">Сумма</span>
                   <span className="text-[18px] font-extrabold text-base-content tabular-nums">{formatCurrency(viewTarget.amount)}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-base-300">
-                  <span className="text-[12px] text-base-content/70 font-medium">Sana</span>
+                  <span className="text-[12px] text-base-content/70 font-medium">Дата</span>
                   <span className="text-[13px] font-semibold text-base-content">{formatDate(viewTarget.spentAt)}</span>
                 </div>
                 {getPaymentMethod(viewTarget) !== '—' && (
                   <div className="flex justify-between items-center py-3 border-b border-base-300">
-                    <span className="text-[12px] text-base-content/70 font-medium">To'lov usuli</span>
+                    <span className="text-[12px] text-base-content/70 font-medium">Способ оплаты</span>
                     <span className="text-[13px] font-semibold text-base-content">{getPaymentMethod(viewTarget)}</span>
                   </div>
                 )}
                 {getCreatedBy(viewTarget) !== '—' && (
                   <div className="flex justify-between items-center py-3 border-b border-base-300">
-                    <span className="text-[12px] text-base-content/70 font-medium">Yaratgan</span>
+                    <span className="text-[12px] text-base-content/70 font-medium">Создал</span>
                     <span className="text-[13px] font-semibold text-base-content">{getCreatedBy(viewTarget)}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-start py-3">
-                  <span className="text-[12px] text-base-content/70 font-medium pt-0.5">Izoh</span>
-                  <span className="text-[13px] text-base-content text-right max-w-[250px] leading-relaxed">{viewTarget.note || <span className="text-base-content/45 italic">Yo'q</span>}</span>
+                  <span className="text-[12px] text-base-content/70 font-medium pt-0.5">Примечание</span>
+                  <span className="text-[13px] text-base-content text-right max-w-[250px] leading-relaxed">{viewTarget.note || <span className="text-base-content/45 italic">Нет</span>}</span>
                 </div>
               </div>
 
               <div className="flex justify-end gap-2.5 pt-3 border-t border-base-300">
                 <button className="btn btn-ghost btn-sm" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
-                  Yopish
+                  Закрыть
                 </button>
                 <button className="btn btn-primary btn-sm gap-1.5" onClick={() => { setViewModalOpen(false); setViewTarget(null); openEditModal(viewTarget); }}>
                   <Pencil className="w-4 h-4" />
-                  Tahrirlash
+                  Редактировать
                 </button>
               </div>
             </div>
@@ -1014,10 +937,10 @@ export default function Expenses() {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="modal-box card bg-base-100 max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setModalOpen(false)}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-base-content mb-4">{editingId ? 'Xarajatni tahrirlash' : 'Xarajat qo\'shish'}</h3>
+          <h3 className="font-bold text-[16px] text-base-content mb-4">{editingId ? 'Редактировать расход' : 'Добавить расход'}</h3>
           <div className="space-y-5">
             <div>
-              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Kategoriya *</label>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Категория *</label>
               <div className="grid grid-cols-3 gap-2">
                 {CATEGORIES.filter((c) => c !== 'All').map((cat) => {
                   const isActive = formData.category === cat;
@@ -1034,7 +957,7 @@ export default function Expenses() {
                         borderColor: isActive ? catColor : 'var(--border)',
                       }}
                     >
-                      {cat}
+                {CATEGORY_LABELS[cat] || cat}
                     </button>
                   );
                 })}
@@ -1043,7 +966,7 @@ export default function Expenses() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Summa *</label>
+                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Сумма *</label>
                 <input
                   type="number"
                   value={formData.amount}
@@ -1053,7 +976,7 @@ export default function Expenses() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Sana</label>
+                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Дата</label>
                 <input
                   type="date"
                   value={formData.spentAt}
@@ -1064,7 +987,7 @@ export default function Expenses() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">To'lov usuli</label>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Способ оплаты</label>
               <div className="grid grid-cols-2 gap-2">
                 {PAYMENT_METHODS.map((method) => (
                   <button
@@ -1085,11 +1008,11 @@ export default function Expenses() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Izoh</label>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Примечание</label>
               <input
                 value={formData.note}
                 onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                placeholder="Xarajat haqida izoh"
+                placeholder="Комментарий к расходу"
                 className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
               />
             </div>
@@ -1105,14 +1028,14 @@ export default function Expenses() {
             )}
 
             <div className="flex justify-end gap-2.5 pt-2">
-              <button className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={saving}>Bekor qilish</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={saving}>Отмена</button>
               <button className="btn btn-primary btn-sm gap-1.5" onClick={handleSave} disabled={saving || !formData.amount}>
                 {saving ? (
                   <span className="flex items-center gap-1.5">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    Saqlanmoqda...
+                    Сохранение...
                   </span>
-                ) : editingId ? "Saqlash" : "Qo'shish"}
+                ) : editingId ? "Сохранить" : "Добавить"}
               </button>
             </div>
           </div>
@@ -1126,18 +1049,18 @@ export default function Expenses() {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="modal-box card bg-base-100 max-w-md relative z-10" onClick={(e) => e.stopPropagation()}>
             <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setDeleteTarget(null)}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-base-content mb-4">Xarajatni o'chirish</h3>
+          <h3 className="font-bold text-[16px] text-base-content mb-4">Удалить расход</h3>
           <div className="space-y-5">
             <div className="flex items-start gap-4">
               <div className="w-11 h-11 rounded-[14px] bg-[rgba(232,84,62,0.12)] flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-5 h-5 text-error" />
               </div>
               <div className="flex-1">
-                <p className="text-[14px] font-bold text-base-content mb-1.5">O'chirishni tasdiqlaysizmi?</p>
+                <p className="text-[14px] font-bold text-base-content mb-1.5">Вы уверены?</p>
                 <p className="text-[12px] text-base-content/70 leading-relaxed">
                   <CategoryBadge category={deleteTarget?.category} />{' '}
                   <span className="tabular-nums font-semibold text-base-content">{formatCurrency(deleteTarget?.amount)}</span>{' '}
-                  xarajatni o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.
+                  — удалить этот расход? Это действие нельзя отменить.
                 </p>
               </div>
             </div>
@@ -1153,20 +1076,23 @@ export default function Expenses() {
             )}
 
             <div className="flex justify-end gap-2.5 pt-2 border-t border-base-300">
-              <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Bekor qilish</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Отмена</button>
               <button className="btn btn-error btn-sm gap-1.5 text-white" onClick={handleDelete} disabled={saving}>
                 {saving ? (
                   <span className="flex items-center gap-1.5">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    O'chirilmoqda...
+                    Удаление...
                   </span>
-                ) : "O'chirish"}
+                ) : "Удалить"}
               </button>
             </div>
           </div>
         </div>
         </div>
       )}
+
+      {/* ═══ Export Dialog ═══ */}
+      <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="expenses" data={filtered} filename="расходы" />
     </div>
   );
 }

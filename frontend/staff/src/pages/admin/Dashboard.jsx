@@ -81,7 +81,7 @@ export default function AdminDashboard() {
   const t = raw.totals || {};
   const m = raw.thisMonth || {};
 
-  /* Oxirgi to'lovlar — faqat oxirgi 5 ta */
+  /* Последние оплаты — только последние 5 */
   const payRaw = invoicesData?.data || invoicesData || {};
   const allPayments = payRaw.payments || payRaw.invoices || (Array.isArray(payRaw) ? payRaw : []);
   const recentPayments = allPayments
