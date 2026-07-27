@@ -36,8 +36,12 @@ export default function SuperBranches() {
   const [currentId, setCurrentId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [location, setLocation] = useState(null);
-  // без ключа Яндекса карта не грузится — тогда координаты не требуем
-  const mapAvailable = Boolean(import.meta.env.VITE_YANDEX_KEY);
+  /* Карта считается доступной, только если она реально поднялась.
+     Одного ключа мало: он может быть не настроен по HTTP referer, а сервис —
+     отвечать 503. Тогда точку поставить нечем, и требовать её означало бы
+     запретить создание филиалов совсем. */
+  const [mapBroken, setMapBroken] = useState(!import.meta.env.VITE_YANDEX_KEY);
+  const mapAvailable = !mapBroken;
 
   // Стейты подтверждения архивации
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -423,7 +427,7 @@ export default function SuperBranches() {
                     </button>
                   )}
                 </span>
-                <YMapPicker value={location} onChange={setLocation} height={260} />
+                <YMapPicker value={location} onChange={setLocation} height={260} onUnavailable={setMapBroken} />
               </div>
 
               <label className="form-control w-full">

@@ -43,7 +43,15 @@ function loadYMapsScript(key) {
   });
 }
 
-export default function YMapPicker({ value, onChange, height = 260 }) {
+/**
+ * `onUnavailable` — сообщить наверх, что карта не поднялась.
+ *
+ * Нужно, чтобы форма филиала не превращалась в тупик: точку на карте мы
+ * требуем при создании, но если сам сервис недоступен (нет ключа, не
+ * применились ограничения, Яндекс отвечает 503), поставить её физически
+ * нечем — и тогда требование надо снимать, иначе филиал не создать вообще.
+ */
+export default function YMapPicker({ value, onChange, height = 260, onUnavailable }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -51,6 +59,7 @@ export default function YMapPicker({ value, onChange, height = 260 }) {
   const [error, setError] = useState(null);
 
   if (!YANDEX_KEY) {
+    onUnavailable?.(true);
     return (
       <div
         style={{ height }}
@@ -69,7 +78,7 @@ export default function YMapPicker({ value, onChange, height = 260 }) {
 
     loadYMapsScript(YANDEX_KEY)
       .then(() => {
-        if (!cancelled) setReady(true);
+        if (!cancelled) { setReady(true); onUnavailable?.(false); }
       })
       .catch(() => {
         /* Самая частая причина — не сам код, а ключ: у JS API 3.0 обязательны
@@ -77,6 +86,7 @@ export default function YMapPicker({ value, onChange, height = 260 }) {
            429 «limited», а с чужого домена — 403 «Invalid api key».
            Пишем это прямо, иначе поиск причины начинается с кода. */
         if (!cancelled) {
+          onUnavailable?.(true);
           setError(
             'Карта не загрузилась. Проверьте ключ Яндекса: в кабинете разработчика ' +
             'у него должны быть заданы ограничения по HTTP referer для этого домена.',
