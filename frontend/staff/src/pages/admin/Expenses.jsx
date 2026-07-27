@@ -180,7 +180,6 @@ function CategoryBadge({ category }) {
 //  Main Component
 // ═══════════════════════════════════════════
 export default function Expenses() {
-  const [expenses, setExpenses] = useState([]);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -192,33 +191,27 @@ export default function Expenses() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState(null);
   const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', paymentMethod: 'Наличные' });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showExport, setShowExport] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [actionError, setActionError] = useState(null);
 
   const { token } = useAuth();
 
-  const loadExpenses = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Uses api.adminExpenses(token) from api.js → proper named method
-      const res = await api.adminExpenses(token);
-      const data = res.data?.data || res.data || res || {};
-      setExpenses(data.expenses || []);
-    } catch (err) {
-      console.error('Failed to load expenses:', err);
-      setError(err.response?.data?.message || err.message || 'Ошибка загрузки расходов');
-      setExpenses([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
+  const qs = useMemo(() => {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('from', dateFrom);
+    if (dateTo) params.set('to', dateTo);
+    return params.toString();
+  }, [dateFrom, dateTo]);
 
-  useEffect(() => { loadExpenses(); }, [loadExpenses]);
+  const { data: expensesRes, isLoading: loading, error: queryError, refetch } = useAdminExpenses(qs);
+  const expenses = useMemo(() => {
+    const data = expensesRes?.data?.expenses || expensesRes?.data || expensesRes || {};
+    return data.expenses || [];
+  }, [expensesRes]);
+  const error = queryError?.message || actionError;
 
   // ─── Filtering & Sorting ───
   const filtered = useMemo(() => {
@@ -363,43 +356,41 @@ export default function Expenses() {
       };
 
       if (editingId) {
-        // На бэкенде пока нет PATCH /admin/expenses/:id — нужно сообщить Карису
         await api.adminUpdateExpense(token, editingId, body);
       } else {
         await api.adminCreateExpense(token, body);
       }
       setEditingId(null);
       setModalOpen(false);
-      await loadExpenses();
+      refetch();
     } catch (err) {
       console.error('Save expense failed:', err);
       const msg = err.response?.data?.message || err.message;
       if (editingId && err.status === 404) {
-        setError("Редактирование пока не работает — на бэкенде нет PATCH. Сообщите Карису.");
+        setActionError("Редактирование пока не работает — на бэкенде нет PATCH. Сообщите Карису.");
       } else {
-        setError(msg || "Ошибка сохранения расхода");
+        setActionError(msg || "Ошибка сохранения расхода");
       }
     } finally {
       setSaving(false);
     }
-  }, [editingId, formData, loadExpenses, token]);
+  }, [editingId, formData, refetch, token]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     setSaving(true);
-    setError(null);
+    setActionError(null);
     try {
-      // Uses api.adminDeleteExpense(token, id) from api.js
       await api.adminDeleteExpense(token, deleteTarget.id);
       setDeleteTarget(null);
-      await loadExpenses();
+      refetch();
     } catch (err) {
       console.error('Delete expense failed:', err);
-      setError(err.response?.data?.message || err.message || "Ошибка удаления");
+      setActionError(err.response?.data?.message || err.message || "Ошибка удаления");
     } finally {
       setSaving(false);
     }
-  }, [deleteTarget, loadExpenses, token]);
+  }, [deleteTarget, refetch, token]);
 
   const filteredTotal = useMemo(() => filtered.reduce((s, e) => s + (e.amount || 0), 0), [filtered]);
 

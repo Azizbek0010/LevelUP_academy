@@ -40,9 +40,13 @@ export default function AdminReports() {
   const [showExport, setShowExport] = useState(false);
 
   // Build query string for backend period filter
-  const qs = from || to
-    ? `?${from ? `from=${encodeURIComponent(from)}` : ''}${from && to ? '&' : ''}${to ? `to=${encodeURIComponent(to)}` : ''}`
-    : '';
+  const qs = useMemo(() => {
+    if (!from && !to) return '';
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    return `?${params.toString()}`;
+  }, [from, to]);
 
   const { data, isLoading, error, refetch } = useAdminReports(qs);
 

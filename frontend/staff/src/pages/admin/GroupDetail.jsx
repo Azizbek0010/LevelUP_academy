@@ -613,7 +613,7 @@ function AttendanceTab({ groupId, token }) {
 }
 
 /* ═══════════════ HomeworkTab ═══════════════ */
-function HomeworkTab({ groupId }) {
+function HomeworkTab({ groupId, token }) {
   const { data: hwData, refetch } = useAdminGroupHomework(groupId);
   const hw = hwData?.data || hwData || [];
   const [showAdd, setShowAdd] = useState(false);
@@ -640,7 +640,7 @@ function HomeworkTab({ groupId }) {
     if (!form.title.trim()) return;
     setSubmitting(true);
     try {
-      await api.adminCreateGroupHomework(null, groupId, form);
+      await api.adminCreateGroupHomework(token, groupId, form);
       setForm({ title: '', description: '', dueDate: '' });
       setShowAdd(false);
       refetch();
@@ -760,7 +760,7 @@ function HomeworkTab({ groupId }) {
 }
 
 /* ═══════════════ FeedbackTab ═══════════════ */
-function FeedbackTab({ groupId }) {
+function FeedbackTab({ groupId, token }) {
   const { data: fbData, refetch } = useAdminGroupFeedback(groupId);
   const fb = fbData?.data || fbData || [];
   const [filter, setFilter] = useState('all');
@@ -784,7 +784,7 @@ function FeedbackTab({ groupId }) {
     if (!form.content.trim()) return;
     setSubmitting(true);
     try {
-      await api.adminCreateGroupFeedback(null, groupId, form);
+      await api.adminCreateGroupFeedback(token, groupId, form);
       setForm({ type: 'student', authorName: '', content: '', rating: 5 });
       setShowAdd(false);
       refetch();
@@ -1012,8 +1012,8 @@ export default function AdminGroupDetail() {
       {/* Tab Content */}
       <div className="card bg-base-100 p-5 animate-fade-in stagger-3">
         {activeTab === 'attendance' && <AttendanceTab groupId={id} token={token} />}
-        {activeTab === 'homework' && <HomeworkTab groupId={id} />}
-        {activeTab === 'feedback' && <FeedbackTab groupId={id} />}
+        {activeTab === 'homework' && <HomeworkTab groupId={id} token={token} />}
+        {activeTab === 'feedback' && <FeedbackTab groupId={id} token={token} />}
       </div>
 
       {/* Add Student Modal */}
