@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Globe, MessageCircle, Send, Info, Circle } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
 import { useChatMessages } from '../queries.js';
@@ -8,10 +7,11 @@ import { timeAgo } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { EmptyState } from '../components/ui.jsx';
+import Icon from '../components/Icons.jsx';
 
 const ROOMS = [
-  { key: 'global', label: 'Общий чат', Icon: Globe, desc: 'Чат для всех родителей и сотрудников' },
-  { key: 'direct', label: 'От staff', Icon: MessageCircle, desc: 'Личные сообщения от менторов и администраторов' },
+  { key: 'global', label: 'Общий чат', icon: 'globe', desc: 'Чат для всех родителей и сотрудников' },
+  { key: 'direct', label: 'От staff', icon: 'chat', desc: 'Личные сообщения от менторов и администраторов' },
 ];
 
 export default function Chat() {
@@ -93,7 +93,7 @@ export default function Chat() {
         subtitle={selectedChild ? `${selectedChild.firstName} ${selectedChild.lastName}` : ''}
       />
 
-      {/* Room tabs */}
+      {/* Room Tabs */}
       <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit shadow-sm">
         {ROOMS.map((r) => (
           <button
@@ -105,22 +105,22 @@ export default function Chat() {
                 : 'text-base-content/50 hover:bg-base-200'
             }`}
           >
-            <r.Icon className="w-4 h-4" />
+            <Icon name={r.icon} className="w-4 h-4" />
             {r.label}
           </button>
         ))}
       </div>
 
-      {/* Chat area */}
+      {/* Chat Container */}
       <div className="card bg-base-100 flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 220px)', minHeight: '400px' }}>
-        {/* Header bar */}
+        {/* Chat Header */}
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-base-300 bg-base-200/30">
           <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
           <span className="text-xs font-medium opacity-60">Онлайн</span>
           <span className="text-[11px] opacity-30 ml-1">· {roomInfo?.desc}</span>
           {activeRoom === 'direct' && (
             <span className="ml-auto text-[11px] opacity-30 bg-base-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <Info className="w-3 h-3" />
+              <Icon name="document-text" className="w-3 h-3" />
               Только чтение
             </span>
           )}
@@ -204,7 +204,7 @@ export default function Chat() {
                 onClick={handleSend}
                 disabled={!input.trim() || sending}
               >
-                <Send className="w-5 h-5" />
+                <Icon name="paperplane" className="w-5 h-5" />
               </button>
             </div>
           </div>
