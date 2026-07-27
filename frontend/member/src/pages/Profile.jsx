@@ -1,13 +1,48 @@
+import { useState } from 'react';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 import Icon from '../components/Icons.jsx';
 import { fmt } from '../format.js';
+import { api } from '../api.js';
+
+/**
+ * FE-PARENT-PROFILE-PREF: этих настроек нет ни в одной таблице на бэке, и
+ * реального push-уведомления (service worker/VAPID) в проекте тоже нет — это
+ * чисто клиентские переключатели ("звук чата в этом браузере"), поэтому
+ * персистим в localStorage, а не изобретаем бэкенд под несуществующую фичу.
+ */
+function usePreference(key, defaultValue) {
+  const [value, setValue] = useState(() => {
+    const raw = localStorage.getItem(key);
+    return raw === null ? defaultValue : raw === 'true';
+  });
+  const toggle = () => {
+    setValue((v) => {
+      localStorage.setItem(key, String(!v));
+      return !v;
+    });
+  };
+  return [value, toggle];
+}
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const { selectedChild, childList, selectChild } = useChild();
+  const [notifyPush, toggleNotifyPush] = usePreference('pref_notify_push', true);
+  const [chatSound, toggleChatSound] = usePreference('pref_chat_sound', false);
+
+  const [tg, setTg] = useState({ status: 'idle', deepLink: null, error: null }); // idle | loading | ready | error
+  const onBindTelegram = async () => {
+    setTg({ status: 'loading', deepLink: null, error: null });
+    try {
+      const res = await api.telegramBindToken(token);
+      setTg({ status: 'ready', deepLink: res.data.deepLink, error: null });
+    } catch (err) {
+      setTg({ status: 'error', deepLink: null, error: err.message || 'Не удалось получить ссылку' });
+    }
+  };
 
   return (
     <>
@@ -128,7 +163,12 @@ export default function Profile() {
                   <p className="text-xs opacity-40">Push-уведомления о занятиях</p>
                 </div>
               </div>
-              <input type="checkbox" className="toggle toggle-sm toggle-primary" defaultChecked />
+              <input
+                type="checkbox"
+                className="toggle toggle-sm toggle-primary"
+                checked={notifyPush}
+                onChange={toggleNotifyPush}
+              />
             </div>
             <div className="flex items-center justify-between p-3.5 rounded-xl bg-base-200/40 hover:bg-base-200/60 transition-colors">
               <div className="flex items-center gap-3">
@@ -140,9 +180,51 @@ export default function Profile() {
                   <p className="text-xs opacity-40">Звуковое оповещение</p>
                 </div>
               </div>
-              <input type="checkbox" className="toggle toggle-sm toggle-primary" />
+              <input
+                type="checkbox"
+                className="toggle toggle-sm toggle-primary"
+                checked={chatSound}
+                onChange={toggleChatSound}
+              />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* TG-FRONT: привязка Telegram-бота */}
+      <div className="card bg-base-100 mb-6">
+        <div className="card-body">
+          <h3 className="card-title text-sm gap-2">
+            <Icon name="chat" className="w-4 h-4 text-primary" />
+            Telegram
+          </h3>
+          <p className="text-xs opacity-40 mt-1 mb-2">
+            Привяжите Telegram, чтобы получать напоминания об оплате и объявления от центра.
+          </p>
+          {tg.status !== 'ready' && (
+            <button
+              className="btn btn-primary btn-sm rounded-xl gap-2 w-fit"
+              onClick={onBindTelegram}
+              disabled={tg.status === 'loading'}
+            >
+              {tg.status === 'loading' ? <span className="loading loading-spinner loading-xs" /> : <Icon name="chat" className="w-4 h-4" />}
+              Привязать Telegram
+            </button>
+          )}
+          {tg.status === 'error' && (
+            <p className="text-xs text-error mt-2">{tg.error}</p>
+          )}
+          {tg.status === 'ready' && (
+            <a
+              href={tg.deepLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary btn-sm rounded-xl gap-2 w-fit"
+            >
+              <Icon name="chevron-right" className="w-4 h-4" />
+              Открыть в Telegram
+            </a>
+          )}
         </div>
       </div>
 

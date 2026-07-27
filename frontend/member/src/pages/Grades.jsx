@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParentOverview } from '../queries.js';
+import { useGradesPage } from '../queries.js';
 import { useChild } from '../child-context.jsx';
 import { dateShort } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
@@ -12,12 +12,25 @@ const TABS = [
   { key: 'homework', label: 'Домашние задания', icon: 'document-text' },
   { key: 'tests', label: 'Тесты', icon: 'academic' },
 ];
+const PAGE_SIZE = 15;
 
 export default function Grades() {
   const { selectedChild } = useChild();
-  const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
   const [tab, setTab] = useState('homework');
+  const [page, setPage] = useState(1);
   const [detail, setDetail] = useState(null);
+
+  // FE-PARENT-PAGINATION: overview.grades.{homework,tests} ограничены последними 5 —
+  // список ниже идёт отдельным постраничным запросом. Счётчики на вкладках — по 1
+  // записи каждого типа (нужен только total из ответа, не сами данные).
+  const { data, isLoading, error, refetch } = useGradesPage(selectedChild?.id, tab, page, PAGE_SIZE);
+  const { data: hwCountData } = useGradesPage(selectedChild?.id, 'homework', 1, 1);
+  const { data: testsCountData } = useGradesPage(selectedChild?.id, 'tests', 1, 1);
+
+  const onTabChange = (next) => {
+    setTab(next);
+    setPage(1);
+  };
 
   if (!selectedChild) return <EmptyState icon="user-circle" title="Выберите ребёнка" />;
 
@@ -32,12 +45,13 @@ export default function Grades() {
 
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
-  const d = data?.data;
-  if (!d) return null;
+  const p = data?.data;
+  if (!p) return null;
 
-  const hw = d.grades?.homework || [];
-  const tests = d.grades?.tests || [];
-  const list = tab === 'homework' ? hw : tests;
+  const list = p.items || [];
+  const pageCount = p.pageCount || 1;
+  const hwCount = hwCountData?.data?.total ?? 0;
+  const testsCount = testsCountData?.data?.total ?? 0;
 
   const avg =
     list.length > 0
@@ -58,11 +72,11 @@ export default function Grades() {
       {/* Tabs */}
       <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit shadow-sm">
         {TABS.map((t) => {
-          const count = t.key === 'homework' ? hw.length : tests.length;
+          const count = t.key === 'homework' ? hwCount : testsCount;
           return (
             <button
               key={t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => onTabChange(t.key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 tab === t.key
                   ? 'bg-primary text-primary-content shadow-sm'
@@ -87,7 +101,7 @@ export default function Grades() {
           <div className="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center mx-auto mb-2">
             <Icon name="document-text" className="w-5 h-5 text-base-content/40" />
           </div>
-          <p className="text-2xl font-extrabold">{list.length}</p>
+          <p className="text-2xl font-extrabold">{p.total}</p>
           <p className="text-[11px] opacity-40 mt-1">Всего</p>
         </div>
         <div className="card bg-base-100 p-4 text-center hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
@@ -159,6 +173,17 @@ export default function Grades() {
                   </button>
                 );
               })}
+            </div>
+          )}
+
+          {/* FE-PARENT-PAGINATION */}
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between px-1 py-3 mt-2 border-t border-base-200">
+              <span className="text-xs text-base-content/50">Страница {page} из {pageCount}</span>
+              <div className="join">
+                <button className="join-item btn btn-xs" disabled={page <= 1} onClick={() => setPage((pg) => pg - 1)}>«</button>
+                <button className="join-item btn btn-xs" disabled={page >= pageCount} onClick={() => setPage((pg) => pg + 1)}>»</button>
+              </div>
             </div>
           )}
         </div>

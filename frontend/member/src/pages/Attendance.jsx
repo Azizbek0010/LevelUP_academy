@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { useParentOverview } from '../queries.js';
+import { useParentOverview, useAttendancePage } from '../queries.js';
 import { useChild } from '../child-context.jsx';
 import { dateShort, ATTENDANCE_STATUS } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressRing } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
+
+const PAGE_SIZE = 15;
 
 const FILTERS = [
   { key: 'all', label: 'Все' },
@@ -19,10 +21,20 @@ export default function Attendance() {
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
   const [filter, setFilter] = useState('all');
+  const [page, setPage] = useState(1);
+
+  // FE-PARENT-PAGINATION: overview.attendance.recent ограничен последними 5 —
+  // полная история постранично идёт отдельным запросом
+  const {
+    data: pageData,
+    isLoading: isPageLoading,
+    error: pageError,
+    refetch: refetchPage,
+  } = useAttendancePage(selectedChild?.id, page, PAGE_SIZE);
 
   if (!selectedChild) return <EmptyState icon="user-circle" title="Выберите ребёнка" />;
 
-  if (isLoading) {
+  if (isLoading || isPageLoading) {
     return (
       <>
         <PageHeader title="Посещаемость" />
@@ -32,16 +44,23 @@ export default function Attendance() {
   }
 
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
+  if (pageError) return <ErrorState message={pageError.message} onRetry={refetchPage} />;
 
   const d = data?.data;
   if (!d) return null;
 
-  const records = d.attendance?.recent || [];
+  const records = pageData?.data?.items || [];
+  const pageCount = pageData?.data?.pageCount || 1;
   const summary = d.attendance?.summary || {};
   const total = summary.total || 1;
   const pct = Math.round(((summary.present || 0) / total) * 100);
 
   const filtered = filter === 'all' ? records : records.filter((r) => r.status === filter);
+
+  const onFilterChange = (next) => {
+    setFilter(next);
+    setPage(1);
+  };
 
   return (
     <>
@@ -70,7 +89,7 @@ export default function Attendance() {
                   return (
                     <button
                       key={s}
-                      onClick={() => setFilter(filter === s ? 'all' : s)}
+                      onClick={() => onFilterChange(filter === s ? 'all' : s)}
                       className={`p-3 rounded-xl text-center transition-all duration-200 border-2 ${
                         isActive
                           ? 'shadow-md scale-[1.02]'
@@ -100,7 +119,7 @@ export default function Attendance() {
           return (
             <button
               key={f.key}
-              onClick={() => setFilter(f.key)}
+              onClick={() => onFilterChange(f.key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                 isActive
                   ? 'bg-primary text-primary-content shadow-sm'
@@ -190,6 +209,17 @@ export default function Attendance() {
                 })}
               </div>
             </>
+          )}
+
+          {/* FE-PARENT-PAGINATION */}
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between px-1 py-3 mt-2 border-t border-base-200">
+              <span className="text-xs text-base-content/50">Страница {page} из {pageCount}</span>
+              <div className="join">
+                <button className="join-item btn btn-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>«</button>
+                <button className="join-item btn btn-xs" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>»</button>
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -21,6 +21,18 @@ export async function listChildren(parentId) {
   return repo.getChildrenForParent(parentId);
 }
 
+/** FE-PARENT-PAGINATION: постраничная история посещаемости одного ребёнка. */
+export async function getChildAttendance(parentId, childId, page, limit) {
+  await assertParentOwnsChild(parentId, childId);
+  return repo.getAttendancePage(childId, page, limit);
+}
+
+/** FE-PARENT-PAGINATION: постраничные оценки (ДЗ или тесты) одного ребёнка. */
+export async function getChildGrades(parentId, childId, type, page, limit) {
+  await assertParentOwnsChild(parentId, childId);
+  return repo.getGradesPage(childId, type, page, limit);
+}
+
 /**
  * Полный обзор одного ребёнка: коины, долг, недельный рейтинг, группы,
  * посещаемость (сводка за 30 дней + последние отметки) и оценки (ДЗ + тесты).
@@ -28,7 +40,7 @@ export async function listChildren(parentId) {
 export async function getChildOverview(parentId, childId) {
   const child = await assertParentOwnsChild(parentId, childId);
 
-  const [leaderboard, groups, attendanceSummary, recentAttendance, homeworkGrades, testResults] =
+  const [leaderboard, groups, attendanceSummary, recentAttendance, homeworkGrades, testResults, currentInvoice] =
     await Promise.all([
       getLeaderboard(child.branchId, 'week', { limit: 20, studentId: childId }),
       repo.getGroups(childId),
@@ -36,6 +48,7 @@ export async function getChildOverview(parentId, childId) {
       repo.getRecentAttendance(childId, RECENT_LIMIT),
       repo.getRecentHomeworkGrades(childId, RECENT_LIMIT),
       repo.getRecentTestResults(childId, RECENT_LIMIT),
+      repo.getCurrentInvoice(childId),
     ]);
 
   return {
@@ -48,6 +61,7 @@ export async function getChildOverview(parentId, childId) {
     },
     coins: child.coins,
     totalDebt: child.totalDebt,
+    currentInvoice,
     rank: leaderboard.me,
     groups,
     attendance: {
