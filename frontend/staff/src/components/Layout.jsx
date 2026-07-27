@@ -8,7 +8,7 @@ import {
 import {
   HiOutlineSquares2X2, HiOutlineBuildingOffice2, HiOutlineUsers,
   HiOutlineAcademicCap, HiOutlineUserGroup,
-  HiOutlineChartBar, HiOutlineExclamationTriangle, HiOutlineCog,
+  HiOutlineChartBar, HiOutlineCog,
   HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
 } from 'react-icons/hi2';
@@ -68,15 +68,15 @@ const superNav = [
       { to: '/attendance', label: 'Посещаемость' },
     ],
   },
-  // Дисциплина переехала сюда из панели Main Admin: штрафы и увольнения
-  // сотрудников — внутреннее дело организации, а не платформы
-  { to: '/discipline', label: 'Дисциплина', Icon: HiOutlineExclamationTriangle },
   {
     type: 'group',
     key: 'more',
     label: 'Ещё',
     Icon: HiOutlineCog,
     items: [
+      // Дисциплина живёт здесь, а не строкой верхнего уровня: взыскания
+      // выписывают редко, а место она занимала наравне с ежедневной работой
+      { to: '/discipline',    label: 'Дисциплина' },
       { to: '/announcements', label: 'Объявления' },
       { to: '/reminders',     label: 'Напоминания' },
       { to: '/audit',         label: 'Аудит' },

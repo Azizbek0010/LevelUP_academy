@@ -186,24 +186,6 @@ export default function YMapPicker({ value, onChange, height = 260, onUnavailabl
         </div>
       )}
       <div ref={containerRef} className="w-full h-full" />
-
-      {/* Hint */}
-      {ready && !value && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-          <div className="bg-base-100/90 backdrop-blur-sm text-xs px-3 py-1.5 rounded-full shadow text-base-content/70">
-            Нажмите на карту чтобы отметить место
-          </div>
-        </div>
-      )}
-
-      {/* Coordinates badge */}
-      {value && (
-        <div className="absolute bottom-3 left-3 z-20 pointer-events-none">
-          <div className="bg-base-100/90 backdrop-blur-sm text-xs px-2.5 py-1 rounded-full shadow font-mono text-base-content/70">
-            {value.lat.toFixed(6)}, {value.lng.toFixed(6)}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

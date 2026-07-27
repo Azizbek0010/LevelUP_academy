@@ -286,105 +286,78 @@ export default function SuperBranches() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {/* Было: иконка в круге, градиентный бейдж «ГЛАВНЫЙ», полоска
+                      снизу с пульсацией и показатели в отдельной серой плашке —
+                      карточка внутри карточки, шесть подписей капсом. Слишком
+                      много украшений на четыре факта. Осталось: имя, состояние
+                      словом, контакты строкой и числа; наведение подсвечивает
+                      рамку, без подпрыгиваний и теней-ореолов. */}
                   {rows.map((b) => (
                     <div
                       key={b.id}
-                      className={`card bg-base-100 border border-base-200/60 shadow-sm relative overflow-hidden group hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-1.5 transition-all duration-300 ${b.isArchived ? 'opacity-65' : ''}`}
+                      className={`card bg-base-100 border border-base-200 hover:border-base-300 transition-colors ${b.isArchived ? 'opacity-60' : ''}`}
                     >
-                      {/* Status indicator bar at the very bottom */}
-                      {b.isArchived ? (
-                        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-base-300" />
-                      ) : b.debt > 0 ? (
-                        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-error/50 to-error animate-pulse" />
-                      ) : (
-                        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary/30 via-primary to-primary/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      )}
-
-                      <div className="card-body p-5 gap-3">
-                        {/* Header */}
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex items-center gap-2.5">
-                            <div className="p-2.5 bg-primary/10 rounded-2xl text-primary transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-sm shadow-primary/5">
-                              <Building2 size={18} className="text-primary" />
-                            </div>
-                            <div>
-                              <Link to={`/branches/${b.id}`} className="font-bold hover:text-primary text-base leading-snug block transition-colors">
-                                {b.name}
-                              </Link>
-                              {b.isMain && (
-                                <span className="inline-block bg-gradient-to-r from-primary to-lime-400 text-primary-content text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mt-1 shadow-sm shadow-primary/10">
-                                  Главный
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <span className={`badge badge-sm border-0 font-medium ${b.isArchived ? 'badge-ghost text-base-content/50' : 'bg-success/10 text-success'}`}>
-                            {b.isArchived ? 'Архив' : 'Активен'}
+                      <div className="card-body p-4 gap-3">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <Link
+                            to={`/branches/${b.id}`}
+                            className="font-semibold hover:underline truncate"
+                          >
+                            {b.name}
+                          </Link>
+                          <span className="text-xs text-base-content/45 shrink-0">
+                            {b.isArchived ? 'в архиве' : b.isMain ? 'главный' : ''}
                           </span>
                         </div>
 
-                        {/* Address & Phone */}
-                        <div className="space-y-1.5 text-xs text-base-content/60 border-t border-base-200 pt-3">
-                          <div className="flex items-center gap-1.5">
-                            <MapPin size={13} className="shrink-0 text-base-content/40" />
-                            <span>{b.address || 'Адрес не указан'}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Phone size={13} className="shrink-0 text-base-content/40" />
-                            <span>{b.phone || 'Телефон не указан'}</span>
-                          </div>
+                        <div className="text-xs text-base-content/50 space-y-0.5">
+                          <div className="truncate">{b.address || 'адрес не указан'}</div>
+                          <div>{b.phone || 'телефон не указан'}</div>
                         </div>
 
-                        {/* Показатели филиала: люди сверху, деньги снизу.
-                            Расход стоит рядом с доходом намеренно — по одному
-                            доходу не видно, какой филиал себя окупает. */}
-                        <div className="grid grid-cols-3 gap-3 mt-1 bg-base-200/30 border border-base-200/50 rounded-xl p-3 text-xs">
+                        <dl className="grid grid-cols-3 gap-y-2 text-sm">
                           <div>
-                            <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Ученики</div>
-                            <div className="text-sm font-extrabold mt-0.5 tabular-nums text-base-content/80">{fmt(b.students)}</div>
+                            <dt className="text-xs text-base-content/45">Ученики</dt>
+                            <dd className="font-semibold tabular-nums">{fmt(b.students)}</dd>
                           </div>
                           <div>
-                            <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Группы</div>
-                            <div className="text-sm font-extrabold mt-0.5 tabular-nums text-base-content/80">{fmt(b.groups)}</div>
+                            <dt className="text-xs text-base-content/45">Группы</dt>
+                            <dd className="font-semibold tabular-nums">{fmt(b.groups)}</dd>
                           </div>
                           <div>
-                            <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Сотрудники</div>
-                            <div className="text-sm font-extrabold mt-0.5 tabular-nums text-base-content/80" title={`Админы: ${fmt(b.admins)} · Менторы: ${fmt(b.mentors)}`}>
+                            <dt className="text-xs text-base-content/45">Сотрудники</dt>
+                            <dd className="font-semibold tabular-nums">
                               {fmt((b.admins || 0) + (b.mentors || 0))}
-                            </div>
+                            </dd>
                           </div>
                           <div>
-                            <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Доход</div>
-                            <div className="text-sm font-extrabold mt-0.5 text-success tabular-nums">{money(b.revenue)}</div>
+                            <dt className="text-xs text-base-content/45">Доход</dt>
+                            <dd className="font-semibold tabular-nums">{money(b.revenue)}</dd>
                           </div>
                           <div>
-                            <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Расход</div>
-                            <div className="text-sm font-extrabold mt-0.5 tabular-nums text-base-content/70">{money(b.expenses)}</div>
+                            <dt className="text-xs text-base-content/45">Расход</dt>
+                            <dd className="font-semibold tabular-nums">{money(b.expenses)}</dd>
                           </div>
                           <div>
-                            <div className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider">Долг</div>
-                            <div className={`text-sm font-extrabold mt-0.5 tabular-nums ${b.debt > 0 ? 'text-error font-black' : 'text-base-content/40'}`} title={money(b.debt)}>
+                            <dt className="text-xs text-base-content/45">Долг</dt>
+                            <dd className={`font-semibold tabular-nums ${b.debt > 0 ? 'text-error' : ''}`}>
                               {money(b.debt)}
-                            </div>
+                            </dd>
                           </div>
-                        </div>
+                        </dl>
 
-                        {/* Actions */}
-                        <div className="flex justify-end gap-1.5 mt-1 pt-2 border-t border-base-200 text-xs">
+                        <div className="flex gap-4 text-xs text-base-content/45 pt-1">
                           {!b.isArchived && (
-                            <button
-                              className="btn btn-ghost btn-xs text-base-content/70 hover:text-primary transition-colors"
-                              onClick={() => openEdit(b)}
-                            >
-                              Изменить
+                            <button className="hover:text-base-content" onClick={() => openEdit(b)}>
+                              изменить
                             </button>
                           )}
                           <button
-                            className={`btn btn-xs transition-colors ${b.isArchived ? 'btn-ghost text-base-content/70 hover:text-primary' : 'btn-ghost text-error/80 hover:text-error'}`}
+                            className="hover:text-error"
                             onClick={() => handleArchiveClick(b.id, b.name, b.isArchived)}
                           >
-                            {b.isArchived ? 'Активировать' : 'В архив'}
+                            {b.isArchived ? 'вернуть' : 'в архив'}
                           </button>
                         </div>
                       </div>
@@ -400,84 +373,110 @@ export default function SuperBranches() {
       {/* Create / Edit Modal */}
       {modalOpen && (
         <div className="modal modal-open">
-          <div className="modal-box max-w-md rounded-2xl border border-base-200 shadow-xl">
-            <h3 className="font-bold text-lg">
-              {modalMode === 'create' ? 'Добавить филиал' : 'Редактировать филиал'}
+          {/* Две колонки: слева поля, справа карта.
+              В одну колонку карта уезжала за нижний край и форму приходилось
+              прокручивать, чтобы добраться до телефона и кнопок. Поля мелкого
+              размера — как в остальной панели; раньше здесь стояли крупные,
+              и модалка выбивалась из общего вида. */}
+          <div className="modal-box max-w-3xl rounded-2xl border border-base-200">
+            <h3 className="font-bold text-base">
+              {modalMode === 'create' ? 'Новый филиал' : 'Филиал'}
             </h3>
             {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
-            <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-3 mt-4">
-              <label className="form-control w-full">
-                <span className="label-text mb-1">Название *</span>
-                <input
-                  {...register('name')}
-                  autoFocus
-                  placeholder="Например: Чиланзар"
-                  className={`input input-bordered w-full rounded-xl ${errors.name ? 'input-error' : ''}`}
-                />
-                {errors.name && <span className="text-xs text-error mt-1">{errors.name.message}</span>}
-              </label>
-              <label className="form-control w-full">
-                <span className="label-text mb-1">Адрес</span>
-                <input
-                  {...register('address')}
-                  placeholder="Улица, дом, ориентир"
-                  className={`input input-bordered w-full rounded-xl ${errors.address ? 'input-error' : ''}`}
-                />
-                {errors.address && <span className="text-xs text-error mt-1">{errors.address.message}</span>}
-              </label>
+            <form onSubmit={handleSubmit(onFormSubmit)} className="mt-4">
+              <div className="grid md:grid-cols-2 gap-x-5 gap-y-3">
+                <div className="space-y-3">
+                  <label className="form-control w-full">
+                    <span className="text-xs text-base-content/60 mb-1">Название *</span>
+                    <input
+                      {...register('name')}
+                      autoFocus
+                      placeholder="Чиланзар"
+                      className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.name ? 'input-error' : ''}`}
+                    />
+                    {errors.name && <span className="text-xs text-error mt-1">{errors.name.message}</span>}
+                  </label>
 
-              <label className="form-control w-full">
-                <span className="label-text mb-1">Количество комнат</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="999"
-                  {...register('roomCount')}
-                  placeholder="Например: 8"
-                  className={`input input-bordered w-full ${errors.roomCount ? 'input-error' : ''}`}
-                />
-                {errors.roomCount && <span className="text-xs text-error mt-1">{errors.roomCount.message}</span>}
-              </label>
+                  <label className="form-control w-full">
+                    <span className="text-xs text-base-content/60 mb-1">Адрес</span>
+                    <input
+                      {...register('address')}
+                      placeholder="Улица, дом, ориентир"
+                      className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.address ? 'input-error' : ''}`}
+                    />
+                    {errors.address && <span className="text-xs text-error mt-1">{errors.address.message}</span>}
+                  </label>
 
-              {/* Map picker */}
-              <div>
-                <span className="label-text mb-1 block">
-                  Местоположение на карте{mapAvailable && modalMode === 'create' && ' *'}
-                  {location && (
-                    <button
-                      type="button"
-                      className="ml-2 text-xs text-error hover:underline"
-                      onClick={() => setLocation(null)}
-                    >
-                      Сбросить
-                    </button>
-                  )}
-                </span>
-                <YMapPicker
-                  value={location}
-                  onChange={(p) => setLocation(p ? { lat: round6(p.lat), lng: round6(p.lng) } : null)}
-                  height={260}
-                  onUnavailable={setMapBroken}
-                />
+                  <label className="form-control w-full">
+                    <span className="text-xs text-base-content/60 mb-1">Телефон</span>
+                    <Controller
+                      name="phone"
+                      control={control}
+                      render={({ field }) => (
+                        <PhoneInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.phone ? 'input-error' : ''}`}
+                        />
+                      )}
+                    />
+                    {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
+                  </label>
 
-                {/* Ручной ввод координат.
-                    Нужен по двум причинам. Первая: карта может быть недоступна
-                    (нет ключа, не применились ограничения, сервис отвечает 503) —
-                    и тогда без этих полей точку не задать и не поправить вообще.
-                    Вторая: координаты часто присылают текстом из Яндекс/Google
-                    Карт, и вбить их точнее, чем попасть пальцем по карте. */}
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  <label className="form-control">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">
-                      Широта
+                  <label className="form-control w-full">
+                    <span className="text-xs text-base-content/60 mb-1">Комнат</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="999"
+                      {...register('roomCount')}
+                      placeholder="8"
+                      className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.roomCount ? 'input-error' : ''}`}
+                    />
+                    {errors.roomCount && <span className="text-xs text-error mt-1">{errors.roomCount.message}</span>}
+                  </label>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs text-base-content/60">
+                      На карте{mapAvailable && modalMode === 'create' && ' *'}
                     </span>
+                    {location ? (
+                      <button
+                        type="button"
+                        className="text-xs text-base-content/45 hover:text-error"
+                        onClick={() => setLocation(null)}
+                      >
+                        сбросить
+                      </button>
+                    ) : (
+                      /* Подсказка строкой у заголовка, а не плашкой поверх карты:
+                         плашка закрывала часть карты и спорила с её же контролами. */
+                      <span className="text-xs text-base-content/40">кликните по карте</span>
+                    )}
+                  </div>
+
+                  <YMapPicker
+                    value={location}
+                    onChange={(p) => setLocation(p ? { lat: round6(p.lat), lng: round6(p.lng) } : null)}
+                    height={232}
+                    onUnavailable={setMapBroken}
+                  />
+
+                  {/* Координаты полями — на случай, когда карта недоступна
+                      (нет ключа, ограничения не применились), и чтобы вставить
+                      готовую пару, скопированную из Яндекс Карт. */}
+                  <div className="grid grid-cols-2 gap-2">
                     <input
                       type="number"
                       step="any"
                       min="-90"
                       max="90"
+                      aria-label="Широта"
                       className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
-                      placeholder="41.311081"
+                      placeholder="широта"
                       value={location?.lat ?? ''}
                       onChange={(e) => {
                         const lat = e.target.value === '' ? null : round6(e.target.value);
@@ -486,18 +485,14 @@ export default function SuperBranches() {
                           : { lat, lng: location?.lng ?? null });
                       }}
                     />
-                  </label>
-                  <label className="form-control">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">
-                      Долгота
-                    </span>
                     <input
                       type="number"
                       step="any"
                       min="-180"
                       max="180"
+                      aria-label="Долгота"
                       className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
-                      placeholder="69.240562"
+                      placeholder="долгота"
                       value={location?.lng ?? ''}
                       onChange={(e) => {
                         const lng = e.target.value === '' ? null : round6(e.target.value);
@@ -506,29 +501,10 @@ export default function SuperBranches() {
                           : { lat: location?.lat ?? null, lng });
                       }}
                     />
-                  </label>
+                  </div>
                 </div>
-                <span className="text-xs text-base-content/45 mt-1 block">
-                  Можно отметить на карте или вставить координаты из Яндекс Карт — например 41.311081, 69.240562
-                </span>
               </div>
 
-              <label className="form-control w-full">
-                <span className="label-text mb-1">Телефон</span>
-                <Controller
-                  name="phone"
-                  control={control}
-                  render={({ field }) => (
-                    <PhoneInput
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      className={`input input-bordered w-full rounded-xl ${errors.phone ? 'input-error' : ''}`}
-                    />
-                  )}
-                />
-                {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
-              </label>
               <div className="modal-action">
                 <button type="button" className="btn btn-ghost btn-sm rounded-xl" onClick={() => setModalOpen(false)} disabled={busy}>
                   Отмена
