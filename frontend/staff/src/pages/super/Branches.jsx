@@ -123,7 +123,15 @@ export default function SuperBranches() {
        старого филиала не требуем: он мог быть заведён до появления карты.
        Если ключ Яндекса не подключён, карта показать себя не может — тогда
        требовать координаты бессмысленно, и филиал создаётся без них. */
-    if (modalMode === 'create' && mapAvailable && !location) {
+    const hasPoint = location?.lat != null && location?.lng != null;
+    const halfPoint = !hasPoint && (location?.lat != null || location?.lng != null);
+
+    // одна координата без второй — почти всегда недописанный ввод, а не намерение
+    if (halfPoint) {
+      setErr('Укажите обе координаты: широту и долготу');
+      return;
+    }
+    if (modalMode === 'create' && mapAvailable && !hasPoint) {
       setErr('Отметьте филиал на карте — без точки его не найдут ни родители, ни курьер');
       return;
     }
@@ -135,7 +143,14 @@ export default function SuperBranches() {
         address: formData.address.trim(),
         phone: formData.phone.trim(),
         ...(formData.roomCount !== '' && formData.roomCount != null ? { roomCount: Number(formData.roomCount) } : {}),
-        ...(location ? { lat: location.lat, lng: location.lng } : {}),
+        /* При создании координаты шлём только когда они есть. При правке шлём
+           всегда: null — это осознанное «снять точку», и без него отметку
+           можно было поставить и подвинуть, но не убрать. */
+        ...(hasPoint
+          ? { lat: location.lat, lng: location.lng }
+          : modalMode === 'edit'
+            ? { lat: null, lng: null }
+            : {}),
       };
       if (modalMode === 'create') {
         await api.superCreateBranch(token, body);
@@ -428,6 +443,58 @@ export default function SuperBranches() {
                   )}
                 </span>
                 <YMapPicker value={location} onChange={setLocation} height={260} onUnavailable={setMapBroken} />
+
+                {/* Ручной ввод координат.
+                    Нужен по двум причинам. Первая: карта может быть недоступна
+                    (нет ключа, не применились ограничения, сервис отвечает 503) —
+                    и тогда без этих полей точку не задать и не поправить вообще.
+                    Вторая: координаты часто присылают текстом из Яндекс/Google
+                    Карт, и вбить их точнее, чем попасть пальцем по карте. */}
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <label className="form-control">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">
+                      Широта
+                    </span>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      min="-90"
+                      max="90"
+                      className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
+                      placeholder="41.311081"
+                      value={location?.lat ?? ''}
+                      onChange={(e) => {
+                        const lat = e.target.value === '' ? null : Number(e.target.value);
+                        setLocation(lat === null && location?.lng == null
+                          ? null
+                          : { lat, lng: location?.lng ?? null });
+                      }}
+                    />
+                  </label>
+                  <label className="form-control">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">
+                      Долгота
+                    </span>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      min="-180"
+                      max="180"
+                      className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
+                      placeholder="69.240562"
+                      value={location?.lng ?? ''}
+                      onChange={(e) => {
+                        const lng = e.target.value === '' ? null : Number(e.target.value);
+                        setLocation(lng === null && location?.lat == null
+                          ? null
+                          : { lat: location?.lat ?? null, lng });
+                      }}
+                    />
+                  </label>
+                </div>
+                <span className="text-xs text-base-content/45 mt-1 block">
+                  Можно отметить на карте или вставить координаты из Яндекс Карт — например 41.311081, 69.240562
+                </span>
               </div>
 
               <label className="form-control w-full">
