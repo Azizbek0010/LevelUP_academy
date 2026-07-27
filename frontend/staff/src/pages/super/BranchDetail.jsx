@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -7,6 +7,7 @@ import {
 import {
   Building2, Users, Phone, MapPin, AlertTriangle, TrendingUp, Wallet,
   UserCog, GraduationCap, BookOpen, ArrowLeft, CalendarCheck, Coins,
+  Settings, ExternalLink,
 } from 'lucide-react';
 import { fmt, money } from '../../format.js';
 import { useSuperBranchDetail } from '../../queries.js';
@@ -15,7 +16,10 @@ import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import { SkeletonList } from '../../components/Skeleton.jsx';
+import YMapPicker from '../../components/YMapPicker.jsx';
+import { phoneDisplay } from '../../components/PhoneInput.jsx';
 import { Kpi, Panel, EmptyState } from '../mentor/_ui.jsx';
+import BranchFormModal from './BranchFormModal.jsx';
 
 /**
  * Филиал — единственная точка входа во всё, что в нём происходит.
@@ -145,6 +149,8 @@ export default function SuperBranchDetail() {
   const { id } = useParams();
   const [params, setParams] = useSearchParams();
   const { data, isLoading, error, refetch } = useSuperBranchDetail(id);
+  // всё управление филиалом — здесь, под шестерёнкой, а не на общем списке
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const tab = TABS.some((t) => t.key === params.get('tab')) ? params.get('tab') : 'overview';
   const groupId = params.get('group');
@@ -209,6 +215,7 @@ export default function SuperBranchDetail() {
   const admins = branch.admins ?? [];
   const mentors = branch.mentors ?? [];
   const openedGroup = groups.find((g) => g.id === groupId) ?? null;
+  const hasPoint = branch.lat != null && branch.lng != null;
 
   return (
     <div className="space-y-5">
@@ -225,6 +232,13 @@ export default function SuperBranchDetail() {
       >
         {branch.isMain && <span className="badge badge-primary badge-sm">Главный</span>}
         {branch.isArchived && <span className="badge badge-ghost badge-sm">Архив</span>}
+        <button
+          className="btn btn-ghost btn-sm gap-1.5"
+          onClick={() => setSettingsOpen(true)}
+          title="Настройки филиала"
+        >
+          <Settings size={16} /> Настройки
+        </button>
       </PageHeader>
 
       {/* Вкладки. Состояние в адресе, поэтому ссылку можно переслать. */}
@@ -270,24 +284,57 @@ export default function SuperBranchDetail() {
             />
           </div>
 
-          <Panel title="Контакты" icon={Building2}>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <MapPin size={14} className="text-base-content/40 shrink-0" />
-                <span>{branch.address || 'Адрес не указан'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone size={14} className="text-base-content/40 shrink-0" />
-                <span>{branch.phone || 'Телефон не указан'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin size={14} className="text-base-content/40 shrink-0" />
-                <span>
-                  {branch.lat != null && branch.lng != null
-                    ? `На карте: ${Number(branch.lat).toFixed(5)}, ${Number(branch.lng).toFixed(5)}`
-                    : 'Точка на карте не отмечена'}
+          {/* Где филиал — показываем картой, а не строкой координат: пять
+              знаков после запятой человеку ничего не говорят, а карта отвечает
+              на настоящий вопрос «это вообще где». */}
+          <Panel title="Контакты и адрес" icon={Building2}>
+            {/* Контакты строкой сверху, карта под ними во всю ширину: рядом с
+                текстом ей доставалась половина панели, а половина оставалась
+                пустой — читать на такой карте нечего. */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm">
+                <span className="flex items-center gap-2">
+                  <MapPin size={14} className="text-base-content/40 shrink-0" />
+                  {branch.address || 'Адрес не указан'}
                 </span>
+                <span className="flex items-center gap-2">
+                  <Phone size={14} className="text-base-content/40 shrink-0" />
+                  {/* тем же видом, что и в поле ввода: +998 90 123 45 67,
+                      а не слитной строкой из базы */}
+                  {branch.phone ? phoneDisplay(branch.phone) : 'Телефон не указан'}
+                </span>
+                {hasPoint && (
+                  <span className="flex items-center gap-3">
+                    <span className="text-xs font-mono text-base-content/50 tabular-nums">
+                      {Number(branch.lat).toFixed(6)}, {Number(branch.lng).toFixed(6)}
+                    </span>
+                    <a
+                      href={`https://yandex.uz/maps/?pt=${branch.lng},${branch.lat}&z=17&l=map`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-base-content/45 hover:text-base-content inline-flex items-center gap-1"
+                    >
+                      открыть в Картах <ExternalLink size={11} />
+                    </a>
+                  </span>
+                )}
               </div>
+
+              {hasPoint ? (
+                <YMapPicker
+                  value={{ lat: Number(branch.lat), lng: Number(branch.lng) }}
+                  height="min(46vh, 380px)"
+                  readOnly
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-base-300 text-center p-10">
+                  <MapPin size={22} className="text-base-content/25" />
+                  <p className="text-xs text-base-content/50">Точка на карте не отмечена</p>
+                  <button className="btn btn-ghost btn-xs" onClick={() => setSettingsOpen(true)}>
+                    Отметить на карте
+                  </button>
+                </div>
+              )}
             </div>
           </Panel>
         </div>
@@ -410,6 +457,13 @@ export default function SuperBranchDetail() {
           </Panel>
         </div>
       )}
+
+      <BranchFormModal
+        open={settingsOpen}
+        mode="edit"
+        branch={branch}
+        onClose={() => setSettingsOpen(false)}
+      />
     </div>
   );
 }
