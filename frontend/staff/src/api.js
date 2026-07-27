@@ -2357,6 +2357,10 @@ export const api = {
   superUpsertCharter: (token, body) => request('/super/charter', { method: 'PUT', token, body }),
   superReactivateStaff: (token, id) => request(`/super/staff/${id}/reactivate`, { method: 'POST', token }),
 
+  // -------- K-DISC-FRONT: own discipline (mentor/methodist self-view) --------
+  myPenalties: (token) => request('/users/me/penalties', { token }),
+  myCharter: (token) => request('/users/me/charter', { token }),
+
   // -------- METHODIST CONTENT --------
   methodistTrainingTypes: (token) => request('/methodist/training-types', { token }),
   methodistCreateTrainingType: (token, body) => request('/methodist/training-types', { method: 'POST', token, body }),

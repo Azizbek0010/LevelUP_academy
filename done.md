@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 28.07.2026 04:13 (UTC+5, Toshkent vaqti)
-> Statistika: 184/207 task tugallangan (88%)
+> Oxirgi yangilanish: 28.07.2026 04:29 (UTC+5, Toshkent vaqti)
+> Statistika: 185/207 task tugallangan (89%)
 
 ---
 
-## Progress: [#################...] 88%
+## Progress: [#################...] 89%
 
 ## Tugallangan vazifalar
 
@@ -48,6 +48,7 @@
 - [x] K-DISC: Ustav (org_charters, erkin matn, upsert, barcha xodimlarga ko'rinadi)
 - [x] K-DISC: Endpointlar — super PUT/GET /charter, POST/GET /penalties, POST /staff/:id/reactivate; admin GET /charter, POST/GET /penalties; shared GET /users/me/penalties, /users/me/charter
 - [x] K-DISC: Swagger — Discipline tegi, 10 endpoint, swagger/*.md qayta generatsiya (139 endpoint)
+- [x] K-DISC-FRONT ✅ BAJARILDI 2026-07-28 (Karis, Hamidula'ning o'rniga — vaqtni tejash uchun
 
 ### Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
 - [x] K-PAY: Payments modul: oylik avto-hisoblash (billing.worker, 1-sana, muddat 5-sana) + invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + ad-hoc to'lov + refund/void + chek S3 ga; commit dan KEYIN notificationQueue ('payment.received'/'payment.due'/'payment.refunded'); total_debt + invoice.status qayta hisob. To'lamasa (5-sanadan keyin, invoice='overdue') — student panelga umuman data qaytmaydi (paymentGate, 402). NASIYA YO'Q
@@ -261,6 +262,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 111 task
+- Karis (Backend): 112 task
 - Abdulaziz (Backend): 75 task
 - Frontend jamoasi: 66 task

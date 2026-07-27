@@ -44,6 +44,7 @@ const MentorStudents = lazy(() => import('./pages/mentor/Students.jsx'));
 const MentorStudentDetail = lazy(() => import('./pages/mentor/StudentDetail.jsx'));
 
 const MethodistDashboard = lazy(() => import('./pages/methodist/Dashboard.jsx'));
+const MethodistProfile = lazy(() => import('./pages/methodist/Profile.jsx'));
 const TrainingTypes = lazy(() => import('./pages/methodist/TrainingTypes.jsx'));
 const Topics = lazy(() => import('./pages/methodist/Topics.jsx'));
 const Lessons = lazy(() => import('./pages/methodist/Lessons.jsx'));
@@ -102,7 +103,7 @@ export default function App() {
         <Route path="/groups/:id" element={<SW><RoleView views={{ admin: AdminGroupDetail, mentor: MentorGroupWorkspace }} /></SW>} />
         <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SW>} />
         <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
-        <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile, mentor: MentorProfile }} /></SW>} />
+        <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile, mentor: MentorProfile, methodist: MethodistProfile }} /></SW>} />
         <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: () => <MentorLegacyRedirect tab="davomat" /> }} /></SW>} />
         <Route path="/tests" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="testlar" /> }} /></SW>} />
         <Route path="/coins" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="koinlar" /> }} /></SW>} />
