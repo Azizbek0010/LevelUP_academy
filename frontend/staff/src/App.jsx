@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './auth.jsx';
 
 import Layout from './components/Layout.jsx';
@@ -52,8 +52,9 @@ const MethodistAnalytics = lazy(() => import('./pages/methodist/Analytics.jsx'))
 
 function Protected({ children }) {
   const { token, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <Splash />;
-  return token ? children : <Navigate to="/login" replace />;
+  return token ? children : <Navigate to="/login" state={{ from: location }} replace />;
 }
 
 function DashboardRedirect() {

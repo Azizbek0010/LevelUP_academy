@@ -324,7 +324,7 @@ function TabNotifications({ settings, onChange }) {
 
 /* ═══════════════════ Tab: Security ═══════════════════ */
 
-function TabSecurity({ settings, onChange }) {
+function TabSecurity({ settings, onChange, token }) {
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [pwFields, setPwFields] = useState({ current: '', newPw: '', confirm: '' });
@@ -339,7 +339,7 @@ function TabSecurity({ settings, onChange }) {
     }
     setPwBusy(true);
     try {
-      await api.adminUpdateSettings(null, { changePassword: { current: pwFields.current, newPassword: pwFields.newPw } });
+      await api.adminUpdateSettings(token, { changePassword: { current: pwFields.current, newPassword: pwFields.newPw } });
       setPwMsg('success');
       setPwFields({ current: '', newPw: '', confirm: '' });
       setTimeout(() => setPwMsg(''), 3000);
@@ -801,7 +801,7 @@ export default function AdminSettings() {
         <div className="flex-1 min-w-0 pb-24">
           {activeTab === 'general' && <TabGeneral settings={settings} onChange={update} />}
           {activeTab === 'notifications' && <TabNotifications settings={settings} onChange={update} />}
-          {activeTab === 'security' && <TabSecurity settings={settings} onChange={update} />}
+          {activeTab === 'security' && <TabSecurity settings={settings} onChange={update} token={token} />}
           {activeTab === 'finance' && <TabFinance settings={settings} onChange={update} />}
           {activeTab === 'localization' && <TabLocalization settings={settings} onChange={update} />}
         </div>

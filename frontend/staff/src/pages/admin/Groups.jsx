@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Archive, ArchiveRestore, ChevronRight, Users, User, FolderOpen, LayoutGrid, List } from 'lucide-react';
+import { Plus, Archive, ArchiveRestore, ChevronRight, Users, User, FolderOpen, LayoutGrid, List, Download } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminGroups, useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
+import ExportDialog from '../../components/ExportDialog.jsx';
 import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip } from '../mentor/_ui.jsx';
 
 const isArchived = (g) => g.isArchived ?? g.is_archived ?? false;
@@ -86,6 +87,7 @@ export default function AdminGroups() {
   const [err, setErr] = useState('');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState('card');
+  const [showExport, setShowExport] = useState(false);
 
   const raw = data?.data || data || {};
   const rows = raw.groups || (Array.isArray(raw) ? raw : []);
@@ -120,6 +122,9 @@ export default function AdminGroups() {
   return (
     <div className="space-y-6 pb-8">
       <PageHeader title="Группы" subtitle="Учебные группы филиала">
+        <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={filteredRows.length === 0}>
+          <Download size={14} /> Экспорт
+        </button>
         <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
           <Plus size={16} /> Создать группу
         </button>
@@ -226,6 +231,8 @@ export default function AdminGroups() {
           </div>
         </div>
       )}
+
+      <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="groups" data={filteredRows} />
 
       {/* ═══ Create Modal ═══ */}
       {form && (
