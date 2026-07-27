@@ -143,6 +143,45 @@ export function exportToCSV(data, columns, filename = `export_${today()}`) {
   URL.revokeObjectURL(url);
 }
 
+// ═══════════════ Markdown (.md) ═══════════════
+
+export function exportToMarkdown(data, columns, filename = `export_${today()}`, title = 'Отчёт') {
+  const { header, rows } = buildRows(data, columns);
+  const dateStr = new Date().toLocaleDateString('ru-RU');
+
+  const lines = [];
+  lines.push(`# ${title}`);
+  lines.push('');
+  lines.push(`> 📅 Дата: ${dateStr}  |  📊 Записей: ${data.length}`);
+  lines.push('');
+
+  // Table header
+  lines.push(`| ${header.join(' | ')} |`);
+  lines.push(`| ${header.map(() => '---').join(' | ')} |`);
+
+  // Table rows
+  for (const row of rows) {
+    const escaped = row.map((cell) => {
+      const str = String(cell ?? '—');
+      return str.replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    });
+    lines.push(`| ${escaped.join(' | ')} |`);
+  }
+
+  lines.push('');
+  lines.push('---');
+  lines.push('*LevelUp Academy — Exported Report*');
+
+  const md = lines.join('\n');
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${filename}.md`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 // ═══════════════ Main Dispatcher ═══════════════
 
 export async function exportData(format, data, columns, filename, title) {
@@ -153,6 +192,8 @@ export async function exportData(format, data, columns, filename, title) {
       return exportToPDF(data, columns, filename, title);
     case 'csv':
       return exportToCSV(data, columns, filename);
+    case 'markdown':
+      return exportToMarkdown(data, columns, filename, title);
     default:
       throw new Error(`Unknown format: ${format}`);
   }

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Download, FileSpreadsheet, FileText, FileDown, X, Check } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, FileDown, FileCode2, X, Check } from 'lucide-react';
 import { exportData, PAGE_EXPORT_CONFIG } from '../utils/exportUtils.js';
 
 const FORMAT_OPTIONS = [
@@ -20,6 +20,15 @@ const FORMAT_OPTIONS = [
     color: '#E8543E',
     bg: 'rgba(232,84,62,0.10)',
     desc: 'Документ с заголовком',
+  },
+  {
+    key: 'markdown',
+    label: 'Markdown',
+    ext: '.md',
+    icon: FileCode2,
+    color: '#7C3AED',
+    bg: 'rgba(124,58,237,0.10)',
+    desc: 'Текстовый файл (.md)',
   },
   {
     key: 'csv',
@@ -89,7 +98,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
         </div>
 
         {/* Format selector */}
-        <div className="grid grid-cols-3 gap-2.5 mb-5">
+        <div className="grid grid-cols-4 gap-2 mb-5">
           {FORMAT_OPTIONS.map((f) => {
             const active = format === f.key;
             const Icon = f.icon;
@@ -97,7 +106,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
               <button
                 key={f.key}
                 onClick={() => setFormat(f.key)}
-                className="relative flex flex-col items-center gap-2 p-4 rounded-[14px] border-2 transition-all duration-200 hover:shadow-sm"
+                className="relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 hover:shadow-sm cursor-pointer"
                 style={{
                   borderColor: active ? f.color : 'var(--border)',
                   background: active ? f.bg : 'var(--surface)',
@@ -112,7 +121,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
                   </div>
                 )}
                 <div
-                  className="w-10 h-10 rounded-[10px] flex items-center justify-center"
+                  className="w-9 h-9 rounded-lg flex items-center justify-center"
                   style={{ background: active ? f.color : 'var(--border)' }}
                 >
                   <Icon size={18} style={{ color: active ? '#fff' : 'var(--text-secondary)' }} />
