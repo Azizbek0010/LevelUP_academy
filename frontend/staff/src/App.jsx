@@ -10,6 +10,7 @@ import Splash from './components/Splash.jsx';
 const SuperDashboard = lazy(() => import('./pages/super/Dashboard.jsx'));
 const SuperBranches = lazy(() => import('./pages/super/Branches.jsx'));
 const SuperAdmins = lazy(() => import('./pages/super/Admins.jsx'));
+const SuperStaffDetail = lazy(() => import('./pages/super/StaffDetail.jsx'));
 const SuperBranchDetail = lazy(() => import('./pages/super/BranchDetail.jsx'));
 const SuperSettings = lazy(() => import('./pages/super/Settings.jsx'));
 const SuperStudents = lazy(() => import('./pages/super/Students.jsx'));
@@ -137,6 +138,7 @@ export default function App() {
           <Route path="/branches" element={<SW><SuperBranches /></SW>} />
           <Route path="/branches/:id" element={<SW><SuperBranchDetail /></SW>} />
           <Route path="/admins" element={<SW><SuperAdmins /></SW>} />
+          <Route path="/admins/:role/:id" element={<SW><SuperStaffDetail /></SW>} />
           <Route path="/stats" element={<SW><SuperStats /></SW>} />
           <Route path="/announcements" element={<SW><SuperAnnouncements /></SW>} />
           <Route path="/reminders" element={<SW><SuperReminders /></SW>} />

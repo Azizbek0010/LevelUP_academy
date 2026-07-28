@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
-import { Plus, Edit2, ShieldAlert, Users, BookOpen, KeyRound, Copy, Check, AlertTriangle, ScrollText } from 'lucide-react';
-import { dateShort, money, ADMIN_STATUS } from '../../format.js';
+import { Plus, Edit2, ShieldAlert, Users, BookOpen, KeyRound, Copy, Check, AlertTriangle } from 'lucide-react';
+import { dateShort, ADMIN_STATUS } from '../../format.js';
 import { useSuperAdmins, useSuperBranches, useSuperMethodists, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
@@ -12,8 +12,6 @@ import PageHeader from '../../components/PageHeader.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import PhoneInput from '../../components/PhoneInput.jsx';
-import { Modal } from '../mentor/_ui.jsx';
-import { LevelBadge } from '../../discipline-meta.jsx';
 
 // ─── Schemas ───────────────────────────────────────────────
 // Пароль больше не вводится руками — сервер генерирует случайный и отдаёт
@@ -113,101 +111,12 @@ function TempPasswordModal({ email, password, onClose }) {
   );
 }
 
-// ─── Карточка сотрудника (клик по строке) ────────────────────
-// Полные данные + история дисциплинарных взысканий — переиспользует уже
-// существующий /super/penalties?targetUserId=X (см. discipline-модуль), не
-// заводит отдельный endpoint под детальный просмотр.
-function StaffDetailModal({ open, onClose, person, role }) {
-  const { token } = useAuth();
-  const { data, isLoading } = useQuery({
-    queryKey: ['super-penalties', person?.id],
-    queryFn: () => api.superPenalties(token, `?targetUserId=${person.id}`),
-    enabled: open && !!person?.id,
-  });
-  const items = data?.data ?? [];
-
-  if (!person) return null;
-  const status = ADMIN_STATUS[person.status === 'frozen' ? 'frozen' : 'active'] || { label: person.status };
-
-  return (
-    <Modal isOpen={open} onClose={onClose} title={`${person.firstName} ${person.lastName}`}>
-      <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Email</div>
-            <div className="font-mono">{person.email}</div>
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Телефон</div>
-            <div className="font-mono">{person.phone || '—'}</div>
-          </div>
-          {role === 'admin' && (
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Филиал</div>
-              <div className="font-medium">{person.branchName || '—'}</div>
-            </div>
-          )}
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Оклад</div>
-            <div className="font-semibold">{person.monthlySalary != null ? money(person.monthlySalary) : '—'}</div>
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Статус</div>
-            <div>{status.label}</div>
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Создан</div>
-            <div>{dateShort(person.createdAt)}</div>
-          </div>
-        </div>
-
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-2 flex items-center gap-1.5">
-            <ScrollText size={13} /> Нарушения дисциплины ({items.length})
-          </div>
-          {isLoading ? (
-            <div className="skeleton h-20 w-full rounded-xl" />
-          ) : items.length === 0 ? (
-            <p className="text-sm text-base-content/45 py-3">Нарушений нет</p>
-          ) : (
-            <div className="overflow-x-auto border border-base-200 rounded-xl">
-              <table className="table table-sm">
-                <thead>
-                  <tr>
-                    <th>Вид</th>
-                    <th>Причина</th>
-                    <th className="text-right">% от оклада</th>
-                    <th>Когда</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((p) => (
-                    <tr key={p.id}>
-                      <td><LevelBadge type={p.type} size="sm" /></td>
-                      <td className="max-w-xs text-sm">{p.reason}</td>
-                      <td className="text-right tabular-nums font-semibold">
-                        {p.amount == null ? '—' : `−${Number(p.amount)}%`}
-                      </td>
-                      <td className="text-xs text-base-content/55 whitespace-nowrap">
-                        {dateShort(p.created_at ?? p.createdAt)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
 // ─── Admin Tab ─────────────────────────────────────────────
 function AdminsTab() {
   const { data: adminsData, isLoading, error } = useSuperAdmins();
   const { data: branchesData } = useSuperBranches();
   const { token } = useAuth();
+  const navigate = useNavigate();
   const invalidate = useInvalidate();
   const [q, setQ] = useState('');
   const [err, setErr] = useState('');
@@ -217,7 +126,6 @@ function AdminsTab() {
   const [busy, setBusy] = useState(false);
   const [resetBusyId, setResetBusyId] = useState(null);
   const [tempPassword, setTempPassword] = useState(null); // { email, password }
-  const [detailPerson, setDetailPerson] = useState(null);
 
   const schema = modalMode === 'create' ? adminCreateSchema : adminEditSchema;
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
@@ -344,7 +252,7 @@ function AdminsTab() {
                   <tr
                     key={a.id}
                     className={`cursor-pointer hover:bg-base-200/50 ${a.status === 'frozen' ? 'opacity-60' : ''}`}
-                    onClick={() => setDetailPerson(a)}
+                    onClick={() => navigate(`/admins/admin/${a.id}`)}
                   >
                     <td>
                       <div className="flex items-center gap-2.5">
@@ -486,13 +394,6 @@ function AdminsTab() {
           onClose={() => setTempPassword(null)}
         />
       )}
-
-      <StaffDetailModal
-        open={!!detailPerson}
-        onClose={() => setDetailPerson(null)}
-        person={detailPerson}
-        role="admin"
-      />
     </>
   );
 }
@@ -501,6 +402,7 @@ function AdminsTab() {
 function MethodistsTab() {
   const { data: methodistsData, isLoading, error } = useSuperMethodists();
   const { token } = useAuth();
+  const navigate = useNavigate();
   const invalidate = useInvalidate();
   const [q, setQ] = useState('');
   const [err, setErr] = useState('');
@@ -510,7 +412,6 @@ function MethodistsTab() {
   const [busy, setBusy] = useState(false);
   const [resetBusyId, setResetBusyId] = useState(null);
   const [tempPassword, setTempPassword] = useState(null); // { email, password }
-  const [detailPerson, setDetailPerson] = useState(null);
 
   const schema = modalMode === 'create' ? methodistCreateSchema : methodistEditSchema;
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
@@ -630,7 +531,7 @@ function MethodistsTab() {
                   <tr
                     key={m.id}
                     className={`cursor-pointer hover:bg-base-200/50 ${m.status === 'frozen' ? 'opacity-60' : ''}`}
-                    onClick={() => setDetailPerson(m)}
+                    onClick={() => navigate(`/admins/methodist/${m.id}`)}
                   >
                     <td>
                       <div className="flex items-center gap-2.5">
@@ -762,13 +663,6 @@ function MethodistsTab() {
           onClose={() => setTempPassword(null)}
         />
       )}
-
-      <StaffDetailModal
-        open={!!detailPerson}
-        onClose={() => setDetailPerson(null)}
-        person={detailPerson}
-        role="methodist"
-      />
     </>
   );
 }
