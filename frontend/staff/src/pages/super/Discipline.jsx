@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 import {
-  ShieldAlert, Ban, Plus, ScrollText, UserX, RotateCcw, Trash2, ListChecks, TriangleAlert,
+  ShieldAlert, Ban, Plus, ScrollText, UserX, RotateCcw, Trash2, ListChecks, TriangleAlert, Check,
 } from 'lucide-react';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
@@ -70,10 +70,13 @@ function StaffSelect({ staff, value, onChange }) {
             key={s.id}
             type="button"
             onClick={() => onChange(s.id)}
-            className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-left transition-colors ${
-              active ? 'bg-base-200' : 'hover:bg-base-200/50'
+            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm text-left transition-colors border-l-4 ${
+              active
+                ? 'bg-primary/10 border-l-primary font-semibold'
+                : 'border-l-transparent hover:bg-base-200/50'
             }`}
           >
+            <Check size={15} className={`shrink-0 ${active ? 'text-primary' : 'text-transparent'}`} />
             <span className="flex-1 truncate">{s.firstName} {s.lastName}</span>
             <span className="text-xs text-base-content/45 shrink-0">{ROLE_LABEL[s.role] ?? s.role}</span>
           </button>
@@ -98,10 +101,13 @@ function RuleSelect({ rules, value, onChange }) {
             key={r.id}
             type="button"
             onClick={() => onChange(r.id)}
-            className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-left transition-colors ${
-              active ? 'bg-base-200' : 'hover:bg-base-200/50'
+            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm text-left transition-colors border-l-4 ${
+              active
+                ? 'bg-primary/10 border-l-primary font-semibold'
+                : 'border-l-transparent hover:bg-base-200/50'
             }`}
           >
+            <Check size={15} className={`shrink-0 ${active ? 'text-primary' : 'text-transparent'}`} />
             <span className="flex-1 truncate">{r.description}</span>
             <LevelBadge type={r.type} size="sm" />
           </button>
