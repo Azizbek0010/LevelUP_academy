@@ -288,6 +288,7 @@ export async function listMentors(orgId) {
     status: u.status,
     branchId: u.branch_id,
     branchName: u.branch_name,
+    phone: u.phone,
     createdAt: u.created_at,
   }));
 }

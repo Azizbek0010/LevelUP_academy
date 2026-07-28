@@ -5,8 +5,8 @@ import {
   Mail, Phone, Building2, Wallet, Calendar, MapPin, UserCog,
   ShieldAlert, Ban, TriangleAlert, ScrollText,
 } from 'lucide-react';
-import { fmt, dateShort, money, ADMIN_STATUS } from '../../format.js';
-import { useSuperAdmins, useSuperMethodists, useSuperBranches } from '../../queries.js';
+import { fmt, dateShort, money, ADMIN_STATUS, ROLE_LABELS } from '../../format.js';
+import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import Avatar from '../../components/Avatar.jsx';
@@ -31,8 +31,6 @@ import { TYPE_META, LevelBadge } from '../../discipline-meta.jsx';
  * фильтр /super/penalties?targetUserId=.
  */
 
-const ROLE_LABEL = { admin: 'Администратор', methodist: 'Методист', superadmin: 'Super Admin' };
-
 function dateTime(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -46,16 +44,18 @@ export default function StaffDetail() {
   const { token } = useAuth();
 
   const admins = useSuperAdmins();
+  const mentors = useSuperMentors();
   const methodists = useSuperMethodists();
   const branches = useSuperBranches();
 
-  const loading = role === 'admin' ? admins.isLoading : methodists.isLoading;
+  const loading = role === 'admin' ? admins.isLoading : role === 'mentor' ? mentors.isLoading : methodists.isLoading;
 
   const person = useMemo(() => {
     if (role === 'admin') return (admins.data?.admins ?? []).find((a) => a.id === id) ?? null;
+    if (role === 'mentor') return (mentors.data?.mentors ?? []).find((m) => m.id === id) ?? null;
     if (role === 'methodist') return (methodists.data?.methodists ?? []).find((m) => m.id === id) ?? null;
     return null;
-  }, [role, id, admins.data, methodists.data]);
+  }, [role, id, admins.data, mentors.data, methodists.data]);
 
   const branch = useMemo(
     () => (branches.data?.branches ?? []).find((b) => b.id === person?.branchId) ?? null,
@@ -123,7 +123,7 @@ export default function StaffDetail() {
           <Avatar name={fullName} size={44} />
           <div>
             <h1 className="text-[28px] font-extrabold tracking-tight leading-tight text-base-content">{fullName}</h1>
-            <p className="text-[13px] text-base-content/70 mt-0.5">{ROLE_LABEL[role] ?? role}</p>
+            <p className="text-[13px] text-base-content/70 mt-0.5">{ROLE_LABELS[role] ?? role}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export default function StaffDetail() {
                 {person.monthlySalary != null ? money(person.monthlySalary) : 'не указан'}
               </span>
             </span>
-            {role === 'admin' && (
+            {role !== 'methodist' && (
               <>
                 <span className="flex items-center gap-2">
                   <Building2 size={14} className="text-base-content/40 shrink-0" />
@@ -226,7 +226,7 @@ export default function StaffDetail() {
                     <td className="text-sm">
                       {p.issued_by_name ?? p.issuedByName ?? '—'}
                       <div className="text-xs text-base-content/45">
-                        {ROLE_LABEL[p.issuer_role] ?? p.issuer_role}
+                        {ROLE_LABELS[p.issuer_role] ?? p.issuer_role}
                       </div>
                     </td>
                     <td className="text-xs text-base-content/55 whitespace-nowrap">

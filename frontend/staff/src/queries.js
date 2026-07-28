@@ -51,6 +51,12 @@ export function useSuperMethodists() {
   return useAuthedQuery(['super-methodists'], () => api.superMethodists(token));
 }
 
+/** Менторы организации — только чтение (заводит/редактирует их Admin филиала). */
+export function useSuperMentors() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-mentors'], () => api.superMentors(token));
+}
+
 // -------- ADMIN --------
 export function useAdminDashboard() {
   const { token } = useAuth();
