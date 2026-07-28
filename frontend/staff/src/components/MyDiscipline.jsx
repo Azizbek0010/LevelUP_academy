@@ -1,6 +1,5 @@
 import { ShieldAlert, ListChecks } from 'lucide-react';
 import { useMyPenalties, useMyDisciplineRules } from '../queries.js';
-import { money } from '../format.js';
 import { Panel, EmptyState } from '../pages/mentor/_ui.jsx';
 import { LevelBadge } from '../discipline-meta.jsx';
 
@@ -54,7 +53,7 @@ export default function MyDiscipline() {
               <thead>
                 <tr>
                   <th>Вид</th>
-                  <th className="text-right">Сумма</th>
+                  <th className="text-right">% от оклада</th>
                   <th>Причина</th>
                   <th>Кто выписал</th>
                   <th>Когда</th>
@@ -68,7 +67,7 @@ export default function MyDiscipline() {
                         <LevelBadge type={p.type} size="sm" />
                       </td>
                       <td className="text-right font-semibold">
-                        {p.amount == null ? '—' : money(Number(p.amount))}
+                        {p.amount == null ? '—' : `−${Number(p.amount)}%`}
                       </td>
                       <td className="max-w-xs"><span className="text-sm">{p.reason}</span></td>
                       <td className="text-sm text-base-content/60">
@@ -106,7 +105,7 @@ export default function MyDiscipline() {
                   <LevelBadge type={r.type} size="sm" />
                   <span className="text-sm flex-1">{r.description}</span>
                   {r.amount != null && (
-                    <span className="text-sm font-semibold tabular-nums shrink-0">{money(Number(r.amount))}</span>
+                    <span className="text-sm font-semibold tabular-nums shrink-0">−{Number(r.amount)}% от оклада</span>
                   )}
                 </div>
               );

@@ -985,6 +985,22 @@ router.get('/methodists', ctrl.listMethodists);
 
 /**
  * @openapi
+ * /api/super/mentors:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: List mentors of the organization (read-only — Admin of the branch manages them)
+ *     description: Нужен только для выбора цели в «Взыскании» — CRUD ментора остаётся у Admin филиала.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: List of mentors
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.get('/mentors', ctrl.listMentors);
+
+/**
+ * @openapi
  * /api/super/methodists/{id}:
  *   patch:
  *     tags: [Super Admin]

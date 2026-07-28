@@ -2317,6 +2317,8 @@ export const api = {
   superGetOrganization: (token) => request('/super/organization', { token }),
   superUpdateOrganization: (token, body) => request('/super/organization', { method: 'PATCH', token, body }),
   superMethodists: (token) => request('/super/methodists', { token }),
+  // Только чтение — для выбора цели во «Взыскании». CRUD ментора у Admin филиала.
+  superMentors: (token) => request('/super/mentors', { token }),
   superCreateMethodist: (token, body) => request('/super/methodists', { method: 'POST', token, body }),
   superUpdateMethodist: (token, id, body) => request(`/super/methodists/${id}`, { method: 'PATCH', token, body }),
   superFreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),

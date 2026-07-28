@@ -5,11 +5,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 import {
-  ShieldAlert, Ban, Coins, Plus, ScrollText, UserX, RotateCcw, Trash2, ListChecks, TriangleAlert,
+  ShieldAlert, Ban, Plus, ScrollText, UserX, RotateCcw, Trash2, ListChecks, TriangleAlert,
 } from 'lucide-react';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
-import { fmt, money } from '../../format.js';
+import { fmt } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
 import { Kpi, Panel, EmptyState, Modal } from '../mentor/_ui.jsx';
@@ -55,6 +55,32 @@ function dateTime(iso) {
   return Number.isNaN(d.getTime())
     ? '—'
     : d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+/** Выбор сотрудника для «Взыскания» — тот же список-строка, что и у правил,
+    вместо голого нативного <select> (тот и не красится под дизайн панели, и
+    не показывает роль по-человечески). */
+function StaffSelect({ staff, value, onChange }) {
+  return (
+    <div className="border border-base-300 rounded-lg max-h-48 overflow-y-auto divide-y divide-base-200">
+      {staff.map((s) => {
+        const active = s.id === value;
+        return (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => onChange(s.id)}
+            className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-left transition-colors ${
+              active ? 'bg-base-200' : 'hover:bg-base-200/50'
+            }`}
+          >
+            <span className="flex-1 truncate">{s.firstName} {s.lastName}</span>
+            <span className="text-xs text-base-content/45 shrink-0">{ROLE_LABEL[s.role] ?? s.role}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 /** Выбор правила для «Взыскания» — список строк внутри самой формы (не
@@ -157,22 +183,12 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
             Сотрудник
           </span>
-          <select
-            className="select select-bordered select-sm rounded-lg"
-            value={targetUserId}
-            onChange={(e) => setTarget(e.target.value)}
-          >
-            <option value="">Выберите сотрудника</option>
-            {staff.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.firstName} {s.lastName} — {ROLE_LABEL[s.role] ?? s.role}
-              </option>
-            ))}
-          </select>
-          {staff.length === 0 && (
+          {staff.length === 0 ? (
             <span className="text-xs text-warning mt-1">
-              Сотрудников не найдено — сначала добавьте администратора или методиста
+              Сотрудников не найдено — сначала добавьте администратора, ментора или методиста
             </span>
+          ) : (
+            <StaffSelect staff={staff} value={targetUserId} onChange={setTarget} />
           )}
         </label>
 
@@ -192,18 +208,19 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
         {rule && rule.amount != null && (
           <label className="form-control">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-              Сумма, сум
+              Процент от оклада, %
             </span>
             <input
               type="number"
               min="0"
+              max="100"
               className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="100000"
+              placeholder="5"
             />
             <span className="text-xs text-base-content/45 mt-1">
-              Подставлена из правила, можно поправить. Не списывается автоматически — запись для расчёта зарплаты
+              Подставлен из правила, можно поправить. Не списывается автоматически — запись для расчёта зарплаты
             </span>
           </label>
         )}
@@ -323,15 +340,16 @@ function NewRuleModal({ open, onClose, onDone }) {
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            Сумма, сум (необязательно)
+            Процент от оклада, % (необязательно)
           </span>
           <input
             type="number"
             min="0"
+            max="100"
             className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="Например, если правило ещё и со штрафом"
+            placeholder="Например, 5"
           />
         </label>
 
@@ -397,7 +415,7 @@ function RulesPanel({ rules, onChanged }) {
                 <LevelBadge type={r.type} size="sm" />
                 <span className="text-sm flex-1">{r.description}</span>
                 {r.amount != null && (
-                  <span className="text-sm font-semibold tabular-nums shrink-0">{money(Number(r.amount))}</span>
+                  <span className="text-sm font-semibold tabular-nums shrink-0">−{Number(r.amount)}% от оклада</span>
                 )}
                 <button
                   className="btn btn-ghost btn-xs shrink-0"
@@ -443,6 +461,11 @@ export default function SuperDiscipline() {
     queryFn: () => api.superMethodists(token),
     enabled: !!token,
   });
+  const mentors = useQuery({
+    queryKey: ['super-mentors'],
+    queryFn: () => api.superMentors(token),
+    enabled: !!token,
+  });
   const rules = useQuery({
     queryKey: ['super-discipline-rules'],
     queryFn: () => api.superDisciplineRules(token),
@@ -451,27 +474,24 @@ export default function SuperDiscipline() {
 
   const items = penalties.data?.data ?? [];
 
-  /* Кого можно оштрафовать. По CAN_ISSUE это админы, менторы и методисты, но
-     эндпоинта со списком менторов у Super Admin нет — есть только
-     /super/admins и /super/methodists. Менторов штрафует администратор
-     филиала, у которого их список есть.
+  /* Кого можно оштрафовать. По CAN_ISSUE это админы, менторы и методисты —
+     раньше менторов тут не было: у Super Admin не было эндпоинта со списком
+     менторов (заводит их Admin филиала), 2026-07-29 добавлен /super/mentors
+     только на чтение специально для этого списка.
 
      Ключи ответов разные, проверено на живом API: /super/admins отдаёт
      { admins: [...] }, /super/methodists — { methodists: [...] },
-     /super/penalties — { data: [...] }. */
+     /super/mentors — { mentors: [...] }, /super/penalties — { data: [...] }. */
   const staff = useMemo(() => [
     ...(admins.data?.admins ?? []).map((u) => ({ ...u, role: 'admin' })),
+    ...(mentors.data?.mentors ?? []).map((u) => ({ ...u, role: 'mentor' })),
     ...(methodists.data?.methodists ?? []).map((u) => ({ ...u, role: 'methodist' })),
-  ], [admins.data, methodists.data]);
+  ], [admins.data, mentors.data, methodists.data]);
 
   const totals = useMemo(() => {
-    const acc = { amount: 0 };
+    const acc = {};
     for (const key of Object.keys(TYPE_META)) acc[key] = 0;
-    for (const p of items) {
-      acc[p.type] = (acc[p.type] ?? 0) + 1;
-      // сумма — необязательный довесок к любому уровню, не эксклюзив одного типа
-      acc.amount += Number(p.amount) || 0;
-    }
+    for (const p of items) acc[p.type] = (acc[p.type] ?? 0) + 1;
     return acc;
   }, [items]);
 
@@ -539,13 +559,12 @@ export default function SuperDiscipline() {
       {err && <div className="alert alert-error text-sm py-2">{err}</div>}
 
       {penalties.isLoading ? (
-        <SkeletonKpis count={4} className="grid-cols-2 lg:grid-cols-4" />
+        <SkeletonKpis count={3} className="grid-cols-1 sm:grid-cols-3" />
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Kpi Icon={TriangleAlert} tone="warning" title="Жёлтые" value={fmt(totals.sariq)} unit="предупреждений" />
           <Kpi Icon={ShieldAlert} tone="danger" title="Красные" value={fmt(totals.qizil)} unit="предупреждений" />
           <Kpi Icon={Ban} tone="danger" title="Увольнения" value={fmt(totals.qora)} unit="сотрудников" />
-          <Kpi Icon={Coins} tone="neutral" title="Взыскано" value={money(totals.amount)} unit="по всем уровням" />
         </div>
       )}
 
@@ -616,17 +635,40 @@ export default function SuperDiscipline() {
         bodyClass="p-0"
         action={
           <div className="join">
-            {[['all', 'Все'], ...Object.entries(TYPE_META).map(([k, m]) => [k, m.label])].map(([key, label]) => (
-              <button
-                key={key}
-                className={`btn btn-xs join-item ${
-                  filter === key ? 'btn-primary' : 'btn-outline hover:bg-base-200 hover:border-base-300 hover:text-base-content'
-                }`}
-                onClick={() => setFilter(key)}
-              >
-                {label}
-              </button>
-            ))}
+            <button
+              type="button"
+              className={`btn btn-xs join-item ${filter === 'all' ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setFilter('all')}
+            >
+              Все
+            </button>
+            {Object.entries(TYPE_META).map(([key, m]) => {
+              const active = filter === key;
+              const fillText = m.dark ? '#141B10' : '#ffffff';
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="btn btn-xs join-item border"
+                  style={active
+                    ? { background: m.color, borderColor: m.color, color: fillText }
+                    : { background: 'transparent', borderColor: m.color, color: m.color }}
+                  onMouseEnter={(e) => {
+                    if (active) return;
+                    e.currentTarget.style.background = m.color;
+                    e.currentTarget.style.color = fillText;
+                  }}
+                  onMouseLeave={(e) => {
+                    if (active) return;
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = m.color;
+                  }}
+                  onClick={() => setFilter(key)}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
           </div>
         }
       >
@@ -645,7 +687,7 @@ export default function SuperDiscipline() {
                 <tr>
                   <th>Сотрудник</th>
                   <th>Вид</th>
-                  <th className="text-right">Сумма</th>
+                  <th className="text-right">% от оклада</th>
                   <th>Причина</th>
                   <th>Выписал</th>
                   <th>Когда</th>
@@ -666,7 +708,7 @@ export default function SuperDiscipline() {
                         <LevelBadge type={p.type} size="sm" />
                       </td>
                       <td className="text-right tabular-nums font-semibold">
-                        {p.amount == null ? '—' : money(Number(p.amount))}
+                        {p.amount == null ? '—' : `−${Number(p.amount)}%`}
                       </td>
                       <td className="max-w-xs"><span className="text-sm">{p.reason}</span></td>
                       <td className="text-sm">

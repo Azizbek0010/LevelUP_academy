@@ -365,6 +365,24 @@ export function insertMethodist(
     .then((r) => r.rows[0]);
 }
 
+// ---------- менторы (для выбора в «Взыскании» — сами менторов не заводят) ----------
+
+/** Все менторы организации (по всем филиалам) — только чтение, для выбора
+    цели взыскания у Super Admin. Заводит/редактирует ментора Admin филиала. */
+export function listMentors(orgId, client = pool) {
+  return client
+    .query(
+      `SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.created_at,
+              u.branch_id, b.name AS branch_name
+         FROM users u
+         LEFT JOIN branches b ON b.id = u.branch_id
+        WHERE u.organization_id = $1 AND u.role = 'mentor' AND u.deleted_at IS NULL
+        ORDER BY u.created_at DESC`,
+      [orgId],
+    )
+    .then((r) => r.rows);
+}
+
 export function listMethodists(orgId, client = pool) {
   return client
     .query(

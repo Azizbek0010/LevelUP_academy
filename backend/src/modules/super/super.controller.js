@@ -228,6 +228,11 @@ export const listMethodists = asyncHandler(async (req, res) => {
   res.json({ methodists: await service.listMethodists(orgId(req)) });
 });
 
+// --- менторы (только чтение — заводит их Admin филиала) ---
+export const listMentors = asyncHandler(async (req, res) => {
+  res.json({ mentors: await service.listMentors(orgId(req)) });
+});
+
 export const updateMethodist = asyncHandler(async (req, res) => {
   const methodist = await service.updateMethodist(orgId(req), req.params.id, req.body);
   await audit(req, {

@@ -272,6 +272,22 @@ export async function resetMethodistPassword(orgId, id) {
   return { ...mapMethodist(row), tempPassword };
 }
 
+// ---------- менторы (только чтение, для выбора в «Взыскании») ----------
+
+export async function listMentors(orgId) {
+  const rows = await repo.listMentors(orgId);
+  return rows.map((u) => ({
+    id: u.id,
+    firstName: u.first_name,
+    lastName: u.last_name,
+    email: u.email,
+    status: u.status,
+    branchId: u.branch_id,
+    branchName: u.branch_name,
+    createdAt: u.created_at,
+  }));
+}
+
 export async function listMethodists(orgId) {
   const rows = await repo.listMethodists(orgId);
   return rows.map((u) => ({
