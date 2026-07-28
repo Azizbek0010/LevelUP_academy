@@ -18,6 +18,13 @@ export default defineConfig(({ mode }) => {
           target: env.DEV_API_PROXY || 'https://levelup-academy-1.onrender.com',
           changeOrigin: true,
         },
+        // AB-VERIFY: без прокси /socket.io чат родителя молча не подключался
+        // (connect_error: timeout) — тот же баг, что и в staff/vite.config.js.
+        '/socket.io': {
+          target: env.DEV_API_PROXY || 'https://levelup-academy-1.onrender.com',
+          changeOrigin: true,
+          ws: true,
+        },
       },
     },
   };

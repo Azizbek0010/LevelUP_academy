@@ -106,9 +106,14 @@
       header menyulari, telefonda gorizontal overflow va chat kompozeri tuzatildi, firma logotipi
 - [x] MP-SEED: `seed-mentor-demo.mjs` (demo mentorni real data bilan to'ldiradi),
       `test-token.mjs`, `send-test-dm.mjs`, `docs/CHAT-TESTING.md` (qo'lda Postman/curl bilan tekshirish)
-- [ ] MP-VERIFY 🔴: **JONLI TEKSHIRILMAGAN** — Docker ko'tarilmagani uchun real BD da hech biri
-      yugurtirilmagan. Mock rejimida playwright bilan tekshirilgan xolos.
-      Kontakt ro'yxati BO'SH holati ham jonli ko'rilmagan (mocklarda doim 3 ta kontakt bor)
+- [x] MP-VERIFY ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Docker ko'tarildi (`docker compose up
+      postgres`, 24/24 migratsiya joyida), backend + staff `VITE_USE_MOCKS=false` bilan
+      lokal ishga tushirildi. Dashboard/Groups/Attendance (belgilash + saqlash + real-time
+      badge) va Chat (DM yuborish) — hammasi haqiqiy API/socket bilan tekshirildi.
+      ⚠️ Yo'lda topilgan haqiqiy bag: dev prokside `/socket.io` yo'q edi — chat va live
+      attendance HECH QACHON ishlamagan (har doim `connect_error: timeout`), shuning uchun
+      buni ilgari hech kim jonli tekshira olmagan edi. `vite.config.js` (staff+member) ga
+      `/socket.io` proxy (`ws: true`) qo'shildi — MP-VERIFY shu tufayli ilgari BLOKLANGAN edi
 
 ## Backend — Integration (Karis) 🔥 hozirgi fokus
 
@@ -271,7 +276,10 @@
 - [~] K-SUPER-INT: GET /api/super/reminders → **AB-SUPER-REM (Abdulaziz)**
 - [~] K-SUPER-INT: GET /api/super/audit → **AB-SUPER-AUDIT (Abdulaziz)**
 - [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
-- [ ] K-SUPER-INT: har bir sahifa E2E — real superadmin login → real data
+- [x] K-SUPER-INT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Dashboard, Филиалы, Студенты, Группы,
+      Отчёты, Статистика (7/30/90 kunlik almashtirish), Дисциплина (взыскание/устав),
+      Объявления (real create+delete+audit), Напоминания, Настройки (lessonDurationMin
+      saqlash) — barchasi real superadmin login bilan tekshirildi, hech qanday xato topilmadi
 
 ## Backend — YANGI TOPSHIRIQ (Abdulaziz) 🔥 2026-07-19, Karis bergan
 
@@ -303,7 +311,16 @@
 
 ### AB-VERIFY
 
-- [ ] AB-VERIFY: `VITE_USE_MOCKS=false` bilan Student/Parent panellarini jonli E2E tekshirish
+- [x] AB-VERIFY ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis, Abdulaziz'ning ishiga tegmasdan —
+      vaqtni tejash uchun o'zi qildi). **Haqiqiy bag topildi va tuzatildi:** parent'ning
+      "От staff" tab'i eski `parent:<id>` xona formatidan foydalanardi — bekend buni
+      chat.access.js'da 2026-07-2x atrofida `dm:<staffId>:<parentId>` juft-xonalarga
+      o'tkazgandan beri bu format UMUMAN ishlamas edi (`requireRoomAccess` 400 qaytaradi).
+      Ya'ni parent hech qachon staff'dan kelgan xabarni ko'ra olmagan, javob berish esa
+      frontendda umuman yo'q edi. Tuzatish: bekendga `GET /api/chat/my-threads`
+      (parent/student o'z suhbatlarini ko'radi — o'zi boshlay olmaydi, faqat javob),
+      frontendga `chat:dm:reply` socket orqali javob yozish. Jonli tasdiqlandi: mentor →
+      parent xabar yubordi, parent ko'rdi va javob yozdi — ikkalasi ham real vaqtda
 - [x] AB-VERIFY: Parent Chat — Socket.io realtime tasdiqlandi (2026-07-21)
 
 ## Telegram bot (Bilol) ⚠️ TASK.md ga 2026-07-19 da QO'SHILDI
@@ -676,7 +693,9 @@
 - [x] STUDENT: Videos
 - [x] STUDENT: Leaderboard
 - [x] STUDENT: staff design-system'ga ko'chirildi (Tailwind + DaisyUI) — 2026-07-25, Karis (`a458c1b`)
-- [ ] STUDENT (Sardor): jonli E2E — VITE_USE_MOCKS=false bilan real backend'da tekshirish
+- [x] STUDENT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan): login,
+      Главная, Тесты, Домашки, Видео, Магазин, Рейтинг — `VITE_USE_MOCKS=false` bilan
+      real backend'da tekshirildi, xato topilmadi. Responsive ham (360-1440px) toza
 - [x] STUDENT ✅ BAJARILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan) —
       `Videos.jsx`/`Tests.jsx`/`Leaderboard.jsx` da yo'q edi: xato bo'lsa `list`/`data`
       null qolib qolardi va Skeleton abadiy aylanaverardi (retry yo'q). Endi uchalasida
@@ -698,7 +717,9 @@
 - [x] PARENT: To'lov / qarz — Debt.jsx
 - [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ✅ Socket.io realtime tasdiqlandi (2026-07-21)
 - [x] PARENT: Bildirishnomalar — Notifications.jsx
-- [ ] PARENT: jonli E2E — mock o'chirilgan holda real parent login bilan tekshirish
+- [x] PARENT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Обзор, Посещаемость, Оценки, Оплата,
+      Уведомления, Профиль (Telegram tugmasi, preference toggle'lar) — real login bilan
+      tekshirildi. Chat — AB-VERIFY'ga qara (u yerda topilgan bag shu yerga ham tegishli edi)
 - [ ] PARENT: Design-system — laym #C6FF34, Manrope, 3 holat (Skeleton/Empty/Error), responsive 1280/768/375, TanStack Query
 
 ### 🔴 PARENT (Kama) — auditda topilgan yangi kamchiliklar (2026-07-21)
