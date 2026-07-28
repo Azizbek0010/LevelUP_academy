@@ -29,11 +29,11 @@ function usePreference(key, defaultValue) {
 
 export default function Profile() {
   const { user, token, logout } = useAuth();
-  const { selectedChild, childList, selectChild } = useChild();
+  const { selectedChild } = useChild();
   const [notifyPush, toggleNotifyPush] = usePreference('pref_notify_push', true);
   const [chatSound, toggleChatSound] = usePreference('pref_chat_sound', false);
 
-  const [tg, setTg] = useState({ status: 'idle', deepLink: null, error: null }); // idle | loading | ready | error
+  const [tg, setTg] = useState({ status: 'idle', deepLink: null, error: null });
   const onBindTelegram = async () => {
     setTg({ status: 'loading', deepLink: null, error: null });
     try {
@@ -72,78 +72,49 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Children Cards */}
-      <div className="card bg-base-100 mb-6">
-        <div className="card-body">
-          <h3 className="card-title text-sm gap-2">
-            <Icon name="user" className="w-4 h-4 text-primary" />
-            Дети
-          </h3>
-          {childList.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="w-14 h-14 rounded-2xl bg-base-200 flex items-center justify-center mx-auto mb-3">
-                <Icon name="user-circle" className="w-7 h-7 text-base-content/25" />
+      {/* Child Info */}
+      {selectedChild && (
+        <div className="card bg-base-100 mb-6">
+          <div className="card-body">
+            <h3 className="card-title text-sm gap-2">
+              <Icon name="user" className="w-4 h-4 text-primary" />
+              Ребёнок
+            </h3>
+            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-primary/10 ring-2 ring-primary/30 mt-2">
+              <div className="relative">
+                <Avatar name={`${selectedChild.firstName} ${selectedChild.lastName}`} size={42} />
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-base-100 flex items-center justify-center">
+                  <Icon name="check" className="w-2.5 h-2.5 text-primary-content" strokeWidth={3} />
+                </div>
               </div>
-              <p className="text-sm font-medium opacity-50">Нет привязанных детей</p>
-              <p className="text-xs opacity-30 mt-1">Обратитесь к администратору</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold">{selectedChild.firstName} {selectedChild.lastName}</p>
+                <p className="text-xs opacity-40 flex items-center gap-1.5 mt-0.5">
+                  <span className="flex items-center gap-0.5">
+                    <Icon name="star" className="w-3 h-3" />
+                    {fmt(selectedChild.coins)} коинов
+                  </span>
+                  <span className="opacity-30">·</span>
+                  {Number(selectedChild.totalDebt) > 0 ? (
+                    <span className="text-error flex items-center gap-0.5">
+                      <Icon name="wallet" className="w-3 h-3" />
+                      Долг
+                    </span>
+                  ) : (
+                    <span className="text-success flex items-center gap-0.5">
+                      <Icon name="check-circle" className="w-3 h-3" />
+                      Без долга
+                    </span>
+                  )}
+                </p>
+              </div>
+              <span className="text-[11px] px-2.5 py-1 rounded-full bg-primary text-primary-content font-bold flex items-center gap-1">
+                Активен
+              </span>
             </div>
-          ) : (
-            <div className="space-y-2 mt-2">
-              {childList.map((child) => {
-                const isActive = selectedChild?.id === child.id;
-                return (
-                  <button
-                    key={child.id}
-                    onClick={() => selectChild(child.id)}
-                    className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all duration-200 text-left group ${
-                      isActive
-                        ? 'bg-primary/10 ring-2 ring-primary/30 shadow-sm'
-                        : 'bg-base-200/40 hover:bg-base-200/70 hover:-translate-y-0.5'
-                    }`}
-                  >
-                    <div className="relative">
-                      <Avatar name={`${child.firstName} ${child.lastName}`} size={42} />
-                      {isActive && (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-base-100 flex items-center justify-center">
-                          <Icon name="check" className="w-2.5 h-2.5 text-primary-content" strokeWidth={3} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm ${isActive ? 'font-bold' : 'font-semibold'}`}>{child.firstName} {child.lastName}</p>
-                      <p className="text-xs opacity-40 flex items-center gap-1.5 mt-0.5">
-                        <span className="flex items-center gap-0.5">
-                          <Icon name="star" className="w-3 h-3" />
-                          {fmt(child.coins)} коинов
-                        </span>
-                        <span className="opacity-30">·</span>
-                        {Number(child.totalDebt) > 0 ? (
-                          <span className="text-error flex items-center gap-0.5">
-                            <Icon name="wallet" className="w-3 h-3" />
-                            Долг
-                          </span>
-                        ) : (
-                          <span className="text-success flex items-center gap-0.5">
-                            <Icon name="check-circle" className="w-3 h-3" />
-                            Без долга
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    {isActive ? (
-                      <span className="text-[11px] px-2.5 py-1 rounded-full bg-primary text-primary-content font-bold flex items-center gap-1">
-                        Выбран
-                      </span>
-                    ) : (
-                      <Icon name="chevron-right" className="w-4 h-4 opacity-20 group-hover:opacity-50 transition-opacity" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Settings */}
       <div className="card bg-base-100 mb-6">
