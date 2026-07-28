@@ -209,24 +209,42 @@ export default function StaffDetail() {
             )}
           </div>
 
-          {role === 'mentor' && (person.bio || person.skills?.length > 0) && (
-            <div className="pt-3 border-t border-base-200 space-y-2.5">
-              {person.skills?.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5">
+        </div>
+      </Panel>
+
+      {role === 'mentor' && (person.bio || person.skills?.length > 0) && (
+        <Panel title="О менторе" icon={Award}>
+          <div className="space-y-4">
+            {person.skills?.length > 0 && (
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-2">
+                  Навыки
+                </div>
+                <div className="flex flex-wrap gap-1.5">
                   {person.skills.map((s) => (
-                    <span key={s} className="text-xs px-2 py-0.5 rounded-full bg-base-200 text-base-content/70">
+                    <span
+                      key={s}
+                      className="text-xs font-medium px-2.5 py-1 rounded-full border border-base-300 text-base-content/70"
+                    >
                       {s}
                     </span>
                   ))}
                 </div>
-              )}
-              {person.bio && (
-                <p className="text-sm text-base-content/70 whitespace-pre-wrap">{person.bio}</p>
-              )}
-            </div>
-          )}
-        </div>
-      </Panel>
+              </div>
+            )}
+            {person.bio && (
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-2">
+                  О себе
+                </div>
+                <p className="text-sm text-base-content/75 leading-relaxed border-l-2 border-base-300 pl-3 whitespace-pre-wrap">
+                  {person.bio}
+                </p>
+              </div>
+            )}
+          </div>
+        </Panel>
+      )}
 
       <Panel title="История нарушений дисциплины" icon={ScrollText} bodyClass="p-0">
         {penalties.isLoading ? (
