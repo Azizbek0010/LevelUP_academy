@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
-import { Plus, Edit2, ShieldAlert, Users, BookOpen, KeyRound, Copy, Check, AlertTriangle } from 'lucide-react';
-import { dateShort, ADMIN_STATUS } from '../../format.js';
+import { Plus, Edit2, ShieldAlert, Users, BookOpen, KeyRound, Copy, Check, AlertTriangle, ScrollText } from 'lucide-react';
+import { dateShort, money, ADMIN_STATUS } from '../../format.js';
 import { useSuperAdmins, useSuperBranches, useSuperMethodists, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
@@ -11,6 +12,8 @@ import PageHeader from '../../components/PageHeader.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import PhoneInput from '../../components/PhoneInput.jsx';
+import { Modal } from '../mentor/_ui.jsx';
+import { LevelBadge } from '../../discipline-meta.jsx';
 
 // ─── Schemas ───────────────────────────────────────────────
 // Пароль больше не вводится руками — сервер генерирует случайный и отдаёт
@@ -19,6 +22,14 @@ import PhoneInput from '../../components/PhoneInput.jsx';
 // аккаунт с паролем, который никто потом не мог вспомнить, а сбросить было
 // нечем — теперь для этого есть кнопка «Сбросить пароль».
 const phoneRegex = /^\+?\d{7,20}$/;
+
+// Оклад — метаданные карточки, не пересчитывается автоматически (см. backend
+// super.schemas.js). Пустое поле = не трогать текущее значение, поэтому '' до
+// coerce превращается в undefined, а не в 0.
+const monthlySalaryField = z.preprocess(
+  (v) => (v === '' || v === undefined ? undefined : v),
+  z.coerce.number().min(0, 'Не может быть отрицательным').max(1_000_000_000_000).optional(),
+);
 
 const adminCreateSchema = z.object({
   firstName: z.string().trim().min(1, 'Имя обязательно').max(80),
@@ -33,6 +44,7 @@ const adminEditSchema = z.object({
   lastName:  z.string().trim().min(1, 'Фамилия обязательна').max(80),
   branchId:  z.string().uuid('Выберите филиал').min(1, 'Выберите филиал'),
   phone:     z.string().trim().regex(phoneRegex, 'Формат: +998901234567').or(z.literal('')),
+  monthlySalary: monthlySalaryField,
 });
 
 const methodistCreateSchema = z.object({
@@ -46,6 +58,7 @@ const methodistEditSchema = z.object({
   firstName: z.string().trim().min(1, 'Имя обязательно').max(80),
   lastName:  z.string().trim().min(1, 'Фамилия обязательна').max(80),
   phone:     z.string().trim().regex(phoneRegex, 'Формат: +998901234567').or(z.literal('')),
+  monthlySalary: monthlySalaryField,
 });
 
 // ─── Показ сгенерированного пароля (один раз) ────────────────
@@ -100,6 +113,96 @@ function TempPasswordModal({ email, password, onClose }) {
   );
 }
 
+// ─── Карточка сотрудника (клик по строке) ────────────────────
+// Полные данные + история дисциплинарных взысканий — переиспользует уже
+// существующий /super/penalties?targetUserId=X (см. discipline-модуль), не
+// заводит отдельный endpoint под детальный просмотр.
+function StaffDetailModal({ open, onClose, person, role }) {
+  const { token } = useAuth();
+  const { data, isLoading } = useQuery({
+    queryKey: ['super-penalties', person?.id],
+    queryFn: () => api.superPenalties(token, `?targetUserId=${person.id}`),
+    enabled: open && !!person?.id,
+  });
+  const items = data?.data ?? [];
+
+  if (!person) return null;
+  const status = ADMIN_STATUS[person.status === 'frozen' ? 'frozen' : 'active'] || { label: person.status };
+
+  return (
+    <Modal isOpen={open} onClose={onClose} title={`${person.firstName} ${person.lastName}`}>
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Email</div>
+            <div className="font-mono">{person.email}</div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Телефон</div>
+            <div className="font-mono">{person.phone || '—'}</div>
+          </div>
+          {role === 'admin' && (
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Филиал</div>
+              <div className="font-medium">{person.branchName || '—'}</div>
+            </div>
+          )}
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Оклад</div>
+            <div className="font-semibold">{person.monthlySalary != null ? money(person.monthlySalary) : '—'}</div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Статус</div>
+            <div>{status.label}</div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1">Создан</div>
+            <div>{dateShort(person.createdAt)}</div>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-2 flex items-center gap-1.5">
+            <ScrollText size={13} /> Нарушения дисциплины ({items.length})
+          </div>
+          {isLoading ? (
+            <div className="skeleton h-20 w-full rounded-xl" />
+          ) : items.length === 0 ? (
+            <p className="text-sm text-base-content/45 py-3">Нарушений нет</p>
+          ) : (
+            <div className="overflow-x-auto border border-base-200 rounded-xl">
+              <table className="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Вид</th>
+                    <th>Причина</th>
+                    <th className="text-right">% от оклада</th>
+                    <th>Когда</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((p) => (
+                    <tr key={p.id}>
+                      <td><LevelBadge type={p.type} size="sm" /></td>
+                      <td className="max-w-xs text-sm">{p.reason}</td>
+                      <td className="text-right tabular-nums font-semibold">
+                        {p.amount == null ? '—' : `−${Number(p.amount)}%`}
+                      </td>
+                      <td className="text-xs text-base-content/55 whitespace-nowrap">
+                        {dateShort(p.created_at ?? p.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 // ─── Admin Tab ─────────────────────────────────────────────
 function AdminsTab() {
   const { data: adminsData, isLoading, error } = useSuperAdmins();
@@ -114,6 +217,7 @@ function AdminsTab() {
   const [busy, setBusy] = useState(false);
   const [resetBusyId, setResetBusyId] = useState(null);
   const [tempPassword, setTempPassword] = useState(null); // { email, password }
+  const [detailPerson, setDetailPerson] = useState(null);
 
   const schema = modalMode === 'create' ? adminCreateSchema : adminEditSchema;
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
@@ -140,7 +244,13 @@ function AdminsTab() {
     setModalMode('edit');
     setCurrentId(admin.id);
     setErr('');
-    reset({ firstName: admin.firstName || '', lastName: admin.lastName || '', branchId: admin.branchId || '', phone: admin.phone || '' });
+    reset({
+      firstName: admin.firstName || '',
+      lastName: admin.lastName || '',
+      branchId: admin.branchId || '',
+      phone: admin.phone || '',
+      monthlySalary: admin.monthlySalary ?? '',
+    });
     setModalOpen(true);
   };
 
@@ -163,6 +273,7 @@ function AdminsTab() {
           lastName:  formData.lastName.trim(),
           branchId:  formData.branchId,
           phone:     formData.phone.trim() || undefined,
+          monthlySalary: formData.monthlySalary,
         });
       }
       invalidate('super-admins', 'super-dashboard');
@@ -230,7 +341,11 @@ function AdminsTab() {
               {rows.map((a) => {
                 const s = ADMIN_STATUS[a.status === 'frozen' ? 'frozen' : 'active'] || { label: a.status, cls: 'badge-ghost' };
                 return (
-                  <tr key={a.id} className={a.status === 'frozen' ? 'opacity-60' : ''}>
+                  <tr
+                    key={a.id}
+                    className={`cursor-pointer hover:bg-base-200/50 ${a.status === 'frozen' ? 'opacity-60' : ''}`}
+                    onClick={() => setDetailPerson(a)}
+                  >
                     <td>
                       <div className="flex items-center gap-2.5">
                         <Avatar name={`${a.firstName} ${a.lastName}`} size={32} />
@@ -242,7 +357,7 @@ function AdminsTab() {
                     <td className="font-medium">{a.branchName || '—'}</td>
                     <td className="text-sm tabular-nums">{dateShort(a.createdAt)}</td>
                     <td><span className={`badge badge-sm font-semibold ${s.cls}`}>{s.label}</span></td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
                         {a.status !== 'frozen' && (
                           <>
@@ -335,6 +450,22 @@ function AdminsTab() {
                 />
                 {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
               </label>
+              {modalMode === 'edit' && (
+                <label className="form-control w-full">
+                  <span className="label-text mb-1">Оклад, UZS</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    {...register('monthlySalary')}
+                    placeholder="Не указан"
+                    className={`input input-bordered w-full ${errors.monthlySalary ? 'input-error' : ''}`}
+                  />
+                  {errors.monthlySalary
+                    ? <span className="text-xs text-error mt-1">{errors.monthlySalary.message}</span>
+                    : <span className="text-xs text-base-content/45 mt-1">Метаданные карточки — не участвует в автоматических расчётах</span>}
+                </label>
+              )}
               <div className="modal-action">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={busy}>Отмена</button>
                 <button type="submit" className="btn btn-primary btn-sm" disabled={busy}>
@@ -355,6 +486,13 @@ function AdminsTab() {
           onClose={() => setTempPassword(null)}
         />
       )}
+
+      <StaffDetailModal
+        open={!!detailPerson}
+        onClose={() => setDetailPerson(null)}
+        person={detailPerson}
+        role="admin"
+      />
     </>
   );
 }
@@ -372,6 +510,7 @@ function MethodistsTab() {
   const [busy, setBusy] = useState(false);
   const [resetBusyId, setResetBusyId] = useState(null);
   const [tempPassword, setTempPassword] = useState(null); // { email, password }
+  const [detailPerson, setDetailPerson] = useState(null);
 
   const schema = modalMode === 'create' ? methodistCreateSchema : methodistEditSchema;
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
@@ -394,7 +533,12 @@ function MethodistsTab() {
     setModalMode('edit');
     setCurrentId(m.id);
     setErr('');
-    reset({ firstName: m.firstName || '', lastName: m.lastName || '', phone: m.phone || '' });
+    reset({
+      firstName: m.firstName || '',
+      lastName: m.lastName || '',
+      phone: m.phone || '',
+      monthlySalary: m.monthlySalary ?? '',
+    });
     setModalOpen(true);
   };
 
@@ -415,6 +559,7 @@ function MethodistsTab() {
           firstName: formData.firstName.trim(),
           lastName:  formData.lastName.trim(),
           phone:     formData.phone.trim() || undefined,
+          monthlySalary: formData.monthlySalary,
         });
       }
       invalidate('super-methodists');
@@ -482,7 +627,11 @@ function MethodistsTab() {
               {rows.map((m) => {
                 const s = ADMIN_STATUS[m.status === 'frozen' ? 'frozen' : 'active'] || { label: m.status, cls: 'badge-ghost' };
                 return (
-                  <tr key={m.id} className={m.status === 'frozen' ? 'opacity-60' : ''}>
+                  <tr
+                    key={m.id}
+                    className={`cursor-pointer hover:bg-base-200/50 ${m.status === 'frozen' ? 'opacity-60' : ''}`}
+                    onClick={() => setDetailPerson(m)}
+                  >
                     <td>
                       <div className="flex items-center gap-2.5">
                         <Avatar name={`${m.firstName} ${m.lastName}`} size={32} />
@@ -493,7 +642,7 @@ function MethodistsTab() {
                     <td className="text-sm">{m.phone || '—'}</td>
                     <td className="text-sm tabular-nums">{dateShort(m.createdAt)}</td>
                     <td><span className={`badge badge-sm font-semibold ${s.cls}`}>{s.label}</span></td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
                         {m.status !== 'frozen' && (
                           <>
@@ -577,6 +726,22 @@ function MethodistsTab() {
                 />
                 {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
               </label>
+              {modalMode === 'edit' && (
+                <label className="form-control w-full">
+                  <span className="label-text mb-1">Оклад, UZS</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    {...register('monthlySalary')}
+                    placeholder="Не указан"
+                    className={`input input-bordered w-full ${errors.monthlySalary ? 'input-error' : ''}`}
+                  />
+                  {errors.monthlySalary
+                    ? <span className="text-xs text-error mt-1">{errors.monthlySalary.message}</span>
+                    : <span className="text-xs text-base-content/45 mt-1">Метаданные карточки — не участвует в автоматических расчётах</span>}
+                </label>
+              )}
               <div className="modal-action">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={busy}>Отмена</button>
                 <button type="submit" className="btn btn-primary btn-sm" disabled={busy}>
@@ -597,6 +762,13 @@ function MethodistsTab() {
           onClose={() => setTempPassword(null)}
         />
       )}
+
+      <StaffDetailModal
+        open={!!detailPerson}
+        onClose={() => setDetailPerson(null)}
+        person={detailPerson}
+        role="methodist"
+      />
     </>
   );
 }

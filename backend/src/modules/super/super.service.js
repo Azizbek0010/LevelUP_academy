@@ -208,6 +208,8 @@ export async function listAdmins(orgId) {
     status: u.status,
     branchId: u.branch_id,
     branchName: u.branch_name,
+    phone: u.phone,
+    monthlySalary: u.monthly_salary,
     createdAt: u.created_at,
   }));
 }
@@ -220,6 +222,8 @@ function mapAdmin(u) {
     email: u.email,
     status: u.status,
     branchId: u.branch_id,
+    phone: u.phone,
+    monthlySalary: u.monthly_salary,
   };
 }
 
@@ -297,6 +301,7 @@ export async function listMethodists(orgId) {
     email: u.email,
     status: u.status,
     phone: u.phone,
+    monthlySalary: u.monthly_salary,
     createdAt: u.created_at,
   }));
 }
@@ -321,6 +326,7 @@ function mapMethodist(u) {
     email: u.email,
     status: u.status,
     phone: u.phone,
+    monthlySalary: u.monthly_salary,
   };
 }
 
