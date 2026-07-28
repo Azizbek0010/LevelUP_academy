@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Search, Inbox, X, ArrowRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
@@ -120,7 +121,14 @@ export function Panel({ title, icon: Icon, action, children, bodyClass = 'p-4' }
    Везде в админке/менторе были сырые `<dialog className="modal modal-open">`.
    Теперь одна точка сборки: открытие через `isOpen`, закрытие по X / backdrop /
    Escape (браузерный `<dialog>` сам ловит Escape, но для единообразия
-   прописано и здесь). */
+   прописано и здесь).
+
+   Портал в document.body — раньше <dialog> рендерился прямо в дереве страницы.
+   position:fixed у него ловил чужой containing block, если у ЛЮБОГО предка
+   был transform (анимация входа страницы, коллапс сайдбара и т.п.) — тогда
+   backdrop не докрывал экран сверху/слева (см. Discipline.jsx: «tepa va yon
+   tomonida blur yoq»). Портал прямо в body убирает эту зависимость целиком —
+   не нужно искать, у какого именно предка transform. */
 export function Modal({ isOpen, onClose, title, children, actions }) {
   const ref = useRef(null);
   useEffect(() => {
@@ -130,7 +138,7 @@ export function Modal({ isOpen, onClose, title, children, actions }) {
   }, [isOpen]);
 
   if (!isOpen) return null;
-  return (
+  return createPortal(
     <dialog ref={ref} className="modal modal-open" onClose={onClose}>
       <div className="modal-box glass-strong border border-[var(--border)]">
         <div className="flex items-center justify-between mb-4">
@@ -147,7 +155,8 @@ export function Modal({ isOpen, onClose, title, children, actions }) {
         {actions && <div className="modal-action">{actions}</div>}
       </div>
       <div className="modal-backdrop" onClick={onClose} />
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }
 
