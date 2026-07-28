@@ -98,18 +98,27 @@ export default function MyDiscipline() {
             hint="Организация пока не описала правила."
           />
         ) : (
-          <div className="space-y-2">
-            {rules.map((r) => {
-              return (
-                <div key={r.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-base-200/50">
-                  <LevelBadge type={r.type} size="sm" />
-                  <span className="text-sm flex-1">{r.description}</span>
-                  {r.amount != null && (
-                    <span className="text-sm font-semibold tabular-nums shrink-0">−{Number(r.amount)}% от оклада</span>
-                  )}
-                </div>
-              );
-            })}
+          <div className="overflow-x-auto">
+            <table className="table table-sm">
+              <thead>
+                <tr>
+                  <th>Правило</th>
+                  <th>Уровень</th>
+                  <th className="text-right">% от оклада</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rules.map((r) => (
+                  <tr key={r.id} className="hover">
+                    <td className="text-sm">{r.description}</td>
+                    <td><LevelBadge type={r.type} size="sm" /></td>
+                    <td className="text-right tabular-nums font-semibold">
+                      {r.amount != null ? `−${Number(r.amount)}%` : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </Panel>

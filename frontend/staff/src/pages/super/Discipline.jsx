@@ -62,7 +62,7 @@ function dateTime(iso) {
     не показывает роль по-человечески). */
 function StaffSelect({ staff, value, onChange }) {
   return (
-    <div className="border border-base-300 rounded-lg max-h-48 overflow-y-auto divide-y divide-base-200">
+    <div className="border border-base-300 rounded-lg max-h-48 overflow-y-auto divide-y divide-base-200 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-base-300 [&::-webkit-scrollbar-thumb]:rounded-full">
       {staff.map((s) => {
         const active = s.id === value;
         return (
@@ -90,7 +90,7 @@ function StaffSelect({ staff, value, onChange }) {
     уровня, как в таблице-референсе (Название/Категория). */
 function RuleSelect({ rules, value, onChange }) {
   return (
-    <div className="border border-base-300 rounded-lg max-h-48 overflow-y-auto divide-y divide-base-200">
+    <div className="border border-base-300 rounded-lg max-h-48 overflow-y-auto divide-y divide-base-200 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-base-300 [&::-webkit-scrollbar-thumb]:rounded-full">
       {rules.map((r) => {
         const active = r.id === value;
         return (
@@ -408,28 +408,40 @@ function RulesPanel({ rules, onChanged }) {
           hint="Опишите нарушение и уровень взыскания за него один раз — дальше на это правило можно ссылаться при выдаче взыскания."
         />
       ) : (
-        <div className="space-y-2">
-          {rules.map((r) => {
-            return (
-              <div key={r.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-base-200/50">
-                <LevelBadge type={r.type} size="sm" />
-                <span className="text-sm flex-1">{r.description}</span>
-                {r.amount != null && (
-                  <span className="text-sm font-semibold tabular-nums shrink-0">−{Number(r.amount)}% от оклада</span>
-                )}
-                <button
-                  className="btn btn-ghost btn-xs shrink-0"
-                  onClick={() => remove(r.id)}
-                  disabled={busyId === r.id}
-                  title="Удалить правило"
-                >
-                  {busyId === r.id
-                    ? <span className="loading loading-spinner loading-xs" />
-                    : <Trash2 size={13} />}
-                </button>
-              </div>
-            );
-          })}
+        <div className="overflow-x-auto">
+          <table className="table table-sm">
+            <thead>
+              <tr>
+                <th>Правило</th>
+                <th>Уровень</th>
+                <th className="text-right">% от оклада</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {rules.map((r) => (
+                <tr key={r.id} className="hover">
+                  <td className="text-sm">{r.description}</td>
+                  <td><LevelBadge type={r.type} size="sm" /></td>
+                  <td className="text-right tabular-nums font-semibold">
+                    {r.amount != null ? `−${Number(r.amount)}%` : '—'}
+                  </td>
+                  <td className="text-right">
+                    <button
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => remove(r.id)}
+                      disabled={busyId === r.id}
+                      title="Удалить правило"
+                    >
+                      {busyId === r.id
+                        ? <span className="loading loading-spinner loading-xs" />
+                        : <Trash2 size={13} />}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -537,6 +549,7 @@ export default function SuperDiscipline() {
       await api.superReactivateStaff(token, id);
       qc.invalidateQueries({ queryKey: ['super-penalties'] });
       qc.invalidateQueries({ queryKey: ['super-admins'] });
+      qc.invalidateQueries({ queryKey: ['super-mentors'] });
       qc.invalidateQueries({ queryKey: ['super-methodists'] });
     } catch (e) {
       setErr(e.message);
@@ -721,18 +734,29 @@ export default function SuperDiscipline() {
                         {dateTime(p.created_at ?? p.createdAt)}
                       </td>
                       <td className="text-right">
-                        {p.type === 'qora' && (
-                          <button
-                            className="btn btn-ghost btn-xs gap-1"
-                            onClick={() => reactivate(p)}
-                            disabled={busyId === p.id}
-                            title="Снять увольнение и вернуть доступ"
-                          >
-                            {busyId === p.id
-                              ? <span className="loading loading-spinner loading-xs" />
-                              : <><RotateCcw size={12} /> Вернуть</>}
-                          </button>
-                        )}
+                        {(() => {
+                          if (p.type !== 'qora') return null;
+                          // Историческая запись остаётся qora навсегда, а уволен человек
+                          // может быть уже не быть — сверяем с текущим статусом в staff,
+                          // иначе кнопка «Вернуть» висит вечно и падает с 409 при повторном клике.
+                          const targetId = p.target_user_id ?? p.targetUserId;
+                          const stillFired = staff.find((s) => s.id === targetId)?.status === 'fired';
+                          if (!stillFired) {
+                            return <span className="text-xs text-base-content/35">Восстановлен</span>;
+                          }
+                          return (
+                            <button
+                              className="btn btn-outline btn-xs gap-1"
+                              onClick={() => reactivate(p)}
+                              disabled={busyId === p.id}
+                              title="Снять увольнение и вернуть доступ"
+                            >
+                              {busyId === p.id
+                                ? <span className="loading loading-spinner loading-xs" />
+                                : <><RotateCcw size={12} /> Вернуть</>}
+                            </button>
+                          );
+                        })()}
                       </td>
                     </tr>
                   );
