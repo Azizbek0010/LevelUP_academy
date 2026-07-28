@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 import {
-  ShieldAlert, Ban, Coins, Plus, ScrollText, UserX, RotateCcw, Trash2, ListChecks,
+  ShieldAlert, Ban, Coins, Plus, ScrollText, UserX, RotateCcw, Trash2, ListChecks, TriangleAlert,
 } from 'lucide-react';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
@@ -56,37 +56,56 @@ function dateTime(iso) {
     : d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-/* ── Выписать взыскание ───────────────────────────────────────────────── */
-function IssueModal({ open, onClose, staff, onDone }) {
+// Эмодзи-маркер цвета внутри <option> — CSS-цвет текста у нативных option
+// ненадёжен по браузерам, а цветной эмодзи-кружок рендерится всегда одинаково.
+const TYPE_DOT = { sariq: '🟡', qizil: '🔴', shtraf: '💰', qora: '⚫' };
+
+/* ── Выписать взыскание ───────────────────────────────────────────────────
+   Взыскание больше не выбирает уровень и не описывает причину заново —
+   и то, и другое уже задано в правиле (qoyda). Тут только «кому» и «за
+   какое из уже описанных правил»; цвет/уровень и сумма штрафа подтягиваются
+   из выбранного правила автоматически. */
+function IssueModal({ open, onClose, staff, rules, onDone }) {
   const { token } = useAuth();
-  const [type, setType] = useState('shtraf');
   const [targetUserId, setTarget] = useState('');
+  const [ruleId, setRuleId] = useState('');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+
+  const rule = rules.find((r) => r.id === ruleId) ?? null;
+  const meta = rule ? (TYPE_META[rule.type] ?? TYPE_META.sariq) : null;
+
+  const pickRule = (id) => {
+    setRuleId(id);
+    const r = rules.find((x) => x.id === id);
+    setAmount(r?.amount != null ? String(r.amount) : '');
+    setReason(r?.description ?? '');
+  };
 
   if (!open) return null;
 
   const submit = async () => {
     setErr('');
     if (!targetUserId) return setErr('Выберите сотрудника');
+    if (!rule) return setErr('Выберите нарушенное правило');
     if (!reason.trim()) return setErr('Укажите причину');
-    if (type === 'shtraf' && !amount) return setErr('Для штрафа нужна сумма');
+    if (rule.type === 'shtraf' && !amount) return setErr('Для штрафа нужна сумма');
 
     setBusy(true);
     try {
       // amount отправляем ТОЛЬКО для штрафа: схема на бэкенде отклоняет сумму
-      // у увольнения и, наоборот, требует её у штрафа
+      // у остальных уровней и, наоборот, требует её у штрафа
       await api.superIssuePenalty(token, {
         targetUserId,
-        type,
+        type: rule.type,
         reason: reason.trim(),
-        ...(type === 'shtraf' ? { amount: Number(amount) } : {}),
+        ...(rule.type === 'shtraf' ? { amount: Number(amount) } : {}),
       });
       onDone();
       onClose();
-      setTarget(''); setAmount(''); setReason(''); setType('shtraf');
+      setTarget(''); setRuleId(''); setAmount(''); setReason('');
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -111,18 +130,6 @@ function IssueModal({ open, onClose, staff, onDone }) {
       <div className="space-y-4">
         {err && <div className="alert alert-error text-sm py-2">{err}</div>}
 
-        <div className="grid grid-cols-2 gap-2">
-          {Object.entries(TYPE_META).map(([key, m]) => (
-            <button
-              key={key}
-              className={`btn btn-sm h-auto py-2.5 gap-1.5 whitespace-normal leading-tight text-center ${type === key ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setType(key)}
-            >
-              <m.Icon size={14} className="shrink-0" /> {m.label}
-            </button>
-          ))}
-        </div>
-
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
             Сотрудник
@@ -146,7 +153,36 @@ function IssueModal({ open, onClose, staff, onDone }) {
           )}
         </label>
 
-        {type === 'shtraf' && (
+        <label className="form-control">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
+            Какое правило нарушено
+          </span>
+          <select
+            className="select select-bordered select-sm rounded-lg"
+            value={ruleId}
+            onChange={(e) => pickRule(e.target.value)}
+          >
+            <option value="">Выберите правило</option>
+            {rules.map((r) => (
+              <option key={r.id} value={r.id}>
+                {TYPE_DOT[r.type] ?? ''} {r.description}
+              </option>
+            ))}
+          </select>
+          {rules.length === 0 && (
+            <span className="text-xs text-warning mt-1">
+              Правил ещё нет — сначала добавьте хотя бы одно кнопкой «Новое правило» выше
+            </span>
+          )}
+        </label>
+
+        {meta && (
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold ${meta.cls}`}>
+            <meta.Icon size={14} /> {meta.label}
+          </span>
+        )}
+
+        {rule?.type === 'shtraf' && (
           <label className="form-control">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
               Сумма, сум
@@ -160,25 +196,25 @@ function IssueModal({ open, onClose, staff, onDone }) {
               placeholder="100000"
             />
             <span className="text-xs text-base-content/45 mt-1">
-              Сумма не списывается автоматически — это запись для расчёта зарплаты
+              Подставлена из правила, можно поправить. Не списывается автоматически — запись для расчёта зарплаты
             </span>
           </label>
         )}
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            Причина
+            Описание
           </span>
           <textarea
             rows={3}
             className="textarea textarea-bordered rounded-lg text-base sm:text-sm resize-none"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="За что выносится взыскание"
+            placeholder="Подставится из правила — можно уточнить детали"
           />
         </label>
 
-        {type === 'qora' && (
+        {rule?.type === 'qora' && (
           <div className="alert alert-warning text-sm py-2">
             <UserX size={15} className="shrink-0" />
             <span>Сотрудник потеряет доступ к системе. Вернуть его можно кнопкой в списке.</span>
@@ -658,6 +694,7 @@ export default function SuperDiscipline() {
         open={issueOpen}
         onClose={() => setIssueOpen(false)}
         staff={staff}
+        rules={rules.data?.data ?? []}
         onDone={refresh}
       />
     </div>
