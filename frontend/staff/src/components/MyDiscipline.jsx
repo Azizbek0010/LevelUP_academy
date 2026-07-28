@@ -1,19 +1,18 @@
-import { ShieldAlert, Coins, Ban, ScrollText } from 'lucide-react';
-import { useMyPenalties, useMyCharter } from '../queries.js';
+import { ShieldAlert, ListChecks } from 'lucide-react';
+import { useMyPenalties, useMyDisciplineRules } from '../queries.js';
 import { money } from '../format.js';
 import { Panel, EmptyState } from '../pages/mentor/_ui.jsx';
+import { TYPE_META } from '../discipline-meta.js';
 
 /**
  * K-DISC-FRONT: read-only дисциплина сотрудника (mentor/methodist) — свои
- * штрафы/увольнения и устав организации. Только просмотр: выписывает и
- * редактирует устав Super Admin (см. pages/super/Discipline.jsx), CAN_ISSUE
- * не даёт mentor/methodist никаких прав на запись.
+ * взыскания и каталог правил организации. Только просмотр: правила заводит
+ * Super Admin (см. pages/super/Discipline.jsx), CAN_ISSUE не даёт
+ * mentor/methodist никаких прав на запись.
+ *
+ * Свободный текстовый устав убран 2026-07-28 — здесь теперь тот же каталог
+ * правил (qoyda), что и в Super Admin.
  */
-
-const TYPE_META = {
-  shtraf: { label: 'Штраф', Icon: Coins, cls: 'bg-warning/10 text-warning' },
-  qora: { label: 'Увольнение', Icon: Ban, cls: 'bg-error/10 text-error' },
-};
 
 const ROLE_LABEL = {
   admin: 'Администратор',
@@ -30,11 +29,10 @@ function dateTime(iso) {
 
 export default function MyDiscipline() {
   const { data: penaltiesData, isLoading: penaltiesLoading } = useMyPenalties();
-  const { data: charterData, isLoading: charterLoading } = useMyCharter();
+  const { data: rulesData, isLoading: rulesLoading } = useMyDisciplineRules();
 
   const items = penaltiesData?.data ?? [];
-  const charter = charterData?.data;
-  const empty = !charter?.content?.trim();
+  const rules = rulesData?.data ?? [];
 
   return (
     <div className="space-y-5">
@@ -91,26 +89,35 @@ export default function MyDiscipline() {
         )}
       </Panel>
 
-      <Panel title={charter?.title || 'Устав организации'} icon={ScrollText}>
-        {charterLoading ? (
-          <div className="skeleton h-32 w-full rounded-xl" />
-        ) : empty ? (
+      <Panel title="Правила организации" icon={ListChecks}>
+        {rulesLoading ? (
+          <div className="space-y-2">
+            <div className="skeleton h-10 w-full rounded-xl" />
+            <div className="skeleton h-10 w-full rounded-xl" />
+          </div>
+        ) : rules.length === 0 ? (
           <EmptyState
-            icon={ScrollText}
-            title="Устав ещё не написан"
-            hint="Организация пока не опубликовала правила."
+            icon={ListChecks}
+            title="Правил пока нет"
+            hint="Организация пока не описала правила."
           />
         ) : (
-          <>
-            <p className="text-sm whitespace-pre-wrap text-base-content/75 leading-relaxed">
-              {charter.content}
-            </p>
-            {charter.updated_at && (
-              <p className="text-xs text-base-content/40 mt-4 pt-3 border-t border-base-200">
-                Обновлён {dateTime(charter.updated_at)}
-              </p>
-            )}
-          </>
+          <div className="space-y-2">
+            {rules.map((r) => {
+              const meta = TYPE_META[r.type] ?? TYPE_META.sariq;
+              return (
+                <div key={r.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-base-200/50">
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold shrink-0 ${meta.cls}`}>
+                    <meta.Icon size={12} /> {meta.label}
+                  </span>
+                  <span className="text-sm flex-1">{r.description}</span>
+                  {r.amount != null && (
+                    <span className="text-sm font-semibold tabular-nums shrink-0">{money(Number(r.amount))}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </Panel>
     </div>

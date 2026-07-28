@@ -42,18 +42,6 @@ export const reactivateStaff = asyncHandler(async (req, res) => {
   res.json({ success: true, data: result });
 });
 
-// GET /charter — устав организации (super / admin / любой сотрудник через /me)
-export const getCharter = asyncHandler(async (req, res) => {
-  const charter = await service.getCharter(req.scope.organizationId);
-  res.json({ success: true, data: charter });
-});
-
-// PUT /charter — создать/изменить устав (super only, guard в роуте)
-export const upsertCharter = asyncHandler(async (req, res) => {
-  const charter = await service.upsertCharter(req.scope.organizationId, req.user.id, req.body);
-  res.json({ success: true, data: charter });
-});
-
 // GET /discipline-rules — каталог правил организации (super only, guard в роуте)
 export const listRules = asyncHandler(async (req, res) => {
   const items = await service.listRules(req.scope.organizationId);

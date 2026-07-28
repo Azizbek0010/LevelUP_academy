@@ -98,23 +98,6 @@ export async function reactivateStaff(orgId, targetUserId) {
   return repo.setUserStatus(targetUserId, orgId, 'active');
 }
 
-/** Устав организации — если ещё не создан, отдаём пустой шаблон. */
-export async function getCharter(orgId) {
-  return (
-    (await repo.getCharter(orgId)) ?? {
-      organization_id: orgId,
-      title: 'Устав',
-      content: '',
-      updated_by: null,
-      updated_at: null,
-    }
-  );
-}
-
-export async function upsertCharter(orgId, userId, body) {
-  return repo.upsertCharter({ orgId, title: body.title, content: body.content, updatedBy: userId });
-}
-
 /**
  * Каталог правил (qoyda) — «нарушение → уровень», настраивается один раз и
  * используется как справочник при выдаче взыскания. Ручной процесс: правило

@@ -125,28 +125,3 @@ export function deleteRule(id, orgId, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
-export function getCharter(orgId, client = pool) {
-  return client
-    .query(
-      `SELECT organization_id, title, content, updated_by, updated_at
-         FROM org_charters WHERE organization_id = $1`,
-      [orgId],
-    )
-    .then((r) => r.rows[0] ?? null);
-}
-
-export function upsertCharter({ orgId, title, content, updatedBy }, client = pool) {
-  return client
-    .query(
-      `INSERT INTO org_charters (organization_id, title, content, updated_by, updated_at)
-       VALUES ($1, COALESCE($2, 'Устав'), $3, $4, now())
-       ON CONFLICT (organization_id) DO UPDATE
-         SET title = COALESCE($2, org_charters.title),
-             content = $3,
-             updated_by = $4,
-             updated_at = now()
-       RETURNING organization_id, title, content, updated_by, updated_at`,
-      [orgId, title ?? null, content ?? '', updatedBy],
-    )
-    .then((r) => r.rows[0]);
-}

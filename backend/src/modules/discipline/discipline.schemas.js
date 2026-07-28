@@ -22,12 +22,6 @@ export const issuePenaltySchema = z
     path: ['amount'],
   });
 
-// Устав организации — свободный текст правил (upsert, один на организацию)
-export const upsertCharterSchema = z.object({
-  title: z.string().trim().min(1).max(200).optional(),
-  content: z.string().trim().max(20000, 'Макс. 20000 символов').default(''),
-});
-
 // Фильтры списка штрафов (super/admin)
 export const listPenaltiesQuery = z.object({
   targetUserId: z.string().uuid().optional(),

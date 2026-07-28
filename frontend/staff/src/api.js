@@ -2354,18 +2354,17 @@ export const api = {
   // кого из сотрудников партнёра наказали. Дисциплина принадлежит организации.
   superPenalties: (token, qs = '') => request(`/super/penalties${qs}`, { token }),
   superIssuePenalty: (token, body) => request('/super/penalties', { method: 'POST', token, body }),
-  superCharter: (token) => request('/super/charter', { token }),
-  superUpsertCharter: (token, body) => request('/super/charter', { method: 'PUT', token, body }),
   superReactivateStaff: (token, id) => request(`/super/staff/${id}/reactivate`, { method: 'POST', token }),
   // Каталог правил (qoyda): нарушение -> уровень (sariq/qizil/shtraf/qora).
   // Справочник, не автоматика — накопление уровней ничего не выдаёт само.
+  // Заменил свободный текстовый устав 2026-07-28.
   superDisciplineRules: (token) => request('/super/discipline-rules', { token }),
   superCreateDisciplineRule: (token, body) => request('/super/discipline-rules', { method: 'POST', token, body }),
   superDeleteDisciplineRule: (token, id) => request(`/super/discipline-rules/${id}`, { method: 'DELETE', token }),
 
   // -------- K-DISC-FRONT: own discipline (mentor/methodist self-view) --------
   myPenalties: (token) => request('/users/me/penalties', { token }),
-  myCharter: (token) => request('/users/me/charter', { token }),
+  myDisciplineRules: (token) => request('/users/me/discipline-rules', { token }),
 
   // -------- METHODIST CONTENT --------
   methodistTrainingTypes: (token) => request('/methodist/training-types', { token }),

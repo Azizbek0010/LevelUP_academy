@@ -1392,25 +1392,6 @@ export const components = {
         },
       },
     },
-    Charter: {
-      type: 'object',
-      description: 'Устав организации — свободный текст правил, один на организацию',
-      properties: {
-        organization_id: { type: 'string', format: 'uuid' },
-        title: { type: 'string' },
-        content: { type: 'string' },
-        updated_by: { type: 'string', format: 'uuid', nullable: true },
-        updated_at: { type: 'string', format: 'date-time', nullable: true },
-      },
-    },
-    UpsertCharterRequest: {
-      type: 'object',
-      required: ['content'],
-      properties: {
-        title: { type: 'string', maxLength: 200 },
-        content: { type: 'string', maxLength: 20000 },
-      },
-    },
   },
 };
 

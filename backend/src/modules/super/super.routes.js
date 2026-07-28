@@ -21,7 +21,6 @@ import * as discipline from '../discipline/discipline.controller.js';
 import * as reminders from './reminders/reminders.controller.js';
 import {
   issuePenaltySchema,
-  upsertCharterSchema,
   listPenaltiesQuery,
   createRuleSchema,
 } from '../discipline/discipline.schemas.js';
@@ -1054,53 +1053,7 @@ router.patch('/methodists/:id', validate({ params: idParam, body: updateMethodis
 router.patch('/methodists/:id/freeze', validate({ params: idParam, body: freezeMethodistSchema }), ctrl.freezeMethodist);
 router.post('/methodists/:id/reset-password', validate({ params: idParam }), ctrl.resetMethodistPassword);
 
-// ==================== ДИСЦИПЛИНА (устав + штрафы/qora) ====================
-
-/**
- * @openapi
- * /api/super/charter:
- *   get:
- *     tags: [Discipline]
- *     summary: Get organization charter (устав)
- *     description: Если устав ещё не создан — возвращается пустой шаблон.
- *     security: [{ bearerAuth: [] }]
- *     responses:
- *       200:
- *         description: Charter
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 data: { $ref: '#/components/schemas/Charter' }
- *       401: { $ref: '#/components/responses/Unauthorized' }
- *       403: { $ref: '#/components/responses/Forbidden' }
- *   put:
- *     tags: [Discipline]
- *     summary: Create/update organization charter (Super Admin only)
- *     security: [{ bearerAuth: [] }]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema: { $ref: '#/components/schemas/UpsertCharterRequest' }
- *     responses:
- *       200:
- *         description: Saved charter
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 data: { $ref: '#/components/schemas/Charter' }
- *       401: { $ref: '#/components/responses/Unauthorized' }
- *       403: { $ref: '#/components/responses/Forbidden' }
- *       422: { $ref: '#/components/responses/ValidationError' }
- */
-router.get('/charter', discipline.getCharter);
-router.put('/charter', validate({ body: upsertCharterSchema }), discipline.upsertCharter);
+// ==================== ДИСЦИПЛИНА (правила + штрафы/предупреждения/qora) ====================
 
 /**
  * @openapi

@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 import {
-  ShieldAlert, Ban, Coins, Plus, ScrollText, UserX, RotateCcw, Pencil, Save, X,
-  TriangleAlert, Trash2, ListChecks,
+  ShieldAlert, Ban, Coins, Plus, ScrollText, UserX, RotateCcw, Trash2, ListChecks,
 } from 'lucide-react';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
@@ -14,6 +13,7 @@ import { fmt, money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
 import { Kpi, Panel, EmptyState, Modal } from '../mentor/_ui.jsx';
+import { TYPE_META } from '../../discipline-meta.js';
 
 /**
  * Дисциплина сотрудников организации.
@@ -35,19 +35,11 @@ import { Kpi, Panel, EmptyState, Modal } from '../mentor/_ui.jsx';
  * несколько предупреждений в qora сама. Это осталось ручным решением того,
  * кто выдаёт взыскание — как раньше был только qora.
  *
- * Устав тут же, а не отдельной страницей: правила и наказания за их нарушение
- * читают вместе. Пустой устав это норма, а не ошибка — бэкенд отдаёт для новой
- * организации шаблон с пустым текстом. Каталог правил (qoyda) ниже устава —
- * структурированная альтернатива/дополнение к свободному тексту: конкретное
- * нарушение → конкретный уровень, а не абзац прозы.
+ * Свободный текстовый устав убран 2026-07-28 — каталог правил (qoyda) ниже
+ * заменяет его целиком: конкретное нарушение → конкретный уровень, структурой,
+ * а не абзацем прозы. Самопросмотр сотрудника (MyDiscipline.jsx) теперь тоже
+ * показывает этот каталог вместо устава.
  */
-
-const TYPE_META = {
-  sariq: { label: 'Жёлтое предупреждение', Icon: TriangleAlert, cls: 'bg-[#eab308]/10 text-[#b45309]', color: '#eab308' },
-  qizil: { label: 'Красное предупреждение', Icon: ShieldAlert, cls: 'bg-error/10 text-error', color: '#dc2626' },
-  shtraf: { label: 'Штраф', Icon: Coins, cls: 'bg-info/10 text-info', color: '#2563eb' },
-  qora: { label: 'Увольнение', Icon: Ban, cls: 'bg-neutral text-neutral-content', color: '#111827' },
-};
 
 const ROLE_LABEL = {
   admin: 'Администратор',
@@ -119,14 +111,14 @@ function IssueModal({ open, onClose, staff, onDone }) {
       <div className="space-y-4">
         {err && <div className="alert alert-error text-sm py-2">{err}</div>}
 
-        <div className="join w-full">
+        <div className="grid grid-cols-2 gap-2">
           {Object.entries(TYPE_META).map(([key, m]) => (
             <button
               key={key}
-              className={`btn btn-sm join-item flex-1 ${type === key ? 'btn-primary' : 'btn-outline'}`}
+              className={`btn btn-sm h-auto py-2.5 gap-1.5 whitespace-normal leading-tight text-center ${type === key ? 'btn-primary' : 'btn-outline'}`}
               onClick={() => setType(key)}
             >
-              <m.Icon size={14} /> {m.label}
+              <m.Icon size={14} className="shrink-0" /> {m.label}
             </button>
           ))}
         </div>
@@ -197,114 +189,6 @@ function IssueModal({ open, onClose, staff, onDone }) {
   );
 }
 
-/* ── Устав ────────────────────────────────────────────────────────────── */
-function Charter({ charter, onSaved }) {
-  const { token } = useAuth();
-  const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
-
-  // при открытии редактора подставляем то, что уже есть на сервере
-  useEffect(() => {
-    if (editing) {
-      setTitle(charter?.title ?? 'Устав');
-      setContent(charter?.content ?? '');
-      setErr('');
-    }
-  }, [editing, charter]);
-
-  const empty = !charter?.content?.trim();
-
-  const save = async () => {
-    setBusy(true);
-    setErr('');
-    try {
-      await api.superUpsertCharter(token, { title: title.trim() || 'Устав', content });
-      onSaved();
-      setEditing(false);
-    } catch (e) {
-      setErr(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Panel
-      title={charter?.title || 'Устав организации'}
-      icon={ScrollText}
-      action={
-        editing ? (
-          <div className="flex gap-1.5">
-            <button className="btn btn-ghost btn-xs gap-1" onClick={() => setEditing(false)} disabled={busy}>
-              <X size={13} /> Отмена
-            </button>
-            <button className="btn btn-primary btn-xs gap-1" onClick={save} disabled={busy}>
-              {busy ? <span className="loading loading-spinner loading-xs" /> : <><Save size={13} /> Сохранить</>}
-            </button>
-          </div>
-        ) : (
-          <button className="btn btn-outline btn-xs gap-1" onClick={() => setEditing(true)}>
-            {empty ? <><Plus size={13} /> Создать</> : <><Pencil size={13} /> Изменить</>}
-          </button>
-        )
-      }
-    >
-      {err && <div className="alert alert-error text-sm py-2 mb-3">{err}</div>}
-
-      {editing ? (
-        <div className="space-y-3">
-          <label className="form-control">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-              Заголовок
-            </span>
-            <input
-              className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Устав"
-            />
-          </label>
-          <label className="form-control">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-              Правила
-            </span>
-            <textarea
-              rows={12}
-              className="textarea textarea-bordered rounded-lg text-base sm:text-sm"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={'Например:\n1. Опоздание более 15 минут — штраф 50 000 сум.\n2. Пропуск занятия без предупреждения — штраф 100 000 сум.'}
-            />
-            <span className="text-xs text-base-content/45 mt-1">
-              До 20 000 символов. Устав видят сотрудники организации
-            </span>
-          </label>
-        </div>
-      ) : empty ? (
-        <EmptyState
-          icon={ScrollText}
-          title="Устав ещё не написан"
-          hint="Пока правил нет, взыскание опирается только на формулировку в поле «Причина». Запишите правила один раз — и на них можно ссылаться."
-        />
-      ) : (
-        <>
-          <p className="text-sm whitespace-pre-wrap text-base-content/75 leading-relaxed">
-            {charter.content}
-          </p>
-          {charter.updated_at && (
-            <p className="text-xs text-base-content/40 mt-4 pt-3 border-t border-base-200">
-              Обновлён {dateTime(charter.updated_at)}
-            </p>
-          )}
-        </>
-      )}
-    </Panel>
-  );
-}
-
 /* ── Каталог правил (qoyda) ──────────────────────────────────────────────
    Структурированная альтернатива устава: конкретное нарушение → конкретный
    уровень (sariq/qizil/shtraf/qora), а не абзац в свободном тексте. Чисто
@@ -362,14 +246,14 @@ function NewRuleModal({ open, onClose, onDone }) {
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5 block">
             Уровень
           </span>
-          <div className="join w-full flex-wrap">
+          <div className="grid grid-cols-2 gap-2">
             {Object.entries(TYPE_META).map(([key, m]) => (
               <button
                 key={key}
-                className={`btn btn-sm join-item flex-1 ${type === key ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn btn-sm h-auto py-2.5 gap-1.5 whitespace-normal leading-tight text-center ${type === key ? 'btn-primary' : 'btn-outline'}`}
                 onClick={() => setType(key)}
               >
-                <m.Icon size={14} /> {m.label}
+                <m.Icon size={14} className="shrink-0" /> {m.label}
               </button>
             ))}
           </div>
@@ -502,11 +386,6 @@ export default function SuperDiscipline() {
     queryFn: () => api.superMethodists(token),
     enabled: !!token,
   });
-  const charter = useQuery({
-    queryKey: ['super-charter'],
-    queryFn: () => api.superCharter(token),
-    enabled: !!token,
-  });
   const rules = useQuery({
     queryKey: ['super-discipline-rules'],
     queryFn: () => api.superDisciplineRules(token),
@@ -568,10 +447,7 @@ export default function SuperDiscipline() {
   }, [items]);
 
   const shown = filter === 'all' ? items : items.filter((p) => p.type === filter);
-  const refresh = () => {
-    qc.invalidateQueries({ queryKey: ['super-penalties'] });
-    qc.invalidateQueries({ queryKey: ['super-charter'] });
-  };
+  const refresh = () => qc.invalidateQueries({ queryKey: ['super-penalties'] });
   const refreshRules = () => qc.invalidateQueries({ queryKey: ['super-discipline-rules'] });
 
   const reactivate = async (p) => {
@@ -776,12 +652,6 @@ export default function SuperDiscipline() {
         <div className="skeleton h-32 w-full rounded-2xl" />
       ) : (
         <RulesPanel rules={rules.data?.data ?? []} onChanged={refreshRules} />
-      )}
-
-      {charter.isLoading ? (
-        <div className="skeleton h-40 w-full rounded-2xl" />
-      ) : (
-        <Charter charter={charter.data?.data} onSaved={refresh} />
       )}
 
       <IssueModal

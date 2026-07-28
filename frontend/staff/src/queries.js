@@ -229,9 +229,9 @@ export function useMyPenalties() {
   return useAuthedQuery(['my-penalties'], () => api.myPenalties(token));
 }
 
-export function useMyCharter() {
+export function useMyDisciplineRules() {
   const { token } = useAuth();
-  return useAuthedQuery(['my-charter'], () => api.myCharter(token));
+  return useAuthedQuery(['my-discipline-rules'], () => api.myDisciplineRules(token));
 }
 
 // -------- CHAT --------
