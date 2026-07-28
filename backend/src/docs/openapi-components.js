@@ -418,12 +418,11 @@ export const components = {
     },
     CreateAdminRequest: {
       type: 'object',
-      required: ['firstName', 'lastName', 'email', 'password', 'branchId'],
+      required: ['firstName', 'lastName', 'email', 'branchId'],
       properties: {
         firstName: { type: 'string' },
         lastName: { type: 'string' },
         email: { type: 'string', format: 'email' },
-        password: { type: 'string', minLength: 8, maxLength: 128 },
         branchId: { type: 'string', format: 'uuid' },
         phone: { type: 'string' },
       },
@@ -451,12 +450,11 @@ export const components = {
     },
     CreateMethodistRequest: {
       type: 'object',
-      required: ['firstName', 'lastName', 'email', 'password'],
+      required: ['firstName', 'lastName', 'email'],
       properties: {
         firstName: { type: 'string' },
         lastName: { type: 'string' },
         email: { type: 'string', format: 'email' },
-        password: { type: 'string', minLength: 8, maxLength: 128 },
         phone: { type: 'string' },
       },
     },

@@ -3,6 +3,7 @@ import { AppError } from '../../utils/AppError.js';
 import { planLimits } from '../../config/plans.js';
 import { logger } from '../../config/logger.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
+import { genTempPassword } from '../auth/credentials.js';
 import * as repo from './super.repository.js';
 
 // ---------- филиалы ----------
@@ -149,12 +150,17 @@ export async function branchDetail(orgId, id) {
 
 // ---------- админы ----------
 
-export async function createAdmin(orgId, { firstName, lastName, email, password, branchId, phone }) {
+export async function createAdmin(orgId, { firstName, lastName, email, branchId, phone }) {
   // филиал должен принадлежать ЭТОЙ организации — иначе super admin суёт чужой филиал
   const branch = await repo.findBranchInOrg(branchId, orgId);
   if (!branch) throw new AppError(404, 'Branch not found in your organization');
 
-  const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
+  // пароль всегда генерится сервером и показывается один раз — так же, как
+  // Main Admin заводит Super Admin. Ручной ввод убрали: опечатка/автозаполнение
+  // браузера в форме создания приводили к аккаунту с паролем, который никто
+  // не мог вспомнить, а сбросить его было нечем.
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
 
   let admin;
   try {
@@ -178,7 +184,18 @@ export async function createAdmin(orgId, { firstName, lastName, email, password,
     lastName: admin.last_name,
     email: admin.email,
     branchId: admin.branch_id,
+    // показать один раз — Super Admin передаёт сотруднику
+    tempPassword,
   };
+}
+
+/** Новый случайный пароль для админа — когда старый забыт/введён неверно при создании. */
+export async function resetAdminPassword(orgId, id) {
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
+  const admin = await repo.setAdminPasswordHash(id, orgId, passwordHash);
+  if (!admin) throw new AppError(404, 'Admin not found in your organization');
+  return { ...mapAdmin(admin), tempPassword };
 }
 
 export async function listAdmins(orgId) {
@@ -227,8 +244,9 @@ export async function setAdminFrozen(orgId, id, frozen) {
 
 // ---------- методисты ----------
 
-export async function createMethodist(orgId, { firstName, lastName, email, password, phone }) {
-  const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
+export async function createMethodist(orgId, { firstName, lastName, email, phone }) {
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
   try {
     const row = await repo.insertMethodist({
       orgId,
@@ -238,11 +256,20 @@ export async function createMethodist(orgId, { firstName, lastName, email, passw
       phone,
       passwordHash,
     });
-    return mapMethodist(row);
+    return { ...mapMethodist(row), tempPassword };
   } catch (err) {
     if (err.code === '23505') throw new AppError(409, 'Email already in use');
     throw err;
   }
+}
+
+/** Новый случайный пароль для методиста — тот же сценарий, что и у админа. */
+export async function resetMethodistPassword(orgId, id) {
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
+  const row = await repo.setMethodistPasswordHash(id, orgId, passwordHash);
+  if (!row) throw new AppError(404, 'Methodist not found in your organization');
+  return { ...mapMethodist(row), tempPassword };
 }
 
 export async function listMethodists(orgId) {

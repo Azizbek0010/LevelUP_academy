@@ -80,12 +80,12 @@ export const createBranchSchema = z.object({
 });
 
 // Super Admin создаёт админа и назначает в свой филиал.
-// Логин (email) и пароль задаёт сам Super Admin (не генерятся).
+// Логин (email) задаёт Super Admin; пароль генерируется автоматически и
+// показывается один раз — так же, как Main Admin заводит Super Admin.
 export const createAdminSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
   email,
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
   branchId: z.string().uuid('Invalid branchId'),
   phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').or(z.literal('')).optional(),
 });
@@ -96,7 +96,6 @@ export const createMethodistSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
   email,
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
   phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').or(z.literal('')).optional(),
 });
 

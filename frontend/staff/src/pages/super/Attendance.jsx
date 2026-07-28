@@ -119,6 +119,7 @@ export default function SuperAttendance() {
 
   const filtered = useMemo(() => {
     return lessons.filter((l) => {
+      if (!l.startsAt) return false;
       const dateIso = l.startsAt.slice(0, 10);
       if (dateIso < activeFrom || dateIso > activeTo) return false;
       if (groupFilter !== 'all' && l.groupId !== groupFilter) return false;
