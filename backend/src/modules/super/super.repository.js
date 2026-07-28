@@ -374,9 +374,11 @@ export function listMentors(orgId, client = pool) {
   return client
     .query(
       `SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.created_at,
-              u.branch_id, b.name AS branch_name, u.phone
+              u.branch_id, b.name AS branch_name, u.phone,
+              mp.grade, mp.bio, mp.skills
          FROM users u
          LEFT JOIN branches b ON b.id = u.branch_id
+         LEFT JOIN mentor_profiles mp ON mp.user_id = u.id
         WHERE u.organization_id = $1 AND u.role = 'mentor' AND u.deleted_at IS NULL
         ORDER BY u.created_at DESC`,
       [orgId],

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Mail, Phone, Building2, Wallet, Calendar, MapPin, UserCog,
+  Mail, Phone, Building2, Wallet, Calendar, MapPin, UserCog, Award,
   ShieldAlert, Ban, TriangleAlert, ScrollText,
 } from 'lucide-react';
 import { fmt, dateShort, money, ADMIN_STATUS, ROLE_LABELS } from '../../format.js';
@@ -30,6 +30,15 @@ import { TYPE_META, LevelBadge } from '../../discipline-meta.jsx';
  * из кэша, если страница открыта переходом со списка) плюс существующий
  * фильтр /super/penalties?targetUserId=.
  */
+
+// Те же цвета, что и в GradePicker админа филиала (pages/admin/Mentors.jsx) —
+// грейд здесь read-only (меняет только Admin филиала), но цвет должен
+// совпадать, а не изобретаться заново для одной страницы.
+const GRADE_META = {
+  junior: { label: 'Junior', color: '#2563eb' },
+  middle: { label: 'Middle', color: '#b45309' },
+  senior: { label: 'Senior', color: '#15803d' },
+};
 
 function dateTime(iso) {
   if (!iso) return '—';
@@ -127,6 +136,14 @@ export default function StaffDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {role === 'mentor' && person.grade && GRADE_META[person.grade] && (
+            <span
+              className="badge badge-outline badge-sm gap-1.5 font-semibold"
+              style={{ borderColor: GRADE_META[person.grade].color, color: GRADE_META[person.grade].color }}
+            >
+              <Award size={11} /> {GRADE_META[person.grade].label}
+            </span>
+          )}
           {lastViolation && (
             <span className="badge badge-ghost badge-sm gap-1.5">
               <ScrollText size={11} /> Последнее: {dateShort(lastViolation.created_at ?? lastViolation.createdAt)}
@@ -191,6 +208,23 @@ export default function StaffDetail() {
               </>
             )}
           </div>
+
+          {role === 'mentor' && (person.bio || person.skills?.length > 0) && (
+            <div className="pt-3 border-t border-base-200 space-y-2.5">
+              {person.skills?.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {person.skills.map((s) => (
+                    <span key={s} className="text-xs px-2 py-0.5 rounded-full bg-base-200 text-base-content/70">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {person.bio && (
+                <p className="text-sm text-base-content/70 whitespace-pre-wrap">{person.bio}</p>
+              )}
+            </div>
+          )}
         </div>
       </Panel>
 

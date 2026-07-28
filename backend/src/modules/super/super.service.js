@@ -289,6 +289,9 @@ export async function listMentors(orgId) {
     branchId: u.branch_id,
     branchName: u.branch_name,
     phone: u.phone,
+    grade: u.grade,
+    bio: u.bio,
+    skills: u.skills ?? [],
     createdAt: u.created_at,
   }));
 }
