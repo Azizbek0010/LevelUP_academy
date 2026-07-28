@@ -53,6 +53,10 @@ export const updateBranchSchema = z
     { message: 'Либо обе координаты, либо ни одной', path: ['lat'] },
   );
 
+// Оклад — просто метаданные карточки сотрудника, не участвует ни в каком
+// автоматическом расчёте (см. discipline: % от оклада там пока тоже вручную).
+const monthlySalaryField = z.coerce.number().min(0, 'Не может быть отрицательным').max(1_000_000_000_000).nullable();
+
 // редактирование админа — частичное (email/пароль тут не меняем)
 export const updateAdminSchema = z
   .object({
@@ -60,6 +64,7 @@ export const updateAdminSchema = z
     lastName: z.string().trim().min(1).max(80),
     branchId: z.string().uuid('Invalid branchId'),
     phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone'),
+    monthlySalary: monthlySalaryField,
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
@@ -104,6 +109,7 @@ export const updateMethodistSchema = z
     firstName: z.string().trim().min(1).max(80),
     lastName: z.string().trim().min(1).max(80),
     phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone'),
+    monthlySalary: monthlySalaryField,
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });

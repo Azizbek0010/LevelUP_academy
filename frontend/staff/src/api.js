@@ -2298,11 +2298,10 @@ export const api = {
 
   // -------- SUPER ADMIN --------
   superDashboard: (token) => request('/super/dashboard', { token }),
-  /* Статистика и отчёт — отдельные эндпоинты, а не дашборд: у первого есть
-     ряд выручки по дням и разбивка по способам оплаты, у второго — доля
-     филиала в выручке, посчитанная на сервере. */
+  // «Отчёты» слиты в «Статистику» 2026-07-28 — это был один и тот же набор
+  // данных (итоги + разбивка по филиалам) на двух страницах; /super/reports
+  // больше не существует, доля филиала (share) теперь тоже приходит отсюда.
   superStats: (token, period = '30d') => request(`/super/stats?period=${period}`, { token }),
-  superReports: (token) => request('/super/reports', { token }),
   superBranches: (token) => request('/super/branches', { token }),
   superBranchDetail: (token, id) => request(`/super/branches/${id}`, { token }),
   superCreateBranch: (token, body) => request('/super/branches', { method: 'POST', token, body }),
@@ -2318,6 +2317,8 @@ export const api = {
   superGetOrganization: (token) => request('/super/organization', { token }),
   superUpdateOrganization: (token, body) => request('/super/organization', { method: 'PATCH', token, body }),
   superMethodists: (token) => request('/super/methodists', { token }),
+  // Только чтение — для выбора цели во «Взыскании». CRUD ментора у Admin филиала.
+  superMentors: (token) => request('/super/mentors', { token }),
   superCreateMethodist: (token, body) => request('/super/methodists', { method: 'POST', token, body }),
   superUpdateMethodist: (token, id, body) => request(`/super/methodists/${id}`, { method: 'PATCH', token, body }),
   superFreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
@@ -2355,13 +2356,17 @@ export const api = {
   // кого из сотрудников партнёра наказали. Дисциплина принадлежит организации.
   superPenalties: (token, qs = '') => request(`/super/penalties${qs}`, { token }),
   superIssuePenalty: (token, body) => request('/super/penalties', { method: 'POST', token, body }),
-  superCharter: (token) => request('/super/charter', { token }),
-  superUpsertCharter: (token, body) => request('/super/charter', { method: 'PUT', token, body }),
   superReactivateStaff: (token, id) => request(`/super/staff/${id}/reactivate`, { method: 'POST', token }),
+  // Каталог правил (qoyda): нарушение -> уровень (sariq/qizil/shtraf/qora).
+  // Справочник, не автоматика — накопление уровней ничего не выдаёт само.
+  // Заменил свободный текстовый устав 2026-07-28.
+  superDisciplineRules: (token) => request('/super/discipline-rules', { token }),
+  superCreateDisciplineRule: (token, body) => request('/super/discipline-rules', { method: 'POST', token, body }),
+  superDeleteDisciplineRule: (token, id) => request(`/super/discipline-rules/${id}`, { method: 'DELETE', token }),
 
   // -------- K-DISC-FRONT: own discipline (mentor/methodist self-view) --------
   myPenalties: (token) => request('/users/me/penalties', { token }),
-  myCharter: (token) => request('/users/me/charter', { token }),
+  myDisciplineRules: (token) => request('/users/me/discipline-rules', { token }),
 
   // -------- METHODIST CONTENT --------
   methodistTrainingTypes: (token) => request('/methodist/training-types', { token }),

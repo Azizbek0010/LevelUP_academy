@@ -24,12 +24,6 @@ export function useSuperStats(period = '30d') {
   return useAuthedQuery(['super-stats', period], () => api.superStats(token, period));
 }
 
-/** Сводный отчёт: те же филиалы, но с долей в выручке от сервера. */
-export function useSuperReports() {
-  const { token } = useAuth();
-  return useAuthedQuery(['super-reports'], () => api.superReports(token));
-}
-
 export function useSuperBranches() {
   const { token } = useAuth();
   return useAuthedQuery(['super-branches'], () => api.superBranches(token));
@@ -55,6 +49,12 @@ export function useSuperOrganization() {
 export function useSuperMethodists() {
   const { token } = useAuth();
   return useAuthedQuery(['super-methodists'], () => api.superMethodists(token));
+}
+
+/** Менторы организации — только чтение (заводит/редактирует их Admin филиала). */
+export function useSuperMentors() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-mentors'], () => api.superMentors(token));
 }
 
 // -------- ADMIN --------
@@ -235,9 +235,9 @@ export function useMyPenalties() {
   return useAuthedQuery(['my-penalties'], () => api.myPenalties(token));
 }
 
-export function useMyCharter() {
+export function useMyDisciplineRules() {
   const { token } = useAuth();
-  return useAuthedQuery(['my-charter'], () => api.myCharter(token));
+  return useAuthedQuery(['my-discipline-rules'], () => api.myDisciplineRules(token));
 }
 
 // -------- CHAT --------

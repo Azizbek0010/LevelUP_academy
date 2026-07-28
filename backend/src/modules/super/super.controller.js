@@ -65,10 +65,14 @@ export const listGroups = asyncHandler(async (req, res) => {
   res.json(await service.listGroups(orgId(req)));
 });
 export const archiveGroup = asyncHandler(async (req, res) => {
-  res.json({ group: await service.setGroupArchived(orgId(req), req.params.id, true) });
+  const group = await service.setGroupArchived(orgId(req), req.params.id, true);
+  await audit(req, { action: 'group.archive', entityType: 'group', entityId: group.id });
+  res.json({ group });
 });
 export const unarchiveGroup = asyncHandler(async (req, res) => {
-  res.json({ group: await service.setGroupArchived(orgId(req), req.params.id, false) });
+  const group = await service.setGroupArchived(orgId(req), req.params.id, false);
+  await audit(req, { action: 'group.unarchive', entityType: 'group', entityId: group.id });
+  res.json({ group });
 });
 export const deleteGroup = asyncHandler(async (req, res) => {
   const result = await service.deleteGroup(orgId(req), req.params.id);
@@ -113,9 +117,6 @@ export const listAudit = asyncHandler(async (req, res) => {
 export const stats = asyncHandler(async (req, res) => {
   res.json(await service.stats(orgId(req), req.query.period));
 });
-export const reports = asyncHandler(async (req, res) => {
-  res.json(await service.reports(orgId(req)));
-});
 
 // --- филиалы ---
 export const createBranch = asyncHandler(async (req, res) => {
@@ -138,15 +139,27 @@ export const branchDetail = asyncHandler(async (req, res) => {
 });
 
 export const updateBranch = asyncHandler(async (req, res) => {
-  res.json({ branch: await service.updateBranch(orgId(req), req.params.id, req.body) });
+  const branch = await service.updateBranch(orgId(req), req.params.id, req.body);
+  await audit(req, {
+    action: 'branch.update',
+    entityType: 'branch',
+    entityId: branch.id,
+    entityLabel: branch.name,
+    meta: { fields: Object.keys(req.body) },
+  });
+  res.json({ branch });
 });
 
 export const archiveBranch = asyncHandler(async (req, res) => {
-  res.json({ branch: await service.setBranchArchived(orgId(req), req.params.id, true) });
+  const branch = await service.setBranchArchived(orgId(req), req.params.id, true);
+  await audit(req, { action: 'branch.archive', entityType: 'branch', entityId: branch.id, entityLabel: branch.name });
+  res.json({ branch });
 });
 
 export const unarchiveBranch = asyncHandler(async (req, res) => {
-  res.json({ branch: await service.setBranchArchived(orgId(req), req.params.id, false) });
+  const branch = await service.setBranchArchived(orgId(req), req.params.id, false);
+  await audit(req, { action: 'branch.unarchive', entityType: 'branch', entityId: branch.id, entityLabel: branch.name });
+  res.json({ branch });
 });
 
 // --- админы ---
@@ -166,7 +179,15 @@ export const listAdmins = asyncHandler(async (req, res) => {
 });
 
 export const updateAdmin = asyncHandler(async (req, res) => {
-  res.json({ admin: await service.updateAdmin(orgId(req), req.params.id, req.body) });
+  const admin = await service.updateAdmin(orgId(req), req.params.id, req.body);
+  await audit(req, {
+    action: 'admin.update',
+    entityType: 'admin',
+    entityId: admin.id,
+    entityLabel: `${admin.firstName} ${admin.lastName}`,
+    meta: { fields: Object.keys(req.body) },
+  });
+  res.json({ admin });
 });
 
 export const freezeAdmin = asyncHandler(async (req, res) => {
@@ -193,21 +214,55 @@ export const resetAdminPassword = asyncHandler(async (req, res) => {
 
 // --- методисты ---
 export const createMethodist = asyncHandler(async (req, res) => {
-  res.status(201).json({ methodist: await service.createMethodist(orgId(req), req.body) });
+  const methodist = await service.createMethodist(orgId(req), req.body);
+  await audit(req, {
+    action: 'methodist.create',
+    entityType: 'methodist',
+    entityId: methodist.id,
+    entityLabel: `${methodist.firstName} ${methodist.lastName}`,
+  });
+  res.status(201).json({ methodist });
 });
 
 export const listMethodists = asyncHandler(async (req, res) => {
   res.json({ methodists: await service.listMethodists(orgId(req)) });
 });
 
+// --- менторы (только чтение — заводит их Admin филиала) ---
+export const listMentors = asyncHandler(async (req, res) => {
+  res.json({ mentors: await service.listMentors(orgId(req)) });
+});
+
 export const updateMethodist = asyncHandler(async (req, res) => {
-  res.json({ methodist: await service.updateMethodist(orgId(req), req.params.id, req.body) });
+  const methodist = await service.updateMethodist(orgId(req), req.params.id, req.body);
+  await audit(req, {
+    action: 'methodist.update',
+    entityType: 'methodist',
+    entityId: methodist.id,
+    entityLabel: `${methodist.firstName} ${methodist.lastName}`,
+    meta: { fields: Object.keys(req.body) },
+  });
+  res.json({ methodist });
 });
 
 export const freezeMethodist = asyncHandler(async (req, res) => {
-  res.json({ methodist: await service.setMethodistFrozen(orgId(req), req.params.id, req.body.frozen) });
+  const methodist = await service.setMethodistFrozen(orgId(req), req.params.id, req.body.frozen);
+  await audit(req, {
+    action: req.body.frozen ? 'methodist.freeze' : 'methodist.unfreeze',
+    entityType: 'methodist',
+    entityId: methodist.id,
+    entityLabel: `${methodist.firstName} ${methodist.lastName}`,
+  });
+  res.json({ methodist });
 });
 
 export const resetMethodistPassword = asyncHandler(async (req, res) => {
-  res.json({ methodist: await service.resetMethodistPassword(orgId(req), req.params.id) });
+  const methodist = await service.resetMethodistPassword(orgId(req), req.params.id);
+  await audit(req, {
+    action: 'methodist.reset_password',
+    entityType: 'methodist',
+    entityId: methodist.id,
+    entityLabel: `${methodist.firstName} ${methodist.lastName}`,
+  });
+  res.json({ methodist });
 });

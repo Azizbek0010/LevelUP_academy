@@ -221,7 +221,7 @@ export function findAdminInOrg(id, orgId, client = pool) {
 }
 
 const ADMIN_RETURN =
-  'id, first_name, last_name, email, status, branch_id';
+  'id, first_name, last_name, email, status, branch_id, phone, monthly_salary';
 
 export function updateAdmin(id, orgId, fields, client = pool) {
   const cols = [];
@@ -232,6 +232,7 @@ export function updateAdmin(id, orgId, fields, client = pool) {
     ['lastName', 'last_name'],
     ['branchId', 'branch_id'],
     ['phone', 'phone'],
+    ['monthlySalary', 'monthly_salary'],
   ]) {
     if (fields[key] !== undefined) {
       cols.push(`${col} = $${i++}`);
@@ -339,7 +340,7 @@ export function listAdmins(orgId, client = pool) {
   return client
     .query(
       `SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.created_at,
-              u.branch_id, b.name AS branch_name
+              u.branch_id, b.name AS branch_name, u.phone, u.monthly_salary
          FROM users u
          JOIN branches b ON b.id = u.branch_id
         WHERE u.organization_id = $1 AND u.role = 'admin' AND u.deleted_at IS NULL
@@ -365,10 +366,31 @@ export function insertMethodist(
     .then((r) => r.rows[0]);
 }
 
+// ---------- менторы (для выбора в «Взыскании» — сами менторов не заводят) ----------
+
+/** Все менторы организации (по всем филиалам) — только чтение, для выбора
+    цели взыскания у Super Admin. Заводит/редактирует ментора Admin филиала. */
+export function listMentors(orgId, client = pool) {
+  return client
+    .query(
+      `SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.created_at,
+              u.branch_id, b.name AS branch_name, u.phone,
+              mp.grade, mp.bio, mp.skills
+         FROM users u
+         LEFT JOIN branches b ON b.id = u.branch_id
+         LEFT JOIN mentor_profiles mp ON mp.user_id = u.id
+        WHERE u.organization_id = $1 AND u.role = 'mentor' AND u.deleted_at IS NULL
+        ORDER BY u.created_at DESC`,
+      [orgId],
+    )
+    .then((r) => r.rows);
+}
+
 export function listMethodists(orgId, client = pool) {
   return client
     .query(
-      `SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.phone, u.created_at
+      `SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.phone, u.created_at,
+              u.monthly_salary
          FROM users u
         WHERE u.organization_id = $1 AND u.role = 'methodist' AND u.deleted_at IS NULL
         ORDER BY u.created_at DESC`,
@@ -406,6 +428,7 @@ export function updateMethodist(id, orgId, fields, client = pool) {
     ['firstName', 'first_name'],
     ['lastName', 'last_name'],
     ['phone', 'phone'],
+    ['monthlySalary', 'monthly_salary'],
   ]) {
     if (fields[key] !== undefined) {
       cols.push(`${col} = $${i++}`);
@@ -418,7 +441,7 @@ export function updateMethodist(id, orgId, fields, client = pool) {
     .query(
       `UPDATE users SET ${cols.join(', ')}, updated_at = now()
         WHERE id = $${i++} AND organization_id = $${i} AND role = 'methodist' AND deleted_at IS NULL
-        RETURNING id, first_name, last_name, email, phone`,
+        RETURNING id, first_name, last_name, email, phone, monthly_salary`,
       vals,
     )
     .then((r) => r.rows[0] ?? null);

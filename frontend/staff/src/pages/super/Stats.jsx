@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -170,9 +171,9 @@ export default function SuperStats() {
     csv += `"Статистика LevelUp Academy","${new Date().toLocaleDateString('ru-RU')}","Период: ${periodLabel}"\n\n`;
     csv += `"Выручка за период","Выручка за всё время","Долг","Ученики","Доля долга"\n`;
     csv += `${t.periodRevenue ?? 0},${t.revenue},${t.outstandingDebt ?? 0},${t.activeStudents},${debtRatio}%\n\n`;
-    csv += `"Филиал","Выручка","Долг"\n`;
+    csv += `"Филиал","Выручка","Долг","Доля"\n`;
     branches.forEach((b) => {
-      csv += `"${b.name}",${b.revenue ?? 0},${b.debt ?? 0}\n`;
+      csv += `"${b.name}",${b.revenue ?? 0},${b.debt ?? 0},${(b.share ?? 0).toFixed(1)}%\n`;
     });
     if (methodData.length) {
       csv += `\n"Способ оплаты","Сумма"\n`;
@@ -315,6 +316,47 @@ export default function SuperStats() {
               </ResponsiveContainer>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Сводная таблица по филиалам — перенесена со страницы «Отчёты» (слита
+          сюда 2026-07-28): та же выборка, что и в графиках выше, но с точной
+          долей филиала в общей выручке, посчитанной на сервере. */}
+      <div className="card bg-base-100 shadow-sm">
+        <div className="card-body p-6">
+          <h2 className="text-base font-bold mb-4">Сводка по филиалам</h2>
+          {branches.length === 0 ? (
+            <p className="text-center py-10 opacity-50 text-sm">Нет данных</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="table table-sm tabular-nums">
+                <thead>
+                  <tr>
+                    <th>Филиал</th>
+                    <th className="text-right">Ученики</th>
+                    <th className="text-right">Админы</th>
+                    <th className="text-right">Выручка</th>
+                    <th className="text-right">Долг</th>
+                    <th className="text-right">Доля</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {branches.map((b) => (
+                    <tr key={b.id} className="hover">
+                      <td className="font-semibold">
+                        <Link to={`/branches/${b.id}`} className="hover:underline">{b.name}</Link>
+                      </td>
+                      <td className="text-right">{fmt(b.students ?? 0)}</td>
+                      <td className="text-right">{fmt(b.admins ?? 0)}</td>
+                      <td className="text-right font-medium">{money(b.revenue ?? 0)}</td>
+                      <td className="text-right text-error">{money(b.debt ?? 0)}</td>
+                      <td className="text-right">{(b.share ?? 0).toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

@@ -9,6 +9,8 @@ body,
   background-color: var(--bg) !important;
 }
 
+img { max-width: 100%; display: block; }
+
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -386,3 +388,46 @@ main > * {
   height: 100dvh;
   max-height: 100dvh;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Перенесено из frontend/student/index.css при объединении кабинета
+   student+parent внутри member
+   ═══════════════════════════════════════════════════════════════ */
+
+.modal-box {
+  background: var(--surface) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+.modal-backdrop { background: rgba(0, 0, 0, 0.4) !important; backdrop-filter: blur(4px); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Кольцо результата теста — конический градиент primary по проценту */
+.score-ring {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  background: conic-gradient(var(--primary) calc(var(--score, 0) * 1%), var(--base-300, #e7eede) 0);
+}
+.score-ring > span {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Таймер прохождения теста */
+.quiz-clock { font-variant-numeric: tabular-nums; }
+.quiz-clock--low { color: var(--danger) !important; }

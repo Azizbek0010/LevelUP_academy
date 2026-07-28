@@ -208,6 +208,8 @@ export async function listAdmins(orgId) {
     status: u.status,
     branchId: u.branch_id,
     branchName: u.branch_name,
+    phone: u.phone,
+    monthlySalary: u.monthly_salary,
     createdAt: u.created_at,
   }));
 }
@@ -220,6 +222,8 @@ function mapAdmin(u) {
     email: u.email,
     status: u.status,
     branchId: u.branch_id,
+    phone: u.phone,
+    monthlySalary: u.monthly_salary,
   };
 }
 
@@ -272,6 +276,26 @@ export async function resetMethodistPassword(orgId, id) {
   return { ...mapMethodist(row), tempPassword };
 }
 
+// ---------- менторы (только чтение, для выбора в «Взыскании») ----------
+
+export async function listMentors(orgId) {
+  const rows = await repo.listMentors(orgId);
+  return rows.map((u) => ({
+    id: u.id,
+    firstName: u.first_name,
+    lastName: u.last_name,
+    email: u.email,
+    status: u.status,
+    branchId: u.branch_id,
+    branchName: u.branch_name,
+    phone: u.phone,
+    grade: u.grade,
+    bio: u.bio,
+    skills: u.skills ?? [],
+    createdAt: u.created_at,
+  }));
+}
+
 export async function listMethodists(orgId) {
   const rows = await repo.listMethodists(orgId);
   return rows.map((u) => ({
@@ -281,6 +305,7 @@ export async function listMethodists(orgId) {
     email: u.email,
     status: u.status,
     phone: u.phone,
+    monthlySalary: u.monthly_salary,
     createdAt: u.created_at,
   }));
 }
@@ -305,6 +330,7 @@ function mapMethodist(u) {
     email: u.email,
     status: u.status,
     phone: u.phone,
+    monthlySalary: u.monthly_salary,
   };
 }
 
@@ -549,40 +575,14 @@ export async function stats(orgId, period = '30d') {
       revenue: Number(b.revenue),
       debt: Number(b.debt),
       students: Number(b.students),
+      admins: Number(b.admins),
+      // доля филиала в выручке организации — раньше жила только в /super/reports;
+      // Отчёты слиты в Статистику 2026-07-28 (была одна и та же выборка на двух
+      // страницах), поле переехало сюда.
+      share: revenue > 0 ? Number(((Number(b.revenue) / revenue) * 100).toFixed(1)) : 0,
     })),
     revenueSeries: series.map((s) => ({ date: s.day, revenue: Number(s.revenue) })),
     paymentMethods: methods.map((m) => ({ method: m.method, amount: Number(m.amount) })),
-  };
-}
-
-// ---------- отчёт организации (Super Reports) ----------
-
-export async function reports(orgId) {
-  const [t, branches] = await Promise.all([repo.orgTotals(orgId), repo.branchBreakdown(orgId)]);
-  const revenue = Number(t.revenue);
-  const branchCount = Number(t.branches);
-  return {
-    totals: {
-      branches: branchCount,
-      activeStudents: Number(t.active_students),
-      admins: Number(t.admins),
-      revenue,
-      outstandingDebt: Number(t.outstanding_debt),
-      avgRevenue: branchCount > 0 ? revenue / branchCount : 0,
-      currency: 'UZS',
-    },
-    branches: branches.map((b) => {
-      const r = Number(b.revenue);
-      return {
-        id: b.id,
-        name: b.name,
-        students: Number(b.students),
-        admins: Number(b.admins),
-        revenue: r,
-        debt: Number(b.debt),
-        share: revenue > 0 ? Number(((r / revenue) * 100).toFixed(1)) : 0,
-      };
-    }),
   };
 }
 
