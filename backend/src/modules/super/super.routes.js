@@ -826,7 +826,7 @@ router.post('/branches/:id/unarchive', validate({ params: idParam }), ctrl.unarc
  *   post:
  *     tags: [Super Admin]
  *     summary: Create an admin assigned to one of the organization's branches
- *     description: Login (email) and password are set directly by the Super Admin (not auto-generated).
+ *     description: Login (email) is set by the Super Admin; password is auto-generated and returned once (tempPassword).
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
@@ -950,6 +950,7 @@ router.patch('/admins/:id', validate({ params: idParam, body: updateAdminSchema 
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.patch('/admins/:id/freeze', validate({ params: idParam, body: freezeSchema }), ctrl.freezeAdmin);
+router.post('/admins/:id/reset-password', validate({ params: idParam }), ctrl.resetAdminPassword);
 
 /**
  * @openapi
@@ -1072,6 +1073,7 @@ router.patch('/methodists/:id', validate({ params: idParam, body: updateMethodis
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.patch('/methodists/:id/freeze', validate({ params: idParam, body: freezeMethodistSchema }), ctrl.freezeMethodist);
+router.post('/methodists/:id/reset-password', validate({ params: idParam }), ctrl.resetMethodistPassword);
 
 // ==================== ДИСЦИПЛИНА (устав + штрафы/qora) ====================
 

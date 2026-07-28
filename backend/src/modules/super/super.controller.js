@@ -180,6 +180,17 @@ export const freezeAdmin = asyncHandler(async (req, res) => {
   res.json({ admin });
 });
 
+export const resetAdminPassword = asyncHandler(async (req, res) => {
+  const admin = await service.resetAdminPassword(orgId(req), req.params.id);
+  await audit(req, {
+    action: 'admin.reset_password',
+    entityType: 'admin',
+    entityId: admin.id,
+    entityLabel: `${admin.firstName} ${admin.lastName}`,
+  });
+  res.json({ admin });
+});
+
 // --- методисты ---
 export const createMethodist = asyncHandler(async (req, res) => {
   res.status(201).json({ methodist: await service.createMethodist(orgId(req), req.body) });
@@ -195,4 +206,8 @@ export const updateMethodist = asyncHandler(async (req, res) => {
 
 export const freezeMethodist = asyncHandler(async (req, res) => {
   res.json({ methodist: await service.setMethodistFrozen(orgId(req), req.params.id, req.body.frozen) });
+});
+
+export const resetMethodistPassword = asyncHandler(async (req, res) => {
+  res.json({ methodist: await service.resetMethodistPassword(orgId(req), req.params.id) });
 });

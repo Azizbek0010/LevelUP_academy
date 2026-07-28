@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Edit2, ShieldAlert, Users, BookOpen } from 'lucide-react';
+import { Plus, Edit2, ShieldAlert, Users, BookOpen, KeyRound, Copy, Check, AlertTriangle } from 'lucide-react';
 import { dateShort, ADMIN_STATUS } from '../../format.js';
 import { useSuperAdmins, useSuperBranches, useSuperMethodists, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
@@ -11,16 +11,19 @@ import PageHeader from '../../components/PageHeader.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import PhoneInput from '../../components/PhoneInput.jsx';
-import PasswordInput from '../../components/PasswordInput.jsx';
 
 // ─── Schemas ───────────────────────────────────────────────
+// Пароль больше не вводится руками — сервер генерирует случайный и отдаёт
+// один раз в ответе (tempPassword), так же как при заведении Super Admin
+// Main Admin'ом. Опечатка/автозаполнение браузера в этом поле раньше давали
+// аккаунт с паролем, который никто потом не мог вспомнить, а сбросить было
+// нечем — теперь для этого есть кнопка «Сбросить пароль».
 const phoneRegex = /^\+?\d{7,20}$/;
 
 const adminCreateSchema = z.object({
   firstName: z.string().trim().min(1, 'Имя обязательно').max(80),
   lastName:  z.string().trim().min(1, 'Фамилия обязательна').max(80),
   email:     z.string().trim().min(1, 'Email обязателен').email('Неверный формат email').max(120),
-  password:  z.string().min(8, 'Мин. 8 символов').max(128),
   branchId:  z.string().uuid('Выберите филиал').min(1, 'Выберите филиал'),
   phone:     z.string().trim().regex(phoneRegex, 'Формат: +998901234567').or(z.literal('')),
 });
@@ -36,7 +39,6 @@ const methodistCreateSchema = z.object({
   firstName: z.string().trim().min(1, 'Имя обязательно').max(80),
   lastName:  z.string().trim().min(1, 'Фамилия обязательна').max(80),
   email:     z.string().trim().min(1, 'Email обязателен').email('Неверный формат email').max(120),
-  password:  z.string().min(8, 'Мин. 8 символов').max(128),
   phone:     z.string().trim().regex(phoneRegex, 'Формат: +998901234567').or(z.literal('')),
 });
 
@@ -45,6 +47,58 @@ const methodistEditSchema = z.object({
   lastName:  z.string().trim().min(1, 'Фамилия обязательна').max(80),
   phone:     z.string().trim().regex(phoneRegex, 'Формат: +998901234567').or(z.literal('')),
 });
+
+// ─── Показ сгенерированного пароля (один раз) ────────────────
+function TempPasswordModal({ email, password, onClose }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard?.writeText(password || '');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <div className="modal modal-open">
+      <div className="modal-box max-w-lg">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 rounded-full bg-success/20 grid place-items-center">
+            <Check size={24} className="text-success" />
+          </div>
+          <div>
+            <h3 className="font-bold text-lg text-success">Готово!</h3>
+            <p className="text-sm text-base-content/60">Пароль сгенерирован автоматически</p>
+          </div>
+        </div>
+        <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
+          <div className="flex items-start gap-2 mb-3">
+            <AlertTriangle size={16} className="text-warning shrink-0 mt-0.5" />
+            <p className="text-sm font-semibold text-warning">Сохраните пароль — показывается только один раз!</p>
+          </div>
+          <div className="bg-base-100 rounded-lg p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-base-content/55 w-16 shrink-0">Логин:</span>
+              <span className="font-semibold">{email}</span>
+            </div>
+            <div className="border-t border-base-200 pt-2 mt-2">
+              <div className="text-xs text-base-content/50 mb-1.5 font-semibold uppercase tracking-wider">Пароль</div>
+              <div className="flex items-center gap-2">
+                <code className="font-mono font-bold text-xl tracking-widest bg-base-200 px-3 py-2 rounded-lg flex-1 text-center">
+                  {password}
+                </code>
+                <button className={`btn btn-sm ${copied ? 'btn-success' : 'btn-outline'} gap-1.5`} onClick={copy}>
+                  {copied ? <><Check size={14} /> Скопировано</> : <><Copy size={14} /> Копировать</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="modal-action">
+          <button className="btn btn-primary w-full" onClick={onClose}>Готово</button>
+        </div>
+      </div>
+      <div className="modal-backdrop" onClick={onClose} />
+    </div>
+  );
+}
 
 // ─── Admin Tab ─────────────────────────────────────────────
 function AdminsTab() {
@@ -58,6 +112,8 @@ function AdminsTab() {
   const [modalMode, setModalMode] = useState('create');
   const [currentId, setCurrentId] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [resetBusyId, setResetBusyId] = useState(null);
+  const [tempPassword, setTempPassword] = useState(null); // { email, password }
 
   const schema = modalMode === 'create' ? adminCreateSchema : adminEditSchema;
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
@@ -76,7 +132,7 @@ function AdminsTab() {
   const openCreate = () => {
     setModalMode('create');
     setErr('');
-    reset({ firstName: '', lastName: '', email: '', password: '', branchId: activeBranches?.[0]?.id || '', phone: '' });
+    reset({ firstName: '', lastName: '', email: '', branchId: activeBranches?.[0]?.id || '', phone: '' });
     setModalOpen(true);
   };
 
@@ -93,14 +149,14 @@ function AdminsTab() {
     setBusy(true);
     try {
       if (modalMode === 'create') {
-        await api.superCreateAdmin(token, {
+        const { admin } = await api.superCreateAdmin(token, {
           firstName: formData.firstName.trim(),
           lastName:  formData.lastName.trim(),
           email:     formData.email.trim(),
-          password:  formData.password,
           branchId:  formData.branchId,
           phone:     formData.phone.trim() || undefined,
         });
+        setTempPassword({ email: admin.email, password: admin.tempPassword });
       } else {
         await api.superUpdateAdmin(token, currentId, {
           firstName: formData.firstName.trim(),
@@ -125,6 +181,19 @@ function AdminsTab() {
       else await api.superFreezeAdmin(token, admin.id);
       invalidate('super-admins', 'super-dashboard');
     } catch (e) { setErr(e.message); }
+  };
+
+  const resetPassword = async (admin) => {
+    setErr('');
+    setResetBusyId(admin.id);
+    try {
+      const { admin: updated } = await api.superResetAdminPassword(token, admin.id);
+      setTempPassword({ email: admin.email, password: updated.tempPassword });
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setResetBusyId(null);
+    }
   };
 
   const showErr = err || (error && error.status !== 401 ? error.message : '');
@@ -176,9 +245,21 @@ function AdminsTab() {
                     <td>
                       <div className="flex items-center gap-1">
                         {a.status !== 'frozen' && (
-                          <button className="btn btn-ghost btn-square btn-xs" onClick={() => openEdit(a)} title="Редактировать">
-                            <Edit2 size={14} />
-                          </button>
+                          <>
+                            <button className="btn btn-ghost btn-square btn-xs" onClick={() => openEdit(a)} title="Редактировать">
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-square btn-xs"
+                              onClick={() => resetPassword(a)}
+                              disabled={resetBusyId === a.id}
+                              title="Сбросить пароль"
+                            >
+                              {resetBusyId === a.id
+                                ? <span className="loading loading-spinner loading-xs" />
+                                : <KeyRound size={14} />}
+                            </button>
+                          </>
                         )}
                         <button
                           className={`btn btn-square btn-xs ${a.status === 'frozen' ? 'btn-success btn-outline' : 'btn-ghost text-error'}`}
@@ -218,18 +299,12 @@ function AdminsTab() {
                 </label>
               </div>
               {modalMode === 'create' ? (
-                <>
-                  <label className="form-control w-full">
-                    <span className="label-text mb-1">Email (Логин) *</span>
-                    <input {...register('email')} placeholder="admin@levelup.local" className={`input input-bordered w-full ${errors.email ? 'input-error' : ''}`} />
-                    {errors.email && <span className="text-xs text-error mt-1">{errors.email.message}</span>}
-                  </label>
-                  <label className="form-control w-full">
-                    <span className="label-text mb-1">Пароль (мин. 8) *</span>
-                    <PasswordInput {...register('password')} placeholder="••••••••" className={`input input-bordered w-full ${errors.password ? 'input-error' : ''}`} />
-                    {errors.password && <span className="text-xs text-error mt-1">{errors.password.message}</span>}
-                  </label>
-                </>
+                <label className="form-control w-full">
+                  <span className="label-text mb-1">Email (Логин) *</span>
+                  <input {...register('email')} placeholder="admin@levelup.local" className={`input input-bordered w-full ${errors.email ? 'input-error' : ''}`} />
+                  {errors.email && <span className="text-xs text-error mt-1">{errors.email.message}</span>}
+                  <span className="text-xs text-base-content/45 mt-1">Пароль сгенерируется автоматически и покажется после создания</span>
+                </label>
               ) : (
                 <label className="form-control w-full">
                   <span className="label-text mb-1">Email (Логин)</span>
@@ -272,6 +347,14 @@ function AdminsTab() {
           <div className="modal-backdrop" onClick={() => setModalOpen(false)} />
         </div>
       )}
+
+      {tempPassword && (
+        <TempPasswordModal
+          email={tempPassword.email}
+          password={tempPassword.password}
+          onClose={() => setTempPassword(null)}
+        />
+      )}
     </>
   );
 }
@@ -287,6 +370,8 @@ function MethodistsTab() {
   const [modalMode, setModalMode] = useState('create');
   const [currentId, setCurrentId] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [resetBusyId, setResetBusyId] = useState(null);
+  const [tempPassword, setTempPassword] = useState(null); // { email, password }
 
   const schema = modalMode === 'create' ? methodistCreateSchema : methodistEditSchema;
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
@@ -301,7 +386,7 @@ function MethodistsTab() {
   const openCreate = () => {
     setModalMode('create');
     setErr('');
-    reset({ firstName: '', lastName: '', email: '', password: '', phone: '' });
+    reset({ firstName: '', lastName: '', email: '', phone: '' });
     setModalOpen(true);
   };
 
@@ -318,13 +403,13 @@ function MethodistsTab() {
     setBusy(true);
     try {
       if (modalMode === 'create') {
-        await api.superCreateMethodist(token, {
+        const { methodist } = await api.superCreateMethodist(token, {
           firstName: formData.firstName.trim(),
           lastName:  formData.lastName.trim(),
           email:     formData.email.trim(),
-          password:  formData.password,
           phone:     formData.phone.trim() || undefined,
         });
+        setTempPassword({ email: methodist.email, password: methodist.tempPassword });
       } else {
         await api.superUpdateMethodist(token, currentId, {
           firstName: formData.firstName.trim(),
@@ -348,6 +433,19 @@ function MethodistsTab() {
       else await api.superFreezeMethodist(token, m.id);
       invalidate('super-methodists');
     } catch (e) { setErr(e.message); }
+  };
+
+  const resetPassword = async (m) => {
+    setErr('');
+    setResetBusyId(m.id);
+    try {
+      const { methodist } = await api.superResetMethodistPassword(token, m.id);
+      setTempPassword({ email: m.email, password: methodist.tempPassword });
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setResetBusyId(null);
+    }
   };
 
   const showErr = err || (error && error.status !== 401 ? error.message : '');
@@ -398,9 +496,21 @@ function MethodistsTab() {
                     <td>
                       <div className="flex items-center gap-1">
                         {m.status !== 'frozen' && (
-                          <button className="btn btn-ghost btn-square btn-xs" onClick={() => openEdit(m)} title="Редактировать">
-                            <Edit2 size={14} />
-                          </button>
+                          <>
+                            <button className="btn btn-ghost btn-square btn-xs" onClick={() => openEdit(m)} title="Редактировать">
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-square btn-xs"
+                              onClick={() => resetPassword(m)}
+                              disabled={resetBusyId === m.id}
+                              title="Сбросить пароль"
+                            >
+                              {resetBusyId === m.id
+                                ? <span className="loading loading-spinner loading-xs" />
+                                : <KeyRound size={14} />}
+                            </button>
+                          </>
                         )}
                         <button
                           className={`btn btn-square btn-xs ${m.status === 'frozen' ? 'btn-success btn-outline' : 'btn-ghost text-error'}`}
@@ -440,18 +550,12 @@ function MethodistsTab() {
                 </label>
               </div>
               {modalMode === 'create' ? (
-                <>
-                  <label className="form-control w-full">
-                    <span className="label-text mb-1">Email (Логин) *</span>
-                    <input {...register('email')} placeholder="methodist@levelup.local" className={`input input-bordered w-full ${errors.email ? 'input-error' : ''}`} />
-                    {errors.email && <span className="text-xs text-error mt-1">{errors.email.message}</span>}
-                  </label>
-                  <label className="form-control w-full">
-                    <span className="label-text mb-1">Пароль (мин. 8) *</span>
-                    <PasswordInput {...register('password')} placeholder="••••••••" className={`input input-bordered w-full ${errors.password ? 'input-error' : ''}`} />
-                    {errors.password && <span className="text-xs text-error mt-1">{errors.password.message}</span>}
-                  </label>
-                </>
+                <label className="form-control w-full">
+                  <span className="label-text mb-1">Email (Логин) *</span>
+                  <input {...register('email')} placeholder="methodist@levelup.local" className={`input input-bordered w-full ${errors.email ? 'input-error' : ''}`} />
+                  {errors.email && <span className="text-xs text-error mt-1">{errors.email.message}</span>}
+                  <span className="text-xs text-base-content/45 mt-1">Пароль сгенерируется автоматически и покажется после создания</span>
+                </label>
               ) : (
                 <div className="text-xs text-base-content/50 bg-base-200 rounded-lg px-3 py-2">
                   Email нельзя изменить после создания
@@ -484,6 +588,14 @@ function MethodistsTab() {
           </div>
           <div className="modal-backdrop" onClick={() => setModalOpen(false)} />
         </div>
+      )}
+
+      {tempPassword && (
+        <TempPasswordModal
+          email={tempPassword.email}
+          password={tempPassword.password}
+          onClose={() => setTempPassword(null)}
+        />
       )}
     </>
   );

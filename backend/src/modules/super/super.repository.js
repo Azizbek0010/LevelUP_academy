@@ -250,6 +250,17 @@ export function updateAdmin(id, orgId, fields, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
+export function setAdminPasswordHash(id, orgId, passwordHash, client = pool) {
+  return client
+    .query(
+      `UPDATE users SET password_hash = $3, updated_at = now()
+        WHERE id = $1 AND organization_id = $2 AND role = 'admin' AND deleted_at IS NULL
+        RETURNING ${ADMIN_RETURN}`,
+      [id, orgId, passwordHash],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
 export function setAdminStatus(id, orgId, status, client = pool) {
   return client
     .query(
@@ -372,6 +383,17 @@ export function findMethodistInOrg(id, orgId, client = pool) {
       `SELECT id FROM users
         WHERE id = $1 AND organization_id = $2 AND role = 'methodist' AND deleted_at IS NULL`,
       [id, orgId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function setMethodistPasswordHash(id, orgId, passwordHash, client = pool) {
+  return client
+    .query(
+      `UPDATE users SET password_hash = $3, updated_at = now()
+        WHERE id = $1 AND organization_id = $2 AND role = 'methodist' AND deleted_at IS NULL
+        RETURNING id, first_name, last_name, email, status, phone`,
+      [id, orgId, passwordHash],
     )
     .then((r) => r.rows[0] ?? null);
 }
