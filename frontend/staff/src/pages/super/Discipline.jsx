@@ -25,11 +25,12 @@ import { TYPE_META, Dot } from '../../discipline-meta.jsx';
  * main_admin не выписывает взысканий никому, а superadmin — может
  * администраторам, менторам и методистам своей организации.
  *
- * Четыре вида записи, от мягкого к жёсткому:
- *   sariq  — жёлтое предупреждение, без денег и без блокировки входа;
- *   qizil  — красное (строгое) предупреждение, тоже без денег и блокировки;
- *   shtraf — денежный штраф, сумма обязательна;
- *   qora   — увольнение («чёрная метка»), суммы нет, сотрудник теряет вход.
+ * Три вида записи, от мягкого к жёсткому:
+ *   sariq — жёлтое предупреждение;
+ *   qizil — красное (строгое) предупреждение;
+ *   qora  — увольнение («чёрная метка»), сотрудник теряет вход.
+ * Денежная сумма — необязательный довесок к любому из трёх (не 4-я
+ * категория: «Штраф» как отдельный синий уровень отменён 2026-07-29).
  *
  * sariq/qizil — НЕ автоматика: система не считает пороги и не превращает
  * несколько предупреждений в qora сама. Это осталось ручным решением того,
@@ -161,7 +162,6 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
     if (!targetUserId) return setErr('Выберите сотрудника');
     if (!rule) return setErr('Выберите нарушенное правило');
     if (!reason.trim()) return setErr('Укажите причину');
-    if (rule.type === 'shtraf' && !amount) return setErr('Для штрафа нужна сумма');
 
     setBusy(true);
     try {
@@ -238,12 +238,12 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
 
         {meta && (
           <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-base-300">
-            <Dot color={meta.color} size={10} />
+            <Dot color={meta.color} />
             <span className="text-sm font-semibold">{meta.label}</span>
           </div>
         )}
 
-        {rule && (rule.type === 'shtraf' || rule.amount != null) && (
+        {rule && rule.amount != null && (
           <label className="form-control">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
               Сумма, сум
@@ -288,8 +288,9 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
 
 /* ── Каталог правил (qoyda) ──────────────────────────────────────────────
    Структурированная альтернатива устава: конкретное нарушение → конкретный
-   уровень (sariq/qizil/shtraf/qora), а не абзац в свободном тексте. Чисто
-   справочник — ничего само не выдаёт и не считает пороги (см. TYPE_META). */
+   уровень (sariq/qizil/qora), а не абзац в свободном тексте. Сумма — не 4-й
+   уровень, а необязательный довесок к любому из трёх. Чисто справочник —
+   ничего само не выдаёт и не считает пороги (см. TYPE_META). */
 function NewRuleModal({ open, onClose, onDone }) {
   const { token } = useAuth();
   const [type, setType] = useState('sariq');
@@ -303,7 +304,6 @@ function NewRuleModal({ open, onClose, onDone }) {
   const submit = async () => {
     setErr('');
     if (!description.trim()) return setErr('Опишите, за что выдаётся это правило');
-    if (type === 'shtraf' && !amount) return setErr('Для штрафа нужна сумма');
 
     setBusy(true);
     try {
@@ -363,7 +363,7 @@ function NewRuleModal({ open, onClose, onDone }) {
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            Сумма, сум{type !== 'shtraf' && ' (необязательно)'}
+            Сумма, сум (необязательно)
           </span>
           <input
             type="number"
@@ -371,7 +371,7 @@ function NewRuleModal({ open, onClose, onDone }) {
             className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder={type === 'shtraf' ? '50000' : 'Например, если это правило ещё и со штрафом'}
+            placeholder="Например, если правило ещё и со штрафом"
           />
         </label>
 
@@ -511,7 +511,8 @@ export default function SuperDiscipline() {
     for (const key of Object.keys(TYPE_META)) acc[key] = 0;
     for (const p of items) {
       acc[p.type] = (acc[p.type] ?? 0) + 1;
-      if (p.type === 'shtraf') acc.amount += Number(p.amount) || 0;
+      // сумма — необязательный довесок к любому уровню, не эксклюзив одного типа
+      acc.amount += Number(p.amount) || 0;
     }
     return acc;
   }, [items]);
@@ -520,7 +521,7 @@ export default function SuperDiscipline() {
      эндпоинта аналитики по дисциплине нет, а считать по 200 записям в браузере
      дешевле, чем заводить его. Донат — соотношение видов, столбики — кто
      набрал больше всех. Оба разреза строятся по TYPE_META, а не по жёстко
-     вписанным shtraf/qora — иначе каждый новый уровень взыскания надо было бы
+     вписанным типам — иначе каждый новый уровень взыскания надо было бы
      дописывать здесь руками. */
   const byType = useMemo(() => (
     Object.entries(TYPE_META)
@@ -538,7 +539,7 @@ export default function SuperDiscipline() {
         map.set(name, row);
       }
       const row = map.get(name);
-      const label = (TYPE_META[p.type] ?? TYPE_META.shtraf).label;
+      const label = (TYPE_META[p.type] ?? TYPE_META.sariq).label;
       row[label] += 1;
       row.total += 1;
     }
@@ -580,14 +581,13 @@ export default function SuperDiscipline() {
       {err && <div className="alert alert-error text-sm py-2">{err}</div>}
 
       {penalties.isLoading ? (
-        <SkeletonKpis count={5} className="grid-cols-2 lg:grid-cols-5" />
+        <SkeletonKpis count={4} className="grid-cols-2 lg:grid-cols-4" />
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Kpi Icon={TriangleAlert} tone="warning" title="Жёлтые" value={fmt(totals.sariq)} unit="предупреждений" />
           <Kpi Icon={ShieldAlert} tone="danger" title="Красные" value={fmt(totals.qizil)} unit="предупреждений" />
-          <Kpi Icon={Coins} tone="neutral" title="Штрафы" value={fmt(totals.shtraf)} unit="записей" />
-          <Kpi Icon={Coins} tone="neutral" title="Сумма штрафов" value={money(totals.amount)} />
           <Kpi Icon={Ban} tone="danger" title="Увольнения" value={fmt(totals.qora)} unit="сотрудников" />
+          <Kpi Icon={Coins} tone="neutral" title="Взыскано" value={money(totals.amount)} unit="по всем уровням" />
         </div>
       )}
 
@@ -616,10 +616,7 @@ export default function SuperDiscipline() {
             <div className="flex justify-center gap-4">
               {byType.map((d) => (
                 <span key={d.key} className="flex items-center gap-1.5 text-xs">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ background: TYPE_META[d.key].color }}
-                  />
+                  <Dot color={TYPE_META[d.key].color} size={10} />
                   {d.name} · <span className="font-bold tabular-nums">{d.value}</span>
                 </span>
               ))}
@@ -699,7 +696,7 @@ export default function SuperDiscipline() {
               </thead>
               <tbody>
                 {shown.map((p) => {
-                  const meta = TYPE_META[p.type] ?? TYPE_META.shtraf;
+                  const meta = TYPE_META[p.type] ?? TYPE_META.sariq;
                   return (
                     <tr key={p.id}>
                       <td>

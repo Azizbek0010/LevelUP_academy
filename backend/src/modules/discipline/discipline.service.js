@@ -4,10 +4,10 @@ import * as repo from './discipline.repository.js';
 
 /**
  * Матрица прав выдачи (кто → кому, по типу). sariq/qizil (предупреждения) —
- * та же аудитория, что и у shtraf: это некритичные записи без последствий для
- * входа, в отличие от qora, которую admin может выдать только ментору.
- *   super_admin → admin, mentor, methodist   (sariq, qizil, shtraf, qora)
- *   admin       → mentor, methodist          (sariq, qizil, shtraf)
+ * некритичные записи без последствий для входа, в отличие от qora, которую
+ * admin может выдать только ментору.
+ *   super_admin → admin, mentor, methodist   (sariq, qizil, qora)
+ *   admin       → mentor, methodist          (sariq, qizil)
  *   admin       → mentor                       (qora — только ментор)
  *   main_admin  → НИЧЕГО
  */
@@ -15,13 +15,11 @@ const CAN_ISSUE = {
   superadmin: {
     sariq: ['admin', 'mentor', 'methodist'],
     qizil: ['admin', 'mentor', 'methodist'],
-    shtraf: ['admin', 'mentor', 'methodist'],
     qora: ['admin', 'mentor', 'methodist'],
   },
   admin: {
     sariq: ['mentor', 'methodist'],
     qizil: ['mentor', 'methodist'],
-    shtraf: ['mentor', 'methodist'],
     qora: ['mentor'],
   },
 };
@@ -62,8 +60,7 @@ export async function issuePenalty(issuer, scope, body) {
     issuedBy: issuer.id,
     issuerRole: issuer.role,
     type: body.type,
-    // необязательный довесок у sariq/qizil/qora, обязателен у shtraf — схема
-    // (issuePenaltySchema) уже это проверила
+    // необязательный довесок — сумма не привязана к типу
     amount: body.amount ?? null,
     reason: body.reason,
   };
@@ -113,7 +110,7 @@ export async function createRule(orgId, createdBy, { type, amount, description }
   return repo.insertRule({
     orgId,
     type,
-    // необязательный довесок у sariq/qizil/qora, обязателен у shtraf
+    // необязательный довесок — сумма не привязана к типу
     amount: amount ?? null,
     description,
     createdBy,

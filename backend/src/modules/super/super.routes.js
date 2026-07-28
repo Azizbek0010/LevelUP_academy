@@ -1068,7 +1068,7 @@ router.post('/methodists/:id/reset-password', validate({ params: idParam }), ctr
  *         schema: { type: string, format: uuid }
  *       - in: query
  *         name: type
- *         schema: { type: string, enum: [shtraf, qora] }
+ *         schema: { type: string, enum: [sariq, qizil, qora] }
  *     responses:
  *       200:
  *         description: Penalty list
@@ -1083,9 +1083,10 @@ router.post('/methodists/:id/reset-password', validate({ params: idParam }), ctr
  *       403: { $ref: '#/components/responses/Forbidden' }
  *   post:
  *     tags: [Discipline]
- *     summary: Issue a penalty (shtraf) or fire (qora) a staff member
+ *     summary: Issue a warning (sariq/qizil) or fire (qora) a staff member
  *     description: >
- *       Super Admin → admin / mentor / methodist (и shtraf, и qora).
+ *       Super Admin → admin / mentor / methodist. amount — необязательный
+ *       довесок к любому из трёх уровней, не отдельная категория.
  *       qora ставит целевому status=fired (атомарно).
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
@@ -1152,7 +1153,7 @@ router.post('/staff/:id/reactivate', validate({ params: idParam }), discipline.r
  *       403: { $ref: '#/components/responses/Forbidden' }
  *   post:
  *     tags: [Discipline]
- *     summary: Create a discipline rule (violation -> sariq/qizil/shtraf/qora)
+ *     summary: Create a discipline rule (violation -> sariq/qizil/qora)
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
@@ -1161,8 +1162,8 @@ router.post('/staff/:id/reactivate', validate({ params: idParam }), discipline.r
  *           schema:
  *             type: object
  *             properties:
- *               type: { type: string, enum: [sariq, qizil, shtraf, qora] }
- *               amount: { type: number, description: 'Only for type=shtraf' }
+ *               type: { type: string, enum: [sariq, qizil, qora] }
+ *               amount: { type: number, description: 'Необязательный довесок к любому уровню' }
  *               description: { type: string }
  *     responses:
  *       201:

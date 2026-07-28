@@ -62,7 +62,7 @@ export default function MyDiscipline() {
               </thead>
               <tbody>
                 {items.map((p) => {
-                  const meta = TYPE_META[p.type] ?? TYPE_META.shtraf;
+                  const meta = TYPE_META[p.type] ?? TYPE_META.sariq;
                   return (
                     <tr key={p.id} className="hover">
                       <td>
