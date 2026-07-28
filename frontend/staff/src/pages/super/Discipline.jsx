@@ -13,7 +13,7 @@ import { fmt, money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
 import { Kpi, Panel, EmptyState, Modal } from '../mentor/_ui.jsx';
-import { TYPE_META, Dot } from '../../discipline-meta.jsx';
+import { TYPE_META, Dot, LevelBadge } from '../../discipline-meta.jsx';
 
 /**
  * Дисциплина сотрудников организации.
@@ -57,77 +57,31 @@ function dateTime(iso) {
     : d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-/** Выбор правила для «Взыскания» — отдельная модалка со списком (название +
-    уровень), а не select и не попап поверх формы: обычный <select> не может
-    покрасить кружок у опции, а DaisyUI dropdown-попап внутри модалки с
-    overflow-y легко обрезается снизу. Нативные <dialog> корректно
-    складываются друг над другом сами, без ручного z-index. */
-function RulePickerModal({ open, onClose, rules, onPick }) {
+/** Выбор правила для «Взыскания» — список строк внутри самой формы (не
+    отдельная модалка): вложенный <dialog> внутри уже открытого <dialog>
+    закрывался ненадёжно и мог всплыть заново — родной элемент модалок в
+    этом проекте не рассчитан на вложенность. Строка = описание + бейдж
+    уровня, как в таблице-референсе (Название/Категория). */
+function RuleSelect({ rules, value, onChange }) {
   return (
-    <Modal isOpen={open} onClose={onClose} title="Выберите правило">
-      <div className="max-h-[60vh] overflow-y-auto -mx-1">
-        <table className="table table-sm">
-          <thead>
-            <tr>
-              <th>Правило</th>
-              <th className="text-right">Уровень</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rules.map((r) => {
-              const m = TYPE_META[r.type] ?? TYPE_META.sariq;
-              return (
-                <tr
-                  key={r.id}
-                  className="hover cursor-pointer"
-                  onClick={() => { onPick(r.id); onClose(); }}
-                >
-                  <td className="text-sm">{r.description}</td>
-                  <td className="text-right">
-                    <span className="inline-flex items-center gap-2 justify-end text-sm whitespace-nowrap">
-                      <Dot color={m.color} /> {m.label}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </Modal>
-  );
-}
-
-/** Поле «Какое правило нарушено» в «Взыскании» — кнопка-триггер, открывает
-    RulePickerModal. Показывает выбранное правило тем же кружком+текстом. */
-function RuleField({ rules, value, onPick }) {
-  const [open, setOpen] = useState(false);
-  const selected = rules.find((r) => r.id === value) ?? null;
-  const meta = selected ? (TYPE_META[selected.type] ?? TYPE_META.sariq) : null;
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="input input-bordered input-sm rounded-lg w-full flex items-center gap-2 text-left"
-      >
-        {selected ? (
-          <>
-            <Dot color={meta.color} />
-            <span className="truncate flex-1">{selected.description}</span>
-          </>
-        ) : (
-          <span className="flex-1 text-base-content/40">Выберите правило</span>
-        )}
-      </button>
-      <RulePickerModal
-        open={open}
-        onClose={() => setOpen(false)}
-        rules={rules}
-        onPick={onPick}
-      />
-    </>
+    <div className="border border-base-300 rounded-lg max-h-48 overflow-y-auto divide-y divide-base-200">
+      {rules.map((r) => {
+        const active = r.id === value;
+        return (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => onChange(r.id)}
+            className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-left transition-colors ${
+              active ? 'bg-base-200' : 'hover:bg-base-200/50'
+            }`}
+          >
+            <span className="flex-1 truncate">{r.description}</span>
+            <LevelBadge type={r.type} size="sm" />
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -146,7 +100,6 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
   const [err, setErr] = useState('');
 
   const rule = rules.find((r) => r.id === ruleId) ?? null;
-  const meta = rule ? (TYPE_META[rule.type] ?? TYPE_META.sariq) : null;
 
   const pickRule = (id) => {
     setRuleId(id);
@@ -232,16 +185,9 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
               Правил ещё нет — сначала добавьте хотя бы одно кнопкой «Новое правило» выше
             </span>
           ) : (
-            <RuleField rules={rules} value={ruleId} onPick={pickRule} />
+            <RuleSelect rules={rules} value={ruleId} onChange={pickRule} />
           )}
         </label>
-
-        {meta && (
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-base-300">
-            <Dot color={meta.color} />
-            <span className="text-sm font-semibold">{meta.label}</span>
-          </div>
-        )}
 
         {rule && rule.amount != null && (
           <label className="form-control">
@@ -345,19 +291,33 @@ function NewRuleModal({ open, onClose, onDone }) {
             Уровень
           </span>
           <div className="grid grid-cols-2 gap-2">
-            {Object.entries(TYPE_META).map(([key, m]) => (
-              <button
-                key={key}
-                className={`btn btn-sm h-auto py-2.5 gap-1.5 whitespace-normal leading-tight text-center ${
-                  type === key
-                    ? 'btn-primary'
-                    : 'btn-outline hover:bg-base-200 hover:border-base-300 hover:text-base-content'
-                }`}
-                onClick={() => setType(key)}
-              >
-                <Dot color={m.color} /> {m.label}
-              </button>
-            ))}
+            {Object.entries(TYPE_META).map(([key, m]) => {
+              const active = type === key;
+              const fillText = m.dark ? '#141B10' : '#ffffff';
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="btn btn-sm h-auto py-2.5 whitespace-normal leading-tight text-center border-2 bg-transparent"
+                  style={active
+                    ? { background: m.color, borderColor: m.color, color: fillText }
+                    : { background: 'transparent', borderColor: m.color, color: m.color }}
+                  onMouseEnter={(e) => {
+                    if (active) return;
+                    e.currentTarget.style.background = m.color;
+                    e.currentTarget.style.color = fillText;
+                  }}
+                  onMouseLeave={(e) => {
+                    if (active) return;
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = m.color;
+                  }}
+                  onClick={() => setType(key)}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -432,11 +392,9 @@ function RulesPanel({ rules, onChanged }) {
       ) : (
         <div className="space-y-2">
           {rules.map((r) => {
-            const meta = TYPE_META[r.type] ?? TYPE_META.sariq;
             return (
               <div key={r.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-base-200/50">
-                <Dot color={meta.color} />
-                <span className="text-xs font-semibold text-base-content/60 shrink-0 w-40 truncate">{meta.label}</span>
+                <LevelBadge type={r.type} size="sm" />
                 <span className="text-sm flex-1">{r.description}</span>
                 {r.amount != null && (
                   <span className="text-sm font-semibold tabular-nums shrink-0">{money(Number(r.amount))}</span>
@@ -696,7 +654,6 @@ export default function SuperDiscipline() {
               </thead>
               <tbody>
                 {shown.map((p) => {
-                  const meta = TYPE_META[p.type] ?? TYPE_META.sariq;
                   return (
                     <tr key={p.id}>
                       <td>
@@ -706,9 +663,7 @@ export default function SuperDiscipline() {
                         </div>
                       </td>
                       <td>
-                        <span className="inline-flex items-center gap-2 text-sm">
-                          <Dot color={meta.color} /> {meta.label}
-                        </span>
+                        <LevelBadge type={p.type} size="sm" />
                       </td>
                       <td className="text-right tabular-nums font-semibold">
                         {p.amount == null ? '—' : money(Number(p.amount))}

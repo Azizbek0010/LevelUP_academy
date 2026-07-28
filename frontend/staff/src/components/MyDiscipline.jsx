@@ -2,7 +2,7 @@ import { ShieldAlert, ListChecks } from 'lucide-react';
 import { useMyPenalties, useMyDisciplineRules } from '../queries.js';
 import { money } from '../format.js';
 import { Panel, EmptyState } from '../pages/mentor/_ui.jsx';
-import { TYPE_META, Dot } from '../discipline-meta.jsx';
+import { LevelBadge } from '../discipline-meta.jsx';
 
 /**
  * K-DISC-FRONT: read-only дисциплина сотрудника (mentor/methodist) — свои
@@ -62,13 +62,10 @@ export default function MyDiscipline() {
               </thead>
               <tbody>
                 {items.map((p) => {
-                  const meta = TYPE_META[p.type] ?? TYPE_META.sariq;
                   return (
                     <tr key={p.id} className="hover">
                       <td>
-                        <span className="inline-flex items-center gap-2 text-sm">
-                          <Dot color={meta.color} /> {meta.label}
-                        </span>
+                        <LevelBadge type={p.type} size="sm" />
                       </td>
                       <td className="text-right font-semibold">
                         {p.amount == null ? '—' : money(Number(p.amount))}
@@ -104,11 +101,9 @@ export default function MyDiscipline() {
         ) : (
           <div className="space-y-2">
             {rules.map((r) => {
-              const meta = TYPE_META[r.type] ?? TYPE_META.sariq;
               return (
                 <div key={r.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-base-200/50">
-                  <Dot color={meta.color} />
-                  <span className="text-xs font-semibold text-base-content/60 shrink-0 w-40 truncate">{meta.label}</span>
+                  <LevelBadge type={r.type} size="sm" />
                   <span className="text-sm flex-1">{r.description}</span>
                   {r.amount != null && (
                     <span className="text-sm font-semibold tabular-nums shrink-0">{money(Number(r.amount))}</span>

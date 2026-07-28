@@ -13,29 +13,38 @@
  * ещё содержит 'shtraf' — у старых тестовых записей может остаться, ENUM-
  * значения нельзя выпилить — но UI больше нигде его не предлагает и не создаёт.
  *
- * Только label + color, без иконки и цветной плашки: серьёзный учебный центр,
- * не набор стикеров (см. Dot ниже — везде рисуем закрашенный кружок цвета, а
- * не иконку в цветном бейдже).
+ * `dark: true` — на закраске этим цветом (hover/выбор) держим тёмный текст,
+ * не белый: жёлтый (#eab308) с белым текстом читается плохо.
  */
 export const TYPE_META = {
-  sariq: { label: 'Жёлтое предупреждение', color: '#eab308' },
+  sariq: { label: 'Жёлтое предупреждение', color: '#eab308', dark: true },
   qizil: { label: 'Красное предупреждение', color: '#dc2626' },
   qora: { label: 'Увольнение', color: '#111827' },
 };
 
-/** Цветной маркер уровня — закрашенный кружок с лёгкой тенью для объёма
-    (плоский однотонный круг на белой карточке выглядел дёшево), без иконок
-    и цветных плашек вокруг. Размер побольше — на мелком не было видно объёма. */
-export function Dot({ color, size = 14 }) {
+/** Бейдж уровня — рамка цвета уровня, без заливки и без иконки: серьёзный
+    учебный центр, не набор стикеров. Для пассивных мест (таблицы, списки). */
+export function LevelBadge({ type, size = 'md' }) {
+  const m = TYPE_META[type] ?? TYPE_META.sariq;
+  return (
+    <span
+      className={`inline-flex items-center rounded-full font-semibold border-[1.5px] whitespace-nowrap ${
+        size === 'sm' ? 'text-xs px-2.5 py-0.5' : 'text-sm px-3 py-1'
+      }`}
+      style={{ borderColor: m.color, color: m.color }}
+    >
+      {m.label}
+    </span>
+  );
+}
+
+/** Цветной кружок — только для легенды графика (recharts), там закрашенный
+    квадрат/кружок рядом с подписью — общепринятая конвенция, не «стикер». */
+export function Dot({ color, size = 10 }) {
   return (
     <span
       className="rounded-full shrink-0 inline-block"
-      style={{
-        width: size,
-        height: size,
-        background: `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${color} 70%, white), ${color})`,
-        boxShadow: `0 1px 3px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(0,0,0,0.06)`,
-      }}
+      style={{ width: size, height: size, background: color }}
     />
   );
 }
