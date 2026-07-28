@@ -594,30 +594,6 @@ router.get('/audit', ctrl.listAudit);
  *                     avgRevenue: { type: number }
  *                     debtRatio: { type: number }
  *                     currency: { type: string }
- *                 branches: { type: array, items: { type: object } }
- *                 revenueSeries: { type: array, items: { type: object } }
- *                 paymentMethods: { type: array, items: { type: object } }
- *       401: { $ref: '#/components/responses/Unauthorized' }
- *       403: { $ref: '#/components/responses/Forbidden' }
- */
-router.get('/stats', validate({ query: statsQuery }), ctrl.stats);
-
-/**
- * @openapi
- * /api/super/reports:
- *   get:
- *     tags: [Super Admin]
- *     summary: Organization report — real per-branch revenue, debt, students, admins, revenue share
- *     security: [{ bearerAuth: [] }]
- *     responses:
- *       200:
- *         description: Report
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 totals: { type: object }
  *                 branches:
  *                   type: array
  *                   items:
@@ -625,15 +601,17 @@ router.get('/stats', validate({ query: statsQuery }), ctrl.stats);
  *                     properties:
  *                       id: { type: string, format: uuid }
  *                       name: { type: string }
- *                       students: { type: integer }
- *                       admins: { type: integer }
  *                       revenue: { type: number }
  *                       debt: { type: number }
- *                       share: { type: number }
+ *                       students: { type: integer }
+ *                       admins: { type: integer }
+ *                       share: { type: number, description: 'Доля филиала в общей выручке организации, %' }
+ *                 revenueSeries: { type: array, items: { type: object } }
+ *                 paymentMethods: { type: array, items: { type: object } }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
-router.get('/reports', ctrl.reports);
+router.get('/stats', validate({ query: statsQuery }), ctrl.stats);
 
 /**
  * @openapi

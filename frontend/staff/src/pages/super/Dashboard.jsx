@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Building2, GraduationCap, Users, Wallet, TriangleAlert, Wifi, RefreshCw, ChevronRight } from 'lucide-react';
+import { Building2, GraduationCap, Users, Wallet, TriangleAlert, Wifi, RefreshCw, ChevronRight, ArrowRight } from 'lucide-react';
 import { fmt } from '../../format.js';
 import { useSuperDashboard } from '../../queries.js';
 import { useOnlineCount } from '../../socket.js';
@@ -40,24 +40,6 @@ function Kpi({ Icon, tint, title, value, unit, to }) {
   return <div className="card bg-base-100">{body}</div>;
 }
 
-function HorizontalBar({ value, max, color, label, rightLabel }) {
-  const pct = max > 0 ? (value / max) * 100 : 0;
-  return (
-    <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span className="font-medium">{label}</span>
-        <span className="font-bold">{rightLabel}</span>
-      </div>
-      <div className="w-full h-5 rounded bg-base-200 overflow-hidden">
-        <div
-          className="h-full rounded transition-all duration-500"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
-    </div>
-  );
-}
-
 export default function SuperDashboard() {
   const { data, isLoading, error, refetch } = useSuperDashboard();
   const { token } = useAuth();
@@ -95,9 +77,6 @@ function Loaded({ data, onlineCount }) {
   const cur = t.currency;
   const branches = data.branches || [];
 
-  const maxRevenue = Math.max(...branches.map((b) => Number(b.revenue)), 1);
-  const maxDebt = Math.max(...branches.map((b) => Number(b.debt)), 1);
-
   return (
     <>
       {/* KPI grid */}
@@ -105,31 +84,10 @@ function Loaded({ data, onlineCount }) {
         <Kpi Icon={Building2} tint={{ bg: '#E0F2FE', fg: '#075985' }} title="Филиалы" value={fmt(t.branches)} unit="всего" to="/branches" />
         <Kpi Icon={GraduationCap} tint={{ bg: '#EDE9FE', fg: '#5B21B6' }} title="Ученики" value={fmt(t.activeStudents)} unit="активных" to="/students" />
         <Kpi Icon={Users} tint={{ bg: '#DCFCE7', fg: '#166534' }} title="Админы" value={fmt(t.admins)} unit="сотрудников" to="/admins" />
-        <Kpi Icon={Wallet} tint={{ bg: '#FFEDD5', fg: '#9A3412' }} title="Доход" value={fmt(t.revenue)} unit={cur} to="/reports" />
-        <Kpi Icon={TriangleAlert} tint={{ bg: '#FEE2E2', fg: '#DC2626' }} title="Долги" value={fmt(t.outstandingDebt)} unit={cur} to="/reports" />
+        <Kpi Icon={Wallet} tint={{ bg: '#FFEDD5', fg: '#9A3412' }} title="Доход" value={fmt(t.revenue)} unit={cur} to="/stats" />
+        <Kpi Icon={TriangleAlert} tint={{ bg: '#FEE2E2', fg: '#DC2626' }} title="Долги" value={fmt(t.outstandingDebt)} unit={cur} to="/stats" />
         <Kpi Icon={Wifi} tint={{ bg: '#E0F2FE', fg: '#0369A1' }} title="Live Online" value={onlineCount} unit="онлайн" />
       </div>
-
-      {/* Доход по филиалам — Bar Chart */}
-      {branches.length > 0 && (
-        <div className="card bg-base-100 mt-6">
-          <div className="card-body">
-            <h2 className="card-title text-base mb-4">Доход по филиалам</h2>
-            <div className="space-y-3">
-              {branches.map((b) => (
-                <HorizontalBar
-                  key={b.id}
-                  value={Number(b.revenue)}
-                  max={maxRevenue}
-                  color="#3b82f6"
-                  label={b.name}
-                  rightLabel={`${fmt(b.revenue)} ${cur}`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Филиалы — таблица */}
       <div className="card bg-base-100 mt-6">
@@ -147,7 +105,6 @@ function Loaded({ data, onlineCount }) {
                   <tr>
                     <th>Филиал</th>
                     <th className="text-right">Ученики</th>
-                    <th className="text-right">Комнаты</th>
                     <th className="text-right">Админы</th>
                     <th className="text-right">Доход</th>
                     <th className="text-right">Долг</th>
@@ -165,7 +122,6 @@ function Loaded({ data, onlineCount }) {
                         </span>
                       </td>
                       <td className="text-right">{fmt(b.students)}</td>
-                      <td className="text-right">{b.roomCount != null ? b.roomCount : '—'}</td>
                       <td className="text-right">{fmt(b.admins)}</td>
                       <td className="text-right font-medium">{fmt(b.revenue)}</td>
                       <td className="text-right text-error">{fmt(b.debt)}</td>
@@ -178,26 +134,18 @@ function Loaded({ data, onlineCount }) {
         </div>
       </div>
 
-      {/* Задолженность по филиалам — Bar Chart */}
-      {branches.length > 0 && (
-        <div className="card bg-base-100 mt-6">
-          <div className="card-body">
-            <h2 className="card-title text-base mb-4">Задолженность по филиалам</h2>
-            <div className="space-y-3">
-              {branches.map((b) => (
-                <HorizontalBar
-                  key={b.id}
-                  value={Number(b.debt)}
-                  max={maxDebt}
-                  color="#FEE2E2"
-                  label={b.name}
-                  rightLabel={`${fmt(b.debt)} ${cur}`}
-                />
-              ))}
-            </div>
-          </div>
+      {/* Графики доходов/долгов по филиалам и разбивка по методам оплаты —
+          на «Статистике» (там же период 7/30/90 дней и экспорт CSV), здесь
+          дублировать их больше не нужно. */}
+      <Link
+        to="/stats"
+        className="card bg-base-100 mt-6 transition-all hover:shadow-md hover:-translate-y-0.5 hover:ring-1 hover:ring-primary/30"
+      >
+        <div className="card-body flex-row items-center justify-between p-5">
+          <span className="text-sm font-semibold">Подробная аналитика — графики, период, способы оплаты</span>
+          <ArrowRight size={16} className="text-primary shrink-0" />
         </div>
-      )}
+      </Link>
     </>
   );
 }

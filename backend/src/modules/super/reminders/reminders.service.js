@@ -26,10 +26,20 @@ export async function listReminders(orgId) {
  * Повторная постановка того же job'а в очередь с тем же payload. История не
  * переписывается — старая (failed) строка остаётся как есть, новая попытка
  * появится отдельной строкой, когда слушатель увидит её completed/failed.
+ *
+ * Payload — снимок долга на момент первой отправки. Если с тех пор студент
+ * оплатил счёт, слепой resend уйдёт с устаревшей суммой и напугает родителя,
+ * который уже заплатил — поэтому сверяем с актуальным total_debt перед тем,
+ * как ставить job в очередь заново.
  */
 export async function resendReminder(orgId, id) {
   const row = await repo.getById(orgId, id);
   if (!row) throw new AppError(404, 'Reminder not found');
+
+  const debt = await repo.getStudentDebt(row.student_id ?? row.payload?.studentId);
+  if (debt !== null && debt <= 0) {
+    throw new AppError(409, 'У студента больше нет задолженности — напоминание уже неактуально');
+  }
 
   await notificationQueue.add(row.kind, row.payload);
   return { id: row.id, requeued: true };

@@ -24,12 +24,6 @@ export function useSuperStats(period = '30d') {
   return useAuthedQuery(['super-stats', period], () => api.superStats(token, period));
 }
 
-/** Сводный отчёт: те же филиалы, но с долей в выручке от сервера. */
-export function useSuperReports() {
-  const { token } = useAuth();
-  return useAuthedQuery(['super-reports'], () => api.superReports(token));
-}
-
 export function useSuperBranches() {
   const { token } = useAuth();
   return useAuthedQuery(['super-branches'], () => api.superBranches(token));

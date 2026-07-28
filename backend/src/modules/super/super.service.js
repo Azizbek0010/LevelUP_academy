@@ -549,40 +549,14 @@ export async function stats(orgId, period = '30d') {
       revenue: Number(b.revenue),
       debt: Number(b.debt),
       students: Number(b.students),
+      admins: Number(b.admins),
+      // доля филиала в выручке организации — раньше жила только в /super/reports;
+      // Отчёты слиты в Статистику 2026-07-28 (была одна и та же выборка на двух
+      // страницах), поле переехало сюда.
+      share: revenue > 0 ? Number(((Number(b.revenue) / revenue) * 100).toFixed(1)) : 0,
     })),
     revenueSeries: series.map((s) => ({ date: s.day, revenue: Number(s.revenue) })),
     paymentMethods: methods.map((m) => ({ method: m.method, amount: Number(m.amount) })),
-  };
-}
-
-// ---------- отчёт организации (Super Reports) ----------
-
-export async function reports(orgId) {
-  const [t, branches] = await Promise.all([repo.orgTotals(orgId), repo.branchBreakdown(orgId)]);
-  const revenue = Number(t.revenue);
-  const branchCount = Number(t.branches);
-  return {
-    totals: {
-      branches: branchCount,
-      activeStudents: Number(t.active_students),
-      admins: Number(t.admins),
-      revenue,
-      outstandingDebt: Number(t.outstanding_debt),
-      avgRevenue: branchCount > 0 ? revenue / branchCount : 0,
-      currency: 'UZS',
-    },
-    branches: branches.map((b) => {
-      const r = Number(b.revenue);
-      return {
-        id: b.id,
-        name: b.name,
-        students: Number(b.students),
-        admins: Number(b.admins),
-        revenue: r,
-        debt: Number(b.debt),
-        share: revenue > 0 ? Number(((r / revenue) * 100).toFixed(1)) : 0,
-      };
-    }),
   };
 }
 
