@@ -12,10 +12,30 @@ import Debt from './pages/Debt.jsx';
 import Chat from './pages/Chat.jsx';
 import Notifications from './pages/Notifications.jsx';
 import Profile from './pages/Profile.jsx';
+import { ToastProvider } from './student/components/toast.jsx';
+import StudentArea from './student/StudentArea.jsx';
+import StudentLayout from './student/components/Layout.jsx';
+import StudentHome from './student/pages/Home.jsx';
+import StudentTests from './student/pages/Tests.jsx';
+import StudentTestTake from './student/pages/TestTake.jsx';
+import StudentHomework from './student/pages/Homework.jsx';
+import StudentVideos from './student/pages/Videos.jsx';
+import StudentShop from './student/pages/Shop.jsx';
+import StudentLeaderboard from './student/pages/Leaderboard.jsx';
 
 function Protected({ children }) {
   const { token } = useAuth();
   return token ? children : <Navigate to="/login" replace />;
+}
+
+/**
+ * Единственное место, где роль решает маршрут (CONSTRAINTS.md: без ролевой
+ * логики «на глазок» в компонентах — только RoleGuard + ролевые layouts).
+ * Чужая роль → на "/", там HomeRedirect уже отправит её на свой кабинет.
+ */
+function RoleGuard({ role, children }) {
+  const { user } = useAuth();
+  return user?.role === role ? children : <Navigate to="/" replace />;
 }
 
 function ParentLayout() {
@@ -28,11 +48,7 @@ function ParentLayout() {
 
 function HomeRedirect() {
   const { user } = useAuth();
-  if (user?.role === 'student') {
-    const url = import.meta.env.VITE_STUDENT_URL || 'http://localhost:5176';
-    window.location.href = url;
-    return <Splash />;
-  }
+  if (user?.role === 'student') return <Navigate to="/student" replace />;
   return <Navigate to="/dashboard" replace />;
 }
 
@@ -54,10 +70,13 @@ export default function App() {
           }
         />
 
+        {/* Parent — кабинет родителя */}
         <Route
           element={
             <Protected>
-              <ParentLayout />
+              <RoleGuard role="parent">
+                <ParentLayout />
+              </RoleGuard>
             </Protected>
           }
         >
@@ -68,6 +87,29 @@ export default function App() {
           <Route path="/chat" element={<Chat />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile" element={<Profile />} />
+        </Route>
+
+        {/* Student — кабинет ученика (перенесён из бывшего frontend/student) */}
+        <Route
+          element={
+            <Protected>
+              <RoleGuard role="student">
+                <ToastProvider>
+                  <StudentArea />
+                </ToastProvider>
+              </RoleGuard>
+            </Protected>
+          }
+        >
+          <Route element={<StudentLayout />}>
+            <Route path="/student" element={<StudentHome />} />
+            <Route path="/tests" element={<StudentTests />} />
+            <Route path="/tests/:testId" element={<StudentTestTake />} />
+            <Route path="/homework" element={<StudentHomework />} />
+            <Route path="/videos" element={<StudentVideos />} />
+            <Route path="/shop" element={<StudentShop />} />
+            <Route path="/leaderboard" element={<StudentLeaderboard />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
