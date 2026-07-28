@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
 import Avatar from '../../components/Avatar.jsx';
+import MyDiscipline from '../../components/MyDiscipline.jsx';
 import { useMe, useMentorGroups } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
@@ -481,6 +482,9 @@ export default function MentorProfile() {
               </div>
             </div>
           </section>
+
+          {/* K-DISC-FRONT: свои взыскания + устав, только просмотр */}
+          <MyDiscipline />
         </div>
       </div>
     </div>

@@ -54,22 +54,20 @@
 - [x] K-DISC: Ustav (org_charters, erkin matn, upsert, barcha xodimlarga ko'rinadi)
 - [x] K-DISC: Endpointlar — super PUT/GET /charter, POST/GET /penalties, POST /staff/:id/reactivate; admin GET /charter, POST/GET /penalties; shared GET /users/me/penalties, /users/me/charter
 - [x] K-DISC: Swagger — Discipline tegi, 10 endpoint, swagger/*.md qayta generatsiya (139 endpoint)
-- [ ] K-DISC-FRONT 🆕 EGASI: **HAMIDULA** (2026-07-19 da biriktirildi).
-      ⚠️ Ilgari "front jamoasiga" deb turgan edi — ISM yo'q edi, shuning uchun 2026-07-18 dan
-      beri hech kim olmagan. Egasiz vazifa = qilinmaydigan vazifa.
-      Hamidula tanlandi: yuki eng yengil edi (bitta UI-TABLES), forma ishi esa uning yo'nalishi.
-      🔄 **2026-07-28 (Karis): Admin panel qismi Abduloh'ga o'tkazildi** (pastda
-      `K-DISC-FRONT-ADMIN` ga qara) — Hamidula'da endi faqat Super + Mentor/Methodist qoldi.
-
-      Nima qilinadi (backend TAYYOR, 10 endpoint, Swagger'da "Discipline" tegi ostida):
-      • Super panelda: ustav tahrirlash formasi (`PUT /api/super/charter`) +
-        shtraf berish formasi (`POST /api/super/penalties`) + ro'yxat (`GET`)
-      • Mentor va Methodist panelida: FAQAT ko'rish — o'z shtraflari
-        (`GET /api/users/me/penalties`) va ustav (`GET /api/users/me/charter`)
-
-      ⚠️ Huquqlar matritsasi backendda qat'iy (CAN_ISSUE) — frontda tugmalarni shunga qarab yashir:
-      superadmin → admin/mentor/methodist ga shtraf/qora; main_admin → HECH KIMGA.
-      Backend baribir tekshiradi, lekin ishlamaydigan tugma ko'rsatish yomon UX
+- [x] K-DISC-FRONT ✅ BAJARILDI 2026-07-28 (Karis, Hamidula'ning o'rniga — vaqtni tejash uchun
+      o'zi qildi, Hamidula'ning boshqa ishiga tegilmadi):
+      • Super panel — allaqachon tayyor ekan (`pages/super/Discipline.jsx`, 579 qator,
+        Karis tomonidan 26.07 qurilgan): ustav tahrirlash + shtraf/qora berish formasi +
+        ro'yxat + statistika. TASK.md eskirgan edi, kod tekshirilib [x] qo'yildi
+      • Mentor va Methodist — YO'Q edi, tuzatildi: umumiy `components/MyDiscipline.jsx`
+        (o'z shtraflari + ustav, faqat o'qish) yozildi va ikkalasining `Profile.jsx`
+        sahifasiga qo'shildi. Methodist'da esa `/profile` marshruti UMUMAN yo'q edi —
+        `RoleView` xaritasida yo'q edi, shuning uchun tugma bosilsa jimgina dashboardga
+        qaytarardi. Yangi `pages/methodist/Profile.jsx` yozildi (mentor variantidan
+        soddalashtirilgan — guruh/grade/skills yo'q) va marshrutga qo'shildi
+      • Bekendga ikkita yangi funksiya: `api.myPenalties`/`api.myCharter`
+        (`GET /api/users/me/penalties`, `/users/me/charter`) — ilgari frontda umuman
+        chaqirilmagan edi
 - [ ] K-DISC-FRONT-ADMIN 🔄 EGASI: **ABDULOH** (Hamidula'dan o'tkazildi, 2026-07-28, Karis).
       Admin panelda: shtraf berish formasi + ro'yxat (`POST/GET /api/admin/penalties`),
       ustavni faqat o'qish (`GET /api/admin/charter`). Huquqlar matritsasi bo'yicha

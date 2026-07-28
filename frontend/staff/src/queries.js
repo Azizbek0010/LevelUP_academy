@@ -229,6 +229,17 @@ export function useMe() {
   return useAuthedQuery(['me'], () => api.me(token));
 }
 
+// K-DISC-FRONT: own discipline (mentor/methodist self-view, read-only)
+export function useMyPenalties() {
+  const { token } = useAuth();
+  return useAuthedQuery(['my-penalties'], () => api.myPenalties(token));
+}
+
+export function useMyCharter() {
+  const { token } = useAuth();
+  return useAuthedQuery(['my-charter'], () => api.myCharter(token));
+}
+
 // -------- CHAT --------
 // options нужен вызову из шапки: у методиста и супер-админа чата нет, и
 // запрашивать контакты за них — гарантированный 403 в консоли на каждой странице.
