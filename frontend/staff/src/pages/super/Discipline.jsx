@@ -56,31 +56,77 @@ function dateTime(iso) {
     : d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-/** Список правил для «Взыскания» — обычный <select> не может покрасить кружок
-    у каждой опции (текст options браузер красит сам, ненадёжно), поэтому это
-    прокручиваемый список строк, а не попап: внутри модалки с overflow попап
-    от DaisyUI dropdown легко обрезается снизу, у списка такого риска нет. */
-function RuleSelect({ rules, value, onChange }) {
+/** Выбор правила для «Взыскания» — отдельная модалка со списком (название +
+    уровень), а не select и не попап поверх формы: обычный <select> не может
+    покрасить кружок у опции, а DaisyUI dropdown-попап внутри модалки с
+    overflow-y легко обрезается снизу. Нативные <dialog> корректно
+    складываются друг над другом сами, без ручного z-index. */
+function RulePickerModal({ open, onClose, rules, onPick }) {
   return (
-    <div className="border border-base-300 rounded-lg max-h-40 overflow-y-auto divide-y divide-base-200">
-      {rules.map((r) => {
-        const m = TYPE_META[r.type] ?? TYPE_META.sariq;
-        const active = r.id === value;
-        return (
-          <button
-            key={r.id}
-            type="button"
-            onClick={() => onChange(r.id)}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors ${
-              active ? 'bg-primary/10 font-semibold' : 'hover:bg-base-200/60'
-            }`}
-          >
-            <Dot color={m.color} />
-            <span className="flex-1 truncate">{r.description}</span>
-          </button>
-        );
-      })}
-    </div>
+    <Modal isOpen={open} onClose={onClose} title="Выберите правило">
+      <div className="max-h-[60vh] overflow-y-auto -mx-1">
+        <table className="table table-sm">
+          <thead>
+            <tr>
+              <th>Правило</th>
+              <th className="text-right">Уровень</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rules.map((r) => {
+              const m = TYPE_META[r.type] ?? TYPE_META.sariq;
+              return (
+                <tr
+                  key={r.id}
+                  className="hover cursor-pointer"
+                  onClick={() => { onPick(r.id); onClose(); }}
+                >
+                  <td className="text-sm">{r.description}</td>
+                  <td className="text-right">
+                    <span className="inline-flex items-center gap-2 justify-end text-sm whitespace-nowrap">
+                      <Dot color={m.color} /> {m.label}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </Modal>
+  );
+}
+
+/** Поле «Какое правило нарушено» в «Взыскании» — кнопка-триггер, открывает
+    RulePickerModal. Показывает выбранное правило тем же кружком+текстом. */
+function RuleField({ rules, value, onPick }) {
+  const [open, setOpen] = useState(false);
+  const selected = rules.find((r) => r.id === value) ?? null;
+  const meta = selected ? (TYPE_META[selected.type] ?? TYPE_META.sariq) : null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="input input-bordered input-sm rounded-lg w-full flex items-center gap-2 text-left"
+      >
+        {selected ? (
+          <>
+            <Dot color={meta.color} />
+            <span className="truncate flex-1">{selected.description}</span>
+          </>
+        ) : (
+          <span className="flex-1 text-base-content/40">Выберите правило</span>
+        )}
+      </button>
+      <RulePickerModal
+        open={open}
+        onClose={() => setOpen(false)}
+        rules={rules}
+        onPick={onPick}
+      />
+    </>
   );
 }
 
@@ -119,13 +165,13 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
 
     setBusy(true);
     try {
-      // amount отправляем ТОЛЬКО для штрафа: схема на бэкенде отклоняет сумму
-      // у остальных уровней и, наоборот, требует её у штрафа
+      // amount у штрафа обязателен, у остальных — необязательный довесок,
+      // шлём его, только если поле реально показано и заполнено
       await api.superIssuePenalty(token, {
         targetUserId,
         type: rule.type,
         reason: reason.trim(),
-        ...(rule.type === 'shtraf' ? { amount: Number(amount) } : {}),
+        ...(amount ? { amount: Number(amount) } : {}),
       });
       onDone();
       onClose();
@@ -186,7 +232,7 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
               Правил ещё нет — сначала добавьте хотя бы одно кнопкой «Новое правило» выше
             </span>
           ) : (
-            <RuleSelect rules={rules} value={ruleId} onChange={pickRule} />
+            <RuleField rules={rules} value={ruleId} onPick={pickRule} />
           )}
         </label>
 
@@ -197,7 +243,7 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
           </div>
         )}
 
-        {rule?.type === 'shtraf' && (
+        {rule && (rule.type === 'shtraf' || rule.amount != null) && (
           <label className="form-control">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
               Сумма, сум
@@ -264,7 +310,8 @@ function NewRuleModal({ open, onClose, onDone }) {
       await api.superCreateDisciplineRule(token, {
         type,
         description: description.trim(),
-        ...(type === 'shtraf' ? { amount: Number(amount) } : {}),
+        // необязательный довесок у sariq/qizil/qora — шлём, только если вписали
+        ...(amount ? { amount: Number(amount) } : {}),
       });
       onDone();
       onClose();
@@ -301,7 +348,11 @@ function NewRuleModal({ open, onClose, onDone }) {
             {Object.entries(TYPE_META).map(([key, m]) => (
               <button
                 key={key}
-                className={`btn btn-sm h-auto py-2.5 gap-1.5 whitespace-normal leading-tight text-center ${type === key ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn btn-sm h-auto py-2.5 gap-1.5 whitespace-normal leading-tight text-center ${
+                  type === key
+                    ? 'btn-primary'
+                    : 'btn-outline hover:bg-base-200 hover:border-base-300 hover:text-base-content'
+                }`}
                 onClick={() => setType(key)}
               >
                 <Dot color={m.color} /> {m.label}
@@ -310,21 +361,19 @@ function NewRuleModal({ open, onClose, onDone }) {
           </div>
         </div>
 
-        {type === 'shtraf' && (
-          <label className="form-control">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-              Сумма, сум
-            </span>
-            <input
-              type="number"
-              min="0"
-              className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="50000"
-            />
-          </label>
-        )}
+        <label className="form-control">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
+            Сумма, сум{type !== 'shtraf' && ' (необязательно)'}
+          </span>
+          <input
+            type="number"
+            min="0"
+            className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder={type === 'shtraf' ? '50000' : 'Например, если это правило ещё и со штрафом'}
+          />
+        </label>
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
@@ -615,7 +664,9 @@ export default function SuperDiscipline() {
             {[['all', 'Все'], ...Object.entries(TYPE_META).map(([k, m]) => [k, m.label])].map(([key, label]) => (
               <button
                 key={key}
-                className={`btn btn-xs join-item ${filter === key ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn btn-xs join-item ${
+                  filter === key ? 'btn-primary' : 'btn-outline hover:bg-base-200 hover:border-base-300 hover:text-base-content'
+                }`}
                 onClick={() => setFilter(key)}
               >
                 {label}

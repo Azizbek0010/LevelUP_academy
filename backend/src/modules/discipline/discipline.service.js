@@ -62,7 +62,9 @@ export async function issuePenalty(issuer, scope, body) {
     issuedBy: issuer.id,
     issuerRole: issuer.role,
     type: body.type,
-    amount: body.type === 'shtraf' ? body.amount : null,
+    // необязательный довесок у sariq/qizil/qora, обязателен у shtraf — схема
+    // (issuePenaltySchema) уже это проверила
+    amount: body.amount ?? null,
     reason: body.reason,
   };
 
@@ -111,7 +113,8 @@ export async function createRule(orgId, createdBy, { type, amount, description }
   return repo.insertRule({
     orgId,
     type,
-    amount: type === 'shtraf' ? amount : null,
+    // необязательный довесок у sariq/qizil/qora, обязателен у shtraf
+    amount: amount ?? null,
     description,
     createdBy,
   });

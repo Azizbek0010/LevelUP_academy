@@ -20,12 +20,19 @@ export const TYPE_META = {
   qora: { label: 'Увольнение', color: '#111827' },
 };
 
-/** Цветной маркер уровня — просто закрашенный кружок, без иконок и плашек. */
-export function Dot({ color, size = 9 }) {
+/** Цветной маркер уровня — закрашенный кружок с лёгкой тенью для объёма
+    (плоский однотонный круг на белой карточке выглядел дёшево), без иконок
+    и цветных плашек вокруг. */
+export function Dot({ color, size = 10 }) {
   return (
     <span
       className="rounded-full shrink-0 inline-block"
-      style={{ width: size, height: size, background: color }}
+      style={{
+        width: size,
+        height: size,
+        background: `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${color} 70%, white), ${color})`,
+        boxShadow: `0 1px 2px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(0,0,0,0.06)`,
+      }}
     />
   );
 }
