@@ -10,7 +10,9 @@ import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip } from '../mento
 
 const isArchived = (g) => g.isArchived ?? g.is_archived ?? false;
 const MAX_STUDENTS = 15;
-const emptyForm = { name: '', mentorId: '', maxStudents: MAX_STUDENTS };
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const DAY_LABEL = { mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс' };
+const emptyForm = { name: '', mentorId: '', maxStudents: MAX_STUDENTS, days: [], startTime: '' };
 
 /* ═══════════════ Group Card ═══════════════ */
 /* Раньше ссылкой был только маленький блок «иконка + название» — клик по всей
@@ -104,7 +106,16 @@ export default function AdminGroups() {
   const create = async () => {
     setBusy(true); setErr('');
     try {
-      await api.adminCreateGroup(token, { name: form.name, mentorId: form.mentorId || undefined });
+      const body = { name: form.name, mentorId: form.mentorId || undefined };
+      // Build schedule from selected days + startTime
+      if (form.days.length > 0) {
+        body.schedule = form.days.map((day) => ({
+          day,
+          ...(form.startTime ? { start: form.startTime } : {}),
+        }));
+        if (form.startTime) body.startTime = form.startTime;
+      }
+      await api.adminCreateGroup(token, body);
       setForm(null); refetch();
     } catch (e) { setErr(e.message || 'Ошибка'); }
     finally { setBusy(false); }
@@ -253,6 +264,42 @@ export default function AdminGroups() {
                   <p className="text-[11px] text-warning mt-1">Стандарт — {MAX_STUDENTS} студентов</p>
                 )}
               </div>
+
+              {/* Days */}
+              <div>
+                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1.5 block">Дни занятий</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {DAYS.map((d) => {
+                    const active = form.days.includes(d);
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        className={`btn btn-xs rounded-lg ${active ? 'btn-primary' : 'btn-outline'}`}
+                        onClick={() => {
+                          const next = active ? form.days.filter((x) => x !== d) : [...form.days, d];
+                          setForm({ ...form, days: next });
+                        }}
+                      >
+                        {DAY_LABEL[d]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Start time */}
+              {form.days.length > 0 && (
+                <div>
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Время начала</label>
+                  <input
+                    className="input input-bordered w-full"
+                    type="time"
+                    value={form.startTime}
+                    onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                  />
+                </div>
+              )}
             </div>
             <div className="modal-action">
               <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>

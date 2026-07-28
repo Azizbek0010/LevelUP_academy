@@ -123,6 +123,11 @@ export function useAdminSettings() {
   return useAuthedQuery(['admin-settings'], () => api.adminSettings(token), { retry: false });
 }
 
+export function useAdminPenalties(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-penalties', qs], () => api.adminPenalties(token, qs));
+}
+
 // -------- MENTOR --------
 export function useMentorGroups() {
   const { token } = useAuth();
