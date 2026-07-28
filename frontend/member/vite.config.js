@@ -18,6 +18,11 @@ export default defineConfig(({ mode }) => {
           target: env.DEV_API_PROXY || 'https://levelup-academy-1.onrender.com',
           changeOrigin: true,
         },
+        '/socket.io': {
+          target: env.DEV_API_PROXY || 'https://levelup-academy-1.onrender.com',
+          changeOrigin: true,
+          ws: true,
+        },
       },
     },
   };
