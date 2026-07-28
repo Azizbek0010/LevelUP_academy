@@ -2,7 +2,7 @@ import { ShieldAlert, ListChecks } from 'lucide-react';
 import { useMyPenalties, useMyDisciplineRules } from '../queries.js';
 import { money } from '../format.js';
 import { Panel, EmptyState } from '../pages/mentor/_ui.jsx';
-import { TYPE_META } from '../discipline-meta.js';
+import { TYPE_META, Dot } from '../discipline-meta.jsx';
 
 /**
  * K-DISC-FRONT: read-only дисциплина сотрудника (mentor/methodist) — свои
@@ -66,8 +66,8 @@ export default function MyDiscipline() {
                   return (
                     <tr key={p.id} className="hover">
                       <td>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold ${meta.cls}`}>
-                          <meta.Icon size={12} /> {meta.label}
+                        <span className="inline-flex items-center gap-2 text-sm">
+                          <Dot color={meta.color} /> {meta.label}
                         </span>
                       </td>
                       <td className="text-right font-semibold">
@@ -107,9 +107,8 @@ export default function MyDiscipline() {
               const meta = TYPE_META[r.type] ?? TYPE_META.sariq;
               return (
                 <div key={r.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-base-200/50">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold shrink-0 ${meta.cls}`}>
-                    <meta.Icon size={12} /> {meta.label}
-                  </span>
+                  <Dot color={meta.color} />
+                  <span className="text-xs font-semibold text-base-content/60 shrink-0 w-40 truncate">{meta.label}</span>
                   <span className="text-sm flex-1">{r.description}</span>
                   {r.amount != null && (
                     <span className="text-sm font-semibold tabular-nums shrink-0">{money(Number(r.amount))}</span>

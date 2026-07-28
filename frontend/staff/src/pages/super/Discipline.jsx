@@ -13,7 +13,7 @@ import { fmt, money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
 import { Kpi, Panel, EmptyState, Modal } from '../mentor/_ui.jsx';
-import { TYPE_META } from '../../discipline-meta.js';
+import { TYPE_META, Dot } from '../../discipline-meta.jsx';
 
 /**
  * Дисциплина сотрудников организации.
@@ -56,9 +56,33 @@ function dateTime(iso) {
     : d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-// Эмодзи-маркер цвета внутри <option> — CSS-цвет текста у нативных option
-// ненадёжен по браузерам, а цветной эмодзи-кружок рендерится всегда одинаково.
-const TYPE_DOT = { sariq: '🟡', qizil: '🔴', shtraf: '💰', qora: '⚫' };
+/** Список правил для «Взыскания» — обычный <select> не может покрасить кружок
+    у каждой опции (текст options браузер красит сам, ненадёжно), поэтому это
+    прокручиваемый список строк, а не попап: внутри модалки с overflow попап
+    от DaisyUI dropdown легко обрезается снизу, у списка такого риска нет. */
+function RuleSelect({ rules, value, onChange }) {
+  return (
+    <div className="border border-base-300 rounded-lg max-h-40 overflow-y-auto divide-y divide-base-200">
+      {rules.map((r) => {
+        const m = TYPE_META[r.type] ?? TYPE_META.sariq;
+        const active = r.id === value;
+        return (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => onChange(r.id)}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors ${
+              active ? 'bg-primary/10 font-semibold' : 'hover:bg-base-200/60'
+            }`}
+          >
+            <Dot color={m.color} />
+            <span className="flex-1 truncate">{r.description}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 /* ── Выписать взыскание ───────────────────────────────────────────────────
    Взыскание больше не выбирает уровень и не описывает причину заново —
@@ -157,29 +181,20 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
             Какое правило нарушено
           </span>
-          <select
-            className="select select-bordered select-sm rounded-lg"
-            value={ruleId}
-            onChange={(e) => pickRule(e.target.value)}
-          >
-            <option value="">Выберите правило</option>
-            {rules.map((r) => (
-              <option key={r.id} value={r.id}>
-                {TYPE_DOT[r.type] ?? ''} {r.description}
-              </option>
-            ))}
-          </select>
-          {rules.length === 0 && (
+          {rules.length === 0 ? (
             <span className="text-xs text-warning mt-1">
               Правил ещё нет — сначала добавьте хотя бы одно кнопкой «Новое правило» выше
             </span>
+          ) : (
+            <RuleSelect rules={rules} value={ruleId} onChange={pickRule} />
           )}
         </label>
 
         {meta && (
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold ${meta.cls}`}>
-            <meta.Icon size={14} /> {meta.label}
-          </span>
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-base-300">
+            <Dot color={meta.color} size={10} />
+            <span className="text-sm font-semibold">{meta.label}</span>
+          </div>
         )}
 
         {rule?.type === 'shtraf' && (
@@ -289,7 +304,7 @@ function NewRuleModal({ open, onClose, onDone }) {
                 className={`btn btn-sm h-auto py-2.5 gap-1.5 whitespace-normal leading-tight text-center ${type === key ? 'btn-primary' : 'btn-outline'}`}
                 onClick={() => setType(key)}
               >
-                <m.Icon size={14} className="shrink-0" /> {m.label}
+                <Dot color={m.color} /> {m.label}
               </button>
             ))}
           </div>
@@ -371,9 +386,8 @@ function RulesPanel({ rules, onChanged }) {
             const meta = TYPE_META[r.type] ?? TYPE_META.sariq;
             return (
               <div key={r.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-base-200/50">
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold shrink-0 ${meta.cls}`}>
-                  <meta.Icon size={12} /> {meta.label}
-                </span>
+                <Dot color={meta.color} />
+                <span className="text-xs font-semibold text-base-content/60 shrink-0 w-40 truncate">{meta.label}</span>
                 <span className="text-sm flex-1">{r.description}</span>
                 {r.amount != null && (
                   <span className="text-sm font-semibold tabular-nums shrink-0">{money(Number(r.amount))}</span>
@@ -644,8 +658,8 @@ export default function SuperDiscipline() {
                         </div>
                       </td>
                       <td>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold ${meta.cls}`}>
-                          <meta.Icon size={12} /> {meta.label}
+                        <span className="inline-flex items-center gap-2 text-sm">
+                          <Dot color={meta.color} /> {meta.label}
                         </span>
                       </td>
                       <td className="text-right tabular-nums font-semibold">
