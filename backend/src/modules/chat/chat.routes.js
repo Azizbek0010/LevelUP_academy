@@ -99,6 +99,34 @@ router.get('/contacts', authenticate, ctrl.getContacts);
 
 /**
  * @openapi
+ * /api/chat/my-threads:
+ *   get:
+ *     tags: [Chat]
+ *     summary: My conversations with staff (parent/student side)
+ *     description: >
+ *       AB-VERIFY: parent/student cannot start a `dm:<staffId>:<me>` conversation
+ *       (only reply — see POST /chat/dm and requireRoomAccess), so this list is
+ *       built from existing messages, not from an eligibility rule like
+ *       /chat/contacts. Other roles get an empty list.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Threads (most recent message first)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/ChatContact' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ */
+router.get('/my-threads', authenticate, ctrl.getMyThreads);
+
+/**
+ * @openapi
  * /api/chat/dm:
  *   post:
  *     tags: [Chat]

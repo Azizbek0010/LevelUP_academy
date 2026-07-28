@@ -27,6 +27,15 @@ export default defineConfig(({ mode }) => {
           target: env.DEV_API_PROXY || env.VITE_API_URL || 'https://api.levelup-academy.uz',
           changeOrigin: true,
         },
+        // MP-VERIFY: socket.js подключается на VITE_API_URL || '' (тот же origin,
+        // т.е. dev-сервер), а не на бэкенд — без проксирования /socket.io чат и
+        // живая посещаемость молча не подключались (connect_error: timeout) в
+        // любом локальном запуске, что и мешало живой проверке Mentor-панели.
+        '/socket.io': {
+          target: env.DEV_API_PROXY || env.VITE_API_URL || 'https://api.levelup-academy.uz',
+          changeOrigin: true,
+          ws: true,
+        },
       },
     },
   };

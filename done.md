@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 28.07.2026 04:29 (UTC+5, Toshkent vaqti)
-> Statistika: 185/207 task tugallangan (89%)
+> Oxirgi yangilanish: 28.07.2026 10:06 (UTC+5, Toshkent vaqti)
+> Statistika: 190/207 task tugallangan (91%)
 
 ---
 
-## Progress: [#################...] 89%
+## Progress: [##################..] 91%
 
 ## Tugallangan vazifalar
 
@@ -62,6 +62,7 @@
 - [x] MP-CHAT: Chat qayta yozildi — kompozer HAR DOIM render bo'ladi (ilgari `activeContact` ichida edi →
 - [x] MP-SHELL: Staff qobig'i — sidebar hover'da ochiladi/yopiladi, ishlaydigan bildirishnomalar paneli,
 - [x] MP-SEED: `seed-mentor-demo.mjs` (demo mentorni real data bilan to'ldiradi),
+- [x] MP-VERIFY ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Docker ko'tarildi (`docker compose up
 
 ### Backend — Integration (Karis) 🔥 hozirgi fokus
 - [x] K-INT: admin GroupDetail — **QAROR QABUL QILINDI 2026-07-19**, Abdulaziz bloki OCHILDI.
@@ -95,6 +96,7 @@
 - [x] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa (repository listOrgStudents: ILIKE search + LIMIT/OFFSET)
 - [x] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
 - [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
+- [x] K-SUPER-INT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Dashboard, Филиалы, Студенты, Группы,
 
 ### Backend — YANGI TOPSHIRIQ (Abdulaziz) 🔥 2026-07-19, Karis bergan
 - [x] AB-INT-GROUP — attendance/homework/feedback endpointlar `admin.routes.js` da,
@@ -106,6 +108,7 @@
 - [x] AB-SUPER-REPORTS — `GET /api/super/reports` (`460914b`); front FE-SUPER-REPORTS'da
 - [x] AB-EXPENSE-PATCH — `PATCH /api/admin/expenses/:id` qo'shildi
 - [x] AB-MAIN-REVENUE — `GET /api/main/revenue` (`460914b`); front tomoni Shohjahon'da (MAIN: Revenue)
+- [x] AB-VERIFY ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis, Abdulaziz'ning ishiga tegmasdan —
 - [x] AB-VERIFY: Parent Chat — Socket.io realtime tasdiqlandi (2026-07-21)
 
 ### Telegram bot (Bilol) ⚠️ TASK.md ga 2026-07-19 da QO'SHILDI
@@ -225,6 +228,7 @@
 - [x] STUDENT: Videos
 - [x] STUDENT: Leaderboard
 - [x] STUDENT: staff design-system'ga ko'chirildi (Tailwind + DaisyUI) — 2026-07-25, Karis (`a458c1b`)
+- [x] STUDENT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan): login,
 - [x] STUDENT ✅ BAJARILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan) —
 - [x] STUDENT UI-STATES ✅ 2026-07-28 (Karis): audit qilindi — `Home.jsx` va `TestTake.jsx`
 
@@ -236,6 +240,7 @@
 - [x] PARENT: To'lov / qarz — Debt.jsx
 - [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ✅ Socket.io realtime tasdiqlandi (2026-07-21)
 - [x] PARENT: Bildirishnomalar — Notifications.jsx
+- [x] PARENT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Обзор, Посещаемость, Оценки, Оплата,
 - [x] AB-PARENT-NOTIF ✅ allaqachon bajarilgan ekan (Abdulaziz, `870d1c5`, 2026-07-21) —
 - [x] FE-PARENT-DEBT ✅ TUZATILDI 2026-07-28 (Karis): backendga `overview.repository.js`
 - [x] FE-PARENT-PROFILE-PREF ✅ TUZATILDI 2026-07-28 (Karis): haqiqiy push-bildirishnoma
@@ -262,6 +267,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 112 task
-- Abdulaziz (Backend): 75 task
-- Frontend jamoasi: 66 task
+- Karis (Backend): 115 task
+- Abdulaziz (Backend): 79 task
+- Frontend jamoasi: 68 task

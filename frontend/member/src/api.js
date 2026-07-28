@@ -146,7 +146,7 @@ const MOCK_CHAT_MESSAGES = {
     {
       id: 'msg-010',
       chat_type: 'direct',
-      room_key: 'parent:mock-parent-id-001',
+      room_key: 'dm:mock-mentor-001:mock-parent-id-001',
       sender_id: 'mock-mentor-001',
       body: 'Здравствуйте, Нодира! Хотел сообщить, что Диёр очень хорошо себя ведёт на занятиях. Последние две недели заметен прогресс в математике.',
       attachment_key: null,
@@ -158,7 +158,7 @@ const MOCK_CHAT_MESSAGES = {
     {
       id: 'msg-011',
       chat_type: 'direct',
-      room_key: 'parent:mock-parent-id-001',
+      room_key: 'dm:mock-mentor-001:mock-parent-id-001',
       sender_id: 'mock-parent-id-001',
       body: 'Большое спасибо за обратную связь! Очень приятно слышать. Он действительно старается.',
       attachment_key: null,
@@ -170,7 +170,7 @@ const MOCK_CHAT_MESSAGES = {
     {
       id: 'msg-012',
       chat_type: 'direct',
-      room_key: 'parent:mock-parent-id-001',
+      room_key: 'dm:mock-mentor-001:mock-parent-id-001',
       sender_id: 'mock-mentor-001',
       body: 'Кстати, на следующей неделе будет олимпиада по алгебре. Может, Диёр хочет поучаствовать? Он точно способен занять призовое место.',
       attachment_key: null,
@@ -318,8 +318,28 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
     return { data: { messages: MOCK_CHAT_MESSAGES.global, nextCursor: null } };
   }
 
-  if (path.startsWith('/chat/parent:') && path.endsWith('/messages')) {
+  if (path.startsWith('/chat/dm%3Amock-mentor-001') || (path.startsWith('/chat/dm:mock-mentor-001') && path.endsWith('/messages'))) {
     return { data: { messages: MOCK_CHAT_MESSAGES.direct, nextCursor: null } };
+  }
+
+  // AB-VERIFY: список диалогов родителя со staff (my-threads)
+  if (path === '/chat/my-threads') {
+    const last = MOCK_CHAT_MESSAGES.direct[MOCK_CHAT_MESSAGES.direct.length - 1];
+    return {
+      data: [
+        {
+          id: 'mock-mentor-001',
+          first_name: 'Акбар',
+          last_name: 'Каримов',
+          avatar_key: null,
+          staff_role: 'mentor',
+          room_key: 'dm:mock-mentor-001:mock-parent-id-001',
+          last_message: last?.body ?? null,
+          last_message_at: last?.created_at ?? null,
+          unread_count: 0,
+        },
+      ],
+    };
   }
 
   // TG-FRONT
@@ -465,6 +485,7 @@ export const api = {
 
   chatMessages: (token, roomKey) =>
     request(`/chat/${encodeURIComponent(roomKey)}/messages`, { token }),
+  chatThreads: (token) => request('/chat/my-threads', { token }),
 
   // TG-FRONT
   telegramBindToken: (token) => request('/telegram/bind-token', { method: 'POST', token }),

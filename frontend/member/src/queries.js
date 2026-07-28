@@ -51,6 +51,12 @@ export function useChatMessages(roomKey) {
   });
 }
 
+/** AB-VERIFY: диалоги родителя/студента со staff (не может начать сам — только отвечать). */
+export function useChatThreads() {
+  const { token } = useAuth();
+  return useAuthedQuery(['chat-threads'], () => api.chatThreads(token));
+}
+
 /**
  * FE-PARENT-PAGINATION: лента уведомлений — не таблица, а слияние 5 источников
  * (см. backend notifications.service.js), поэтому пагинация курсорная (`before`),
