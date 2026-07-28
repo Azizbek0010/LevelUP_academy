@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
+import { formatPhone } from '../../format.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
@@ -52,7 +53,7 @@ function StudentCard({ s, onNavigate }) {
                 <KeyRound size={10} /> {s.login_code || s.loginCode}
               </span>
             ) : null}
-            {s.phone && <span>{s.phone}</span>}
+            {s.phone && <span>{formatPhone(s.phone)}</span>}
             {s.coins != null && s.coins > 0 && (
               <span className="flex items-center gap-1 text-primary font-semibold">
                 <Coins size={10} /> {s.coins}
@@ -262,7 +263,7 @@ export default function AdminStudents() {
                       </div>
                     </td>
                     <td className="font-mono text-base-content/70">{s.login_code || s.loginCode || '—'}</td>
-                    <td className="text-base-content/45">{s.phone || '—'}</td>
+                    <td className="text-base-content/45">{formatPhone(s.phone)}</td>
                     <td>
                       <div className="flex flex-wrap gap-1">
                         {(s.groups || []).slice(0, 2).map((g, i) => (

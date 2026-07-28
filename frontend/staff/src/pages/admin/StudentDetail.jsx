@@ -259,7 +259,7 @@ export default function AdminStudentDetail() {
 
           {/* Groups count */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[10px] flex items-center justify-center bg-blue-50 text-blue-600">
+            <div className="w-10 h-10 rounded-[10px] flex items-center justify-center bg-base-200 text-primary">
               <Users size={18} />
             </div>
             <div>
@@ -489,7 +489,7 @@ export default function AdminStudentDetail() {
             onClick={handleRegen}
             disabled={busy}
           >
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-blue-50 text-blue-600 group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-base-200 text-primary group-hover:scale-105 transition-transform">
               <KeyRound size={16} />
             </div>
             <div>

@@ -624,7 +624,7 @@ function HomeworkTab({ groupId, token }) {
 
   const statusBadge = (s) => {
     if (s === 'active') return 'bg-emerald-100 text-emerald-700';
-    if (s === 'completed') return 'bg-blue-100 text-blue-700';
+    if (s === 'completed') return 'bg-success/15 text-success';
     if (s === 'overdue') return 'bg-red-100 text-red-700';
     return 'bg-gray-100 text-gray-500';
   };
@@ -833,13 +833,13 @@ function FeedbackTab({ groupId, token }) {
               <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                    f.type === 'student' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                    f.type === 'student' ? 'bg-success/15 text-success' : 'bg-purple-100 text-purple-700'
                   }`}>
                     {f.type === 'student' ? 'О' : 'М'}
                   </div>
                   <span className="text-[13px] font-bold text-base-content">{f.authorName || 'Аноним'}</span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                    f.type === 'student' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
+                    f.type === 'student' ? 'bg-success/10 text-success' : 'bg-purple-50 text-purple-600'
                   }`}>
                     {f.type === 'student' ? 'Ученик' : 'Ментор'}
                   </span>

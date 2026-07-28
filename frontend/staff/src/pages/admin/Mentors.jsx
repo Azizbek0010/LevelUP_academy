@@ -4,6 +4,7 @@ import { Plus, Pencil, Users, UserCheck, UserX, Mail, Phone, Award, MessageCircl
 import { useAuth } from '../../auth.jsx';
 import { useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
+import { formatPhone } from '../../format.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
@@ -80,7 +81,7 @@ function MentorCard({ m, onEdit, onGrade, gradeBusy }) {
             )}
             {m.phone && (
               <span className="flex items-center gap-1.5">
-                <Phone size={10} className="opacity-50" /> {m.phone}
+                <Phone size={10} className="opacity-50" /> {formatPhone(m.phone)}
               </span>
             )}
           </div>

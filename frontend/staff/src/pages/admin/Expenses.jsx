@@ -17,11 +17,11 @@ const CATEGORY_LABELS = {
   All: 'Все', Rent: 'Аренда', Salary: 'Зарплата', Materials: 'Материалы', Utility: 'Коммунальные', Other: 'Другое',
 };
 const CATEGORY_COLORS = {
-  Rent: '#3B82F6', Salary: '#8B5CF6', Materials: '#F59E0B',
+  Rent: '#8FA283', Salary: '#8B5CF6', Materials: '#F59E0B',
   Utility: '#E8543E', Other: '#8FA283',
 };
 const CATEGORY_COLORS_LIGHT = {
-  Rent: 'rgba(59,130,246,0.12)', Salary: 'rgba(139,92,246,0.12)', Materials: 'rgba(245,158,11,0.12)',
+  Rent: 'rgba(143,162,131,0.12)', Salary: 'rgba(139,92,246,0.12)', Materials: 'rgba(245,158,11,0.12)',
   Utility: 'rgba(232,84,62,0.12)', Other: 'rgba(143,162,131,0.12)',
 };
 

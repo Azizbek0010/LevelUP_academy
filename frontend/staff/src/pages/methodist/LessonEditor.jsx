@@ -249,7 +249,7 @@ export default function LessonEditor() {
             </div>
             <div>
               <h3 className="font-semibold text-sm">Видео-материал:</h3>
-              <a href={lesson?.video_url || lesson?.videoUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline font-medium break-all">
+              <a href={lesson?.video_url || lesson?.videoUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline font-medium break-all">
                 {lesson?.video_url || lesson?.videoUrl}
               </a>
             </div>
