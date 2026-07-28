@@ -12,7 +12,31 @@ import { useAuth } from '../../auth.jsx';
 import { useAdminReports } from '../../queries.js';
 import { Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
 
-const COLORS = ['#3B82F6', '#E8543E', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899', '#2ECC71'];
+const COLORS = ['#2ECC71', '#E8543E', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899', '#43893E'];
+
+/* ── Cyrillic font loading for jsPDF (v4 instance API) ── */
+async function loadCyrillicFont(doc) {
+  const [regularRes, boldRes] = await Promise.all([
+    fetch('/fonts/Roboto-Regular.ttf'),
+    fetch('/fonts/Roboto-Bold.ttf'),
+  ]);
+  const regularBuf = await regularRes.arrayBuffer();
+  const boldBuf = await boldRes.arrayBuffer();
+  const regular = new Uint8Array(regularBuf);
+  const bold = new Uint8Array(boldBuf);
+
+  const toBase64 = (bytes) => {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  };
+
+  doc.addFileToVFS('Roboto-Regular.ttf', toBase64(regular));
+  doc.addFileToVFS('Roboto-Bold.ttf', toBase64(bold));
+  doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+  doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
+  return 'Roboto';
+}
 
 /* ═══════════════ KPI Card ═══════════════ */
 /* ═══════════════ Custom Tooltip ═══════════════ */
@@ -100,17 +124,21 @@ export default function AdminReports() {
       ]);
 
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const fontName = await loadCyrillicFont(doc);
+      doc.setFont(fontName, 'normal');
       const pageW = doc.internal.pageSize.getWidth();
       const dateStr = new Date().toLocaleDateString('ru-RU');
 
       doc.setFontSize(16);
       doc.setTextColor(30, 30, 30);
+      doc.setFont(fontName, 'bold');
       doc.text('Отчёт — Доходы и долги', 14, 18);
+      doc.setFont(fontName, 'normal');
       doc.setFontSize(9);
       doc.setTextColor(120, 120, 120);
       doc.text(`Дата: ${dateStr}  |  Общий доход: ${money(totalRevenue)}  |  Групп: ${byGroup.length}`, 14, 25);
 
-      autoTable.default(doc, {
+      autoTable(doc, {
         startY: 30,
         head: [['#', 'Группа', 'Ученики', "Доход (сум)", "Долг (сум)"]],
         body: byGroup.map((g, i) => [
@@ -122,6 +150,7 @@ export default function AdminReports() {
         ]),
         foot: [['', 'ИТОГО', fmt(totalStudents), fmt(totalRevenue), fmt(totalDebt)]],
         styles: {
+          font: 'Roboto',
           fontSize: 8,
           cellPadding: 3,
           textColor: [30, 30, 30],
@@ -348,7 +377,7 @@ export default function AdminReports() {
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <RechartsTooltip content={<ChartTooltip />} />
-                <Bar dataKey="revenue" name="Доход" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="revenue" name="Доход" fill="#2ECC71" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="debt" name="Долг" fill="#E8543E" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

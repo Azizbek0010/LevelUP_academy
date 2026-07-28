@@ -15,7 +15,7 @@ const ROLE_LABELS = {
 };
 
 export default function Profile() {
-  const { user, setUser } = useAuth();
+  const { token, user, patchUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null); // { type: 'ok'|'err', text }
@@ -44,9 +44,9 @@ export default function Profile() {
         nickname: form.nickname,
         age: form.age ? Number(form.age) : undefined,
       };
-      const res = await api.request('auth/me', { method: 'PATCH', body: payload });
-      if (res?.user) setUser(res.user);
-      else setUser(u => ({ ...u, ...payload }));
+      const res = await api.updateMe(token, payload);
+      if (res?.data) patchUser(res.data);
+      else patchUser(u => ({ ...u, ...payload }));
       setMsg({ type: 'ok', text: 'Профиль обновлён!' });
     } catch (err) {
       setMsg({ type: 'err', text: err.message || 'Ошибка сохранения' });
@@ -68,9 +68,9 @@ export default function Profile() {
     setSaving(true);
     setMsg(null);
     try {
-      await api.request('auth/change-password', {
-        method: 'POST',
-        body: { currentPassword: form.currentPassword, newPassword: form.newPassword },
+      await api.changePassword(token, {
+        currentPassword: form.currentPassword,
+        newPassword: form.newPassword,
       });
       setForm(f => ({ ...f, currentPassword: '', newPassword: '', confirmPassword: '' }));
       setMsg({ type: 'ok', text: 'Пароль успешно изменён!' });

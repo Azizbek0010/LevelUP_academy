@@ -11,6 +11,7 @@ import { api } from '../../api.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Avatar, RowSkeleton } from '../mentor/_ui.jsx';
+import { formatPhone } from '../../format.js';
 
 /* ─── helpers ─── */
 const fullName = (s) =>
@@ -313,7 +314,7 @@ export default function AdminStudentDetail() {
                 <Phone size={14} className="text-base-content/45" />
                 <div>
                   <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Telefon</div>
-                  <div className="text-[13px] font-semibold text-base-content">{student.phone || "Ko'rsatilmagan"}</div>
+                  <div className="text-[13px] font-semibold text-base-content">{student.phone ? formatPhone(student.phone) : "Ko'rsatilmagan"}</div>
                 </div>
               </div>
               {student.phone && (
@@ -354,7 +355,7 @@ export default function AdminStudentDetail() {
                   <Phone size={14} className="text-base-content/45" />
                   <div>
                     <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Ota-ona telefoni</div>
-                    <div className="text-[13px] font-semibold text-base-content">{student.parentPhone}</div>
+                    <div className="text-[13px] font-semibold text-base-content">{formatPhone(student.parentPhone)}</div>
                   </div>
                 </div>
                 <button

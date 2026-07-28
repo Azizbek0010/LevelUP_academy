@@ -8,16 +8,40 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminExpenses } from '../../queries.js';
+
+/* ── Cyrillic font loading for jsPDF (v4 instance API) ── */
+async function loadCyrillicFont(doc) {
+  const [regularRes, boldRes] = await Promise.all([
+    fetch('/fonts/Roboto-Regular.ttf'),
+    fetch('/fonts/Roboto-Bold.ttf'),
+  ]);
+  const regularBuf = await regularRes.arrayBuffer();
+  const boldBuf = await boldRes.arrayBuffer();
+  const regular = new Uint8Array(regularBuf);
+  const bold = new Uint8Array(boldBuf);
+
+  const toBase64 = (bytes) => {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  };
+
+  doc.addFileToVFS('Roboto-Regular.ttf', toBase64(regular));
+  doc.addFileToVFS('Roboto-Bold.ttf', toBase64(bold));
+  doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+  doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
+  return 'Roboto';
+}
 import PageHeader from '../../components/PageHeader.jsx';
 import { SearchInput, RowSkeleton, Kpi, Tip } from '../mentor/_ui.jsx';
 
 const CATEGORIES = ['All', 'Rent', 'Salary', 'Materials', 'Utility', 'Other'];
 const CATEGORY_COLORS = {
-  Rent: '#3B82F6', Salary: '#8B5CF6', Materials: '#F59E0B',
+  Rent: '#2ECC71', Salary: '#8B5CF6', Materials: '#F59E0B',
   Utility: '#E8543E', Other: '#8FA283',
 };
 const CATEGORY_COLORS_LIGHT = {
-  Rent: 'rgba(59,130,246,0.12)', Salary: 'rgba(139,92,246,0.12)', Materials: 'rgba(245,158,11,0.12)',
+  Rent: 'rgba(46,204,113,0.12)', Salary: 'rgba(139,92,246,0.12)', Materials: 'rgba(245,158,11,0.12)',
   Utility: 'rgba(232,84,62,0.12)', Other: 'rgba(143,162,131,0.12)',
 };
 
@@ -199,7 +223,7 @@ export default function Expenses() {
     setError(null);
     try {
       // Uses api.adminExpenses(token) from api.js → proper named method
-      const res = await api.adminExpenses(token);
+      const res = await api.adminExpenses(token, '?limit=500');
       const data = res.data?.data || res.data || res || {};
       setExpenses(data.expenses || []);
     } catch (err) {
@@ -405,13 +429,17 @@ export default function Expenses() {
       ]);
 
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const fontName = await loadCyrillicFont(doc);
+      doc.setFont(fontName, 'normal');
       const pageW = doc.internal.pageSize.getWidth();
       const dateStr = new Date().toLocaleDateString('ru-RU');
 
       // Header
       doc.setFontSize(16);
       doc.setTextColor(30, 30, 30);
+      doc.setFont(fontName, 'bold');
       doc.text('Отчёт по расходам', 14, 18);
+      doc.setFont(fontName, 'normal');
       doc.setFontSize(9);
       doc.setTextColor(120, 120, 120);
       doc.text(`Дата: ${dateStr}  |  Итого: ${formatCurrency(filteredTotal)}  |  Кол-во: ${filtered.length}`, 14, 25);
@@ -422,7 +450,7 @@ export default function Expenses() {
         return m[s?.toLowerCase()] || s || '—';
       };
 
-      autoTable.default(doc, {
+      autoTable(doc, {
         startY: 30,
         head: [['#', 'Категория', 'Сумма', 'Дата', 'Примечание', 'Статус', 'Способ оплаты']],
         body: filtered.map((e, i) => [
@@ -436,6 +464,7 @@ export default function Expenses() {
         ]),
         foot: [['', 'ИТОГО', formatCurrency(filteredTotal), '', '', '', '']],
         styles: {
+          font: 'Roboto',
           fontSize: 8,
           cellPadding: 3,
           textColor: [30, 30, 30],

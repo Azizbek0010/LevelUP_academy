@@ -10,6 +10,7 @@ import { api } from '../../api.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip } from '../mentor/_ui.jsx';
+import { formatPhone } from '../../format.js';
 
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
@@ -39,10 +40,12 @@ function StudentCard({ s, onNavigate }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-bold text-base-content truncate">{fullName(s)}</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-              style={{ background: status.bg, color: status.text }}>
-              {status.label}
-            </span>
+            {s.status === 'frozen' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                style={{ background: status.bg, color: status.text }}>
+                {status.label}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3 mt-1.5 text-[11px] text-base-content/45">
@@ -51,7 +54,7 @@ function StudentCard({ s, onNavigate }) {
                 <KeyRound size={10} /> {s.login_code || s.loginCode}
               </span>
             ) : null}
-            {s.phone && <span>{s.phone}</span>}
+            {s.phone && <span>{formatPhone(s.phone)}</span>}
             {s.coins != null && s.coins > 0 && (
               <span className="flex items-center gap-1 text-primary font-semibold">
                 <Coins size={10} /> {s.coins}
@@ -96,11 +99,22 @@ export default function AdminStudents() {
   const frozenCount = rows.filter((s) => s.status === 'frozen').length;
   const debtCount = rows.filter((s) => (s.debt || s.outstandingDebt || 0) > 0).length;
   const filteredRows = (() => {
-    if (statusFilter === 'all') return rows;
-    if (statusFilter === 'active') return rows.filter(s => s.status !== 'frozen');
-    if (statusFilter === 'frozen') return rows.filter(s => s.status === 'frozen');
-    if (statusFilter === 'debt') return rows.filter(s => (s.debt || s.outstandingDebt || 0) > 0);
-    return rows;
+    let result = rows;
+    // Client-side search filter
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(s => {
+        const name = fullName(s).toLowerCase();
+        const phone = (s.phone || '').toLowerCase();
+        const code = (s.login_code || s.loginCode || '').toLowerCase();
+        return name.includes(q) || phone.includes(q) || code.includes(q);
+      });
+    }
+    // Status filter
+    if (statusFilter === 'active') result = result.filter(s => s.status !== 'frozen');
+    else if (statusFilter === 'frozen') result = result.filter(s => s.status === 'frozen');
+    else if (statusFilter === 'debt') result = result.filter(s => (s.debt || s.outstandingDebt || 0) > 0);
+    return result;
   })();
 
   const create = async () => {
@@ -257,7 +271,7 @@ export default function AdminStudents() {
                       </div>
                     </td>
                     <td className="font-mono text-base-content/70">{s.login_code || s.loginCode || '—'}</td>
-                    <td className="text-base-content/45">{s.phone || '—'}</td>
+                    <td className="text-base-content/45">{formatPhone(s.phone)}</td>
                     <td>
                       <div className="flex flex-wrap gap-1">
                         {(s.groups || []).slice(0, 2).map((g, i) => (

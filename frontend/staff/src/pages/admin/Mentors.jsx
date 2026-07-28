@@ -7,6 +7,7 @@ import { api } from '../../api.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Avatar, EmptyState, Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
+import { formatPhone } from '../../format.js';
 
 const fullName = (m) =>
   [m.firstName || m.first_name, m.lastName || m.last_name].filter(Boolean).join(' ') || '—';
@@ -79,7 +80,7 @@ function MentorCard({ m, onEdit, onGrade, gradeBusy }) {
             )}
             {m.phone && (
               <span className="flex items-center gap-1.5">
-                <Phone size={10} className="opacity-50" /> {m.phone}
+                <Phone size={10} className="opacity-50" /> {formatPhone(m.phone)}
               </span>
             )}
           </div>
