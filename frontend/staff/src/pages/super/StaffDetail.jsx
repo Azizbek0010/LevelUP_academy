@@ -2,30 +2,32 @@ import { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowLeft, Mail, Phone, Building2, Wallet, Calendar,
+  ArrowLeft, Mail, Phone, Building2, Wallet, Calendar, Briefcase,
   ShieldAlert, Ban, TriangleAlert, ScrollText,
 } from 'lucide-react';
 import { fmt, dateShort, money, ADMIN_STATUS } from '../../format.js';
-import { useSuperAdmins, useSuperMethodists } from '../../queries.js';
+import { useSuperAdmins, useSuperMethodists, useSuperBranches } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
-import PageHeader from '../../components/PageHeader.jsx';
+import Avatar from '../../components/Avatar.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
+import { phoneDisplay } from '../../components/PhoneInput.jsx';
 import { Kpi, Panel, EmptyState } from '../mentor/_ui.jsx';
 import { TYPE_META, LevelBadge } from '../../discipline-meta.jsx';
 
 /**
  * Полная карточка сотрудника (Admin/Methodist) — отдельная страница, а не
  * модалка: список нарушений и контактные данные не помещались в диалог без
- * скролла внутри скролла, а Karis прямо попросил full page.
+ * скролла внутри скролла, а Karis прямо попросил full page с бОльшим
+ * количеством данных.
  *
  * Данные не тянут новый endpoint — берутся из уже загруженных списков
- * /super/admins и /super/methodists (react-query отдаёт их из кэша, если
- * страница открыта переходом со списка) плюс существующий фильтр
- * /super/penalties?targetUserId=.
+ * /super/admins, /super/methodists, /super/branches (react-query отдаёт их
+ * из кэша, если страница открыта переходом со списка) плюс существующий
+ * фильтр /super/penalties?targetUserId=.
  */
 
-const ROLE_LABEL = { admin: 'Администратор', methodist: 'Методист' };
+const ROLE_LABEL = { admin: 'Администратор', methodist: 'Методист', superadmin: 'Super Admin' };
 
 function dateTime(iso) {
   if (!iso) return '—';
@@ -35,15 +37,13 @@ function dateTime(iso) {
     : d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function Field({ icon: Icon, label, children }) {
+function InfoItem({ icon: Icon, label, children }) {
   return (
-    <div className="card bg-base-100">
-      <div className="p-4">
-        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-          <Icon size={13} /> {label}
-        </div>
-        <div className="text-sm">{children}</div>
+    <div>
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
+        <Icon size={13} /> {label}
       </div>
+      <div className="text-sm">{children}</div>
     </div>
   );
 }
@@ -55,6 +55,7 @@ export default function StaffDetail() {
 
   const admins = useSuperAdmins();
   const methodists = useSuperMethodists();
+  const branches = useSuperBranches();
 
   const loading = role === 'admin' ? admins.isLoading : methodists.isLoading;
 
@@ -63,6 +64,11 @@ export default function StaffDetail() {
     if (role === 'methodist') return (methodists.data?.methodists ?? []).find((m) => m.id === id) ?? null;
     return null;
   }, [role, id, admins.data, methodists.data]);
+
+  const branch = useMemo(
+    () => (branches.data?.branches ?? []).find((b) => b.id === person?.branchId) ?? null,
+    [branches.data, person],
+  );
 
   const penalties = useQuery({
     queryKey: ['super-penalties', id],
@@ -84,7 +90,8 @@ export default function StaffDetail() {
     return (
       <div className="space-y-5">
         <div className="skeleton h-8 w-40 rounded-lg" />
-        <div className="skeleton h-32 w-full rounded-2xl" />
+        <div className="skeleton h-28 w-full rounded-2xl" />
+        <div className="skeleton h-40 w-full rounded-2xl" />
       </div>
     );
   }
@@ -105,36 +112,71 @@ export default function StaffDetail() {
   }
 
   const status = ADMIN_STATUS[person.status === 'frozen' ? 'frozen' : 'active'] || { label: person.status, cls: 'badge-ghost' };
+  const lastViolation = items[0] ?? null;
 
   return (
-    <div className="space-y-6">
-      <button className="btn btn-ghost btn-sm gap-1.5 -mb-1" onClick={back}>
+    <div className="space-y-5">
+      <button className="btn btn-ghost btn-sm gap-1.5" onClick={back}>
         <ArrowLeft size={15} /> Назад к сотрудникам
       </button>
 
-      <PageHeader title={`${person.firstName} ${person.lastName}`} subtitle={ROLE_LABEL[role] ?? role}>
-        <span className={`badge font-semibold ${status.cls}`}>{status.label}</span>
-      </PageHeader>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Field icon={Mail} label="Email">
-          <span className="font-mono break-all">{person.email}</span>
-        </Field>
-        <Field icon={Phone} label="Телефон">
-          <span className="font-mono">{person.phone || '—'}</span>
-        </Field>
-        {role === 'admin' && (
-          <Field icon={Building2} label="Филиал">
-            <span className="font-medium">{person.branchName || '—'}</span>
-          </Field>
-        )}
-        <Field icon={Wallet} label="Оклад">
-          <span className="font-semibold">{person.monthlySalary != null ? money(person.monthlySalary) : '—'}</span>
-        </Field>
-        <Field icon={Calendar} label="В системе с">
-          {dateShort(person.createdAt)}
-        </Field>
+      {/* Хедер-«визитка»: раньше был обычный PageHeader (заголовок + бейдж),
+          теперь аватар + быстрый контекст по нарушениям — то, ради чего
+          открывают карточку, видно сразу, без скролла к таблице. */}
+      <div className="card bg-base-100">
+        <div className="p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Avatar name={`${person.firstName} ${person.lastName}`} size={56} />
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight leading-tight">
+                {person.firstName} {person.lastName}
+              </h1>
+              <p className="text-sm text-base-content/55 mt-0.5">{ROLE_LABEL[role] ?? role}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {lastViolation && (
+              <span className="badge badge-outline gap-1.5 text-xs">
+                <ScrollText size={12} /> Последнее: {dateShort(lastViolation.created_at ?? lastViolation.createdAt)}
+              </span>
+            )}
+            <span className={`badge font-semibold ${status.cls}`}>{status.label}</span>
+          </div>
+        </div>
       </div>
+
+      <Panel title="Контакты" icon={Mail}>
+        <div className="grid sm:grid-cols-2 gap-5">
+          <InfoItem icon={Mail} label="Email">
+            <span className="font-mono break-all">{person.email}</span>
+          </InfoItem>
+          <InfoItem icon={Phone} label="Телефон">
+            <span className="font-mono">{person.phone ? phoneDisplay(person.phone) : '—'}</span>
+          </InfoItem>
+        </div>
+      </Panel>
+
+      <Panel title="Работа" icon={Briefcase}>
+        <div className={`grid sm:grid-cols-2 ${role === 'admin' ? 'lg:grid-cols-3' : ''} gap-5`}>
+          {role === 'admin' && (
+            <InfoItem icon={Building2} label="Филиал">
+              <div className="font-medium break-words">{person.branchName || '—'}</div>
+              {(branch?.address || branch?.phone) && (
+                <div className="text-xs text-base-content/50 mt-1 space-y-0.5">
+                  {branch?.address && <div className="break-words">{branch.address}</div>}
+                  {branch?.phone && <div className="font-mono">{phoneDisplay(branch.phone)}</div>}
+                </div>
+              )}
+            </InfoItem>
+          )}
+          <InfoItem icon={Wallet} label="Оклад">
+            <span className="font-semibold">{person.monthlySalary != null ? money(person.monthlySalary) : '—'}</span>
+          </InfoItem>
+          <InfoItem icon={Calendar} label="В системе с">
+            {dateShort(person.createdAt)}
+          </InfoItem>
+        </div>
+      </Panel>
 
       {penalties.isLoading ? (
         <SkeletonKpis count={3} className="grid-cols-1 sm:grid-cols-3" />
@@ -178,7 +220,7 @@ export default function StaffDetail() {
                     <td className="text-sm">
                       {p.issued_by_name ?? p.issuedByName ?? '—'}
                       <div className="text-xs text-base-content/45">
-                        {p.issuer_role === 'superadmin' ? 'Super Admin' : (ROLE_LABEL[p.issuer_role] ?? p.issuer_role)}
+                        {ROLE_LABEL[p.issuer_role] ?? p.issuer_role}
                       </div>
                     </td>
                     <td className="text-xs text-base-content/55 whitespace-nowrap">
