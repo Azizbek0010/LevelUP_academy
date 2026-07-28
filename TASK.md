@@ -4,6 +4,27 @@
 > Statistika qo'lda YOZILMAYDI — real raqamlar faqat `done.md` da.
 > V1 SCOPE: naqd + karta (full/split). Click/Payme/UzCard/Humo — FAQAT v3. Nasiya/рассрочка — V1 DA YO'Q (qaror 2026-07-05, tasdiqlangan 2026-07-07).
 
+## ⚠️ Jamoa branch'lari — save-zone'ga hali qo'shilmagan (2026-07-28 tekshiruvi)
+
+> `git fetch --all` + har birini save-zone'ga merge qilishga urinildi. Uchtasi konflikt/muammo
+> tufayli qo'shilmadi — **konfliktni branch egasi hal qilsin, Karis emas** (qoida). Boshqa hamma
+> branch (Abduloh, Bilol, Islom, abdulaziz/student-panel, alisher/mentor-panel, aziz/branches,
+> elyor, methodist, rey, shohjahon, xob) — save-zone bilan bab-baravar, qo'shimcha ish yo'q.
+
+- **`hamidulla`** (1 commit, 07-21, admin sahifalar — Expenses/GroupDetail/Groups/Mentors/
+  Payments/Reports/StudentDetail/Students): save-zone o'shandan beri ancha oldinga ketgan,
+  merge 9 ta faylda konflikt beryapti. Hamidula o'zida `git merge save-zone`, konfliktlarni
+  hal qilib qayta pushlasin.
+- **`iface9808` (Kama)** (1 commit, 07-27, member chat redesign): `api.js`/`Chat.jsx`/
+  `Profile.jsx`/`vite.config.js` da konflikt — aynan shu fayllarda 07-28 da AB-VERIFY bag
+  tuzatildi (parent chat `dm:` xona formatiga o'tkazildi + `/socket.io` prokси). Kama
+  save-zone'ni tortib olib, ESKI `parent:<id>` formatga qaytarib yubormasdan o'z dizaynini
+  ustiga qursin — aks holda chat yana ishlamay qoladi.
+- **`alish`** (2 commit, 07-14): repo ILDIZIGA butunlay yangi Vite-ilova qo'yilgan
+  (`package.json`, `src/pages/ChatPage.jsx` va h.k. — `frontend/` ichida emas). Bu allaqachon
+  ma'lum muammo (frontend/TEAM-TASKS.md'da yozilgan). Merge qilinmadi — Alish `frontend/`
+  ichida to'g'ri joyda qayta boshlashi kerak, aks holda repo tuzilishi buziladi.
+
 ---
 
 ## Backend — Auth (Karis)
