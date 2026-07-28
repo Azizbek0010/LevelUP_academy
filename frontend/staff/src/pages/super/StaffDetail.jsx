@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowLeft, Mail, Phone, Building2, Wallet, Calendar, Briefcase,
+  Mail, Phone, Building2, Wallet, Calendar, MapPin, UserCog,
   ShieldAlert, Ban, TriangleAlert, ScrollText,
 } from 'lucide-react';
 import { fmt, dateShort, money, ADMIN_STATUS } from '../../format.js';
@@ -10,7 +10,7 @@ import { useSuperAdmins, useSuperMethodists, useSuperBranches } from '../../quer
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import Avatar from '../../components/Avatar.jsx';
-import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
+import { SkeletonKpis, SkeletonTable, SkeletonList } from '../../components/Skeleton.jsx';
 import { phoneDisplay } from '../../components/PhoneInput.jsx';
 import { Kpi, Panel, EmptyState } from '../mentor/_ui.jsx';
 import { TYPE_META, LevelBadge } from '../../discipline-meta.jsx';
@@ -18,8 +18,12 @@ import { TYPE_META, LevelBadge } from '../../discipline-meta.jsx';
 /**
  * Полная карточка сотрудника (Admin/Methodist) — отдельная страница, а не
  * модалка: список нарушений и контактные данные не помещались в диалог без
- * скролла внутри скролла, а Karis прямо попросил full page с бОльшим
- * количеством данных.
+ * скролла внутри скролла, а Karis прямо попросил full page.
+ *
+ * Вёрстка сознательно повторяет язык SuperBranchDetail.jsx (хлебные крошки →
+ * заголовок → KPI-плитки → панель с иконка+текст строками вместо кучи мелких
+ * рамочных карточек) — это уже устоявшийся «серьёзный» стиль остальной
+ * Super Admin панели, а не новый визуальный диалект для одной страницы.
  *
  * Данные не тянут новый endpoint — берутся из уже загруженных списков
  * /super/admins, /super/methodists, /super/branches (react-query отдаёт их
@@ -37,20 +41,8 @@ function dateTime(iso) {
     : d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function InfoItem({ icon: Icon, label, children }) {
-  return (
-    <div>
-      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-        <Icon size={13} /> {label}
-      </div>
-      <div className="text-sm">{children}</div>
-    </div>
-  );
-}
-
 export default function StaffDetail() {
   const { role, id } = useParams();
-  const navigate = useNavigate();
   const { token } = useAuth();
 
   const admins = useSuperAdmins();
@@ -84,14 +76,13 @@ export default function StaffDetail() {
     return acc;
   }, [items]);
 
-  const back = () => navigate('/admins');
-
   if (loading) {
     return (
-      <div className="space-y-5">
-        <div className="skeleton h-8 w-40 rounded-lg" />
-        <div className="skeleton h-28 w-full rounded-2xl" />
-        <div className="skeleton h-40 w-full rounded-2xl" />
+      <div>
+        <div className="text-xs breadcrumbs text-base-content/50">
+          <ul><li><Link to="/admins" className="hover:text-base-content font-medium">Сотрудники</Link></li></ul>
+        </div>
+        <SkeletonList rows={8} />
       </div>
     );
   }
@@ -99,9 +90,12 @@ export default function StaffDetail() {
   if (!person) {
     return (
       <div className="space-y-4">
-        <button className="btn btn-ghost btn-sm gap-1.5" onClick={back}>
-          <ArrowLeft size={15} /> Назад к сотрудникам
-        </button>
+        <div className="text-xs breadcrumbs text-base-content/50">
+          <ul>
+            <li><Link to="/admins" className="hover:text-base-content font-medium">Сотрудники</Link></li>
+            <li className="font-semibold text-base-content">Не найден</li>
+          </ul>
+        </div>
         <EmptyState
           icon={ShieldAlert}
           title="Сотрудник не найден"
@@ -113,70 +107,34 @@ export default function StaffDetail() {
 
   const status = ADMIN_STATUS[person.status === 'frozen' ? 'frozen' : 'active'] || { label: person.status, cls: 'badge-ghost' };
   const lastViolation = items[0] ?? null;
+  const fullName = `${person.firstName} ${person.lastName}`;
 
   return (
     <div className="space-y-5">
-      <button className="btn btn-ghost btn-sm gap-1.5" onClick={back}>
-        <ArrowLeft size={15} /> Назад к сотрудникам
-      </button>
-
-      {/* Хедер-«визитка»: раньше был обычный PageHeader (заголовок + бейдж),
-          теперь аватар + быстрый контекст по нарушениям — то, ради чего
-          открывают карточку, видно сразу, без скролла к таблице. */}
-      <div className="card bg-base-100">
-        <div className="p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Avatar name={`${person.firstName} ${person.lastName}`} size={56} />
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight leading-tight">
-                {person.firstName} {person.lastName}
-              </h1>
-              <p className="text-sm text-base-content/55 mt-0.5">{ROLE_LABEL[role] ?? role}</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {lastViolation && (
-              <span className="badge badge-outline gap-1.5 text-xs">
-                <ScrollText size={12} /> Последнее: {dateShort(lastViolation.created_at ?? lastViolation.createdAt)}
-              </span>
-            )}
-            <span className={`badge font-semibold ${status.cls}`}>{status.label}</span>
-          </div>
-        </div>
+      <div className="text-xs breadcrumbs text-base-content/50">
+        <ul>
+          <li><Link to="/admins" className="hover:text-base-content font-medium">Сотрудники</Link></li>
+          <li className="font-semibold text-base-content">{fullName}</li>
+        </ul>
       </div>
 
-      <Panel title="Контакты" icon={Mail}>
-        <div className="grid sm:grid-cols-2 gap-5">
-          <InfoItem icon={Mail} label="Email">
-            <span className="font-mono break-all">{person.email}</span>
-          </InfoItem>
-          <InfoItem icon={Phone} label="Телефон">
-            <span className="font-mono">{person.phone ? phoneDisplay(person.phone) : '—'}</span>
-          </InfoItem>
+      <div className="flex flex-wrap items-start justify-between gap-3 animate-page-enter">
+        <div className="flex items-center gap-3.5">
+          <Avatar name={fullName} size={44} />
+          <div>
+            <h1 className="text-[28px] font-extrabold tracking-tight leading-tight text-base-content">{fullName}</h1>
+            <p className="text-[13px] text-base-content/70 mt-0.5">{ROLE_LABEL[role] ?? role}</p>
+          </div>
         </div>
-      </Panel>
-
-      <Panel title="Работа" icon={Briefcase}>
-        <div className={`grid sm:grid-cols-2 ${role === 'admin' ? 'lg:grid-cols-3' : ''} gap-5`}>
-          {role === 'admin' && (
-            <InfoItem icon={Building2} label="Филиал">
-              <div className="font-medium break-words">{person.branchName || '—'}</div>
-              {(branch?.address || branch?.phone) && (
-                <div className="text-xs text-base-content/50 mt-1 space-y-0.5">
-                  {branch?.address && <div className="break-words">{branch.address}</div>}
-                  {branch?.phone && <div className="font-mono">{phoneDisplay(branch.phone)}</div>}
-                </div>
-              )}
-            </InfoItem>
+        <div className="flex items-center gap-2">
+          {lastViolation && (
+            <span className="badge badge-ghost badge-sm gap-1.5">
+              <ScrollText size={11} /> Последнее: {dateShort(lastViolation.created_at ?? lastViolation.createdAt)}
+            </span>
           )}
-          <InfoItem icon={Wallet} label="Оклад">
-            <span className="font-semibold">{person.monthlySalary != null ? money(person.monthlySalary) : '—'}</span>
-          </InfoItem>
-          <InfoItem icon={Calendar} label="В системе с">
-            {dateShort(person.createdAt)}
-          </InfoItem>
+          <span className={`badge font-semibold ${status.cls}`}>{status.label}</span>
         </div>
-      </Panel>
+      </div>
 
       {penalties.isLoading ? (
         <SkeletonKpis count={3} className="grid-cols-1 sm:grid-cols-3" />
@@ -187,6 +145,54 @@ export default function StaffDetail() {
           <Kpi Icon={Ban} tone="danger" title="Увольнения" value={fmt(totals.qora)} unit="записей" />
         </div>
       )}
+
+      <Panel title="Профиль" icon={UserCog}>
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm">
+            <span className="flex items-center gap-2">
+              <Mail size={14} className="text-base-content/40 shrink-0" />
+              <span className="font-mono">{person.email}</span>
+            </span>
+            <span className="flex items-center gap-2">
+              <Phone size={14} className="text-base-content/40 shrink-0" />
+              {person.phone ? phoneDisplay(person.phone) : 'Телефон не указан'}
+            </span>
+            <span className="flex items-center gap-2">
+              <Calendar size={14} className="text-base-content/40 shrink-0" />
+              В системе с {dateShort(person.createdAt)}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm pt-3 border-t border-base-200">
+            <span className="flex items-center gap-2">
+              <Wallet size={14} className="text-base-content/40 shrink-0" />
+              Оклад: <span className="font-semibold">
+                {person.monthlySalary != null ? money(person.monthlySalary) : 'не указан'}
+              </span>
+            </span>
+            {role === 'admin' && (
+              <>
+                <span className="flex items-center gap-2">
+                  <Building2 size={14} className="text-base-content/40 shrink-0" />
+                  {person.branchName || 'Филиал не указан'}
+                </span>
+                {branch?.address && (
+                  <span className="flex items-center gap-2 text-base-content/60">
+                    <MapPin size={14} className="text-base-content/40 shrink-0" />
+                    {branch.address}
+                  </span>
+                )}
+                {branch?.phone && (
+                  <span className="flex items-center gap-2 text-base-content/60">
+                    <Phone size={14} className="text-base-content/40 shrink-0" />
+                    {phoneDisplay(branch.phone)} · филиал
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </Panel>
 
       <Panel title="История нарушений дисциплины" icon={ScrollText} bodyClass="p-0">
         {penalties.isLoading ? (
