@@ -7,7 +7,7 @@ import {
   Plus, Edit2, ShieldAlert, KeyRound, Copy, Check, AlertTriangle,
   MoreVertical, ChevronDown, Search,
 } from 'lucide-react';
-import { dateShort, ROLE_LABELS } from '../../format.js';
+import { dateShort } from '../../format.js';
 import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
@@ -80,6 +80,31 @@ const STATUS_META = {
   frozen: { label: 'Заморожен', cls: 'badge-error' },
   fired:  { label: 'Уволен', cls: 'badge-error' },
 };
+
+// Голый badge-outline (чёрная рамка на белом) рядом с залитым badge-success/
+// error статуса смотрелся недоделанным — будто про эту колонку забыли.
+// Тон + приглушённый цвет на роль — тот же приём, что и у KPI-плиток
+// (Kpi/_ui.jsx: bg-{tone}/10 text-{tone}) и у грейда ментора на карточке
+// сотрудника, а не рамка без заливки. Цвета — не success/warning/error:
+// те уже заняты статусом и уровнями дисциплины, брать их для роли было бы
+// путаницей («красный» ментор ≠ проблема).
+const ROLE_META = {
+  admin:     { label: 'Администратор', color: '#4f46e5' },
+  mentor:    { label: 'Ментор',        color: '#0d9488' },
+  methodist: { label: 'Методист',      color: '#7c3aed' },
+};
+
+function RoleBadge({ role }) {
+  const m = ROLE_META[role] ?? { label: role, color: '#64748b' };
+  return (
+    <span
+      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+      style={{ background: `${m.color}1a`, color: m.color }}
+    >
+      {m.label}
+    </span>
+  );
+}
 
 // ─── Показ сгенерированного пароля (один раз) ────────────────
 function TempPasswordModal({ email, password, onClose }) {
@@ -462,7 +487,7 @@ export default function SuperAdmins() {
                             <span className="font-semibold">{row.firstName} {row.lastName}</span>
                           </div>
                         </td>
-                        <td><span className="badge badge-outline badge-sm">{ROLE_LABELS[row.role]}</span></td>
+                        <td><RoleBadge role={row.role} /></td>
                         <td className="text-sm font-mono">{row.email}</td>
                         <td className="text-sm font-mono">{row.phone || '—'}</td>
                         <td className="font-medium">{row.branchName || '—'}</td>
