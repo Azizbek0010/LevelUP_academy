@@ -208,18 +208,17 @@ export default function StaffDetail() {
               </>
             )}
           </div>
-
         </div>
       </Panel>
 
-      {role === 'mentor' && (person.bio || person.skills?.length > 0) && (
+      {role === 'mentor' && (
         <Panel title="О менторе" icon={Award}>
           <div className="space-y-4">
-            {person.skills?.length > 0 && (
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-2">
-                  Навыки
-                </div>
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-2">
+                Навыки
+              </div>
+              {person.skills?.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {person.skills.map((s) => (
                     <span
@@ -230,18 +229,22 @@ export default function StaffDetail() {
                     </span>
                   ))}
                 </div>
+              ) : (
+                <p className="text-sm text-base-content/45">Не указаны</p>
+              )}
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-2">
+                О себе
               </div>
-            )}
-            {person.bio && (
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-2">
-                  О себе
-                </div>
+              {person.bio ? (
                 <p className="text-sm text-base-content/75 leading-relaxed border-l-2 border-base-300 pl-3 whitespace-pre-wrap">
                   {person.bio}
                 </p>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-base-content/45">Не заполнено</p>
+              )}
+            </div>
           </div>
         </Panel>
       )}
