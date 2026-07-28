@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import {
   ShieldAlert, Ban, Coins, Plus, ScrollText, UserX, RotateCcw, Pencil, Save, X,
+  TriangleAlert, Trash2, ListChecks,
 } from 'lucide-react';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
@@ -24,18 +25,28 @@ import { Kpi, Panel, EmptyState, Modal } from '../mentor/_ui.jsx';
  * main_admin не выписывает взысканий никому, а superadmin — может
  * администраторам, менторам и методистам своей организации.
  *
- * Два вида записи различаются смыслом, а не оформлением:
+ * Четыре вида записи, от мягкого к жёсткому:
+ *   sariq  — жёлтое предупреждение, без денег и без блокировки входа;
+ *   qizil  — красное (строгое) предупреждение, тоже без денег и блокировки;
  *   shtraf — денежный штраф, сумма обязательна;
- *   qora   — увольнение («чёрный список»), суммы нет, сотрудник теряет вход.
+ *   qora   — увольнение («чёрная метка»), суммы нет, сотрудник теряет вход.
+ *
+ * sariq/qizil — НЕ автоматика: система не считает пороги и не превращает
+ * несколько предупреждений в qora сама. Это осталось ручным решением того,
+ * кто выдаёт взыскание — как раньше был только qora.
  *
  * Устав тут же, а не отдельной страницей: правила и наказания за их нарушение
  * читают вместе. Пустой устав это норма, а не ошибка — бэкенд отдаёт для новой
- * организации шаблон с пустым текстом.
+ * организации шаблон с пустым текстом. Каталог правил (qoyda) ниже устава —
+ * структурированная альтернатива/дополнение к свободному тексту: конкретное
+ * нарушение → конкретный уровень, а не абзац прозы.
  */
 
 const TYPE_META = {
-  shtraf: { label: 'Штраф', Icon: Coins, cls: 'bg-warning/10 text-warning', color: 'oklch(75% 0.15 85)' },
-  qora: { label: 'Увольнение', Icon: Ban, cls: 'bg-error/10 text-error', color: 'oklch(62% 0.24 25)' },
+  sariq: { label: 'Жёлтое предупреждение', Icon: TriangleAlert, cls: 'bg-[#eab308]/10 text-[#b45309]', color: '#eab308' },
+  qizil: { label: 'Красное предупреждение', Icon: ShieldAlert, cls: 'bg-error/10 text-error', color: '#dc2626' },
+  shtraf: { label: 'Штраф', Icon: Coins, cls: 'bg-info/10 text-info', color: '#2563eb' },
+  qora: { label: 'Увольнение', Icon: Ban, cls: 'bg-neutral text-neutral-content', color: '#111827' },
 };
 
 const ROLE_LABEL = {
@@ -294,6 +305,180 @@ function Charter({ charter, onSaved }) {
   );
 }
 
+/* ── Каталог правил (qoyda) ──────────────────────────────────────────────
+   Структурированная альтернатива устава: конкретное нарушение → конкретный
+   уровень (sariq/qizil/shtraf/qora), а не абзац в свободном тексте. Чисто
+   справочник — ничего само не выдаёт и не считает пороги (см. TYPE_META). */
+function NewRuleModal({ open, onClose, onDone }) {
+  const { token } = useAuth();
+  const [type, setType] = useState('sariq');
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  if (!open) return null;
+
+  const submit = async () => {
+    setErr('');
+    if (!description.trim()) return setErr('Опишите, за что выдаётся это правило');
+    if (type === 'shtraf' && !amount) return setErr('Для штрафа нужна сумма');
+
+    setBusy(true);
+    try {
+      await api.superCreateDisciplineRule(token, {
+        type,
+        description: description.trim(),
+        ...(type === 'shtraf' ? { amount: Number(amount) } : {}),
+      });
+      onDone();
+      onClose();
+      setType('sariq'); setAmount(''); setDescription('');
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title="Новое правило"
+      actions={
+        <>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>Отмена</button>
+          <button className="btn btn-primary btn-sm" onClick={submit} disabled={busy}>
+            {busy ? <span className="loading loading-spinner loading-xs" /> : 'Сохранить'}
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {err && <div className="alert alert-error text-sm py-2">{err}</div>}
+
+        <div>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5 block">
+            Уровень
+          </span>
+          <div className="join w-full flex-wrap">
+            {Object.entries(TYPE_META).map(([key, m]) => (
+              <button
+                key={key}
+                className={`btn btn-sm join-item flex-1 ${type === key ? 'btn-primary' : 'btn-outline'}`}
+                onClick={() => setType(key)}
+              >
+                <m.Icon size={14} /> {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {type === 'shtraf' && (
+          <label className="form-control">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
+              Сумма, сум
+            </span>
+            <input
+              type="number"
+              min="0"
+              className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="50000"
+            />
+          </label>
+        )}
+
+        <label className="form-control">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
+            За что
+          </span>
+          <textarea
+            rows={2}
+            className="textarea textarea-bordered rounded-lg text-base sm:text-sm resize-none"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Например: опоздание более 15 минут"
+          />
+        </label>
+      </div>
+    </Modal>
+  );
+}
+
+function RulesPanel({ rules, onChanged }) {
+  const { token } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [busyId, setBusyId] = useState(null);
+  const [err, setErr] = useState('');
+
+  const remove = async (id) => {
+    setBusyId(id);
+    setErr('');
+    try {
+      await api.superDeleteDisciplineRule(token, id);
+      onChanged();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <Panel
+      title="Правила (qoyda)"
+      icon={ListChecks}
+      action={
+        <button className="btn btn-outline btn-xs gap-1" onClick={() => setOpen(true)}>
+          <Plus size={13} /> Новое правило
+        </button>
+      }
+    >
+      {err && <div className="alert alert-error text-sm py-2 mb-3">{err}</div>}
+
+      {rules.length === 0 ? (
+        <EmptyState
+          icon={ListChecks}
+          title="Правил пока нет"
+          hint="Опишите нарушение и уровень взыскания за него один раз — дальше на это правило можно ссылаться при выдаче взыскания."
+        />
+      ) : (
+        <div className="space-y-2">
+          {rules.map((r) => {
+            const meta = TYPE_META[r.type] ?? TYPE_META.sariq;
+            return (
+              <div key={r.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-base-200/50">
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold shrink-0 ${meta.cls}`}>
+                  <meta.Icon size={12} /> {meta.label}
+                </span>
+                <span className="text-sm flex-1">{r.description}</span>
+                {r.amount != null && (
+                  <span className="text-sm font-semibold tabular-nums shrink-0">{money(Number(r.amount))}</span>
+                )}
+                <button
+                  className="btn btn-ghost btn-xs shrink-0"
+                  onClick={() => remove(r.id)}
+                  disabled={busyId === r.id}
+                  title="Удалить правило"
+                >
+                  {busyId === r.id
+                    ? <span className="loading loading-spinner loading-xs" />
+                    : <Trash2 size={13} />}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <NewRuleModal open={open} onClose={() => setOpen(false)} onDone={onChanged} />
+    </Panel>
+  );
+}
+
 export default function SuperDiscipline() {
   const { token } = useAuth();
   const qc = useQueryClient();
@@ -322,6 +507,11 @@ export default function SuperDiscipline() {
     queryFn: () => api.superCharter(token),
     enabled: !!token,
   });
+  const rules = useQuery({
+    queryKey: ['super-discipline-rules'],
+    queryFn: () => api.superDisciplineRules(token),
+    enabled: !!token,
+  });
 
   const items = penalties.data?.data ?? [];
 
@@ -338,33 +528,43 @@ export default function SuperDiscipline() {
     ...(methodists.data?.methodists ?? []).map((u) => ({ ...u, role: 'methodist' })),
   ], [admins.data, methodists.data]);
 
-  const totals = useMemo(() => items.reduce((acc, p) => {
-    if (p.type === 'shtraf') { acc.shtraf += 1; acc.amount += Number(p.amount) || 0; }
-    else acc.qora += 1;
+  const totals = useMemo(() => {
+    const acc = { amount: 0 };
+    for (const key of Object.keys(TYPE_META)) acc[key] = 0;
+    for (const p of items) {
+      acc[p.type] = (acc[p.type] ?? 0) + 1;
+      if (p.type === 'shtraf') acc.amount += Number(p.amount) || 0;
+    }
     return acc;
-  }, { shtraf: 0, qora: 0, amount: 0 }), [items]);
+  }, [items]);
 
   /* Статистика. Два разреза, оба из уже загруженного списка — отдельного
      эндпоинта аналитики по дисциплине нет, а считать по 200 записям в браузере
      дешевле, чем заводить его. Донат — соотношение видов, столбики — кто
-     набрал больше всех. */
-  const byType = useMemo(() => ([
-    { name: TYPE_META.shtraf.label, value: totals.shtraf, key: 'shtraf' },
-    { name: TYPE_META.qora.label, value: totals.qora, key: 'qora' },
-  ].filter((d) => d.value > 0)), [totals]);
+     набрал больше всех. Оба разреза строятся по TYPE_META, а не по жёстко
+     вписанным shtraf/qora — иначе каждый новый уровень взыскания надо было бы
+     дописывать здесь руками. */
+  const byType = useMemo(() => (
+    Object.entries(TYPE_META)
+      .map(([key, m]) => ({ name: m.label, value: totals[key] ?? 0, key }))
+      .filter((d) => d.value > 0)
+  ), [totals]);
 
   const byEmployee = useMemo(() => {
     const map = new Map();
     for (const p of items) {
       const name = p.target_name ?? p.targetName ?? '—';
-      const cur = map.get(name) ?? { name, Штрафы: 0, Увольнения: 0, sum: 0 };
-      if (p.type === 'shtraf') { cur.Штрафы += 1; cur.sum += Number(p.amount) || 0; }
-      else cur.Увольнения += 1;
-      map.set(name, cur);
+      if (!map.has(name)) {
+        const row = { name, total: 0 };
+        for (const m of Object.values(TYPE_META)) row[m.label] = 0;
+        map.set(name, row);
+      }
+      const row = map.get(name);
+      const label = (TYPE_META[p.type] ?? TYPE_META.shtraf).label;
+      row[label] += 1;
+      row.total += 1;
     }
-    return [...map.values()]
-      .sort((a, b) => (b.Штрафы + b.Увольнения) - (a.Штрафы + a.Увольнения))
-      .slice(0, 6);
+    return [...map.values()].sort((a, b) => b.total - a.total).slice(0, 6);
   }, [items]);
 
   const shown = filter === 'all' ? items : items.filter((p) => p.type === filter);
@@ -372,6 +572,7 @@ export default function SuperDiscipline() {
     qc.invalidateQueries({ queryKey: ['super-penalties'] });
     qc.invalidateQueries({ queryKey: ['super-charter'] });
   };
+  const refreshRules = () => qc.invalidateQueries({ queryKey: ['super-discipline-rules'] });
 
   const reactivate = async (p) => {
     const id = p.target_user_id ?? p.targetUserId;
@@ -392,7 +593,7 @@ export default function SuperDiscipline() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Дисциплина" subtitle="Устав, штрафы и увольнения сотрудников">
+      <PageHeader title="Дисциплина" subtitle="Устав, правила, предупреждения, штрафы и увольнения сотрудников">
         <button
           className="btn btn-primary btn-sm gap-1.5"
           onClick={() => setIssueOpen(true)}
@@ -404,11 +605,13 @@ export default function SuperDiscipline() {
       {err && <div className="alert alert-error text-sm py-2">{err}</div>}
 
       {penalties.isLoading ? (
-        <SkeletonKpis count={3} className="grid-cols-2 lg:grid-cols-3" />
+        <SkeletonKpis count={5} className="grid-cols-2 lg:grid-cols-5" />
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <Kpi Icon={Coins} tone="warning" title="Штрафы" value={fmt(totals.shtraf)} unit="записей" />
-          <Kpi Icon={ShieldAlert} tone="neutral" title="Сумма штрафов" value={money(totals.amount)} />
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <Kpi Icon={TriangleAlert} tone="warning" title="Жёлтые" value={fmt(totals.sariq)} unit="предупреждений" />
+          <Kpi Icon={ShieldAlert} tone="danger" title="Красные" value={fmt(totals.qizil)} unit="предупреждений" />
+          <Kpi Icon={Coins} tone="neutral" title="Штрафы" value={fmt(totals.shtraf)} unit="записей" />
+          <Kpi Icon={Coins} tone="neutral" title="Сумма штрафов" value={money(totals.amount)} />
           <Kpi Icon={Ban} tone="danger" title="Увольнения" value={fmt(totals.qora)} unit="сотрудников" />
         </div>
       )}
@@ -461,8 +664,15 @@ export default function SuperDiscipline() {
                   />
                   <YAxis allowDecimals={false} tick={{ fontSize: 10 }} width={24} />
                   <Tooltip />
-                  <Bar dataKey="Штрафы" stackId="a" fill={TYPE_META.shtraf.color} radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="Увольнения" stackId="a" fill={TYPE_META.qora.color} radius={[4, 4, 0, 0]} />
+                  {Object.values(TYPE_META).map((m, i, arr) => (
+                    <Bar
+                      key={m.label}
+                      dataKey={m.label}
+                      stackId="a"
+                      fill={m.color}
+                      radius={i === arr.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                    />
+                  ))}
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -476,7 +686,7 @@ export default function SuperDiscipline() {
         bodyClass="p-0"
         action={
           <div className="join">
-            {[['all', 'Все'], ['shtraf', 'Штрафы'], ['qora', 'Увольнения']].map(([key, label]) => (
+            {[['all', 'Все'], ...Object.entries(TYPE_META).map(([k, m]) => [k, m.label])].map(([key, label]) => (
               <button
                 key={key}
                 className={`btn btn-xs join-item ${filter === key ? 'btn-primary' : 'btn-outline'}`}
@@ -561,6 +771,12 @@ export default function SuperDiscipline() {
           </div>
         )}
       </Panel>
+
+      {rules.isLoading ? (
+        <div className="skeleton h-32 w-full rounded-2xl" />
+      ) : (
+        <RulesPanel rules={rules.data?.data ?? []} onChanged={refreshRules} />
+      )}
 
       {charter.isLoading ? (
         <div className="skeleton h-40 w-full rounded-2xl" />

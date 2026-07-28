@@ -23,6 +23,7 @@ import {
   issuePenaltySchema,
   upsertCharterSchema,
   listPenaltiesQuery,
+  createRuleSchema,
 } from '../discipline/discipline.schemas.js';
 
 const router = Router();
@@ -1183,5 +1184,58 @@ router.post('/penalties', validate({ body: issuePenaltySchema }), discipline.iss
  *       409: { $ref: '#/components/responses/Conflict' }
  */
 router.post('/staff/:id/reactivate', validate({ params: idParam }), discipline.reactivateStaff);
+
+/**
+ * @openapi
+ * /api/super/discipline-rules:
+ *   get:
+ *     tags: [Discipline]
+ *     summary: List organization discipline rules (qoyda catalog)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Rules
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *   post:
+ *     tags: [Discipline]
+ *     summary: Create a discipline rule (violation -> sariq/qizil/shtraf/qora)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               type: { type: string, enum: [sariq, qizil, shtraf, qora] }
+ *               amount: { type: number, description: 'Only for type=shtraf' }
+ *               description: { type: string }
+ *     responses:
+ *       201:
+ *         description: Created
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.get('/discipline-rules', discipline.listRules);
+router.post('/discipline-rules', validate({ body: createRuleSchema }), discipline.createRule);
+
+/**
+ * @openapi
+ * /api/super/discipline-rules/{id}:
+ *   delete:
+ *     tags: [Discipline]
+ *     summary: Delete a discipline rule
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
+router.delete('/discipline-rules/:id', validate({ params: idParam }), discipline.deleteRule);
 
 export default router;

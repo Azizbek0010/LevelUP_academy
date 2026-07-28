@@ -2357,6 +2357,11 @@ export const api = {
   superCharter: (token) => request('/super/charter', { token }),
   superUpsertCharter: (token, body) => request('/super/charter', { method: 'PUT', token, body }),
   superReactivateStaff: (token, id) => request(`/super/staff/${id}/reactivate`, { method: 'POST', token }),
+  // Каталог правил (qoyda): нарушение -> уровень (sariq/qizil/shtraf/qora).
+  // Справочник, не автоматика — накопление уровней ничего не выдаёт само.
+  superDisciplineRules: (token) => request('/super/discipline-rules', { token }),
+  superCreateDisciplineRule: (token, body) => request('/super/discipline-rules', { method: 'POST', token, body }),
+  superDeleteDisciplineRule: (token, id) => request(`/super/discipline-rules/${id}`, { method: 'DELETE', token }),
 
   // -------- K-DISC-FRONT: own discipline (mentor/methodist self-view) --------
   myPenalties: (token) => request('/users/me/penalties', { token }),
