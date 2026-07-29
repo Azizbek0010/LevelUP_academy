@@ -326,7 +326,7 @@ export default function Expenses() {
     const today = new Date().toISOString().split('T')[0];
     setFormData({ category: 'Other', amount: '', spentAt: today, note: '', paymentMethod: 'Наличные' });
     setEditingId(null);
-    setError(null);
+    setActionError(null);
     setModalOpen(true);
   };
 
@@ -344,13 +344,13 @@ export default function Expenses() {
       paymentMethod: getPaymentMethod(expense) !== '—' ? getPaymentMethod(expense) : 'Наличные',
     });
     setEditingId(expense.id);
-    setError(null);
+    setActionError(null);
     setModalOpen(true);
   };
 
   const handleSave = useCallback(async () => {
     setSaving(true);
-    setError(null);
+    setActionError(null);
     try {
       const body = {
         category: formData.category,
@@ -436,13 +436,13 @@ export default function Expenses() {
           <span className="flex-1">{error}</span>
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => loadExpenses()}
+              onClick={() => refetch()}
               className="flex items-center gap-1.5 px-3 h-7 rounded-[8px] text-[11px] font-semibold hover:bg-[rgba(232,84,62,0.12)] transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Обновить
             </button>
-            <button onClick={() => setError(null)} className="w-7 h-7 rounded-[8px] flex items-center justify-center hover:bg-[rgba(232,84,62,0.1)] transition-all shrink-0">
+            <button onClick={() => setActionError(null)} className="w-7 h-7 rounded-[8px] flex items-center justify-center hover:bg-[rgba(232,84,62,0.1)] transition-all shrink-0">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -773,7 +773,7 @@ export default function Expenses() {
                             expense={e}
                             onView={openViewModal}
                             onEdit={openEditModal}
-                            onDelete={(exp) => { setDeleteTarget(exp); setError(null); }}
+                            onDelete={(exp) => { setDeleteTarget(exp); setActionError(null); }}
                           />
                         </td>
                       </tr>

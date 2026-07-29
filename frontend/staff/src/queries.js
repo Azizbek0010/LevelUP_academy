@@ -5,7 +5,7 @@ import { useAuth } from './auth.jsx';
 
 function useAuthedQuery(queryKey, queryFn, opts = {}) {
   const { token, logout } = useAuth();
-  const q = useQuery({ queryKey, queryFn, enabled: !!token, ...opts });
+  const q = useQuery({ queryKey, queryFn, ...opts, enabled: !!token && (opts.enabled ?? true) });
   useEffect(() => {
     if (q.error?.status === 401) logout();
   }, [q.error, logout]);

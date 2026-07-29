@@ -489,7 +489,8 @@ function AttendanceTab({ groupId, token }) {
                 // Count present days
                 let presentCount = 0;
                 DAYS.forEach((d) => {
-                  if (attendanceMap[`${sid}_${dateKeyFor(d)}`] === 'present') presentCount++;
+                  const st = attendanceMap[`${sid}_${dateKeyFor(d)}`];
+                  if (st === 'present' || st === 'late') presentCount++;
                 });
 
                 return (
@@ -640,7 +641,10 @@ function HomeworkTab({ groupId, token }) {
     if (!form.title.trim()) return;
     setSubmitting(true);
     try {
-      await api.adminCreateGroupHomework(token, groupId, form);
+      const body = { title: form.title.trim() };
+      if (form.description?.trim()) body.description = form.description.trim();
+      if (form.dueDate) body.dueDate = form.dueDate;
+      await api.adminCreateGroupHomework(token, groupId, body);
       setForm({ title: '', description: '', dueDate: '' });
       setShowAdd(false);
       refetch();
@@ -932,8 +936,9 @@ export default function AdminGroupDetail() {
   const group = raw.group || raw;
   const students = group.students || raw.students || [];
   const totalDebt = students.reduce((sum, s) => sum + Number(s.totalDebt ?? s.total_debt ?? 0), 0);
-  const allStudents = (studentsData?.data || studentsData || {}).students || [];
-  const candidates = allStudents.filter((s) => !students.some((gs) => gs.id === s.id));
+  const sRaw = studentsData?.data || studentsData || {};
+  const allStudents = sRaw.students || (Array.isArray(sRaw) ? sRaw : []);
+  const candidates = allStudents.filter((s) => !students.some((gs) => (gs.id || gs.studentId || gs.student_id) === (s.id || s.studentId || s.student_id)));
 
   const add = async () => {
     if (!pick) return;

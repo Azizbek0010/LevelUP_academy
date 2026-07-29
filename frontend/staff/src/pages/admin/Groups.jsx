@@ -240,31 +240,29 @@ function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, on
           </div>
 
           {/* Время начала + превью конца */}
-          {form.days.length > 0 && (
-            <div className="bg-base-200/50 p-4 rounded-xl border border-base-200">
-              <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-2 block">
-                Время начала
-              </label>
-              <input
-                className="input input-bordered w-full rounded-lg"
-                type="time"
-                value={form.startTime}
-                onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-              />
-              {endPreview && (
-                <div className="mt-3 flex items-center justify-between bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">
-                  <span className="text-xs font-medium text-base-content/70 flex items-center gap-1.5">
-                    <Clock size={13} className="text-primary" />
-                    Окончание:
-                  </span>
-                  <span className="text-sm font-bold text-primary">
-                    {endPreview}
-                    {lessonDurationMin && <span className="text-[10px] font-normal text-primary/60 ml-1">({lessonDurationMin} мин)</span>}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
+          <div className="bg-base-200/50 p-4 rounded-xl border border-base-200">
+            <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-2 block">
+              Время начала
+            </label>
+            <input
+              className="input input-bordered w-full rounded-lg"
+              type="time"
+              value={form.startTime}
+              onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+            />
+            {endPreview && (
+              <div className="mt-3 flex items-center justify-between bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">
+                <span className="text-xs font-medium text-base-content/70 flex items-center gap-1.5">
+                  <Clock size={13} className="text-primary" />
+                  Окончание:
+                </span>
+                <span className="text-sm font-bold text-primary">
+                  {endPreview}
+                  {lessonDurationMin && <span className="text-[10px] font-normal text-primary/60 ml-1">({lessonDurationMin} мин)</span>}
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* Макс. студентов */}
           <div>
@@ -285,7 +283,7 @@ function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, on
 
         <div className="modal-action mt-6">
           <button className="btn btn-ghost rounded-lg" onClick={onClose} disabled={busy}>Отмена</button>
-          <button className="btn btn-primary rounded-lg" onClick={submit} disabled={busy || !form.name}>
+          <button className="btn btn-primary rounded-lg" onClick={submit} disabled={busy || !form.name || !form.mentorId}>
             {busy && <span className="loading loading-spinner loading-xs" />}
             {isEdit ? 'Сохранить изменения' : 'Создать группу'}
           </button>
@@ -336,7 +334,7 @@ export default function AdminGroups() {
 
   const openCreate = () => setForm({ ...emptyForm });
   const openEdit = (g) => {
-    const scheduleDays = g.schedule?.map(s => s.day) || [];
+    const scheduleDays = g.schedule?.map(s => String(s.day).toLowerCase()) || [];
     const initialDays = g.days?.length > 0 ? g.days : scheduleDays;
     setForm({
       id: g.id,
@@ -505,6 +503,7 @@ export default function AdminGroups() {
 
       {/* ═══ Create/Edit Modal ═══ */}
       <GroupFormModal
+        key={form?.id || 'create'}
         open={Boolean(form)}
         onClose={() => setForm(null)}
         mentors={mentors}
