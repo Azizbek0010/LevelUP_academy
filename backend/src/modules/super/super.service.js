@@ -595,6 +595,7 @@ export async function dashboard(orgId) {
       branches: Number(t.branches),
       activeStudents: Number(t.active_students),
       admins: Number(t.admins),
+      mentors: Number(t.mentors),
       revenue: Number(t.revenue),
       outstandingDebt: Number(t.outstanding_debt),
       currency: 'UZS',
