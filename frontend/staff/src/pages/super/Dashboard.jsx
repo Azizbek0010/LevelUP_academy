@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Building2, GraduationCap, Users, Wallet, TriangleAlert, RefreshCw, ChevronRight, ArrowRight } from 'lucide-react';
+import { Building2, GraduationCap, Users, Presentation, Wallet, TriangleAlert, RefreshCw, ChevronRight, ArrowRight } from 'lucide-react';
 import { fmt } from '../../format.js';
 import { useSuperDashboard } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
@@ -60,7 +60,7 @@ export default function SuperDashboard() {
       <PageHeader title="Дашборд организации" subtitle="Обзор филиалов, студентов и дохода" />
 
       {isLoading || !data ? (
-        <SkeletonKpis count={5} className="grid-cols-2 md:grid-cols-3 lg:grid-cols-3" />
+        <SkeletonKpis count={6} className="grid-cols-2 md:grid-cols-3 lg:grid-cols-3" />
       ) : (
         <Loaded data={data} />
       )}
@@ -80,6 +80,7 @@ function Loaded({ data }) {
         <Kpi Icon={Building2} tint={{ bg: '#E0F2FE', fg: '#075985' }} title="Филиалы" value={fmt(t.branches)} unit="всего" to="/branches" />
         <Kpi Icon={GraduationCap} tint={{ bg: '#EDE9FE', fg: '#5B21B6' }} title="Ученики" value={fmt(t.activeStudents)} unit="активных" to="/students" />
         <Kpi Icon={Users} tint={{ bg: '#DCFCE7', fg: '#166534' }} title="Админы" value={fmt(t.admins)} unit="сотрудников" to="/admins" />
+        <Kpi Icon={Presentation} tint={{ bg: '#CCFBF1', fg: '#0F766E' }} title="Менторы" value={fmt(t.mentors)} unit="преподавателей" to="/admins" />
         <Kpi Icon={Wallet} tint={{ bg: '#FFEDD5', fg: '#9A3412' }} title="Доход" value={fmt(t.revenue)} unit={cur} to="/stats" />
         <Kpi Icon={TriangleAlert} tint={{ bg: '#FEE2E2', fg: '#DC2626' }} title="Долги" value={fmt(t.outstandingDebt)} unit={cur} to="/stats" />
       </div>
