@@ -1,9 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Building2, GraduationCap, Users, Wallet, TriangleAlert, Wifi, RefreshCw, ChevronRight, ArrowRight } from 'lucide-react';
+import { Building2, GraduationCap, Users, Wallet, TriangleAlert, RefreshCw, ChevronRight, ArrowRight } from 'lucide-react';
 import { fmt } from '../../format.js';
 import { useSuperDashboard } from '../../queries.js';
-import { useOnlineCount } from '../../socket.js';
-import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
 
@@ -42,8 +40,6 @@ function Kpi({ Icon, tint, title, value, unit, to }) {
 
 export default function SuperDashboard() {
   const { data, isLoading, error, refetch } = useSuperDashboard();
-  const { token } = useAuth();
-  const onlineCount = useOnlineCount(token);
 
   if (error) {
     if (error.status === 401) {
@@ -64,15 +60,15 @@ export default function SuperDashboard() {
       <PageHeader title="Дашборд организации" subtitle="Обзор филиалов, студентов и дохода" />
 
       {isLoading || !data ? (
-        <SkeletonKpis count={6} className="grid-cols-2 md:grid-cols-3 lg:grid-cols-3" />
+        <SkeletonKpis count={5} className="grid-cols-2 md:grid-cols-3 lg:grid-cols-3" />
       ) : (
-        <Loaded data={data} onlineCount={onlineCount} />
+        <Loaded data={data} />
       )}
     </div>
   );
 }
 
-function Loaded({ data, onlineCount }) {
+function Loaded({ data }) {
   const t = data.totals;
   const cur = t.currency;
   const branches = data.branches || [];
@@ -86,7 +82,6 @@ function Loaded({ data, onlineCount }) {
         <Kpi Icon={Users} tint={{ bg: '#DCFCE7', fg: '#166534' }} title="Админы" value={fmt(t.admins)} unit="сотрудников" to="/admins" />
         <Kpi Icon={Wallet} tint={{ bg: '#FFEDD5', fg: '#9A3412' }} title="Доход" value={fmt(t.revenue)} unit={cur} to="/stats" />
         <Kpi Icon={TriangleAlert} tint={{ bg: '#FEE2E2', fg: '#DC2626' }} title="Долги" value={fmt(t.outstandingDebt)} unit={cur} to="/stats" />
-        <Kpi Icon={Wifi} tint={{ bg: '#E0F2FE', fg: '#0369A1' }} title="Live Online" value={onlineCount} unit="онлайн" />
       </div>
 
       {/* Филиалы — таблица */}
