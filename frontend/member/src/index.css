@@ -431,3 +431,78 @@ main > * {
 /* Таймер прохождения теста */
 .quiz-clock { font-variant-numeric: tabular-nums; }
 .quiz-clock--low { color: var(--danger) !important; }
+
+/* ═══════════════════════════════════════════════════════════════
+   КАБИНЕТ УЧЕНИКА (7-14 лет) — отдельный визуальный язык
+   ═══════════════════════════════════════════════════════════════
+
+   2026-07-30. Раньше кабинет ученика жил на той же системе, что
+   родительская и staff-панели: мягкие размытые тени, градиенты,
+   иконка в бледном квадратике. Karis справедливо сказал, что это
+   «AI-дизайн» — и это буквально так: сине-фиолетовые градиенты +
+   blur-тени + одинаковые скруглённые карточки это статистический
+   дефолт генеративных моделей, а не решение.
+
+   Здесь другой, осознанно выбранный язык — «наклейка на столе»:
+     · толстая чернильная обводка (3px), а не 1px светло-серая
+     · ТВЁРДАЯ тень без размытия (5px 5px 0), а не blur
+     · плоские насыщенные заливки, БЕЗ градиентов на поверхностях
+     · нажатие физически вдавливает элемент (translate + тень短)
+   Читается как коллекционная карточка/настолка: тактильно и
+   уверенно, не инфантильно — работает и на 7, и на 14 лет.
+
+   Всё под префиксом .kid-* и применяется только внутри /student/*,
+   чтобы не протекло в кабинет родителя (там другая аудитория). */
+.kid {
+  --ink: #1B2A1B;
+  --paper: #FFFDF7;
+  --lime: #C6FF34;
+  --grass: #3DA35D;
+  --sky: #35A7FF;
+  --sun: #FFC93C;
+  --coral: #FF6B4A;
+  --grape: #A265FF;
+  background: #F2F7EA;
+}
+
+/* Поверхность-карточка */
+.kid-card {
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 5px 5px 0 0 var(--ink);
+}
+.kid-card--flat { box-shadow: none; }
+
+/* Кликабельная поверхность: вдавливается под курсором */
+.kid-press {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.kid-press:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 0 var(--ink) !important;
+}
+.kid-press:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0 0 var(--ink);
+}
+
+/* Тропа уроков: пунктирная «нить», на которую нанизаны узлы */
+.kid-spine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  border-left: 4px dashed rgba(27, 42, 27, 0.18);
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+/* Крупные числа как элемент дизайна, а не подпись */
+.kid-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}

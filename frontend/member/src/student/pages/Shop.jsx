@@ -48,7 +48,7 @@ export default function Shop() {
         subtitle="Обменяй заработанные коины на призы"
         actions={
           balance !== null && (
-            <Pill tone="primary" className="text-sm px-3.5 py-2">
+            <Pill hue="lime" className="text-sm px-3.5 py-2">
               <Coins size={15} /> {fmtNum(balance)} коинов
             </Pill>
           )
@@ -83,14 +83,14 @@ export default function Shop() {
                   </div>
                   <div className="font-bold text-[15px] flex-1 leading-snug">{item.name}</div>
                   <div className="flex items-center justify-between gap-2">
-                    <Pill tone="primary" className="tabular-nums">
+                    <Pill hue="lime" className="tabular-nums">
                       <Coins size={13} /> {fmtNum(item.coin_price)}
                     </Pill>
                     <span className="text-xs text-base-content/45 tabular-nums">осталось {item.stock}</span>
                   </div>
                   <Button
                     size="sm"
-                    tone="purple"
+                    hue="grape"
                     className="w-full"
                     disabled={!affordable}
                     onClick={() => setConfirm(item)}
@@ -138,7 +138,7 @@ export default function Shop() {
           </p>
           <div className="flex justify-end gap-2.5 mt-6">
             <button className="btn btn-ghost rounded-2xl" onClick={() => setConfirm(null)} disabled={busy}>Отмена</button>
-            <Button tone="purple" onClick={buy} disabled={busy}>
+            <Button hue="grape" onClick={buy} disabled={busy}>
               {busy ? <span className="loading loading-spinner loading-sm" /> : 'Купить'}
             </Button>
           </div>

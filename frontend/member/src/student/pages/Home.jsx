@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Coins, Wallet, Trophy, Users, BookOpen, ArrowRight, PartyPopper, Sparkles } from 'lucide-react';
+import { Star, Trophy, Wallet, Users, BookOpen, Play, ArrowRight, Clock } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useToast } from '../components/toast.jsx';
-import {
-  StatCard, Panel, Pill, Skeleton, EmptyState, ErrorState,
-} from '../components/ui.jsx';
+import { StatTile, Panel, Pill, Skeleton, EmptyState, ErrorState, Button, INK, HUE, textOn } from '../components/ui.jsx';
 import { fmtNum, fmtMoney, fmtDateTime, deadlineLabel } from '../format.js';
+import { MOCK_TOPICS } from './Lessons.jsx';
 
+/**
+ * Главная кабинета ученика.
+ *
+ * 2026-07-30, переписана. Была тремя равными плитками-показателями и двумя
+ * равными панелями — это композиция корпоративного дашборда: всё одного
+ * веса, ребёнку непонятно, что делать. У детских обучающих приложений
+ * ровно один доминирующий элемент — «продолжить с того места, где
+ * остановился», и всё остальное подчинено ему по размеру.
+ *
+ * Здесь так же: огромная карточка следующего урока занимает верх экрана,
+ * показатели ушли ниже и стали второстепенными.
+ */
 export default function Home() {
   const { user } = useAuth();
   const toast = useToast();
@@ -23,118 +34,172 @@ export default function Home() {
     setError(null);
     api
       .home()
-      .then((d) => {
-        if (!cancelled) setData(d.data);
-      })
+      .then((d) => { if (!cancelled) setData(d.data); })
       .catch((err) => {
         if (cancelled) return;
         // без данных нельзя рисовать нули — они читаются как настоящий баланс/долг
         setError(err.message);
         toast(err.message, 'error');
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [toast, reloadKey]);
 
   const debt = Number(data?.totalDebt) || 0;
 
-  // Формулировка баннера — только из настоящих данных (коины/место), без
-  // выдуманных «уровней» и стриков, которых нет в модели данных.
-  const heroText = data?.rank?.rank
-    ? `Ты на ${data.rank.rank}-м месте в рейтинге филиала — так держать!`
-    : 'Сдавай тесты и домашки, зарабатывай коины и поднимайся в рейтинге';
+  /* Следующий урок — из того же мока, что и страница «Мои уроки»
+     (реального расписания на бэкенде пока нет, см. Lessons.jsx).
+     Когда появится эндпоинт — меняется только этот вызов. */
+  const nextTopic = MOCK_TOPICS.find((t) => !t.locked && !t.done) ?? null;
+  const doneCount = MOCK_TOPICS.filter((t) => t.done).length;
+  const progress = Math.round((doneCount / MOCK_TOPICS.length) * 100);
 
   return (
     <>
-      <div
-        className="rounded-3xl p-6 sm:p-7 mb-6 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(120deg, #16A34A 0%, #65A30D 55%, #C6FF34 130%)' }}
-      >
-        <div className="relative z-10">
-          <h1 className="text-[26px] sm:text-[32px] font-extrabold leading-tight tracking-tight">
-            Привет, {user?.firstName || 'студент'}!
-          </h1>
-          <p className="text-sm sm:text-base mt-1.5 font-semibold text-white/90 max-w-md">{heroText}</p>
+      {/* ── Доминанта: следующий урок ── */}
+      {nextTopic && (
+        <div
+          className="relative overflow-hidden mb-5 p-6 sm:p-8"
+          style={{ background: HUE.sky, border: `3px solid ${INK}`, borderRadius: 26, boxShadow: `6px 6px 0 0 ${INK}` }}
+        >
+          <nextTopic.icon
+            size={230}
+            strokeWidth={2}
+            className="absolute -right-10 -bottom-16 pointer-events-none text-white"
+            style={{ opacity: 0.14 }}
+            aria-hidden="true"
+          />
+          <div className="relative">
+            <div className="text-[12px] font-extrabold uppercase tracking-[0.1em] text-white/75">
+              Привет, {user?.firstName || 'ученик'}! Твой следующий урок
+            </div>
+            <h1 className="text-white font-extrabold leading-[1.05] tracking-[-0.02em] text-[32px] sm:text-[44px] mt-2">
+              {nextTopic.title}
+            </h1>
+            <p className="text-white/85 font-bold text-[15px] mt-2">{nextTopic.subtitle}</p>
+
+            {/* Прогресс курса — полоса с обводкой, а не тонкая линия */}
+            <div className="mt-6 max-w-sm">
+              <div className="flex items-center justify-between text-[12px] font-extrabold text-white/80 mb-1.5">
+                <span>Пройдено {doneCount} из {MOCK_TOPICS.length}</span>
+                <span className="kid-num">{progress}%</span>
+              </div>
+              <div
+                className="h-5 overflow-hidden"
+                style={{ background: 'rgba(255,255,255,0.3)', border: `3px solid ${INK}`, borderRadius: 999 }}
+              >
+                <div className="h-full" style={{ width: `${progress}%`, background: HUE.lime, borderRight: progress > 0 && progress < 100 ? `3px solid ${INK}` : 'none' }} />
+              </div>
+            </div>
+
+            <Link to={`/lessons/${nextTopic.id}`} className="inline-block mt-6">
+              <span
+                className="kid-press inline-flex items-center gap-2.5 font-extrabold text-[17px] px-7 py-3.5"
+                style={{ background: HUE.lime, color: INK, border: `3px solid ${INK}`, borderRadius: 18, boxShadow: `5px 5px 0 0 ${INK}` }}
+              >
+                <Play size={19} strokeWidth={3} fill={INK} /> Продолжить урок
+              </span>
+            </Link>
+          </div>
         </div>
-        <Sparkles size={140} strokeWidth={1} className="absolute -right-6 -bottom-10 opacity-15 pointer-events-none" aria-hidden="true" />
-      </div>
+      )}
 
       {loading ? (
-        <Skeleton h={96} count={3} />
+        <Skeleton h={132} count={3} />
       ) : error ? (
-        <div className="card bg-base-100"><ErrorState message={error} onRetry={() => setReloadKey((k) => k + 1)} /></div>
+        <div className="kid-card"><ErrorState message={error} onRetry={() => setReloadKey((k) => k + 1)} /></div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard Icon={Coins} label="Коины" value={fmtNum(data?.coins)} hint="потрать их в магазине" />
-            <StatCard
+          {/* ── Показатели: подчинены доминанте, поэтому мельче ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <StatTile
+              Icon={Star}
+              hue="sun"
+              label="Мои монеты"
+              value={fmtNum(data?.coins)}
+              hint="трать в магазине"
+            />
+            <StatTile
               Icon={Trophy}
-              tone="purple"
+              hue="grape"
               label="Место в рейтинге"
               value={data?.rank?.rank ? `#${data.rank.rank}` : '—'}
-              hint={data?.rank?.rank ? `${fmtNum(data.rank.coins)} коинов за неделю` : 'заработай коины, чтобы попасть в топ'}
+              hint={data?.rank?.rank ? `${fmtNum(data.rank.coins)} за неделю` : 'заработай монеты'}
             />
-            <StatCard
+            <StatTile
               Icon={Wallet}
-              label="Задолженность"
-              tone={debt > 0 ? 'danger' : 'success'}
-              value={debt > 0 ? fmtMoney(debt) : 'Нет'}
-              valueClass={debt > 0 ? 'text-error' : ''}
-              hint={debt > 0 ? 'уточни оплату у администратора' : undefined}
+              hue={debt > 0 ? 'coral' : 'grass'}
+              label="Оплата"
+              value={debt > 0 ? fmtMoney(debt) : 'Всё ок'}
+              hint={debt > 0 ? 'скажи родителям' : 'долгов нет'}
+              className="col-span-2 lg:col-span-1"
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5 items-start">
             <Panel
-              title="Ближайшие дедлайны"
-              icon={BookOpen}
+              title="Сдать до срока"
+              icon={Clock}
+              hue="coral"
               action={
-                <Link to="/homework" className="btn btn-ghost btn-xs gap-1 text-primary">
-                  все ДЗ <ArrowRight size={13} />
+                <Link to="/homework" className="inline-flex items-center gap-1 text-[13px] font-extrabold text-white">
+                  все <ArrowRight size={14} strokeWidth={3} />
                 </Link>
               }
             >
               {data?.upcomingHomework?.length ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {data.upcomingHomework.map((hw) => {
                     const label = deadlineLabel(hw.deadline);
+                    const urgent = label === 'сегодня' || label === 'просрочено';
                     return (
-                      <div key={hw.id} className="flex items-center gap-3 rounded-xl bg-base-200/50 border border-base-200 px-4 py-3">
+                      <div
+                        key={hw.id}
+                        className="flex items-center gap-3 px-4 py-3"
+                        style={{ background: '#F2F7EA', border: `3px solid ${INK}`, borderRadius: 18 }}
+                      >
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-bold truncate">{hw.title}</div>
-                          <div className="text-xs text-base-content/45 mt-0.5">до {fmtDateTime(hw.deadline)}</div>
+                          <div className="text-[15px] font-extrabold truncate" style={{ color: INK }}>{hw.title}</div>
+                          <div className="text-[12px] font-bold mt-0.5" style={{ color: 'rgba(27,42,27,0.5)' }}>
+                            до {fmtDateTime(hw.deadline)}
+                          </div>
                         </div>
-                        <Pill tone={label === 'сегодня' || label === 'просрочено' ? 'danger' : 'primary'}>{label}</Pill>
+                        <Pill hue={urgent ? 'coral' : 'sky'}>{label}</Pill>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <EmptyState icon={PartyPopper} title="Всё сдано!" text="Новых дедлайнов пока нет." />
+                <EmptyState icon={BookOpen} hue="grass" title="Всё сдано!" text="Новых заданий пока нет." />
               )}
             </Panel>
 
-            <Panel title="Мои группы" icon={Users}>
+            <Panel title="Моя группа" icon={Users} hue="lime">
               {data?.groups?.length ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {data.groups.map((g) => (
-                    <div key={g.id} className="flex items-center gap-3 rounded-xl bg-base-200/50 border border-base-200 px-4 py-3">
-                      <span className="w-9 h-9 rounded-lg bg-primary/12 text-primary grid place-items-center shrink-0">
-                        <Users size={16} />
+                    <div
+                      key={g.id}
+                      className="flex items-center gap-3 px-4 py-3"
+                      style={{ background: '#F2F7EA', border: `3px solid ${INK}`, borderRadius: 18 }}
+                    >
+                      <span
+                        className="w-10 h-10 grid place-items-center shrink-0"
+                        style={{ background: HUE.lime, border: `2.5px solid ${INK}`, borderRadius: 13, color: INK }}
+                      >
+                        <Users size={18} strokeWidth={2.7} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-bold truncate">{g.name}</div>
-                        <div className="text-xs text-base-content/45 mt-0.5 truncate">{g.subject} · {g.mentorName}</div>
+                        <div className="text-[15px] font-extrabold truncate" style={{ color: INK }}>{g.name}</div>
+                        <div className="text-[12px] font-bold mt-0.5 truncate" style={{ color: 'rgba(27,42,27,0.5)' }}>
+                          {g.subject} · {g.mentorName}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <EmptyState icon={Users} title="Пока нет групп" text="Администратор добавит тебя в группу." />
+                <EmptyState icon={Users} hue="sky" title="Пока нет группы" text="Администратор добавит тебя в группу." />
               )}
             </Panel>
           </div>
