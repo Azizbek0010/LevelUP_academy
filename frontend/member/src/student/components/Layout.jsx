@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Home,
-  ClipboardCheck,
   BookOpen,
-  PlayCircle,
   ShoppingBag,
   Trophy,
   LogOut,
@@ -17,11 +15,14 @@ import { initials, fmtNum } from '../format.js';
 import { Avatar } from './ui.jsx';
 import { api } from '../api.js';
 
+// 2026-07-30: «Тесты»/«Домашки»/«Видео» были тремя отдельными пунктами меню —
+// Karis попросил объединить их в один вход «Мои уроки» (список тем по дням,
+// внутри темы — вкладки Тесты/Домашние задания/Видеоуроки). Сами старые
+// страницы и роуты (/tests, /homework, /videos) не удалены — работают как
+// раньше, просто больше не в сайдбаре напрямую.
 const NAV = [
   { to: '/student', label: 'Главная', icon: Home, end: true },
-  { to: '/tests', label: 'Тесты', icon: ClipboardCheck },
-  { to: '/homework', label: 'Домашки', icon: BookOpen },
-  { to: '/videos', label: 'Видео', icon: PlayCircle },
+  { to: '/lessons', label: 'Мои уроки', icon: BookOpen },
   { to: '/shop', label: 'Магазин', icon: ShoppingBag },
   { to: '/leaderboard', label: 'Рейтинг', icon: Trophy },
 ];
