@@ -11,6 +11,7 @@ import {
   HiOutlineChartBar, HiOutlineCog,
   HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
+  HiOutlineExclamationTriangle,
 } from 'react-icons/hi2';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';

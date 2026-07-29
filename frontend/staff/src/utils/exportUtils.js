@@ -75,7 +75,7 @@ async function loadCyrillicFont(doc) {
     const [normalBuf, boldBuf] = await Promise.all([
       normalRes.arrayBuffer(),
       boldRes.arrayBuffer(),
-    });
+    ]);
 
     const normalArr = new Uint8Array(normalBuf);
     const boldArr = new Uint8Array(boldBuf);

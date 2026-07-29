@@ -1,27 +1,28 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ShieldAlert, Ban, Coins, Plus, ScrollText, UserX } from 'lucide-react';
+import { ShieldAlert, Ban, Coins, Plus, ScrollText, UserX, BookOpen, AlertTriangle, AlertCircle, Percent } from 'lucide-react';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
-import { fmt, money } from '../../format.js';
+import { fmt } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
 import { Kpi, Panel, EmptyState, Modal } from '../mentor/_ui.jsx';
-import { useAdminPenalties, useAdminMentors } from '../../queries.js';
+import { useAdminPenalties, useAdminMentors, useMyDisciplineRules } from '../../queries.js';
 
 /**
  * Дисциплина сотрудников филиала (панель Admin).
  *
- * Admin выписывает штрафы (shtraf) менторам и методистам, а увольнение (qora)
- * — только менторам (CAN_ISSUE в discipline.service.js).
+ * Admin выписывает предупреждения (sariq/qizil) менторам и методистам,
+ * а увольнение (qora) — только менторам (см. CAN_ISSUE в discipline.service.js).
  *
- * Список.methodists у admin нет — в форме выбираем только mentors.
- * Бэкенд всё равно проверяет права при выписке.
+ * Бэкенд принимает только sariq/qizil/qora. shtraf отменён 2026-07-29.
+ * amount — процент от оклада (0-100), НЕ сумма в сумах.
  */
 
 const TYPE_META = {
-  shtraf: { label: 'Штраф', Icon: Coins, cls: 'bg-warning/10 text-warning', color: 'oklch(75% 0.15 85)' },
-  qora: { label: 'Увольнение', Icon: Ban, cls: 'bg-error/10 text-error', color: 'oklch(62% 0.24 25)' },
+  sariq: { label: 'Сарық', Icon: AlertTriangle, cls: 'bg-warning/10 text-warning', color: 'oklch(75% 0.15 85)' },
+  qizil: { label: 'Қизил', Icon: AlertCircle, cls: 'bg-error/20 text-error', color: 'oklch(62% 0.24 25)' },
+  qora: { label: 'Қора', Icon: Ban, cls: 'bg-neutral/20 text-neutral', color: 'oklch(45% 0 0)' },
 };
 
 const ROLE_LABEL = {
@@ -39,9 +40,9 @@ function dateTime(iso) {
 }
 
 /* ── Модалка «Выписать взыскание» ──────────────────────────────────────── */
-function IssueModal({ open, onClose, mentors, onDone }) {
+function IssueModal({ open, onClose, staffList, onDone }) {
   const { token } = useAuth();
-  const [type, setType] = useState('shtraf');
+  const [type, setType] = useState('sariq');
   const [targetUserId, setTarget] = useState('');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
@@ -54,7 +55,11 @@ function IssueModal({ open, onClose, mentors, onDone }) {
     setErr('');
     if (!targetUserId) return setErr('Выберите сотрудника');
     if (!reason.trim()) return setErr('Укажите причину');
-    if (type === 'shtraf' && !amount) return setErr('Для штрафа нужна сумма');
+
+    const parsed = amount !== '' ? Number(amount) : undefined;
+    if (parsed != null && (isNaN(parsed) || parsed < 0 || parsed > 100)) {
+      return setErr('Процент должен быть от 0 до 100');
+    }
 
     setBusy(true);
     try {
@@ -62,11 +67,11 @@ function IssueModal({ open, onClose, mentors, onDone }) {
         targetUserId,
         type,
         reason: reason.trim(),
-        ...(type === 'shtraf' ? { amount: Number(amount) } : {}),
+        ...(parsed != null ? { amount: parsed } : {}),
       });
       onDone();
       onClose();
-      setTarget(''); setAmount(''); setReason(''); setType('shtraf');
+      setTarget(''); setAmount(''); setReason(''); setType('sariq');
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -113,37 +118,39 @@ function IssueModal({ open, onClose, mentors, onDone }) {
             onChange={(e) => setTarget(e.target.value)}
           >
             <option value="">Выберите сотрудника</option>
-            {mentors.map((m) => (
+            {staffList.map((m) => (
               <option key={m.id} value={m.id}>
-                {[m.firstName || m.first_name, m.lastName || m.last_name].filter(Boolean).join(' ')} — Ментор
+                {[m.firstName || m.first_name, m.lastName || m.last_name].filter(Boolean).join(' ')} — {ROLE_LABEL[m.role] ?? m.role}
               </option>
             ))}
           </select>
-          {mentors.length === 0 && (
+          {staffList.length === 0 && (
             <span className="text-xs text-warning mt-1">
-              Менторов не найдено — сначала добавьте ментора
+              Сотрудников не найдено
             </span>
           )}
         </label>
 
-        {type === 'shtraf' && (
-          <label className="form-control">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-              Сумма, сум
-            </span>
+        <label className="form-control">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
+            Процент от оклада (необязательно)
+          </span>
+          <div className="join w-full">
             <input
               type="number"
               min="0"
-              className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
+              max="100"
+              className="input input-bordered input-sm rounded-lg text-base sm:text-sm join-item flex-1"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="100000"
+              placeholder="0"
             />
-            <span className="text-xs text-base-content/45 mt-1">
-              Сумма не списывается автоматически — это запись для расчёта зарплаты
-            </span>
-          </label>
-        )}
+            <span className="join-item btn btn-sm btn-ghost pointer-events-none text-base-content/45">%</span>
+          </div>
+          <span className="text-xs text-base-content/45 mt-1">
+            Процент от оклада, который вычитается (например, 5 = −5% от оклада)
+          </span>
+        </label>
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
@@ -169,6 +176,74 @@ function IssueModal({ open, onClose, mentors, onDone }) {
   );
 }
 
+/* ── Панель правил дисциплины (каталог) ───────────────────────────────── */
+function RulesPanel() {
+  const { data, isLoading } = useMyDisciplineRules();
+  const rules = data?.data ?? data ?? [];
+
+  const TYPE_META_SMALL = {
+    sariq: { label: 'Сарық', Icon: AlertTriangle, cls: 'badge-warning' },
+    qizil: { label: 'Қизил', Icon: AlertCircle, cls: 'badge-error' },
+    qora: { label: 'Қора', Icon: Ban, cls: 'badge-neutral' },
+  };
+
+  return (
+    <Panel
+      title="Правила дисциплины"
+      icon={BookOpen}
+      bodyClass="p-0"
+    >
+      {isLoading ? (
+        <div className="p-4"><SkeletonTable /></div>
+      ) : rules.length === 0 ? (
+        <EmptyState
+          icon={BookOpen}
+          title="Правил пока нет"
+          hint="Super Admin может настроить правила дисциплины — они будут отображаться здесь как справочник."
+        />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="table table-sm">
+            <thead>
+              <tr>
+                <th>Уровень</th>
+                <th>Описание</th>
+                <th className="text-right w-24">% от оклада</th>
+                <th className="w-40">Добавлено</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rules.map((r) => {
+                const meta = TYPE_META_SMALL[r.type] ?? TYPE_META_SMALL.sariq;
+                return (
+                  <tr key={r.id}>
+                    <td>
+                      <span className={`badge badge-sm gap-1 ${meta.cls}`}>
+                        <meta.Icon size={11} /> {meta.label}
+                      </span>
+                    </td>
+                    <td className="text-sm max-w-md">{r.description}</td>
+                    <td className="text-right tabular-nums">
+                      {r.amount != null ? (
+                        <span className="inline-flex items-center gap-0.5 font-semibold">
+                          {r.amount} <Percent size={11} className="text-base-content/45" />
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td className="text-xs text-base-content/55">
+                      {dateTime(r.created_at || r.createdAt)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 /* ── Основной компонент ────────────────────────────────────────────────── */
 export default function AdminDiscipline() {
   const { token } = useAuth();
@@ -183,23 +258,26 @@ export default function AdminDiscipline() {
   const mentorsRaw = mentorsQuery.data?.data || mentorsQuery.data || {};
   const mentorsList = mentorsRaw.mentors || (Array.isArray(mentorsRaw) ? mentorsRaw : []);
 
+  // Admin может выдать sariq/qizil менторам и методистам, qora — только менторам.
+  // Собираем методистов и менторов вместе для формы, чтобы admin мог выбрать любого.
   const staff = useMemo(() =>
-    mentorsList.map((m) => ({ ...m, role: 'mentor' })),
+    mentorsList.map((m) => ({ ...m, role: m.role || 'mentor' })),
     [mentorsList],
   );
 
   const totals = useMemo(() => items.reduce((acc, p) => {
-    if (p.type === 'shtraf') { acc.shtraf += 1; acc.amount += Number(p.amount) || 0; }
-    else acc.qora += 1;
+    if (p.type === 'sariq') acc.sariq += 1;
+    else if (p.type === 'qizil') acc.qizil += 1;
+    else if (p.type === 'qora') acc.qora += 1;
     return acc;
-  }, { shtraf: 0, qora: 0, amount: 0 }), [items]);
+  }, { sariq: 0, qizil: 0, qora: 0 }), [items]);
 
   const shown = filter === 'all' ? items : items.filter((p) => p.type === filter);
   const refresh = () => qc.invalidateQueries({ queryKey: ['admin-penalties'] });
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Дисциплина" subtitle="Штрафы и увольнения сотрудников филиала">
+      <PageHeader title="Дисциплина" subtitle="Взыскания сотрудников филиала">
         <button
           className="btn btn-primary btn-sm gap-1.5"
           onClick={() => setIssueOpen(true)}
@@ -212,9 +290,9 @@ export default function AdminDiscipline() {
         <SkeletonKpis count={3} className="grid-cols-2 lg:grid-cols-3" />
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <Kpi Icon={Coins} tone="warning" title="Штрафы" value={fmt(totals.shtraf)} unit="записей" />
-          <Kpi Icon={ShieldAlert} tone="neutral" title="Сумма штрафов" value={money(totals.amount)} />
-          <Kpi Icon={Ban} tone="danger" title="Увольнения" value={fmt(totals.qora)} unit="сотрудников" />
+          <Kpi Icon={AlertTriangle} tone="warning" title="Сарық" value={fmt(totals.sariq)} unit="предупреждений" />
+          <Kpi Icon={AlertCircle} tone="danger" title="Қизил" value={fmt(totals.qizil)} unit="предупреждений" />
+          <Kpi Icon={Ban} tone="neutral" title="Қора" value={fmt(totals.qora)} unit="увольнений" />
         </div>
       )}
 
@@ -224,7 +302,7 @@ export default function AdminDiscipline() {
         bodyClass="p-0"
         action={
           <div className="join">
-            {[['all', 'Все'], ['shtraf', 'Штрафы'], ['qora', 'Увольнения']].map(([key, label]) => (
+            {[['all', 'Все'], ['sariq', 'Сарық'], ['qizil', 'Қизил'], ['qora', 'Қора']].map(([key, label]) => (
               <button
                 key={key}
                 className={`btn btn-xs join-item ${filter === key ? 'btn-primary' : 'btn-outline'}`}
@@ -251,7 +329,7 @@ export default function AdminDiscipline() {
                 <tr>
                   <th>Сотрудник</th>
                   <th>Вид</th>
-                  <th className="text-right">Сумма</th>
+                  <th className="text-right">% от оклада</th>
                   <th>Причина</th>
                   <th>Выписал</th>
                   <th>Когда</th>
@@ -259,7 +337,7 @@ export default function AdminDiscipline() {
               </thead>
               <tbody>
                 {shown.map((p) => {
-                  const meta = TYPE_META[p.type] ?? TYPE_META.shtraf;
+                  const meta = TYPE_META[p.type] ?? TYPE_META.sariq;
                   return (
                     <tr key={p.id}>
                       <td>
@@ -274,7 +352,7 @@ export default function AdminDiscipline() {
                         </span>
                       </td>
                       <td className="text-right tabular-nums font-semibold">
-                        {p.amount == null ? '—' : money(Number(p.amount))}
+                        {p.amount == null ? '—' : `${Number(p.amount)}%`}
                       </td>
                       <td className="max-w-xs"><span className="text-sm">{p.reason}</span></td>
                       <td className="text-sm">
@@ -295,10 +373,12 @@ export default function AdminDiscipline() {
         )}
       </Panel>
 
+      <RulesPanel />
+
       <IssueModal
         open={issueOpen}
         onClose={() => setIssueOpen(false)}
-        mentors={staff}
+        staffList={staff}
         onDone={refresh}
       />
     </div>
