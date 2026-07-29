@@ -56,6 +56,7 @@ export default function Home() {
             <StatCard Icon={Coins} label="Коины" value={fmtNum(data?.coins)} hint="потрать их в магазине" />
             <StatCard
               Icon={Trophy}
+              tone="purple"
               label="Место в рейтинге"
               value={data?.rank?.rank ? `#${data.rank.rank}` : '—'}
               hint={data?.rank?.rank ? `${fmtNum(data.rank.coins)} коинов за неделю` : 'заработай коины, чтобы попасть в топ'}
@@ -63,7 +64,7 @@ export default function Home() {
             <StatCard
               Icon={Wallet}
               label="Задолженность"
-              tone={debt > 0 ? 'danger' : 'neutral'}
+              tone={debt > 0 ? 'danger' : 'success'}
               value={debt > 0 ? fmtMoney(debt) : 'Нет 🎉'}
               valueClass={debt > 0 ? 'text-error' : ''}
               hint={debt > 0 ? 'уточни оплату у администратора' : undefined}
@@ -96,7 +97,7 @@ export default function Home() {
                   })}
                 </div>
               ) : (
-                <EmptyState icon={BookOpen} title="Всё сдано!" text="Новых дедлайнов пока нет." />
+                <EmptyState emoji="🎉" title="Всё сдано!" text="Новых дедлайнов пока нет." />
               )}
             </Panel>
 
@@ -116,7 +117,7 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                <EmptyState icon={Users} title="Пока нет групп" text="Администратор добавит тебя в группу." />
+                <EmptyState emoji="👥" title="Пока нет групп" text="Администратор добавит тебя в группу." />
               )}
             </Panel>
           </div>

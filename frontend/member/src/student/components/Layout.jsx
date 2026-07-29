@@ -34,27 +34,24 @@ function DesktopNavLink({ to, label, icon: Icon, end }) {
     <NavLink
       to={to}
       end={end}
-      className="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200"
+      className="group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] transition-all duration-200"
       style={({ isActive }) => ({
-        color: isActive ? '#C6FF34' : 'rgba(232, 239, 226, 0.55)',
-        background: isActive ? 'rgba(198, 255, 52, 0.10)' : 'transparent',
-        fontWeight: isActive ? 700 : 500,
+        color: isActive ? '#141B10' : 'rgba(232, 239, 226, 0.6)',
+        background: isActive ? '#C6FF34' : 'transparent',
+        fontWeight: isActive ? 800 : 600,
+        boxShadow: isActive ? '0 4px 14px rgba(198, 255, 52, 0.35)' : 'none',
       })}
     >
       {({ isActive }) => (
         <>
-          {isActive && (
+          <Icon size={21} strokeWidth={isActive ? 2.4 : 1.9} className="shrink-0 transition-transform group-hover:scale-110" />
+          <span className="flex-1">{label}</span>
+          {!isActive && (
             <span
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
-              style={{ background: '#C6FF34', boxShadow: '0 0 8px rgba(198, 255, 52, 0.5)' }}
+              className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none -z-10"
+              style={{ background: 'rgba(198, 255, 52, 0.08)' }}
             />
           )}
-          <Icon size={19} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
-          <span className="flex-1">{label}</span>
-          <span
-            className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-            style={{ background: 'rgba(198, 255, 52, 0.05)' }}
-          />
         </>
       )}
     </NavLink>
@@ -66,10 +63,10 @@ function MobileNavLink({ to, label, icon: Icon, end }) {
     <NavLink
       to={to}
       end={end}
-      className="flex flex-col items-center justify-center gap-1 flex-1 py-2 text-[10.5px] font-semibold transition-colors"
+      className="flex flex-col items-center justify-center gap-1 flex-1 py-2 text-[11px] font-bold transition-colors"
       style={({ isActive }) => ({ color: isActive ? '#C6FF34' : 'rgba(232, 239, 226, 0.5)' })}
     >
-      <Icon size={20} />
+      <Icon size={22} strokeWidth={2.1} />
       {label}
     </NavLink>
   );
@@ -107,7 +104,7 @@ export default function Layout() {
           <img src="/logo-white.svg" alt="LevelUp Academy" className="h-7 w-auto animate-fade-in" />
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
           {NAV.map((item) => (
             <DesktopNavLink key={item.to} {...item} />
           ))}
