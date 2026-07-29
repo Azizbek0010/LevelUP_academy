@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Home,
@@ -9,9 +9,11 @@ import {
   Trophy,
   LogOut,
   Send,
+  Coins,
+  Bell,
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
-import { initials } from '../format.js';
+import { initials, fmtNum } from '../format.js';
 import { Avatar } from './ui.jsx';
 import { api } from '../api.js';
 
@@ -69,6 +71,54 @@ function MobileNavLink({ to, label, icon: Icon, end }) {
       <Icon size={22} strokeWidth={2.1} />
       {label}
     </NavLink>
+  );
+}
+
+/* Плашки-статы в духе Mars IT (монеты/место в рейтинге всегда на виду, не
+   только на Главной) — отдельный лёгкий запрос здесь, не завязан на стейт
+   страницы Home: Layout монтируется один раз на весь /student/*, а конкретная
+   страница может быть любой. Дублирует /student/home с Home.jsx (та тоже его
+   дёргает) — на масштабе этого приложения дешевле, чем заводить общий контекст
+   ради одной цифры. */
+function useHeaderStats() {
+  const [stats, setStats] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    api.home().then((d) => { if (!cancelled) setStats(d.data); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  return stats;
+}
+
+function TopBar() {
+  const stats = useHeaderStats();
+  return (
+    <div className="flex items-center justify-end gap-2.5 mb-5">
+      <span
+        className="inline-flex items-center gap-1.5 rounded-full pl-2 pr-3.5 py-1.5 text-sm font-extrabold text-white shadow-sm"
+        style={{ background: 'linear-gradient(135deg, #FBBF24, #F59E0B)' }}
+      >
+        <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center"><Coins size={14} /></span>
+        {stats ? fmtNum(stats.coins) : '···'}
+      </span>
+      {stats?.rank?.rank && (
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full pl-2 pr-3.5 py-1.5 text-sm font-extrabold text-white shadow-sm"
+          style={{ background: 'linear-gradient(135deg, #C084FC, #7C3AED)' }}
+        >
+          <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center"><Trophy size={14} /></span>
+          #{stats.rank.rank}
+        </span>
+      )}
+      <button
+        type="button"
+        title="Уведомления"
+        aria-label="Уведомления"
+        className="w-10 h-10 rounded-full bg-base-100 border border-base-200 grid place-items-center text-base-content/45 hover:text-primary transition-colors shadow-sm"
+      >
+        <Bell size={17} />
+      </button>
+    </div>
   );
 }
 
@@ -152,6 +202,7 @@ export default function Layout() {
       {/* ── Main ── */}
       <main className="lg:ml-64 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 min-h-screen overflow-x-hidden">
         <div className="animate-page-enter max-w-6xl mx-auto">
+          <TopBar />
           <Outlet />
         </div>
       </main>

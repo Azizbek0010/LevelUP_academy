@@ -5,7 +5,7 @@ import { api } from '../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useToast } from '../components/toast.jsx';
 import {
-  PageHeader, StatCard, Panel, Pill, Skeleton, EmptyState, ErrorState,
+  StatCard, Panel, Pill, Skeleton, EmptyState, ErrorState,
 } from '../components/ui.jsx';
 import { fmtNum, fmtMoney, fmtDateTime, deadlineLabel } from '../format.js';
 
@@ -42,9 +42,26 @@ export default function Home() {
 
   const debt = Number(data?.totalDebt) || 0;
 
+  // Формулировка баннера — только из настоящих данных (коины/место), без
+  // выдуманных «уровней» и стриков, которых нет в модели данных.
+  const heroText = data?.rank?.rank
+    ? `Ты на ${data.rank.rank}-м месте в рейтинге филиала — так держать!`
+    : 'Сдавай тесты и домашки, зарабатывай коины и поднимайся в рейтинге';
+
   return (
     <>
-      <PageHeader title={`Привет, ${user?.firstName || 'студент'}! 👋`} subtitle="Твой прогресс за эту неделю" />
+      <div
+        className="rounded-3xl p-6 sm:p-7 mb-6 text-white relative overflow-hidden"
+        style={{ background: 'linear-gradient(120deg, #16A34A 0%, #65A30D 55%, #C6FF34 130%)' }}
+      >
+        <div className="relative z-10">
+          <h1 className="text-[26px] sm:text-[32px] font-extrabold leading-tight tracking-tight">
+            Привет, {user?.firstName || 'студент'}! 👋
+          </h1>
+          <p className="text-sm sm:text-base mt-1.5 font-semibold text-white/90 max-w-md">{heroText}</p>
+        </div>
+        <span className="absolute -right-4 -bottom-8 text-[110px] leading-none opacity-20 select-none" aria-hidden="true">🚀</span>
+      </div>
 
       {loading ? (
         <Skeleton h={96} count={3} />
