@@ -352,13 +352,9 @@ python scripts/rollback.py v0.1.1   # вернуть main к состоянию 
 
 ## Тестовые аккаунты
 
-| Роль | Email / Код | Пароль |
-|------|-------------|--------|
-| Main Admin | hp8187081014laptop@gmail.com | azizbek_10.3 |
-| Super Admin | azizbekamangeldiev.2010@gmail.com | (создаётся при онбординге) |
-| Student | demostud | 123456 |
-| Parent | demopare | 654321 |
-| Mentor | mentor.demo@levelup.local | ChangeMe123! |
+Пароли — в `TEST-ACCOUNTS.md` (в корне репо, в `.gitignore`, не коммитится).
+Список ролей/email там же; сюда реальные пароли больше не пишем, чтобы не
+утекали в историю git.
 
 ---
 
