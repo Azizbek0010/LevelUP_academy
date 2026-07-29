@@ -9,6 +9,12 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 5174,
+      // FE-COOP: default COOP blocks Firebase signInWithPopup from polling
+      // popup.closed — console warning (google/firebase-js-sdk#7370).
+      // same-origin-allow-popups keeps isolation but allows our own popups.
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      },
       proxy: {
         '/api': {
           /* DEV_API_PROXY впереди VITE_API_URL намеренно.
@@ -20,6 +26,15 @@ export default defineConfig(({ mode }) => {
              DEV_API_PROXY не имеет префикса VITE_ и в браузер не попадает. */
           target: env.DEV_API_PROXY || env.VITE_API_URL || 'https://api.levelup-academy.uz',
           changeOrigin: true,
+        },
+        // MP-VERIFY: socket.js подключается на VITE_API_URL || '' (тот же origin,
+        // т.е. dev-сервер), а не на бэкенд — без проксирования /socket.io чат и
+        // живая посещаемость молча не подключались (connect_error: timeout) в
+        // любом локальном запуске, что и мешало живой проверке Mentor-панели.
+        '/socket.io': {
+          target: env.DEV_API_PROXY || env.VITE_API_URL || 'https://api.levelup-academy.uz',
+          changeOrigin: true,
+          ws: true,
         },
       },
     },

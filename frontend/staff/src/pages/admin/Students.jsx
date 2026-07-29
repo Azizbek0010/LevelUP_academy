@@ -276,7 +276,7 @@ export default function AdminStudents() {
                         )}
                       </div>
                     </td>
-                    <td>
+                    <td className="tabular-nums">
                       {s.coins != null && s.coins > 0 ? (
                         <span className="flex items-center gap-1 text-primary font-semibold text-[12px]">
                           <Coins size={11} /> {s.coins}

@@ -10,8 +10,8 @@ import Splash from './components/Splash.jsx';
 const SuperDashboard = lazy(() => import('./pages/super/Dashboard.jsx'));
 const SuperBranches = lazy(() => import('./pages/super/Branches.jsx'));
 const SuperAdmins = lazy(() => import('./pages/super/Admins.jsx'));
+const SuperStaffDetail = lazy(() => import('./pages/super/StaffDetail.jsx'));
 const SuperBranchDetail = lazy(() => import('./pages/super/BranchDetail.jsx'));
-const SuperReports = lazy(() => import('./pages/super/Reports.jsx'));
 const SuperSettings = lazy(() => import('./pages/super/Settings.jsx'));
 const SuperStudents = lazy(() => import('./pages/super/Students.jsx'));
 const SuperGroups = lazy(() => import('./pages/super/Groups.jsx'));
@@ -45,6 +45,7 @@ const MentorStudents = lazy(() => import('./pages/mentor/Students.jsx'));
 const MentorStudentDetail = lazy(() => import('./pages/mentor/StudentDetail.jsx'));
 
 const MethodistDashboard = lazy(() => import('./pages/methodist/Dashboard.jsx'));
+const MethodistProfile = lazy(() => import('./pages/methodist/Profile.jsx'));
 const TrainingTypes = lazy(() => import('./pages/methodist/TrainingTypes.jsx'));
 const Topics = lazy(() => import('./pages/methodist/Topics.jsx'));
 const Lessons = lazy(() => import('./pages/methodist/Lessons.jsx'));
@@ -84,6 +85,16 @@ function MentorLegacyRedirect({ tab }) {
   return <Navigate to={`/groups?tab=${tab}`} replace />;
 }
 
+/**
+ * Super Admin Отчёты и Статистика были одной и той же выборкой (итоги +
+ * разбивка по филиалам) на двух страницах — слиты в Статистику 2026-07-28.
+ * `/reports` у Admin'а остаётся своей страницей (RoleView ниже), а старые
+ * ссылки на super-Отчёты уводим на /stats вместо 404.
+ */
+function SuperReportsRedirect() {
+  return <Navigate to="/stats" replace />;
+}
+
 const SW = ({ children }) => <Suspense fallback={<Splash />}>{children}</Suspense>;
 
 export default function App() {
@@ -101,9 +112,9 @@ export default function App() {
             тот же путь обслуживает и ментора — RoleView так же не пускает
             чужие роли (уводит на «/»), поэтому доступ админа не расширился. */}
         <Route path="/groups/:id" element={<SW><RoleView views={{ admin: AdminGroupDetail, mentor: MentorGroupWorkspace }} /></SW>} />
-        <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReports, admin: AdminReports }} /></SW>} />
+        <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReportsRedirect, admin: AdminReports }} /></SW>} />
         <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
-        <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile, mentor: MentorProfile }} /></SW>} />
+        <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile, mentor: MentorProfile, methodist: MethodistProfile }} /></SW>} />
         <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: () => <MentorLegacyRedirect tab="davomat" /> }} /></SW>} />
         <Route path="/tests" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="testlar" /> }} /></SW>} />
         <Route path="/coins" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="koinlar" /> }} /></SW>} />
@@ -129,6 +140,7 @@ export default function App() {
           <Route path="/branches" element={<SW><SuperBranches /></SW>} />
           <Route path="/branches/:id" element={<SW><SuperBranchDetail /></SW>} />
           <Route path="/admins" element={<SW><SuperAdmins /></SW>} />
+          <Route path="/admins/:role/:id" element={<SW><SuperStaffDetail /></SW>} />
           <Route path="/stats" element={<SW><SuperStats /></SW>} />
           <Route path="/announcements" element={<SW><SuperAnnouncements /></SW>} />
           <Route path="/reminders" element={<SW><SuperReminders /></SW>} />

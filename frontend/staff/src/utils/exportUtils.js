@@ -121,7 +121,7 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
   doc.text(`Дата: ${dateStr}  |  Записей: ${data.length}`, 14, 25);
 
   // Table
-  autoTable.default(doc, {
+  autoTable(doc, {
     startY: 30,
     head: [header],
     body: rows,

@@ -29,3 +29,18 @@ Nul
 # tooling junk
 .playwright-mcp/
 **/.vite/
+
+# скриншоты и артефакты прогонов: попадали в репозиторий пачками по 100+ файлов
+# (докажи-что-работает картинки к задачам). Место таким — в чате, не в истории
+screenshots/
+**/screenshots/
+docs/screenshots/
+test-results/
+**/test-results/
+playwright-report/
+**/playwright-report/
+*.png
+!frontend/logos/**
+!frontend/*/public/**
+!frontend/*/src/assets/**
+.vercel

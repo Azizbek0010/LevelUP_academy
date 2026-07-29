@@ -77,17 +77,24 @@ function mapOverdueInvoice(r) {
  * отфильтрованных по детям этого родителя, и сортируются по дате.
  * `read` всегда false — отметки прочтения фронт пока не запрашивает
  * (Notifications.jsx не вызывает mark-as-read).
+ *
+ * FE-PARENT-PAGINATION: лента — не таблица, а слияние 5 источников, поэтому
+ * обычный OFFSET не работает (он был бы неверным после слияния и сортировки).
+ * Вместо этого — курсор `before` (createdAt последнего элемента предыдущей
+ * страницы): каждый источник запрашивается заново с фильтром `< before`,
+ * снова сливается и сортируется. nextCursor возвращается, только если
+ * страница вышла полной (FEED_LIMIT) — иначе дальше грузить нечего.
  */
-export async function listForParent(parentId) {
+export async function listForParent(parentId, before = null) {
   const childIds = await repo.getChildIdsForParent(parentId);
-  if (childIds.length === 0) return [];
+  if (childIds.length === 0) return { items: [], nextCursor: null };
 
   const [homework, tests, attendance, paymentsReceived, overdueInvoices] = await Promise.all([
-    repo.getHomeworkGradeEvents(childIds, SOURCE_LIMIT),
-    repo.getTestGradeEvents(childIds, SOURCE_LIMIT),
-    repo.getAttendanceEvents(childIds, SOURCE_LIMIT),
-    repo.getPaymentReceivedEvents(childIds, SOURCE_LIMIT),
-    repo.getOverdueInvoiceEvents(childIds, SOURCE_LIMIT),
+    repo.getHomeworkGradeEvents(childIds, SOURCE_LIMIT, before),
+    repo.getTestGradeEvents(childIds, SOURCE_LIMIT, before),
+    repo.getAttendanceEvents(childIds, SOURCE_LIMIT, before),
+    repo.getPaymentReceivedEvents(childIds, SOURCE_LIMIT, before),
+    repo.getOverdueInvoiceEvents(childIds, SOURCE_LIMIT, before),
   ]);
 
   const items = [
@@ -99,5 +106,7 @@ export async function listForParent(parentId) {
   ];
 
   items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  return items.slice(0, FEED_LIMIT);
+  const page = items.slice(0, FEED_LIMIT);
+  const nextCursor = page.length === FEED_LIMIT ? page[page.length - 1].createdAt : null;
+  return { items: page, nextCursor };
 }

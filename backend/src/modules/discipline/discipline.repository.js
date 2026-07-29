@@ -91,28 +91,37 @@ export function listPenaltiesForUser(userId, client = pool) {
     .then((r) => r.rows);
 }
 
-export function getCharter(orgId, client = pool) {
+// ---------- каталог правил (qoyda) ----------
+
+export function listRules(orgId, client = pool) {
   return client
     .query(
-      `SELECT organization_id, title, content, updated_by, updated_at
-         FROM org_charters WHERE organization_id = $1`,
+      `SELECT id, type, amount, description, created_by, created_at
+         FROM discipline_rules
+        WHERE organization_id = $1
+        ORDER BY created_at DESC`,
       [orgId],
+    )
+    .then((r) => r.rows);
+}
+
+export function insertRule({ orgId, type, amount, description, createdBy }, client = pool) {
+  return client
+    .query(
+      `INSERT INTO discipline_rules (organization_id, type, amount, description, created_by)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, type, amount, description, created_by, created_at`,
+      [orgId, type, amount ?? null, description, createdBy],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function deleteRule(id, orgId, client = pool) {
+  return client
+    .query(
+      `DELETE FROM discipline_rules WHERE id = $1 AND organization_id = $2 RETURNING id`,
+      [id, orgId],
     )
     .then((r) => r.rows[0] ?? null);
 }
 
-export function upsertCharter({ orgId, title, content, updatedBy }, client = pool) {
-  return client
-    .query(
-      `INSERT INTO org_charters (organization_id, title, content, updated_by, updated_at)
-       VALUES ($1, COALESCE($2, 'Устав'), $3, $4, now())
-       ON CONFLICT (organization_id) DO UPDATE
-         SET title = COALESCE($2, org_charters.title),
-             content = $3,
-             updated_by = $4,
-             updated_at = now()
-       RETURNING organization_id, title, content, updated_by, updated_at`,
-      [orgId, title ?? null, content ?? '', updatedBy],
-    )
-    .then((r) => r.rows[0]);
-}

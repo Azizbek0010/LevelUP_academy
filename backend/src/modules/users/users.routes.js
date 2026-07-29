@@ -63,7 +63,7 @@ router.use(authenticate);
 router.get('/me', ctrl.getMe);
 router.patch('/me', validate({ body: updateProfileSchema }), ctrl.updateMe);
 
-// Своя дисциплина: сотрудник (admin/mentor/methodist) видит устав + свои штрафы.
+// Своя дисциплина: сотрудник (admin/mentor/methodist) видит каталог правил + свои штрафы.
 // authorize(...) без ctrl-роутов просто ставит req.scope и режет доступ до staff.
 /**
  * @openapi
@@ -87,33 +87,26 @@ router.patch('/me', validate({ body: updateProfileSchema }), ctrl.updateMe);
  *                     type: object
  *                     properties:
  *                       id: { type: string, format: uuid }
- *                       type: { type: string, enum: [shtraf, qora] }
+ *                       type: { type: string, enum: [sariq, qizil, shtraf, qora] }
  *                       amount: { type: number, nullable: true }
  *                       reason: { type: string }
  *                       issuer_role: { type: string }
  *                       created_at: { type: string, format: date-time }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
- * /api/users/me/charter:
+ * /api/users/me/discipline-rules:
  *   get:
  *     tags: [Discipline]
- *     summary: Own organization charter (staff self-view)
+ *     summary: Organization discipline rules catalog (staff self-view, read-only)
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
- *         description: Charter
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 data: { $ref: '#/components/schemas/Charter' }
+ *         description: Rules
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
 router.get('/me/penalties', authorize('admin', 'mentor', 'methodist'), discipline.myPenalties);
-router.get('/me/charter', authorize('admin', 'mentor', 'methodist'), discipline.getCharter);
+router.get('/me/discipline-rules', authorize('admin', 'mentor', 'methodist'), discipline.listRules);
 
 /**
  * @openapi

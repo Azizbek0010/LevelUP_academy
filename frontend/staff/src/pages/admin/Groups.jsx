@@ -225,7 +225,7 @@ export default function AdminGroups() {
                         </div>
                       </td>
                       <td className="text-base-content/70">{g.mentor?.name || g.mentorName || '—'}</td>
-                      <td>
+                      <td className="tabular-nums">
                         <span className="font-semibold">{count}</span>
                         <span className="text-base-content/45"> / {MAX_STUDENTS}</span>
                       </td>

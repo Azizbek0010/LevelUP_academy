@@ -203,7 +203,12 @@ export default function Expenses() {
     const params = new URLSearchParams();
     if (dateFrom) params.set('from', dateFrom);
     if (dateTo) params.set('to', dateTo);
-    return params.toString();
+    /* со знаком вопроса: строка подставляется прямо в путь —
+       `/admin/expenses${qs}`. Без него первый же выбранный день давал
+       запрос к `/admin/expensesfrom=2026-01-01` и список расходов падал в 404.
+       Так же сделано на всех остальных страницах панели. */
+    const s = params.toString();
+    return s ? `?${s}` : '';
   }, [dateFrom, dateTo]);
 
   const { data: expensesRes, isLoading: loading, error: queryError, refetch } = useAdminExpenses(qs);
