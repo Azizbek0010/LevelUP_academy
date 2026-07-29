@@ -10,6 +10,7 @@ build/
 .env
 .env.*
 !.env.example
+TEST-ACCOUNTS.md
 
 # logs
 *.log
