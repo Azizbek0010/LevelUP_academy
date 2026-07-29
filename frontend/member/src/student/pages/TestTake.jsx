@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Timer, ArrowLeft } from 'lucide-react';
 import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { Skeleton } from '../components/ui.jsx';
+import { Skeleton, Button } from '../components/ui.jsx';
 import { fmtDuration } from '../format.js';
 
 /**
@@ -140,7 +140,7 @@ export default function TestTake() {
             <p className="text-sm text-base-content/55 mb-6">{error}</p>
           </>
         )}
-        <Link to="/tests" className="btn btn-neutral gap-2">
+        <Link to="/tests" className="btn btn-neutral rounded-2xl gap-2">
           <ArrowLeft size={16} /> К списку тестов
         </Link>
       </div>
@@ -162,11 +162,11 @@ export default function TestTake() {
           </p>
         )}
         <div className="flex gap-2.5">
-          <Link to="/tests" className="btn btn-ghost">Назад</Link>
+          <Link to="/tests" className="btn btn-ghost rounded-2xl">Назад</Link>
           {!error && (
-            <button className="btn btn-primary flex-1" onClick={start} disabled={busy}>
+            <Button className="flex-1" onClick={start} disabled={busy}>
               {busy ? <span className="loading loading-spinner loading-sm" /> : 'Начать тест'}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -226,9 +226,9 @@ export default function TestTake() {
         <span className="text-sm text-base-content/55">
           Отвечено: <b className="tabular-nums text-base-content">{answered}/{test.questions.length}</b>
         </span>
-        <button className="btn btn-primary" onClick={() => submit(false)} disabled={busy}>
+        <Button onClick={() => submit(false)} disabled={busy}>
           {busy ? <span className="loading loading-spinner loading-sm" /> : 'Завершить тест'}
-        </button>
+        </Button>
       </div>
     </div>
   );

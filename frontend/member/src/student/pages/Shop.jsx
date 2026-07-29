@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ShoppingBag, Coins, Gift, History } from 'lucide-react';
 import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill, Tabs } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill, Tabs, Button } from '../components/ui.jsx';
 import { fmtNum, fmtDateTime } from '../format.js';
 
 export default function Shop() {
@@ -88,13 +88,15 @@ export default function Shop() {
                     </Pill>
                     <span className="text-xs text-base-content/45 tabular-nums">осталось {item.stock}</span>
                   </div>
-                  <button
-                    className="btn btn-sm btn-neutral w-full"
+                  <Button
+                    size="sm"
+                    tone="purple"
+                    className="w-full"
                     disabled={!affordable}
                     onClick={() => setConfirm(item)}
                   >
                     {affordable ? 'Купить' : 'Не хватает коинов'}
-                  </button>
+                  </Button>
                 </div>
               );
             })}
@@ -135,10 +137,10 @@ export default function Shop() {
             Коины спишутся сразу, приз выдаст администратор филиала.
           </p>
           <div className="flex justify-end gap-2.5 mt-6">
-            <button className="btn btn-ghost" onClick={() => setConfirm(null)} disabled={busy}>Отмена</button>
-            <button className="btn btn-primary" onClick={buy} disabled={busy}>
+            <button className="btn btn-ghost rounded-2xl" onClick={() => setConfirm(null)} disabled={busy}>Отмена</button>
+            <Button tone="purple" onClick={buy} disabled={busy}>
               {busy ? <span className="loading loading-spinner loading-sm" /> : 'Купить'}
-            </button>
+            </Button>
           </div>
         </Modal>
       )}

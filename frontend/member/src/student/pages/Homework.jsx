@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BookOpen, Paperclip, Coins } from 'lucide-react';
 import { api, uploadToPresignedUrl } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill, Button } from '../components/ui.jsx';
 import { fmtDateTime, deadlineLabel } from '../format.js';
 
 function StatusPill({ hw }) {
@@ -104,9 +104,9 @@ export default function Homework() {
                 </div>
                 <StatusPill hw={hw} />
                 {canSubmit && (
-                  <button className="btn btn-sm btn-neutral" onClick={() => openSubmit(hw)}>
+                  <Button size="sm" tone="info" onClick={() => openSubmit(hw)}>
                     {hw.submission_status ? 'Пересдать' : 'Сдать'}
-                  </button>
+                  </Button>
                 )}
               </div>
             );
@@ -144,12 +144,12 @@ export default function Homework() {
               />
             </div>
             <div className="flex justify-end gap-2.5 pt-1">
-              <button type="button" className="btn btn-ghost" onClick={() => setActive(null)} disabled={busy}>
+              <button type="button" className="btn btn-ghost rounded-2xl" onClick={() => setActive(null)} disabled={busy}>
                 Отмена
               </button>
-              <button className="btn btn-primary" disabled={busy}>
+              <Button disabled={busy}>
                 {busy ? <span className="loading loading-spinner loading-sm" /> : 'Отправить'}
-              </button>
+              </Button>
             </div>
           </form>
         </Modal>

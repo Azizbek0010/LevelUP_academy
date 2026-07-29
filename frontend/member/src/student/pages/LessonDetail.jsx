@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ClipboardCheck, BookOpen, PlayCircle, Coins, Clock, HelpCircle } from 'lucide-react';
-import { Tabs, EmptyState } from '../components/ui.jsx';
+import { Tabs, EmptyState, Button } from '../components/ui.jsx';
 import { MOCK_TOPICS } from './Lessons.jsx';
 
 /**
@@ -37,9 +37,9 @@ function TestsTab({ topic }) {
           </div>
         </div>
       </div>
-      <button type="button" className="btn btn-primary rounded-full mt-5 font-bold w-full sm:w-auto">
+      <Button tone="info" className="mt-5 w-full sm:w-auto">
         {topic.done ? 'Пройти ещё раз' : 'Начать квиз'}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -61,9 +61,9 @@ function HomeworkTab({ topic }) {
           </p>
         </div>
       </div>
-      <button type="button" className="btn btn-outline rounded-full mt-5 font-bold w-full sm:w-auto" disabled>
+      <Button tone="warning" disabled className="mt-5 w-full sm:w-auto">
         Пока нет задания
-      </button>
+      </Button>
     </div>
   );
 }
@@ -98,7 +98,7 @@ export default function LessonDetail() {
           icon={HelpCircle}
           title="Тема не найдена"
           text="Вернись к списку и выбери тему заново."
-          action={<Link to="/lessons" className="btn btn-primary rounded-full font-bold">К урокам</Link>}
+          action={<Button onClick={() => navigate('/lessons')}>К урокам</Button>}
         />
       </div>
     );

@@ -134,6 +134,56 @@ export function Pill({ tone = 'muted', children, className = '' }) {
   );
 }
 
+/* ── Кнопка ─────────────────────────────────────────────────────────────
+   Фирменный «объёмный» вид игровых edtech-приложений (Duolingo и т.п.):
+   плоская заливка + нижняя тень 4px, при нажатии кнопка «проваливается»
+   на transform. Не градиент, не эмодзи — просто тактильная форма, которая
+   и делает интерфейс «игровым» без единого стикера. Инлайн-style для
+   цвета/тени, потому что Tailwind не даёт собрать произвольный
+   box-shadow-цвет по имени тона во время сборки. */
+const BUTTON_TONES = {
+  primary: { bg: '#65A30D', shadow: '#3F6212' },
+  info: { bg: '#2563EB', shadow: '#1E3A8A' },
+  purple: { bg: '#7C3AED', shadow: '#4C1D95' },
+  warning: { bg: '#F59E0B', shadow: '#92400E' },
+  neutral: { bg: '#64748B', shadow: '#334155' },
+};
+
+const BUTTON_SIZES = {
+  sm: 'px-4 py-2 text-[13px] rounded-xl',
+  md: 'px-6 py-3 text-[15px] rounded-2xl',
+};
+
+export function Button({ tone = 'primary', variant = 'solid', size = 'md', className = '', disabled, children, ...props }) {
+  const t = BUTTON_TONES[tone] ?? BUTTON_TONES.primary;
+  const sizeCls = BUTTON_SIZES[size] ?? BUTTON_SIZES.md;
+  if (variant === 'outline') {
+    return (
+      <button
+        {...props}
+        disabled={disabled}
+        className={`inline-flex items-center justify-center gap-2 font-extrabold border-2 transition-colors disabled:opacity-40 disabled:pointer-events-none ${sizeCls} ${className}`}
+        style={{ borderColor: t.bg, color: t.bg }}
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <button
+      {...props}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center gap-2 font-extrabold text-white transition-transform active:translate-y-[3px] disabled:pointer-events-none ${sizeCls} ${className}`}
+      style={{
+        background: disabled ? '#CBD5E1' : t.bg,
+        boxShadow: disabled ? 'none' : `0 ${size === 'sm' ? '3px' : '4px'} 0 0 ${disabled ? 'transparent' : t.shadow}`,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 /* ── Сегментированные вкладки ───────────────────────────────────────────── */
 export function Tabs({ value, onChange, items }) {
   return (
@@ -204,9 +254,9 @@ export function ErrorState({ message, onRetry }) {
       <p className="text-base font-extrabold text-base-content/80">Ой, что-то не загрузилось</p>
       {message && <p className="text-sm text-base-content/50 mt-1.5 max-w-xs font-medium">{message}</p>}
       {onRetry && (
-        <button type="button" className="btn btn-primary rounded-full mt-4 gap-1.5 font-bold" onClick={onRetry}>
+        <Button type="button" onClick={onRetry} className="mt-4">
           Попробовать снова <ArrowRight size={14} />
-        </button>
+        </Button>
       )}
     </div>
   );
