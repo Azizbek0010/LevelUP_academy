@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Coins, Wallet, Trophy, Users, BookOpen, ArrowRight } from 'lucide-react';
+import { Coins, Wallet, Trophy, Users, BookOpen, ArrowRight, PartyPopper, Sparkles } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useToast } from '../components/toast.jsx';
@@ -56,11 +56,11 @@ export default function Home() {
       >
         <div className="relative z-10">
           <h1 className="text-[26px] sm:text-[32px] font-extrabold leading-tight tracking-tight">
-            Привет, {user?.firstName || 'студент'}! 👋
+            Привет, {user?.firstName || 'студент'}!
           </h1>
           <p className="text-sm sm:text-base mt-1.5 font-semibold text-white/90 max-w-md">{heroText}</p>
         </div>
-        <span className="absolute -right-4 -bottom-8 text-[110px] leading-none opacity-20 select-none" aria-hidden="true">🚀</span>
+        <Sparkles size={140} strokeWidth={1} className="absolute -right-6 -bottom-10 opacity-15 pointer-events-none" aria-hidden="true" />
       </div>
 
       {loading ? (
@@ -82,7 +82,7 @@ export default function Home() {
               Icon={Wallet}
               label="Задолженность"
               tone={debt > 0 ? 'danger' : 'success'}
-              value={debt > 0 ? fmtMoney(debt) : 'Нет 🎉'}
+              value={debt > 0 ? fmtMoney(debt) : 'Нет'}
               valueClass={debt > 0 ? 'text-error' : ''}
               hint={debt > 0 ? 'уточни оплату у администратора' : undefined}
             />
@@ -114,7 +114,7 @@ export default function Home() {
                   })}
                 </div>
               ) : (
-                <EmptyState emoji="🎉" title="Всё сдано!" text="Новых дедлайнов пока нет." />
+                <EmptyState icon={PartyPopper} title="Всё сдано!" text="Новых дедлайнов пока нет." />
               )}
             </Panel>
 
@@ -134,7 +134,7 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                <EmptyState emoji="👥" title="Пока нет групп" text="Администратор добавит тебя в группу." />
+                <EmptyState icon={Users} title="Пока нет групп" text="Администратор добавит тебя в группу." />
               )}
             </Panel>
           </div>

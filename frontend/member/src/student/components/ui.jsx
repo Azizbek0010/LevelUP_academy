@@ -178,15 +178,14 @@ export function RowSkeleton({ count = 3, height = 'h-14' }) {
 }
 
 /* ── Пустое состояние ─────────────────────────────────────────────────────
-   Раньше: серая иконка в сером квадрате + сухой канцелярский текст.
-   Теперь: крупный цветной эмодзи-бейдж + ободряющая формулировка — ребёнку
-   пустой список не должен читаться как «ошибка», а как «пока пусто, но
-   скоро будет». */
-export function EmptyState({ icon: Icon = Inbox, title, text, action, emoji }) {
+   Karis: никаких эмодзи-как-иконок («стикеры») — даже для ободряющего тона.
+   Цветной бейдж + нормальная векторная иконка (lucide, тот же язык, что и
+   везде в приложении) делают то же самое дружелюбнее, без дешёвого вида. */
+export function EmptyState({ icon: Icon = Inbox, title, text, action }) {
   return (
     <div className="flex flex-col items-center justify-center text-center px-6 py-16">
-      <span className="w-20 h-20 rounded-3xl bg-primary/10 text-primary grid place-items-center mb-4 text-4xl">
-        {emoji || <Icon size={32} />}
+      <span className="w-20 h-20 rounded-3xl bg-primary/10 text-primary grid place-items-center mb-4">
+        <Icon size={34} />
       </span>
       <p className="text-base font-extrabold text-base-content/80">{title}</p>
       {text && <p className="text-sm text-base-content/50 mt-1.5 max-w-xs font-medium">{text}</p>}

@@ -6,15 +6,17 @@ import { useToast } from '../components/toast.jsx';
 import { PageHeader, Skeleton, EmptyState, ErrorState, Tabs, Avatar } from '../components/ui.jsx';
 import { fmtNum } from '../format.js';
 
-const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' };
+// Медали как цвет+иконка, не emoji — золото/серебро/бронза через lucide Trophy.
+const MEDAL_COLORS = { 1: '#F59E0B', 2: '#94A3B8', 3: '#B45309' };
 
 function LeaderRow({ r, me }) {
+  const medalColor = MEDAL_COLORS[r.rank];
   return (
     <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
       me ? 'border-primary/40 bg-primary/8' : 'border-base-200 bg-base-200/40'
     }`}>
-      <span className="w-7 text-center font-extrabold text-[15px] tabular-nums shrink-0">
-        {MEDALS[r.rank] ?? r.rank}
+      <span className="w-7 flex items-center justify-center font-extrabold text-[15px] tabular-nums shrink-0">
+        {medalColor ? <Trophy size={18} style={{ color: medalColor }} fill={medalColor} /> : r.rank}
       </span>
       <Avatar name={`${r.firstName ?? ''} ${r.lastName ?? ''}`} size="sm" />
       <div className="min-w-0 flex-1">

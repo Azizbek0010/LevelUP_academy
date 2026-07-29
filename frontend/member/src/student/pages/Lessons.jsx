@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Lock, ClipboardCheck, BookOpen, PlayCircle, ChevronRight } from 'lucide-react';
+import { Lock, ClipboardCheck, ChevronRight, Globe, Palette, LayoutGrid, Braces, MousePointerClick } from 'lucide-react';
 
 /**
  * «Мои уроки» — прототип UI, данные захардкожены намеренно (Karis: «hozir
@@ -12,17 +12,20 @@ import { Lock, ClipboardCheck, BookOpen, PlayCircle, ChevronRight } from 'lucide
  * Разблокировка последовательная (как в Duolingo) — тема открывается только
  * после предыдущей. `locked` тут тоже мок: в реальных данных это будет
  * считаться на бэкенде по прогрессу ученика.
+ *
+ * Иконки — только lucide (векторные), никаких emoji-как-иконок: Karis прямо
+ * попросил убрать «стикерный» вид.
  */
 export const MOCK_TOPICS = [
-  { id: '1', day: 1, emoji: '🌐', title: 'HTML — основы', subtitle: 'Теги, структура страницы', locked: false, done: true, testScore: 100 },
-  { id: '2', day: 2, emoji: '🎨', title: 'CSS — стили', subtitle: 'Цвета, отступы, шрифты', locked: false, done: true, testScore: 80 },
-  { id: '3', day: 3, emoji: '📐', title: 'Flexbox и Grid', subtitle: 'Раскладка элементов на странице', locked: false, done: false, testScore: null },
-  { id: '4', day: 4, emoji: '⚡', title: 'JavaScript — переменные', subtitle: 'Первые шаги в программировании', locked: true, done: false, testScore: null },
-  { id: '5', day: 5, emoji: '🖱️', title: 'DOM и события', subtitle: 'Как оживить страницу', locked: true, done: false, testScore: null },
+  { id: '1', day: 1, icon: Globe, title: 'HTML — основы', subtitle: 'Теги, структура страницы', locked: false, done: true, testScore: 100 },
+  { id: '2', day: 2, icon: Palette, title: 'CSS — стили', subtitle: 'Цвета, отступы, шрифты', locked: false, done: true, testScore: 80 },
+  { id: '3', day: 3, icon: LayoutGrid, title: 'Flexbox и Grid', subtitle: 'Раскладка элементов на странице', locked: false, done: false, testScore: null },
+  { id: '4', day: 4, icon: Braces, title: 'JavaScript — переменные', subtitle: 'Первые шаги в программировании', locked: true, done: false, testScore: null },
+  { id: '5', day: 5, icon: MousePointerClick, title: 'DOM и события', subtitle: 'Как оживить страницу', locked: true, done: false, testScore: null },
 ];
 
 function TopicRow({ topic, onOpen }) {
-  const { day, emoji, title, subtitle, locked, done, testScore } = topic;
+  const { day, icon: Icon, title, subtitle, locked, done, testScore } = topic;
   return (
     <button
       type="button"
@@ -35,7 +38,7 @@ function TopicRow({ topic, onOpen }) {
       }`}
     >
       <span
-        className="w-14 h-14 rounded-2xl grid place-items-center shrink-0 text-2xl font-extrabold text-white shadow-sm"
+        className="w-14 h-14 rounded-2xl grid place-items-center shrink-0 text-white shadow-sm"
         style={{
           background: locked
             ? 'linear-gradient(135deg, #CBD5E1, #94A3B8)'
@@ -44,7 +47,7 @@ function TopicRow({ topic, onOpen }) {
               : 'linear-gradient(135deg, #60A5FA, #2563EB)',
         }}
       >
-        {locked ? <Lock size={22} /> : emoji}
+        {locked ? <Lock size={22} /> : <Icon size={24} />}
       </span>
 
       <div className="min-w-0 flex-1">
@@ -80,7 +83,7 @@ export default function Lessons() {
   return (
     <>
       <div className="mb-6">
-        <h1 className="text-[26px] sm:text-[32px] font-extrabold leading-tight tracking-tight">Мои уроки 📚</h1>
+        <h1 className="text-[26px] sm:text-[32px] font-extrabold leading-tight tracking-tight">Мои уроки</h1>
         <p className="text-sm sm:text-base text-base-content/55 mt-1 font-medium">
           Проходи темы по порядку — новая открывается, когда сдана предыдущая
         </p>

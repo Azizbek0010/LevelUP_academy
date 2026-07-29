@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, ClipboardCheck, BookOpen, PlayCircle, Coins, Clock } from 'lucide-react';
+import { ArrowLeft, ClipboardCheck, BookOpen, PlayCircle, Coins, Clock, HelpCircle } from 'lucide-react';
 import { Tabs, EmptyState } from '../components/ui.jsx';
 import { MOCK_TOPICS } from './Lessons.jsx';
 
@@ -95,7 +95,7 @@ export default function LessonDetail() {
     return (
       <div className="card bg-base-100 rounded-3xl">
         <EmptyState
-          emoji="🤔"
+          icon={HelpCircle}
           title="Тема не найдена"
           text="Вернись к списку и выбери тему заново."
           action={<Link to="/lessons" className="btn btn-primary rounded-full font-bold">К урокам</Link>}
@@ -111,7 +111,12 @@ export default function LessonDetail() {
       </button>
 
       <div className="flex items-center gap-3 mb-6">
-        <span className="text-3xl">{topic.emoji}</span>
+        <span
+          className="w-12 h-12 rounded-2xl grid place-items-center shrink-0 text-white shadow-sm"
+          style={{ background: 'linear-gradient(135deg, #4ADE80, #16A34A)' }}
+        >
+          <topic.icon size={22} />
+        </span>
         <div>
           <div className="text-[11px] font-extrabold uppercase tracking-wider text-base-content/40">День {topic.day}</div>
           <h1 className="text-2xl font-extrabold leading-tight">{topic.title}</h1>

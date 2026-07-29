@@ -125,7 +125,7 @@ export default function TestTake() {
             <div className="score-ring" style={{ '--score': score }}>
               <span className={score >= 50 ? 'text-primary' : 'text-error'}>{score}%</span>
             </div>
-            <h2 className="text-xl font-extrabold mb-2">{score >= 50 ? 'Тест сдан! 🎉' : 'Тест не сдан'}</h2>
+            <h2 className="text-xl font-extrabold mb-2">{score >= 50 ? 'Тест сдан!' : 'Тест не сдан'}</h2>
             <p className="text-sm text-base-content/55 mb-6">
               {score >= 50
                 ? row?.coin_reward > 0

@@ -35,7 +35,7 @@ export default function Shop() {
       setConfirm(null);
       load();
     } catch (err) {
-      toast(err.status === 422 ? 'Не хватает коинов 😢' : err.message, 'error');
+      toast(err.status === 422 ? 'Не хватает коинов' : err.message, 'error');
     } finally {
       setBusy(false);
     }
