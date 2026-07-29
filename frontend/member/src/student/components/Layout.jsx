@@ -91,34 +91,48 @@ function useHeaderStats() {
   return stats;
 }
 
+/* 2026-07-30: Karis просил в шапке аккаунт + монеты + вторую характеристику
+   (не копируя название у Mars) — раньше тут была только плашка монет, а
+   рейтинг показывался, только если он есть, и без реальных данных (у тестового
+   ученика рейтинга ещё нет) выглядело так, будто задание проигнорировали.
+   Теперь: аккаунт слева, обе плашки справа всегда видны («—» вместо скрытия). */
 function TopBar() {
+  const { user } = useAuth();
   const stats = useHeaderStats();
+  const name = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Студент';
+
   return (
-    <div className="flex items-center justify-end gap-2.5 mb-5">
-      <span
-        className="inline-flex items-center gap-1.5 rounded-full pl-2 pr-3.5 py-1.5 text-sm font-extrabold text-white shadow-sm"
-        style={{ background: 'linear-gradient(135deg, #FBBF24, #F59E0B)' }}
-      >
-        <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center"><Coins size={14} /></span>
-        {stats ? fmtNum(stats.coins) : '···'}
-      </span>
-      {stats?.rank?.rank && (
+    <div className="flex items-center justify-between gap-3 mb-6">
+      <div className="flex items-center gap-2.5 bg-base-100 rounded-full pl-1.5 pr-4 py-1.5 shadow-sm border border-base-200">
+        <Avatar name={name} size="sm" />
+        <span className="text-sm font-extrabold truncate max-w-[140px] sm:max-w-none">{name}</span>
+      </div>
+
+      <div className="flex items-center gap-2.5">
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full pl-2 pr-3.5 py-1.5 text-sm font-extrabold text-white shadow-sm"
+          style={{ background: 'linear-gradient(135deg, #FBBF24, #F59E0B)' }}
+        >
+          <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center"><Coins size={14} /></span>
+          {stats ? fmtNum(stats.coins) : '···'}
+        </span>
         <span
           className="inline-flex items-center gap-1.5 rounded-full pl-2 pr-3.5 py-1.5 text-sm font-extrabold text-white shadow-sm"
           style={{ background: 'linear-gradient(135deg, #C084FC, #7C3AED)' }}
+          title="Место в рейтинге филиала"
         >
           <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center"><Trophy size={14} /></span>
-          #{stats.rank.rank}
+          {stats ? (stats.rank?.rank ? `#${stats.rank.rank}` : '—') : '···'}
         </span>
-      )}
-      <button
-        type="button"
-        title="Уведомления"
-        aria-label="Уведомления"
-        className="w-10 h-10 rounded-full bg-base-100 border border-base-200 grid place-items-center text-base-content/45 hover:text-primary transition-colors shadow-sm"
-      >
-        <Bell size={17} />
-      </button>
+        <button
+          type="button"
+          title="Уведомления"
+          aria-label="Уведомления"
+          className="w-10 h-10 rounded-full bg-base-100 border border-base-200 grid place-items-center text-base-content/45 hover:text-primary transition-colors shadow-sm shrink-0"
+        >
+          <Bell size={17} />
+        </button>
+      </div>
     </div>
   );
 }
