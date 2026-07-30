@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ShoppingBag, Coins, Gift, History } from 'lucide-react';
 import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill, Tabs } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill, Tabs, Button } from '../components/ui.jsx';
 import { fmtNum, fmtDateTime } from '../format.js';
 
 export default function Shop() {
@@ -35,7 +35,7 @@ export default function Shop() {
       setConfirm(null);
       load();
     } catch (err) {
-      toast(err.status === 422 ? 'Не хватает коинов 😢' : err.message, 'error');
+      toast(err.status === 422 ? 'Не хватает коинов' : err.message, 'error');
     } finally {
       setBusy(false);
     }
@@ -48,7 +48,7 @@ export default function Shop() {
         subtitle="Обменяй заработанные коины на призы"
         actions={
           balance !== null && (
-            <Pill tone="primary" className="text-sm px-3.5 py-2">
+            <Pill hue="lime" className="text-sm px-3.5 py-2">
               <Coins size={15} /> {fmtNum(balance)} коинов
             </Pill>
           )
@@ -83,18 +83,20 @@ export default function Shop() {
                   </div>
                   <div className="font-bold text-[15px] flex-1 leading-snug">{item.name}</div>
                   <div className="flex items-center justify-between gap-2">
-                    <Pill tone="primary" className="tabular-nums">
+                    <Pill hue="lime" className="tabular-nums">
                       <Coins size={13} /> {fmtNum(item.coin_price)}
                     </Pill>
                     <span className="text-xs text-base-content/45 tabular-nums">осталось {item.stock}</span>
                   </div>
-                  <button
-                    className="btn btn-sm btn-neutral w-full"
+                  <Button
+                    size="sm"
+                    hue="lime"
+                    className="w-full"
                     disabled={!affordable}
                     onClick={() => setConfirm(item)}
                   >
                     {affordable ? 'Купить' : 'Не хватает коинов'}
-                  </button>
+                  </Button>
                 </div>
               );
             })}
@@ -135,10 +137,10 @@ export default function Shop() {
             Коины спишутся сразу, приз выдаст администратор филиала.
           </p>
           <div className="flex justify-end gap-2.5 mt-6">
-            <button className="btn btn-ghost" onClick={() => setConfirm(null)} disabled={busy}>Отмена</button>
-            <button className="btn btn-primary" onClick={buy} disabled={busy}>
+            <button className="btn btn-ghost rounded-2xl" onClick={() => setConfirm(null)} disabled={busy}>Отмена</button>
+            <Button hue="lime" onClick={buy} disabled={busy}>
               {busy ? <span className="loading loading-spinner loading-sm" /> : 'Купить'}
-            </button>
+            </Button>
           </div>
         </Modal>
       )}

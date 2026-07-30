@@ -2,16 +2,16 @@ import { useEffect, useState } from 'react';
 import { BookOpen, Paperclip, Coins } from 'lucide-react';
 import { api, uploadToPresignedUrl } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill, Button } from '../components/ui.jsx';
 import { fmtDateTime, deadlineLabel } from '../format.js';
 
 function StatusPill({ hw }) {
   if (hw.submission_status === 'graded')
-    return <Pill tone="success">Оценено · {hw.score}/{hw.max_score}</Pill>;
-  if (hw.submission_status === 'late') return <Pill tone="danger">Сдано с опозданием</Pill>;
-  if (hw.submission_status === 'submitted') return <Pill tone="primary">На проверке</Pill>;
+    return <Pill hue="teal">Оценено · {hw.score}/{hw.max_score}</Pill>;
+  if (hw.submission_status === 'late') return <Pill hue="coral">Сдано с опозданием</Pill>;
+  if (hw.submission_status === 'submitted') return <Pill hue="lime">На проверке</Pill>;
   const overdue = hw.deadline && Date.now() > new Date(hw.deadline).getTime();
-  return overdue ? <Pill tone="danger">Просрочено</Pill> : <Pill tone="muted">{deadlineLabel(hw.deadline)}</Pill>;
+  return overdue ? <Pill hue="coral">Просрочено</Pill> : <Pill hue="muted">{deadlineLabel(hw.deadline)}</Pill>;
 }
 
 export default function Homework() {
@@ -104,9 +104,9 @@ export default function Homework() {
                 </div>
                 <StatusPill hw={hw} />
                 {canSubmit && (
-                  <button className="btn btn-sm btn-neutral" onClick={() => openSubmit(hw)}>
+                  <Button size="sm" hue="lime" onClick={() => openSubmit(hw)}>
                     {hw.submission_status ? 'Пересдать' : 'Сдать'}
-                  </button>
+                  </Button>
                 )}
               </div>
             );
@@ -144,12 +144,12 @@ export default function Homework() {
               />
             </div>
             <div className="flex justify-end gap-2.5 pt-1">
-              <button type="button" className="btn btn-ghost" onClick={() => setActive(null)} disabled={busy}>
+              <button type="button" className="btn btn-ghost rounded-2xl" onClick={() => setActive(null)} disabled={busy}>
                 Отмена
               </button>
-              <button className="btn btn-primary" disabled={busy}>
+              <Button disabled={busy}>
                 {busy ? <span className="loading loading-spinner loading-sm" /> : 'Отправить'}
-              </button>
+              </Button>
             </div>
           </form>
         </Modal>

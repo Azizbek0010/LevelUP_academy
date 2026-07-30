@@ -1,83 +1,68 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import {
-  Home,
-  ClipboardCheck,
-  BookOpen,
-  PlayCircle,
-  ShoppingBag,
-  Trophy,
-  LogOut,
-  Send,
-} from 'lucide-react';
+import { Home, BookOpen, ShoppingBag, Trophy, LogOut, Send, Bell, Star, Zap } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
-import { initials } from '../format.js';
-import { Avatar } from './ui.jsx';
+import { fmtNum } from '../format.js';
+import { Avatar, C } from './ui.jsx';
 import { api } from '../api.js';
+
+/**
+ * Каркас кабинета ученика.
+ *
+ * По референсам от Karis (скриншоты 043704 и 044228):
+ *   · сайдбар СВЕТЛЫЙ, активный пункт — залитая лаймовая таблетка
+ *     (у Mars такая же по смыслу, но оранжевая; лайм — наш брендовый)
+ *   · шапка во всю ширину: аккаунт, монеты, энергия, уведомления
+ *
+ * «Энергия» — задел под будущую механику (Karis: «Энергия от задач это
+ * доп-фича потом сделаем»). Значение сейчас не выдумывается: показываем
+ * прочерк, пока на бэкенде нет источника, чтобы цифра не врала.
+ */
 
 const NAV = [
   { to: '/student', label: 'Главная', icon: Home, end: true },
-  { to: '/tests', label: 'Тесты', icon: ClipboardCheck },
-  { to: '/homework', label: 'Домашки', icon: BookOpen },
-  { to: '/videos', label: 'Видео', icon: PlayCircle },
+  { to: '/lessons', label: 'Мои уроки', icon: BookOpen },
   { to: '/shop', label: 'Магазин', icon: ShoppingBag },
   { to: '/leaderboard', label: 'Рейтинг', icon: Trophy },
 ];
 
-/* Градиент и активные состояния — язык сайдбара staff. Лайм (limebrand) —
-   брендовый акцент для тёмной поверхности: на #16210f он читается 12:1, тогда
-   как лесной зелёный primary — всего ~2:1. */
-const SIDEBAR_BG = 'linear-gradient(180deg, #0f1a0a 0%, #16210f 40%, #1a2912 100%)';
-
-function DesktopNavLink({ to, label, icon: Icon, end }) {
-  return (
-    <NavLink
-      to={to}
-      end={end}
-      className="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200"
-      style={({ isActive }) => ({
-        color: isActive ? '#C6FF34' : 'rgba(232, 239, 226, 0.55)',
-        background: isActive ? 'rgba(198, 255, 52, 0.10)' : 'transparent',
-        fontWeight: isActive ? 700 : 500,
-      })}
-    >
-      {({ isActive }) => (
-        <>
-          {isActive && (
-            <span
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
-              style={{ background: '#C6FF34', boxShadow: '0 0 8px rgba(198, 255, 52, 0.5)' }}
-            />
-          )}
-          <Icon size={19} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
-          <span className="flex-1">{label}</span>
-          <span
-            className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-            style={{ background: 'rgba(198, 255, 52, 0.05)' }}
-          />
-        </>
-      )}
-    </NavLink>
-  );
+/* Монеты нужны в шапке на всех страницах, поэтому запрос здесь: Layout
+   монтируется один раз на весь /student/*. Дублирует /student/home с
+   Home.jsx — дешевле, чем общий контекст ради двух чисел. */
+function useHeaderStats() {
+  const [stats, setStats] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    api.home().then((d) => { if (!cancelled) setStats(d.data); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  return stats;
 }
 
-function MobileNavLink({ to, label, icon: Icon, end }) {
+/* Счётчик в шапке: цветной кружок-значок + число. Форма одна, меняются
+   цвет и иконка — так монеты и энергия читаются как элементы одной HUD. */
+function Counter({ icon: Icon, value, fill, title }) {
   return (
-    <NavLink
-      to={to}
-      end={end}
-      className="flex flex-col items-center justify-center gap-1 flex-1 py-2 text-[10.5px] font-semibold transition-colors"
-      style={({ isActive }) => ({ color: isActive ? '#C6FF34' : 'rgba(232, 239, 226, 0.5)' })}
+    <span
+      className="inline-flex items-center gap-2 h-10 pl-1.5 pr-3.5 rounded-full"
+      style={{ background: C.bg }}
+      title={title}
     >
-      <Icon size={20} />
-      {label}
-    </NavLink>
+      <span
+        className="w-7 h-7 rounded-full grid place-items-center text-white shrink-0"
+        style={{ background: fill, boxShadow: `0 3px 8px ${fill}66` }}
+      >
+        <Icon size={14} strokeWidth={2.8} fill="currentColor" />
+      </span>
+      <span className="k-num text-[15px]" style={{ color: C.text }}>{value}</span>
+    </span>
   );
 }
 
 export default function Layout() {
   const { user, logout } = useAuth();
-  const name = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
+  const stats = useHeaderStats();
+  const name = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Ученик';
 
   // TG-FRONT: привязка Telegram-бота (напоминания об оплате, объявления центра)
   const [tgBusy, setTgBusy] = useState(false);
@@ -94,78 +79,129 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      {/* ── Desktop sidebar ── */}
-      <aside
-        className="hidden lg:flex fixed top-0 left-0 h-full w-64 z-40 flex-col"
-        style={{ background: SIDEBAR_BG, borderRight: '1px solid rgba(64, 131, 59, 0.15)', borderRadius: '0 0 16px 0' }}
+    <div className="kid min-h-screen">
+      {/* ══ Шапка во всю ширину ══ */}
+      <header
+        className="fixed top-0 inset-x-0 z-50 h-[70px] flex items-center gap-3 px-4 sm:px-6"
+        style={{ background: C.card, boxShadow: '0 1px 0 #EBF0E2, 0 4px 16px rgba(29,36,23,.05)' }}
       >
-        <div
-          className="flex items-center gap-3 px-5 h-16 shrink-0"
-          style={{ borderBottom: '1px solid rgba(64, 131, 59, 0.15)' }}
-        >
-          <img src="/logo-white.svg" alt="LevelUp Academy" className="h-7 w-auto animate-fade-in" />
+        <div className="flex items-center gap-2.5 shrink-0">
+          <img src="/logo-mark.svg" alt="" className="h-8 w-auto" />
+          <span className="hidden sm:block text-[17px] font-extrabold tracking-[-0.01em]" style={{ color: C.text }}>
+            LevelUp
+          </span>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
-          {NAV.map((item) => (
-            <DesktopNavLink key={item.to} {...item} />
+        <div className="flex-1" />
+
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <Counter icon={Star} fill={C.amber} value={stats ? fmtNum(stats.coins) : '···'} title="Монеты" />
+          {/* Энергия — доп-фича, источника пока нет: не выдумываем число */}
+          <div className="hidden sm:block">
+            <Counter icon={Zap} fill={C.violet} value="—" title="Энергия (скоро)" />
+          </div>
+
+          <button
+            type="button"
+            title="Уведомления"
+            aria-label="Уведомления"
+            className="relative w-10 h-10 rounded-full grid place-items-center shrink-0 transition-colors"
+            style={{ background: C.bg, color: C.muted }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = C.text; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = C.muted; }}
+          >
+            <Bell size={18} strokeWidth={2.4} />
+          </button>
+
+          <div className="flex items-center gap-2.5 h-10 pl-1 pr-1 sm:pr-3 rounded-full" style={{ background: C.bg }}>
+            <Avatar name={name} size={34} />
+            <div className="hidden sm:block leading-none pr-1">
+              <div className="text-[13px] font-extrabold truncate max-w-[120px]" style={{ color: C.text }}>{name}</div>
+              <div className="text-[10px] font-bold mt-0.5" style={{ color: C.muted }}>УЧЕНИК</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ══ Светлый сайдбар под шапкой ══ */}
+      <aside
+        className="hidden lg:flex fixed top-[70px] bottom-0 left-0 w-[236px] z-40 flex-col"
+        style={{ background: C.card, borderRight: `1px solid ${C.line}` }}
+      >
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
+          {NAV.map(({ to, label, icon: Icon, end }) => (
+            <NavLink key={to} to={to} end={end} className="block">
+              {({ isActive }) => (
+                <span
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-[15px] font-extrabold transition-colors ${
+                    isActive ? 'k-nav-on' : ''
+                  }`}
+                  style={isActive ? undefined : { color: C.muted }}
+                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = C.bg; e.currentTarget.style.color = C.text; } }}
+                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.muted; } }}
+                >
+                  <Icon size={21} strokeWidth={isActive ? 2.7 : 2.2} className="shrink-0" />
+                  {label}
+                </span>
+              )}
+            </NavLink>
           ))}
         </nav>
 
-        <div
-          className="flex items-center gap-3 px-4 py-3 shrink-0"
-          style={{ borderTop: '1px solid rgba(64, 131, 59, 0.15)' }}
-        >
-          <Avatar name={name || 'С'} size="md" onDark />
-          <div className="min-w-0 flex-1">
-            <div className="text-[13px] font-bold leading-tight truncate" style={{ color: 'rgba(232, 239, 226, 0.92)' }}>
-              {name || 'Студент'}
-            </div>
-            <div className="text-[11px]" style={{ color: 'rgba(232, 239, 226, 0.45)' }}>
-              Ученик
-            </div>
+        <div className="p-3 shrink-0" style={{ borderTop: `1px solid ${C.line}` }}>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onBindTelegram}
+              disabled={tgBusy}
+              title="Привязать Telegram"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40 transition-colors"
+              style={{ background: '#E4F1FF', color: '#1668B8' }}
+            >
+              <Send size={15} strokeWidth={2.6} /> Telegram
+            </button>
+            <button
+              onClick={logout}
+              title="Выйти"
+              aria-label="Выйти"
+              className="w-10 h-10 rounded-xl grid place-items-center shrink-0"
+              style={{ background: '#FFE9E6', color: '#C0392B' }}
+            >
+              <LogOut size={17} strokeWidth={2.6} />
+            </button>
           </div>
-          <button
-            onClick={onBindTelegram}
-            disabled={tgBusy}
-            title="Привязать Telegram"
-            aria-label="Привязать Telegram"
-            className="w-8 h-8 rounded-lg grid place-items-center transition-colors disabled:opacity-40"
-            style={{ color: 'rgba(232, 239, 226, 0.5)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#C6FF34'; e.currentTarget.style.background = 'rgba(198,255,52,0.12)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(232,239,226,0.5)'; e.currentTarget.style.background = 'transparent'; }}
-          >
-            <Send size={16} />
-          </button>
-          <button
-            onClick={logout}
-            title="Выйти"
-            aria-label="Выйти"
-            className="w-8 h-8 rounded-lg grid place-items-center transition-colors"
-            style={{ color: 'rgba(232, 239, 226, 0.5)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#e8543e'; e.currentTarget.style.background = 'rgba(232,84,62,0.12)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(232,239,226,0.5)'; e.currentTarget.style.background = 'transparent'; }}
-          >
-            <LogOut size={17} />
-          </button>
         </div>
       </aside>
 
-      {/* ── Main ── */}
-      <main className="lg:ml-64 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 min-h-screen overflow-x-hidden">
-        <div className="animate-page-enter max-w-6xl mx-auto">
+      {/* ══ Контент ══ */}
+      <main className="pt-[70px] lg:pl-[236px] min-h-screen">
+        <div className="animate-page-enter max-w-[1080px] mx-auto p-4 sm:p-5 lg:p-7 pb-28 lg:pb-8">
           <Outlet />
         </div>
       </main>
 
-      {/* ── Mobile bottom nav ── */}
+      {/* ══ Нижняя навигация (мобильные) ══ */}
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex items-stretch h-16 px-1"
-        style={{ background: SIDEBAR_BG, borderTop: '1px solid rgba(64, 131, 59, 0.15)' }}
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex items-stretch h-[68px] px-2"
+        style={{ background: C.card, borderTop: `1px solid ${C.line}` }}
       >
-        {NAV.map((item) => (
-          <MobileNavLink key={item.to} {...item} />
+        {NAV.map(({ to, label, icon: Icon, end }) => (
+          <NavLink key={to} to={to} end={end} className="flex-1 grid place-items-center">
+            {({ isActive }) => (
+              <span className="flex flex-col items-center gap-1">
+                <span
+                  className="w-11 h-8 rounded-xl grid place-items-center"
+                  style={isActive
+                    ? { background: C.lime, color: C.ink }
+                    : { background: 'transparent', color: C.muted }}
+                >
+                  <Icon size={19} strokeWidth={2.6} />
+                </span>
+                <span className="text-[10px] font-extrabold" style={{ color: isActive ? C.text : C.muted }}>
+                  {label}
+                </span>
+              </span>
+            )}
+          </NavLink>
         ))}
       </nav>
     </div>

@@ -20,6 +20,8 @@ import StudentTests from './student/pages/Tests.jsx';
 import StudentTestTake from './student/pages/TestTake.jsx';
 import StudentHomework from './student/pages/Homework.jsx';
 import StudentVideos from './student/pages/Videos.jsx';
+import StudentLessons from './student/pages/Lessons.jsx';
+import StudentLessonDetail from './student/pages/LessonDetail.jsx';
 import StudentShop from './student/pages/Shop.jsx';
 import StudentLeaderboard from './student/pages/Leaderboard.jsx';
 
@@ -103,6 +105,8 @@ export default function App() {
         >
           <Route element={<StudentLayout />}>
             <Route path="/student" element={<StudentHome />} />
+            <Route path="/lessons" element={<StudentLessons />} />
+            <Route path="/lessons/:id" element={<StudentLessonDetail />} />
             <Route path="/tests" element={<StudentTests />} />
             <Route path="/tests/:testId" element={<StudentTestTake />} />
             <Route path="/homework" element={<StudentHomework />} />

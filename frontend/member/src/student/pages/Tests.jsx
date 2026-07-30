@@ -9,13 +9,13 @@ import { fmtDateTime } from '../format.js';
 /** Статус теста для студента по данным списка. */
 export function testStatus(t) {
   const now = Date.now();
-  if (t.finished_at) return { key: 'done', label: `Сдан · ${t.score}%`, tone: t.score >= 50 ? 'success' : 'danger' };
-  if (t.started_at) return { key: 'inProgress', label: 'В процессе', tone: 'primary' };
+  if (t.finished_at) return { key: 'done', label: `Сдан · ${t.score}%`, hue: t.score >= 50 ? 'teal' : 'coral' };
+  if (t.started_at) return { key: 'inProgress', label: 'В процессе', hue: 'lime' };
   if (t.starts_at && now < new Date(t.starts_at).getTime())
-    return { key: 'scheduled', label: `Откроется ${fmtDateTime(t.starts_at)}`, tone: 'muted' };
+    return { key: 'scheduled', label: `Откроется ${fmtDateTime(t.starts_at)}`, hue: 'muted' };
   if (t.ends_at && now > new Date(t.ends_at).getTime())
-    return { key: 'closed', label: 'Закрыт', tone: 'muted' };
-  return { key: 'open', label: 'Доступен', tone: 'primary' };
+    return { key: 'closed', label: 'Закрыт', hue: 'muted' };
+  return { key: 'open', label: 'Доступен', hue: 'lime' };
 }
 
 export default function Tests() {
@@ -74,7 +74,7 @@ export default function Tests() {
                     )}
                   </div>
                 </div>
-                <Pill tone={st.tone}>{st.label}</Pill>
+                <Pill hue={st.hue}>{st.label}</Pill>
                 {clickable && <ChevronRight size={16} className="text-base-content/25 shrink-0" />}
               </div>
             );
