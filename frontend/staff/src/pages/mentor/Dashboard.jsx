@@ -122,10 +122,10 @@ export default function MentorDashboard() {
             </span>
             <div className="min-w-0">
               <p className="text-sm font-bold text-error truncate">
-                {activeGroup.name} — dars ketmoqda
+                {activeGroup.name} — идёт урок
               </p>
               <p className="text-xs text-base-content/55 truncate">
-                {activeGroup.subject || 'Fan'} · {activeLesson.time} · davomat belgilanmagan
+                {activeGroup.subject || 'Предмет'} · {activeLesson.time} · посещаемость не отмечена
               </p>
             </div>
           </div>
@@ -133,7 +133,7 @@ export default function MentorDashboard() {
             to={`/groups/${activeGroup.id}?tab=davomat`}
             className="btn btn-sm btn-error text-white gap-1.5 shrink-0"
           >
-            Davomatni belgilash <ArrowRight size={14} />
+            Отметить посещаемость <ArrowRight size={14} />
           </Link>
         </div>
       )}
@@ -149,11 +149,11 @@ export default function MentorDashboard() {
            в ленте ниже по метке «Tugagan» — цифра дублировала её и ничего
            не решала. */
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Kpi Icon={BookOpen} title="Guruhlar" value={groups.length} unit="faol" to="/groups" />
-          <Kpi Icon={Users} title="O'quvchilar" value={totalStudents} unit="jami" to="/students" />
+          <Kpi Icon={BookOpen} title="Группы" value={groups.length} unit="активных" to="/groups" />
+          <Kpi Icon={Users} title="Ученики" value={totalStudents} unit="всего" to="/students" />
           {/* Было жёстко «—»: плитка занимала место и ничего не сообщала.
               Считаем реальное число занятий с расписанием на сегодня. */}
-          <Kpi Icon={CalendarDays} title="Bugungi darslar" value={lessons.length} unit="jadval bo'yicha" />
+          <Kpi Icon={CalendarDays} title="Сегодняшние уроки" value={lessons.length} unit="по расписанию" />
         </div>
       )}
 
@@ -163,12 +163,12 @@ export default function MentorDashboard() {
           живёт на своей странице, сюда ведёт ссылка в шапке. */}
       <div className="mt-6">
         <Panel
-          title="Bugungi jadval"
+          title="Расписание на сегодня"
           icon={CalendarDays}
           bodyClass="p-4"
           action={
             <Link to="/groups" className="btn btn-ghost btn-xs gap-1 text-primary">
-              Guruhlarim <ArrowRight size={13} />
+              Мои группы <ArrowRight size={13} />
             </Link>
           }
         >
@@ -177,9 +177,9 @@ export default function MentorDashboard() {
           ) : lessons.length === 0 ? (
             <EmptyState
               icon={Bell}
-              title="Bugun jadvalda dars yo'q"
-              hint="Guruhga dars vaqti qo'yilmagan bo'lsa ham, davomatni qo'lda belgilashingiz mumkin."
-              action={<Link to="/groups?tab=davomat" className="btn btn-sm btn-primary">Davomatga o'tish</Link>}
+              title="Сегодня уроков нет в расписании"
+              hint="Даже если для группы не установлено время урока, вы можете отметить посещаемость вручную."
+              action={<Link to="/groups?tab=davomat" className="btn btn-sm btn-primary">Перейти к посещаемости</Link>}
             />
           ) : (
             <ol className="relative space-y-2">
@@ -224,22 +224,22 @@ export default function MentorDashboard() {
                           <div className="min-w-0">
                             <div className="text-sm font-bold truncate">{g.name}</div>
                             <div className="text-xs text-base-content/45 truncate">
-                              {g.subject || 'Fan'} · {g.students || 0} o'quvchi
+                              {g.subject || 'Предмет'} · {g.students || 0} учеников
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {isNow && (
-                            <span className="badge badge-sm badge-primary">Ketmoqda</span>
+                            <span className="badge badge-sm badge-primary">Идёт</span>
                           )}
                           {isPast && (
-                            <span className="badge badge-sm badge-ghost text-base-content/45">Tugagan</span>
+                            <span className="badge badge-sm badge-ghost text-base-content/45">Завершено</span>
                           )}
                           <Link
                             to={`/groups/${g.id}?tab=davomat`}
                             className="btn btn-ghost btn-xs text-primary"
                           >
-                            Davomat
+                            Посещаемость
                           </Link>
                         </div>
                       </div>

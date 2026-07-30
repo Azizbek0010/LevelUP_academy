@@ -8,14 +8,20 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts';
-import { useDashboard } from '../queries.js';
+import { useRevenue } from '../queries.js';
 import { fmt, ORG_STATUS } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { SkeletonKpis, SkeletonList } from '../components/Skeleton.jsx';
 
+// ВАЖНО: это ПРОГНОЗ, а не фактическая выручка за период.
+// Бэкенд (GET /api/main/revenue) знает только текущий месячный счёт каждого
+// партнёра — истории выставленных счетов у платформы пока нет. Раньше эти же
+// коэффициенты применялись молча и подписывались как «Доход / год», то есть
+// выдуманное число показывалось как настоящее. Теперь множитель назван прогнозом
+// и это видно в интерфейсе.
 const PERIODS = [
-  { key: 'month', label: 'Этот месяц', mult: 1 },
+  { key: 'month', label: 'Месяц', mult: 1 },
   { key: 'quarter', label: 'Квартал', mult: 3 },
   { key: 'year', label: 'Год', mult: 12 },
 ];
@@ -119,7 +125,11 @@ function BarDetailModal({ bar, partner, total, cur, onClose }) {
 }
 
 function PartnerRow({ p, cur, tone }) {
-  const days = Math.max(0, Math.floor((Date.now() - new Date(p.createdAt)) / 86400000));
+  // Если сервер не отдал дату — не печатаем «NaN дн.», просто прячем возраст.
+  const ts = p.createdAt ? new Date(p.createdAt).getTime() : NaN;
+  const days = Number.isFinite(ts)
+    ? Math.max(0, Math.floor((Date.now() - ts) / 86400000))
+    : null;
   const s = ORG_STATUS[p.status] || { label: p.status, cls: 'badge-ghost' };
   return (
     <div className="flex items-center gap-3 p-2.5 rounded-lg bg-base-200/40">
@@ -128,7 +138,7 @@ function PartnerRow({ p, cur, tone }) {
         <div className="text-sm font-semibold truncate">{p.name}</div>
         <div className="text-xs text-base-content/50 flex items-center gap-2 flex-wrap">
           <span className={`badge badge-xs ${s.cls}`}>{s.label}</span>
-          <span>Активен {days} дн.</span>
+          {days !== null && <span>Активен {days} дн.</span>}
         </div>
       </div>
       <div className={`text-sm font-extrabold tabular-nums shrink-0 ${tone === 'best' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -139,7 +149,7 @@ function PartnerRow({ p, cur, tone }) {
 }
 
 export default function Revenue() {
-  const { data, isLoading, error } = useDashboard();
+  const { data, isLoading, error } = useRevenue();
   const [period, setPeriod] = useState('month');
   const [selectedBar, setSelectedBar] = useState(null);
 
@@ -150,7 +160,10 @@ export default function Revenue() {
     if (!data) return null;
     const partners = data.partners || [];
     const cur = data.totals?.currency || 'UZS';
-    const total = partners.reduce((s, p) => s + (p.monthlyBill || 0), 0);
+    // Итог берём из ответа сервера, а не пересчитываем на клиенте: сервер уже
+    // сложил monthlyBill по всем партнёрам (computeBill по числу учеников).
+    // Пересчёт на фронте молча разошёлся бы с бэком при любой правке тарифов.
+    const total = data.totals?.ourMonthlyIncome ?? partners.reduce((s, p) => s + (p.monthlyBill || 0), 0);
     const active = partners.filter((p) => p.status === 'active');
     const trial = partners.filter((p) => p.status === 'trial');
     const frozen = partners.filter((p) => p.status === 'frozen');
@@ -200,9 +213,9 @@ export default function Revenue() {
     <div className="space-y-6">
       <PageHeader title="Доход платформы" subtitle="Ежемесячная выручка от всех учебных центров" />
 
-      {/* Period filter */}
+      {/* Прогноз: множитель к текущему месячному счёту, а не факт за период */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm text-base-content/60 font-semibold">Период:</span>
+        <span className="text-sm text-base-content/60 font-semibold">Прогноз на:</span>
         <div className="join">
           {PERIODS.map((p) => (
             <button
@@ -217,7 +230,7 @@ export default function Revenue() {
         </div>
         {stats && mult !== 1 && (
           <span className="text-xs text-base-content/50">
-            × {mult} к месячному счёту (~{fmt(stats.total * mult)} {stats.cur})
+            текущий счёт × {mult}, при неизменном составе партнёров
           </span>
         )}
       </div>
@@ -233,13 +246,13 @@ export default function Revenue() {
             <Kpi
               Icon={Wallet}
               tint={{ bg: '#E6F4D7', fg: '#3F6212' }}
-              title={`Доход / ${periodLabel.toLowerCase()}`}
+              title={mult === 1 ? 'Доход / месяц' : `Прогноз / ${periodLabel.toLowerCase()}`}
               value={fmt(stats.total * mult)}
-              unit={stats.cur}
+              unit={mult === 1 ? stats.cur : `${stats.cur} · оценка`}
               accent
             />
             <Kpi Icon={Building2} tint={{ bg: '#E0F2FE', fg: '#075985' }} title="Партнёров" value={String(stats.partners.length)} unit="учебных центров" />
-            <Kpi Icon={GraduationCap} tint={{ bg: '#EDE9FE', fg: '#5B21B6' }} title="Средний счёт" value={fmt(stats.avg * mult)} unit={stats.cur} />
+            <Kpi Icon={GraduationCap} tint={{ bg: '#EDE9FE', fg: '#5B21B6' }} title="Средний счёт" value={fmt(stats.avg * mult)} unit={mult === 1 ? stats.cur : `${stats.cur} · оценка`} />
             <Kpi Icon={TrendingUp} tint={{ bg: '#DCFCE7', fg: '#166534' }} title="Активные" value={String(stats.active.length)} unit={`из ${stats.partners.length}`} />
           </div>
 

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   Wallet, CreditCard, Banknote, Clock, CheckCircle2, AlertTriangle,
   AlertCircle, TrendingUp, Search, ChevronLeft, ChevronRight, Plus, X,
-  Upload, RotateCcw, Ban, Info
+  Upload, RotateCcw, Ban, Info, Download
 } from 'lucide-react';
 import { money, dateShort } from '../../format.js';
 import { useAuth } from '../../auth.jsx';
@@ -11,7 +11,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminInvoices, useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, Kpi, RowSkeleton } from '../mentor/_ui.jsx';
+import ExportDialog from '../../components/ExportDialog.jsx';
+import { Avatar, Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
 
 const STATUS = {
   paid: { label: 'Оплачен', bg: '#2ECC7115', text: '#2ECC71', icon: CheckCircle2 },
@@ -158,6 +159,9 @@ export default function AdminPayments() {
   const [uploadTxId, setUploadTxId] = useState(null);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  // Export dialog
+  const [showExport, setShowExport] = useState(false);
 
   // Store transactions from pay responses (keyed by invoice ID)
   const txStore = useRef({});
@@ -338,12 +342,13 @@ export default function AdminPayments() {
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader title="Платежи" subtitle="Счета и оплаты (наличные + карта)">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {allRows.length > 0 && (
             <span className="text-sm text-base-content/45 tabular-nums">{meta.total || allRows.length} счетов</span>
           )}
-          {/* Было `background: var(--accent)` (#16210f) с `color: #000` —
-              чёрным по почти чёрному, кнопка не читалась вовсе. */}
+          <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={rows.length === 0}>
+            <Download size={14} /> Экспорт
+          </button>
           <button
             className="btn btn-primary btn-sm gap-1.5"
             onClick={() => { setShowAdHoc(true); setErr(''); setStudentSearch(''); }}
@@ -435,7 +440,8 @@ export default function AdminPayments() {
         </>
       )}
 
-      {/* ═══════════════ MODAL: Pay Invoice ═══════════════ */}
+      <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="payments" data={rows} />
+
       {/* ═══════════════ MODAL: Pay Invoice ═══════════════ */}
       {pay && createPortal(
         <dialog className="modal modal-open">

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -6,24 +7,37 @@ import {
 import {
   ArrowUpRight, ArrowDownRight, Download,
   Landmark, CreditCard, Users, Percent,
-  TrendingUp,
+  TrendingUp, Wallet,
 } from 'lucide-react';
-import { useSuperDashboard } from '../../queries.js';
+import { useSuperStats } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
 import { fmt, money } from '../../format.js';
 
-// ---- Colors ----
-const PRIMARY = '#3b82f6';
-const TEAL    = 'oklch(75% 0.16 175)';
-const ERR     = 'oklch(62% 0.24 25)';
-const NEON    = ['#3b82f6', '#34D1FF', '#FF6B6B', '#A78BFA', '#34FFB0', '#FFB534'];
+/**
+ * Статистика организации.
+ *
+ * Страница жила на `/super/dashboard` — том же эндпоинте, что и Дашборд с
+ * Аналитикой. Оттуда приходят только итоги и филиалы, поэтому «выручка по
+ * дням» рисовалась по филиалам, способов оплаты не было вовсе (на их месте
+ * когда-то стояли зашитые 65/30/5 %), а переключатель периода 7/30/90 менял
+ * только подсветку кнопки — запрос он не трогал.
+ *
+ * Теперь свой эндпоинт `GET /api/super/stats?period=` — он и был написан для
+ * этой страницы: ряд выручки по дням, разбивка по способам оплаты и итоги,
+ * посчитанные за выбранный период.
+ */
 
-// ---- Payment mock ----
-const PAYMENT_METHODS = [
-  { name: 'Наличные', value: 65 },
-  { name: 'Карта',    value: 30 },
-  { name: 'Online',   value: 5  },
+// ---- Цвета: палитра панели, а не случайный синий ----
+const PRIMARY = '#40833B';
+const SERIES  = ['#40833B', '#7BB661', '#B7D9A0', '#35702f', '#A3C48B', '#5C8F4E'];
+
+const METHOD_LABEL = { cash: 'Наличные', card: 'Карта', transfer: 'Перевод' };
+
+const PERIODS = [
+  { key: '7d', label: '7 дней' },
+  { key: '30d', label: '30 дней' },
+  { key: '90d', label: '90 дней' },
 ];
 
 // ---- Delta chip ----
@@ -80,13 +94,13 @@ function KpiCard({ icon: Icon, iconColor, bgColor, label, value, sub, delta }) {
 function DatePills({ value, onChange }) {
   return (
     <div className="join">
-      {['7д', '30д', '90д'].map((d) => (
+      {PERIODS.map((p) => (
         <button
-          key={d}
-          className={`join-item btn btn-xs ${value === d ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => onChange(d)}
+          key={p.key}
+          className={`join-item btn btn-xs ${value === p.key ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => onChange(p.key)}
         >
-          {d}
+          {p.label}
         </button>
       ))}
     </div>
@@ -95,8 +109,8 @@ function DatePills({ value, onChange }) {
 
 // ---- Main ----
 export default function SuperStats() {
-  const { data, isLoading, error } = useSuperDashboard();
-  const [dateRange, setDateRange] = useState('30д');
+  const [period, setPeriod] = useState('30d');
+  const { data, isLoading, error } = useSuperStats(period);
 
   if (isLoading || !data) {
     return (
@@ -118,17 +132,26 @@ export default function SuperStats() {
   const cur = t.currency ?? 'UZS';
   const branches = data.branches ?? [];
 
-  const avgRevenue = t.branches > 0 ? t.revenue / t.branches : 0;
-  const debtRatio  = t.revenue > 0
-    ? (((t.outstandingDebt ?? 0) / ((t.revenue) + (t.outstandingDebt ?? 0))) * 100).toFixed(1)
-    : '0.0';
+  // средняя выручка и доля долга приходят с сервера — считать их второй раз незачем
+  const avgRevenue = t.periodAvgRevenue ?? 0;
+  const debtRatio = (t.debtRatio ?? 0).toFixed(1);
+  const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? period;
 
-  // Area chart data: revenue per branch (use branch names as X axis)
-  const areaData = branches.map((b) => ({
-    name: b.name?.split(' ')[0] ?? b.name,
-    Выручка: Number(b.revenue ?? 0),
-    Долг:    Number(b.debt ?? 0),
+  /* Выручка по дням за выбранный период — то, ради чего график и нужен.
+     Раньше по оси X стояли филиалы, то есть «динамика» была не динамикой. */
+  const areaData = (data.revenueSeries ?? []).map((p) => ({
+    name: new Date(p.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }),
+    Выручка: Number(p.revenue ?? 0),
   }));
+
+  const methodData = (data.paymentMethods ?? [])
+    .map((m, i) => ({
+      name: METHOD_LABEL[m.method] ?? m.method,
+      value: Number(m.amount ?? 0),
+      color: SERIES[i % SERIES.length],
+    }))
+    .filter((m) => m.value > 0);
+  const methodTotal = methodData.reduce((s, m) => s + m.value, 0);
 
   // Horizontal bar chart: same as area
   const barData = branches.map((b) => ({
@@ -140,18 +163,22 @@ export default function SuperStats() {
   const pieData = branches.map((b, i) => ({
     name: b.name,
     value: Number(b.revenue ?? 0),
-    color: NEON[i % NEON.length],
+    color: SERIES[i % SERIES.length],
   }));
 
   const handleExportCSV = () => {
     let csv = '﻿';
-    csv += `"Статистика LevelUp Academy","${new Date().toLocaleDateString('ru-RU')}"\n\n`;
-    csv += `"Выручка","Долг","Ученики","Доля долга"\n`;
-    csv += `${t.revenue},${t.outstandingDebt ?? 0},${t.activeStudents},${debtRatio}%\n\n`;
-    csv += `"Филиал","Выручка","Долг"\n`;
+    csv += `"Статистика LevelUp Academy","${new Date().toLocaleDateString('ru-RU')}","Период: ${periodLabel}"\n\n`;
+    csv += `"Выручка за период","Выручка за всё время","Долг","Ученики","Доля долга"\n`;
+    csv += `${t.periodRevenue ?? 0},${t.revenue},${t.outstandingDebt ?? 0},${t.activeStudents},${debtRatio}%\n\n`;
+    csv += `"Филиал","Выручка","Долг","Доля"\n`;
     branches.forEach((b) => {
-      csv += `"${b.name}",${b.revenue ?? 0},${b.debt ?? 0}\n`;
+      csv += `"${b.name}",${b.revenue ?? 0},${b.debt ?? 0},${(b.share ?? 0).toFixed(1)}%\n`;
     });
+    if (methodData.length) {
+      csv += `\n"Способ оплаты","Сумма"\n`;
+      methodData.forEach((m) => { csv += `"${m.name}",${m.value}\n`; });
+    }
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -164,7 +191,7 @@ export default function SuperStats() {
     <div className="space-y-6">
       <PageHeader title="Статистика" subtitle="Финансовые показатели организации">
         <div className="flex items-center gap-3">
-          <DatePills value={dateRange} onChange={setDateRange} />
+          <DatePills value={period} onChange={setPeriod} />
           <button className="btn btn-primary btn-sm gap-1.5" onClick={handleExportCSV}>
             <Download size={16} /> Экспорт CSV
           </button>
@@ -173,12 +200,15 @@ export default function SuperStats() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Первая карточка — за период, остальные про «сейчас». Пока выручка
+            была за всё время, а графики под ней за 7 дней, на одном экране
+            стояли два разных числа про одно и то же. */}
         <KpiCard
           icon={Landmark}
           iconColor="text-primary"
           bgColor="bg-primary/10"
-          label="Выручка"
-          value={money(t.revenue ?? 0, cur)}
+          label={`Выручка за ${periodLabel.toLowerCase()}`}
+          value={money(t.periodRevenue ?? 0, cur)}
           sub={`Средняя: ${money(avgRevenue)} / филиал`}
         />
         <KpiCard
@@ -187,7 +217,7 @@ export default function SuperStats() {
           bgColor="bg-error/10"
           label="Долг"
           value={money(t.outstandingDebt ?? 0, cur)}
-          sub="Суммарная задолженность"
+          sub="Задолженность на сегодня"
         />
         <KpiCard
           icon={Users}
@@ -211,10 +241,10 @@ export default function SuperStats() {
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body p-6">
           <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-            <TrendingUp size={18} /> Выручка и долг по филиалам
+            <TrendingUp size={18} /> Выручка по дням
           </h2>
           {areaData.length === 0 ? (
-            <p className="text-center py-12 opacity-50 text-sm">Нет данных</p>
+            <p className="text-center py-12 opacity-50 text-sm">За выбранный период оплат не было</p>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={areaData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
@@ -223,18 +253,12 @@ export default function SuperStats() {
                     <stop offset="5%"  stopColor={PRIMARY} stopOpacity={0.3} />
                     <stop offset="95%" stopColor={PRIMARY} stopOpacity={0} />
                   </linearGradient>
-                  <linearGradient id="gradDebt" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={ERR} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={ERR} stopOpacity={0} />
-                  </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(90% 0 0 / 0.5)" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => fmt(v)} />
                 <Tooltip content={<NeonTooltip />} />
-                <Legend />
-                <Area type="monotone" dataKey="Выручка" stroke={PRIMARY}  fill="url(#gradRev)"  strokeWidth={2} />
-                <Area type="monotone" dataKey="Долг"    stroke={ERR}      fill="url(#gradDebt)" strokeWidth={2} />
+                <Area type="monotone" dataKey="Выручка" stroke={PRIMARY} fill="url(#gradRev)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -295,43 +319,84 @@ export default function SuperStats() {
         </div>
       </div>
 
-      {/* Payment methods pie */}
+      {/* Сводная таблица по филиалам — перенесена со страницы «Отчёты» (слита
+          сюда 2026-07-28): та же выборка, что и в графиках выше, но с точной
+          долей филиала в общей выручке, посчитанной на сервере. */}
       <div className="card bg-base-100 shadow-sm">
         <div className="card-body p-6">
-          <h2 className="text-base font-bold mb-4">Способы оплаты</h2>
-          <div className="flex flex-col sm:flex-row items-center gap-8">
-            <ResponsiveContainer width={200} height={200}>
-              <PieChart>
-                <Pie
-                  data={PAYMENT_METHODS}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={4}
-                  dataKey="value"
-                  nameKey="name"
-                >
-                  <Cell fill={PRIMARY} />
-                  <Cell fill={TEAL} />
-                  <Cell fill={ERR} />
-                </Pie>
-                <Tooltip formatter={(v) => `${v}%`} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="space-y-3">
-              {PAYMENT_METHODS.map((pm, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span
-                    className="w-3 h-3 rounded-full shrink-0"
-                    style={{ background: [PRIMARY, TEAL, ERR][i] }}
-                  />
-                  <span className="text-sm font-medium">{pm.name}</span>
-                  <span className="text-sm font-bold tabular-nums">{pm.value}%</span>
-                </div>
-              ))}
+          <h2 className="text-base font-bold mb-4">Сводка по филиалам</h2>
+          {branches.length === 0 ? (
+            <p className="text-center py-10 opacity-50 text-sm">Нет данных</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="table table-sm tabular-nums">
+                <thead>
+                  <tr>
+                    <th>Филиал</th>
+                    <th className="text-right">Ученики</th>
+                    <th className="text-right">Админы</th>
+                    <th className="text-right">Выручка</th>
+                    <th className="text-right">Долг</th>
+                    <th className="text-right">Доля</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {branches.map((b) => (
+                    <tr key={b.id} className="hover">
+                      <td className="font-semibold">
+                        <Link to={`/branches/${b.id}`} className="hover:underline">{b.name}</Link>
+                      </td>
+                      <td className="text-right">{fmt(b.students ?? 0)}</td>
+                      <td className="text-right">{fmt(b.admins ?? 0)}</td>
+                      <td className="text-right font-medium">{money(b.revenue ?? 0)}</td>
+                      <td className="text-right text-error">{money(b.debt ?? 0)}</td>
+                      <td className="text-right">{(b.share ?? 0).toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
+          )}
+        </div>
+      </div>
+
+      {/* Способы оплаты — теперь по реальным транзакциям за период.
+          Раньше здесь стояли зашитые 65 / 30 / 5 %, и партнёр принимал их
+          за свои цифры; блок убрали, а вернуть его можно было только вместе
+          с настоящей агрегацией — она приходит с /super/stats. */}
+      <div className="card bg-base-100 shadow-sm">
+        <div className="card-body p-6">
+          <h2 className="text-base font-bold mb-4 flex items-center gap-2">
+            <Wallet size={18} /> Способы оплаты
+          </h2>
+          {methodData.length === 0 ? (
+            <p className="text-center py-10 opacity-50 text-sm">За выбранный период оплат не было</p>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-center gap-8">
+              <div className="w-full sm:w-56 h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={methodData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={3}>
+                      {methodData.map((m, i) => <Cell key={i} fill={m.color} />)}
+                    </Pie>
+                    <Tooltip formatter={(v) => money(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex-1 w-full space-y-2">
+                {methodData.map((m) => (
+                  <div key={m.name} className="flex items-center gap-3 text-sm">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: m.color }} />
+                    <span className="flex-1">{m.name}</span>
+                    <span className="font-bold tabular-nums">{money(m.value, cur)}</span>
+                    <span className="text-xs text-base-content/45 w-12 text-right tabular-nums">
+                      {methodTotal > 0 ? `${Math.round((m.value / methodTotal) * 100)}%` : '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

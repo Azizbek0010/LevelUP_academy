@@ -7,7 +7,7 @@ import { fmt, money, dateShort } from '../../format.js';
 import { useAdminDashboard, useAdminInvoices } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
-import { Kpi, Panel, Avatar } from '../mentor/_ui.jsx';
+import { Kpi, Panel, Avatar, Tip } from '../mentor/_ui.jsx';
 
 /* Строка показателя внутри панели. С `to` становится ссылкой — та, что ведёт
    куда-то (студенты, группы, счета), это показывает: шеврон справа и подсветка
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
   const t = raw.totals || {};
   const m = raw.thisMonth || {};
 
-  /* Oxirgi to'lovlar — faqat oxirgi 5 ta */
+  /* Последние оплаты — только последние 5 */
   const payRaw = invoicesData?.data || invoicesData || {};
   const allPayments = payRaw.payments || payRaw.invoices || (Array.isArray(payRaw) ? payRaw : []);
   const recentPayments = allPayments

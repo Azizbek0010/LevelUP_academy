@@ -22,9 +22,9 @@ import { SearchInput, EmptyState } from './_ui.jsx';
  */
 
 const STATUS = {
-  active: { label: 'Faol', cls: 'badge-success' },
-  frozen: { label: 'Muzlatilgan', cls: 'badge-warning' },
-  dropped: { label: "O'chirilgan", cls: 'badge-ghost' },
+  active: { label: 'Активен', cls: 'badge-success' },
+  frozen: { label: 'Заморожен', cls: 'badge-warning' },
+  dropped: { label: 'Отчислен', cls: 'badge-ghost' },
 };
 
 /**
@@ -67,14 +67,14 @@ function RowMenu({ x, y, student, onClose }) {
   const items = [
     {
       Icon: MessageSquare,
-      label: "O'quvchiga yozish",
+      label: 'Написать ученику',
       // Комната та же, что и с родителем: dm:<staffId>:<peerId>. Бэкенд теперь
       // пускает вторым участником и ученика (canStaffChatStudent).
       onClick: () => navigate(`/chat?peer=${student.id}`),
     },
     {
       Icon: UserRound,
-      label: "Ota-onasiga yozish",
+      label: 'Написать родителю',
       /* По идентификатору родителя, а не по имени ребёнка.
          Первая версия передавала имя и полагалась на поиск по child_names:
          тёзки открывали чужой диалог, а расхождение в записи имени не
@@ -83,11 +83,11 @@ function RowMenu({ x, y, student, onClose }) {
       // У ученика может не быть привязанного родителя — тогда писать некому,
       // и честнее показать это, чем открыть пустой чат.
       disabled: !student.parentId,
-      hint: student.parentId ? null : "Ota-ona biriktirilmagan",
+      hint: student.parentId ? null : 'Родитель не привязан',
     },
     {
       Icon: BarChart3,
-      label: "Statistikani ko'rish",
+      label: 'Посмотреть статистику',
       onClick: () => navigate(`/students/${student.id}`),
     },
   ];
@@ -189,7 +189,7 @@ export default function MentorStudents() {
               <Users size={16} />
             </span>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
-              O'quvchilar
+              Ученики
             </span>
           </div>
           <div className="text-3xl font-extrabold mt-3 leading-none tabular-nums">
@@ -202,7 +202,7 @@ export default function MentorStudents() {
               <BookOpen size={16} />
             </span>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
-              Guruhlar
+              Группы
             </span>
           </div>
           <div className="text-3xl font-extrabold mt-3 leading-none tabular-nums">
@@ -215,7 +215,7 @@ export default function MentorStudents() {
               <Coins size={16} />
             </span>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
-              Jami koinlar
+              Всего коинов
             </span>
           </div>
           <div className="text-3xl font-extrabold mt-3 leading-none tabular-nums">
@@ -226,14 +226,14 @@ export default function MentorStudents() {
 
       <section className="card bg-base-100">
         <header className="flex items-center justify-between gap-3 flex-wrap px-4 py-3 border-b border-base-200">
-          <h1 className="font-bold">Barcha o'quvchilarim</h1>
+          <h1 className="font-bold">Все мои ученики</h1>
           <div className="flex items-center gap-2 flex-wrap">
             <select
               className="select select-bordered select-sm rounded-lg"
               value={groupFilter}
               onChange={(e) => setGroupFilter(e.target.value)}
             >
-              <option value="">Barcha guruhlar</option>
+              <option value="">Все группы</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
@@ -241,7 +241,7 @@ export default function MentorStudents() {
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="Ism, telefon yoki ID..."
+              placeholder="Имя, телефон или ID..."
               className="w-full sm:w-64"
             />
           </div>
@@ -259,13 +259,13 @@ export default function MentorStudents() {
               icon={UserX}
               title={
                 students.length === 0
-                  ? "Hozircha o'quvchilar yo'q"
-                  : 'Hech narsa topilmadi'
+                  ? 'Пока нет учеников'
+                  : 'Ничего не найдено'
               }
               hint={
                 students.length === 0
-                  ? "Guruhlaringizga o'quvchi qo'shilgach, ular shu yerda ko'rinadi."
-                  : 'Qidiruvni yoki guruh filtrini o\'zgartiring.'
+                  ? 'Когда ученики будут добавлены в ваши группы, они появятся здесь.'
+                  : 'Измените поиск или фильтр группы.'
               }
             />
           ) : (
@@ -273,11 +273,11 @@ export default function MentorStudents() {
               <table className="table table-sm">
                 <thead>
                   <tr>
-                    <th>O'quvchi</th>
-                    <th>Guruh</th>
-                    <th>Telefon</th>
-                    <th>Holat</th>
-                    <th className="text-right">Koinlar</th>
+                    <th>Ученик</th>
+                    <th>Группа</th>
+                    <th>Телефон</th>
+                    <th>Статус</th>
+                    <th className="text-right">Коины</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -345,13 +345,13 @@ export default function MentorStudents() {
 
         {!loading && filtered.length > 0 && filtered.length !== students.length && (
           <footer className="px-4 py-2.5 border-t border-base-200 text-xs text-base-content/50">
-            {filtered.length} / {students.length} o'quvchi ko'rsatilmoqda
+            {filtered.length} / {students.length} учеников отображается
           </footer>
         )}
       </section>
 
       <Link to="/groups" className="btn btn-ghost btn-sm gap-1.5 text-primary">
-        Guruhlar bo'yicha ko'rish <ArrowRight size={14} />
+        Посмотреть по группам <ArrowRight size={14} />
       </Link>
 
       {menu && (

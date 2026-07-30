@@ -60,8 +60,8 @@ export default function Login() {
     <div className="min-h-screen grid lg:grid-cols-2 bg-base-200">
       {/* Левая панель — бренд */}
       <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-sidebar text-neutral-content p-12">
-        <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-limebrand/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full bg-limebrand/10 blur-3xl" />
+        <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full" style={{ background: 'rgba(64, 131, 59, 0.12)', filter: 'blur(80px)' }} />
+        <div className="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full" style={{ background: 'rgba(64, 131, 59, 0.07)', filter: 'blur(80px)' }} />
         <img src="/logo-white.svg" alt="LevelUp Academy" className="relative h-10 w-auto self-start" />
         <div className="relative">
           <h2 className="text-3xl font-bold leading-tight">Кабинет ученика</h2>
@@ -71,7 +71,7 @@ export default function Login() {
           <ul className="mt-8 space-y-3">
             {FEATURES.map((f) => (
               <li key={f} className="flex items-center gap-3 text-sm opacity-80">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-limebrand/15 text-limebrand">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full" style={{ background: 'rgba(64, 131, 59, 0.15)', color: '#40833B' }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <polyline points="20 6 9 17 4 12" />
                   </svg>

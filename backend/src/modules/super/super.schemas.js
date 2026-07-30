@@ -32,10 +32,30 @@ export const updateBranchSchema = z
   .object({
     name: z.string().trim().min(2).max(120),
     address: z.string().trim().max(500),
-    phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone'),
+    // пустая строка разрешена и означает «телефона нет». Без неё правка
+    // филиала без телефона всегда падала с 422: форма шлёт '', а regex
+    // его не принимает — отредактировать такой филиал было невозможно.
+    phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').or(z.literal('')),
+    // nullable: null — это «убрать точку с карты». Без него отметку можно было
+    // только поставить и поменять, но не снять: отсутствующее поле схема
+    // трактует как «не трогать».
+    lat: z.coerce.number().min(-90).max(90).nullable(),
+    lng: z.coerce.number().min(-180).max(180).nullable(),
   })
   .partial()
-  .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
+  .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' })
+  .refine(
+    (o) => (o.lat === undefined) === (o.lng === undefined),
+    { message: 'Координаты меняются только парой', path: ['lat'] },
+  )
+  .refine(
+    (o) => o.lat === undefined || (o.lat === null) === (o.lng === null),
+    { message: 'Либо обе координаты, либо ни одной', path: ['lat'] },
+  );
+
+// Оклад — просто метаданные карточки сотрудника, не участвует ни в каком
+// автоматическом расчёте (см. discipline: % от оклада там пока тоже вручную).
+const monthlySalaryField = z.coerce.number().min(0, 'Не может быть отрицательным').max(1_000_000_000_000).nullable();
 
 // редактирование админа — частичное (email/пароль тут не меняем)
 export const updateAdminSchema = z
@@ -44,6 +64,7 @@ export const updateAdminSchema = z
     lastName: z.string().trim().min(1).max(80),
     branchId: z.string().uuid('Invalid branchId'),
     phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone'),
+    monthlySalary: monthlySalaryField,
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
@@ -55,18 +76,23 @@ export const freezeSchema = z.object({ frozen: z.boolean() });
 export const createBranchSchema = z.object({
   name: z.string().trim().min(2, 'Too short').max(120),
   address: z.string().trim().max(500).optional(),
-  phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').optional(),
+  phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').or(z.literal('')).optional(),
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lng: z.coerce.number().min(-180).max(180).optional(),
+}).refine((b) => (b.lat === undefined) === (b.lng === undefined), {
+  message: 'Координаты нужны обе сразу',
+  path: ['lat'],
 });
 
 // Super Admin создаёт админа и назначает в свой филиал.
-// Логин (email) и пароль задаёт сам Super Admin (не генерятся).
+// Логин (email) задаёт Super Admin; пароль генерируется автоматически и
+// показывается один раз — так же, как Main Admin заводит Super Admin.
 export const createAdminSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
   email,
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
   branchId: z.string().uuid('Invalid branchId'),
-  phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').optional(),
+  phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').or(z.literal('')).optional(),
 });
 
 // ---------- методисты (без branchId — на уровне организации) ----------
@@ -75,8 +101,7 @@ export const createMethodistSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
   email,
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
-  phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').optional(),
+  phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').or(z.literal('')).optional(),
 });
 
 export const updateMethodistSchema = z
@@ -84,6 +109,7 @@ export const updateMethodistSchema = z
     firstName: z.string().trim().min(1).max(80),
     lastName: z.string().trim().min(1).max(80),
     phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone'),
+    monthlySalary: monthlySalaryField,
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });

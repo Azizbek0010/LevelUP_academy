@@ -129,6 +129,11 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
   if (path === '/auth/refresh') return { user: mock.user, accessToken: 'mock-token' };
   if (path === '/auth/logout') return { success: true };
 
+  // TG-FRONT
+  if (path === '/telegram/bind-token') {
+    return { data: { token: 'mock-bind-token', expiresIn: 300, deepLink: 'https://t.me/levelup_academy_bot?start=mock-bind-token' } };
+  }
+
   // -- /student/... --
   if (seg[0] === 'student') {
     const [, area, id, action] = seg;
@@ -304,6 +309,9 @@ export const api = {
 
   // -------- STUDENT: Leaderboard --------
   leaderboard: (period = 'week') => request(`/student/leaderboard?period=${period}`),
+
+  // TG-FRONT
+  telegramBindToken: () => request('/telegram/bind-token', { method: 'POST' }),
 };
 
 /** PUT файла напрямую в S3/MinIO по presigned URL (в mock-режиме URL 'mock://skip' — пропускаем). */

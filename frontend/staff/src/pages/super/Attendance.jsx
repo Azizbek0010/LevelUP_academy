@@ -74,9 +74,9 @@ function LessonRow({ lesson }) {
     <tr className="hover">
       <td className="font-mono text-xs">{formatDateTime(lesson.startsAt)}</td>
       <td className="font-medium">{lesson.groupName}</td>
-      <td className="text-right">{lesson.totalStudents}</td>
+      <td className="text-right tabular-nums">{lesson.totalStudents}</td>
       <td>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs tabular-nums">
           <span className="text-success font-semibold">{lesson.present}</span>
           <span className="text-base-content/30">·</span>
           <span className="text-error">{lesson.absent}</span>
@@ -119,6 +119,7 @@ export default function SuperAttendance() {
 
   const filtered = useMemo(() => {
     return lessons.filter((l) => {
+      if (!l.startsAt) return false;
       const dateIso = l.startsAt.slice(0, 10);
       if (dateIso < activeFrom || dateIso > activeTo) return false;
       if (groupFilter !== 'all' && l.groupId !== groupFilter) return false;

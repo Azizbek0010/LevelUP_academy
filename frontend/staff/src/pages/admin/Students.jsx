@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Snowflake, Sun, Archive, KeyRound, GraduationCap, UserCheck, UserX,
-  Copy, Check, Coins, LayoutGrid, List, AlertTriangle
+  Copy, Check, Coins, LayoutGrid, List, AlertTriangle, Download
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
+import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput } from '../mentor/_ui.jsx';
+import ExportDialog from '../../components/ExportDialog.jsx';
+import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip } from '../mentor/_ui.jsx';
 
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
@@ -87,6 +89,7 @@ export default function AdminStudents() {
   const [err, setErr] = useState('');
   const [creds, setCreds] = useState(null);
   const [copied, setCopied] = useState('');
+  const [showExport, setShowExport] = useState(false);
 
   const raw = data?.data || data || {};
   const rows = raw.students || (Array.isArray(raw) ? raw : []);
@@ -148,6 +151,9 @@ export default function AdminStudents() {
   return (
     <div className="space-y-6 pb-8">
       <PageHeader title="Студенты" subtitle="Учёт студентов филиала">
+        <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={filteredRows.length === 0}>
+          <Download size={14} /> Экспорт
+        </button>
         <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
           <Plus size={16} /> Добавить студента
         </button>
@@ -269,7 +275,7 @@ export default function AdminStudents() {
                         )}
                       </div>
                     </td>
-                    <td>
+                    <td className="tabular-nums">
                       {s.coins != null && s.coins > 0 ? (
                         <span className="flex items-center gap-1 text-primary font-semibold text-[12px]">
                           <Coins size={11} /> {s.coins}
@@ -308,7 +314,7 @@ export default function AdminStudents() {
                   <option value="female">Женский</option>
                 </select>
               </div>
-              <input className="input input-bordered w-full" placeholder="Телефон студента" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <PhoneInput className="input input-bordered w-full" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
               <input className="input input-bordered w-full" placeholder="Телефон родителя (необязательно)" value={form.parentPhone} onChange={(e) => setForm({ ...form, parentPhone: e.target.value })} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -333,6 +339,8 @@ export default function AdminStudents() {
           <div className="modal-backdrop" onClick={() => setForm(null)} />
         </dialog>
       )}
+
+      <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="students" data={filteredRows} />
 
       {/* ═══ Credentials Modal ═══ */}
       {creds && (

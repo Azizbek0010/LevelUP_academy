@@ -4,62 +4,31 @@ import {
   Wallet, Building2, GraduationCap, Store, RefreshCw, ArrowRight,
   Inbox, Crown, Sparkles, PhoneCall, CheckCircle2, XCircle,
   X, TrendingUp, Snowflake, Zap, PieChart as PieIcon,
-  Calculator, Percent, Award, ChevronRight, Power, Pause, Bell,
+  Calculator, Percent, Award, ChevronRight, Power, Pause,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts';
 import { fmt, dateShort, LEAD_STATUS, ORG_STATUS } from '../format.js';
+import { tierRange, tierPriceLabel } from '../lib/pricing.js';
 import { useDashboard, useLeads, useInvalidate } from '../queries.js';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { SkeletonKpis, SkeletonList } from '../components/Skeleton.jsx';
+import { Kpi } from '../components/_ui.jsx';
 
 const PIE_COLORS = { active: '#A3E635', trial: '#FCD34D', frozen: '#F87171' };
 const PIE_LABELS = { active: 'Активные', trial: 'Триал', frozen: 'Заморожены' };
 const STATUS_ICON = { new: Sparkles, contacted: PhoneCall, onboarded: CheckCircle2, rejected: XCircle };
 
-function Kpi({ Icon, tint, title, value, unit, accent, onClick, hint }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`card shadow-sm border transition-all hover:shadow-md hover:-translate-y-0.5 text-left cursor-pointer group ${
-        accent
-          ? 'bg-gradient-to-br from-lime-400 to-lime-500 border-lime-400'
-          : 'bg-base-100 border-base-200/60 hover:border-lime-300'
-      }`}
-    >
-      <div className="card-body p-5">
-        <div className="flex items-center gap-3">
-          <span
-            className="w-11 h-11 rounded-xl grid place-items-center shrink-0"
-            style={accent ? { background: 'rgba(0,0,0,0.12)', color: '#1a2e05' } : { background: tint.bg, color: tint.fg }}
-          >
-            <Icon size={20} strokeWidth={2.2} />
-          </span>
-          <div className={`text-[11px] font-semibold uppercase tracking-wider leading-tight ${accent ? 'text-lime-950/60' : 'text-base-content/45'}`}>
-            {title}
-          </div>
-          <ChevronRight
-            size={16}
-            className={`ml-auto opacity-0 group-hover:opacity-100 transition-opacity ${accent ? 'text-lime-950/60' : 'text-base-content/40'}`}
-          />
-        </div>
-        <div className={`text-3xl font-extrabold mt-3 leading-none ${accent ? 'text-lime-950' : ''}`}>{value}</div>
-        {unit && <div className={`text-xs mt-1.5 ${accent ? 'text-lime-950/55' : 'text-base-content/45'}`}>{unit}</div>}
-        {hint && (
-          <div className={`text-[10.5px] mt-2 font-semibold ${accent ? 'text-lime-950/70' : 'text-lime-600'}`}>
-            {hint} →
-          </div>
-        )}
-      </div>
-    </button>
-  );
-}
+/* Локальная Kpi-плитка убрана — теперь общая из components/_ui.jsx.
+   Здесь она принимала сырой hex на каждую плитку (четыре разных пастельных
+   фона) плюс отдельный «accent» с лаймовым градиентом для дохода. Разница
+   цветов ничего не значила: доход был зелёным не потому, что это деньги, а
+   потому что он первый. Плитки различает иконка и подпись. */
 
 const CustomBar = ({ x, y, width, height }) => (
   <rect x={x} y={y} width={width} height={height} rx={6} fill="url(#lime-grad)" />
@@ -174,24 +143,17 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
   const [modal, setModal] = useState(null); // 'income' | 'partners' | 'students' | 'branches' | { type:'partner', p }
   const [barModal, setBarModal] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [err, setErr] = useState('');
   const { token } = useAuth();
   const invalidate = useInvalidate();
 
-  // Партнёры с приближающейся датой разморозки (сегодня или завтра)
-  const thawingSoon = useMemo(() => {
-    return partners.filter((p) => {
-      if (p.status !== 'frozen') return false;
-      let meta;
-      try {
-        meta = JSON.parse(localStorage.getItem(`freeze_meta_${p.id}`) || 'null');
-      } catch {
-        meta = null;
-      }
-      if (!meta?.until) return false;
-      const daysLeft = Math.ceil((new Date(meta.until) - Date.now()) / 86400000);
-      return daysLeft <= 1;
-    });
-  }, [partners]);
+  /* Здесь был блок «Скоро разморозка»: он читал дату разморозки из
+     localStorage браузера. Ни база, ни API такого поля не хранят — напоминание
+     видел только тот, кто сам нажал «Заморозить», на своей же машине, и оно
+     исчезало вместе с очисткой кэша. Убрано вместе с формой причины и срока
+     заморозки (см. Organizations.jsx). Если напоминание нужно по-настоящему —
+     это поля frozen_until/frozen_reason у organizations плюс отдача их в
+     /main/dashboard, то есть работа на бэкенде, а не в браузере. */
 
   const barPartner = barModal ? partners.find((p) => p.id === barModal.id) : null;
 
@@ -231,16 +193,16 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
     if (!p) return;
     const next = p.status === 'active' ? 'frozen' : 'active';
     setBusyId(p.id);
+    setErr('');
     try {
       await api.setPartnerStatus(token, p.id, next);
-      if (next === 'active') {
-        localStorage.removeItem(`freeze_meta_${p.id}`);
-      }
       invalidate('dashboard');
       setModal(null);
       setBarModal(null);
-    } catch (err) {
-      alert(err.message);
+    } catch (e) {
+      // было alert(): единственное место в панели, где ошибка выпадала
+      // системным окном поверх интерфейса — везде остальное показывается в вёрстке
+      setErr(e.message);
     } finally {
       setBusyId(null);
     }
@@ -248,72 +210,42 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
 
   return (
     <>
+      {err && (
+        <div className="alert alert-error mb-4 text-sm">
+          <span>{err}</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi
           Icon={Wallet}
-          tint={{ bg: '#ECFCCB', fg: '#365314' }}
           title="Наш доход / мес"
           value={fmt(t.ourMonthlyIncome)}
-          unit={cur}
-          accent
-          hint="разбивка"
+          unit={`${cur} · разбивка`}
           onClick={() => setModal('income')}
         />
         <Kpi
           Icon={Building2}
-          tint={{ bg: '#E0F2FE', fg: '#075985' }}
           title="Партнёры"
           value={fmt(t.partners)}
-          unit="учебных центров"
-          hint="по статусам"
+          unit="учебных центров · по статусам"
           onClick={() => setModal('partners')}
         />
         <Kpi
           Icon={GraduationCap}
-          tint={{ bg: '#EDE9FE', fg: '#5B21B6' }}
           title="Ученики"
           value={fmt(t.students)}
-          unit="по платформе"
-          hint="топ 5"
+          unit="по платформе · топ 5"
           onClick={() => setModal('students')}
         />
         <Kpi
           Icon={Store}
-          tint={{ bg: '#FFEDD5', fg: '#9A3412' }}
           title="Филиалы"
           value={fmt(t.branches)}
-          unit="всего"
-          hint="распределение"
+          unit="всего · распределение"
           onClick={() => setModal('branches')}
         />
       </div>
-
-      {thawingSoon.length > 0 && (
-        <div className="alert bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl">
-          <Bell size={16} className="text-amber-500 shrink-0" />
-          <div>
-            <div className="font-bold text-sm">Скоро разморозка</div>
-            {thawingSoon.map((p) => {
-              let meta;
-              try {
-                meta = JSON.parse(localStorage.getItem(`freeze_meta_${p.id}`) || 'null');
-              } catch {
-                meta = null;
-              }
-              if (!meta?.until) return null;
-              const daysLeft = Math.ceil((new Date(meta.until) - Date.now()) / 86400000);
-              return (
-                <div key={p.id} className="text-xs mt-0.5">
-                  <span className="font-semibold">{p.name}</span>
-                  {' — '}
-                  {daysLeft <= 0 ? 'сегодня нужно разморозить' : 'завтра нужно разморозить'}
-                  {' '}(до {new Date(meta.until).toLocaleDateString('ru-RU')})
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="card bg-base-100 shadow-sm border border-base-200/60 lg:col-span-2">
@@ -549,11 +481,18 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
             </div>
           </div>
 
+          {/* Тарифы — бакеты по числу активных учеников. Здесь стояла старая
+              формула (база + доп. филиал + за ученика): бэкенд этих полей не
+              отдаёт, и все три строки печатали пустое значение. */}
           <div className="rounded-xl bg-base-200/50 p-4 space-y-2">
-            <div className="text-xs font-semibold text-base-content/60 uppercase mb-1">Формула ценообразования</div>
-            <div className="flex justify-between text-sm"><span>Первый филиал (база)</span><span className="font-bold tabular-nums">{fmt(pricing.baseFirstBranch)} {cur}</span></div>
-            <div className="flex justify-between text-sm"><span>Доп. филиал</span><span className="font-bold tabular-nums">{fmt(pricing.perExtraBranch)} {cur}</span></div>
-            <div className="flex justify-between text-sm"><span>За ученика</span><span className="font-bold tabular-nums">{fmt(pricing.perStudent)} {cur}</span></div>
+            <div className="text-xs font-semibold text-base-content/60 uppercase mb-1">Тарифы по числу учеников</div>
+            {(pricing.tiers ?? []).map((t) => (
+              <div key={t.id} className="flex justify-between text-sm">
+                <span>{t.label} <span className="text-base-content/45">· {tierRange(t)}</span></span>
+                <span className="font-bold tabular-nums">{tierPriceLabel(t, cur)}</span>
+              </div>
+            ))}
+            <div className="text-xs text-base-content/45 pt-1">Филиалы входят в тариф без доплаты</div>
           </div>
 
           <Link to="/revenue" className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 w-full gap-2" onClick={() => setModal(null)}>

@@ -418,7 +418,7 @@ function AttendanceTab({ groupId, token }) {
             onClick={() => { setSlideDir('right'); setPageIndex((p) => Math.max(0, p - 1)); }}
             disabled={pageIndex === 0}
             className="w-8 h-8 rounded-xl border border-base-300 grid place-items-center text-base-content/45 hover:bg-base-100 hover:text-base-content disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
-            aria-label="Oldingi sahifa"
+            aria-label="Предыдущая страница"
           >
             <ChevronLeft size={15} />
           </button>
@@ -429,7 +429,7 @@ function AttendanceTab({ groupId, token }) {
             onClick={() => { setSlideDir('left'); setPageIndex((p) => Math.min(totalPages - 1, p + 1)); }}
             disabled={pageIndex >= totalPages - 1}
             className="w-8 h-8 rounded-xl border border-base-300 grid place-items-center text-base-content/45 hover:bg-base-100 hover:text-base-content disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
-            aria-label="Keyingi sahifa"
+            aria-label="Следующая страница"
           >
             <ChevronRight size={15} />
           </button>
@@ -476,7 +476,7 @@ function AttendanceTab({ groupId, token }) {
                 })}
                 {/* Summary column */}
                 <th className="sticky right-0 top-0 z-20 bg-base-100 w-[80px] min-w-[80px] px-4 py-3 text-center border-l border-base-300 text-[13px] font-bold text-base-content">
-                  Jami
+                  Итого
                 </th>
               </tr>
             </thead>
@@ -601,7 +601,7 @@ function AttendanceTab({ groupId, token }) {
               </div>
               {hsDebt > 0 && (
                 <div className="flex items-center gap-2 text-red-500 font-semibold">
-                  <span>Qarz: {hsDebt.toLocaleString()} so'm</span>
+                  <span>Долг: {hsDebt.toLocaleString()} сум</span>
                 </div>
               )}
             </div>
@@ -613,7 +613,7 @@ function AttendanceTab({ groupId, token }) {
 }
 
 /* ═══════════════ HomeworkTab ═══════════════ */
-function HomeworkTab({ groupId }) {
+function HomeworkTab({ groupId, token }) {
   const { data: hwData, refetch } = useAdminGroupHomework(groupId);
   const hw = hwData?.data || hwData || [];
   const [showAdd, setShowAdd] = useState(false);
@@ -640,7 +640,7 @@ function HomeworkTab({ groupId }) {
     if (!form.title.trim()) return;
     setSubmitting(true);
     try {
-      await api.adminCreateGroupHomework(null, groupId, form);
+      await api.adminCreateGroupHomework(token, groupId, form);
       setForm({ title: '', description: '', dueDate: '' });
       setShowAdd(false);
       refetch();
@@ -705,8 +705,8 @@ function HomeworkTab({ groupId }) {
                 </span>
               </div>
               <div className="flex items-center gap-4 text-[11px] text-base-content/45">
-                {h.dueDate && <span>Muddat: {h.dueDate}</span>}
-                <span>{h.submissions || 0} / {h.totalStudents || 0} topshirilgan</span>
+                {h.dueDate && <span>Срок: {h.dueDate}</span>}
+                <span>{h.submissions || 0} / {h.totalStudents || 0} сдано</span>
               </div>
               {h.totalStudents > 0 && (
                 <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
@@ -725,7 +725,7 @@ function HomeworkTab({ groupId }) {
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Добавить задание"
         actions={
           <>
-            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Бекор қилиш</button>
+            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Отмена</button>
             <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.title.trim() || submitting}>
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
               Добавить
@@ -760,7 +760,7 @@ function HomeworkTab({ groupId }) {
 }
 
 /* ═══════════════ FeedbackTab ═══════════════ */
-function FeedbackTab({ groupId }) {
+function FeedbackTab({ groupId, token }) {
   const { data: fbData, refetch } = useAdminGroupFeedback(groupId);
   const fb = fbData?.data || fbData || [];
   const [filter, setFilter] = useState('all');
@@ -784,7 +784,7 @@ function FeedbackTab({ groupId }) {
     if (!form.content.trim()) return;
     setSubmitting(true);
     try {
-      await api.adminCreateGroupFeedback(null, groupId, form);
+      await api.adminCreateGroupFeedback(token, groupId, form);
       setForm({ type: 'student', authorName: '', content: '', rating: 5 });
       setShowAdd(false);
       refetch();
@@ -824,7 +824,7 @@ function FeedbackTab({ groupId }) {
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-base-content/45 text-[13px]">
           <MessageSquare size={32} className="mx-auto mb-2 opacity-30" />
-          Ҳали фикр-мулоҳоза йўқ
+          Пока нет отзывов
         </div>
       ) : (
         <div className="space-y-3">
@@ -857,7 +857,7 @@ function FeedbackTab({ groupId }) {
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Добавить отзыв"
         actions={
           <>
-            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Бекор қилиш</button>
+            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Отмена</button>
             <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.content.trim() || submitting}>
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               Отправить
@@ -893,7 +893,7 @@ function FeedbackTab({ groupId }) {
             onChange={(e) => setForm({ ...form, content: e.target.value })}
           />
           <div>
-            <label className="text-[12px] font-bold text-base-content/70 mb-1 block">Баҳо</label>
+            <label className="text-[12px] font-bold text-base-content/70 mb-1 block">Оценка</label>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((i) => (
                 <button
@@ -1012,21 +1012,21 @@ export default function AdminGroupDetail() {
       {/* Tab Content */}
       <div className="card bg-base-100 p-5 animate-fade-in stagger-3">
         {activeTab === 'attendance' && <AttendanceTab groupId={id} token={token} />}
-        {activeTab === 'homework' && <HomeworkTab groupId={id} />}
-        {activeTab === 'feedback' && <FeedbackTab groupId={id} />}
+        {activeTab === 'homework' && <HomeworkTab groupId={id} token={token} />}
+        {activeTab === 'feedback' && <FeedbackTab groupId={id} token={token} />}
       </div>
 
       {/* Add Student Modal */}
       <Modal isOpen={adding} onClose={() => setAdding(false)} title="Добавить ученика"
         actions={
           <>
-            <button className="btn btn-ghost" onClick={() => setAdding(false)}>Бекор қилиш</button>
+            <button className="btn btn-ghost" onClick={() => setAdding(false)}>Отмена</button>
             <button className="btn btn-primary" onClick={add} disabled={!pick}>Добавить</button>
           </>
         }
       >
         <select className="select select-bordered w-full" value={pick} onChange={(e) => setPick(e.target.value)}>
-          <option value="">О'кувчини танланг...</option>
+          <option value="">Выберите ученика...</option>
           {candidates.map((s) => <option key={s.id} value={s.id}>{fullName(s)}</option>)}
         </select>
       </Modal>

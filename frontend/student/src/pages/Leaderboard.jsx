@@ -1,50 +1,74 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Trophy } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { useToast } from '../components/toast.jsx';
-import { Skeleton, EmptyState } from '../components/ui.jsx';
-import { fmtNum, initials } from '../format.js';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Tabs, Avatar } from '../components/ui.jsx';
+import { fmtNum } from '../format.js';
 
 const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+function LeaderRow({ r, me }) {
+  return (
+    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
+      me ? 'border-primary/40 bg-primary/8' : 'border-base-200 bg-base-200/40'
+    }`}>
+      <span className="w-7 text-center font-extrabold text-[15px] tabular-nums shrink-0">
+        {MEDALS[r.rank] ?? r.rank}
+      </span>
+      <Avatar name={`${r.firstName ?? ''} ${r.lastName ?? ''}`} size="sm" />
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-bold truncate">
+          {r.firstName} {r.lastName}{me && <span className="text-primary"> (ты)</span>}
+        </div>
+      </div>
+      <span className="text-sm font-extrabold tabular-nums whitespace-nowrap">
+        {fmtNum(r.coins)} <span className="text-primary font-bold">коинов</span>
+      </span>
+    </div>
+  );
+}
 
 export default function Leaderboard() {
   const { user } = useAuth();
   const toast = useToast();
   const [period, setPeriod] = useState('week');
   const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setData(null);
+    setError(null);
     api
       .leaderboard(period)
       .then((d) => setData(d.data))
-      .catch((err) => toast(err.message, 'error'));
+      .catch((err) => { setError(err); toast(err.message, 'error'); });
   }, [period, toast]);
+
+  useEffect(() => { load(); }, [load]);
 
   const inTop = data?.top?.some((r) => r.studentId === user?.id);
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Лидерборд</h1>
-          <p>Топ студентов филиала по заработанным коинам</p>
-        </div>
-        <div className="tabs">
-          <button className={period === 'week' ? 'active' : ''} onClick={() => setPeriod('week')}>
-            Неделя
-          </button>
-          <button className={period === 'month' ? 'active' : ''} onClick={() => setPeriod('month')}>
-            Месяц
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Лидерборд"
+        subtitle="Топ студентов филиала по заработанным коинам"
+        actions={
+          <Tabs
+            value={period}
+            onChange={setPeriod}
+            items={[{ value: 'week', label: 'Неделя' }, { value: 'month', label: 'Месяц' }]}
+          />
+        }
+      />
 
-      {!data ? (
+      {error ? (
+        <ErrorState message={error.message} onRetry={load} />
+      ) : !data ? (
         <Skeleton h={64} count={5} />
       ) : data.top.length === 0 ? (
-        <div className="card">
+        <div className="card bg-base-100">
           <EmptyState
             icon={Trophy}
             title="Рейтинг пока пуст"
@@ -52,35 +76,17 @@ export default function Leaderboard() {
           />
         </div>
       ) : (
-        <div className="card" style={{ maxWidth: 640 }}>
+        <div className="card bg-base-100 p-3 max-w-2xl space-y-2">
           {data.top.map((r) => (
-            <div key={r.studentId} className={`row${r.studentId === user?.id ? ' row--me' : ''}`}>
-              <span className="row__place num">{MEDALS[r.rank] ?? r.rank}</span>
-              <div className="avatar">{initials(r.firstName, r.lastName)}</div>
-              <div className="row__body">
-                <div className="row__title">
-                  {r.firstName} {r.lastName}
-                  {r.studentId === user?.id && ' (ты)'}
-                </div>
-              </div>
-              <span className="row__score num">
-                {fmtNum(r.coins)} <span>коинов</span>
-              </span>
-            </div>
+            <LeaderRow key={r.studentId} r={r} me={r.studentId === user?.id} />
           ))}
 
           {!inTop && data.me?.rank && (
-            <div className="row row--me" style={{ marginTop: 16 }}>
-              <span className="row__place num">{data.me.rank}</span>
-              <div className="avatar">{initials(user?.firstName, user?.lastName)}</div>
-              <div className="row__body">
-                <div className="row__title">
-                  {user?.firstName} {user?.lastName} (ты)
-                </div>
-              </div>
-              <span className="row__score num">
-                {fmtNum(data.me.coins)} <span>коинов</span>
-              </span>
+            <div className="pt-2 mt-2 border-t border-base-200">
+              <LeaderRow
+                r={{ rank: data.me.rank, firstName: user?.firstName, lastName: user?.lastName, coins: data.me.coins }}
+                me
+              />
             </div>
           )}
         </div>

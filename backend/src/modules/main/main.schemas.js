@@ -65,3 +65,26 @@ export const idParam = z.object({ id: z.string().uuid('Invalid id') });
 export const partnerStatusSchema = z.object({
   status: z.enum(['active', 'frozen']),
 });
+
+// ---- объявления платформы ----
+
+// Аудитории совпадают с enum `platform_announcement_target` в БД.
+export const createAnnouncementSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required').max(200),
+  body: z.string().trim().min(1, 'Body is required'),
+  targetType: z.enum(['all-partners', 'all-superadmins']),
+});
+
+// ---- профиль main_admin ----
+
+// partial: приходит только то, что реально меняют.
+// email нельзя стереть в null — он идентификатор входа main_admin (Google OAuth тоже по нему).
+export const updateProfileSchema = z
+  .object({
+    firstName: z.string().trim().min(1).max(80),
+    lastName: z.string().trim().min(1).max(80),
+    email,
+    phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone'),
+  })
+  .partial()
+  .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });

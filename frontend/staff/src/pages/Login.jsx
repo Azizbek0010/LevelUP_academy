@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { api } from '../api.js';
 
@@ -104,6 +104,8 @@ function LockIcon() {
 function LoginForm({ onForgot }) {
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -117,7 +119,7 @@ function LoginForm({ onForgot }) {
     setBusy(true);
     try {
       await login(email, password);
-      navigate('/', { replace: true });
+      navigate(from, { replace: true });
     } catch (err) {
       if (err.status === 401) setError('Неверный email или пароль');
       else if (err.status === 429) setError('Слишком много попыток — попробуйте позже');
@@ -131,7 +133,7 @@ function LoginForm({ onForgot }) {
     setGoogleBusy(true);
     try {
       await loginWithGoogle();
-      navigate('/', { replace: true });
+      navigate(from, { replace: true });
     } catch (err) {
       if (err.code === 'firebase-not-configured') setError('Google-вход пока не настроен');
       else if (err.status === 403 || err.status === 401) setError('Этот Google-аккаунт не привязан');

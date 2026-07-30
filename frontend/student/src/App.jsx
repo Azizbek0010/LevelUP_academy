@@ -13,87 +13,62 @@ import Leaderboard from './pages/Leaderboard.jsx';
 
 function Splash() {
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <img src="/logo-mark.svg" alt="LevelUp Academy" width={48} />
+    <div className="min-h-screen grid place-items-center" style={{ background: 'var(--bg)' }}>
+      <img src="/logo-mark.svg" alt="LevelUp Academy" width={48} className="animate-fade-in" />
     </div>
   );
 }
 
-const screenStyle = {
-  minHeight: '100vh',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 14,
-  textAlign: 'center',
-  padding: 24,
-};
-
-const actionStyle = {
-  padding: '10px 20px',
-  borderRadius: 10,
-  background: 'var(--accent, #C6FF34)',
-  color: '#000',
-  fontWeight: 600,
-  textDecoration: 'none',
-  border: 'none',
-  cursor: 'pointer',
-};
+/** Общая обёртка для полноэкранных информационных экранов (без сессии и т.п.). */
+function InfoScreen({ title, children, action }) {
+  return (
+    <div className="min-h-screen grid place-items-center px-6" style={{ background: 'var(--bg)' }}>
+      <div className="card bg-base-100 max-w-md w-full p-8 text-center animate-scale-in">
+        <img src="/logo-mark.svg" alt="" width={44} className="mx-auto mb-5" />
+        <h2 className="text-xl font-extrabold mb-2">{title}</h2>
+        <div className="text-sm text-base-content/55 leading-relaxed mb-6">{children}</div>
+        {action}
+      </div>
+    </div>
+  );
+}
 
 /** Сессии нет — вход делает общий Auth-модуль (member), не эта панель. */
 function NoSession() {
   return (
-    <div style={screenStyle}>
-      <img src="/logo-mark.svg" alt="" width={44} />
-      <h2>Нужен вход</h2>
-      <p style={{ color: 'var(--text-muted)', maxWidth: '38ch' }}>
-        Сессия не найдена. Войди через общий вход LevelUp Academy — после авторизации кабинет
-        студента откроется автоматически.
-      </p>
-      <a href={`${MEMBER_URL}/login`} style={actionStyle}>
-        Перейти к входу
-      </a>
-    </div>
+    <InfoScreen
+      title="Нужен вход"
+      action={<a href={`${MEMBER_URL}/login`} className="btn btn-primary">Перейти к входу</a>}
+    >
+      Сессия не найдена. Войди через общий вход LevelUp Academy — после авторизации кабинет студента
+      откроется автоматически.
+    </InfoScreen>
   );
 }
 
 /** Вошёл не студент (например, родитель) — этот кабинет не для него. */
 function WrongRole({ onLogout }) {
   return (
-    <div style={screenStyle}>
-      <img src="/logo-mark.svg" alt="" width={44} />
-      <h2>Кабинет ученика</h2>
-      <p style={{ color: 'var(--text-muted)', maxWidth: '38ch' }}>
-        Эта панель доступна только ученикам. Войди под учётной записью ученика.
-      </p>
-      <button type="button" onClick={onLogout} style={actionStyle}>
-        Выйти
-      </button>
-    </div>
+    <InfoScreen
+      title="Кабинет ученика"
+      action={<button type="button" onClick={onLogout} className="btn btn-neutral">Выйти</button>}
+    >
+      Эта панель доступна только ученикам. Войди под учётной записью ученика.
+    </InfoScreen>
   );
 }
 
 /** 402 от blockIfOverdue — просроченный счёт закрывает весь кабинет до оплаты. */
 function PaymentOverdue({ amount, onLogout }) {
   return (
-    <div style={screenStyle}>
-      <img src="/logo-mark.svg" alt="" width={44} />
-      <h2>Доступ приостановлен</h2>
-      <p style={{ color: 'var(--text-muted)', maxWidth: '42ch' }}>
-        По твоему счёту есть просроченная задолженность
-        {amount ? (
-          <>
-            {' '}
-            — <b>{fmtMoney(amount)}</b>
-          </>
-        ) : null}
-        . Кабинет откроется сразу после оплаты — обратись к администратору учебного центра.
-      </p>
-      <button type="button" onClick={onLogout} style={actionStyle}>
-        Выйти
-      </button>
-    </div>
+    <InfoScreen
+      title="Доступ приостановлен"
+      action={<button type="button" onClick={onLogout} className="btn btn-neutral">Выйти</button>}
+    >
+      По твоему счёту есть просроченная задолженность
+      {amount ? <> — <b className="text-base-content">{fmtMoney(amount)}</b></> : null}. Кабинет
+      откроется сразу после оплаты — обратись к администратору учебного центра.
+    </InfoScreen>
   );
 }
 

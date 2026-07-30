@@ -18,6 +18,12 @@ export function useSuperDashboard() {
   return useAuthedQuery(['super-dashboard'], () => api.superDashboard(token));
 }
 
+/** Статистика организации за период: 7d / 30d / 90d. */
+export function useSuperStats(period = '30d') {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-stats', period], () => api.superStats(token, period));
+}
+
 export function useSuperBranches() {
   const { token } = useAuth();
   return useAuthedQuery(['super-branches'], () => api.superBranches(token));
@@ -43,6 +49,12 @@ export function useSuperOrganization() {
 export function useSuperMethodists() {
   const { token } = useAuth();
   return useAuthedQuery(['super-methodists'], () => api.superMethodists(token));
+}
+
+/** Менторы организации — только чтение (заводит/редактирует их Admin филиала). */
+export function useSuperMentors() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-mentors'], () => api.superMentors(token));
 }
 
 // -------- ADMIN --------
@@ -215,6 +227,17 @@ export function useMentorStudentStats(studentId) {
 export function useMe() {
   const { token } = useAuth();
   return useAuthedQuery(['me'], () => api.me(token));
+}
+
+// K-DISC-FRONT: own discipline (mentor/methodist self-view, read-only)
+export function useMyPenalties() {
+  const { token } = useAuth();
+  return useAuthedQuery(['my-penalties'], () => api.myPenalties(token));
+}
+
+export function useMyDisciplineRules() {
+  const { token } = useAuth();
+  return useAuthedQuery(['my-discipline-rules'], () => api.myDisciplineRules(token));
 }
 
 // -------- CHAT --------

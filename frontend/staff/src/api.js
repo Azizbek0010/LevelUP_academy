@@ -585,6 +585,26 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       return { success: true };
     }
 
+    // AUTH-FORGOT: код в моке всегда '123456' (для ручного тестирования формы,
+    // без реального SMTP) — тот же цикл запрос → код → новый пароль, что на бэке.
+    if (path === '/auth/forgot-password') {
+      const email = String(body?.email || '').trim().toLowerCase();
+      localStorage.setItem(`mock_reset_otp_${email}`, '123456');
+      return { message: 'If the account exists, a reset code has been sent' };
+    }
+
+    if (path === '/auth/reset-password') {
+      const email = String(body?.email || '').trim().toLowerCase();
+      const savedOtp = localStorage.getItem(`mock_reset_otp_${email}`);
+      if (!savedOtp || savedOtp !== String(body?.otp || '').trim()) {
+        const err = new Error('Invalid or expired code');
+        err.status = 400;
+        throw err;
+      }
+      localStorage.removeItem(`mock_reset_otp_${email}`);
+      return { message: 'Password updated, please log in again' };
+    }
+
     // -------- SUPER ADMIN: Organization Settings --------
     if (path === '/super/organization') {
       let org = JSON.parse(localStorage.getItem('mock_organization'));
@@ -2278,6 +2298,10 @@ export const api = {
 
   // -------- SUPER ADMIN --------
   superDashboard: (token) => request('/super/dashboard', { token }),
+  // «Отчёты» слиты в «Статистику» 2026-07-28 — это был один и тот же набор
+  // данных (итоги + разбивка по филиалам) на двух страницах; /super/reports
+  // больше не существует, доля филиала (share) теперь тоже приходит отсюда.
+  superStats: (token, period = '30d') => request(`/super/stats?period=${period}`, { token }),
   superBranches: (token) => request('/super/branches', { token }),
   superBranchDetail: (token, id) => request(`/super/branches/${id}`, { token }),
   superCreateBranch: (token, body) => request('/super/branches', { method: 'POST', token, body }),
@@ -2289,13 +2313,17 @@ export const api = {
   superUpdateAdmin: (token, id, body) => request(`/super/admins/${id}`, { method: 'PATCH', token, body }),
   superFreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
   superUnfreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
+  superResetAdminPassword: (token, id) => request(`/super/admins/${id}/reset-password`, { method: 'POST', token }),
   superGetOrganization: (token) => request('/super/organization', { token }),
   superUpdateOrganization: (token, body) => request('/super/organization', { method: 'PATCH', token, body }),
   superMethodists: (token) => request('/super/methodists', { token }),
+  // Только чтение — для выбора цели во «Взыскании». CRUD ментора у Admin филиала.
+  superMentors: (token) => request('/super/mentors', { token }),
   superCreateMethodist: (token, body) => request('/super/methodists', { method: 'POST', token, body }),
   superUpdateMethodist: (token, id, body) => request(`/super/methodists/${id}`, { method: 'PATCH', token, body }),
   superFreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
   superUnfreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
+  superResetMethodistPassword: (token, id) => request(`/super/methodists/${id}/reset-password`, { method: 'POST', token }),
 
   // -------- SUPER ADMIN: Students --------
   superStudents: (token, qs = '') => request(`/super/students${qs}`, { token }),
@@ -2322,6 +2350,23 @@ export const api = {
 
   // -------- SUPER ADMIN: Attendance --------
   superAttendance: (token, qs = '') => request(`/super/attendance${qs}`, { token }),
+
+  // -------- SUPER ADMIN: Discipline (штрафы и увольнения сотрудников) --------
+  // Раньше эти данные показывались в панели Main Admin — платформе незачем знать,
+  // кого из сотрудников партнёра наказали. Дисциплина принадлежит организации.
+  superPenalties: (token, qs = '') => request(`/super/penalties${qs}`, { token }),
+  superIssuePenalty: (token, body) => request('/super/penalties', { method: 'POST', token, body }),
+  superReactivateStaff: (token, id) => request(`/super/staff/${id}/reactivate`, { method: 'POST', token }),
+  // Каталог правил (qoyda): нарушение -> уровень (sariq/qizil/shtraf/qora).
+  // Справочник, не автоматика — накопление уровней ничего не выдаёт само.
+  // Заменил свободный текстовый устав 2026-07-28.
+  superDisciplineRules: (token) => request('/super/discipline-rules', { token }),
+  superCreateDisciplineRule: (token, body) => request('/super/discipline-rules', { method: 'POST', token, body }),
+  superDeleteDisciplineRule: (token, id) => request(`/super/discipline-rules/${id}`, { method: 'DELETE', token }),
+
+  // -------- K-DISC-FRONT: own discipline (mentor/methodist self-view) --------
+  myPenalties: (token) => request('/users/me/penalties', { token }),
+  myDisciplineRules: (token) => request('/users/me/discipline-rules', { token }),
 
   // -------- METHODIST CONTENT --------
   methodistTrainingTypes: (token) => request('/methodist/training-types', { token }),

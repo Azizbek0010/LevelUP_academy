@@ -27,10 +27,10 @@ const BAND_COLOR = {
 };
 
 const BAND_LABEL = {
-  weak: 'Zaif',
-  mid: "O'rtacha",
-  good: 'Yaxshi',
-  top: "A'lo",
+  weak: 'Слабый',
+  mid: 'Средний',
+  good: 'Хороший',
+  top: 'Отличный',
 };
 
 const scoreColor = (v) => {
@@ -74,7 +74,7 @@ function Distribution({ distribution, total }) {
                   background: d.count > 0 ? color : 'var(--border)',
                   opacity: d.count > 0 ? 1 : 0.5,
                 }}
-                title={`${BAND_LABEL[d.key]}: ${d.count} ta o'quvchi`}
+                title={`${BAND_LABEL[d.key]}: ${d.count} ученик(ов)`}
               />
             </div>
           );
@@ -94,7 +94,7 @@ function Distribution({ distribution, total }) {
       </div>
 
       <p className="text-[11px] text-base-content/40 mt-3">
-        Umumiy ball — davomat, uy vazifasi va testlar o'rtachasi. Jami {total} ta o'quvchi.
+        Общий балл — посещаемость, домашние задания и тесты (среднее). Всего {total} ученик(ов).
       </p>
     </div>
   );
@@ -118,10 +118,10 @@ function Bar({ value }) {
 }
 
 const SORTS = [
-  { key: 'overall', label: 'Umumiy ball' },
-  { key: 'attendanceRate', label: 'Davomat' },
-  { key: 'homeworkRate', label: 'Uy vazifasi' },
-  { key: 'testAvg', label: 'Testlar' },
+  { key: 'overall', label: 'Общий балл' },
+  { key: 'attendanceRate', label: 'Посещаемость' },
+  { key: 'homeworkRate', label: 'Домашние задания' },
+  { key: 'testAvg', label: 'Тесты' },
 ];
 
 export default function StatsTab({ groupId }) {
@@ -139,7 +139,7 @@ export default function StatsTab({ groupId }) {
   }
 
   if (!stats || stats.students.length === 0) {
-    return <EmptyState icon={Users} title="Guruhda o'quvchi yo'q" />;
+    return <EmptyState icon={Users} title="В группе нет учеников" />;
   }
 
   const { summary, distribution, students } = stats;
@@ -165,10 +165,10 @@ export default function StatsTab({ groupId }) {
       {/* ── Средние по группе ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Umumiy ball', value: summary.overall },
-          { label: 'Davomat', value: summary.attendanceRate },
-          { label: 'Uy vazifasi', value: summary.homeworkRate },
-          { label: 'Testlar', value: summary.testAvg },
+          { label: 'Общий балл', value: summary.overall },
+          { label: 'Посещаемость', value: summary.attendanceRate },
+          { label: 'Домашние задания', value: summary.homeworkRate },
+          { label: 'Тесты', value: summary.testAvg },
         ].map((m) => (
           <div key={m.label} className="rounded-xl border border-base-200 px-4 py-3">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
@@ -185,7 +185,7 @@ export default function StatsTab({ groupId }) {
       {/* ── Распределение ── */}
       <div className="rounded-xl border border-base-200 p-4">
         <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
-          <BarChart3 size={15} className="text-primary" /> O'zlashtirish taqsimoti
+          <BarChart3 size={15} className="text-primary" /> Распределение успеваемости
         </h3>
         <Distribution distribution={distribution} total={summary.students} />
       </div>
@@ -195,7 +195,7 @@ export default function StatsTab({ groupId }) {
         <div className="rounded-xl border border-base-200 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-2.5 bg-success/5 border-b border-base-200">
             <Trophy size={14} className="text-success" />
-            <span className="text-sm font-bold">Eng yaxshi o'zlashtirganlar</span>
+            <span className="text-sm font-bold">Лучшие по успеваемости</span>
           </div>
           <ul className="divide-y divide-base-200">
             {best.map((s, i) => (
@@ -219,11 +219,11 @@ export default function StatsTab({ groupId }) {
         <div className="rounded-xl border border-base-200 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-2.5 bg-error/5 border-b border-base-200">
             <AlertTriangle size={14} className="text-error" />
-            <span className="text-sm font-bold">E'tibor talab qiladi</span>
+            <span className="text-sm font-bold">Требуют внимания</span>
           </div>
           {risk.length === 0 ? (
             <p className="px-4 py-6 text-sm text-base-content/45 text-center">
-              60% dan past o'quvchi yo'q
+              Нет учеников с баллом ниже 60%
             </p>
           ) : (
             <ul className="divide-y divide-base-200">
@@ -238,7 +238,7 @@ export default function StatsTab({ groupId }) {
                       {s.firstName} {s.lastName}
                     </Link>
                     <div className="text-[11px] text-base-content/45">
-                      {s.homeworkDone}/{s.homeworkTotal} vazifa · davomat {s.attendanceRate ?? '—'}%
+                      {s.homeworkDone}/{s.homeworkTotal} заданий · посещаемость {s.attendanceRate ?? '—'}%
                     </div>
                   </div>
                   <span className="text-sm font-bold" style={{ color: scoreColor(s.overall) }}>
@@ -255,7 +255,7 @@ export default function StatsTab({ groupId }) {
       <div className="rounded-xl border border-base-200 overflow-hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-base-200 flex-wrap">
           <h3 className="text-sm font-bold flex items-center gap-2">
-            <Users size={15} className="text-primary" /> Barcha o'quvchilar
+            <Users size={15} className="text-primary" /> Все ученики
           </h3>
           <label className="flex items-center gap-1.5 text-xs text-base-content/50">
             <ArrowUpDown size={13} />
@@ -276,11 +276,11 @@ export default function StatsTab({ groupId }) {
             <thead>
               <tr>
                 <th className="w-8">#</th>
-                <th>O'quvchi</th>
-                <th className="min-w-[130px]">Davomat</th>
-                <th className="min-w-[130px]">Uy vazifasi</th>
-                <th className="min-w-[130px]">Testlar</th>
-                <th className="min-w-[130px]">Umumiy</th>
+                <th>Ученик</th>
+                <th className="min-w-[130px]">Посещаемость</th>
+                <th className="min-w-[130px]">Домашние задания</th>
+                <th className="min-w-[130px]">Тесты</th>
+                <th className="min-w-[130px]">Общий</th>
                 <th className="w-8" />
               </tr>
             </thead>
@@ -296,7 +296,7 @@ export default function StatsTab({ groupId }) {
                           {s.firstName} {s.lastName}
                         </span>
                         {s.status !== 'active' && (
-                          <span className="block text-[10px] text-warning font-medium">Muzlatilgan</span>
+                          <span className="block text-[10px] text-warning font-medium">Заморожен</span>
                         )}
                       </span>
                     </Link>
@@ -304,14 +304,14 @@ export default function StatsTab({ groupId }) {
                   <td><Bar value={s.attendanceRate} /></td>
                   <td>
                     <Bar value={s.homeworkRate} />
-                    <div className="text-[10px] text-base-content/40 mt-0.5">
-                      {s.homeworkDone}/{s.homeworkTotal} topshirgan
+                    <div className="text-[10px] text-base-content/40 mt-0.5 tabular-nums">
+                      {s.homeworkDone}/{s.homeworkTotal} сдано
                     </div>
                   </td>
                   <td>
                     <Bar value={s.testAvg} />
-                    <div className="text-[10px] text-base-content/40 mt-0.5">
-                      {s.testsTaken}/{s.testsTotal} ishlagan
+                    <div className="text-[10px] text-base-content/40 mt-0.5 tabular-nums">
+                      {s.testsTaken}/{s.testsTotal} пройдено
                     </div>
                   </td>
                   <td><Bar value={s.overall} /></td>

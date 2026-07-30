@@ -51,21 +51,21 @@ const STATUS = {
   critical: '#d03b3b',
 };
 
-const MONTH_SHORT = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
+const MONTH_SHORT = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
 const HW_STATE = {
-  graded:    { label: 'Baholangan', cls: 'bg-success/10 text-success border-success/25', Icon: Check },
-  submitted: { label: 'Topshirgan', cls: 'bg-info/10 text-info border-info/25', Icon: ClipboardCheck },
-  late:      { label: 'Kech topshirgan', cls: 'bg-warning/10 text-warning border-warning/25', Icon: Clock },
-  missed:    { label: 'Topshirmagan', cls: 'bg-error/10 text-error border-error/25', Icon: X },
-  pending:   { label: 'Muddati kelmagan', cls: 'bg-base-200 text-base-content/50 border-base-300', Icon: Clock },
+  graded:    { label: 'Оценено', cls: 'bg-success/10 text-success border-success/25', Icon: Check },
+  submitted: { label: 'Сдано', cls: 'bg-info/10 text-info border-info/25', Icon: ClipboardCheck },
+  late:      { label: 'Сдано с опозданием', cls: 'bg-warning/10 text-warning border-warning/25', Icon: Clock },
+  missed:    { label: 'Не сдано', cls: 'bg-error/10 text-error border-error/25', Icon: X },
+  pending:   { label: 'Срок не наступил', cls: 'bg-base-200 text-base-content/50 border-base-300', Icon: Clock },
 };
 
 const ATT_STATE = {
-  present: { label: 'Keldi', cls: 'bg-success/15 text-success' },
-  late:    { label: 'Kechikdi', cls: 'bg-warning/15 text-warning' },
-  absent:  { label: 'Kelmadi', cls: 'bg-error/15 text-error' },
-  excused: { label: 'Sababli', cls: 'bg-info/15 text-info' },
+  present: { label: 'Присутствует', cls: 'bg-success/15 text-success' },
+  late:    { label: 'Опоздал', cls: 'bg-warning/15 text-warning' },
+  absent:  { label: 'Отсутствует', cls: 'bg-error/15 text-error' },
+  excused: { label: 'По уважит.', cls: 'bg-info/15 text-info' },
 };
 
 const fmtDate = (iso) =>
@@ -184,7 +184,7 @@ function TrendArea({ points, series, height = 240 }) {
         backgroundColor: '#1D2417', padding: 10, cornerRadius: 8,
         usePointStyle: true,
         callbacks: {
-          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y === null ? "ma'lumot yo'q" : `${ctx.parsed.y}%`}`,
+          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y === null ? 'нет данных' : `${ctx.parsed.y}%`}`,
         },
       },
     },
@@ -217,13 +217,13 @@ function Delta({ points, field }) {
   const known = points.map((p) => p[field]).filter((v) => v !== null && v !== undefined);
   if (known.length < 2) return null;
   const diff = known[known.length - 1] - known[known.length - 2];
-  if (diff === 0) return <span className="text-[11px] text-base-content/40">o'zgarishsiz</span>;
+  if (diff === 0) return <span className="text-[11px] text-base-content/40">без изменений</span>;
   const up = diff > 0;
   return (
     <span className={`text-[11px] font-bold flex items-center gap-0.5 ${up ? 'text-success' : 'text-error'}`}>
       {up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
       {up ? '+' : ''}{diff}%
-      <span className="font-medium text-base-content/40 ml-0.5">o'tgan oyga</span>
+      <span className="font-medium text-base-content/40 ml-0.5">к прошлому мес.</span>
     </span>
   );
 }
@@ -246,12 +246,12 @@ export default function MentorStudentDetail() {
       .map((h) => ({
         id: `hw-${h.id}`,
         title: h.title,
-        kind: 'Uy vazifasi',
+        kind: 'Домашнее задание',
         percent: Math.round((h.score / (h.maxScore || 100)) * 100),
       }));
     const fromTests = stats.tests.items
       .filter((t) => t.percent !== null)
-      .map((t) => ({ id: `t-${t.id}`, title: t.title, kind: 'Test', percent: t.percent }));
+      .map((t) => ({ id: `t-${t.id}`, title: t.title, kind: 'Тест', percent: t.percent }));
     return [...fromHw, ...fromTests].sort((a, b) => b.percent - a.percent);
   }, [stats]);
 
@@ -269,9 +269,9 @@ export default function MentorStudentDetail() {
       <div className="card bg-base-100">
         <EmptyState
           icon={UserX}
-          title="O'quvchi topilmadi"
-          hint="Balki u sizning guruhingizdan chiqarilgan."
-          action={<Link to="/students" className="btn btn-sm btn-primary">O'quvchilarga qaytish</Link>}
+          title="Ученик не найден"
+          hint="Возможно, он был отчислен из вашей группы."
+          action={<Link to="/students" className="btn btn-sm btn-primary">К списку учеников</Link>}
         />
       </div>
     );
@@ -299,16 +299,16 @@ export default function MentorStudentDetail() {
     : homework.items.filter((h) => (hwFilter === 'missed' ? h.state === 'missed' : h.state !== 'missed'));
 
   const TABS = [
-    { key: 'umumiy', label: 'Umumiy', Icon: LayoutGrid },
-    { key: 'davomat', label: 'Davomat', Icon: CalendarCheck },
-    { key: 'testlar', label: 'Testlar', Icon: ClipboardCheck },
-    { key: 'vazifa', label: 'Uyga vazifa', Icon: FileText },
+    { key: 'umumiy', label: 'Общее', Icon: LayoutGrid },
+    { key: 'davomat', label: 'Посещаемость', Icon: CalendarCheck },
+    { key: 'testlar', label: 'Тесты', Icon: ClipboardCheck },
+    { key: 'vazifa', label: 'Домашнее задание', Icon: FileText },
   ];
 
   return (
     <div className="space-y-5">
       <Link to="/students" className="btn btn-ghost btn-sm gap-1.5 -ml-2">
-        <ArrowLeft size={15} /> Barcha o'quvchilar
+        <ArrowLeft size={15} /> Все ученики
       </Link>
 
       {/* ═════ Шапка ученика ═════ */}
@@ -319,7 +319,7 @@ export default function MentorStudentDetail() {
             <h1 className="text-xl font-extrabold truncate">{fullName}</h1>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               {student.status !== 'active' && (
-                <span className="badge badge-warning badge-sm">Muzlatilgan</span>
+                <span className="badge badge-warning badge-sm">Заморожен</span>
               )}
               {groups.map((g) => (
                 <Link
@@ -338,7 +338,7 @@ export default function MentorStudentDetail() {
           </div>
           <div className="text-right">
             <div className="text-[11px] uppercase tracking-wider text-base-content/45 font-semibold">
-              Koinlar
+              Коины
             </div>
             <div className="text-2xl font-extrabold text-warning flex items-center gap-1.5 justify-end">
               <Coins size={18} /> {coins.balance}
@@ -351,10 +351,10 @@ export default function MentorStudentDetail() {
       <section className="card bg-base-100 overflow-hidden">
         <header className="px-4 sm:px-5 pt-4 border-b border-base-200">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-            <h2 className="font-bold">Statistika</h2>
+            <h2 className="font-bold">Статистика</h2>
             {homework.missed > 0 && (
               <span className="flex items-center gap-1.5 text-xs font-semibold text-error">
-                <AlertTriangle size={14} /> {homework.missed} ta vazifa topshirilmagan
+                <AlertTriangle size={14} /> {homework.missed} заданий не выполнено
               </span>
             )}
           </div>
@@ -389,33 +389,33 @@ export default function MentorStudentDetail() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Ring
                 value={attendance.rate}
-                label="Davomat"
-                sub={`${attendance.present + attendance.late} / ${attendance.total} darsda`}
+                label="Посещаемость"
+                sub={`${attendance.present + attendance.late} / ${attendance.total} уроков`}
               />
               <Ring
                 value={homework.completionRate}
-                label="Uy vazifasi"
-                sub={`${homework.done} / ${homework.total} topshirgan`}
+                label="Домашнее задание"
+                sub={`${homework.done} / ${homework.total} сдано`}
               />
               <Ring
                 value={tests.avgPercent}
-                label="Testlar"
-                sub={`${tests.taken} / ${tests.total} ishlagan`}
+                label="Тесты"
+                sub={`${tests.taken} / ${tests.total} пройдено`}
               />
             </div>
 
             <div>
-              <h3 className="text-sm font-bold mb-1">Oxirgi 6 oy</h3>
+              <h3 className="text-sm font-bold mb-1">Последние 6 мес.</h3>
               <TrendArea
                 points={points}
                 series={[
-                  { key: 'attendanceRate', label: 'Davomat', color: SERIES.attendance },
-                  { key: 'homeworkAvg', label: "O'rtacha baho", color: SERIES.grade },
-                  { key: 'testAvg', label: 'Testlar', color: SERIES.tests },
+                  { key: 'attendanceRate', label: 'Посещаемость', color: SERIES.attendance },
+                  { key: 'homeworkAvg', label: 'Ср. оценка', color: SERIES.grade },
+                  { key: 'testAvg', label: 'Тесты', color: SERIES.tests },
                 ]}
               />
               <p className="text-[11px] text-base-content/40 mt-2">
-                Chiziq uzilgan oyda ma'lumot yo'q — dars yoki topshiriq bo'lmagan.
+                Разрыв линии — нет данных за этот месяц (не было уроков или заданий).
               </p>
             </div>
 
@@ -424,11 +424,11 @@ export default function MentorStudentDetail() {
               <div className="rounded-xl border border-base-200 overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-success/5 border-b border-base-200">
                   <ThumbsUp size={14} className="text-success" />
-                  <span className="text-sm font-bold">Yaxshi o'zlashtirgan</span>
+                  <span className="text-sm font-bold">Хорошо усвоено</span>
                 </div>
                 {strong.length === 0 ? (
                   <p className="px-4 py-6 text-sm text-base-content/45 text-center">
-                    Baholangan ish yo'q
+                    Нет оцененных работ
                   </p>
                 ) : (
                   <ul className="divide-y divide-base-200">
@@ -442,11 +442,11 @@ export default function MentorStudentDetail() {
               <div className="rounded-xl border border-base-200 overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-error/5 border-b border-base-200">
                   <AlertCircle size={14} className="text-error" />
-                  <span className="text-sm font-bold">Qiyinchilik bor</span>
+                  <span className="text-sm font-bold">Есть сложности</span>
                 </div>
                 {weak.length === 0 ? (
                   <p className="px-4 py-6 text-sm text-base-content/45 text-center">
-                    Zaif mavzu yo'q — barcha ishlar 80% dan yuqori
+                    Слабых тем нет — все работы выше 80%
                   </p>
                 ) : (
                   <ul className="divide-y divide-base-200">
@@ -466,8 +466,8 @@ export default function MentorStudentDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 items-center">
               <Ring
                 value={attendance.rate}
-                label="Davomat"
-                sub={`${attendance.total} ta dars`}
+                label="Посещаемость"
+                sub={`${attendance.total} уроков`}
                 size={124}
               />
               <div>
@@ -483,10 +483,10 @@ export default function MentorStudentDetail() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                   {[
-                    { label: 'Keldi', value: attendance.present, c: STATUS.good },
-                    { label: 'Kechikdi', value: attendance.late, c: STATUS.warning },
-                    { label: 'Kelmadi', value: attendance.absent, c: STATUS.critical },
-                    { label: 'Sababli', value: attendance.excused, c: SERIES.homework },
+                    { label: 'Присутствует', value: attendance.present, c: STATUS.good },
+                    { label: 'Опоздал', value: attendance.late, c: STATUS.warning },
+                    { label: 'Отсутствует', value: attendance.absent, c: STATUS.critical },
+                    { label: 'По уважит.', value: attendance.excused, c: SERIES.homework },
                   ].map((s) => (
                     <div key={s.label} className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.c }} />
@@ -502,20 +502,20 @@ export default function MentorStudentDetail() {
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <h3 className="text-sm font-bold">Oylar bo'yicha</h3>
+                <h3 className="text-sm font-bold">По месяцам</h3>
                 <Delta points={points} field="attendanceRate" />
               </div>
               <TrendArea
                 points={points}
-                series={[{ key: 'attendanceRate', label: 'Davomat', color: SERIES.attendance }]}
+                series={[{ key: 'attendanceRate', label: 'Посещаемость', color: SERIES.attendance }]}
                 height={200}
               />
             </div>
 
             <div>
-              <h3 className="text-sm font-bold mb-2">Oxirgi darslar</h3>
+              <h3 className="text-sm font-bold mb-2">Последние уроки</h3>
               {recentAttendance.length === 0 ? (
-                <EmptyState icon={CalendarCheck} title="Davomat belgilanmagan" />
+                <EmptyState icon={CalendarCheck} title="Посещаемость не отмечена" />
               ) : (
                 <ul className="divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
                   {recentAttendance.slice(0, 8).map((a, i) => {
@@ -542,27 +542,27 @@ export default function MentorStudentDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 items-center">
               <Ring
                 value={tests.avgPercent}
-                label="O'rtacha natija"
-                sub={`${tests.taken} / ${tests.total} ishlagan`}
+                label="Средний балл"
+                sub={`${tests.taken} / ${tests.total} пройдено`}
                 size={124}
               />
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-bold">Oylar bo'yicha</h3>
+                  <h3 className="text-sm font-bold">По месяцам</h3>
                   <Delta points={points} field="testAvg" />
                 </div>
                 <TrendArea
                   points={points}
-                  series={[{ key: 'testAvg', label: 'Testlar', color: SERIES.tests }]}
+                  series={[{ key: 'testAvg', label: 'Тесты', color: SERIES.tests }]}
                   height={180}
                 />
               </div>
             </div>
 
             <div>
-              <h3 className="text-sm font-bold mb-2">Barcha testlar</h3>
+              <h3 className="text-sm font-bold mb-2">Все тесты</h3>
               {tests.items.length === 0 ? (
-                <EmptyState icon={ClipboardCheck} title="Test yo'q" />
+                <EmptyState icon={ClipboardCheck} title="Нет тестов" />
               ) : (
                 <ul className="divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
                   {tests.items.map((t) => (
@@ -590,7 +590,7 @@ export default function MentorStudentDetail() {
                         </>
                       ) : (
                         <span className="text-[11px] font-semibold px-2 py-1 rounded-md border border-base-300 text-base-content/45 shrink-0">
-                          Ishlamagan
+                          Не пройден
                         </span>
                       )}
                     </li>
@@ -607,18 +607,18 @@ export default function MentorStudentDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 items-center">
               <Ring
                 value={homework.completionRate}
-                label="Topshirgan"
-                sub={`${homework.done} / ${homework.total} ta`}
+                label="Сдано"
+                sub={`${homework.done} / ${homework.total}`}
                 size={124}
               />
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-bold">O'rtacha baho — oylar bo'yicha</h3>
+                  <h3 className="text-sm font-bold">Ср. оценка — по месяцам</h3>
                   <Delta points={points} field="homeworkAvg" />
                 </div>
                 <TrendArea
                   points={points}
-                  series={[{ key: 'homeworkAvg', label: "O'rtacha baho", color: SERIES.grade }]}
+                  series={[{ key: 'homeworkAvg', label: 'Ср. оценка', color: SERIES.grade }]}
                   height={180}
                 />
               </div>
@@ -626,12 +626,12 @@ export default function MentorStudentDetail() {
 
             <div>
               <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
-                <h3 className="text-sm font-bold">Vazifalar</h3>
+                <h3 className="text-sm font-bold">Задания</h3>
                 <div role="tablist" className="flex gap-1 bg-base-200/70 p-0.5 rounded-lg">
                   {[
-                    { key: 'missed', label: `Topshirmagan (${homework.missed})` },
-                    { key: 'done', label: `Topshirgan (${homework.done})` },
-                    { key: 'all', label: 'Barchasi' },
+                    { key: 'missed', label: `Не сдано (${homework.missed})` },
+                    { key: 'done', label: `Сдано (${homework.done})` },
+                    { key: 'all', label: 'Все' },
                   ].map((t) => (
                     <button
                       key={t.key}
@@ -653,7 +653,7 @@ export default function MentorStudentDetail() {
               {hwFiltered.length === 0 ? (
                 <EmptyState
                   icon={hwFilter === 'missed' ? Check : FileText}
-                  title={hwFilter === 'missed' ? 'Barcha vazifalar topshirilgan' : "Vazifa yo'q"}
+                  title={hwFilter === 'missed' ? 'Все задания выполнены' : 'Нет заданий'}
                 />
               ) : (
                 <ul className="divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
@@ -668,7 +668,7 @@ export default function MentorStudentDetail() {
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-semibold truncate">{h.title}</div>
                           <div className="text-[11px] text-base-content/45 truncate">
-                            {h.groupName} · {fmtDate(h.deadline)} gacha
+                            {h.groupName} · {fmtDate(h.deadline)} до
                           </div>
                         </div>
                         {percent !== null ? (
