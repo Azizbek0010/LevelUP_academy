@@ -2296,6 +2296,9 @@ export const api = {
   // -------- ADMIN: Reports --------
   adminReports: (token, qs = '') => request(`/admin/reports${qs}`, { token }),
 
+  // -------- ADMIN: Discipline (штрафы и увольнения сотрудников) --------
+  adminPenalties: (token, qs = '') => request(`/admin/penalties${qs}`, { token }),
+  adminIssuePenalty: (token, body) => request('/admin/penalties', { method: 'POST', token, body }),
   // -------- SUPER ADMIN --------
   superDashboard: (token) => request('/super/dashboard', { token }),
   // «Отчёты» слиты в «Статистику» 2026-07-28 — это был один и тот же набор

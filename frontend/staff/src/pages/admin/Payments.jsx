@@ -456,7 +456,7 @@ export default function AdminPayments() {
               const u = [...payParts]; u[i] = { ...u[i], [f]: v }; setPayParts(u);
             }} onAdd={() => setPayParts([...payParts, { method: 'card', amount: '' }])}
               onRemove={(i) => setPayParts(payParts.filter((_, idx) => idx !== i))} />
-            {payParts.length > 1 && (
+            {(
               <p className="text-xs text-base-content/45 mt-2 tabular-nums">
                 Итого: {money(payPartsSum)}
                 {payPartsSum > Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0) && (
@@ -550,7 +550,7 @@ export default function AdminPayments() {
                   maxParts={5} />
               </div>
 
-              {adhocParts.length > 1 && (
+              {(
                 <p className={`text-xs tabular-nums ${adhocTotal > Number(adhocForm.totalAmount) ? 'text-error' : 'text-base-content/45'}`}>
                   Итого частей: {money(adhocTotal)}
                   {adhocTotal > Number(adhocForm.totalAmount) && (
@@ -601,6 +601,7 @@ export default function AdminPayments() {
               </span>
             </div>
 
+            {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
             {/* Summary */}
             <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="card bg-base-100 p-3 text-center">
@@ -692,7 +693,7 @@ export default function AdminPayments() {
                       placeholder="Причина (обязательно для возврата)" value={reverseReason}
                       onChange={(e) => setReverseReason(e.target.value)} />
                     <button className="btn btn-error btn-sm w-full" onClick={submitReverse}
-                      disabled={busy || (reverseMode === 'refund' && !reverseReason.trim())}>
+                      disabled={busy || !reverseReason.trim()}>
                       {busy && <span className="loading loading-spinner loading-xs" />}
                       {reverseMode === 'refund' ? 'Выполнить возврат' : 'Аннулировать'}
                     </button>
@@ -725,7 +726,9 @@ export default function AdminPayments() {
                     <Upload size={24} className="mx-auto mb-2 text-base-content/45" />
                     <p className="text-[12px] text-base-content/45">{uploadFile ? uploadFile.name : 'Нажмите для выбора файла'}</p>
                     <input id="receipt-file-input" type="file" accept="image/*,.pdf" className="hidden"
+                      onClick={(e) => e.stopPropagation()}
                       onChange={(e) => {
+                        e.stopPropagation();
                         setUploadFile(e.target.files?.[0] || null);
                         handleReceiptFile(e);
                       }} />

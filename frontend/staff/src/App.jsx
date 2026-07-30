@@ -34,6 +34,7 @@ const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
 const AdminChat = lazy(() => import('./pages/admin/Chat.jsx'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings.jsx'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile.jsx'));
+const AdminDiscipline = lazy(() => import('./pages/admin/Discipline.jsx'));
 
 const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
 const MentorChat = lazy(() => import('./pages/mentor/Chat.jsx'));
@@ -118,6 +119,7 @@ export default function App() {
         <Route path="/tests" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="testlar" /> }} /></SW>} />
         <Route path="/coins" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="koinlar" /> }} /></SW>} />
         <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, superadmin: SuperStudents, mentor: MentorStudents }} /></SW>} />
+        <Route path="/discipline" element={<SW><RoleView views={{ admin: AdminDiscipline, superadmin: SuperDiscipline }} /></SW>} />
 
         {/* Admin routes */}
         {/* Карточка ученика: у админа своя, у ментора — статистика по его
@@ -143,7 +145,6 @@ export default function App() {
           <Route path="/announcements" element={<SW><SuperAnnouncements /></SW>} />
           <Route path="/reminders" element={<SW><SuperReminders /></SW>} />
           <Route path="/audit" element={<SW><SuperAudit /></SW>} />
-        <Route path="/discipline" element={<SW><SuperDiscipline /></SW>} />
         </Route>
 
         {/* Methodist routes */}

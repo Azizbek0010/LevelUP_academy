@@ -35,8 +35,8 @@ const FORMAT_OPTIONS = [
     label: 'CSV',
     ext: '.csv',
     icon: FileText,
-    color: '#3B82F6',
-    bg: 'rgba(59,130,246,0.10)',
+    color: '#8FA283',
+    bg: 'rgba(143,162,131,0.10)',
     desc: 'Текстовый файл (Cyrillic)',
   },
 ];

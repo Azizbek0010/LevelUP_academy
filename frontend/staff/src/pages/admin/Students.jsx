@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Snowflake, Sun, Archive, KeyRound, GraduationCap, UserCheck, UserX,
@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
+import { formatPhone } from '../../format.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
@@ -26,7 +27,7 @@ const STATUS_COLORS = {
 /* ═══════════════ Student Card ═══════════════ */
 function StudentCard({ s, onNavigate }) {
   const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
-  const groupNames = (s.groups || []).map((g) => g.name).filter(Boolean);
+  const groupNames = (s.groups && s.groups.length > 0) ? s.groups.map((g) => g.name).filter(Boolean) : (s.groupName ? [s.groupName] : []);
 
   return (
     <div className="card bg-base-100 p-4 card-hover-premium group cursor-pointer" onClick={() => onNavigate?.(s.id)}>
@@ -40,10 +41,12 @@ function StudentCard({ s, onNavigate }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-bold text-base-content truncate">{fullName(s)}</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-              style={{ background: status.bg, color: status.text }}>
-              {status.label}
-            </span>
+            {s.status !== 'active' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                style={{ background: status.bg, color: status.text }}>
+                {status.label}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3 mt-1.5 text-[11px] text-base-content/45">
@@ -52,7 +55,7 @@ function StudentCard({ s, onNavigate }) {
                 <KeyRound size={10} /> {s.login_code || s.loginCode}
               </span>
             ) : null}
-            {s.phone && <span>{s.phone}</span>}
+            {s.phone && <span>{formatPhone(s.phone)}</span>}
             {s.coins != null && s.coins > 0 && (
               <span className="flex items-center gap-1 text-primary font-semibold">
                 <Coins size={10} /> {s.coins}
@@ -96,14 +99,24 @@ export default function AdminStudents() {
 
   const activeCount = rows.filter((s) => s.status !== 'frozen').length;
   const frozenCount = rows.filter((s) => s.status === 'frozen').length;
-  const debtCount = rows.filter((s) => (s.debt || s.outstandingDebt || 0) > 0).length;
-  const filteredRows = (() => {
-    if (statusFilter === 'all') return rows;
-    if (statusFilter === 'active') return rows.filter(s => s.status !== 'frozen');
-    if (statusFilter === 'frozen') return rows.filter(s => s.status === 'frozen');
-    if (statusFilter === 'debt') return rows.filter(s => (s.debt || s.outstandingDebt || 0) > 0);
-    return rows;
-  })();
+  const debtCount = rows.filter((s) => (s.debt || s.outstandingDebt || s.balance || 0) > 0).length;
+  const filteredRows = useMemo(() => {
+    let result = rows;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((s) => {
+        const name = fullName(s).toLowerCase();
+        const phone = (s.phone || '').toLowerCase();
+        const code = (s.login_code || s.loginCode || '').toLowerCase();
+        return name.includes(q) || phone.includes(q) || code.includes(q);
+      });
+    }
+    if (statusFilter === 'all') return result;
+    if (statusFilter === 'active') return result.filter(s => s.status !== 'frozen');
+    if (statusFilter === 'frozen') return result.filter(s => s.status === 'frozen');
+    if (statusFilter === 'debt') return result.filter(s => (s.debt || s.outstandingDebt || s.balance || 0) > 0);
+    return result;
+  }, [rows, search, statusFilter]);
 
   const create = async () => {
     setBusy(true); setErr('');
@@ -117,7 +130,7 @@ export default function AdminStudents() {
       });
       const r = res?.data || res;
       setForm(null);
-      setCreds({ login_code: r.login_code || r.loginCode || r.student?.login_code, password: r.password });
+      setCreds({ login_code: r.login_code || r.loginCode || r.student?.login_code || r.student?.loginCode, password: r.password || r.student?.password });
       refetch();
     } catch (e) { setErr(e.message || 'Ошибка'); }
     finally { setBusy(false); }
@@ -262,17 +275,22 @@ export default function AdminStudents() {
                       </div>
                     </td>
                     <td className="font-mono text-base-content/70">{s.login_code || s.loginCode || '—'}</td>
-                    <td className="text-base-content/45">{s.phone || '—'}</td>
+                    <td className="text-base-content/45">{formatPhone(s.phone)}</td>
                     <td>
                       <div className="flex flex-wrap gap-1">
-                        {(s.groups || []).slice(0, 2).map((g, i) => (
-                          <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary">
-                            {g.name}
-                          </span>
-                        ))}
-                        {(s.groups || []).length > 2 && (
-                          <span className="text-[9px] text-base-content/45">+{(s.groups || []).length - 2}</span>
-                        )}
+                        {(() => {
+                          const tg = (s.groups && s.groups.length > 0) ? s.groups : (s.groupName ? [{name: s.groupName}] : []);
+                          return [
+                            ...tg.slice(0, 2).map((g, i) => (
+                              <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary">
+                                {g.name}
+                              </span>
+                            )),
+                            tg.length > 2 && (
+                              <span key="more" className="text-[9px] text-base-content/45">+{tg.length - 2}</span>
+                            )
+                          ];
+                        })()}
                       </div>
                     </td>
                     <td className="tabular-nums">
@@ -283,10 +301,12 @@ export default function AdminStudents() {
                       ) : '—'}
                     </td>
                     <td>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
-                        style={{ background: (STATUS_COLORS[s.status] || STATUS_COLORS.active).bg, color: (STATUS_COLORS[s.status] || STATUS_COLORS.active).text }}>
-                        {(STATUS_COLORS[s.status] || STATUS_COLORS.active).label}
-                      </span>
+                      {s.status !== 'active' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
+                          style={{ background: (STATUS_COLORS[s.status] || STATUS_COLORS.active).bg, color: (STATUS_COLORS[s.status] || STATUS_COLORS.active).text }}>
+                          {(STATUS_COLORS[s.status] || STATUS_COLORS.active).label}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

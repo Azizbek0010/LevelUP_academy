@@ -59,6 +59,45 @@ export async function exportToExcel(data, columns, filename = `export_${today()}
 
 // ═══════════════ PDF ═══════════════
 
+/** Load DejaVuSans TTF from public/fonts and register with jsPDF for Cyrillic support */
+async function loadCyrillicFont(doc) {
+  try {
+    const [normalRes, boldRes] = await Promise.all([
+      fetch('/fonts/DejaVuSans.ttf'),
+      fetch('/fonts/DejaVuSans-Bold.ttf'),
+    ]);
+
+    if (!normalRes.ok || !boldRes.ok) {
+      console.warn('DejaVuSans font files not found, falling back to Helvetica (Cyrillic may not render)');
+      return;
+    }
+
+    const [normalBuf, boldBuf] = await Promise.all([
+      normalRes.arrayBuffer(),
+      boldRes.arrayBuffer(),
+    ]);
+
+    const normalArr = new Uint8Array(normalBuf);
+    const boldArr = new Uint8Array(boldBuf);
+
+    // Convert to base64
+    const toBase64 = (arr) => {
+      let binary = '';
+      for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i]);
+      return btoa(binary);
+    };
+
+    doc.addFileToVFS('DejaVuSans.ttf', toBase64(normalArr));
+    doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+    doc.addFileToVFS('DejaVuSans-Bold.ttf', toBase64(boldArr));
+    doc.addFont('DejaVuSans-Bold.ttf', 'DejaVuSans', 'bold');
+
+    doc.setFont('DejaVuSans');
+  } catch (err) {
+    console.warn('Failed to load Cyrillic font:', err);
+  }
+}
+
 export async function exportToPDF(data, columns, filename = `export_${today()}`, title = 'Отчёт') {
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
     import('jspdf'),
@@ -69,6 +108,9 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
   const pageW = doc.internal.pageSize.getWidth();
   const dateStr = new Date().toLocaleDateString('ru-RU');
   const { header, rows } = buildRows(data, columns);
+
+  // Load Cyrillic font (DejaVuSans) — supports Russian, Uzbek, etc.
+  await loadCyrillicFont(doc);
 
   // Header
   doc.setFontSize(16);
@@ -84,6 +126,7 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
     head: [header],
     body: rows,
     styles: {
+      font: 'DejaVuSans',
       fontSize: 8,
       cellPadding: 3,
       textColor: [30, 30, 30],
@@ -91,7 +134,7 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
       lineWidth: 0.3,
     },
     headStyles: {
-      fillColor: [59, 130, 246], // blue-500
+      fillColor: [143, 162, 131], // #8FA283 design system muted green
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 8,
