@@ -60,7 +60,7 @@ export default function Videos() {
                 <div className="text-sm font-bold truncate">{v.title}</div>
                 <div className="text-xs text-base-content/45 mt-0.5">{fmtDate(v.created_at)}</div>
               </div>
-              {v.duration_sec > 0 && <Pill hue="slate" className="tabular-nums">{fmtDuration(v.duration_sec)}</Pill>}
+              {v.duration_sec > 0 && <Pill hue="muted" className="tabular-nums">{fmtDuration(v.duration_sec)}</Pill>}
             </div>
           ))}
         </div>

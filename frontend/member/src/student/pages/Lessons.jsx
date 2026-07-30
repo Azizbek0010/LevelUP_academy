@@ -1,148 +1,142 @@
 import { useNavigate } from 'react-router-dom';
-import { Lock, Check, Globe, Palette, LayoutGrid, Braces, MousePointerClick, Play } from 'lucide-react';
-import { INK, HUE, textOn } from '../components/ui.jsx';
+import {
+  Lock, Check, ChevronRight, Code2, Palette, LayoutGrid, Braces, MousePointerClick, Star,
+} from 'lucide-react';
+import { IconTile, Ring, Pill, C } from '../components/ui.jsx';
 
 /**
- * «Мои уроки» — тропа тем.
+ * «Мои уроки».
  *
  * Данные захардкожены намеренно (Karis: «hozir ui statik qilib tur keyin
  * backend integratsiya qilamiz»). Учебного плана по дням на бэкенде нет:
- * training_types/topics это плоский каталог без привязки к дате и группе.
+ * training_types/topics — плоский каталог без привязки к дате и группе.
  * Когда появится эндпоинт — меняется только массив, вёрстка не тронется.
  *
- * 2026-07-30, третья итерация. Первая была списком карточек (Karis: «это
- * не другой дизайн»). Вторая — кругами, но они висели в пустоте без
- * связи между собой, поэтому читались как поломка, а не как путь.
- * Здесь узлы нанизаны на пунктирную нить (.kid-spine) и разбиты на
- * главы — видно и последовательность, и структуру курса.
+ * Karis про прошлую версию: «слишком скучно и слишком пиксельный дизайн».
+ * Поэтому здесь: крупные цветные значки у каждой темы (свой цвет = тему
+ * видно с одного взгляда), кольцо с процентом выполнения, заметная
+ * лаймовая карточка у текущего урока и общий прогресс курса сверху.
  */
 export const MOCK_TOPICS = [
-  { id: '1', day: 1, icon: Globe, title: 'HTML — основы', subtitle: 'Теги, структура страницы', chapter: 'Глава 1 · Вёрстка', locked: false, done: true, testScore: 100 },
-  { id: '2', day: 2, icon: Palette, title: 'CSS — стили', subtitle: 'Цвета, отступы, шрифты', locked: false, done: true, testScore: 80 },
-  { id: '3', day: 3, icon: LayoutGrid, title: 'Flexbox и Grid', subtitle: 'Раскладка элементов на странице', locked: false, done: false, testScore: null },
-  { id: '4', day: 4, icon: Braces, title: 'JavaScript — переменные', subtitle: 'Первые шаги в программировании', chapter: 'Глава 2 · Программирование', locked: true, done: false, testScore: null },
-  { id: '5', day: 5, icon: MousePointerClick, title: 'DOM и события', subtitle: 'Как оживить страницу', locked: true, done: false, testScore: null },
+  { id: '1', day: 1, icon: Code2, hue: 'blue', title: 'HTML — основы', subtitle: 'Теги, структура страницы', chapter: 'Вёрстка', locked: false, done: true, testScore: 100, hwScore: 100, videoDone: true },
+  { id: '2', day: 2, icon: Palette, hue: 'violet', title: 'CSS — стили', subtitle: 'Цвета, отступы, шрифты', locked: false, done: true, testScore: 80, hwScore: 90, videoDone: true },
+  { id: '3', day: 3, icon: LayoutGrid, hue: 'coral', title: 'Flexbox и Grid', subtitle: 'Раскладка элементов на странице', locked: false, done: false, testScore: null, hwScore: null, videoDone: false },
+  { id: '4', day: 4, icon: Braces, hue: 'amber', title: 'JavaScript — переменные', subtitle: 'Первые шаги в программировании', chapter: 'Программирование', locked: true, done: false, testScore: null, hwScore: null, videoDone: false },
+  { id: '5', day: 5, icon: MousePointerClick, hue: 'teal', title: 'DOM и события', subtitle: 'Как оживить страницу', locked: true, done: false, testScore: null, hwScore: null, videoDone: false },
 ];
 
-/* Смещение от центра. Небольшое (±76px) и намеренно не строго
-   попеременное: нить читается как тропа, а не как механический зигзаг. */
-const SHIFT = [0, 76, -60, 66, -72];
-
-function Node({ topic, index, onOpen }) {
-  const { icon: Icon, day, title, subtitle, locked, done, testScore } = topic;
-  const current = !locked && !done;
-  const hue = locked ? 'slate' : done ? 'grass' : 'sky';
-  const size = current ? 108 : 88;
-
-  return (
-    <div className="relative flex justify-center" style={{ zIndex: 1 }}>
-      <div className="flex flex-col items-center" style={{ transform: `translateX(${SHIFT[index % SHIFT.length]}px)` }}>
-        <button
-          type="button"
-          onClick={() => !locked && onOpen(topic)}
-          disabled={locked}
-          aria-label={title}
-          className={`kid-press relative rounded-full grid place-items-center ${locked ? 'cursor-not-allowed' : ''}`}
-          style={{
-            width: size,
-            height: size,
-            background: HUE[hue],
-            color: textOn(hue),
-            border: `4px solid ${INK}`,
-            boxShadow: `0 ${current ? 7 : 5}px 0 0 ${INK}`,
-          }}
-        >
-          {locked ? (
-            <Lock size={30} strokeWidth={2.8} />
-          ) : done ? (
-            <Check size={38} strokeWidth={3.5} />
-          ) : (
-            <Play size={34} strokeWidth={3} fill="currentColor" className="ml-1" />
-          )}
-
-          {/* Номер дня — жетоном на краю узла, а не подписью под ним */}
-          <span
-            className="absolute -top-1.5 -left-1.5 w-8 h-8 rounded-full grid place-items-center kid-num text-[14px]"
-            style={{ background: '#FFFDF7', border: `3px solid ${INK}`, color: INK }}
-          >
-            {day}
-          </span>
-
-          {/* Результат теста — жетоном с другой стороны */}
-          {done && (
-            <span
-              className="absolute -bottom-1 -right-1.5 px-2 py-0.5 rounded-full kid-num text-[12px]"
-              style={{ background: HUE.sun, border: `3px solid ${INK}`, color: INK }}
-            >
-              {testScore}%
-            </span>
-          )}
-        </button>
-
-        <div className="mt-3.5 text-center max-w-[190px]">
-          <div className="text-[16px] font-extrabold leading-tight" style={{ color: locked ? 'rgba(27,42,27,0.38)' : INK }}>
-            {title}
-          </div>
-          <div className="text-[12.5px] font-bold mt-1" style={{ color: 'rgba(27,42,27,0.45)' }}>
-            {locked ? 'Откроется позже' : subtitle}
-          </div>
-          {current && (
-            <span
-              className="inline-block mt-2.5 px-3 py-1 text-[11.5px] font-extrabold uppercase tracking-wider"
-              style={{ background: HUE.lime, color: INK, border: `2.5px solid ${INK}`, borderRadius: 999 }}
-            >
-              Ты здесь
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+/* Процент выполнения темы: тест + домашка + видео, равными долями.
+   Считается здесь, чтобы и список, и страница темы показывали одно число. */
+export function topicPercent(t) {
+  const parts = [
+    t.testScore != null ? t.testScore : 0,
+    t.hwScore != null ? t.hwScore : 0,
+    t.videoDone ? 100 : 0,
+  ];
+  return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length);
 }
 
-function ChapterLabel({ children }) {
+function TopicCard({ topic, onOpen }) {
+  const { icon, hue, day, title, subtitle, locked, done } = topic;
+  const current = !locked && !done;
+  const percent = topicPercent(topic);
+
   return (
-    <div className="relative flex justify-center py-2" style={{ zIndex: 1 }}>
-      <span
-        className="px-5 py-2 text-[13px] font-extrabold uppercase tracking-[0.08em]"
-        style={{ background: '#FFFDF7', color: INK, border: `3px solid ${INK}`, borderRadius: 999, boxShadow: `4px 4px 0 0 ${INK}` }}
-      >
-        {children}
-      </span>
-    </div>
+    <button
+      type="button"
+      onClick={() => !locked && onOpen(topic)}
+      disabled={locked}
+      className={`k-card ${locked ? '' : 'k-hover'} w-full flex items-center gap-4 p-4 text-left ${
+        locked ? 'cursor-not-allowed' : ''
+      }`}
+      style={{
+        opacity: locked ? 0.6 : 1,
+        outline: current ? `2.5px solid ${C.lime}` : 'none',
+        outlineOffset: current ? -2.5 : 0,
+      }}
+    >
+      {locked ? (
+        <span className="w-[56px] h-[56px] rounded-2xl grid place-items-center shrink-0" style={{ background: C.bg, color: C.muted }}>
+          <Lock size={22} strokeWidth={2.5} />
+        </span>
+      ) : (
+        <IconTile icon={icon} hue={hue} size={56} />
+      )}
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.08em]" style={{ color: C.muted }}>
+            Урок {day}
+          </span>
+          {current && <Pill hue="lime">Сейчас</Pill>}
+          {done && <Pill hue="teal"><Check size={11} strokeWidth={3.5} /> Готово</Pill>}
+        </div>
+        <div className="text-[17px] font-extrabold leading-tight mt-1" style={{ color: C.text }}>{title}</div>
+        <div className="text-[13px] font-semibold mt-0.5 truncate" style={{ color: C.muted }}>
+          {locked ? 'Откроется после предыдущего урока' : subtitle}
+        </div>
+      </div>
+
+      {!locked && (
+        <Ring percent={percent} size={54} thickness={6} color={done ? C.teal : C.lime}>
+          <span className="k-num text-[13px]" style={{ color: C.text }}>{percent}%</span>
+        </Ring>
+      )}
+      {!locked && <ChevronRight size={18} strokeWidth={2.8} style={{ color: C.muted }} className="shrink-0" />}
+    </button>
   );
 }
 
 export default function Lessons() {
   const navigate = useNavigate();
   const doneCount = MOCK_TOPICS.filter((t) => t.done).length;
+  const coursePercent = Math.round(
+    MOCK_TOPICS.reduce((sum, t) => sum + topicPercent(t), 0) / MOCK_TOPICS.length,
+  );
+
+  const groups = [];
+  MOCK_TOPICS.forEach((t) => {
+    if (t.chapter || groups.length === 0) groups.push({ chapter: t.chapter, items: [t] });
+    else groups[groups.length - 1].items.push(t);
+  });
 
   return (
     <>
-      <div className="flex items-end justify-between gap-4 flex-wrap mb-8">
-        <div>
-          <h1 className="text-[30px] sm:text-[38px] font-extrabold leading-[1.05] tracking-[-0.02em]" style={{ color: INK }}>
+      {/* Общий прогресс курса — кольцо + счётчики */}
+      <div className="k-card p-5 mb-5 flex items-center gap-5">
+        <Ring percent={coursePercent} size={84} thickness={8}>
+          <div className="text-center leading-none">
+            <div className="k-num text-[21px]" style={{ color: C.text }}>{coursePercent}%</div>
+          </div>
+        </Ring>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[24px] sm:text-[29px] font-extrabold leading-[1.1] tracking-[-0.025em]" style={{ color: C.text }}>
             Мои уроки
           </h1>
-          <p className="text-[15px] mt-1.5 font-bold" style={{ color: 'rgba(27,42,27,0.55)' }}>
-            Идём по тропе сверху вниз — новая тема открывается после сдачи предыдущей
+          <p className="text-[13.5px] font-semibold mt-1" style={{ color: C.muted }}>
+            Пройдено {doneCount} из {MOCK_TOPICS.length} тем — следующая откроется после теста
           </p>
         </div>
-        <span
-          className="px-4 py-2.5 kid-num text-[15px]"
-          style={{ background: HUE.grass, color: '#fff', border: `3px solid ${INK}`, borderRadius: 16, boxShadow: `4px 4px 0 0 ${INK}` }}
-        >
-          {doneCount} / {MOCK_TOPICS.length} пройдено
-        </span>
+        <div className="hidden sm:flex items-center gap-2 shrink-0">
+          <Pill hue="amber"><Star size={11} strokeWidth={3} fill="currentColor" /> монеты за каждый тест</Pill>
+        </div>
       </div>
 
-      {/* kid-spine рисует пунктирную нить по центру — узлы нанизаны на неё */}
-      <div className="kid-spine relative max-w-md mx-auto py-4 space-y-9">
-        {MOCK_TOPICS.map((topic, i) => (
-          <div key={topic.id}>
-            {topic.chapter && <ChapterLabel>{topic.chapter}</ChapterLabel>}
-            <div className={topic.chapter ? 'mt-9' : ''}>
-              <Node topic={topic} index={i} onOpen={(t) => navigate(`/lessons/${t.id}`)} />
+      <div className="space-y-5">
+        {groups.map((g, gi) => (
+          <div key={gi}>
+            {g.chapter && (
+              <div className="flex items-center gap-3 mb-2.5 px-1">
+                <span className="text-[12px] font-extrabold uppercase tracking-[0.1em]" style={{ color: C.muted }}>
+                  {g.chapter}
+                </span>
+                <span className="flex-1 h-px" style={{ background: C.line }} />
+              </div>
+            )}
+            <div className="space-y-3">
+              {g.items.map((topic) => (
+                <TopicCard key={topic.id} topic={topic} onOpen={(t) => navigate(`/lessons/${t.id}`)} />
+              ))}
             </div>
           </div>
         ))}

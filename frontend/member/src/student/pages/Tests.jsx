@@ -9,12 +9,12 @@ import { fmtDateTime } from '../format.js';
 /** Статус теста для студента по данным списка. */
 export function testStatus(t) {
   const now = Date.now();
-  if (t.finished_at) return { key: 'done', label: `Сдан · ${t.score}%`, hue: t.score >= 50 ? 'grass' : 'coral' };
-  if (t.started_at) return { key: 'inProgress', label: 'В процессе', hue: 'sky' };
+  if (t.finished_at) return { key: 'done', label: `Сдан · ${t.score}%`, hue: t.score >= 50 ? 'teal' : 'coral' };
+  if (t.started_at) return { key: 'inProgress', label: 'В процессе', hue: 'lime' };
   if (t.starts_at && now < new Date(t.starts_at).getTime())
-    return { key: 'scheduled', label: `Откроется ${fmtDateTime(t.starts_at)}`, hue: 'slate' };
+    return { key: 'scheduled', label: `Откроется ${fmtDateTime(t.starts_at)}`, hue: 'muted' };
   if (t.ends_at && now > new Date(t.ends_at).getTime())
-    return { key: 'closed', label: 'Закрыт', hue: 'slate' };
+    return { key: 'closed', label: 'Закрыт', hue: 'muted' };
   return { key: 'open', label: 'Доступен', hue: 'lime' };
 }
 

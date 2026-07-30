@@ -7,11 +7,11 @@ import { fmtDateTime, deadlineLabel } from '../format.js';
 
 function StatusPill({ hw }) {
   if (hw.submission_status === 'graded')
-    return <Pill hue="grass">Оценено · {hw.score}/{hw.max_score}</Pill>;
+    return <Pill hue="teal">Оценено · {hw.score}/{hw.max_score}</Pill>;
   if (hw.submission_status === 'late') return <Pill hue="coral">Сдано с опозданием</Pill>;
   if (hw.submission_status === 'submitted') return <Pill hue="lime">На проверке</Pill>;
   const overdue = hw.deadline && Date.now() > new Date(hw.deadline).getTime();
-  return overdue ? <Pill hue="coral">Просрочено</Pill> : <Pill hue="slate">{deadlineLabel(hw.deadline)}</Pill>;
+  return overdue ? <Pill hue="coral">Просрочено</Pill> : <Pill hue="muted">{deadlineLabel(hw.deadline)}</Pill>;
 }
 
 export default function Homework() {
@@ -104,7 +104,7 @@ export default function Homework() {
                 </div>
                 <StatusPill hw={hw} />
                 {canSubmit && (
-                  <Button size="sm" hue="sky" onClick={() => openSubmit(hw)}>
+                  <Button size="sm" hue="lime" onClick={() => openSubmit(hw)}>
                     {hw.submission_status ? 'Пересдать' : 'Сдать'}
                   </Button>
                 )}

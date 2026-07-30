@@ -23,7 +23,7 @@ function PaymentOverdue({ amount, onLogout }) {
   return (
     <InfoScreen
       title="Доступ приостановлен"
-      action={<Button hue="slate" onClick={onLogout}>Выйти</Button>}
+      action={<Button hue="muted" onClick={onLogout}>Выйти</Button>}
     >
       По твоему счёту есть просроченная задолженность
       {amount ? <> — <b className="text-base-content">{fmtMoney(amount)}</b></> : null}. Кабинет

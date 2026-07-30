@@ -90,7 +90,7 @@ export default function Shop() {
                   </div>
                   <Button
                     size="sm"
-                    hue="grape"
+                    hue="lime"
                     className="w-full"
                     disabled={!affordable}
                     onClick={() => setConfirm(item)}
@@ -138,7 +138,7 @@ export default function Shop() {
           </p>
           <div className="flex justify-end gap-2.5 mt-6">
             <button className="btn btn-ghost rounded-2xl" onClick={() => setConfirm(null)} disabled={busy}>Отмена</button>
-            <Button hue="grape" onClick={buy} disabled={busy}>
+            <Button hue="lime" onClick={buy} disabled={busy}>
               {busy ? <span className="loading loading-spinner loading-sm" /> : 'Купить'}
             </Button>
           </div>

@@ -433,76 +433,96 @@ main > * {
 .quiz-clock--low { color: var(--danger) !important; }
 
 /* ═══════════════════════════════════════════════════════════════
-   КАБИНЕТ УЧЕНИКА (7-14 лет) — отдельный визуальный язык
+   КАБИНЕТ УЧЕНИКА (7-14 лет)
    ═══════════════════════════════════════════════════════════════
 
-   2026-07-30. Раньше кабинет ученика жил на той же системе, что
-   родительская и staff-панели: мягкие размытые тени, градиенты,
-   иконка в бледном квадратике. Karis справедливо сказал, что это
-   «AI-дизайн» — и это буквально так: сине-фиолетовые градиенты +
-   blur-тени + одинаковые скруглённые карточки это статистический
-   дефолт генеративных моделей, а не решение.
+   2026-07-30, финальная редакция — по КОНКРЕТНЫМ референсам от Karis
+   (скриншоты 043704 и 044228), а не по моим догадкам. До этого было
+   пять неудачных попыток: градиенты, чернильные обводки, тёмная
+   админка — все мимо, потому что я угадывал вкус вместо того, чтобы
+   опираться на образец.
 
-   Здесь другой, осознанно выбранный язык — «наклейка на столе»:
-     · толстая чернильная обводка (3px), а не 1px светло-серая
-     · ТВЁРДАЯ тень без размытия (5px 5px 0), а не blur
-     · плоские насыщенные заливки, БЕЗ градиентов на поверхностях
-     · нажатие физически вдавливает элемент (translate + тень短)
-   Читается как коллекционная карточка/настолка: тактильно и
-   уверенно, не инфантильно — работает и на 7, и на 14 лет.
+   Что взято из референсов:
+     · СВЕТЛАЯ основа (у Mars светло-серый фон, белые карточки)
+     · активный пункт навигации — залитая яркая «таблетка»
+       (у Mars оранжевая → у нас брендовый лайм)
+     · КРУПНЫЕ ЦВЕТНЫЕ иконки категорий (у Mars фиолетовая
+       клавиатура, синий плеер, красная шапочка) — именно они дают
+       детскую живость, поэтому вводим яркую палитру категорий
+     · яркий баннер соревнования с таймером и призами
+     · лидерборд строками с аватаром, уровнем и очками
 
-   Всё под префиксом .kid-* и применяется только внутри /student/*,
-   чтобы не протекло в кабинет родителя (там другая аудитория). */
+   Лайм #C6FF34 остаётся брендовым цветом ДЕЙСТВИЯ и активного
+   состояния; цветные — только у иконок категорий, чтобы разделы
+   различались с одного взгляда. */
 .kid {
-  --ink: #1B2A1B;
-  --paper: #FFFDF7;
-  --lime: #C6FF34;
-  --grass: #3DA35D;
-  --sky: #35A7FF;
-  --sun: #FFC93C;
-  --coral: #FF6B4A;
-  --grape: #A265FF;
-  background: #F2F7EA;
+  --k-bg: #F4F7EF;
+  --k-card: #FFFFFF;
+  --k-text: #1D2417;
+  --k-muted: #78876C;
+  --k-line: #EBF0E2;
+  --k-lime: #C6FF34;
+  --k-lime-dk: #A8E01F;
+  --k-ink: #141B10;
+
+  /* яркая палитра категорий — из референса Mars (крупные цветные значки) */
+  --k-violet: #7C5CFF;
+  --k-blue: #2E9BFF;
+  --k-coral: #FF6B5A;
+  --k-amber: #FFB020;
+  --k-teal: #12B886;
+  --k-pink: #FF5FA2;
+
+  background: var(--k-bg);
+  color: var(--k-text);
 }
 
-/* Поверхность-карточка */
-.kid-card {
-  background: var(--paper);
-  border: 3px solid var(--ink);
-  border-radius: 22px;
-  box-shadow: 5px 5px 0 0 var(--ink);
+/* Карточка: белая, мягкая тень — светлая база как в референсе */
+.k-card {
+  background: var(--k-card);
+  border-radius: 18px;
+  box-shadow: 0 2px 4px rgba(29, 36, 23, 0.04), 0 8px 20px rgba(29, 36, 23, 0.06);
 }
-.kid-card--flat { box-shadow: none; }
-
-/* Кликабельная поверхность: вдавливается под курсором */
-.kid-press {
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-.kid-press:active:not(:disabled) {
-  transform: translate(3px, 3px);
-  box-shadow: 2px 2px 0 0 var(--ink) !important;
-}
-.kid-press:hover:not(:disabled) {
-  transform: translate(-1px, -1px);
-  box-shadow: 6px 6px 0 0 var(--ink);
+.k-hover { transition: transform 0.16s ease, box-shadow 0.16s ease; }
+.k-hover:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(29, 36, 23, 0.06), 0 14px 30px rgba(29, 36, 23, 0.12);
 }
 
-/* Тропа уроков: пунктирная «нить», на которую нанизаны узлы */
-.kid-spine::before {
+/* Крупный цветной значок категории — ключевой элемент живости.
+   Мягкий объём даёт лёгкий внутренний блик, а не плоская заливка. */
+.k-icon {
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.k-icon::after {
   content: '';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 0;
-  border-left: 4px dashed rgba(27, 42, 27, 0.18);
-  transform: translateX(-50%);
-  z-index: 0;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 62%);
+}
+.k-icon > * { position: relative; z-index: 1; }
+
+/* Кольцо прогресса — знак из логотипа LevelUp (шкала 0-100) */
+.k-ring { border-radius: 50%; display: grid; place-items: center; }
+.k-ring > i { border-radius: 50%; background: #fff; display: grid; place-items: center; font-style: normal; }
+
+/* Активный пункт навигации — залитая лаймовая таблетка */
+.k-nav-on {
+  background: var(--k-lime);
+  color: var(--k-ink);
+  box-shadow: 0 4px 12px rgba(168, 224, 31, 0.45);
 }
 
-/* Крупные числа как элемент дизайна, а не подпись */
-.kid-num {
-  font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+.k-num { font-variant-numeric: tabular-nums; font-weight: 800; letter-spacing: -0.02em; }
+
+/* Мягкое «дыхание» для текущего/призывного элемента */
+@keyframes k-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
 }
+.k-pulse { animation: k-pulse 2.4s ease-in-out infinite; }

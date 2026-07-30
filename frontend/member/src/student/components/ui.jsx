@@ -3,72 +3,117 @@ import { X, Inbox, AlertTriangle } from 'lucide-react';
 /**
  * UI-кит кабинета ученика (7-14 лет).
  *
- * 2026-07-30, переписан целиком. До этого кит повторял staff/родительскую
- * панель: мягкие blur-тени, градиентные бейджи, иконка в бледном квадрате.
- * Это ровно тот «AI-дизайн», на который жаловался Karis — и объективно так
- * и есть: градиент + blur-тень + одинаковые скруглённые карточки это
- * статистический дефолт генеративных моделей.
- *
- * Новый язык — «наклейка на столе» (см. .kid-* в index.css):
- *   толстая чернильная обводка · ТВЁРДАЯ тень без размытия · плоские
- *   насыщенные заливки · физическое вдавливание при нажатии.
- * Ни одного градиента на поверхностях, ни одной размытой тени.
+ * 2026-07-30, собран по КОНКРЕТНЫМ референсам от Karis, а не по догадкам.
+ * Ключевое из образца: светлая основа, белые карточки, КРУПНЫЕ ЦВЕТНЫЕ
+ * значки категорий (именно они дают живость), лайм — цвет действия и
+ * активного состояния.
  */
 
-/* Палитра. Дублирует CSS-переменные .kid — нужна в JS там, где цвет
-   выбирается по смыслу (тон плитки, узел тропы), а не классом. */
-export const INK = '#1B2A1B';
-export const HUE = {
+export const C = {
+  bg: '#F4F7EF',
+  card: '#FFFFFF',
+  text: '#1D2417',
+  muted: '#78876C',
+  line: '#EBF0E2',
   lime: '#C6FF34',
-  grass: '#3DA35D',
-  sky: '#35A7FF',
-  sun: '#FFC93C',
-  coral: '#FF6B4A',
-  grape: '#A265FF',
-  slate: '#B8C4B0',
+  limeDk: '#A8E01F',
+  ink: '#141B10',
+  violet: '#7C5CFF',
+  blue: '#2E9BFF',
+  coral: '#FF6B5A',
+  amber: '#FFB020',
+  teal: '#12B886',
+  pink: '#FF5FA2',
 };
-/* Тёмный текст на светлых заливках, светлый — на насыщенных. Лайм и
-   солнечный жёлтый слишком светлые для белого текста (контраст ~1.5:1). */
-const ON_LIGHT = new Set(['lime', 'sun', 'slate']);
-export const textOn = (hue) => (ON_LIGHT.has(hue) ? INK : '#FFFFFF');
 
-/* ── Заголовок страницы ─────────────────────────────────────────────────── */
+/* Цвета категорий — чтобы разделы и типы заданий различались мгновенно */
+export const HUES = {
+  lime: C.lime,
+  violet: C.violet,
+  blue: C.blue,
+  coral: C.coral,
+  amber: C.amber,
+  teal: C.teal,
+  pink: C.pink,
+};
+
+/* ── Крупный цветной значок ─────────────────────────────────────────────
+   Главный носитель «детскости» из референса: большой сочный квадрат с
+   мягким блеском, внутри белая иконка. */
+export function IconTile({ icon: Icon, hue = 'violet', size = 56, radius, className = '' }) {
+  const fill = HUES[hue] ?? C.violet;
+  return (
+    <span
+      className={`k-icon shrink-0 ${className}`}
+      style={{
+        width: size,
+        height: size,
+        background: fill,
+        borderRadius: radius ?? Math.round(size * 0.32),
+        boxShadow: `0 6px 16px ${fill}59`,
+      }}
+    >
+      <Icon size={Math.round(size * 0.48)} strokeWidth={2.4} />
+    </span>
+  );
+}
+
+/* ── Кольцо прогресса (знак из логотипа LevelUp) ─────────────────────── */
+export function Ring({ percent = 0, size = 76, thickness = 7, color = C.lime, track = C.line, children }) {
+  return (
+    <span
+      className="k-ring shrink-0"
+      style={{ width: size, height: size, background: `conic-gradient(${color} ${percent}%, ${track} 0)` }}
+    >
+      <i style={{ width: size - thickness * 2, height: size - thickness * 2 }}>{children}</i>
+    </span>
+  );
+}
+
+/* ── Кнопка ─────────────────────────────────────────────────────────── */
+const BSIZE = {
+  sm: 'px-4 py-2 text-[13.5px] rounded-xl',
+  md: 'px-5 py-2.5 text-[14.5px] rounded-xl',
+  lg: 'px-6 py-3.5 text-[16px] rounded-2xl',
+};
+
+export function Button({ hue = 'lime', size = 'md', className = '', disabled, children, ...props }) {
+  const fill = disabled ? C.line : HUES[hue] ?? C.lime;
+  const fg = disabled ? C.muted : hue === 'lime' ? C.ink : '#fff';
+  return (
+    <button
+      {...props}
+      disabled={disabled}
+      className={`k-hover inline-flex items-center justify-center gap-2 font-extrabold whitespace-nowrap disabled:cursor-not-allowed ${BSIZE[size] ?? BSIZE.md} ${className}`}
+      style={{ background: fill, color: fg, boxShadow: disabled ? 'none' : `0 5px 14px ${fill}55` }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ── Заголовок страницы ─────────────────────────────────────────────── */
 export function PageHeader({ title, subtitle, actions }) {
   return (
-    <div className="flex items-end justify-between gap-4 flex-wrap mb-7">
+    <div className="flex items-end justify-between gap-4 flex-wrap mb-5">
       <div>
-        <h1 className="text-[30px] sm:text-[38px] font-extrabold leading-[1.05] tracking-[-0.02em]" style={{ color: INK }}>
+        <h1 className="text-[26px] sm:text-[31px] font-extrabold leading-[1.1] tracking-[-0.025em]" style={{ color: C.text }}>
           {title}
         </h1>
-        {subtitle && <p className="text-[15px] mt-1.5 font-bold" style={{ color: 'rgba(27,42,27,0.55)' }}>{subtitle}</p>}
+        {subtitle && <p className="text-[14px] mt-1 font-semibold" style={{ color: C.muted }}>{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
 }
 
-/* ── Аватар ─────────────────────────────────────────────────────────────
-   Плоский цветной круг с чернильной обводкой. Цвет закреплён за именем,
-   поэтому свой аватар всегда одного цвета — ребёнок узнаёт себя в списке. */
-const AVATAR_HUES = ['lime', 'sky', 'sun', 'coral', 'grape', 'grass'];
-
-export function Avatar({ name, size = 'md', onDark = false }) {
+/* ── Аватар ─────────────────────────────────────────────────────────── */
+export function Avatar({ name, size = 38 }) {
   const letter = (name?.trim()?.[0] || '?').toUpperCase();
-  const px = { sm: 34, md: 42, lg: 56 }[size] ?? 42;
-  let h = 0;
-  for (const c of name || '?') h = (h * 31 + c.charCodeAt(0)) % AVATAR_HUES.length;
-  const hue = AVATAR_HUES[h];
   return (
     <span
       className="rounded-full grid place-items-center font-extrabold shrink-0"
-      style={{
-        width: px,
-        height: px,
-        fontSize: px * 0.42,
-        background: HUE[hue],
-        color: textOn(hue),
-        border: `${size === 'sm' ? 2.5 : 3}px solid ${onDark ? 'rgba(255,255,255,0.85)' : INK}`,
-      }}
+      style={{ width: size, height: size, fontSize: size * 0.42, background: C.lime, color: C.ink }}
       aria-hidden="true"
     >
       {letter}
@@ -76,132 +121,60 @@ export function Avatar({ name, size = 'md', onDark = false }) {
   );
 }
 
-/* ── Кнопка ─────────────────────────────────────────────────────────────
-   Плоская заливка + твёрдая тень, вдавливается при нажатии. */
-const BUTTON_SIZES = {
-  sm: { pad: '8px 16px', font: 14, radius: 14, shadow: 3 },
-  md: { pad: '13px 26px', font: 16, radius: 18, shadow: 5 },
-  lg: { pad: '17px 34px', font: 18, radius: 20, shadow: 6 },
-};
-
-export function Button({ hue = 'grass', size = 'md', className = '', disabled, children, ...props }) {
-  const s = BUTTON_SIZES[size] ?? BUTTON_SIZES.md;
-  const fill = disabled ? HUE.slate : HUE[hue] ?? HUE.grass;
+/* ── Панель ─────────────────────────────────────────────────────────── */
+export function Panel({ title, icon: Icon, hue = 'violet', action, children, bodyClass = 'p-4 sm:p-5' }) {
   return (
-    <button
-      {...props}
-      disabled={disabled}
-      className={`kid-press inline-flex items-center justify-center gap-2 font-extrabold whitespace-nowrap disabled:cursor-not-allowed ${className}`}
-      style={{
-        padding: s.pad,
-        fontSize: s.font,
-        borderRadius: s.radius,
-        background: fill,
-        color: disabled ? 'rgba(27,42,27,0.45)' : textOn(hue),
-        border: `3px solid ${INK}`,
-        boxShadow: `${s.shadow}px ${s.shadow}px 0 0 ${INK}`,
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-/* ── Плитка-показатель ──────────────────────────────────────────────────
-   Раньше: белая карточка + градиентный квадратик с иконкой + серая
-   подпись. Теперь вся плитка залита своим цветом, число — главный
-   элемент композиции. Иконка ушла в угол мелким силуэтом, потому что
-   значение важнее декора. */
-export function StatTile({ Icon, label, value, hint, hue = 'sun', className = '' }) {
-  const fill = HUE[hue] ?? HUE.sun;
-  const fg = textOn(hue);
-  return (
-    <div
-      className={`relative overflow-hidden p-5 ${className}`}
-      style={{
-        background: fill,
-        color: fg,
-        border: `3px solid ${INK}`,
-        borderRadius: 22,
-        boxShadow: `5px 5px 0 0 ${INK}`,
-      }}
-    >
-      {Icon && (
-        <Icon
-          size={92}
-          strokeWidth={2.5}
-          className="absolute -right-4 -bottom-5 pointer-events-none"
-          style={{ opacity: 0.16 }}
-          aria-hidden="true"
-        />
-      )}
-      <div className="relative">
-        <div className="text-[12px] font-extrabold uppercase tracking-[0.08em]" style={{ opacity: 0.7 }}>
-          {label}
-        </div>
-        <div className="kid-num text-[42px] leading-none mt-2">{value}</div>
-        {hint && <div className="text-[13px] font-bold mt-1.5" style={{ opacity: 0.7 }}>{hint}</div>}
-      </div>
-    </div>
-  );
-}
-
-/* ── Панель ─────────────────────────────────────────────────────────────
-   Шапка — плоская цветная полоса, а не белая строка с бледной иконкой. */
-export function Panel({ title, icon: Icon, action, hue = 'lime', children, bodyClass = 'p-5' }) {
-  const fill = HUE[hue] ?? HUE.lime;
-  return (
-    <section className="kid-card overflow-hidden">
+    <section className="k-card overflow-hidden">
       {title && (
-        <header
-          className="flex items-center justify-between gap-3 px-5 py-3.5"
-          style={{ background: fill, color: textOn(hue), borderBottom: `3px solid ${INK}` }}
-        >
-          <h2 className="text-[17px] font-extrabold flex items-center gap-2.5">
-            {Icon && <Icon size={20} strokeWidth={2.6} className="shrink-0" />}
+        <header className="flex items-center justify-between gap-3 px-4 sm:px-5 pt-4 pb-3">
+          <h2 className="text-[16px] font-extrabold flex items-center gap-2.5" style={{ color: C.text }}>
+            {Icon && <IconTile icon={Icon} hue={hue} size={34} />}
             {title}
           </h2>
           {action}
         </header>
       )}
-      <div className={bodyClass}>{children}</div>
+      <div className={bodyClass} style={title ? { paddingTop: 0 } : undefined}>{children}</div>
     </section>
   );
 }
 
-/* ── Ярлык ──────────────────────────────────────────────────────────────
-   Обводка + плоская заливка, без 12%-тинтов. */
-export function Pill({ hue = 'slate', children, className = '' }) {
-  const fill = HUE[hue] ?? HUE.slate;
+/* ── Ярлык ──────────────────────────────────────────────────────────── */
+export function Pill({ hue = 'muted', children, className = '' }) {
+  const map = {
+    lime: { bg: '#F0FFD1', fg: '#4F7A00' },
+    teal: { bg: '#DFF8EE', fg: '#0B7A5A' },
+    coral: { bg: '#FFE9E6', fg: '#C0392B' },
+    amber: { bg: '#FFF3DC', fg: '#96620A' },
+    blue: { bg: '#E4F1FF', fg: '#1668B8' },
+    violet: { bg: '#EEEAFF', fg: '#5136C4' },
+    muted: { bg: '#F1F4EB', fg: C.muted },
+  };
+  const s = map[hue] ?? map.muted;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 text-[12px] font-extrabold whitespace-nowrap px-2.5 py-1 ${className}`}
-      style={{ background: fill, color: textOn(hue), border: `2.5px solid ${INK}`, borderRadius: 999 }}
+      className={`inline-flex items-center gap-1.5 text-[12px] font-extrabold whitespace-nowrap px-2.5 py-1 rounded-lg ${className}`}
+      style={{ background: s.bg, color: s.fg }}
     >
       {children}
     </span>
   );
 }
 
-/* ── Вкладки ────────────────────────────────────────────────────────────
-   Активная вкладка «выезжает» вперёд твёрдой тенью, остальные плоские. */
+/* ── Вкладки ────────────────────────────────────────────────────────── */
 export function Tabs({ value, onChange, items }) {
   return (
-    <div className="flex flex-wrap gap-2.5">
+    <div className="inline-flex gap-1 p-1 rounded-2xl" style={{ background: '#EDF2E4' }}>
       {items.map((it) => {
-        const active = it.value === value;
+        const on = it.value === value;
         return (
           <button
             key={it.value}
             onClick={() => onChange(it.value)}
-            className="kid-press text-[14px] font-extrabold px-4 py-2.5"
-            style={{
-              background: active ? HUE.sky : HUE.slate,
-              color: active ? '#fff' : 'rgba(27,42,27,0.6)',
-              border: `3px solid ${INK}`,
-              borderRadius: 16,
-              boxShadow: active ? `4px 4px 0 0 ${INK}` : 'none',
-            }}
+            className="px-4 py-2 rounded-xl text-[13.5px] font-extrabold transition-all"
+            style={on
+              ? { background: C.card, color: C.text, boxShadow: '0 2px 6px rgba(29,36,23,.10)' }
+              : { background: 'transparent', color: C.muted }}
           >
             {it.label}
           </button>
@@ -211,56 +184,39 @@ export function Tabs({ value, onChange, items }) {
   );
 }
 
-/* ── Скелеты ────────────────────────────────────────────────────────────
-   Форма совпадает с итоговой (обводка + тень), чтобы страница не
-   «прыгала» после загрузки. */
-export function Skeleton({ h = 132, count = 3 }) {
+/* ── Скелеты ────────────────────────────────────────────────────────── */
+export function Skeleton({ h = 108, count = 3 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {Array.from({ length: count }, (_, i) => (
-        <div
-          key={i}
-          className="animate-pulse"
-          style={{ height: h, background: 'rgba(27,42,27,0.07)', border: `3px solid rgba(27,42,27,0.18)`, borderRadius: 22 }}
-        />
+        <div key={i} className="animate-pulse" style={{ height: h, background: '#E8EEDE', borderRadius: 18 }} />
       ))}
     </div>
   );
 }
 
-export function RowSkeleton({ count = 3, height = 64 }) {
+export function RowSkeleton({ count = 3, height = 62 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       {Array.from({ length: count }, (_, i) => (
-        <div
-          key={i}
-          className="animate-pulse"
-          style={{ height, background: 'rgba(27,42,27,0.07)', border: `3px solid rgba(27,42,27,0.14)`, borderRadius: 18 }}
-        />
+        <div key={i} className="animate-pulse" style={{ height, background: '#E8EEDE', borderRadius: 14 }} />
       ))}
     </div>
   );
 }
 
-/* ── Пустое состояние ───────────────────────────────────────────────────
-   Никаких эмодзи: плоский цветной круг с обводкой + векторная иконка. */
-export function EmptyState({ icon: Icon = Inbox, title, text, action, hue = 'lime' }) {
+/* ── Пустое состояние ───────────────────────────────────────────────── */
+export function EmptyState({ icon: Icon = Inbox, title, text, action, hue = 'violet' }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center px-6 py-14">
-      <span
-        className="w-[84px] h-[84px] rounded-full grid place-items-center mb-5"
-        style={{ background: HUE[hue], color: textOn(hue), border: `3px solid ${INK}`, boxShadow: `4px 4px 0 0 ${INK}` }}
-      >
-        <Icon size={36} strokeWidth={2.6} />
-      </span>
-      <p className="text-[18px] font-extrabold" style={{ color: INK }}>{title}</p>
-      {text && <p className="text-[14px] font-bold mt-1.5 max-w-xs" style={{ color: 'rgba(27,42,27,0.5)' }}>{text}</p>}
-      {action && <div className="mt-5">{action}</div>}
+    <div className="flex flex-col items-center justify-center text-center px-6 py-12">
+      <IconTile icon={Icon} hue={hue} size={64} />
+      <p className="text-[16.5px] font-extrabold mt-4" style={{ color: C.text }}>{title}</p>
+      {text && <p className="text-[13.5px] font-semibold mt-1.5 max-w-xs" style={{ color: C.muted }}>{text}</p>}
+      {action && <div className="mt-4">{action}</div>}
     </div>
   );
 }
 
-/* ── Ошибка ─────────────────────────────────────────────────────────────── */
 export function ErrorState({ message, onRetry }) {
   return (
     <EmptyState
@@ -268,32 +224,32 @@ export function ErrorState({ message, onRetry }) {
       hue="coral"
       title="Не получилось загрузить"
       text={message}
-      action={onRetry ? <Button hue="sky" onClick={onRetry}>Попробовать снова</Button> : null}
+      action={onRetry ? <Button onClick={onRetry}>Попробовать снова</Button> : null}
     />
   );
 }
 
-/* ── Модалка ────────────────────────────────────────────────────────────── */
+/* ── Модалка ────────────────────────────────────────────────────────── */
 export function Modal({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[60] grid place-items-center p-4" role="dialog" aria-modal="true">
       <button
         className="absolute inset-0 cursor-default"
-        style={{ background: 'rgba(27,42,27,0.45)' }}
+        style={{ background: 'rgba(29,36,23,0.45)', backdropFilter: 'blur(2px)' }}
         onClick={onClose}
         aria-label="Закрыть"
         tabIndex={-1}
       />
-      <div className="kid-card relative w-full max-w-md p-6 animate-scale-in">
+      <div className="k-card relative w-full max-w-md p-6 animate-scale-in">
         <div className="flex items-start justify-between gap-3 mb-5">
-          <h3 className="text-[22px] font-extrabold leading-tight" style={{ color: INK }}>{title}</h3>
+          <h3 className="text-[20px] font-extrabold leading-tight" style={{ color: C.text }}>{title}</h3>
           <button
             onClick={onClose}
-            className="kid-press w-9 h-9 grid place-items-center shrink-0"
-            style={{ background: HUE.slate, border: `2.5px solid ${INK}`, borderRadius: 12, color: INK }}
+            className="w-9 h-9 rounded-xl grid place-items-center shrink-0"
+            style={{ background: C.bg, color: C.muted }}
             aria-label="Закрыть"
           >
-            <X size={17} strokeWidth={3} />
+            <X size={17} strokeWidth={2.8} />
           </button>
         </div>
         {children}
