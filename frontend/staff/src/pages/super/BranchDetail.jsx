@@ -356,7 +356,7 @@ export default function SuperBranchDetail() {
                     <tr key={s.id}>
                       <td>
                         <div className="flex items-center gap-2">
-                          <Avatar name={`${s.firstName} ${s.lastName}`} size="sm" />
+                          <Avatar name={`${s.firstName} ${s.lastName}`} size={32} />
                           <span className="font-semibold">{s.firstName} {s.lastName}</span>
                         </div>
                       </td>
@@ -424,7 +424,7 @@ export default function SuperBranchDetail() {
               <ul className="divide-y divide-base-200">
                 {admins.map((a) => (
                   <li key={a.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <Avatar name={`${a.firstName} ${a.lastName}`} size="sm" />
+                    <Avatar name={`${a.firstName} ${a.lastName}`} size={32} />
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm truncate">{a.firstName} {a.lastName}</div>
                       <div className="text-xs text-base-content/50 truncate">{a.email}</div>
@@ -444,7 +444,7 @@ export default function SuperBranchDetail() {
               <ul className="divide-y divide-base-200">
                 {mentors.map((m) => (
                   <li key={m.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <Avatar name={`${m.firstName} ${m.lastName}`} size="sm" />
+                    <Avatar name={`${m.firstName} ${m.lastName}`} size={32} />
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm truncate">{m.firstName} {m.lastName}</div>
                       <div className="text-xs text-base-content/50 truncate">{m.email || m.phone || '—'}</div>
