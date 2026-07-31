@@ -28,16 +28,24 @@ export function Card({ className = '', children }) {
   return <div className={`rounded-2xl border border-base-300 bg-base-100 ${className}`}>{children}</div>;
 }
 
-/* ── Заголовок секции внутри карточки ───────────────────────────────── */
-export function SectionHeader({ title, subtitle, action }) {
+/* ── Карточка с заголовком-секцией ──────────────────────────────────────
+   Совместима по API с Panel из ../mentor/_ui.jsx — BranchDetail.jsx,
+   Discipline.jsx и StaffDetail.jsx переезжают на неё без переписывания
+   вызовов, меняется только импорт. */
+export function Panel({ title, icon: Icon, action, children, bodyClass = 'p-4' }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-base-300">
-      <div>
-        <h2 className="text-sm font-bold text-base-content/80">{title}</h2>
-        {subtitle && <p className="text-xs text-base-content/50 mt-0.5">{subtitle}</p>}
-      </div>
-      {action}
-    </div>
+    <Card>
+      {title && (
+        <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-base-300">
+          <h2 className="text-sm font-bold flex items-center gap-2 text-base-content/80">
+            {Icon && <Icon size={15} className="text-primary shrink-0" />}
+            {title}
+          </h2>
+          {action}
+        </header>
+      )}
+      <div className={bodyClass}>{children}</div>
+    </Card>
   );
 }
 
