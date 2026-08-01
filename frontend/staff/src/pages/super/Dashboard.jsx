@@ -1,9 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Building2, GraduationCap, Users, Wallet, TriangleAlert, Wifi, RefreshCw, ChevronRight, ArrowRight } from 'lucide-react';
+import { Building2, GraduationCap, Users, Presentation, Wallet, TriangleAlert, RefreshCw, ChevronRight, ArrowRight } from 'lucide-react';
 import { fmt } from '../../format.js';
 import { useSuperDashboard } from '../../queries.js';
-import { useOnlineCount } from '../../socket.js';
-import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
 
@@ -42,8 +40,6 @@ function Kpi({ Icon, tint, title, value, unit, to }) {
 
 export default function SuperDashboard() {
   const { data, isLoading, error, refetch } = useSuperDashboard();
-  const { token } = useAuth();
-  const onlineCount = useOnlineCount(token);
 
   if (error) {
     if (error.status === 401) {
@@ -66,13 +62,13 @@ export default function SuperDashboard() {
       {isLoading || !data ? (
         <SkeletonKpis count={6} className="grid-cols-2 md:grid-cols-3 lg:grid-cols-3" />
       ) : (
-        <Loaded data={data} onlineCount={onlineCount} />
+        <Loaded data={data} />
       )}
     </div>
   );
 }
 
-function Loaded({ data, onlineCount }) {
+function Loaded({ data }) {
   const t = data.totals;
   const cur = t.currency;
   const branches = data.branches || [];
@@ -84,9 +80,9 @@ function Loaded({ data, onlineCount }) {
         <Kpi Icon={Building2} tint={{ bg: '#E0F2FE', fg: '#075985' }} title="Филиалы" value={fmt(t.branches)} unit="всего" to="/branches" />
         <Kpi Icon={GraduationCap} tint={{ bg: '#EDE9FE', fg: '#5B21B6' }} title="Ученики" value={fmt(t.activeStudents)} unit="активных" to="/students" />
         <Kpi Icon={Users} tint={{ bg: '#DCFCE7', fg: '#166534' }} title="Админы" value={fmt(t.admins)} unit="сотрудников" to="/admins" />
+        <Kpi Icon={Presentation} tint={{ bg: '#CCFBF1', fg: '#0F766E' }} title="Менторы" value={fmt(t.mentors)} unit="преподавателей" to="/admins" />
         <Kpi Icon={Wallet} tint={{ bg: '#FFEDD5', fg: '#9A3412' }} title="Доход" value={fmt(t.revenue)} unit={cur} to="/stats" />
         <Kpi Icon={TriangleAlert} tint={{ bg: '#FEE2E2', fg: '#DC2626' }} title="Долги" value={fmt(t.outstandingDebt)} unit={cur} to="/stats" />
-        <Kpi Icon={Wifi} tint={{ bg: '#E0F2FE', fg: '#0369A1' }} title="Live Online" value={onlineCount} unit="онлайн" />
       </div>
 
       {/* Филиалы — таблица */}

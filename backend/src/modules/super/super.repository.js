@@ -286,6 +286,8 @@ export function orgTotals(orgId, client = pool) {
               AND status = 'active' AND deleted_at IS NULL) AS active_students,
          (SELECT count(*) FROM users
             WHERE organization_id = $1 AND role = 'admin' AND deleted_at IS NULL) AS admins,
+         (SELECT count(*) FROM users
+            WHERE organization_id = $1 AND role = 'mentor' AND deleted_at IS NULL) AS mentors,
          (SELECT COALESCE(SUM(i.paid_amount), 0) FROM invoices i
             JOIN branches b ON b.id = i.branch_id
            WHERE b.organization_id = $1) AS revenue,

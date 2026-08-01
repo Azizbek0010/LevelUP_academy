@@ -431,3 +431,98 @@ main > * {
 /* Таймер прохождения теста */
 .quiz-clock { font-variant-numeric: tabular-nums; }
 .quiz-clock--low { color: var(--danger) !important; }
+
+/* ═══════════════════════════════════════════════════════════════
+   КАБИНЕТ УЧЕНИКА (7-14 лет)
+   ═══════════════════════════════════════════════════════════════
+
+   2026-07-30, финальная редакция — по КОНКРЕТНЫМ референсам от Karis
+   (скриншоты 043704 и 044228), а не по моим догадкам. До этого было
+   пять неудачных попыток: градиенты, чернильные обводки, тёмная
+   админка — все мимо, потому что я угадывал вкус вместо того, чтобы
+   опираться на образец.
+
+   Что взято из референсов:
+     · СВЕТЛАЯ основа (у Mars светло-серый фон, белые карточки)
+     · активный пункт навигации — залитая яркая «таблетка»
+       (у Mars оранжевая → у нас брендовый лайм)
+     · КРУПНЫЕ ЦВЕТНЫЕ иконки категорий (у Mars фиолетовая
+       клавиатура, синий плеер, красная шапочка) — именно они дают
+       детскую живость, поэтому вводим яркую палитру категорий
+     · яркий баннер соревнования с таймером и призами
+     · лидерборд строками с аватаром, уровнем и очками
+
+   Лайм #C6FF34 остаётся брендовым цветом ДЕЙСТВИЯ и активного
+   состояния; цветные — только у иконок категорий, чтобы разделы
+   различались с одного взгляда. */
+.kid {
+  --k-bg: #F4F7EF;
+  --k-card: #FFFFFF;
+  --k-text: #1D2417;
+  --k-muted: #78876C;
+  --k-line: #EBF0E2;
+  --k-lime: #C6FF34;
+  --k-lime-dk: #A8E01F;
+  --k-ink: #141B10;
+
+  /* яркая палитра категорий — из референса Mars (крупные цветные значки) */
+  --k-violet: #7C5CFF;
+  --k-blue: #2E9BFF;
+  --k-coral: #FF6B5A;
+  --k-amber: #FFB020;
+  --k-teal: #12B886;
+  --k-pink: #FF5FA2;
+
+  background: var(--k-bg);
+  color: var(--k-text);
+}
+
+/* Карточка: белая, мягкая тень — светлая база как в референсе */
+.k-card {
+  background: var(--k-card);
+  border-radius: 18px;
+  box-shadow: 0 2px 4px rgba(29, 36, 23, 0.04), 0 8px 20px rgba(29, 36, 23, 0.06);
+}
+.k-hover { transition: transform 0.16s ease, box-shadow 0.16s ease; }
+.k-hover:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(29, 36, 23, 0.06), 0 14px 30px rgba(29, 36, 23, 0.12);
+}
+
+/* Крупный цветной значок категории — ключевой элемент живости.
+   Мягкий объём даёт лёгкий внутренний блик, а не плоская заливка. */
+.k-icon {
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.k-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 62%);
+}
+.k-icon > * { position: relative; z-index: 1; }
+
+/* Кольцо прогресса — знак из логотипа LevelUp (шкала 0-100) */
+.k-ring { border-radius: 50%; display: grid; place-items: center; }
+.k-ring > i { border-radius: 50%; background: #fff; display: grid; place-items: center; font-style: normal; }
+
+/* Активный пункт навигации — залитая лаймовая таблетка */
+.k-nav-on {
+  background: var(--k-lime);
+  color: var(--k-ink);
+  box-shadow: 0 4px 12px rgba(168, 224, 31, 0.45);
+}
+
+.k-num { font-variant-numeric: tabular-nums; font-weight: 800; letter-spacing: -0.02em; }
+
+/* Мягкое «дыхание» для текущего/призывного элемента */
+@keyframes k-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+.k-pulse { animation: k-pulse 2.4s ease-in-out infinite; }
