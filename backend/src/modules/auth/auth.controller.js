@@ -5,6 +5,12 @@ import * as service from './auth.service.js';
 const REFRESH_COOKIE = 'refresh_token';
 const REFRESH_COOKIE_PATH = '/api/auth';
 
+// group-scoped cookie name — main/staff/member больше не делят одну cookie.
+// На localhost cookie не различает порт (только домен), поэтому сессия одной
+// панели раньше "утекала" в другую при общем /api/auth/refresh. В проде у
+// панелей разные домены, там cookie и так была бы изолирована.
+const cookieNameFor = (group) => `refresh_token_${group}`;
+
 const refreshCookieOptions = () => ({
   httpOnly: true,
   secure: env.NODE_ENV === 'production',
@@ -13,18 +19,20 @@ const refreshCookieOptions = () => ({
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
 });
 
-/** Читаем refresh-cookie вручную (cookie-parser в проект не тянем). */
-function readRefreshCookie(req) {
+/** Читаем cookie по имени вручную (cookie-parser в проект не тянем). */
+function readCookie(req, name) {
   const raw = req.headers.cookie;
   if (!raw) return null;
   for (const part of raw.split(';')) {
     const eq = part.indexOf('=');
     if (eq === -1) continue;
-    const name = part.slice(0, eq).trim();
-    if (name === REFRESH_COOKIE) return decodeURIComponent(part.slice(eq + 1).trim());
+    const key = part.slice(0, eq).trim();
+    if (key === name) return decodeURIComponent(part.slice(eq + 1).trim());
   }
   return null;
 }
+
+const readRefreshCookie = (req) => readCookie(req, REFRESH_COOKIE);
 
 // три раздельных входа — каждый пускает только свою группу ролей (безопасность):
 //   main   → main_admin (владелец платформы)
@@ -36,34 +44,39 @@ const ROLE_GROUPS = {
   member: ['student', 'parent'],
 };
 
-function makeLogin(allowedRoles) {
+// Каждый логин ставит ДВЕ cookie: старую общую (REFRESH_COOKIE — на неё всё ещё
+// смотрят уже задеплоенные фронты через /refresh и /logout, обратная совместимость)
+// и новую group-scoped (на неё переведены /main|staff|member/refresh и /logout ниже).
+function makeLogin(allowedRoles, group) {
   return asyncHandler(async (req, res) => {
     const { user, accessToken, refreshToken } = await service.login(req.body, allowedRoles);
     res.cookie(REFRESH_COOKIE, refreshToken, refreshCookieOptions());
+    res.cookie(cookieNameFor(group), refreshToken, refreshCookieOptions());
     res.json({ user, accessToken });
   });
 }
 
-export const loginMain = makeLogin(ROLE_GROUPS.main);
-export const loginStaff = makeLogin(ROLE_GROUPS.staff);
-export const loginMember = makeLogin(ROLE_GROUPS.member);
+export const loginMain = makeLogin(ROLE_GROUPS.main, 'main');
+export const loginStaff = makeLogin(ROLE_GROUPS.staff, 'staff');
+export const loginMember = makeLogin(ROLE_GROUPS.member, 'member');
 
 // вход через Google (Firebase) — по группам ролей, как обычный логин.
 // доступен main_admin И staff (admin/superadmin/mentor). Один Firebase-проект на всех.
 // member (student/parent) — без Google (нет email, вход по логин-коду).
-function makeGoogleLogin(allowedRoles) {
+function makeGoogleLogin(allowedRoles, group) {
   return asyncHandler(async (req, res) => {
     const { user, accessToken, refreshToken } = await service.googleLogin({
       idToken: req.body?.idToken,
       allowedRoles,
     });
     res.cookie(REFRESH_COOKIE, refreshToken, refreshCookieOptions());
+    res.cookie(cookieNameFor(group), refreshToken, refreshCookieOptions());
     res.json({ user, accessToken });
   });
 }
 
-export const loginMainGoogle = makeGoogleLogin(ROLE_GROUPS.main);
-export const loginStaffGoogle = makeGoogleLogin(ROLE_GROUPS.staff);
+export const loginMainGoogle = makeGoogleLogin(ROLE_GROUPS.main, 'main');
+export const loginStaffGoogle = makeGoogleLogin(ROLE_GROUPS.staff, 'staff');
 
 export const refresh = asyncHandler(async (req, res) => {
   const { user, accessToken, refreshToken } = await service.refresh(readRefreshCookie(req));
@@ -76,6 +89,35 @@ export const logout = asyncHandler(async (req, res) => {
   res.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
   res.status(204).end();
 });
+
+// group-scoped refresh/logout — читают СВОЮ cookie, не общую. Так сессия одной
+// панели физически не может подхватиться другой, даже на одном localhost.
+function makeRefresh(allowedRoles, group) {
+  return asyncHandler(async (req, res) => {
+    const { user, accessToken, refreshToken } = await service.refresh(
+      readCookie(req, cookieNameFor(group)),
+      allowedRoles,
+    );
+    res.cookie(cookieNameFor(group), refreshToken, refreshCookieOptions());
+    res.json({ user, accessToken });
+  });
+}
+
+function makeLogout(group) {
+  return asyncHandler(async (req, res) => {
+    await service.logout(readCookie(req, cookieNameFor(group)));
+    res.clearCookie(cookieNameFor(group), { path: REFRESH_COOKIE_PATH });
+    res.status(204).end();
+  });
+}
+
+export const refreshMain = makeRefresh(ROLE_GROUPS.main, 'main');
+export const refreshStaff = makeRefresh(ROLE_GROUPS.staff, 'staff');
+export const refreshMember = makeRefresh(ROLE_GROUPS.member, 'member');
+
+export const logoutMain = makeLogout('main');
+export const logoutStaff = makeLogout('staff');
+export const logoutMember = makeLogout('member');
 
 export const forgotPassword = asyncHandler(async (req, res) => {
   await service.forgotPassword(req.body.email);

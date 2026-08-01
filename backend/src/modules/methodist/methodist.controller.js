@@ -1,6 +1,7 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './methodist.service.js';
 import * as contentService from './content.service.js';
+import * as videosService from './videos.service.js';
 
 const orgId = (req) => req.scope.organizationId;
 
@@ -150,26 +151,48 @@ export const copyLesson = asyncHandler(async (req, res) => {
 });
 
 export const createQuestion = asyncHandler(async (req, res) => {
-  const item = await contentService.createQuestion(req.body);
+  const item = await contentService.createQuestion(orgId(req), req.body);
   res.status(201).json({ success: true, data: item });
 });
 
 export const createQuestionsBatch = asyncHandler(async (req, res) => {
-  const items = await contentService.createQuestionsBatch(req.body.questions);
+  const items = await contentService.createQuestionsBatch(orgId(req), req.body.questions);
   res.status(201).json({ success: true, data: items });
 });
 
 export const listQuestions = asyncHandler(async (req, res) => {
-  const items = await contentService.listQuestions(req.params.lessonId);
+  const items = await contentService.listQuestions(req.params.lessonId, orgId(req));
   res.json({ success: true, data: items });
 });
 
 export const updateQuestion = asyncHandler(async (req, res) => {
-  const item = await contentService.updateQuestion(req.params.id, req.body);
+  const item = await contentService.updateQuestion(req.params.id, orgId(req), req.body);
   res.json({ success: true, data: item });
 });
 
 export const deleteQuestion = asyncHandler(async (req, res) => {
-  await contentService.deleteQuestion(req.params.id);
+  await contentService.deleteQuestion(req.params.id, orgId(req));
   res.status(204).end();
+});
+
+// ==================== ВИДЕО (учебные материалы группы) ====================
+
+// GET /videos/groups/:groupId/upload-url?filename=&contentType= — presigned S3 PUT
+export const getVideoUploadUrl = asyncHandler(async (req, res) => {
+  const { groupId } = req.params;
+  const { filename, contentType } = req.query;
+  const data = await videosService.getVideoUploadUrl(orgId(req), groupId, { filename, contentType });
+  res.json({ success: true, data });
+});
+
+export const createVideo = asyncHandler(async (req, res) => {
+  const { groupId } = req.params;
+  const video = await videosService.createVideo(orgId(req), req.user.id, groupId, req.body);
+  res.status(201).json({ success: true, data: video });
+});
+
+export const listVideosForGroup = asyncHandler(async (req, res) => {
+  const { groupId } = req.params;
+  const items = await videosService.listVideosForGroup(orgId(req), groupId);
+  res.json({ success: true, data: items });
 });

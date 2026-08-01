@@ -237,7 +237,7 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
     return { user, accessToken: `mock-jwt-${account.role}-xyz` };
   }
 
-  if (path === '/auth/refresh') {
+  if (path === '/auth/member/refresh') {
     const mockToken = localStorage.getItem('mock_member_token');
     const mockUser = JSON.parse(localStorage.getItem('mock_member_user') || 'null');
     if (mockToken && mockUser) return { user: mockUser, accessToken: mockToken };
@@ -246,7 +246,7 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
     throw err;
   }
 
-  if (path === '/auth/logout') {
+  if (path === '/auth/member/logout') {
     localStorage.removeItem('mock_member_token');
     localStorage.removeItem('mock_member_user');
     return { success: true };
@@ -408,7 +408,7 @@ export function mockChatSend(roomKey, body, user) {
 }
 
 // Пути, которым нельзя подсовывать авто-refresh (иначе цикл/логин ломается)
-const AUTH_PATHS = new Set(['/auth/member/login', '/auth/refresh', '/auth/logout']);
+const AUTH_PATHS = new Set(['/auth/member/login', '/auth/member/refresh', '/auth/member/logout']);
 
 // Единый refreshPromise — параллельные 401 ждут один и тот же refresh, не долбят его по отдельности
 let refreshPromise = null;
@@ -417,7 +417,7 @@ export function setOnTokenRefreshed(cb) { onTokenRefreshed = cb; }
 
 function refreshOnce() {
   if (!refreshPromise) {
-    refreshPromise = rawRequest('/auth/refresh', { method: 'POST' })
+    refreshPromise = rawRequest('/auth/member/refresh', { method: 'POST' })
       .then((d) => {
         onTokenRefreshed?.(d);
         return d.accessToken;
@@ -447,8 +447,8 @@ async function request(path, opts = {}) {
 export const api = {
   loginMember: (login, password) =>
     request('/auth/member/login', { method: 'POST', body: { login, password } }),
-  refresh: () => request('/auth/refresh', { method: 'POST' }),
-  logout: () => request('/auth/logout', { method: 'POST' }),
+  refresh: () => request('/auth/member/refresh', { method: 'POST' }),
+  logout: () => request('/auth/member/logout', { method: 'POST' }),
 
   parentChildren: (token) => request('/parent/children', { token }),
   parentOverview: (token, childId) => request(`/parent/children/${childId}/overview`, { token }),

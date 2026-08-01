@@ -433,96 +433,131 @@ main > * {
 .quiz-clock--low { color: var(--danger) !important; }
 
 /* ═══════════════════════════════════════════════════════════════
-   КАБИНЕТ УЧЕНИКА (7-14 лет)
+   КАБИНЕТ УЧЕНИКА (7-15 лет)
    ═══════════════════════════════════════════════════════════════
 
-   2026-07-30, финальная редакция — по КОНКРЕТНЫМ референсам от Karis
-   (скриншоты 043704 и 044228), а не по моим догадкам. До этого было
-   пять неудачных попыток: градиенты, чернильные обводки, тёмная
-   админка — все мимо, потому что я угадывал вкус вместо того, чтобы
-   опираться на образец.
+   2026-08-01, версия 2. Версия 1 («Adventure Camp» — золото, маскот,
+   объёмные игровые кнопки, значки-«стикеры», сильное скругление везде)
+   отклонена прямым фидбеком: слишком по-детски/AI-сгенерированно,
+   не хватало серьёзности. Правки:
+   · палитра — приглушённый лайм (не неон), тона глубже
+   · значки — тонированный фон + цветная иконка (Apple Health), не
+     сплошная плашка-«стикер»
+   · скругления заметно меньше везде
+   · кнопки — Apple-нажатие scale(0.97), без «проседающей» игровой тени
+   · вход карточек — чистый ease-out без пружинного нахлёста
+   · маскот убран целиком (CSS для него тоже — k-float/k-sparkle были
+     только под него)
 
-   Что взято из референсов:
-     · СВЕТЛАЯ основа (у Mars светло-серый фон, белые карточки)
-     · активный пункт навигации — залитая яркая «таблетка»
-       (у Mars оранжевая → у нас брендовый лайм)
-     · КРУПНЫЕ ЦВЕТНЫЕ иконки категорий (у Mars фиолетовая
-       клавиатура, синий плеер, красная шапочка) — именно они дают
-       детскую живость, поэтому вводим яркую палитру категорий
-     · яркий баннер соревнования с таймером и призами
-     · лидерборд строками с аватаром, уровнем и очками
-
-   Лайм #C6FF34 остаётся брендовым цветом ДЕЙСТВИЯ и активного
-   состояния; цветные — только у иконок категорий, чтобы разделы
-   различались с одного взгляда. */
+   Анимации — только transform/opacity/box-shadow (GPU-дешёвые). Общий
+   @media (prefers-reduced-motion) выше по файлу уже глушит все duration —
+   отдельно дублировать не нужно. */
 .kid {
-  --k-bg: #F4F7EF;
+  --k-bg: #F6F8F3;
   --k-card: #FFFFFF;
-  --k-text: #1D2417;
-  --k-muted: #78876C;
-  --k-line: #EBF0E2;
-  --k-lime: #C6FF34;
-  --k-lime-dk: #A8E01F;
-  --k-ink: #141B10;
+  --k-text: #1C231A;
+  --k-muted: #707F68;
+  --k-line: #E4EAE0;
+  --k-lime: #5C9A3B;
+  --k-lime-dk: #457329;
+  --k-ink: #12190E;
 
-  /* яркая палитра категорий — из референса Mars (крупные цветные значки) */
-  --k-violet: #7C5CFF;
-  --k-blue: #2E9BFF;
-  --k-coral: #FF6B5A;
-  --k-amber: #FFB020;
-  --k-teal: #12B886;
-  --k-pink: #FF5FA2;
+  --k-violet: #6E62A6;
+  --k-blue: #3E7CAE;
+  --k-coral: #BD5B45;
+  --k-amber: #B9832E;
+  --k-teal: #2E8F76;
+  --k-pink: #AD5A78;
 
   background: var(--k-bg);
   color: var(--k-text);
 }
 
-/* Карточка: белая, мягкая тень — светлая база как в референсе */
+/* Карточка: белая, спокойная тень, умеренное скругление */
 .k-card {
   background: var(--k-card);
-  border-radius: 18px;
-  box-shadow: 0 2px 4px rgba(29, 36, 23, 0.04), 0 8px 20px rgba(29, 36, 23, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(18, 25, 14, 0.04), 0 6px 16px rgba(18, 25, 14, 0.06);
 }
-.k-hover { transition: transform 0.16s ease, box-shadow 0.16s ease; }
+/* Выпадающая панель от кнопки (уведомления, профиль) — тот же приём,
+   что .popover-surface в Staff: белая, окантована, приподнята тенью. */
+.k-popover {
+  background: var(--k-card);
+  border: 1px solid var(--k-line);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(18, 25, 14, 0.16), 0 4px 12px rgba(18, 25, 14, 0.08);
+}
+
+/* Лёгкий "подъём" для нажимаемых карточек (задания и т.п.) */
+.k-hover { transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease; }
 .k-hover:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(29, 36, 23, 0.06), 0 14px 30px rgba(29, 36, 23, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(18, 25, 14, 0.05), 0 10px 20px rgba(18, 25, 14, 0.08);
 }
 
-/* Крупный цветной значок категории — ключевой элемент живости.
-   Мягкий объём даёт лёгкий внутренний блик, а не плоская заливка. */
-.k-icon {
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-}
-.k-icon::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 62%);
-}
-.k-icon > * { position: relative; z-index: 1; }
+/* Apple-нажатие: scale(0.97) на :active — быстрая, тихая обратная связь
+   (emil-design-eng/apple-design), без игровой "проседающей" тени. */
+.k-press { transition: transform 0.12s ease-out, box-shadow 0.12s ease-out; }
+.k-press:active:not(:disabled) { transform: scale(0.97); }
+.k-press-sm { transition: transform 0.12s ease-out; }
+.k-press-sm:active:not(:disabled) { transform: scale(0.94); }
 
-/* Кольцо прогресса — знак из логотипа LevelUp (шкала 0-100) */
+/* Кольцо прогресса (страницы, которым нужен percent+children) */
 .k-ring { border-radius: 50%; display: grid; place-items: center; }
 .k-ring > i { border-radius: 50%; background: #fff; display: grid; place-items: center; font-style: normal; }
 
 /* Активный пункт навигации — залитая лаймовая таблетка */
 .k-nav-on {
   background: var(--k-lime);
-  color: var(--k-ink);
-  box-shadow: 0 4px 12px rgba(168, 224, 31, 0.45);
+  color: #fff;
 }
 
-.k-num { font-variant-numeric: tabular-nums; font-weight: 800; letter-spacing: -0.02em; }
+.k-num { font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: -0.01em; }
 
 /* Мягкое «дыхание» для текущего/призывного элемента */
 @keyframes k-pulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.04); }
+  50% { transform: scale(1.03); }
 }
 .k-pulse { animation: k-pulse 2.4s ease-in-out infinite; }
+
+/* Вход карточек/модалок — чистый ease-out, без пружинного нахлёста
+   (сериознее, чем bounce; всё ещё не с нуля — из 0.96, не 0). */
+@keyframes k-pop-in {
+  0%   { opacity: 0; transform: scale(0.96) translateY(4px); }
+  100% { opacity: 1; transform: none; }
+}
+.k-pop-in { animation: k-pop-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Блик, бегущий по заполненной части полосы уровня */
+@keyframes k-levelbar-sheen {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+.k-levelbar-fill {
+  position: relative;
+  transition: width 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  overflow: hidden;
+}
+.k-levelbar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: k-levelbar-sheen 2.4s ease-in-out infinite;
+}
+
+/* Конфетти — падение с вращением и затуханием, ~900мс, чисто декоративно */
+@keyframes k-confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(160px) translateX(var(--drift, 0px)) rotate(280deg); opacity: 0; }
+}
+.k-confetti-piece {
+  position: absolute;
+  top: -10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  animation: k-confetti-fall 0.9s cubic-bezier(0.4, 0.2, 0.6, 1) forwards;
+}

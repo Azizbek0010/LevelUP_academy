@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Paperclip, Coins } from 'lucide-react';
+import { BookOpen, Link2, Coins } from 'lucide-react';
 import { api, uploadToPresignedUrl } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill, Button } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill, Button, CountUp, IconTile, Dropzone, C } from '../components/ui.jsx';
 import { fmtDateTime, deadlineLabel } from '../format.js';
 
 function StatusPill({ hw }) {
   if (hw.submission_status === 'graded')
-    return <Pill hue="teal">Оценено · {hw.score}/{hw.max_score}</Pill>;
+    return <Pill hue="teal">Оценено · <CountUp value={hw.score} className="inline" />/{hw.max_score}</Pill>;
   if (hw.submission_status === 'late') return <Pill hue="coral">Сдано с опозданием</Pill>;
   if (hw.submission_status === 'submitted') return <Pill hue="lime">На проверке</Pill>;
   const overdue = hw.deadline && Date.now() > new Date(hw.deadline).getTime();
@@ -19,8 +19,9 @@ export default function Homework() {
   const [list, setList] = useState(null);
   const [error, setError] = useState(null);
   const [active, setActive] = useState(null); // ДЗ в модалке сдачи
-  const [text, setText] = useState('');
   const [file, setFile] = useState(null);
+  const [link, setLink] = useState('');
+  const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = () => {
@@ -38,14 +39,15 @@ export default function Homework() {
 
   const openSubmit = (hw) => {
     setActive(hw);
-    setText(hw.text_answer || '');
     setFile(null);
+    setLink('');
+    setComment(hw.text_answer || '');
   };
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!text.trim() && !file) {
-      toast('Добавь текст ответа или файл', 'error');
+    if (!file && !link.trim() && !comment.trim()) {
+      toast('Прикрепи файл, ссылку или комментарий', 'error');
       return;
     }
     setBusy(true);
@@ -56,9 +58,12 @@ export default function Homework() {
         await uploadToPresignedUrl(d.data.uploadUrl, file);
         fileKey = d.data.fileKey;
       }
+      // Отдельного поля под ссылку в базе нет — кладём её в text_answer
+      // вместе с комментарием.
+      const textAnswer = [link.trim(), comment.trim()].filter(Boolean).join('\n\n');
       await api.submitHomework(active.id, {
         ...(fileKey ? { fileKey } : {}),
-        ...(text.trim() ? { textAnswer: text.trim() } : {}),
+        ...(textAnswer ? { textAnswer } : {}),
       });
       toast('Домашка отправлена на проверку', 'success');
       setActive(null);
@@ -79,24 +84,26 @@ export default function Homework() {
       ) : !list ? (
         <Skeleton h={80} count={4} />
       ) : list.length === 0 ? (
-        <div className="card bg-base-100">
+        <div className="k-card">
           <EmptyState icon={BookOpen} title="Заданий пока нет" text="Ментор ещё не выдал домашки твоим группам." />
         </div>
       ) : (
-        <div className="card bg-base-100 divide-y divide-base-200">
-          {list.map((hw) => {
+        <div className="k-card divide-y" style={{ borderColor: C.line }}>
+          {list.map((hw, i) => {
             const canSubmit = hw.submission_status !== 'graded';
             return (
-              <div key={hw.id} className="flex items-center gap-3 px-4 py-3.5 flex-wrap sm:flex-nowrap">
-                <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
-                  <BookOpen size={18} />
-                </span>
+              <div
+                key={hw.id}
+                className="k-pop-in flex items-center gap-3 px-4 py-3.5 flex-wrap sm:flex-nowrap"
+                style={{ animationDelay: `${Math.min(i, 9) * 50}ms` }}
+              >
+                <IconTile icon={BookOpen} hue="coral" size={42} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold truncate">{hw.title}</div>
-                  <div className="text-xs text-base-content/45 mt-0.5 flex items-center gap-1 flex-wrap">
+                  <div className="text-sm font-extrabold truncate" style={{ color: C.text }}>{hw.title}</div>
+                  <div className="text-xs font-bold mt-0.5 flex items-center gap-1 flex-wrap" style={{ color: C.muted }}>
                     <span>до {fmtDateTime(hw.deadline)} · макс. {hw.max_score} баллов</span>
                     {hw.coin_reward > 0 && (
-                      <span className="inline-flex items-center gap-0.5 text-primary font-semibold">
+                      <span className="inline-flex items-center gap-0.5 font-bold" style={{ color: C.limeDk }}>
                         · <Coins size={12} /> +{hw.coin_reward}
                       </span>
                     )}
@@ -117,34 +124,63 @@ export default function Homework() {
       {active && (
         <Modal title={`Сдать: ${active.title}`} onClose={() => !busy && setActive(null)}>
           {active.description && (
-            <p className="text-sm text-base-content/55 mb-4">{active.description}</p>
+            <p className="text-sm font-semibold mb-4" style={{ color: C.muted }}>{active.description}</p>
           )}
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label htmlFor="hw-text" className="block text-[13px] font-bold mb-1.5">Текст ответа</label>
-              <textarea
-                id="hw-text"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Опиши решение или вставь ссылку…"
-                maxLength={10000}
-                rows={4}
-                className="textarea textarea-bordered w-full text-base sm:text-sm resize-y"
-              />
+              <label className="block text-[13px] font-bold mb-1.5" style={{ color: C.text }}>Файл решения</label>
+              <Dropzone file={file} onFileChange={setFile} disabled={busy} />
             </div>
+
+            <div className="flex items-center gap-3">
+              <span className="flex-1 h-px" style={{ background: C.line }} />
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.08em]" style={{ color: C.muted }}>или</span>
+              <span className="flex-1 h-px" style={{ background: C.line }} />
+            </div>
+
             <div>
-              <label htmlFor="hw-file" className="flex items-center gap-1.5 text-[13px] font-bold mb-1.5">
-                <Paperclip size={13} /> Файл решения (необязательно)
+              <label htmlFor="hw-link" className="flex items-center gap-1.5 text-[13px] font-bold mb-1.5" style={{ color: C.text }}>
+                <Link2 size={13} /> Ссылка на решение
               </label>
               <input
-                id="hw-file"
-                type="file"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                className="file-input file-input-bordered file-input-sm w-full"
+                id="hw-link"
+                type="url"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="https://…"
+                maxLength={2000}
+                className="input w-full text-base sm:text-sm rounded-2xl border-2 focus:outline-none"
+                style={{ borderColor: C.line, background: C.bg, color: C.text }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = C.lime; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = C.line; }}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="hw-comment" className="block text-[13px] font-bold mb-1.5" style={{ color: C.text }}>
+                Комментарий (необязательно)
+              </label>
+              <textarea
+                id="hw-comment"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Что-то важное про решение…"
+                maxLength={10000}
+                rows={3}
+                className="textarea w-full text-base sm:text-sm resize-y rounded-2xl border-2 focus:outline-none"
+                style={{ borderColor: C.line, background: C.bg }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = C.lime; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = C.line; }}
               />
             </div>
             <div className="flex justify-end gap-2.5 pt-1">
-              <button type="button" className="btn btn-ghost rounded-2xl" onClick={() => setActive(null)} disabled={busy}>
+              <button
+                type="button"
+                className="k-press-sm px-5 py-2.5 rounded-2xl text-[14.5px] font-extrabold"
+                style={{ color: C.muted }}
+                onClick={() => setActive(null)}
+                disabled={busy}
+              >
                 Отмена
               </button>
               <Button disabled={busy}>
