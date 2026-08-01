@@ -40,8 +40,8 @@
 - ⬜ Qoida va boshqalar **hamma mentorlarga** tegishli bo'lishi — bitta mentorni so'ramasligi.
 
 ## 8. Payments
-- ⬜ **«Просрочено» (overdue)** tugmasini/tag'ini olib tashlash.
-- ⬜ **«Отменён» (cancelled)** bo'lishini ham yo'qotish.
+- ✅ **«Просрочено» (overdue)** tugmasini/tag'ini olib tashlash → STATUS/STATUS_LIST/STATUS_LABELS dan olib tashlandi + «Просрочено» KPI o'chirildi (stats.overdue ham).
+- ✅ **«Отменён» (cancelled)** bo'lishini ham yo'qotish → STATUS'dan o'chirildi. (Eski overdue/cancelled invoice'lar `pending` fallback'ga tushadi — UI da ko'rinmaydi.)
 
 ## 9. Expenses — tozalash
 - ⬜ KPI kartalarni olib tashlash: «Все расходы», «В этом месяце», «Ожидает», «Одобрено», «Средний расход».

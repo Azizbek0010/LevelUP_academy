@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Wallet, CreditCard, Banknote, Clock, CheckCircle2, AlertTriangle,
+  Wallet, CreditCard, Banknote, Clock, CheckCircle2,
   AlertCircle, TrendingUp, Search, ChevronLeft, ChevronRight, Plus, X,
   Upload, RotateCcw, Ban, Info, Download
 } from 'lucide-react';
@@ -18,14 +18,12 @@ const STATUS = {
   paid: { label: 'Оплачен', bg: '#2ECC7115', text: '#2ECC71', icon: CheckCircle2 },
   partially_paid: { label: 'Частично', bg: '#F59E0B15', text: '#F59E0B', icon: Clock },
   pending: { label: 'Ожидает', bg: '#6B728015', text: '#6B7280', icon: AlertCircle },
-  overdue: { label: 'Просрочен', bg: '#E8543E15', text: '#E8543E', icon: AlertTriangle },
-  cancelled: { label: 'Отменён', bg: '#6B728008', text: '#6B7280', icon: AlertCircle },
 };
 
-const STATUS_LIST = ['all', 'pending', 'partially_paid', 'paid', 'overdue', 'cancelled'];
+const STATUS_LIST = ['all', 'pending', 'partially_paid', 'paid'];
 const STATUS_LABELS = {
   all: 'Все', pending: 'Ожидает', partially_paid: 'Частично',
-  paid: 'Оплачен', overdue: 'Просрочен', cancelled: 'Отменён',
+  paid: 'Оплачен',
 };
 
 const METHODS = { cash: 'Наличные', card: 'Карта', transfer: 'Перевод' };
@@ -205,7 +203,6 @@ export default function AdminPayments() {
       total,
       paid: allRows.filter((inv) => inv.status === 'paid').length,
       waiting: allRows.filter((inv) => inv.status === 'pending' || inv.status === 'partially_paid').length,
-      overdue: allRows.filter((inv) => inv.status === 'overdue').length,
     };
   }, [allRows]);
 
@@ -383,11 +380,10 @@ export default function AdminPayments() {
       </div>
 
       {/* ═══ Stats ═══ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Kpi Icon={TrendingUp} title="Всего счетов" value={allRows.length}  tone="neutral" />
         <Kpi Icon={CheckCircle2} title="Оплачено" value={stats.paid}  tone="success" />
         <Kpi Icon={Clock} title="Ожидает" value={stats.waiting}  tone="warning" />
-        <Kpi Icon={AlertTriangle} title="Просрочено" value={stats.overdue}  tone="danger" />
       </div>
 
       {/* ═══ Invoice List ═══ */}
