@@ -40,8 +40,8 @@ export default function TrainingTypeIcon({ name = '', icon = '', className = 'w-
     normName.includes('js')
   ) {
     IconComponent = TbBrandHtml5;
-    bgClass = 'bg-[#E8F8EE]';
-    colorClass = 'text-[#2ECC71]';
+    bgClass = 'bg-[#EBF2FE]';
+    colorClass = 'text-[#3B82F6]';
   } else if (
     normIcon === 'backend' || 
     normIcon === 'server' || 

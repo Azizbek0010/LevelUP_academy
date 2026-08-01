@@ -13,13 +13,16 @@ import {
   updateMethodistSchema,
   freezeMethodistSchema,
   updateOrganizationSchema,
+  createAnnouncementSchema,
+  statsQuery,
 } from './super.schemas.js';
 import * as ctrl from './super.controller.js';
 import * as discipline from '../discipline/discipline.controller.js';
+import * as reminders from './reminders/reminders.controller.js';
 import {
   issuePenaltySchema,
-  upsertCharterSchema,
   listPenaltiesQuery,
+  createRuleSchema,
 } from '../discipline/discipline.schemas.js';
 
 const router = Router();
@@ -382,42 +385,52 @@ router.get('/attendance', ctrl.attendance);
  * /api/super/announcements:
  *   get:
  *     tags: [Super Admin]
- *     summary: "⚠️ STUB — always returns an empty list"
- *     description: >
- *       NOT IMPLEMENTED. There is no announcements table in the schema yet.
- *       The endpoint exists only so the Announcements page can render its
- *       EmptyState. Real implementation = migration + notificationQueue.
+ *     summary: List organization announcements (migration 1783870000000_super-announcements)
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
- *         description: Always empty
+ *         description: Announcements
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 announcements: { type: array, items: { type: object }, example: [] }
- *                 items: { type: array, items: { type: object }, example: [] }
- *                 total: { type: integer, example: 0 }
+ *                 announcements: { type: array, items: { type: object } }
+ *                 items: { type: array, items: { type: object } }
+ *                 total: { type: integer }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  *   post:
  *     tags: [Super Admin]
- *     summary: "⚠️ NOT IMPLEMENTED — always 501"
- *     description: Needs an announcements table + migration. Do not wire the UI to this yet.
+ *     summary: Create an announcement — queues Telegram delivery for parent/student audiences
  *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, body, targetType]
+ *             properties:
+ *               title: { type: string, maxLength: 200 }
+ *               body: { type: string, maxLength: 4000 }
+ *               targetType: { type: string, enum: [all-staff, all-admins, all-mentors, all-parents, all-students] }
  *     responses:
- *       501: { $ref: '#/components/responses/NotImplemented' }
+ *       201:
+ *         description: Created
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.get('/announcements', ctrl.listAnnouncements);
-router.post('/announcements', ctrl.notImplemented);
+router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
 
 /**
  * @openapi
  * /api/super/announcements/{id}:
  *   delete:
  *     tags: [Super Admin]
- *     summary: "⚠️ NOT IMPLEMENTED — always 501"
+ *     summary: Soft-delete an announcement
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
@@ -425,90 +438,180 @@ router.post('/announcements', ctrl.notImplemented);
  *         required: true
  *         schema: { type: string }
  *     responses:
- *       501: { $ref: '#/components/responses/NotImplemented' }
+ *       200:
+ *         description: Deleted
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Announcement not found in your organization
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
-router.delete('/announcements/:id', ctrl.notImplemented);
+router.delete('/announcements/:id', validate({ params: idParam }), ctrl.deleteAnnouncement);
 
 /**
  * @openapi
  * /api/super/reminders:
  *   get:
  *     tags: [Super Admin]
- *     summary: "⚠️ STUB — always returns an empty list"
- *     description: NOT IMPLEMENTED. No reminders table yet; returns an empty list so the page renders.
+ *     summary: History of automated payment reminders (payment.due / payment.due_soon / debt.overdue)
+ *     description: >
+ *       Not written by an HTTP handler — a BullMQ QueueEvents listener
+ *       (reminders/reminders.listener.js) logs each reminder job as it
+ *       completes or fails on the shared 'notifications' queue. Scoped to
+ *       this organization, newest first.
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
- *         description: Always empty
+ *         description: Reminder history
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 reminders: { type: array, items: { type: object }, example: [] }
- *                 items: { type: array, items: { type: object }, example: [] }
- *                 total: { type: integer, example: 0 }
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string, format: uuid }
+ *                       studentName: { type: string }
+ *                       parentName: { type: string }
+ *                       message: { type: string }
+ *                       status: { type: string, enum: [pending, sent, failed] }
+ *                       error: { type: string, nullable: true }
+ *                       sentAt: { type: string, format: date-time, nullable: true }
+ *                       createdAt: { type: string, format: date-time }
+ *                 total: { type: integer }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
-router.get('/reminders', ctrl.listReminders);
+router.get('/reminders', reminders.list);
 
 /**
  * @openapi
  * /api/super/reminders/{id}/resend:
  *   post:
  *     tags: [Super Admin]
- *     summary: "⚠️ NOT IMPLEMENTED — always 501"
+ *     summary: Re-queue the same reminder job (same payload) — history is not overwritten, a new entry appears once it settles
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string }
+ *         schema: { type: string, format: uuid }
  *     responses:
- *       501: { $ref: '#/components/responses/NotImplemented' }
+ *       200:
+ *         description: Re-queued
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Reminder not found in your organization
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.post('/reminders/:id/resend', ctrl.notImplemented);
+router.post('/reminders/:id/resend', validate({ params: idParam }), reminders.resend);
 
 /**
  * @openapi
  * /api/super/reminders/{id}:
  *   delete:
  *     tags: [Super Admin]
- *     summary: "⚠️ NOT IMPLEMENTED — always 501"
+ *     summary: Delete a reminder history entry
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string }
+ *         schema: { type: string, format: uuid }
  *     responses:
- *       501: { $ref: '#/components/responses/NotImplemented' }
+ *       200:
+ *         description: Deleted
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Reminder not found in your organization
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.delete('/reminders/:id', ctrl.notImplemented);
+router.delete('/reminders/:id', validate({ params: idParam }), reminders.remove);
 
 /**
  * @openapi
  * /api/super/audit:
  *   get:
  *     tags: [Super Admin]
- *     summary: "⚠️ STUB — always returns an empty list"
- *     description: NOT IMPLEMENTED. No audit-log table yet; returns an empty list so the page renders.
+ *     summary: Organization audit log (migration 1783880000000_audit-log)
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
- *         description: Always empty
+ *         description: Audit entries
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 items: { type: array, items: { type: object }, example: [] }
- *                 total: { type: integer, example: 0 }
+ *                 items: { type: array, items: { type: object } }
+ *                 total: { type: integer }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
 router.get('/audit', ctrl.listAudit);
+
+/**
+ * @openapi
+ * /api/super/stats:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: Organization statistics — KPIs, revenue series, per-branch and per-method breakdown
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: period
+ *         in: query
+ *         schema: { type: string, enum: ['7d', '30d', '90d'], default: '30d' }
+ *     responses:
+ *       200:
+ *         description: Stats
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 period: { type: string }
+ *                 totals:
+ *                   type: object
+ *                   properties:
+ *                     revenue: { type: number }
+ *                     outstandingDebt: { type: number }
+ *                     activeStudents: { type: integer }
+ *                     admins: { type: integer }
+ *                     branches: { type: integer }
+ *                     avgRevenue: { type: number }
+ *                     debtRatio: { type: number }
+ *                     currency: { type: string }
+ *                 branches:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string, format: uuid }
+ *                       name: { type: string }
+ *                       revenue: { type: number }
+ *                       debt: { type: number }
+ *                       students: { type: integer }
+ *                       admins: { type: integer }
+ *                       share: { type: number, description: 'Доля филиала в общей выручке организации, %' }
+ *                 revenueSeries: { type: array, items: { type: object } }
+ *                 paymentMethods: { type: array, items: { type: object } }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.get('/stats', validate({ query: statsQuery }), ctrl.stats);
 
 /**
  * @openapi
@@ -701,7 +804,7 @@ router.post('/branches/:id/unarchive', validate({ params: idParam }), ctrl.unarc
  *   post:
  *     tags: [Super Admin]
  *     summary: Create an admin assigned to one of the organization's branches
- *     description: Login (email) and password are set directly by the Super Admin (not auto-generated).
+ *     description: Login (email) is set by the Super Admin; password is auto-generated and returned once (tempPassword).
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
@@ -825,6 +928,7 @@ router.patch('/admins/:id', validate({ params: idParam, body: updateAdminSchema 
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.patch('/admins/:id/freeze', validate({ params: idParam, body: freezeSchema }), ctrl.freezeAdmin);
+router.post('/admins/:id/reset-password', validate({ params: idParam }), ctrl.resetAdminPassword);
 
 /**
  * @openapi
@@ -878,6 +982,22 @@ router.patch('/admins/:id/freeze', validate({ params: idParam, body: freezeSchem
  */
 router.post('/methodists', validate({ body: createMethodistSchema }), ctrl.createMethodist);
 router.get('/methodists', ctrl.listMethodists);
+
+/**
+ * @openapi
+ * /api/super/mentors:
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: List mentors of the organization (read-only — Admin of the branch manages them)
+ *     description: Нужен только для выбора цели в «Взыскании» — CRUD ментора остаётся у Admin филиала.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: List of mentors
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.get('/mentors', ctrl.listMentors);
 
 /**
  * @openapi
@@ -947,54 +1067,9 @@ router.patch('/methodists/:id', validate({ params: idParam, body: updateMethodis
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.patch('/methodists/:id/freeze', validate({ params: idParam, body: freezeMethodistSchema }), ctrl.freezeMethodist);
+router.post('/methodists/:id/reset-password', validate({ params: idParam }), ctrl.resetMethodistPassword);
 
-// ==================== ДИСЦИПЛИНА (устав + штрафы/qora) ====================
-
-/**
- * @openapi
- * /api/super/charter:
- *   get:
- *     tags: [Discipline]
- *     summary: Get organization charter (устав)
- *     description: Если устав ещё не создан — возвращается пустой шаблон.
- *     security: [{ bearerAuth: [] }]
- *     responses:
- *       200:
- *         description: Charter
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 data: { $ref: '#/components/schemas/Charter' }
- *       401: { $ref: '#/components/responses/Unauthorized' }
- *       403: { $ref: '#/components/responses/Forbidden' }
- *   put:
- *     tags: [Discipline]
- *     summary: Create/update organization charter (Super Admin only)
- *     security: [{ bearerAuth: [] }]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema: { $ref: '#/components/schemas/UpsertCharterRequest' }
- *     responses:
- *       200:
- *         description: Saved charter
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 data: { $ref: '#/components/schemas/Charter' }
- *       401: { $ref: '#/components/responses/Unauthorized' }
- *       403: { $ref: '#/components/responses/Forbidden' }
- *       422: { $ref: '#/components/responses/ValidationError' }
- */
-router.get('/charter', discipline.getCharter);
-router.put('/charter', validate({ body: upsertCharterSchema }), discipline.upsertCharter);
+// ==================== ДИСЦИПЛИНА (правила + штрафы/предупреждения/qora) ====================
 
 /**
  * @openapi
@@ -1009,7 +1084,7 @@ router.put('/charter', validate({ body: upsertCharterSchema }), discipline.upser
  *         schema: { type: string, format: uuid }
  *       - in: query
  *         name: type
- *         schema: { type: string, enum: [shtraf, qora] }
+ *         schema: { type: string, enum: [sariq, qizil, qora] }
  *     responses:
  *       200:
  *         description: Penalty list
@@ -1024,9 +1099,10 @@ router.put('/charter', validate({ body: upsertCharterSchema }), discipline.upser
  *       403: { $ref: '#/components/responses/Forbidden' }
  *   post:
  *     tags: [Discipline]
- *     summary: Issue a penalty (shtraf) or fire (qora) a staff member
+ *     summary: Issue a warning (sariq/qizil) or fire (qora) a staff member
  *     description: >
- *       Super Admin → admin / mentor / methodist (и shtraf, и qora).
+ *       Super Admin → admin / mentor / methodist. amount — необязательный
+ *       довесок к любому из трёх уровней, не отдельная категория.
  *       qora ставит целевому status=fired (атомарно).
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
@@ -1078,5 +1154,58 @@ router.post('/penalties', validate({ body: issuePenaltySchema }), discipline.iss
  *       409: { $ref: '#/components/responses/Conflict' }
  */
 router.post('/staff/:id/reactivate', validate({ params: idParam }), discipline.reactivateStaff);
+
+/**
+ * @openapi
+ * /api/super/discipline-rules:
+ *   get:
+ *     tags: [Discipline]
+ *     summary: List organization discipline rules (qoyda catalog)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Rules
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *   post:
+ *     tags: [Discipline]
+ *     summary: Create a discipline rule (violation -> sariq/qizil/qora)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               type: { type: string, enum: [sariq, qizil, qora] }
+ *               amount: { type: number, description: 'Необязательный довесок к любому уровню' }
+ *               description: { type: string }
+ *     responses:
+ *       201:
+ *         description: Created
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.get('/discipline-rules', discipline.listRules);
+router.post('/discipline-rules', validate({ body: createRuleSchema }), discipline.createRule);
+
+/**
+ * @openapi
+ * /api/super/discipline-rules/{id}:
+ *   delete:
+ *     tags: [Discipline]
+ *     summary: Delete a discipline rule
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
+router.delete('/discipline-rules/:id', validate({ params: idParam }), discipline.deleteRule);
 
 export default router;

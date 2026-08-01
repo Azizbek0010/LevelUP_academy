@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { validate } from '../../../middlewares/validate.js';
 import * as ctrl from './overview.controller.js';
-import { childIdParamSchema } from './overview.schemas.js';
+import { childIdParamSchema, pageQuerySchema, gradesQuerySchema } from './overview.schemas.js';
 
 const router = Router();
 
@@ -69,6 +69,74 @@ router.get(
   '/children/:childId/overview',
   validate({ params: childIdParamSchema }),
   ctrl.getChildOverview,
+);
+
+/**
+ * @openapi
+ * /api/parent/children/{childId}/attendance:
+ *   get:
+ *     tags: [Parent]
+ *     summary: Paginated attendance history for one child (FE-PARENT-PAGINATION)
+ *     description: >
+ *       Unlike the overview's "recent" list (capped at 5), this returns the
+ *       full history, page by page.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: childId
+ *         in: path
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *       - name: page
+ *         in: query
+ *         schema: { type: integer, default: 1 }
+ *       - name: limit
+ *         in: query
+ *         schema: { type: integer, default: 20, maximum: 100 }
+ *     responses:
+ *       200:
+ *         description: Page of attendance records
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get(
+  '/children/:childId/attendance',
+  validate({ params: childIdParamSchema, query: pageQuerySchema }),
+  ctrl.getChildAttendance,
+);
+
+/**
+ * @openapi
+ * /api/parent/children/{childId}/grades:
+ *   get:
+ *     tags: [Parent]
+ *     summary: Paginated grades history for one child — homework or tests (FE-PARENT-PAGINATION)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: childId
+ *         in: path
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *       - name: type
+ *         in: query
+ *         schema: { type: string, enum: [homework, tests], default: homework }
+ *       - name: page
+ *         in: query
+ *         schema: { type: integer, default: 1 }
+ *       - name: limit
+ *         in: query
+ *         schema: { type: integer, default: 20, maximum: 100 }
+ *     responses:
+ *       200:
+ *         description: Page of grades
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get(
+  '/children/:childId/grades',
+  validate({ params: childIdParamSchema, query: gradesQuerySchema }),
+  ctrl.getChildGrades,
 );
 
 export default router;

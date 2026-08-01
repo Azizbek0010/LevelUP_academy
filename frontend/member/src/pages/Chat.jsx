@@ -4,7 +4,7 @@ import { useChild } from '../child-context.jsx';
 import { useChatMessages } from '../queries.js';
 import { getSocket, useSocketConnected } from '../socket.js';
 import Avatar from '../components/Avatar.jsx';
-import { EmptyState } from '../components/ui.jsx';
+import { EmptyState, ErrorState } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
 import { mockChatSend } from '../api.js';
 
@@ -113,6 +113,7 @@ export default function Chat() {
   const connected = useSocketConnected(token);
 
   const [activeRoom, setActiveRoom] = useState('global');
+  const [activeStaffId, setActiveStaffId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -124,7 +125,7 @@ export default function Chat() {
 
   const roomKey = activeRoom === 'mentors' ? `parent:${user?.id}` : 'global';
   const roomInfo = ROOMS.find((r) => r.key === activeRoom);
-  const { data, isLoading } = useChatMessages(roomKey);
+  const { data, isLoading, error, refetch } = useChatMessages(roomKey);
 
   useEffect(() => {
     if (data?.data?.messages) {
@@ -140,15 +141,16 @@ export default function Chat() {
   }, [token]);
 
   useEffect(() => {
-    if (!socketRef.current) return;
+    if (!socketRef.current || !roomKey) return;
     const s = socketRef.current;
-    const event = activeRoom === 'global' ? 'chat:global:message' : 'chat:parent:message';
+    const event = activeRoom === 'global' ? 'chat:global:message' : 'chat:dm:message';
     const handler = (msg) => {
+      if (activeRoom !== 'global' && msg.room_key !== roomKey) return;
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
     };
     s.on(event, handler);
     return () => s.off(event, handler);
-  }, [activeRoom]);
+  }, [activeRoom, roomKey]);
 
   useEffect(() => {
     if (atBottom) {

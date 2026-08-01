@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PhoneInput from './PhoneInput.jsx';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { Copy, Check, AlertTriangle, Building2, User } from 'lucide-react';
@@ -152,7 +153,7 @@ export default function OnboardModal({ lead, onClose, onDone }) {
                     required
                     value={form.organizationName}
                     onChange={set('organizationName')}
-                    placeholder="Mars IT School"
+                    placeholder="LevelUp Academy"
                     autoFocus
                   />
                 </label>
@@ -162,9 +163,9 @@ export default function OnboardModal({ lead, onClose, onDone }) {
                     className="input input-bordered"
                     value={form.domain}
                     onChange={set('domain')}
-                    placeholder="mars-school.uz"
+                    placeholder="levelup-academy.uz"
                   />
-                  <span className="text-xs text-base-content/45 mt-1">Без https://, например: mars-school.uz</span>
+                  <span className="text-xs text-base-content/45 mt-1">Без https://, например: levelup-academy.uz</span>
                 </label>
                 <div className="modal-action mt-6">
                   <button type="button" className="btn btn-ghost" onClick={onClose}>Отмена</button>
@@ -213,16 +214,15 @@ export default function OnboardModal({ lead, onClose, onDone }) {
                     required
                     value={form.email}
                     onChange={set('email')}
-                    placeholder="owner@mars-school.uz"
+                    placeholder="owner@levelup-academy.uz"
                   />
                 </label>
                 <label className="form-control">
                   <span className="label-text mb-1">Телефон <span className="opacity-50">(необязательно)</span></span>
-                  <input
+                  <PhoneInput
                     className="input input-bordered"
                     value={form.phone}
-                    onChange={set('phone')}
-                    placeholder="+998901234567"
+                    onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
                   />
                 </label>
                 <div className="modal-action mt-6">

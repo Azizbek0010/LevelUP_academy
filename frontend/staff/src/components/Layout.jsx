@@ -1,25 +1,23 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Bell, ChevronLeft, ChevronRight, ChevronDown, X,
-  LogIn, User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu, Volume2, VolumeX,
+  Bell, ChevronDown, ChevronRight,
+  User as UserIcon, PanelLeftClose, PanelLeft, LogOut, Menu,
+  Volume2, VolumeX,
 } from 'lucide-react';
 import {
   HiOutlineSquares2X2, HiOutlineBuildingOffice2, HiOutlineUsers,
-  HiOutlineAcademicCap, HiOutlineUserGroup, HiOutlineCalendarDays,
-  HiOutlineChartBar, HiOutlineChartPie, HiOutlineMegaphone,
-  HiOutlineBellAlert, HiOutlineShieldExclamation, HiOutlineCog,
+  HiOutlineAcademicCap, HiOutlineUserGroup,
+  HiOutlineChartBar, HiOutlineCog,
   HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
-  HiOutlineClipboardDocumentCheck, HiOutlineCurrencyDollar,
-  HiOutlineDocumentText,
 } from 'react-icons/hi2';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
 import Avatar from './Avatar.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { disconnectSocket, getSocket } from '../socket.js';
-import { useMentorGroups, useChatContacts } from '../queries.js';
+import { useMentorGroups, useSuperBranches, useChatContacts } from '../queries.js';
 import {
   playNotificationSound, unlockSound, isSoundEnabled, setSoundEnabled,
 } from '../lib/notificationSound.js';
@@ -37,19 +35,54 @@ function useMediaQuery(query) {
 }
 
 /* ──────────────────── NAV CONFIG ──────────────────── */
+/**
+ * Меню Super Admin: тринадцать пунктов свёрнуты в семь.
+ *
+ * Две проблемы были одновременно. Первая — длина: одиннадцать ссылок подряд,
+ * где ежедневный дашборд стоял наравне с аудитом, который открывают раз в
+ * месяц. Вторая, хуже, — семь пунктов носили бейдж «soon», хотя страницы за
+ * ними давно написаны и зовут настоящий API (Студенты, Группы, Посещаемость,
+ * Статистика, Объявления, Напоминания, Аудит — у каждой есть useQuery к своему
+ * эндпоинту). Партнёр читал «этого ещё нет» о работающем разделе. Бейджи убраны
+ * вместе с флагом, а не перекрашены.
+ *
+ * Структура повторяет панель ментора: главная сущность — филиал — разворачивается
+ * прямо в меню, а редкие разделы собраны в группы, чтобы не занимать строку
+ * каждый. Ничего не спрятано глубже двух клика.
+ */
 const superNav = [
-  { to: '/',              label: 'Дашборд',       Icon: HiOutlineSquares2X2, end: true },
-  { to: '/branches',      label: 'Филиалы',        Icon: HiOutlineBuildingOffice2 },
-  { to: '/admins',        label: 'Сотрудники',     Icon: HiOutlineUsers },
-  { to: '/students',      label: 'Студенты',       Icon: HiOutlineAcademicCap },
-  { to: '/groups',        label: 'Группы',         Icon: HiOutlineUserGroup },
-  { to: '/attendance',    label: 'Посещаемость',   Icon: HiOutlineCalendarDays },
-  { to: '/reports',       label: 'Аналитика',      Icon: HiOutlineChartBar },
-  { to: '/stats',         label: 'Статистика',     Icon: HiOutlineChartPie },
-  { to: '/announcements', label: 'Объявления',     Icon: HiOutlineMegaphone },
-  { to: '/reminders',     label: 'Напоминания',    Icon: HiOutlineBellAlert },
-  { to: '/audit',         label: 'Аудит',          Icon: HiOutlineShieldExclamation },
-  { to: '/settings',      label: 'Настройки',      Icon: HiOutlineCog },
+  { to: '/',           label: 'Дашборд',    Icon: HiOutlineSquares2X2, end: true },
+  { type: 'super-branches' },
+  { to: '/admins',     label: 'Сотрудники', Icon: HiOutlineUsers },
+  {
+    type: 'group',
+    key: 'analytics',
+    label: 'Аналитика',
+    Icon: HiOutlineChartBar,
+    items: [
+      // «Отчёты» слиты в «Статистику» 2026-07-28 — были одной и той же выборкой
+      { to: '/stats',   label: 'Статистика' },
+      // общие срезы по всей организации; разбор по одному филиалу — внутри него
+      { to: '/students',   label: 'Все ученики' },
+      { to: '/groups',     label: 'Все группы' },
+      { to: '/attendance', label: 'Посещаемость' },
+    ],
+  },
+  {
+    type: 'group',
+    key: 'more',
+    label: 'Ещё',
+    Icon: HiOutlineCog,
+    items: [
+      // Дисциплина живёт здесь, а не строкой верхнего уровня: взыскания
+      // выписывают редко, а место она занимала наравне с ежедневной работой
+      { to: '/discipline',    label: 'Дисциплина' },
+      { to: '/announcements', label: 'Объявления' },
+      { to: '/reminders',     label: 'Напоминания' },
+      { to: '/audit',         label: 'Аудит' },
+      { to: '/settings',      label: 'Настройки' },
+    ],
+  },
 ];
 
 const adminNav = [
@@ -77,7 +110,7 @@ const adminNav = [
 const mentorNav = [
   { to: '/',     label: 'Дашборд',  Icon: HiOutlineSquares2X2, end: true },
   { type: 'mentor-groups' },
-  { to: '/chat', label: 'Xabarlar', Icon: HiOutlineChatBubbleLeftRight },
+  { to: '/chat', label: 'Чат', Icon: HiOutlineChatBubbleLeftRight },
 ];
 
 const methodistNav = [
@@ -103,7 +136,7 @@ const ROLE_TITLE = {
 const ROLE_COLORS = {
   superadmin: '#8b5cf6',
   admin: '#3b82f6',
-  mentor: '#22c55e',
+  mentor: '#3b82f6',
   methodist: '#f59e0b',
 };
 
@@ -130,23 +163,23 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
     <div>
       <button
         onClick={toggle}
-        title={collapsed ? 'Guruhlar' : undefined}
+        title={collapsed ? 'Группы' : undefined}
         aria-expanded={collapsed ? false : open}
         className={`group w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-sm ${
           collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
         }`}
         style={{
-          color: insideGroup ? '#C6FF34' : 'rgba(232, 239, 226, 0.55)',
-          background: insideGroup ? 'rgba(198, 255, 52, 0.1)' : 'transparent',
+          color: insideGroup ? '#40833B' : 'rgba(232, 239, 226, 0.55)',
+          background: insideGroup ? 'rgba(64, 131, 59, 0.1)' : 'transparent',
         }}
       >
         <HiOutlineUserGroup size={18} strokeWidth={insideGroup ? 2.2 : 1.8} className="shrink-0" />
         {!collapsed && (
           <>
-            <span className="flex-1 text-left font-medium">Guruhlar</span>
+            <span className="flex-1 text-left font-medium">Группы</span>
             <span
               className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-              style={{ background: 'rgba(198,255,52,0.12)', color: 'rgba(198,255,52,0.75)' }}
+              style={{ background: 'rgba(64,131,59,0.12)', color: 'rgba(64,131,59,0.75)' }}
             >
               {groups.length}
             </span>
@@ -160,10 +193,10 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
       </button>
 
       {!collapsed && open && (
-        <ul className="mt-1 space-y-0.5 pl-3 border-l ml-4" style={{ borderColor: 'rgba(198,255,52,0.12)' }}>
+        <ul className="mt-1 space-y-0.5 pl-3 border-l ml-4" style={{ borderColor: 'rgba(64,131,59,0.15)' }}>
           {groups.length === 0 ? (
             <li className="px-3 py-2 text-[11px]" style={{ color: 'rgba(232,239,226,0.3)' }}>
-              Guruh yo'q
+              Групп нет
             </li>
           ) : (
             groups.map((g) => {
@@ -174,8 +207,8 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
                     to={`/groups/${g.id}`}
                     className="block rounded-lg px-3 py-2 text-[13px] transition-colors truncate"
                     style={{
-                      color: active ? '#C6FF34' : 'rgba(232, 239, 226, 0.5)',
-                      background: active ? 'rgba(198, 255, 52, 0.08)' : 'transparent',
+                      color: active ? '#40833B' : 'rgba(232, 239, 226, 0.5)',
+                      background: active ? 'rgba(64, 131, 59, 0.08)' : 'transparent',
                       fontWeight: active ? 600 : 400,
                     }}
                     title={g.name}
@@ -186,6 +219,176 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
               );
             })
           )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────── SUPER ADMIN: список филиалов ────────────────────
+   То же решение, что у ментора с группами: филиал — главная сущность
+   Super Admin, и выбирать его логично один раз в меню, а не заходить сначала
+   в список, потом в карточку. Хук вызывается только под этой ролью —
+   у остальных /super/branches вернул бы 403. */
+function SuperBranchesNav({ collapsed, onExpandSidebar }) {
+  const { data } = useSuperBranches();
+  const location = useLocation();
+  const branches = data?.branches ?? [];
+
+  const inside = location.pathname.startsWith('/branches');
+  const [open, setOpen] = useState(true);
+
+  const toggle = () => {
+    if (collapsed) { onExpandSidebar(); setOpen(true); return; }
+    setOpen((v) => !v);
+  };
+
+  return (
+    <div>
+      <button
+        onClick={toggle}
+        title={collapsed ? 'Филиалы' : undefined}
+        aria-expanded={collapsed ? false : open}
+        className={`group w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-sm ${
+          collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
+        }`}
+        style={{
+          color: inside ? '#40833B' : 'rgba(232, 239, 226, 0.55)',
+          background: inside ? 'rgba(64, 131, 59, 0.1)' : 'transparent',
+        }}
+      >
+        <HiOutlineBuildingOffice2 size={18} strokeWidth={inside ? 2.2 : 1.8} className="shrink-0" />
+        {!collapsed && (
+          <>
+            <span className="flex-1 text-left font-medium">Филиалы</span>
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+              style={{ background: 'rgba(64,131,59,0.12)', color: 'rgba(64,131,59,0.75)' }}
+            >
+              {branches.length}
+            </span>
+            <ChevronDown
+              size={14}
+              className="shrink-0 transition-transform duration-200"
+              style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+            />
+          </>
+        )}
+      </button>
+
+      {!collapsed && open && (
+        <ul className="mt-1 space-y-0.5 pl-3 border-l ml-4" style={{ borderColor: 'rgba(64,131,59,0.15)' }}>
+          <li>
+            <NavLink
+              to="/branches"
+              end
+              className="block rounded-lg px-3 py-2 text-[12px] transition-colors"
+              style={({ isActive }) => ({
+                color: isActive ? '#40833B' : 'rgba(232, 239, 226, 0.4)',
+                background: isActive ? 'rgba(64, 131, 59, 0.08)' : 'transparent',
+                fontWeight: isActive ? 600 : 400,
+              })}
+            >
+              Все филиалы
+            </NavLink>
+          </li>
+          {branches.map((b) => {
+            const active = location.pathname === `/branches/${b.id}`;
+            return (
+              <li key={b.id}>
+                <NavLink
+                  to={`/branches/${b.id}`}
+                  title={b.name}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-colors"
+                  style={{
+                    color: active ? '#40833B' : 'rgba(232, 239, 226, 0.5)',
+                    background: active ? 'rgba(64, 131, 59, 0.08)' : 'transparent',
+                    fontWeight: active ? 600 : 400,
+                  }}
+                >
+                  <span className="truncate">{b.name}</span>
+                  {b.isMain && (
+                    <span
+                      className="text-[9px] font-bold px-1 py-0.5 rounded shrink-0"
+                      style={{ background: 'rgba(64,131,59,0.12)', color: 'rgba(64,131,59,0.7)' }}
+                    >
+                      осн
+                    </span>
+                  )}
+                </NavLink>
+              </li>
+            );
+          })}
+          {branches.length === 0 && (
+            <li className="px-3 py-2 text-[11px]" style={{ color: 'rgba(232,239,226,0.3)' }}>
+              Филиалов нет
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────── Сворачиваемая группа пунктов ────────────────────
+   Нужна, чтобы редкие разделы (отчёты, аудит, рассылки) не занимали по строке
+   в меню каждый. Раскрыта, если пользователь уже внутри одного из её пунктов —
+   иначе после перехода группа схлопывалась бы и прятала текущую страницу. */
+function NavGroup({ label, Icon, items, collapsed, onExpandSidebar }) {
+  const location = useLocation();
+  const inside = items.some((i) => location.pathname === i.to);
+  const [open, setOpen] = useState(inside);
+
+  const toggle = () => {
+    if (collapsed) { onExpandSidebar(); setOpen(true); return; }
+    setOpen((v) => !v);
+  };
+
+  return (
+    <div>
+      <button
+        onClick={toggle}
+        title={collapsed ? label : undefined}
+        aria-expanded={collapsed ? false : open}
+        className={`group w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-sm ${
+          collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
+        }`}
+        style={{
+          color: inside ? '#40833B' : 'rgba(232, 239, 226, 0.55)',
+          background: inside ? 'rgba(64, 131, 59, 0.1)' : 'transparent',
+        }}
+      >
+        <Icon size={18} strokeWidth={inside ? 2.2 : 1.8} className="shrink-0" />
+        {!collapsed && (
+          <>
+            <span className="flex-1 text-left font-medium">{label}</span>
+            <ChevronDown
+              size={14}
+              className="shrink-0 transition-transform duration-200"
+              style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+            />
+          </>
+        )}
+      </button>
+
+      {!collapsed && open && (
+        <ul className="mt-1 space-y-0.5 pl-3 border-l ml-4" style={{ borderColor: 'rgba(64,131,59,0.15)' }}>
+          {items.map((i) => (
+            <li key={i.to}>
+              <NavLink
+                to={i.to}
+                end
+                className="block rounded-lg px-3 py-2 text-[13px] transition-colors truncate"
+                style={({ isActive }) => ({
+                  color: isActive ? '#40833B' : 'rgba(232, 239, 226, 0.5)',
+                  background: isActive ? 'rgba(64, 131, 59, 0.08)' : 'transparent',
+                  fontWeight: isActive ? 600 : 400,
+                })}
+              >
+                {i.label}
+              </NavLink>
+            </li>
+          ))}
         </ul>
       )}
     </div>
@@ -208,12 +411,12 @@ function Sidebar({
 
   return (
     <aside
+      className="fixed top-0 left-0 h-full z-40 flex flex-col transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden"
       {...hoverProps}
-      className="fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-200 ease-out overflow-hidden"
       style={{
         width: collapsed ? 72 : 256,
         background: 'linear-gradient(180deg, #0f1a0a 0%, #16210f 40%, #1a2912 100%)',
-        borderRight: '1px solid rgba(198, 255, 52, 0.08)',
+        borderRight: '1px solid rgba(64, 131, 59, 0.15)',
         // Когда панель выехала поверх страницы, тень должна быть заметнее:
         // иначе не читается, что это слой над контентом, а не раздвинувшая его колонка.
         boxShadow: overlaying
@@ -232,7 +435,7 @@ function Sidebar({
       <Link
         to="/"
         className="flex items-center gap-3 px-4 h-16 shrink-0 transition-opacity hover:opacity-85"
-        style={{ borderBottom: '1px solid rgba(198, 255, 52, 0.06)' }}
+        style={{ borderBottom: '1px solid rgba(64, 131, 59, 0.15)' }}
         aria-label="LevelUp Academy — bosh sahifa"
       >
         {collapsed ? (
@@ -258,6 +461,27 @@ function Sidebar({
               />
             );
           }
+          if (item.type === 'super-branches') {
+            return (
+              <SuperBranchesNav
+                key="super-branches"
+                collapsed={collapsed}
+                onExpandSidebar={onExpandSidebar}
+              />
+            );
+          }
+          if (item.type === 'group') {
+            return (
+              <NavGroup
+                key={item.key}
+                label={item.label}
+                Icon={item.Icon}
+                items={item.items}
+                collapsed={collapsed}
+                onExpandSidebar={onExpandSidebar}
+              />
+            );
+          }
           const { to, label, Icon, end, soon } = item;
           const isActive = location.pathname === to || (end && location.pathname === to) || (!end && location.pathname.startsWith(to) && to !== '/');
           return (
@@ -270,8 +494,8 @@ function Sidebar({
                 collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
               } text-sm relative overflow-hidden`}
               style={{
-                color: isActive ? '#C6FF34' : 'rgba(232, 239, 226, 0.55)',
-                background: isActive ? 'rgba(198, 255, 52, 0.1)' : 'transparent',
+                color: isActive ? '#40833B' : 'rgba(232, 239, 226, 0.55)',
+                background: isActive ? 'rgba(64, 131, 59, 0.1)' : 'transparent',
                 animationDelay: `${i * 40}ms`,
               }}
             >
@@ -279,7 +503,7 @@ function Sidebar({
               {isActive && (
                 <div
                   className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
-                  style={{ background: '#C6FF34', boxShadow: '0 0 8px rgba(198, 255, 52, 0.5)' }}
+                  style={{ background: '#40833B', boxShadow: '0 0 8px rgba(64, 131, 59, 0.4)' }}
                 />
               )}
 
@@ -289,14 +513,14 @@ function Sidebar({
                 strokeWidth={isActive ? 2.2 : 1.8}
                 className="shrink-0 transition-all duration-200"
                 style={{
-                  color: isActive ? '#C6FF34' : soon ? 'rgba(232,239,226,0.25)' : undefined,
+                  color: isActive ? '#40833B' : soon ? 'rgba(232,239,226,0.25)' : undefined,
                 }}
               />
 
               {/* Label */}
               {!collapsed && (
                 <span className="flex-1 font-medium transition-colors" style={{
-                  color: isActive ? '#C6FF34' : soon ? 'rgba(232,239,226,0.3)' : undefined,
+                  color: isActive ? '#40833B' : soon ? 'rgba(232,239,226,0.3)' : undefined,
                 }}>
                   {label}
                 </span>
@@ -315,14 +539,15 @@ function Sidebar({
               {/* Hover glow — subtle green */}
               <div
                 className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-                style={{ background: 'rgba(198, 255, 52, 0.04)' }}
+                style={{ background: 'rgba(64, 131, 59, 0.05)' }}
               />
             </NavLink>
           );
         })}
       </nav>
 
-      {/* Кнопка теперь управляет не «свёрнут/развёрнут», а «закреплён ли
+      {/* Collapse toggle.
+          Кнопка теперь управляет не «свёрнут/развёрнут», а «закреплён ли
           открытым». Панель и так раскрывается на наведении — кнопка нужна,
           чтобы зафиксировать её и не гонять мышь к краю каждый раз. */}
       <div className="px-3 pb-3 shrink-0">
@@ -331,16 +556,15 @@ function Sidebar({
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs transition-all duration-200"
           style={{
             color: 'rgba(232,239,226,0.35)',
-            background: 'rgba(198,255,52,0.04)',
-            marginBottom: '4px',
+            background: 'rgba(64,131,59,0.06)',
           }}
-          title={pinned ? 'Panelni yig\'ish' : 'Panelni ochiq qoldirish'}
+          title={pinned ? 'Свернуть панель' : 'Закрепить панель'}
           aria-pressed={pinned}
         >
           {pinned ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
           {!collapsed && (
             <span className="font-medium">
-              {pinned ? "Yig'ish" : 'Mahkamlash'}
+              {pinned ? 'Свернуть' : 'Закрепить'}
             </span>
           )}
         </button>
@@ -358,6 +582,7 @@ function Sidebar({
    действительно существует и требует реакции: непрочитанные сообщения от
    родителей. Цифра на значке — их настоящее количество, а не константа.
    Появится таблица notifications — сюда добавится второй источник. */
+
 /** «14:30» сегодня, «Kecha» вчера, дальше — дата. Как в списке чата. */
 function formatWhen(iso) {
   if (!iso) return '';
@@ -368,7 +593,7 @@ function formatWhen(iso) {
   }
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Kecha';
+  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
 }
 
@@ -404,6 +629,7 @@ function Notifications() {
     socket.on('chat:dm:message', onMessage);
     return () => socket.off('chat:dm:message', onMessage);
   }, [hasChat, token, qc, user?.id]);
+
   const unread = contacts.filter((c) => (c.unread_count ?? 0) > 0);
   const total = unread.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
 
@@ -436,10 +662,12 @@ function Notifications() {
           unlockSound();
           setOpen((v) => !v);
         }}
-        aria-label={total > 0 ? `Bildirishnomalar: ${total} ta yangi` : 'Bildirishnomalar'}
+        aria-label={total > 0 ? `Уведомления: ${total} новых` : 'Уведомления'}
         aria-expanded={open}
         className={`relative w-10 h-10 rounded-full grid place-items-center transition-colors ${
-          open ? 'bg-primary/10 text-primary' : 'text-base-content/60 hover:bg-base-200'
+          open
+            ? 'bg-[var(--primary)]/10 text-[var(--primary)]'
+            : 'text-[var(--text-secondary)] hover:bg-[rgba(59,130,246,0.08)]'
         }`}
       >
         <Bell size={18} />
@@ -453,34 +681,32 @@ function Notifications() {
       {open && (
         <div
           role="dialog"
-          aria-label="Bildirishnomalar"
+          aria-label="Уведомления"
           /* На телефоне панель шириной 320px, привязанная к правому краю
              кнопки, уезжала левым краем за экран (замер: left = -26px).
              Там она растягивается по ширине окна с отступами, на sm+ —
              обычный выпадающий список под колокольчиком. */
           className="popover-surface fixed sm:absolute left-3 right-3 top-[4.25rem] sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[360px] overflow-hidden animate-scale-in z-50"
         >
-          <header className="flex items-center justify-between gap-2 px-4 py-3.5 border-b border-base-200">
-            <h2 className="text-[15px] font-bold">Bildirishnomalar</h2>
+          <header className="flex items-center justify-between gap-2 px-4 py-3.5 border-b border-[var(--border)]">
+            <h2 className="text-[15px] font-bold text-[var(--text)]">Уведомления</h2>
             <div className="flex items-center gap-1.5">
               {total > 0 && (
-                <span className="text-[11px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5 tabular-nums">
-                  {total} yangi
+                <span className="text-[11px] font-bold text-[var(--primary)] bg-[rgba(59,130,246,0.1)] rounded-full px-2 py-0.5 tabular-nums">
+                  {total} новых
                 </span>
               )}
-              {/* Звук отключаемый: сигнал на каждое сообщение мешает тому, кто
-                  ведёт урок с открытой панелью. Выбор живёт в localStorage. */}
               <button
                 onClick={() => {
                   const next = !soundOn;
                   setSoundEnabled(next);
                   setSoundOn(next);
-                  if (next) { unlockSound(); playNotificationSound(); }  // сразу слышно, что включилось
+                  if (next) { unlockSound(); playNotificationSound(); }
                 }}
-                aria-label={soundOn ? "Ovozni o'chirish" : 'Ovozni yoqish'}
-                title={soundOn ? "Ovoz yoqilgan" : "Ovoz o'chirilgan"}
+                aria-label={soundOn ? 'Выключить звук' : 'Включить звук'}
+                title={soundOn ? 'Звук включён' : 'Звук выключен'}
                 className={`w-7 h-7 rounded-lg grid place-items-center transition-colors ${
-                  soundOn ? 'text-primary hover:bg-primary/10' : 'text-base-content/35 hover:bg-base-200'
+                  soundOn ? 'text-[var(--primary)] bg-[rgba(59,130,246,0.08)]' : 'text-[var(--text-muted)] hover:bg-[rgba(59,130,246,0.08)]'
                 }`}
               >
                 {soundOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
@@ -491,47 +717,45 @@ function Notifications() {
           <div className="max-h-[min(60vh,380px)] overflow-y-auto">
             {!hasChat || unread.length === 0 ? (
               <div className="px-6 py-12 text-center">
-                <span className="w-14 h-14 rounded-2xl grid place-items-center mx-auto mb-3 bg-base-200 text-base-content/30">
+                <span className="w-14 h-14 rounded-2xl grid place-items-center mx-auto mb-3 bg-[var(--surface-hover)] text-[var(--text-muted)]">
                   <Bell size={22} />
                 </span>
-                <p className="text-sm font-semibold text-base-content/70">
-                  Yangi bildirishnoma yo'q
+                <p className="text-sm font-semibold text-[var(--text)]">
+                  Нет новых уведомлений
                 </p>
-                <p className="text-xs mt-1 text-base-content/45 max-w-[220px] mx-auto">
-                  O'qilmagan xabarlar shu yerda ko'rinadi.
+                <p className="text-xs mt-1 text-[var(--text-muted)] max-w-[220px] mx-auto">
+                  Непрочитанные сообщения появятся здесь.
                 </p>
               </div>
             ) : (
-              <ul className="divide-y divide-base-200">
+              <ul className="divide-y divide-[var(--border)]">
                 {unread.map((c) => {
                   const name = `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim();
                   return (
                     <li key={c.id}>
                       <button
                         onClick={() => openChat(c.id)}
-                        className="group w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-base-200/60 transition-colors"
+                        className="group w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-[rgba(59,130,246,0.08)] transition-colors"
                       >
                         <span className="relative shrink-0">
                           <Avatar name={name} size={40} />
-                          {/* Точка непрочитанного на аватаре — статус читается
-                              раньше, чем взгляд доходит до счётчика справа. */}
-                          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-primary border-2 border-base-100" />
+                          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--green)] border-2 border-[var(--surface)]" />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="flex items-baseline justify-between gap-2">
-                            <span className="text-sm font-bold truncate">{name}</span>
-                            <span className="text-[10px] text-base-content/40 shrink-0 tabular-nums">
+                            <span className="text-sm font-bold text-[var(--text)] truncate">{name}</span>
+                            <span className="text-[10px] text-[var(--text-muted)] shrink-0 tabular-nums">
                               {formatWhen(c.last_message_at)}
                             </span>
                           </span>
                           {c.child_names && (
-                            <span className="block text-[11px] text-base-content/45 truncate">
+                            <span className="block text-[11px] text-[var(--text-muted)] truncate">
                               {c.child_names}
                             </span>
                           )}
                           <span className="flex items-center justify-between gap-2 mt-0.5">
-                            <span className="text-xs text-base-content/60 truncate">
-                              {c.last_message || 'Yangi xabar'}
+                            <span className="text-xs text-[var(--text-secondary)] truncate">
+                              {c.last_message || 'Новое сообщение'}
                             </span>
                             <span className="badge badge-primary badge-sm shrink-0 tabular-nums">
                               {c.unread_count}
@@ -549,9 +773,9 @@ function Notifications() {
           {unread.length > 0 && (
             <button
               onClick={() => openChat(null)}
-              className="w-full px-4 py-3 text-sm font-semibold text-primary border-t border-base-200 hover:bg-base-200/60 transition-colors flex items-center justify-center gap-1.5"
+              className="w-full px-4 py-3 text-sm font-semibold text-[var(--primary)] border-t border-[var(--border)] hover:bg-[rgba(59,130,246,0.08)] transition-colors flex items-center justify-center gap-1.5"
             >
-              Barcha xabarlar <ChevronRight size={14} />
+              Все сообщения <ChevronRight size={14} />
             </button>
           )}
         </div>
@@ -619,25 +843,25 @@ function Header({ sidebarWidth, onMobileToggle }) {
         <button
           onClick={() => setShowUserMenu(!showUserMenu)}
           aria-expanded={showUserMenu}
-          aria-label="Akkaunt menyusi"
+          aria-label="Меню аккаунта"
           /* Было hover:scale — от наведения дёргался весь блок вместе с
              текстом. Подсветка фона спокойнее и не сдвигает соседей. */
           className={`flex items-center gap-2.5 p-1 sm:pr-3 rounded-full transition-colors ${
-            showUserMenu ? 'bg-base-200' : 'hover:bg-base-200/70'
+            showUserMenu ? 'bg-[var(--green-bg)]' : 'hover:bg-[var(--green-bg)]'
           }`}
         >
           <Avatar name={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`} size={36} />
           <span className="hidden sm:block text-left leading-tight">
-            <span className="block text-sm font-bold">
+            <span className="block text-sm font-bold text-[var(--text)]">
               {user?.firstName} {user?.lastName}
             </span>
-            <span className="block text-[11px] text-base-content/45">
+            <span className="block text-[11px] text-[var(--text-muted)]">
               {ROLE_TITLE[role] || role}
             </span>
           </span>
           <ChevronDown
             size={14}
-            className={`hidden sm:block text-base-content/35 transition-transform ${
+            className={`hidden sm:block text-[var(--text-muted)] transition-transform ${
               showUserMenu ? 'rotate-180' : ''
             }`}
           />
@@ -652,41 +876,39 @@ function Header({ sidebarWidth, onMobileToggle }) {
             role="menu"
             className="popover-surface fixed sm:absolute left-3 right-3 top-[4.25rem] sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-64 overflow-hidden animate-scale-in z-50"
           >
-            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-base-200">
+            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--border)]">
               <Avatar name={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`} size={44} />
               <div className="min-w-0">
-                <div className="text-sm font-bold truncate">
+                <div className="text-sm font-bold text-[var(--text)] truncate">
                   {user?.firstName} {user?.lastName}
                 </div>
-                <div className="text-[11px] text-base-content/50 truncate">{user?.email}</div>
-                <span className="inline-block mt-1 text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5">
+                <div className="text-[11px] text-[var(--text-muted)] truncate">{user?.email}</div>
+                <span className="inline-block mt-1 text-[10px] font-bold text-[var(--primary)] bg-[rgba(59,130,246,0.1)] rounded-full px-2 py-0.5">
                   {ROLE_TITLE[role] || role}
                 </span>
               </div>
             </div>
 
             <div className="p-1.5">
-              {/* Вело на /settings, а такого маршрута у ментора и методиста нет —
-                  RoleView молча выкидывал их на дашборд. Профиль есть у всех. */}
               <button
                 role="menuitem"
                 onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-base-content/75 hover:bg-base-200 hover:text-base-content transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[rgba(59,130,246,0.08)] hover:text-[var(--text)] transition-colors"
               >
-                <span className="w-7 h-7 rounded-lg bg-base-200 grid place-items-center shrink-0">
+                <span className="w-7 h-7 rounded-lg bg-[var(--surface-hover)] grid place-items-center shrink-0">
                   <UserIcon size={14} />
                 </span>
-                Profil va sozlamalar
+                Профиль
               </button>
               <button
                 role="menuitem"
                 onClick={onLogout}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-error hover:bg-error/10 transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--danger)] hover:bg-[var(--danger-light)] transition-colors"
               >
-                <span className="w-7 h-7 rounded-lg bg-error/10 grid place-items-center shrink-0">
+                <span className="w-7 h-7 rounded-lg bg-[var(--danger-light)] grid place-items-center shrink-0">
                   <LogOut size={14} />
                 </span>
-                Chiqish
+                Выйти
               </button>
             </div>
           </div>

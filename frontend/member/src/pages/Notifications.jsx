@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNotifications } from '../queries.js';
 import { timeAgo } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
-import { EmptyState } from '../components/ui.jsx';
+import { EmptyState, ErrorState } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
 
 const ICON_MAP = {
@@ -29,12 +29,20 @@ const FILTERS = [
 ];
 
 export default function Notifications() {
-  const { data, isLoading } = useNotifications();
+  const { items, isLoading, isFetchingMore, hasMore, loadMore, error, refetch } = useNotifications();
   const [filter, setFilter] = useState('all');
 
-  const items = data?.data || [];
   const filtered = filter === 'all' ? items : items.filter((n) => n.type === filter);
   const unread = items.filter((n) => !n.read).length;
+
+  if (error) {
+    return (
+      <>
+        <PageHeader title="Уведомления" />
+        <ErrorState message={error.message} onRetry={refetch} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -126,6 +134,19 @@ export default function Notifications() {
           );
         })}
       </div>
+
+      {/* FE-PARENT-PAGINATION: курсорная подгрузка — лента синтезируется из 5 источников на бэке, поэтому "ещё" */}
+      {!isLoading && hasMore && filter === 'all' && (
+        <div className="text-center mt-4">
+          <button
+            className="btn btn-sm btn-ghost"
+            onClick={loadMore}
+            disabled={isFetchingMore}
+          >
+            {isFetchingMore ? <span className="loading loading-spinner loading-xs" /> : 'Показать ещё'}
+          </button>
+        </div>
+      )}
     </>
   );
 }

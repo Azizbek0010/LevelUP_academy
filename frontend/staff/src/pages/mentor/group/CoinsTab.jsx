@@ -67,7 +67,7 @@ export default function CoinsTab({ groupId }) {
     } catch (err) {
       // Было alert() — модальное окно браузера посреди работы. Ошибка остаётся
       // в форме, рядом с полем, которое её вызвало.
-      setError(err.message || 'Xatolik yuz berdi');
+      setError(err.message || 'Произошла ошибка');
     } finally {
       setSaving(false);
     }
@@ -85,7 +85,7 @@ export default function CoinsTab({ groupId }) {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
         {/* ── Ученики ── */}
         <div className="lg:col-span-2">
-          <Panel title="O'quvchilar" icon={Users} bodyClass="p-3">
+          <Panel title="Ученики" icon={Users} bodyClass="p-3">
             <SearchInput value={search} onChange={setSearch} className="mb-3" />
 
             {rosterLoading ? (
@@ -93,7 +93,7 @@ export default function CoinsTab({ groupId }) {
             ) : filteredStudents.length === 0 ? (
               <EmptyState
                 icon={Users}
-                title={search ? 'Hech kim topilmadi' : "Guruhda o'quvchi yo'q"}
+                title={search ? 'Никто не найден' : 'В группе нет учеников'}
               />
             ) : (
               <ul className="space-y-1">
@@ -130,13 +130,13 @@ export default function CoinsTab({ groupId }) {
             <div className="card bg-base-100">
               <EmptyState
                 icon={CoinsIcon}
-                title="O'quvchini tanlang"
-                hint="Coin berish yoki ayirish uchun chapdagi ro'yxatdan tanlang."
+                title="Выберите ученика"
+                hint="Выберите ученика в списке слева для начисления или списания коинов."
               />
             </div>
           ) : (
             <>
-              <Panel title="Coin operatsiyasi" icon={CoinsIcon} bodyClass="p-4">
+              <Panel title="Операция с коинами" icon={CoinsIcon} bodyClass="p-4">
                 <div className="flex items-center gap-3 mb-4">
                   <Avatar name={`${selectedStudent.firstName} ${selectedStudent.lastName}`} size="lg" />
                   <div className="min-w-0">
@@ -153,14 +153,14 @@ export default function CoinsTab({ groupId }) {
                   </div>
                 </div>
 
-                <div role="radiogroup" aria-label="Operatsiya turi" className="flex gap-2 mb-4">
+                  <div role="radiogroup" aria-label="Тип операции" className="flex gap-2 mb-4">
                   <button
                     role="radio"
                     aria-checked={!isDeduct}
                     onClick={() => setOperation('grant')}
                     className={`flex-1 btn btn-sm gap-1.5 ${!isDeduct ? 'btn-success text-white' : 'btn-outline'}`}
                   >
-                    <Plus size={14} /> Berish
+                    <Plus size={14} /> Начислить
                   </button>
                   <button
                     role="radio"
@@ -168,7 +168,7 @@ export default function CoinsTab({ groupId }) {
                     onClick={() => setOperation('deduct')}
                     className={`flex-1 btn btn-sm gap-1.5 ${isDeduct ? 'btn-error text-white' : 'btn-outline'}`}
                   >
-                    <Minus size={14} /> Ayirish
+                    <Minus size={14} /> Списать
                   </button>
                 </div>
 
@@ -187,7 +187,7 @@ export default function CoinsTab({ groupId }) {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <label className="form-control">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-                      Miqdor
+                      Сумма
                     </span>
                     <input
                       type="number"
@@ -200,12 +200,12 @@ export default function CoinsTab({ groupId }) {
                   </label>
                   <label className="form-control sm:col-span-2">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-                      Sabab <span className="text-error">*</span>
+                      Причина <span className="text-error">*</span>
                     </span>
                     <input
                       type="text"
                       className="input input-bordered input-sm"
-                      placeholder="Nima uchun?"
+                      placeholder="За что?"
                       value={coinReason}
                       maxLength={200}
                       onChange={(e) => setCoinReason(e.target.value)}
@@ -230,16 +230,16 @@ export default function CoinsTab({ groupId }) {
                     {saving
                       ? <span className="loading loading-spinner loading-xs" />
                       : isDeduct ? <Minus size={14} /> : <Plus size={14} />}
-                    {isDeduct ? 'Ayirish' : 'Berish'}
+                    {isDeduct ? 'Списать' : 'Начислить'}
                   </button>
                 </div>
               </Panel>
 
-              <Panel title="Operatsiyalar tarixi" icon={History} bodyClass="p-4">
+              <Panel title="История операций" icon={History} bodyClass="p-4">
                 {historyLoading ? (
                   <RowSkeleton count={3} height="h-11" />
                 ) : coinHistory.length === 0 ? (
-                  <EmptyState icon={History} title="Hali operatsiyalar yo'q" />
+                  <EmptyState icon={History} title="Пока нет операций" />
                 ) : (
                   <ul className="divide-y divide-base-200">
                     {coinHistory.map((h, i) => {

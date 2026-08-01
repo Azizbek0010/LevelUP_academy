@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Bell, Send, Trash2, ChevronDown, ChevronRight,
+  Bell, Trash2, ChevronDown, ChevronRight,
   CheckCircle, XCircle, Clock, RefreshCw,
   ListOrdered, History,
 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { dateShort } from '../../format.js';
+import { Card, Metric, FilterPills, StatusBadge, EmptyState } from './_ui.jsx';
 
 // ---- Query ----
 
@@ -30,34 +31,16 @@ function useRemindersQuery() {
 // ---- Status helpers ----
 
 function statusBadge(status) {
-  if (status === 'sent') return <span className="badge badge-success badge-sm">Отправлено</span>;
-  if (status === 'failed') return <span className="badge badge-error badge-sm">Ошибка</span>;
-  if (status === 'pending') return <span className="badge badge-warning badge-sm">В очереди</span>;
-  return <span className="badge badge-ghost badge-sm">{status}</span>;
+  if (status === 'sent') return <StatusBadge tone="success">Отправлено</StatusBadge>;
+  if (status === 'failed') return <StatusBadge tone="danger">Ошибка</StatusBadge>;
+  if (status === 'pending') return <StatusBadge tone="warning">В очереди</StatusBadge>;
+  return <StatusBadge>{status}</StatusBadge>;
 }
 
 function statusIcon(status) {
   if (status === 'sent') return <CheckCircle size={15} className="text-success" />;
   if (status === 'failed') return <XCircle size={15} className="text-error" />;
   return <Clock size={15} className="text-warning" />;
-}
-
-// ---- Stat card ----
-
-function StatCard({ icon: Icon, label, value, color }) {
-  return (
-    <div className="card bg-base-100 shadow-sm border border-base-200">
-      <div className="card-body p-5 flex-row items-center gap-4">
-        <div className={`p-2.5 rounded-xl ${color}`}>
-          <Icon size={20} />
-        </div>
-        <div>
-          <div className="text-2xl font-extrabold tabular-nums">{value}</div>
-          <div className="text-xs text-base-content/50">{label}</div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ---- Main Component ----
@@ -101,59 +84,48 @@ export default function SuperReminders() {
       <PageHeader title="Напоминания" subtitle="Автоматические уведомления студентам и родителям" />
 
       {/* Tabs */}
-      <div className="tabs tabs-boxed w-fit">
-        <button
-          className={`tab gap-2 ${tab === 'rules' ? 'tab-active' : ''}`}
-          onClick={() => setTab('rules')}
-        >
-          <ListOrdered size={14} /> Правила
-        </button>
-        <button
-          className={`tab gap-2 ${tab === 'history' ? 'tab-active' : ''}`}
-          onClick={() => setTab('history')}
-        >
-          <History size={14} /> История
-        </button>
-      </div>
+      <FilterPills
+        options={[
+          { key: 'rules', label: <span className="flex items-center gap-2"><ListOrdered size={14} /> Правила</span> },
+          { key: 'history', label: <span className="flex items-center gap-2"><History size={14} /> История</span> },
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
 
       {/* Rules tab */}
       {tab === 'rules' && (
-        <div className="card bg-base-100 shadow-sm border border-base-200">
-          <div className="card-body items-center text-center py-16">
-            <Bell size={48} className="text-base-content/20 mb-3" />
-            <p className="text-base-content/50 text-sm font-medium">
-              Автоматические правила скоро
-            </p>
-            <p className="text-xs text-base-content/30 mt-1">
-              Настройка триггеров, шаблонов и расписаний появится в следующем обновлении.
-            </p>
-          </div>
-        </div>
+        <Card>
+          <EmptyState
+            icon={Bell}
+            title="Автоматические правила скоро"
+            hint="Настройка триггеров, шаблонов и расписаний появится в следующем обновлении."
+          />
+        </Card>
       )}
 
       {/* History tab */}
       {tab === 'history' && (
         <>
           {/* Stat cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard icon={Bell}        label="Всего"     value={totalCount}   color="bg-base-200 text-base-content" />
-            <StatCard icon={CheckCircle} label="Отправлено" value={sentCount}   color="bg-success/10 text-success" />
-            <StatCard icon={XCircle}     label="Ошибка"    value={failedCount}  color="bg-error/10 text-error" />
-            <StatCard icon={Clock}       label="В очереди"  value={pendingCount} color="bg-warning/10 text-warning" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <Metric Icon={Bell} tone="neutral" label="Всего" value={totalCount} />
+            <Metric Icon={CheckCircle} tone="success" label="Отправлено" value={sentCount} />
+            <Metric Icon={XCircle} tone="danger" label="Ошибка" value={failedCount} />
+            <Metric Icon={Clock} tone="warning" label="В очереди" value={pendingCount} />
           </div>
 
           {/* Filter buttons */}
-          <div className="join">
-            {['all', 'sent', 'failed', 'pending'].map((f) => (
-              <button
-                key={f}
-                className={`join-item btn btn-sm ${statusFilter === f ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setStatusFilter(f)}
-              >
-                {f === 'all' ? 'Все' : f === 'sent' ? 'Отправлено' : f === 'failed' ? 'Ошибка' : 'В очереди'}
-              </button>
-            ))}
-          </div>
+          <FilterPills
+            options={[
+              { key: 'all', label: 'Все' },
+              { key: 'sent', label: 'Отправлено' },
+              { key: 'failed', label: 'Ошибка' },
+              { key: 'pending', label: 'В очереди' },
+            ]}
+            value={statusFilter}
+            onChange={setStatusFilter}
+          />
 
           {/* Table */}
           {isLoading ? (
@@ -165,7 +137,7 @@ export default function SuperReminders() {
               Записей не найдено
             </div>
           ) : (
-            <div className="card bg-base-100 shadow-sm">
+            <Card>
               <div className="overflow-x-auto">
                 <table className="table table-sm">
                   <thead>
@@ -248,7 +220,7 @@ export default function SuperReminders() {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </Card>
           )}
         </>
       )}

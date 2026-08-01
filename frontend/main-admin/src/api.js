@@ -35,7 +35,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
 
 // Пути, которым нельзя подсовывать авто-refresh (иначе цикл/логин ломается)
 const AUTH_PATHS = new Set([
-  '/auth/main/login', '/auth/main/google', '/auth/refresh', '/auth/logout',
+  '/auth/main/login', '/auth/main/google', '/auth/main/refresh', '/auth/main/logout',
   '/auth/forgot-password', '/auth/reset-password',
 ]);
 
@@ -46,7 +46,7 @@ export function setOnTokenRefreshed(cb) { onTokenRefreshed = cb; }
 
 function refreshOnce() {
   if (!refreshPromise) {
-    refreshPromise = rawRequest('/auth/refresh', { method: 'POST' })
+    refreshPromise = rawRequest('/auth/main/refresh', { method: 'POST' })
       .then((d) => {
         onTokenRefreshed?.(d);
         return d.accessToken;
@@ -77,15 +77,18 @@ export const api = {
   // auth
   loginMain: (login, password) =>
     request('/auth/main/login', { method: 'POST', body: { login, password } }),
-  refresh: () => request('/auth/refresh', { method: 'POST' }),
-  logout: () => request('/auth/logout', { method: 'POST' }),
+  // используется в auth.jsx при загрузке — восстановление сессии по refresh-cookie
+  refresh: () => request('/auth/main/refresh', { method: 'POST' }),
+  logout: () => request('/auth/main/logout', { method: 'POST' }),
   googleLogin: (idToken) => request('/auth/main/google', { method: 'POST', body: { idToken } }),
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
   resetPassword: (body) => request('/auth/reset-password', { method: 'POST', body }),
 
   // dashboard / partners
   dashboard: (token) => request('/main/dashboard', { token }),
-  partners: (token) => request('/main/partners', { token }),
+  revenue: (token) => request('/main/revenue', { token }),
+  getProfile: (token) => request('/main/profile', { token }),
+  // список партнёров отдельно не запрашиваем — он приходит внутри /main/dashboard
   setPartnerStatus: (token, id, status) =>
     request(`/main/partners/${id}/status`, { method: 'PATCH', token, body: { status } }),
   onboardPartner: (token, body) =>
@@ -97,9 +100,9 @@ export const api = {
   updateLead: (token, id, body) =>
     request(`/main/leads/${id}`, { method: 'PATCH', token, body }),
 
-  // pricing
+  // pricing (только чтение: PUT /main/pricing на бэкенде ничего не записывает,
+  // тарифы лежат в backend/src/config/plans.js — правка через БД это v2)
   getPricing: (token) => request('/main/pricing', { token }),
-  updatePricing: (token, body) => request('/main/pricing', { method: 'PUT', token, body }),
 
   // main announcements
   mainAnnouncements: (token) => request('/main/announcements', { token }),

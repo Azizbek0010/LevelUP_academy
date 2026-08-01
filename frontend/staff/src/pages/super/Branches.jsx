@@ -1,45 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Plus, Building2, MapPin, Phone, DoorOpen } from 'lucide-react';
-import { fmt, money, dateShort } from '../../format.js';
-import { useSuperBranches, useInvalidate } from '../../queries.js';
-import { api } from '../../api.js';
-import { useAuth } from '../../auth.jsx';
+import { Plus, Building2, AlertTriangle } from 'lucide-react';
+import { fmt, money } from '../../format.js';
+import { useSuperBranches } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
-import YMapPicker from '../../components/YMapPicker.jsx';
+import { phoneDisplay } from '../../components/PhoneInput.jsx';
+import BranchFormModal from './BranchFormModal.jsx';
+import { Card, SearchInput, EmptyState } from './_ui.jsx';
 
-const branchSchema = z.object({
-  name:      z.string().trim().min(1, 'Название обязательно').max(80, 'Макс. 80 символов'),
-  address:   z.string().trim().max(160, 'Макс. 160 символов').or(z.literal('')),
-  phone:     z.string().trim().max(30, 'Макс. 30 символов').or(z.literal('')),
-  roomCount: z.coerce.number().int().min(0, 'Не может быть отрицательным').max(999).optional(),
-});
+/**
+ * Список филиалов — витрина, а не пульт управления.
+ *
+ * Раньше на каждой карточке висели «изменить» и «в архив»: карточка вела
+ * внутрь филиала, но два её угла вели куда-то ещё, и промахнуться было легко.
+ * Управление одним филиалом переехало внутрь этого филиала — под шестерёнку
+ * «Настройки». Здесь остались только сам список и создание нового.
+ */
 
 export default function SuperBranches() {
-  const { data, isLoading, error } = useSuperBranches();
-  const { token } = useAuth();
-  const invalidate = useInvalidate();
+  const { data, isLoading, error, refetch } = useSuperBranches();
   const [q, setQ] = useState('');
-  const [err, setErr] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState('create');
-  const [currentId, setCurrentId] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [location, setLocation] = useState(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(branchSchema),
-    defaultValues: { name: '', address: '', phone: '', roomCount: '' },
-  });
+  useEffect(() => {
+    document.title = 'Филиалы | LevelUp Academy';
+  }, []);
 
   const branches = data?.branches || [];
   const rows = branches.filter(
@@ -48,258 +34,154 @@ export default function SuperBranches() {
       (b.address || '').toLowerCase().includes(q.toLowerCase()),
   );
 
-  const openCreate = () => {
-    setModalMode('create');
-    setErr('');
-    setLocation(null);
-    reset({ name: '', address: '', phone: '', roomCount: '' });
-    setModalOpen(true);
-  };
-
-  const openEdit = (branch) => {
-    setModalMode('edit');
-    setCurrentId(branch.id);
-    setErr('');
-    setLocation(
-      branch.lat && branch.lng
-        ? { lat: Number(branch.lat), lng: Number(branch.lng) }
-        : null,
-    );
-    reset({ name: branch.name, address: branch.address || '', phone: branch.phone || '', roomCount: branch.roomCount ?? '' });
-    setModalOpen(true);
-  };
-
-  const onFormSubmit = async (formData) => {
-    setErr('');
-    setBusy(true);
-    try {
-      const body = {
-        name: formData.name.trim(),
-        address: formData.address.trim(),
-        phone: formData.phone.trim(),
-        ...(formData.roomCount !== '' && formData.roomCount != null ? { roomCount: Number(formData.roomCount) } : {}),
-        ...(location ? { lat: location.lat, lng: location.lng } : {}),
-      };
-      if (modalMode === 'create') {
-        await api.superCreateBranch(token, body);
-      } else {
-        await api.superUpdateBranch(token, currentId, body);
-      }
-      invalidate('super-branches', 'super-dashboard');
-      setModalOpen(false);
-    } catch (e) {
-      setErr(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const toggleArchive = async (id, archived) => {
-    try {
-      if (archived) await api.superUnarchiveBranch(token, id);
-      else await api.superArchiveBranch(token, id);
-      invalidate('super-branches', 'super-dashboard');
-    } catch (e) {
-      setErr(e.message);
-    }
-  };
-
-  const showErr = err || (error && error.status !== 401 ? error.message : '');
+  /* Лидеры по деньгам. Считаем по всем филиалам, а не по отфильтрованным:
+     ответ на вопрос «какой филиал больше зарабатывает» не должен меняться
+     от того, что набрано в поиске. Архивные не участвуют — они не работают. */
+  const active = branches.filter((b) => !b.isArchived);
+  const topEarner = active.length
+    ? active.reduce((a, b) => ((b.revenue || 0) > (a.revenue || 0) ? b : a))
+    : null;
+  const topSpender = active.length
+    ? active.reduce((a, b) => ((b.expenses || 0) > (a.expenses || 0) ? b : a))
+    : null;
 
   return (
     <div className="space-y-5">
       <PageHeader title="Филиалы" subtitle="Управление филиалами организации">
-        <button className="btn btn-primary btn-sm gap-1.5" onClick={openCreate}>
+        <button className="btn btn-primary btn-sm gap-1.5" onClick={() => setCreateOpen(true)}>
           <Plus size={16} /> Новый филиал
         </button>
       </PageHeader>
 
-      {showErr && <div className="alert alert-error text-sm"><span>{showErr}</span></div>}
-
-      {isLoading ? (
+      {error && error.status !== 401 ? (
+        <Card className="max-w-lg mx-auto mt-6">
+          <EmptyState
+            icon={AlertTriangle}
+            title="Ошибка загрузки филиалов"
+            hint={error.message || 'Произошла непредвиденная ошибка при запросе к серверу.'}
+            action={
+              <button className="btn btn-primary btn-sm px-6" onClick={() => refetch()}>
+                Повторить попытку
+              </button>
+            }
+          />
+        </Card>
+      ) : isLoading ? (
         <SkeletonTable rows={5} cols={6} />
       ) : (
         <div className="space-y-5">
-          <input
-            className="input input-bordered input-sm max-w-xs"
-            placeholder="Поиск филиалов…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+          <div className="flex flex-wrap items-center gap-3 justify-between">
+            <SearchInput
+              value={q}
+              onChange={setQ}
+              placeholder="Поиск филиалов…"
+              className="max-w-xs"
+            />
+            {topEarner && (topEarner.revenue > 0 || (topSpender && topSpender.expenses > 0)) && (
+              <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
+                {topEarner.revenue > 0 && (
+                  <span className="text-base-content/60">
+                    Больше всех зарабатывает:{' '}
+                    <Link to={`/branches/${topEarner.id}`} className="font-bold text-success hover:underline">
+                      {topEarner.name}
+                    </Link>{' '}
+                    <span className="tabular-nums">{money(topEarner.revenue)}</span>
+                  </span>
+                )}
+                {topSpender && topSpender.expenses > 0 && (
+                  <span className="text-base-content/60">
+                    Больше всех тратит:{' '}
+                    <Link to={`/branches/${topSpender.id}`} className="font-bold hover:underline">
+                      {topSpender.name}
+                    </Link>{' '}
+                    <span className="tabular-nums">{money(topSpender.expenses)}</span>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
 
           {rows.length === 0 ? (
-            <div className="card bg-base-100">
-              <div className="card-body text-center py-12">
-                <p className="text-base-content/40">Филиалов пока нет. Создайте первый филиал.</p>
-              </div>
-            </div>
+            <Card className="border-dashed">
+              <EmptyState
+                icon={Building2}
+                title="Нет филиалов"
+                hint={q ? 'По вашему запросу ничего не найдено. Попробуйте изменить поисковый запрос.' : 'Филиалов пока нет. Создайте первый филиал, чтобы начать работу.'}
+                action={
+                  !q && (
+                    <button className="btn btn-primary btn-sm gap-1.5" onClick={() => setCreateOpen(true)}>
+                      <Plus size={16} /> Создать первый филиал
+                    </button>
+                  )
+                }
+              />
+            </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {/* Карточка целиком — ссылка внутрь филиала. Ни одной кнопки:
+                  всё, что можно сделать с филиалом, делается внутри него. */}
               {rows.map((b) => (
-                <div
+                <Link
                   key={b.id}
-                  className={`card bg-base-100 shadow-sm hover:shadow-md transition-all duration-200 ${b.isArchived ? 'opacity-60' : ''}`}
+                  to={`/branches/${b.id}`}
+                  className={`block rounded-2xl border border-base-300 bg-base-100 hover:border-primary/40 transition-colors ${b.isArchived ? 'opacity-60' : ''}`}
                 >
-                  <div className="card-body p-5 gap-3">
-                    {/* Header */}
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-primary/10 rounded-xl">
-                          <Building2 size={18} className="text-primary" />
-                        </div>
-                        <div>
-                          <Link to={`/branches/${b.id}`} className="font-bold hover:text-primary text-base leading-snug block">
-                            {b.name}
-                          </Link>
-                          {b.isMain && (
-                            <span className="badge badge-primary badge-xs mt-1">Главный</span>
-                          )}
-                        </div>
-                      </div>
-                      <span className={`badge badge-sm ${b.isArchived ? 'badge-ghost' : 'badge-success'}`}>
-                        {b.isArchived ? 'Архив' : 'Активен'}
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-semibold truncate">{b.name}</span>
+                      <span className="text-xs text-base-content/45 shrink-0">
+                        {b.isArchived ? 'в архиве' : b.isMain ? 'главный' : ''}
                       </span>
                     </div>
 
-                    {/* Address & Phone */}
-                    <div className="space-y-1.5 text-xs text-base-content/60 border-t border-base-200 pt-3">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin size={13} className="shrink-0" />
-                        <span>{b.address || 'Адрес не указан'}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Phone size={13} className="shrink-0" />
-                        <span>{b.phone || 'Телефон не указан'}</span>
-                      </div>
+                    <div className="text-xs text-base-content/50 space-y-0.5">
+                      <div className="truncate">{b.address || 'адрес не указан'}</div>
+                      <div>{b.phone ? phoneDisplay(b.phone) : 'телефон не указан'}</div>
                     </div>
 
-                    {/* Stats */}
-                    <div className="grid grid-cols-3 gap-2 mt-1 bg-base-200/50 rounded-xl p-3">
+                    <dl className="grid grid-cols-3 gap-y-2 text-sm">
                       <div>
-                        <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Ученики</div>
-                        <div className="text-lg font-extrabold mt-0.5 tabular-nums">{fmt(b.students)}</div>
+                        <dt className="text-xs text-base-content/45">Ученики</dt>
+                        <dd className="font-semibold tabular-nums">{fmt(b.students)}</dd>
                       </div>
                       <div>
-                        <div className="flex items-center gap-1">
-                          <DoorOpen size={10} className="text-base-content/50" />
-                          <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Комнаты</div>
-                        </div>
-                        <div className="text-lg font-extrabold mt-0.5 tabular-nums">
-                          {b.roomCount != null ? b.roomCount : '—'}
-                        </div>
+                        <dt className="text-xs text-base-content/45">Группы</dt>
+                        <dd className="font-semibold tabular-nums">{fmt(b.groups)}</dd>
                       </div>
                       <div>
-                        <div className="text-[10px] uppercase font-bold text-base-content/50 tracking-wider">Доход</div>
-                        <div className="text-lg font-extrabold mt-0.5 tabular-nums">{fmt(b.revenue)}</div>
+                        <dt className="text-xs text-base-content/45">Сотрудники</dt>
+                        <dd className="font-semibold tabular-nums">
+                          {fmt((b.admins || 0) + (b.mentors || 0))}
+                        </dd>
                       </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex justify-end gap-1.5 mt-1 pt-2 border-t border-base-200 text-xs">
-                      {!b.isArchived && (
-                        <button
-                          className="btn btn-ghost btn-xs"
-                          onClick={() => openEdit(b)}
-                        >
-                          Изменить
-                        </button>
-                      )}
-                      <button
-                        className={`btn btn-xs ${b.isArchived ? 'btn-ghost' : 'btn-ghost text-error'}`}
-                        onClick={() => toggleArchive(b.id, b.isArchived)}
-                      >
-                        {b.isArchived ? 'Активировать' : 'В архив'}
-                      </button>
-                    </div>
+                      <div>
+                        <dt className="text-xs text-base-content/45">Доход</dt>
+                        <dd className="font-semibold tabular-nums">{money(b.revenue)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-base-content/45">Расход</dt>
+                        <dd className="font-semibold tabular-nums">{money(b.expenses)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-base-content/45">Долг</dt>
+                        <dd className={`font-semibold tabular-nums ${b.debt > 0 ? 'text-error' : ''}`}>
+                          {money(b.debt)}
+                        </dd>
+                      </div>
+                    </dl>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
         </div>
       )}
 
-      {/* Create / Edit Modal */}
-      {modalOpen && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-2xl">
-            <h3 className="font-bold text-lg">
-              {modalMode === 'create' ? 'Добавить филиал' : 'Редактировать филиал'}
-            </h3>
-            {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
-            <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-3 mt-4">
-              <label className="form-control w-full">
-                <span className="label-text mb-1">Название *</span>
-                <input
-                  {...register('name')}
-                  placeholder="Например: Чиланзар"
-                  className={`input input-bordered w-full ${errors.name ? 'input-error' : ''}`}
-                />
-                {errors.name && <span className="text-xs text-error mt-1">{errors.name.message}</span>}
-              </label>
-              <label className="form-control w-full">
-                <span className="label-text mb-1">Адрес</span>
-                <input
-                  {...register('address')}
-                  placeholder="Улица, дом, ориентир"
-                  className={`input input-bordered w-full ${errors.address ? 'input-error' : ''}`}
-                />
-                {errors.address && <span className="text-xs text-error mt-1">{errors.address.message}</span>}
-              </label>
-
-              <label className="form-control w-full">
-                <span className="label-text mb-1">Количество комнат</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="999"
-                  {...register('roomCount')}
-                  placeholder="Например: 8"
-                  className={`input input-bordered w-full ${errors.roomCount ? 'input-error' : ''}`}
-                />
-                {errors.roomCount && <span className="text-xs text-error mt-1">{errors.roomCount.message}</span>}
-              </label>
-
-              {/* Map picker */}
-              <div>
-                <span className="label-text mb-1 block">
-                  Местоположение на карте
-                  {location && (
-                    <button
-                      type="button"
-                      className="ml-2 text-xs text-error hover:underline"
-                      onClick={() => setLocation(null)}
-                    >
-                      Сбросить
-                    </button>
-                  )}
-                </span>
-                <YMapPicker value={location} onChange={setLocation} height={260} />
-              </div>
-
-              <label className="form-control w-full">
-                <span className="label-text mb-1">Телефон</span>
-                <input
-                  {...register('phone')}
-                  placeholder="+998901234567"
-                  className={`input input-bordered w-full ${errors.phone ? 'input-error' : ''}`}
-                />
-                {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
-              </label>
-              <div className="modal-action">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={busy}>
-                  Отмена
-                </button>
-                <button type="submit" className="btn btn-primary btn-sm" disabled={busy}>
-                  {busy && <span className="loading loading-spinner loading-sm" />}
-                  {modalMode === 'create' ? 'Создать' : 'Сохранить'}
-                </button>
-              </div>
-            </form>
-          </div>
-          <div className="modal-backdrop" onClick={() => setModalOpen(false)} />
-        </div>
-      )}
+      <BranchFormModal
+        open={createOpen}
+        mode="create"
+        onClose={() => setCreateOpen(false)}
+      />
     </div>
   );
 }

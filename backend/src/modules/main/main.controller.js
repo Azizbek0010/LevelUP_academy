@@ -14,6 +14,10 @@ export const dashboard = asyncHandler(async (_req, res) => {
   res.json(await service.platformDashboard());
 });
 
+export const revenue = asyncHandler(async (_req, res) => {
+  res.json(await service.platformRevenue());
+});
+
 export const getPricing = asyncHandler(async (_req, res) => {
   res.json({ pricing: await service.getPricing() });
 });
@@ -40,3 +44,27 @@ export const listLeads = asyncHandler(async (req, res) => {
 export const updateLead = asyncHandler(async (req, res) => {
   res.json({ lead: await service.updateLead(req.params.id, req.body) });
 });
+
+// --- объявления платформы ---
+export const listAnnouncements = asyncHandler(async (_req, res) => {
+  res.json(await service.listAnnouncements());
+});
+
+export const createAnnouncement = asyncHandler(async (req, res) => {
+  res.status(201).json(await service.createAnnouncement(req.user.id, req.body));
+});
+
+export const deleteAnnouncement = asyncHandler(async (req, res) => {
+  res.json(await service.deleteAnnouncement(req.params.id));
+});
+
+// --- профиль ---
+export const getProfile = asyncHandler(async (req, res) => {
+  res.json({ profile: await service.getProfile(req.user.id) });
+});
+
+export const updateProfile = asyncHandler(async (req, res) => {
+  res.json({ profile: await service.updateProfile(req.user.id, req.body) });
+});
+
+// дисциплина сотрудников — зона Super Admin (/api/super/penalties), не платформы

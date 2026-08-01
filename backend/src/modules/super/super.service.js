@@ -1,18 +1,24 @@
 import argon2 from 'argon2';
 import { AppError } from '../../utils/AppError.js';
 import { planLimits } from '../../config/plans.js';
+import { logger } from '../../config/logger.js';
+import { notificationQueue } from '../../queues/notification.queue.js';
+import { genTempPassword } from '../auth/credentials.js';
 import * as repo from './super.repository.js';
 
 // ---------- филиалы ----------
 
 /** Первый филиал организации становится главным (is_main). */
-export async function createBranch(orgId, { name, address, phone }) {
+export async function createBranch(orgId, { name, address, phone, lat, lng }) {
   const existing = await repo.countBranches(orgId);
   const branch = await repo.insertBranch({
     orgId,
     name,
     address,
     phone,
+    // без этого координаты с карты доходили до сервиса и молча терялись здесь
+    lat,
+    lng,
     isMain: existing === 0,
   });
   return mapBranch(branch);
@@ -26,8 +32,19 @@ export async function listBranches(orgId) {
     address: b.address,
     phone: b.phone,
     isMain: b.is_main,
+    isArchived: b.is_archived,
     admins: Number(b.admins),
     students: Number(b.students),
+    mentors: Number(b.mentors),
+    groups: Number(b.groups),
+    // деньги филиала — по ним видно, какой зарабатывает, а какой проедает
+    revenue: Number(b.revenue),
+    expenses: Number(b.expenses),
+    profit: Number(b.revenue) - Number(b.expenses),
+    debt: Number(b.debt),
+    // NUMERIC приезжает строкой; карта ждёт числа
+    lat: b.lat === null || b.lat === undefined ? null : Number(b.lat),
+    lng: b.lng === null || b.lng === undefined ? null : Number(b.lng),
     createdAt: b.created_at,
   }));
 }
@@ -40,6 +57,9 @@ function mapBranch(b) {
     phone: b.phone,
     isMain: b.is_main,
     isArchived: b.is_archived,
+    // NUMERIC приезжает строкой; карта ждёт числа
+    lat: b.lat === null || b.lat === undefined ? null : Number(b.lat),
+    lng: b.lng === null || b.lng === undefined ? null : Number(b.lng),
     createdAt: b.created_at,
   };
 }
@@ -57,15 +77,41 @@ export async function setBranchArchived(orgId, id, archived) {
 }
 
 /** Детали филиала: сам филиал + его админы + группы. */
+/**
+ * Всё о филиале в одном ответе: показатели, сотрудники, группы, ученики.
+ *
+ * Собрано одним запросом намеренно — карточка филиала показывает это на
+ * соседних вкладках, и четыре отдельных обращения ради одного экрана только
+ * добавили бы мигание при переключении.
+ *
+ * Раньше здесь были только админы и группы, а фронт при этом рисовал плитки
+ * «Ученики», «Месячный доход» и «Общий долг» — они всегда показывали нули,
+ * потому что таких полей в ответе не было.
+ */
 export async function branchDetail(orgId, id) {
   const branch = await repo.findBranchFull(id, orgId);
   if (!branch) throw new AppError(404, 'Branch not found in your organization');
-  const [admins, groups] = await Promise.all([
+  const [admins, groups, students, mentors, stats] = await Promise.all([
     repo.listBranchAdmins(id),
     repo.listBranchGroups(id),
+    repo.listBranchStudents(id),
+    repo.listBranchMentors(id),
+    repo.branchStats(id),
   ]);
   return {
     ...mapBranch(branch),
+    stats: {
+      students: stats.students,
+      mentors: stats.mentors,
+      groups: stats.groups,
+      admins: admins.length,
+      revenue: Number(stats.revenue),
+      expenses: Number(stats.expenses),
+      // прибыль филиала = что пришло от учеников минус его же траты
+      profit: Number(stats.revenue) - Number(stats.expenses),
+      debt: Number(stats.debt),
+      currency: 'UZS',
+    },
     admins: admins.map((a) => ({
       id: a.id,
       firstName: a.first_name,
@@ -73,23 +119,48 @@ export async function branchDetail(orgId, id) {
       email: a.email,
       status: a.status,
     })),
+    mentors: mentors.map((m) => ({
+      id: m.id,
+      firstName: m.first_name,
+      lastName: m.last_name,
+      email: m.email,
+      phone: m.phone,
+      status: m.status,
+    })),
+    students: students.map((s) => ({
+      id: s.id,
+      firstName: s.first_name,
+      lastName: s.last_name,
+      phone: s.phone,
+      status: s.status,
+      debt: Number(s.total_debt ?? 0),
+      coins: Number(s.coin_balance ?? 0),
+    })),
     groups: groups.map((g) => ({
       id: g.id,
       name: g.name,
       subject: g.subject,
       monthlyPrice: Number(g.monthly_price),
+      mentorId: g.mentor_id,
+      mentorName: g.mentor_name,
+      students: Number(g.students),
     })),
   };
 }
 
 // ---------- админы ----------
 
-export async function createAdmin(orgId, { firstName, lastName, email, password, branchId, phone }) {
+export async function createAdmin(orgId, { firstName, lastName, email, branchId, phone }) {
   // филиал должен принадлежать ЭТОЙ организации — иначе super admin суёт чужой филиал
   const branch = await repo.findBranchInOrg(branchId, orgId);
   if (!branch) throw new AppError(404, 'Branch not found in your organization');
 
-  const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
+  // пароль всегда генерится сервером и показывается один раз — так же, как
+  // Main Admin заводит Super Admin. Ручной ввод убрали: опечатка/автозаполнение
+  // браузера в форме создания приводили к аккаунту с паролем, который никто
+  // не мог вспомнить, а сбросить его было нечем.
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
 
   let admin;
   try {
@@ -113,7 +184,18 @@ export async function createAdmin(orgId, { firstName, lastName, email, password,
     lastName: admin.last_name,
     email: admin.email,
     branchId: admin.branch_id,
+    // показать один раз — Super Admin передаёт сотруднику
+    tempPassword,
   };
+}
+
+/** Новый случайный пароль для админа — когда старый забыт/введён неверно при создании. */
+export async function resetAdminPassword(orgId, id) {
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
+  const admin = await repo.setAdminPasswordHash(id, orgId, passwordHash);
+  if (!admin) throw new AppError(404, 'Admin not found in your organization');
+  return { ...mapAdmin(admin), tempPassword };
 }
 
 export async function listAdmins(orgId) {
@@ -126,6 +208,8 @@ export async function listAdmins(orgId) {
     status: u.status,
     branchId: u.branch_id,
     branchName: u.branch_name,
+    phone: u.phone,
+    monthlySalary: u.monthly_salary,
     createdAt: u.created_at,
   }));
 }
@@ -138,6 +222,8 @@ function mapAdmin(u) {
     email: u.email,
     status: u.status,
     branchId: u.branch_id,
+    phone: u.phone,
+    monthlySalary: u.monthly_salary,
   };
 }
 
@@ -162,8 +248,9 @@ export async function setAdminFrozen(orgId, id, frozen) {
 
 // ---------- методисты ----------
 
-export async function createMethodist(orgId, { firstName, lastName, email, password, phone }) {
-  const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
+export async function createMethodist(orgId, { firstName, lastName, email, phone }) {
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
   try {
     const row = await repo.insertMethodist({
       orgId,
@@ -173,11 +260,40 @@ export async function createMethodist(orgId, { firstName, lastName, email, passw
       phone,
       passwordHash,
     });
-    return mapMethodist(row);
+    return { ...mapMethodist(row), tempPassword };
   } catch (err) {
     if (err.code === '23505') throw new AppError(409, 'Email already in use');
     throw err;
   }
+}
+
+/** Новый случайный пароль для методиста — тот же сценарий, что и у админа. */
+export async function resetMethodistPassword(orgId, id) {
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
+  const row = await repo.setMethodistPasswordHash(id, orgId, passwordHash);
+  if (!row) throw new AppError(404, 'Methodist not found in your organization');
+  return { ...mapMethodist(row), tempPassword };
+}
+
+// ---------- менторы (только чтение, для выбора в «Взыскании») ----------
+
+export async function listMentors(orgId) {
+  const rows = await repo.listMentors(orgId);
+  return rows.map((u) => ({
+    id: u.id,
+    firstName: u.first_name,
+    lastName: u.last_name,
+    email: u.email,
+    status: u.status,
+    branchId: u.branch_id,
+    branchName: u.branch_name,
+    phone: u.phone,
+    grade: u.grade,
+    bio: u.bio,
+    skills: u.skills ?? [],
+    createdAt: u.created_at,
+  }));
 }
 
 export async function listMethodists(orgId) {
@@ -189,6 +305,7 @@ export async function listMethodists(orgId) {
     email: u.email,
     status: u.status,
     phone: u.phone,
+    monthlySalary: u.monthly_salary,
     createdAt: u.created_at,
   }));
 }
@@ -213,6 +330,7 @@ function mapMethodist(u) {
     email: u.email,
     status: u.status,
     phone: u.phone,
+    monthlySalary: u.monthly_salary,
   };
 }
 
@@ -334,18 +452,138 @@ export async function attendance(orgId, { groupId, date }) {
   return { records, lessons: records, totals, total: records.length };
 }
 
-// ---------- заглушки: нет таблиц (announcements/reminders/audit) ----------
-// Таблиц в схеме нет. Возвращаем пустые списки, чтобы страницы рендерились (EmptyState).
-// Полная реализация = миграции + notificationQueue (домен AB-V1/Bilol) — отдельная задача.
+// ---------- объявления организации (Super Announcements) ----------
 
-export async function listAnnouncements() {
-  return { announcements: [], items: [], total: 0 };
+function mapAnnouncement(a) {
+  return {
+    id: a.id,
+    title: a.title,
+    body: a.body,
+    targetType: a.target_type,
+    recipientCount: Number(a.recipient_count),
+    readCount: 0, // пометок «прочитано» в системе пока нет
+    senderName: a.sender_name ?? null,
+    readers: [],
+    nonReaders: [],
+    createdAt: a.created_at,
+  };
 }
-export async function listReminders() {
-  return { reminders: [], items: [], total: 0 };
+
+export async function listAnnouncements(orgId) {
+  const rows = await repo.listAnnouncements(orgId);
+  const items = rows.map(mapAnnouncement);
+  return { items, announcements: items, total: items.length };
 }
-export async function listAudit() {
-  return { items: [], total: 0 };
+
+export async function createAnnouncement(orgId, senderId, { title, body, targetType }) {
+  const recipientCount = await repo.countAnnouncementRecipients(orgId, targetType);
+  const row = await repo.insertAnnouncement({ orgId, senderId, title, body, targetType, recipientCount });
+
+  // Telegram-доставка только для аудиторий, у которых есть привязка бота
+  // (родители/студенты). Сотрудники получают объявление как внутреннюю запись.
+  if (targetType === 'all-parents' || targetType === 'all-students') {
+    const studentIds = await repo.orgActiveStudentIds(orgId);
+    if (studentIds.length > 0) {
+      await notificationQueue.add('announcement.created', { studentIds, title, message: body });
+    }
+  }
+
+  return mapAnnouncement(row);
+}
+
+export async function deleteAnnouncement(orgId, id) {
+  const row = await repo.softDeleteAnnouncement(id, orgId);
+  if (!row) throw new AppError(404, 'Announcement not found in your organization');
+  return { id: row.id };
+}
+
+// ---------- аудит-лог организации (Super Audit) ----------
+
+function mapAudit(a) {
+  return {
+    id: a.id,
+    action: a.action,
+    actorName: a.actor_name ?? null,
+    actorRole: a.actor_role ?? null,
+    entityType: a.entity_type ?? null,
+    entityId: a.entity_id ?? null,
+    entityLabel: a.entity_label ?? null,
+    success: a.success,
+    ip: a.ip ?? null,
+    userAgent: a.user_agent ?? null,
+    meta: a.meta ?? null,
+    createdAt: a.created_at,
+  };
+}
+
+export async function listAudit(orgId) {
+  const rows = await repo.listAudit(orgId);
+  const items = rows.map(mapAudit);
+  return { items, total: items.length };
+}
+
+/**
+ * Записать событие в аудит. Никогда не бросает: аудит — побочный эффект, его сбой
+ * не должен валить саму операцию (создание админа и т.п.). Ошибку только логируем.
+ */
+export async function recordAudit(entry) {
+  try {
+    await repo.insertAudit(entry);
+  } catch (err) {
+    logger.error({ err, action: entry.action }, 'Failed to write audit log');
+  }
+}
+
+// ---------- статистика организации (Super Stats) ----------
+
+const PERIOD_DAYS = { '7d': 7, '30d': 30, '90d': 90 };
+
+export async function stats(orgId, period = '30d') {
+  const days = PERIOD_DAYS[period] ?? 30;
+  const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const [t, branches, series, methods] = await Promise.all([
+    repo.orgTotals(orgId),
+    repo.branchBreakdown(orgId),
+    repo.revenueSeries(orgId, from),
+    repo.revenueByMethod(orgId, from),
+  ]);
+  const revenue = Number(t.revenue);
+  const debt = Number(t.outstanding_debt);
+  const branchCount = Number(t.branches);
+  /* Выручка именно за выбранный период. Без неё страница противоречила себе:
+     сверху стояла карточка «Выручка» за всё время, а графики под ней — за
+     7 дней, и партнёр видел на одном экране два разных числа про одно и то же.
+     Считаем по уже полученному ряду по дням — лишнего запроса в базу нет. */
+  const periodRevenue = series.reduce((sum, r) => sum + Number(r.revenue), 0);
+  return {
+    period,
+    totals: {
+      revenue,
+      periodRevenue,
+      periodAvgRevenue: branchCount > 0 ? periodRevenue / branchCount : 0,
+      outstandingDebt: debt,
+      activeStudents: Number(t.active_students),
+      admins: Number(t.admins),
+      branches: branchCount,
+      avgRevenue: branchCount > 0 ? revenue / branchCount : 0,
+      debtRatio: revenue + debt > 0 ? Number(((debt / (revenue + debt)) * 100).toFixed(1)) : 0,
+      currency: 'UZS',
+    },
+    branches: branches.map((b) => ({
+      id: b.id,
+      name: b.name,
+      revenue: Number(b.revenue),
+      debt: Number(b.debt),
+      students: Number(b.students),
+      admins: Number(b.admins),
+      // доля филиала в выручке организации — раньше жила только в /super/reports;
+      // Отчёты слиты в Статистику 2026-07-28 (была одна и та же выборка на двух
+      // страницах), поле переехало сюда.
+      share: revenue > 0 ? Number(((Number(b.revenue) / revenue) * 100).toFixed(1)) : 0,
+    })),
+    revenueSeries: series.map((s) => ({ date: s.day, revenue: Number(s.revenue) })),
+    paymentMethods: methods.map((m) => ({ method: m.method, amount: Number(m.amount) })),
+  };
 }
 
 // ---------- дашборд организации ----------
@@ -357,6 +595,7 @@ export async function dashboard(orgId) {
       branches: Number(t.branches),
       activeStudents: Number(t.active_students),
       admins: Number(t.admins),
+      mentors: Number(t.mentors),
       revenue: Number(t.revenue),
       outstandingDebt: Number(t.outstanding_debt),
       currency: 'UZS',

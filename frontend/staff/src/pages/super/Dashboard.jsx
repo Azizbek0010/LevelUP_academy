@@ -1,53 +1,13 @@
 import { Link } from 'react-router-dom';
-import { Building2, GraduationCap, Users, Wallet, TriangleAlert, Wifi, RefreshCw } from 'lucide-react';
+import { Building2, GraduationCap, Users, Presentation, Wallet, TriangleAlert, RefreshCw, ArrowRight } from 'lucide-react';
 import { fmt } from '../../format.js';
 import { useSuperDashboard } from '../../queries.js';
-import { useOnlineCount } from '../../socket.js';
-import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
-
-function Kpi({ Icon, tint, title, value, unit }) {
-  return (
-    <div className="card bg-base-100">
-      <div className="card-body p-5">
-        <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl grid place-items-center shrink-0" style={{ background: tint.bg, color: tint.fg }}>
-            <Icon size={20} strokeWidth={2.2} />
-          </span>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 leading-tight">
-            {title}
-          </div>
-        </div>
-        <div className="text-3xl font-extrabold mt-3 leading-none">{value}</div>
-        {unit && <div className="text-xs text-base-content/45 mt-1">{unit}</div>}
-      </div>
-    </div>
-  );
-}
-
-function HorizontalBar({ value, max, color, label, rightLabel }) {
-  const pct = max > 0 ? (value / max) * 100 : 0;
-  return (
-    <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span className="font-medium">{label}</span>
-        <span className="font-bold">{rightLabel}</span>
-      </div>
-      <div className="w-full h-5 rounded bg-base-200 overflow-hidden">
-        <div
-          className="h-full rounded transition-all duration-500"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
-    </div>
-  );
-}
+import { Card, Metric } from './_ui.jsx';
 
 export default function SuperDashboard() {
   const { data, isLoading, error, refetch } = useSuperDashboard();
-  const { token } = useAuth();
-  const onlineCount = useOnlineCount(token);
 
   if (error) {
     if (error.status === 401) {
@@ -68,122 +28,86 @@ export default function SuperDashboard() {
       <PageHeader title="Дашборд организации" subtitle="Обзор филиалов, студентов и дохода" />
 
       {isLoading || !data ? (
-        <SkeletonKpis count={6} className="grid-cols-2 md:grid-cols-3 lg:grid-cols-6" />
+        <SkeletonKpis count={6} className="grid-cols-2 md:grid-cols-3 lg:grid-cols-3" />
       ) : (
-        <Loaded data={data} onlineCount={onlineCount} />
+        <Loaded data={data} />
       )}
     </div>
   );
 }
 
-function Loaded({ data, onlineCount }) {
+function Loaded({ data }) {
   const t = data.totals;
   const cur = t.currency;
   const branches = data.branches || [];
 
-  const maxRevenue = Math.max(...branches.map((b) => Number(b.revenue)), 1);
-  const maxDebt = Math.max(...branches.map((b) => Number(b.debt)), 1);
-
   return (
     <>
       {/* KPI grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <Kpi Icon={Building2} tint={{ bg: '#E0F2FE', fg: '#075985' }} title="Филиалы" value={fmt(t.branches)} unit="всего" />
-        <Kpi Icon={GraduationCap} tint={{ bg: '#EDE9FE', fg: '#5B21B6' }} title="Ученики" value={fmt(t.activeStudents)} unit="активных" />
-        <Kpi Icon={Users} tint={{ bg: '#DCFCE7', fg: '#166534' }} title="Админы" value={fmt(t.admins)} unit="сотрудников" />
-        <Kpi Icon={Wallet} tint={{ bg: '#FFEDD5', fg: '#9A3412' }} title="Доход" value={fmt(t.revenue)} unit={cur} />
-        <Kpi Icon={TriangleAlert} tint={{ bg: '#FEE2E2', fg: '#DC2626' }} title="Задолженность" value={fmt(t.outstandingDebt)} unit={cur} />
-        <Kpi Icon={Wifi} tint={{ bg: '#E0F2FE', fg: '#0369A1' }} title="Live Online" value={onlineCount} unit="онлайн" />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
+        <Metric Icon={Building2} tone="info" label="Филиалы" value={fmt(t.branches)} unit="всего" to="/branches" />
+        <Metric Icon={GraduationCap} tone="primary" label="Ученики" value={fmt(t.activeStudents)} unit="активных" to="/students" />
+        <Metric Icon={Users} tone="success" label="Админы" value={fmt(t.admins)} unit="сотрудников" to="/admins" />
+        <Metric Icon={Presentation} tone="neutral" label="Менторы" value={fmt(t.mentors)} unit="преподавателей" to="/admins" />
+        <Metric Icon={Wallet} tone="warning" label="Доход" value={fmt(t.revenue)} unit={cur} to="/stats" />
+        <Metric Icon={TriangleAlert} tone="danger" label="Долги" value={fmt(t.outstandingDebt)} unit={cur} to="/stats" />
       </div>
-
-      {/* Доход по филиалам — Bar Chart */}
-      {branches.length > 0 && (
-        <div className="card bg-base-100 mt-6">
-          <div className="card-body">
-            <h2 className="card-title text-base mb-4">Доход по филиалам</h2>
-            <div className="space-y-3">
-              {branches.map((b) => (
-                <HorizontalBar
-                  key={b.id}
-                  value={Number(b.revenue)}
-                  max={maxRevenue}
-                  color="#C6FF34"
-                  label={b.name}
-                  rightLabel={`${fmt(b.revenue)} ${cur}`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Филиалы — таблица */}
-      <div className="card bg-base-100 mt-6">
-        <div className="card-body">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="card-title text-base">Филиалы</h2>
-            <Link to="/branches" className="text-sm text-primary font-medium hover:underline">Все филиалы →</Link>
-          </div>
-          {branches.length === 0 ? (
-            <p className="text-base-content/40 text-sm py-6 text-center">Филиалов пока нет</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="table table-sm">
-                <thead>
-                  <tr>
-                    <th>Филиал</th>
-                    <th className="text-right">Ученики</th>
-                    <th className="text-right">Комнаты</th>
-                    <th className="text-right">Админы</th>
-                    <th className="text-right">Доход</th>
-                    <th className="text-right">Долг</th>
+      <Card className="p-5 md:p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold">Филиалы</h2>
+          <Link to="/branches" className="text-sm text-primary font-medium hover:underline">Все филиалы →</Link>
+        </div>
+        {branches.length === 0 ? (
+          <p className="text-base-content/40 text-sm py-6 text-center">Филиалов пока нет</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table table-sm tabular-nums">
+              <thead>
+                <tr>
+                  <th>Филиал</th>
+                  <th className="text-right">Ученики</th>
+                  <th className="text-right">Админы</th>
+                  <th className="text-right">Доход</th>
+                  <th className="text-right">Долг</th>
+                </tr>
+              </thead>
+              <tbody>
+                {branches.map((b) => (
+                  <tr key={b.id} className="hover">
+                    <td>
+                      <Link to={`/branches/${b.id}`} className="font-medium hover:text-primary">
+                        {b.name}
+                      </Link>
+                      <span className={`badge badge-xs ml-2 ${b.isMain ? 'badge-primary' : ''}`}>
+                        {b.isMain ? 'Главный' : b.isArchived ? 'Архив' : 'Филиал'}
+                      </span>
+                    </td>
+                    <td className="text-right">{fmt(b.students)}</td>
+                    <td className="text-right">{fmt(b.admins)}</td>
+                    <td className="text-right font-medium">{fmt(b.revenue)}</td>
+                    <td className="text-right text-error">{fmt(b.debt)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {branches.map((b) => (
-                    <tr key={b.id} className="hover">
-                      <td>
-                        <Link to={`/branches/${b.id}`} className="font-medium hover:text-primary">
-                          {b.name}
-                        </Link>
-                        <span className={`badge badge-xs ml-2 ${b.isMain ? 'badge-primary' : ''}`}>
-                          {b.isMain ? 'Главный' : b.isArchived ? 'Архив' : 'Филиал'}
-                        </span>
-                      </td>
-                      <td className="text-right">{fmt(b.students)}</td>
-                      <td className="text-right">{b.roomCount != null ? b.roomCount : '—'}</td>
-                      <td className="text-right">{fmt(b.admins)}</td>
-                      <td className="text-right font-medium">{fmt(b.revenue)}</td>
-                      <td className="text-right text-error">{fmt(b.debt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Задолженность по филиалам — Bar Chart */}
-      {branches.length > 0 && (
-        <div className="card bg-base-100 mt-6">
-          <div className="card-body">
-            <h2 className="card-title text-base mb-4">Задолженность по филиалам</h2>
-            <div className="space-y-3">
-              {branches.map((b) => (
-                <HorizontalBar
-                  key={b.id}
-                  value={Number(b.debt)}
-                  max={maxDebt}
-                  color="#FEE2E2"
-                  label={b.name}
-                  rightLabel={`${fmt(b.debt)} ${cur}`}
-                />
-              ))}
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
+        )}
+      </Card>
+
+      {/* Графики доходов/долгов по филиалам и разбивка по методам оплаты —
+          на «Статистике» (там же период 7/30/90 дней и экспорт CSV), здесь
+          дублировать их больше не нужно. */}
+      <Link
+        to="/stats"
+        className="block rounded-2xl border border-base-300 bg-base-100 mt-6 transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40"
+      >
+        <div className="flex items-center justify-between p-5">
+          <span className="text-sm font-semibold">Подробная аналитика — графики, период, способы оплаты</span>
+          <ArrowRight size={16} className="text-primary shrink-0" />
         </div>
-      )}
+      </Link>
     </>
   );
 }

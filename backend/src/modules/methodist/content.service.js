@@ -125,24 +125,37 @@ export async function copyLesson(lessonId, orgId, userId, targetTopicId) {
 }
 
 // ==================== ВОПРОСЫ ====================
-export async function createQuestion(payload) {
+// Раньше create/update/delete/list ничего не проверяли по lessonId/orgId —
+// методист мог создать/поменять/удалить вопрос в чужой организации, зная
+// UUID. Добавлена та же проверка, что уже стоит на остальном контенте.
+export async function createQuestion(orgId, payload) {
+  const lesson = await repo.findLessonInOrgById(payload.lessonId, orgId);
+  if (!lesson) throw new AppError(404, 'Lesson not found in your organization');
   return repo.insertQuestion(payload);
 }
 
-export async function createQuestionsBatch(questions) {
+export async function createQuestionsBatch(orgId, questions) {
+  const lessonIds = [...new Set(questions.map((q) => q.lessonId))];
+  const found = await Promise.all(lessonIds.map((id) => repo.findLessonInOrgById(id, orgId)));
+  if (found.some((l) => !l)) throw new AppError(404, 'Lesson not found in your organization');
   return repo.insertQuestionsBatch(questions);
 }
 
-export async function listQuestions(lessonId) {
+export async function listQuestions(lessonId, orgId) {
+  const lesson = await repo.findLessonInOrgById(lessonId, orgId);
+  if (!lesson) throw new AppError(404, 'Lesson not found in your organization');
   return repo.listQuestions(lessonId);
 }
 
-export async function updateQuestion(id, payload) {
+export async function updateQuestion(id, orgId, payload) {
+  const existing = await repo.findQuestionInOrg(id, orgId);
+  if (!existing) throw new AppError(404, 'Question not found');
   const item = await repo.updateQuestion(id, payload);
-  if (!item) throw new AppError(404, 'Question not found');
   return item;
 }
 
-export async function deleteQuestion(id) {
+export async function deleteQuestion(id, orgId) {
+  const existing = await repo.findQuestionInOrg(id, orgId);
+  if (!existing) throw new AppError(404, 'Question not found');
   await repo.deleteQuestion(id);
 }

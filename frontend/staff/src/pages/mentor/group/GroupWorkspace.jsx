@@ -28,10 +28,10 @@ const StatsTab = lazy(() => import('./StatsTab.jsx'));
    Отдельный экран ради того же действия заставлял переключаться туда-сюда
    во время урока. История операций по ученику осталась в его карточке. */
 const TABS = [
-  { key: 'davomat', label: 'Davomat', Icon: CalendarDays, Component: AttendanceTab },
-  { key: 'testlar', label: 'Testlar', Icon: FileText, Component: TestsTab },
+  { key: 'davomat', label: 'Посещаемость', Icon: CalendarDays, Component: AttendanceTab },
+  { key: 'testlar', label: 'Тесты', Icon: FileText, Component: TestsTab },
   // Сравнение учеников между собой: кто тянет, кто отстаёт
-  { key: 'statistika', label: 'Statistika', Icon: BarChart3, Component: StatsTab },
+  { key: 'statistika', label: 'Статистика', Icon: BarChart3, Component: StatsTab },
 ];
 
 function getLessonTime(g) {
@@ -86,9 +86,9 @@ export default function GroupWorkspace() {
       <div className="card bg-base-100">
         <EmptyState
           icon={BookOpen}
-          title="Guruh topilmadi"
-          hint="Balki u arxivlangan yoki sizdan olib qo'yilgan."
-          action={<Link to="/" className="btn btn-sm btn-primary">Bosh sahifaga</Link>}
+          title="Группа не найдена"
+          hint="Возможно, она в архиве или была отобрана."
+          action={<Link to="/" className="btn btn-sm btn-primary">На главную</Link>}
         />
       </div>
     );
@@ -106,7 +106,7 @@ export default function GroupWorkspace() {
           <Link
             to="/"
             className="btn btn-ghost btn-sm btn-circle lg:hidden shrink-0"
-            aria-label="Orqaga"
+            aria-label="Назад"
           >
             <ArrowLeft size={17} />
           </Link>
@@ -115,20 +115,20 @@ export default function GroupWorkspace() {
               {group?.name || <span className="skeleton inline-block h-7 w-40 align-middle" />}
             </h1>
             {group?.is_archived && (
-              <span className="badge badge-ghost badge-sm mt-1">Arxivlangan</span>
+              <span className="badge badge-ghost badge-sm mt-1">В архиве</span>
             )}
           </div>
 
           <div className="flex items-center gap-6 flex-wrap">
-            <Meta Icon={BookOpen} label="Yo'nalish" value={group?.subject || 'Fan'} />
-            <Meta Icon={Clock} label="Dars vaqti" value={getLessonTime(group) || '—'} />
-            <Meta Icon={Users} label="O'quvchilar" value={students.length || 0} />
-            <Meta Icon={Coins} label="Jami koinlar" value={totalCoins} />
+            <Meta Icon={BookOpen} label="Направление" value={group?.subject || 'Предмет'} />
+            <Meta Icon={Clock} label="Время урока" value={getLessonTime(group) || '—'} />
+            <Meta Icon={Users} label="Ученики" value={students.length || 0} />
+            <Meta Icon={Coins} label="Всего коинов" value={totalCoins} />
           </div>
         </div>
 
         {/* ── Вкладки ── */}
-        <nav className="flex gap-1 mt-4 -mb-3" aria-label="Guruh bo'limlari">
+          <nav className="flex gap-1 mt-4 -mb-3" aria-label="Разделы группы">
           {TABS.map(({ key, label, Icon }) => {
             const active = key === activeKey;
             return (

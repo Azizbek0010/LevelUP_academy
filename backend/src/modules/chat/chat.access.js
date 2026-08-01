@@ -137,15 +137,11 @@ export async function canStaffChatStudent(user, studentId, db = pool) {
     return rows.length > 0;
   }
 
-  if (user.role === 'admin') {
-    if (!user.branchId) return false;
-    const { rows } = await db.query(
-      `SELECT 1 FROM student_profiles sp
-        WHERE sp.user_id = $1 AND sp.branch_id = $2 LIMIT 1`,
-      [studentId, user.branchId],
-    );
-    return rows.length > 0;
-  }
+  // Админ филиала переписывается ТОЛЬКО с родителями, не с самими учениками
+  // (решение 2026-07-21): работа с учеником — забота ментора, админ общается со
+  // взрослой стороной. Поэтому прямой диалог админ↔ученик запрещён на уровне
+  // права, а не только скрыт из списка контактов.
+  if (user.role === 'admin') return false;
 
   if (!user.organizationId) return false;
   const { rows } = await db.query(
@@ -358,6 +354,53 @@ export async function listStaffContacts(user, db = pool) {
        LEFT JOIN unread  un ON un.room_key = 'dm:' || $1::text || ':' || p.parent_id
       ORDER BY lm.created_at DESC NULLS LAST, u.first_name`,
     [user.id, scopeParam],
+  );
+
+  return rows;
+}
+
+/**
+ * Мои диалоги со стороны родителя/студента — список staff, с которыми уже
+ * есть переписка. В отличие от listStaffContacts (сотрудник видит ВСЕХ, с кем
+ * вправе заговорить первым), родитель/студент сам диалог начать не может
+ * (см. requireRoomAccess/assertDmAccess) — поэтому список строится не от
+ * права на переписку, а от уже существующих сообщений в `dm:<staffId>:<me>`.
+ */
+export async function listMyThreads(user, db = pool) {
+  if (user.role !== 'parent' && user.role !== 'student') return [];
+
+  const { rows } = await db.query(
+    `WITH last_msg AS (
+        SELECT DISTINCT ON (m.room_key)
+               m.room_key, m.body, m.created_at
+          FROM chat_messages m
+         WHERE m.deleted_at IS NULL
+           AND m.room_key LIKE 'dm:%:' || $1::text
+         ORDER BY m.room_key, m.created_at DESC
+     ),
+     unread AS (
+        SELECT m.room_key, count(*)::int AS unread_count
+          FROM chat_messages m
+         WHERE m.deleted_at IS NULL
+           AND m.read_at IS NULL
+           AND m.sender_id <> $1::uuid
+           AND m.room_key LIKE 'dm:%:' || $1::text
+         GROUP BY m.room_key
+     )
+     SELECT split_part(lm.room_key, ':', 2)::uuid AS id,
+            u.first_name,
+            u.last_name,
+            u.avatar_key,
+            u.role                        AS staff_role,
+            lm.room_key,
+            lm.body                       AS last_message,
+            lm.created_at                 AS last_message_at,
+            COALESCE(un.unread_count, 0)  AS unread_count
+       FROM last_msg lm
+       JOIN users u ON u.id = split_part(lm.room_key, ':', 2)::uuid AND u.deleted_at IS NULL
+       LEFT JOIN unread un ON un.room_key = lm.room_key
+      ORDER BY lm.created_at DESC`,
+    [user.id],
   );
 
   return rows;

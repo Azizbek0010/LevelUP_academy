@@ -30,7 +30,7 @@ export function ErrorState({ message = 'Произошла ошибка', onRetr
   );
 }
 
-export function ProgressRing({ value = 0, size = 80, stroke = 6, color = '#C6FF34', bg = '#e7eede' }) {
+export function ProgressRing({ value = 0, size = 80, stroke = 6, color = '#40833B', bg = '#e7eede' }) {
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ - (Math.min(value, 100) / 100) * circ;
@@ -53,7 +53,7 @@ export function ProgressRing({ value = 0, size = 80, stroke = 6, color = '#C6FF3
   );
 }
 
-export function ProgressBar({ value = 0, color = '#C6FF34', height = 6 }) {
+export function ProgressBar({ value = 0, color = '#40833B', height = 6 }) {
   return (
     <div className="w-full rounded-full overflow-hidden" style={{ height, background: '#e7eede' }}>
       <div

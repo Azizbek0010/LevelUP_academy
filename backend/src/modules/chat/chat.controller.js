@@ -1,7 +1,7 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { AppError } from '../../utils/AppError.js';
 import * as chatService from './chat.service.js';
-import { listStaffContacts, listStaffStudentContacts } from './chat.access.js';
+import { listStaffContacts, listStaffStudentContacts, listMyThreads } from './chat.access.js';
 
 /**
  * GET /api/chat/contacts — все, кому сотрудник вправе писать: родители и сами
@@ -13,9 +13,13 @@ import { listStaffContacts, listStaffStudentContacts } from './chat.access.js';
  * список молчащих родителей.
  */
 export const getContacts = asyncHandler(async (req, res) => {
+  // Админ филиала — только родители (решение 2026-07-21): прямого диалога
+  // админ↔ученик нет (см. canStaffChatStudent), поэтому и в список учеников
+  // не добавляем. Ментор по-прежнему видит и учеников, и родителей.
+  const includeStudents = req.user.role !== 'admin';
   const [parents, students] = await Promise.all([
     listStaffContacts(req.user),
-    listStaffStudentContacts(req.user),
+    includeStudents ? listStaffStudentContacts(req.user) : Promise.resolve([]),
   ]);
 
   const data = [
@@ -30,6 +34,17 @@ export const getContacts = asyncHandler(async (req, res) => {
     return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
   });
 
+  res.json({ success: true, data });
+});
+
+/**
+ * GET /api/chat/my-threads — диалоги родителя/студента со staff, с которыми
+ * уже есть переписка (сам он написать первым не может, см. listMyThreads).
+ * Для остальных ролей — пустой список (см. AUTH-FORGOT/CLAUDE.md: чужая
+ * роль не должна получать 403 на чисто информационном списке).
+ */
+export const getMyThreads = asyncHandler(async (req, res) => {
+  const data = await listMyThreads(req.user);
   res.json({ success: true, data });
 });
 

@@ -81,9 +81,18 @@ export function setOrgOwner(orgId, userId, client = pool) {
 }
 
 /**
- * Список партнёров с числом филиалов/студентов и их доход/расход (для дашборда/списка).
- * revenue/expenses — деньги партнёра (его студенты платят ему), не наш доход от партнёра.
- * Money-таблицы (transactions, expenses) — чужая зона (Karis), здесь только SELECT.
+ * Список партнёров с числом филиалов и студентов.
+ *
+ * Здесь СОЗНАТЕЛЬНО нет выручки и расходов партнёра. Раньше запрос тянул
+ * SUM(transactions.amount) и SUM(expenses.amount) по всем филиалам организации,
+ * то есть оборот и траты чужого бизнеса, и отдавал их наружу в /main/dashboard
+ * и /main/revenue. В интерфейсе эти числа не показывались, но лежали в ответе —
+ * владелец платформы мог открыть devtools и посмотреть, сколько зарабатывает
+ * каждый учебный центр.
+ *
+ * Нам как платформе нужно ровно одно денежное число — сколько партнёр должен
+ * НАМ, а оно считается из числа активных учеников (computeBill), а не из его
+ * оборота. Поэтому количество студентов остаётся, деньги партнёра — нет.
  */
 export function listPartners(client = pool) {
   return client
@@ -92,13 +101,7 @@ export function listPartners(client = pool) {
               (SELECT count(*) FROM branches b
                  WHERE b.organization_id = o.id AND b.deleted_at IS NULL) AS branches,
               (SELECT count(*) FROM users u
-                 WHERE u.organization_id = o.id AND u.role = 'student' AND u.deleted_at IS NULL) AS students,
-              (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t
-                 JOIN branches b ON b.id = t.branch_id
-                WHERE b.organization_id = o.id AND t.status = 'completed') AS revenue,
-              (SELECT COALESCE(SUM(e.amount), 0) FROM expenses e
-                 JOIN branches b ON b.id = e.branch_id
-                WHERE b.organization_id = o.id AND e.deleted_at IS NULL) AS expenses
+                 WHERE u.organization_id = o.id AND u.role = 'student' AND u.deleted_at IS NULL) AS students
          FROM organizations o
         WHERE o.deleted_at IS NULL
         ORDER BY o.created_at DESC`,
@@ -185,3 +188,129 @@ export function markLeadOnboarded(id, orgId, client = pool) {
     [id, orgId],
   );
 }
+
+// ---------- объявления платформы (Main Admin → «Анонсы») ----------
+
+/**
+ * Сколько адресатов у объявления на момент отправки.
+ * `all-partners` — активные организации (адресат = центр как таковой),
+ * `all-superadmins` — активные владельцы организаций (адресат = человек).
+ * Считаем в момент создания и сохраняем: список меняется, а «кому отправили»
+ * должно остаться историческим фактом.
+ */
+export function countAnnouncementRecipients(targetType, client = pool) {
+  if (targetType === 'all-superadmins') {
+    return client
+      .query(
+        `SELECT count(*)::int AS n FROM users
+          WHERE role = 'superadmin' AND status = 'active' AND deleted_at IS NULL`,
+      )
+      .then((r) => r.rows[0].n);
+  }
+  return client
+    .query(
+      `SELECT count(*)::int AS n FROM organizations
+        WHERE status = 'active' AND deleted_at IS NULL`,
+    )
+    .then((r) => r.rows[0].n);
+}
+
+export function insertAnnouncement({ senderId, title, body, targetType, recipientCount }, client = pool) {
+  return client
+    .query(
+      `INSERT INTO platform_announcements
+         (sender_id, title, body, target_type, recipient_count)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, title, body, target_type, recipient_count, created_at`,
+      [senderId, title, body, targetType, recipientCount],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function listAnnouncements(client = pool) {
+  return client
+    .query(
+      `SELECT a.id, a.title, a.body, a.target_type, a.recipient_count, a.created_at,
+              (s.first_name || ' ' || s.last_name) AS sender_name
+         FROM platform_announcements a
+         LEFT JOIN users s ON s.id = a.sender_id
+        WHERE a.deleted_at IS NULL
+        ORDER BY a.created_at DESC`,
+    )
+    .then((r) => r.rows);
+}
+
+export function softDeleteAnnouncement(id, client = pool) {
+  return client
+    .query(
+      `UPDATE platform_announcements SET deleted_at = now()
+        WHERE id = $1 AND deleted_at IS NULL
+        RETURNING id`,
+      [id],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+// ---------- профиль main_admin ----------
+
+const PROFILE_COLS = 'id, first_name, last_name, email, phone, role';
+
+export function findUserById(id, client = pool) {
+  return client
+    .query(`SELECT ${PROFILE_COLS} FROM users WHERE id = $1 AND deleted_at IS NULL`, [id])
+    .then((r) => r.rows[0] ?? null);
+}
+
+/**
+ * Занят ли email/телефон кем-то другим.
+ * В БД на это стоят `uq_users_email` (частичный, среди живых) и `uq_users_phone`.
+ * Проверяем заранее, чтобы отдать понятную 409, а не сырую ошибку уникальности.
+ */
+export function emailTakenByOther(email, userId, client = pool) {
+  return client
+    .query(
+      `SELECT 1 FROM users
+        WHERE lower(email) = lower($1) AND id <> $2 AND deleted_at IS NULL
+        LIMIT 1`,
+      [email, userId],
+    )
+    .then((r) => r.rowCount > 0);
+}
+
+export function phoneTakenByOther(phone, userId, client = pool) {
+  return client
+    .query(`SELECT 1 FROM users WHERE phone = $1 AND id <> $2 LIMIT 1`, [phone, userId])
+    .then((r) => r.rowCount > 0);
+}
+
+/** Частичное обновление профиля: только переданные поля. */
+export function updateProfile(id, fields, client = pool) {
+  const cols = [];
+  const vals = [];
+  let i = 1;
+  for (const [key, col] of [
+    ['firstName', 'first_name'],
+    ['lastName', 'last_name'],
+    ['email', 'email'],
+    ['phone', 'phone'],
+  ]) {
+    if (fields[key] !== undefined) {
+      cols.push(`${col} = $${i++}`);
+      vals.push(fields[key]);
+    }
+  }
+  if (cols.length === 0) return findUserById(id, client);
+  vals.push(id);
+  return client
+    .query(
+      `UPDATE users SET ${cols.join(', ')}, updated_at = now()
+        WHERE id = $${i} AND deleted_at IS NULL
+        RETURNING ${PROFILE_COLS}`,
+      vals,
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/* Запросы по staff_penalties отсюда убраны: платформа не читает дисциплину
+ * сотрудников партнёров. Эти данные принадлежат организации и доступны её
+ * Super Admin через /api/super/penalties. */

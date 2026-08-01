@@ -10,6 +10,7 @@ import { useDashboard, usePricing, useInvalidate } from '../queries.js';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { fmt, dateShort, ORG_STATUS } from '../format.js';
+import { tierForStudents, tierRange, tierPriceLabel } from '../lib/pricing.js';
 import Avatar from '../components/Avatar.jsx';
 import OnboardModal from '../components/OnboardModal.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
@@ -36,13 +37,15 @@ function Kpi({ Icon, label, value, sub, tint, accent }) {
 
 function BillingBreakdown({ partner, pricing, cur }) {
   if (!pricing) return <div className="flex justify-center py-8"><span className="loading loading-spinner opacity-40" /></div>;
-  const base = Number(pricing.baseFirstBranch) || 0;
-  const extra = Math.max(0, (partner.branches || 1) - 1);
-  const extraCost = extra * (Number(pricing.perExtraBranch) || 0);
-  const studCost = (partner.students || 0) * (Number(pricing.perStudent) || 0);
-  const calc = base + extraCost + studCost;
+
+  // Цена зависит только от числа активных учеников, филиалы входят безлимитом.
+  // Прежняя разбивка (база + доп. филиалы + за ученика) считала по полям,
+  // которых в ответе бэкенда нет, и печатала нули.
+  const tier = tierForStudents(pricing.tiers, partner.students);
+  const calc = Number(tier?.price) || 0;
   const actual = partner.monthlyBill || 0;
-  const diff = Math.abs(calc - actual) > 1;
+  // договорной тариф не с чем сверять — расхождение показываем только по цене
+  const diff = tier?.price != null && Math.abs(calc - actual) > 1;
 
   return (
     <div className="space-y-4">
@@ -52,33 +55,31 @@ function BillingBreakdown({ partner, pricing, cur }) {
             <div className="w-7 h-7 rounded-lg bg-blue-50 grid place-items-center shrink-0">
               <Landmark size={12} className="text-blue-600" />
             </div>
-            Базовый (1-й филиал)
+            Тариф
           </span>
-          <span className="font-semibold tabular-nums">{fmt(base)} {cur}</span>
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-2 text-base-content/60">
-            <div className="w-7 h-7 rounded-lg bg-purple-50 grid place-items-center shrink-0">
-              <GitBranch size={12} className="text-purple-600" />
-            </div>
-            {extra > 0
-              ? `Доп. филиалы: ${extra} × ${fmt(pricing.perExtraBranch)}`
-              : 'Доп. филиалы (нет)'}
-          </span>
-          <span className="font-semibold tabular-nums">{fmt(extraCost)} {cur}</span>
+          <span className="font-semibold">{tier?.label ?? '—'}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-2 text-base-content/60">
             <div className="w-7 h-7 rounded-lg bg-green-50 grid place-items-center shrink-0">
               <GraduationCap size={12} className="text-green-600" />
             </div>
-            Ученики: {fmt(partner.students)} × {fmt(pricing.perStudent)}
+            Ученики: {fmt(partner.students)} (бакет {tierRange(tier)})
           </span>
-          <span className="font-semibold tabular-nums">{fmt(studCost)} {cur}</span>
+          <span className="font-semibold tabular-nums">{tierPriceLabel(tier, cur)}</span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="flex items-center gap-2 text-base-content/60">
+            <div className="w-7 h-7 rounded-lg bg-purple-50 grid place-items-center shrink-0">
+              <GitBranch size={12} className="text-purple-600" />
+            </div>
+            Филиалы: {fmt(partner.branches)} (входят в тариф)
+          </span>
+          <span className="font-semibold tabular-nums">0 {cur}</span>
         </div>
         <div className="border-t border-base-300 pt-3 flex items-center justify-between">
           <span className="font-bold">По тарифу / мес</span>
-          <span className="text-xl font-extrabold text-lime-600 tabular-nums">{fmt(calc)} {cur}</span>
+          <span className="text-xl font-extrabold text-lime-600 tabular-nums">{tierPriceLabel(tier, cur)}</span>
         </div>
       </div>
       {diff && (

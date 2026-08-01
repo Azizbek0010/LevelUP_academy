@@ -568,7 +568,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       return { user, accessToken: 'mock-jwt-superadmin-xyz' };
     }
 
-    if (path === '/auth/refresh') {
+    if (path === '/auth/staff/refresh') {
       const mockToken = localStorage.getItem('mock_token');
       const mockUser = JSON.parse(localStorage.getItem('mock_user'));
       if (mockToken && mockUser) {
@@ -579,10 +579,30 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       throw err;
     }
 
-    if (path === '/auth/logout') {
+    if (path === '/auth/staff/logout') {
       localStorage.removeItem('mock_token');
       localStorage.removeItem('mock_user');
       return { success: true };
+    }
+
+    // AUTH-FORGOT: код в моке всегда '123456' (для ручного тестирования формы,
+    // без реального SMTP) — тот же цикл запрос → код → новый пароль, что на бэке.
+    if (path === '/auth/forgot-password') {
+      const email = String(body?.email || '').trim().toLowerCase();
+      localStorage.setItem(`mock_reset_otp_${email}`, '123456');
+      return { message: 'If the account exists, a reset code has been sent' };
+    }
+
+    if (path === '/auth/reset-password') {
+      const email = String(body?.email || '').trim().toLowerCase();
+      const savedOtp = localStorage.getItem(`mock_reset_otp_${email}`);
+      if (!savedOtp || savedOtp !== String(body?.otp || '').trim()) {
+        const err = new Error('Invalid or expired code');
+        err.status = 400;
+        throw err;
+      }
+      localStorage.removeItem(`mock_reset_otp_${email}`);
+      return { message: 'Password updated, please log in again' };
     }
 
     // -------- SUPER ADMIN: Organization Settings --------
@@ -1038,17 +1058,24 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
           totalStudents: 142,
           activeStudents: 128,
           frozenStudents: 14,
+          groups: 8,
           totalGroups: 8,
+          mentors: 6,
           totalMentors: 6,
           totalRevenue: 42500000,
           totalExpenses: 8200000,
           outstandingDebt: 3400000,
+          debts: 3400000,
+          overdueInvoices: 5,
+          income: 42500000,
+          expenses: 8200000,
           currency: 'UZS',
         },
         thisMonth: {
           newStudents: 12,
           revenue: 6800000,
           expenses: 1500000,
+          profit: 5300000,
           payments: 23,
         },
         recentActivity: [
@@ -1865,7 +1892,40 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
         });
       });
       const students = [...seenStudents.values()];
-      return { success: true, data: [...parents, ...students] };
+
+      /* Менторы — только для роля admin/superadmin. Ментор не должен видеть
+         других менторов в списке контактов (он пишет родителям/ученикам). */
+      const me = JSON.parse(localStorage.getItem('mock_user') || localStorage.getItem('mock_me') || 'null');
+      const myRole = me?.role ?? 'mentor';
+      const mentors = (myRole === 'admin' || myRole === 'superadmin')
+        ? (() => {
+            let list = JSON.parse(localStorage.getItem('mock_admin_mentors') || '[]');
+            if (list.length === 0) {
+              list = [
+                { id: 'm1', firstName: 'Ilhom', lastName: 'Karimov', status: 'active', groups: ['Frontend React', 'Mobile Flutter'] },
+                { id: 'm2', firstName: 'Jasur', lastName: 'Usmanov', status: 'active', groups: ['Python Bootcamp'] },
+                { id: 'm3', firstName: 'Malika', lastName: 'Sharipova', status: 'active', groups: ['UI/UX Design'] },
+                { id: 'm4', firstName: 'Sardor', lastName: 'Rakhimov', status: 'active', groups: ['Backend Node.js'] },
+                { id: 'm5', firstName: 'Dilnoza', lastName: 'Karimova', status: 'active', groups: ['English Basic'] },
+              ];
+              localStorage.setItem('mock_admin_mentors', JSON.stringify(list));
+            }
+            return list
+              .filter((m) => m.status !== 'deleted')
+              .map((m) => ({
+                id: m.id,
+                first_name: m.firstName,
+                last_name: m.lastName,
+                avatar_key: null,
+                child_names: m.groups?.join(', ') ?? null,
+                room_key: `dm:mock-me:${m.id}`,
+                ...mockRoomSummary(`dm:mock-me:${m.id}`),
+                peer_type: 'mentor',
+              }));
+          })()
+        : [];
+
+      return { success: true, data: [...mentors, ...parents, ...students] };
     }
 
     if (path.match(/^\/chat\/([^/]+)\/read$/) && method === 'POST') {
@@ -2037,12 +2097,13 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     err.fields = data.details || data.errors || null;
     throw err;
   }
+
   return data;
 }
 
 // Пути, которым нельзя подсовывать авто-refresh (иначе цикл/логин ломается)
 const AUTH_PATHS = new Set([
-  '/auth/staff/login', '/auth/staff/google', '/auth/refresh', '/auth/logout',
+  '/auth/staff/login', '/auth/staff/google', '/auth/staff/refresh', '/auth/staff/logout',
   '/auth/forgot-password', '/auth/reset-password',
 ]);
 
@@ -2053,7 +2114,7 @@ export function setOnTokenRefreshed(cb) { onTokenRefreshed = cb; }
 
 function refreshOnce() {
   if (!refreshPromise) {
-    refreshPromise = rawRequest('/auth/refresh', { method: 'POST' })
+    refreshPromise = rawRequest('/auth/staff/refresh', { method: 'POST' })
       .then((d) => {
         onTokenRefreshed?.(d);
         return d.accessToken;
@@ -2155,8 +2216,8 @@ export const api = {
   // -------- AUTH (staff — admin/superadmin/mentor/methodist) --------
   loginStaff: (login, password) =>
     request('/auth/staff/login', { method: 'POST', body: { login, password } }),
-  refresh: () => request('/auth/refresh', { method: 'POST' }),
-  logout: () => request('/auth/logout', { method: 'POST' }),
+  refresh: () => request('/auth/staff/refresh', { method: 'POST' }),
+  logout: () => request('/auth/staff/logout', { method: 'POST' }),
   googleLogin: (idToken) => request('/auth/staff/google', { method: 'POST', body: { idToken } }),
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
   resetPassword: (body) => request('/auth/reset-password', { method: 'POST', body }),
@@ -2169,6 +2230,7 @@ export const api = {
   adminExpenses: (token, qs = '') => request(`/admin/expenses${qs}`, { token }),
   adminCreateExpense: (token, body) => request('/admin/expenses', { method: 'POST', token, body }),
   adminDeleteExpense: (token, id) => request(`/admin/expenses/${id}`, { method: 'DELETE', token }),
+  adminUpdateExpense: (token, id, body) => request(`/admin/expenses/${id}`, { method: 'PATCH', token, body }),
   adminStudents: (token, qs = '') => request(`/admin/students${qs}`, { token }),
   adminCreateStudent: (token, body) => request('/admin/students', { method: 'POST', token, body }),
   adminStudentDetail: (token, id) => request(`/admin/students/${id}`, { token }),
@@ -2236,6 +2298,10 @@ export const api = {
 
   // -------- SUPER ADMIN --------
   superDashboard: (token) => request('/super/dashboard', { token }),
+  // «Отчёты» слиты в «Статистику» 2026-07-28 — это был один и тот же набор
+  // данных (итоги + разбивка по филиалам) на двух страницах; /super/reports
+  // больше не существует, доля филиала (share) теперь тоже приходит отсюда.
+  superStats: (token, period = '30d') => request(`/super/stats?period=${period}`, { token }),
   superBranches: (token) => request('/super/branches', { token }),
   superBranchDetail: (token, id) => request(`/super/branches/${id}`, { token }),
   superCreateBranch: (token, body) => request('/super/branches', { method: 'POST', token, body }),
@@ -2247,13 +2313,17 @@ export const api = {
   superUpdateAdmin: (token, id, body) => request(`/super/admins/${id}`, { method: 'PATCH', token, body }),
   superFreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
   superUnfreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
+  superResetAdminPassword: (token, id) => request(`/super/admins/${id}/reset-password`, { method: 'POST', token }),
   superGetOrganization: (token) => request('/super/organization', { token }),
   superUpdateOrganization: (token, body) => request('/super/organization', { method: 'PATCH', token, body }),
   superMethodists: (token) => request('/super/methodists', { token }),
+  // Только чтение — для выбора цели во «Взыскании». CRUD ментора у Admin филиала.
+  superMentors: (token) => request('/super/mentors', { token }),
   superCreateMethodist: (token, body) => request('/super/methodists', { method: 'POST', token, body }),
   superUpdateMethodist: (token, id, body) => request(`/super/methodists/${id}`, { method: 'PATCH', token, body }),
   superFreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
   superUnfreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
+  superResetMethodistPassword: (token, id) => request(`/super/methodists/${id}/reset-password`, { method: 'POST', token }),
 
   // -------- SUPER ADMIN: Students --------
   superStudents: (token, qs = '') => request(`/super/students${qs}`, { token }),
@@ -2280,6 +2350,23 @@ export const api = {
 
   // -------- SUPER ADMIN: Attendance --------
   superAttendance: (token, qs = '') => request(`/super/attendance${qs}`, { token }),
+
+  // -------- SUPER ADMIN: Discipline (штрафы и увольнения сотрудников) --------
+  // Раньше эти данные показывались в панели Main Admin — платформе незачем знать,
+  // кого из сотрудников партнёра наказали. Дисциплина принадлежит организации.
+  superPenalties: (token, qs = '') => request(`/super/penalties${qs}`, { token }),
+  superIssuePenalty: (token, body) => request('/super/penalties', { method: 'POST', token, body }),
+  superReactivateStaff: (token, id) => request(`/super/staff/${id}/reactivate`, { method: 'POST', token }),
+  // Каталог правил (qoyda): нарушение -> уровень (sariq/qizil/shtraf/qora).
+  // Справочник, не автоматика — накопление уровней ничего не выдаёт само.
+  // Заменил свободный текстовый устав 2026-07-28.
+  superDisciplineRules: (token) => request('/super/discipline-rules', { token }),
+  superCreateDisciplineRule: (token, body) => request('/super/discipline-rules', { method: 'POST', token, body }),
+  superDeleteDisciplineRule: (token, id) => request(`/super/discipline-rules/${id}`, { method: 'DELETE', token }),
+
+  // -------- K-DISC-FRONT: own discipline (mentor/methodist self-view) --------
+  myPenalties: (token) => request('/users/me/penalties', { token }),
+  myDisciplineRules: (token) => request('/users/me/discipline-rules', { token }),
 
   // -------- METHODIST CONTENT --------
   methodistTrainingTypes: (token) => request('/methodist/training-types', { token }),

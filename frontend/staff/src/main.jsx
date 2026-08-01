@@ -7,12 +7,6 @@ import { AuthProvider } from './auth.jsx';
 import App from './App.jsx';
 import './index.css';
 
-// Тёмная тема удалена. У тех, кто успел её включить, в localStorage лежит
-// `lu-theme: dark`, а на <html> мог остаться класс `dark` из прошлой сессии —
-// CSS под него больше нет, так что чистим оба следа один раз при старте.
-document.documentElement.classList.remove('dark', 'light');
-try { localStorage.removeItem('lu-theme'); } catch { /* приватный режим */ }
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -27,7 +21,7 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <App />
         </AuthProvider>

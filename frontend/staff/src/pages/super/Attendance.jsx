@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Calendar, ChevronRight, Filter } from 'lucide-react';
+import { Calendar, ChevronRight, Filter, BookOpen, CheckCircle2, XCircle, Percent } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
+import { Card, Metric, FilterPills } from './_ui.jsx';
 
 function toDateInput(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -49,22 +50,6 @@ function useGroupsQuery() {
   return q;
 }
 
-function StatCard({ label, value, tone }) {
-  const color =
-    tone === 'success' ? 'text-success'
-    : tone === 'error' ? 'text-error'
-    : tone === 'primary' ? 'text-primary'
-    : 'text-base-content';
-  return (
-    <div className="card bg-base-100 border border-base-300">
-      <div className="card-body py-3 px-4">
-        <div className="text-xs text-base-content/50">{label}</div>
-        <div className={`text-2xl font-bold ${color}`}>{value}</div>
-      </div>
-    </div>
-  );
-}
-
 function LessonRow({ lesson }) {
   const marked = lesson.present + lesson.absent;
   const pct = marked > 0 ? Math.round((lesson.present / marked) * 100) : 0;
@@ -74,9 +59,9 @@ function LessonRow({ lesson }) {
     <tr className="hover">
       <td className="font-mono text-xs">{formatDateTime(lesson.startsAt)}</td>
       <td className="font-medium">{lesson.groupName}</td>
-      <td className="text-right">{lesson.totalStudents}</td>
+      <td className="text-right tabular-nums">{lesson.totalStudents}</td>
       <td>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs tabular-nums">
           <span className="text-success font-semibold">{lesson.present}</span>
           <span className="text-base-content/30">·</span>
           <span className="text-error">{lesson.absent}</span>
@@ -119,6 +104,7 @@ export default function SuperAttendance() {
 
   const filtered = useMemo(() => {
     return lessons.filter((l) => {
+      if (!l.startsAt) return false;
       const dateIso = l.startsAt.slice(0, 10);
       if (dateIso < activeFrom || dateIso > activeTo) return false;
       if (groupFilter !== 'all' && l.groupId !== groupFilter) return false;
@@ -142,23 +128,16 @@ export default function SuperAttendance() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="join">
-          {['7d', '14d', '30d', 'custom'].map((v) => (
-            <button
-              key={v}
-              type="button"
-              className={`join-item btn btn-sm ${preset === v ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => setPreset(v)}
-            >
-              {v === '7d' && '7 дней'}
-              {v === '14d' && '14 дней'}
-              {v === '30d' && '30 дней'}
-              {v === 'custom' && (
-                <span className="flex items-center gap-1"><Calendar size={13} /> Период</span>
-              )}
-            </button>
-          ))}
-        </div>
+        <FilterPills
+          options={[
+            { key: '7d', label: '7 дней' },
+            { key: '14d', label: '14 дней' },
+            { key: '30d', label: '30 дней' },
+            { key: 'custom', label: <span className="flex items-center gap-1"><Calendar size={13} /> Период</span> },
+          ]}
+          value={preset}
+          onChange={setPreset}
+        />
 
         {preset === 'custom' && (
           <div className="flex items-center gap-2 bg-base-100 border border-base-300 rounded-lg px-2 py-1">
@@ -196,11 +175,11 @@ export default function SuperAttendance() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Уроков" value={String(filtered.length)} tone="neutral" />
-        <StatCard label="Присутствовало" value={String(totalPresent)} tone="success" />
-        <StatCard label="Пропустило" value={String(totalAbsent)} tone="error" />
-        <StatCard label="% посещаемости" value={`${attendanceRate}%`} tone="primary" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
+        <Metric Icon={BookOpen} tone="neutral" label="Уроков" value={filtered.length} />
+        <Metric Icon={CheckCircle2} tone="success" label="Присутствовало" value={totalPresent} />
+        <Metric Icon={XCircle} tone="danger" label="Пропустило" value={totalAbsent} />
+        <Metric Icon={Percent} tone="primary" label="% посещаемости" value={`${attendanceRate}%`} />
       </div>
 
       {totalUnknown > 0 && (
@@ -210,7 +189,7 @@ export default function SuperAttendance() {
       )}
 
       {/* Table */}
-      <div className="card bg-base-100 border border-base-300 overflow-hidden">
+      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           {isLoading ? (
             <div className="p-10 text-center text-base-content/40 text-sm">Загрузка…</div>
@@ -237,7 +216,7 @@ export default function SuperAttendance() {
             </table>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

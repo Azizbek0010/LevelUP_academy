@@ -67,13 +67,17 @@ export default function Debt() {
             <p className={`text-3xl font-extrabold ${totalDebt > 0 ? 'text-error' : 'text-success'}`}>
               {money(d.totalDebt)}
             </p>
-            {totalDebt > 0 && (
+            {totalDebt > 0 && d.currentInvoice?.totalAmount > 0 && (
               <div className="mt-4">
                 <div className="flex justify-between text-[11px] opacity-40 mb-1">
-                  <span>Оплачено</span>
-                  <span>Ожидает</span>
+                  <span>Оплачено {money(d.currentInvoice.paidAmount)}</span>
+                  <span>Ожидает {money(d.currentInvoice.totalAmount - d.currentInvoice.paidAmount)}</span>
                 </div>
-                <ProgressBar value={0} color="#ef4444" height={6} />
+                <ProgressBar
+                  value={(d.currentInvoice.paidAmount / d.currentInvoice.totalAmount) * 100}
+                  color="#ef4444"
+                  height={6}
+                />
               </div>
             )}
           </div>

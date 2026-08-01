@@ -119,14 +119,14 @@ export default function TestTake() {
 
   if (phase === 'done') {
     return (
-      <div className="card" style={{ maxWidth: 480, margin: '40px auto', textAlign: 'center' }}>
+      <div className="card bg-base-100 max-w-md mx-auto mt-8 sm:mt-12 p-8 text-center animate-scale-in">
         {score !== null ? (
           <>
             <div className="score-ring" style={{ '--score': score }}>
-              <span className="num">{score}%</span>
+              <span className={score >= 50 ? 'text-primary' : 'text-error'}>{score}%</span>
             </div>
-            <h2 style={{ marginBottom: 8 }}>{score >= 50 ? 'Тест сдан! 🎉' : 'Тест не сдан'}</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
+            <h2 className="text-xl font-extrabold mb-2">{score >= 50 ? 'Тест сдан! 🎉' : 'Тест не сдан'}</h2>
+            <p className="text-sm text-base-content/55 mb-6">
               {score >= 50
                 ? row?.coin_reward > 0
                   ? `Коины за тест уже начислены (+${row.coin_reward}).`
@@ -136,11 +136,11 @@ export default function TestTake() {
           </>
         ) : (
           <>
-            <h2 style={{ marginBottom: 8 }}>Попытка завершена</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>{error}</p>
+            <h2 className="text-xl font-extrabold mb-2">Попытка завершена</h2>
+            <p className="text-sm text-base-content/55 mb-6">{error}</p>
           </>
         )}
-        <Link to="/tests" className="btn btn--dark">
+        <Link to="/tests" className="btn btn-neutral gap-2">
           <ArrowLeft size={16} /> К списку тестов
         </Link>
       </div>
@@ -149,26 +149,23 @@ export default function TestTake() {
 
   if (phase === 'intro') {
     return (
-      <div className="card" style={{ maxWidth: 520, margin: '40px auto' }}>
-        <h2 style={{ marginBottom: 10 }}>{test?.title ?? 'Тест'}</h2>
+      <div className="card bg-base-100 max-w-lg mx-auto mt-8 sm:mt-12 p-7 animate-scale-in">
+        <h2 className="text-xl font-extrabold mb-3">{test?.title ?? 'Тест'}</h2>
         {error ? (
-          <div className="form-error">{error}</div>
+          <div className="rounded-xl bg-error/10 text-error text-sm font-semibold px-4 py-3 mb-5">{error}</div>
         ) : (
-          <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
+          <p className="text-sm text-base-content/55 mb-6 leading-relaxed">
             {test.questions.length} вопросов · {test.duration_min} минут
             {test.coin_reward > 0 && ` · +${test.coin_reward} коинов при результате ≥ 50%`}.
             <br />
-            Таймер запустится сразу после старта — выйти и продолжить позже не получится без потери
-            времени.
+            Таймер запустится сразу после старта — выйти и продолжить позже не получится без потери времени.
           </p>
         )}
-        <div style={{ display: 'flex', gap: 10 }}>
-          <Link to="/tests" className="btn btn--ghost">
-            Назад
-          </Link>
+        <div className="flex gap-2.5">
+          <Link to="/tests" className="btn btn-ghost">Назад</Link>
           {!error && (
-            <button className="btn btn--accent" onClick={start} disabled={busy}>
-              {busy ? 'Стартуем…' : 'Начать тест'}
+            <button className="btn btn-primary flex-1" onClick={start} disabled={busy}>
+              {busy ? <span className="loading loading-spinner loading-sm" /> : 'Начать тест'}
             </button>
           )}
         </div>
@@ -177,44 +174,60 @@ export default function TestTake() {
   }
 
   // phase === 'taking'
+  const low = remaining !== null && remaining < 60;
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto' }}>
-      <div className="test-timer">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Timer size={20} />
-          <b>{test.title}</b>
+    <div className="max-w-3xl mx-auto">
+      <div className="sticky top-4 z-10 mb-5 flex items-center justify-between gap-4 rounded-2xl bg-neutral text-neutral-content px-5 py-3.5 shadow-lg">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Timer size={20} className="shrink-0" />
+          <b className="truncate">{test.title}</b>
         </div>
-        <div className={`test-timer__clock${remaining !== null && remaining < 60 ? ' test-timer__clock--low' : ''}`}>
+        <div className={`quiz-clock text-2xl font-extrabold ${low ? 'quiz-clock--low' : 'text-limebrand'}`}>
           {remaining !== null ? fmtDuration(remaining) : '—'}
         </div>
       </div>
 
-      {test.questions.map((q, qi) => (
-        <div key={qi} className="card question">
-          <div className="question__text">
-            <span className="question__n num">{qi + 1}</span>
-            {q.q}
+      <div className="space-y-4">
+        {test.questions.map((q, qi) => (
+          <div key={qi} className="card bg-base-100 p-5">
+            <div className="flex gap-3 mb-4">
+              <span className="shrink-0 h-6 min-w-6 px-2 rounded-full bg-primary text-primary-content text-xs font-extrabold grid place-items-center tabular-nums">
+                {qi + 1}
+              </span>
+              <p className="font-bold text-[15px] leading-snug pt-0.5">{q.q}</p>
+            </div>
+            <div className="space-y-2">
+              {q.options.map((opt, oi) => {
+                const selected = answers[qi] === oi;
+                return (
+                  <label
+                    key={oi}
+                    className={`flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer text-sm transition-colors ${
+                      selected ? 'border-primary bg-primary/8 font-semibold' : 'border-base-300 bg-base-200/40 hover:bg-base-200'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name={`q${qi}`}
+                      className="radio radio-primary radio-sm"
+                      checked={selected}
+                      onChange={() => setAnswers((prev) => prev.map((a, i) => (i === qi ? oi : a)))}
+                    />
+                    {opt}
+                  </label>
+                );
+              })}
+            </div>
           </div>
-          {q.options.map((opt, oi) => (
-            <label key={oi} className={`option${answers[qi] === oi ? ' option--selected' : ''}`}>
-              <input
-                type="radio"
-                name={`q${qi}`}
-                checked={answers[qi] === oi}
-                onChange={() => setAnswers((prev) => prev.map((a, i) => (i === qi ? oi : a)))}
-              />
-              {opt}
-            </label>
-          ))}
-        </div>
-      ))}
+        ))}
+      </div>
 
-      <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
-        <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-          Отвечено: <b className="num">{answered}/{test.questions.length}</b>
+      <div className="card bg-base-100 mt-4 p-4 flex-row items-center justify-between gap-4 sticky bottom-4 sm:static">
+        <span className="text-sm text-base-content/55">
+          Отвечено: <b className="tabular-nums text-base-content">{answered}/{test.questions.length}</b>
         </span>
-        <button className="btn btn--accent" onClick={() => submit(false)} disabled={busy}>
-          {busy ? 'Отправляем…' : 'Завершить тест'}
+        <button className="btn btn-primary" onClick={() => submit(false)} disabled={busy}>
+          {busy ? <span className="loading loading-spinner loading-sm" /> : 'Завершить тест'}
         </button>
       </div>
     </div>

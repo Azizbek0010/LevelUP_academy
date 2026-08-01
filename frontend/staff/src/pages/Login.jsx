@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { api } from '../api.js';
 
@@ -55,7 +55,7 @@ function EmailField({ value, onChange, placeholder, autoFocus }) {
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="input input-bordered w-full pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(198,255,52,0.18)]"
+        className="input input-bordered w-full pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(59,130,246,0.18)]"
       />
     </div>
   );
@@ -74,7 +74,7 @@ function PasswordField({ value, onChange, placeholder, autoComplete, minLength }
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="input input-bordered w-full pr-11 pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(198,255,52,0.18)]"
+        className="input input-bordered w-full pr-11 pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(59,130,246,0.18)]"
       />
       <span className="absolute inset-y-0 left-0 grid w-11 place-items-center text-base-content/40 pointer-events-none">
         <LockIcon />
@@ -104,6 +104,8 @@ function LockIcon() {
 function LoginForm({ onForgot }) {
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -117,7 +119,7 @@ function LoginForm({ onForgot }) {
     setBusy(true);
     try {
       await login(email, password);
-      navigate('/', { replace: true });
+      navigate(from, { replace: true });
     } catch (err) {
       if (err.status === 401) setError('Неверный email или пароль');
       else if (err.status === 429) setError('Слишком много попыток — попробуйте позже');
@@ -131,7 +133,7 @@ function LoginForm({ onForgot }) {
     setGoogleBusy(true);
     try {
       await loginWithGoogle();
-      navigate('/', { replace: true });
+      navigate(from, { replace: true });
     } catch (err) {
       if (err.code === 'firebase-not-configured') setError('Google-вход пока не настроен');
       else if (err.status === 403 || err.status === 401) setError('Этот Google-аккаунт не привязан');
@@ -242,7 +244,7 @@ function ForgotForm({ onBack }) {
           </p>
           <input inputMode="numeric" maxLength={6} required autoFocus autoComplete="one-time-code" value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-            placeholder="Код из письма (6 цифр)" className="input input-bordered w-full text-center text-lg tracking-[0.5em] transition-shadow focus:shadow-[0_0_0_4px_rgba(198,255,52,0.18)]" />
+            placeholder="Код из письма (6 цифр)" className="input input-bordered w-full text-center text-lg tracking-[0.5em] transition-shadow focus:shadow-[0_0_0_4px_rgba(59,130,246,0.18)]" />
           <PasswordField
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
