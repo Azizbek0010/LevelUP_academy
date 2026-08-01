@@ -55,5 +55,5 @@
 - ✅ **Bank olib tashlash** → PAYMENT_METHODS dan o'chirildi. Eski 'Перевод'/'Банк' yozuvlari note heuristics orqali eski ko'rinishda qolaveradi.
 
 ## 10. Reports — tozalash + ranglar
-- ⬜ Jadvalni olib tashlash: «Группа / Ученики / Доход / Долг / Соотношение» + «4 группы» + «Общий доход» + «Общий долг».
-- ⬜ Ranglar juda yomon — **claude code qoidalarida yozilgan design system ranglarini** ishlatish.
+- ✅ Jadvalni olib tashlash: «Группа / Ученики / Доход / Долг / Соотношение» + «4 группы» + «Общий доход» + «Общий долг» → butun table blok (thead/tbody + footer) o'chirildi; KPI kartalar va grafiklar qoldi. `Banknote`, `Tip`, `maxRevenue`, `useAuth`/`token` (ishlatilmagan) ham olib tashlandi.
+- ✅ Ranglar juda yomon — **design system ranglari ishlatildi** → COLORS endi `index.css` `:root` palitrasidan (--primary #40833B, --danger #dc2626, --warning #b45309, --info #2563eb, --success #15803d, text-secondary/muted); bar chart fill `var(--primary)` + `var(--danger)`.
