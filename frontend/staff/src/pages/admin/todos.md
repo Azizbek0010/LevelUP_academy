@@ -44,15 +44,15 @@
 - ✅ **«Отменён» (cancelled)** bo'lishini ham yo'qotish → STATUS'dan o'chirildi. (Eski overdue/cancelled invoice'lar `pending` fallback'ga tushadi — UI da ko'rinmaydi.)
 
 ## 9. Expenses — tozalash
-- ⬜ KPI kartalarni olib tashlash: «Все расходы», «В этом месяце», «Ожидает», «Одобрено», «Средний расход».
-- ⬜ Filterdan **«От» → «До» (date range)** olib tashlash.
-- ⬜ **«Все статусы»** selection olib tashlash.
-- ⬜ **«Сначала новые»** select olib tashlash.
-- ⬜ Add modalka ranglari juda ko'p — **design system ranglarini ishlatish**.
-- ⬜ **«Другое» (Other)** kategoriya → bosilganda **input paydo bo'lib ism so'rashi** va boshqa rashodlarga qo'shilishi.
-- ⬜ To'lov usulida **«Перевод» (transfer) olib tashlash** — faqat naqd + karta.
-- ⬜ Modalkada **date field olib tashlash**.
-- ⬜ **Bank olib tashlash**.
+- ✅ KPI kartalarni olib tashlash: «Все расходы», «В этом месяце», «Ожидает», «Одобрено», «Средний расход» → butun KPI blok + stats useMemo o'chirildi.
+- ✅ Filterdan **«От» → «До» (date range)** olib tashlash → desktop + mobile date inputlari o'chirildi.
+- ✅ **«Все статусы»** selection olib tashlash → status SelectFilter (desktop+mobile), STATUSES/STATUS_LABELS, getStatusCount o'chirildi.
+- ✅ **«Сначала новые»** select olib tashlash → sort SelectFilter + SORT_OPTIONS o'chirildi, sort har doim eng yangi (spentAt desc).
+- ✅ Add modalka ranglari juda ko'p — **design system ranglarini ishlatish** → kategoriya tugmalari endi `--primary` yashil (avval har kategoriyada har xil rang).
+- ✅ **«Другое» (Other)** kategoriya → bosilganda **«Название расхода»** input paydo bo'ladi (majburiy) → `note`ga saqlanadi (backend schema'da title yo'q). Boshqa kategoriyalarda «Примечание» maydoni qoladi.
+- ✅ To'lov usulida **«Перевод» (transfer) olib tashlash** — faqat naqd + karta (PAYMENT_METHODS = ['Наличные', 'Карта']). Eslatma: backend `createExpenseSchema` paymentMethod'ni qabul qilmaydi (zod tashlab yuboradi) — to'lov usuli `note` matnidan aniqlanadi.
+- ✅ Modalkada **date field olib tashlash** → `spentAt` har doim bugungi sana (add/edit'da formData'da saqlanadi, UI'da ko'rinmaydi).
+- ✅ **Bank olib tashlash** → PAYMENT_METHODS dan o'chirildi. Eski 'Перевод'/'Банк' yozuvlari note heuristics orqali eski ko'rinishda qolaveradi.
 
 ## 10. Reports — tozalash + ranglar
 - ⬜ Jadvalni olib tashlash: «Группа / Ученики / Доход / Долг / Соотношение» + «4 группы» + «Общий доход» + «Общий долг».
