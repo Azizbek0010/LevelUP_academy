@@ -32,6 +32,17 @@
       gtag('config', 'G-RWCK0B6TXP', { send_page_view: false });
     </script>
 
+    <!-- Microsoft Clarity — session replays + heatmaps. Answers what GA4 cannot:
+         where visitors hesitate or abandon the lead form. Loads async, so it never
+         blocks render. Project xvidms2zus, created from Bing Webmaster Tools. -->
+    <script>
+      (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i+"?ref=bwt";
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "xvidms2zus");
+    </script>
+
     <!--
       Переменная часть <head> (title, description, robots, canonical, og:url, JSON-LD
       маршрута) впечатывается сюда на этапе сборки — scripts/prerender.js. Тот же набор
