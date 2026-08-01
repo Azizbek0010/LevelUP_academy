@@ -18,7 +18,7 @@ const PRESETS = [
   { label: '2-4-6', days: ['tue', 'thu', 'sat'] },
 ];
 
-const emptyForm = { name: '', mentorId: '', maxStudents: MAX_STUDENTS, days: [], startTime: '', showCustomDays: false };
+const emptyForm = { name: '', subject: '', monthlyPrice: '', room: '', mentorId: '', days: [], startTime: '', showCustomDays: false };
 
 /** Вычисляет время конца урока: "15:00" + 80 мин → "16:20" */
 function calcEndTime(startTime, durationMin) {
@@ -129,10 +129,27 @@ function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, on
   const submit = async () => {
     setErr('');
     if (!form.name.trim()) return setErr('Введите название группы');
+    if (!form.subject.trim()) return setErr('Введите предмет');
+    if (!form.monthlyPrice) return setErr('Укажите стоимость');
     if (!form.mentorId) return setErr('Выберите ментора — это обязательное поле');
+    if (!form.days || form.days.length === 0) return setErr('Выберите хотя бы один день занятий');
+    if (!form.startTime) return setErr('Укажите время начала занятий');
+    
+    // transform for backend — send only what schema expects
+    const payload = {
+      name: form.name.trim(),
+      subject: form.subject.trim(),
+      mentorId: form.mentorId,
+      monthlyPrice: Number(form.monthlyPrice),
+      days: form.days,
+      startTime: form.startTime,
+    };
+    // room is optional — only send if filled
+    if (form.room?.trim()) payload.room = form.room.trim();
+    
     setBusy(true);
     try {
-      await onSave(form);
+      await onSave(payload);
       onClose();
     } catch (e) {
       setErr(e.message || 'Ошибка');
@@ -160,6 +177,45 @@ function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, on
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </label>
+
+          <label className="form-control">
+            <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
+              Предмет <span className="text-error">*</span>
+            </span>
+            <input
+              className="input input-bordered w-full rounded-lg"
+              placeholder="напр. Веб-разработка"
+              value={form.subject}
+              onChange={(e) => setForm({ ...form, subject: e.target.value })}
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-4">
+            <label className="form-control">
+              <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
+                Стоимость (UZS) <span className="text-error">*</span>
+              </span>
+              <input
+                className="input input-bordered w-full rounded-lg"
+                type="number"
+                min="0"
+                placeholder="0"
+                value={form.monthlyPrice}
+                onChange={(e) => setForm({ ...form, monthlyPrice: e.target.value })}
+              />
+            </label>
+            <label className="form-control">
+              <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
+                Кабинет
+              </span>
+              <input
+                className="input input-bordered w-full rounded-lg"
+                placeholder="напр. 204"
+                value={form.room}
+                onChange={(e) => setForm({ ...form, room: e.target.value })}
+              />
+            </label>
+          </div>
 
           {/* Ментор — ОБЯЗАТЕЛЬНО */}
           <label className="form-control">
@@ -264,21 +320,7 @@ function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, on
             )}
           </div>
 
-          {/* Макс. студентов */}
-          <div>
-            <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
-              Макс. студентов
-            </label>
-            <input
-              className="input input-bordered w-full rounded-lg"
-              type="number" min="1" max="30"
-              value={form.maxStudents}
-              onChange={(e) => setForm({ ...form, maxStudents: Number(e.target.value) })}
-            />
-            {form.maxStudents > MAX_STUDENTS && (
-              <p className="text-[11px] text-warning mt-1">Стандарт — {MAX_STUDENTS} студентов</p>
-            )}
-          </div>
+
         </div>
 
         <div className="modal-action mt-6">
@@ -323,12 +365,15 @@ export default function AdminGroups() {
 
   // Build API body from form state
   const buildBody = (f) => {
-    const body = { name: f.name.trim(), mentorId: f.mentorId || undefined };
-    if (f.days.length > 0) {
-      body.days = f.days;
-      if (f.startTime) body.startTime = f.startTime;
-    }
-    if (f.maxStudents && f.maxStudents !== MAX_STUDENTS) body.maxStudents = f.maxStudents;
+    const body = { 
+      name: f.name.trim(), 
+      subject: f.subject?.trim() || '',
+      monthlyPrice: Number(f.monthlyPrice) || 0,
+      mentorId: f.mentorId || undefined 
+    };
+    if (f.days?.length > 0) body.days = f.days;
+    if (f.startTime) body.startTime = f.startTime;
+    if (f.room?.trim()) body.room = f.room.trim();
     return body;
   };
 
@@ -339,6 +384,9 @@ export default function AdminGroups() {
     setForm({
       id: g.id,
       name: g.name || '',
+      subject: g.subject || '',
+      monthlyPrice: g.monthlyPrice || g.monthly_price || '',
+      room: g.room || '',
       mentorId: g.mentor?.id || g.mentorId || '',
       maxStudents: g.maxStudents ?? g.max_students ?? MAX_STUDENTS,
       days: initialDays,

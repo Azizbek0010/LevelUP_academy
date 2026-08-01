@@ -61,9 +61,7 @@ export default function AdminStudentDetail() {
       firstName: student.firstName || '',
       lastName: student.lastName || '',
       phone: student.phone || '',
-      parentPhone: student.parentPhone || '',
-      age: student.age || '',
-      gender: student.gender || 'male',
+      birthDate: student.birthDate ? new Date(student.birthDate).toISOString().split('T')[0] : '',
     });
     setEditing(true);
   };
@@ -75,9 +73,7 @@ export default function AdminStudentDetail() {
         firstName: form.firstName,
         lastName: form.lastName,
         phone: form.phone || undefined,
-        parentPhone: form.parentPhone || undefined,
-        age: form.age ? Number(form.age) : undefined,
-        gender: form.gender || undefined,
+        birthDate: form.birthDate || undefined,
       });
       setEditing(false);
       refetch();
@@ -291,14 +287,9 @@ export default function AdminStudentDetail() {
                 }`}>
                   {isActive ? 'Активен' : 'Заморожен'}
                 </span>
-                {student.gender && (
+                {student.birthDate && (
                   <span className="text-[11px] text-base-content/45">
-                    {student.gender === 'male' ? 'Мужской' : 'Женский'}
-                  </span>
-                )}
-                {student.age && (
-                  <span className="text-[11px] text-base-content/45">
-                    {student.age} лет
+                    {new Date(student.birthDate).toLocaleDateString('ru-RU')}
                   </span>
                 )}
               </div>
@@ -560,45 +551,23 @@ export default function AdminStudentDetail() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Telefon</label>
-                <PhoneInput
-                  className="input input-bordered w-full"
-                  value={form.phone}
-                  onChange={(v) => setForm({ ...form, phone: v })}
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Ota-ona telefoni</label>
-                <PhoneInput
-                  className="input input-bordered w-full"
-                  value={form.parentPhone}
-                  onChange={(v) => setForm({ ...form, parentPhone: v })}
-                />
-              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Возраст</label>
-                  <input
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Телефон</label>
+                  <PhoneInput
                     className="input input-bordered w-full"
-                    type="number"
-                    min="5"
-                    max="100"
-                    placeholder="Возраст"
-                    value={form.age}
-                    onChange={(e) => setForm({ ...form, age: e.target.value })}
+                    value={form.phone}
+                    onChange={(v) => setForm({ ...form, phone: v })}
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Пол</label>
-                  <select
-                    className="select select-bordered w-full"
-                    value={form.gender}
-                    onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                  >
-                    <option value="male">Мужской</option>
-                    <option value="female">Женский</option>
-                  </select>
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Дата рождения</label>
+                  <input
+                    className="input input-bordered w-full"
+                    type="date"
+                    value={form.birthDate}
+                    onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+                  />
                 </div>
               </div>
             </div>

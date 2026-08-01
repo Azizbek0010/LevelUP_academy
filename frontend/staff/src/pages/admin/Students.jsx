@@ -5,7 +5,7 @@ import {
   Copy, Check, Coins, LayoutGrid, List, AlertTriangle, Download
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
-import { useAdminStudents } from '../../queries.js';
+import { useAdminStudents, useAdminGroups } from '../../queries.js';
 import { api } from '../../api.js';
 import { formatPhone } from '../../format.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
@@ -16,7 +16,7 @@ import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip } from '../mento
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
 
-const emptyForm = { firstName: '', lastName: '', phone: '', parentPhone: '', age: '', gender: 'male', coins: 0, frozen: false };
+const emptyForm = { firstName: '', lastName: '', phone: '', birthDate: '', groupId: '', parentFirstName: '', parentLastName: '', parentPhone: '' };
 
 const STATUS_COLORS = {
   active: { bg: '#2ECC7115', text: '#2ECC71', label: 'Активен' },
@@ -87,6 +87,7 @@ export default function AdminStudents() {
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'frozen'
   const qs = search ? `?search=${encodeURIComponent(search)}` : '';
   const { data, isLoading, error, refetch } = useAdminStudents(qs);
+  const { data: groupsData } = useAdminGroups('?limit=200');
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -121,13 +122,23 @@ export default function AdminStudents() {
   const create = async () => {
     setBusy(true); setErr('');
     try {
-      const res = await api.adminCreateStudent(token, {
-        firstName: form.firstName, lastName: form.lastName,
-        phone: form.phone || undefined, parentPhone: form.parentPhone || undefined,
-        age: form.age ? Number(form.age) : undefined,
-        gender: form.gender || undefined,
-        coins: form.coins ? Number(form.coins) : undefined,
-      });
+      const payload = {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phone || undefined,
+        birthDate: form.birthDate || undefined,
+        groupId: form.groupId || undefined,
+      };
+      
+      if (form.parentFirstName || form.parentLastName || form.parentPhone) {
+        payload.parent = {
+          firstName: form.parentFirstName || form.firstName,
+          lastName: form.parentLastName || form.lastName,
+          phone: form.parentPhone || undefined,
+        };
+      }
+      
+      const res = await api.adminCreateStudent(token, payload);
       const r = res?.data || res;
       setForm(null);
       setCreds({ login_code: r.login_code || r.loginCode || r.student?.login_code || r.student?.loginCode, password: r.password || r.student?.password });
@@ -167,9 +178,11 @@ export default function AdminStudents() {
         <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={filteredRows.length === 0}>
           <Download size={14} /> Экспорт
         </button>
-        <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
-          <Plus size={16} /> Добавить студента
-        </button>
+        {statusFilter !== 'frozen' && (
+          <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
+            <Plus size={16} /> Добавить студента
+          </button>
+        )}
       </PageHeader>
 
       {/* ═══ Stats ═══ */}
@@ -235,9 +248,9 @@ export default function AdminStudents() {
       ) : filteredRows.length === 0 ? (
         <EmptyState
           icon={GraduationCap}
-          title={search ? 'Попробуйте изменить запрос' : 'Нет студентов'}
-          hint={search ? undefined : 'Добавьте первого студента'}
-          action={!search ? (
+          title={search ? 'Попробуйте изменить запрос' : statusFilter === 'frozen' ? 'Нет замороженных студентов' : 'Нет студентов'}
+          hint={search || statusFilter === 'frozen' ? undefined : 'Добавьте первого студента'}
+          action={(!search && statusFilter !== 'frozen') ? (
             <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
               <Plus size={14} /> Добавить
             </button>
@@ -322,31 +335,27 @@ export default function AdminStudents() {
           <div className="modal-box card bg-base-100 border border-base-300">
             <h3 className="font-bold text-lg mb-4">Новый студент</h3>
             {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <input className="input input-bordered w-full" placeholder="Имя" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
-                <input className="input input-bordered w-full" placeholder="Фамилия" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input className="input input-bordered w-full" type="number" placeholder="Возраст" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
-                <select className="select select-bordered w-full" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
-                  <option value="male">Мужской</option>
-                  <option value="female">Женский</option>
-                </select>
-              </div>
-              <PhoneInput className="input input-bordered w-full" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-              <input className="input input-bordered w-full" placeholder="Телефон родителя (необязательно)" value={form.parentPhone} onChange={(e) => setForm({ ...form, parentPhone: e.target.value })} />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Коины</label>
-                  <input className="input input-bordered w-full" type="number" min="0" value={form.coins} onChange={(e) => setForm({ ...form, coins: Number(e.target.value) })} />
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-[12px] font-bold text-base-content/50 uppercase tracking-wider mb-2">Данные студента</h4>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <input className="input input-bordered w-full" placeholder="Имя" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+                  <input className="input input-bordered w-full" placeholder="Фамилия" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
                 </div>
-                <div className="flex items-end pb-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" className="checkbox checkbox-sm" checked={form.frozen} onChange={(e) => setForm({ ...form, frozen: e.target.checked })} />
-                    <span className="text-[13px] text-base-content">Заморожен</span>
-                  </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <PhoneInput className="input input-bordered w-full" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+                  <input className="input input-bordered w-full" type="date" placeholder="Дата рождения" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
                 </div>
+
+              </div>
+              
+              <div>
+                <h4 className="text-[12px] font-bold text-base-content/50 uppercase tracking-wider mb-2">Данные родителя (опционально)</h4>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <input className="input input-bordered w-full" placeholder="Имя родителя" value={form.parentFirstName} onChange={(e) => setForm({ ...form, parentFirstName: e.target.value })} />
+                  <input className="input input-bordered w-full" placeholder="Фамилия родителя" value={form.parentLastName} onChange={(e) => setForm({ ...form, parentLastName: e.target.value })} />
+                </div>
+                <PhoneInput className="input input-bordered w-full" value={form.parentPhone} onChange={(v) => setForm({ ...form, parentPhone: v })} />
               </div>
             </div>
             <div className="modal-action">

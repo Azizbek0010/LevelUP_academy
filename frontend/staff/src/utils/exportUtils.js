@@ -99,20 +99,47 @@ async function loadCyrillicFont(doc) {
 }
 
 export async function exportToPDF(data, columns, filename = `export_${today()}`, title = 'Отчёт') {
-  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-    import('jspdf'),
-    import('jspdf-autotable'),
-  ]);
+  // jsPDF v4.x exports { jsPDF } as named export
+  const jspdfModule = await import('jspdf');
+  const JsPDF = jspdfModule.jsPDF ?? jspdfModule.default?.jsPDF ?? jspdfModule.default;
+  if (!JsPDF) throw new Error('jsPDF not found in module');
 
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  // jspdf-autotable v5.x: call autoTable(doc, options) — it mutates doc
+  const autoTableMod = await import('jspdf-autotable');
+  const autoTable = autoTableMod.default ?? autoTableMod.autoTable ?? autoTableMod;
+
+  const doc = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const dateStr = new Date().toLocaleDateString('ru-RU');
   const { header, rows } = buildRows(data, columns);
 
-  // Load Cyrillic font (DejaVuSans) — supports Russian, Uzbek, etc.
-  await loadCyrillicFont(doc);
+  // Load Cyrillic font — best-effort, falls back to helvetica
+  let fontName = 'helvetica';
+  try {
+    const [nr, br] = await Promise.all([
+      fetch('/fonts/DejaVuSans.ttf'),
+      fetch('/fonts/DejaVuSans-Bold.ttf'),
+    ]);
+    if (nr.ok && br.ok) {
+      const toB64 = async (r) => {
+        const buf = await r.arrayBuffer();
+        const arr = new Uint8Array(buf);
+        let s = '';
+        for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]);
+        return btoa(s);
+      };
+      const [nb, bb] = await Promise.all([toB64(nr), toB64(br)]);
+      doc.addFileToVFS('DejaVuSans.ttf', nb);
+      doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+      doc.addFileToVFS('DejaVuSans-Bold.ttf', bb);
+      doc.addFont('DejaVuSans-Bold.ttf', 'DejaVuSans', 'bold');
+      fontName = 'DejaVuSans';
+    }
+  } catch (e) {
+    console.warn('PDF: Cyrillic font load failed, using helvetica', e);
+  }
 
-  // Header
+  doc.setFont(fontName);
   doc.setFontSize(16);
   doc.setTextColor(30, 30, 30);
   doc.text(title, 14, 18);
@@ -120,42 +147,53 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
   doc.setTextColor(120, 120, 120);
   doc.text(`Дата: ${dateStr}  |  Записей: ${data.length}`, 14, 25);
 
-  // Table
-  autoTable(doc, {
+  const tableOpts = {
     startY: 30,
     head: [header],
     body: rows,
     styles: {
-      font: 'DejaVuSans',
-      fontSize: 8,
-      cellPadding: 3,
-      textColor: [30, 30, 30],
-      lineColor: [220, 229, 212],
-      lineWidth: 0.3,
+      font: fontName,
+      fontSize: 9,
+      cellPadding: 4,
+      textColor: [40, 40, 40],
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1,
     },
     headStyles: {
-      fillColor: [143, 162, 131], // #8FA283 design system muted green
+      fillColor: [15, 23, 42],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8,
+      fontSize: 9,
+      cellPadding: 5,
     },
-    alternateRowStyles: { fillColor: [248, 251, 245] },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 14, right: 14 },
     didDrawPage: () => {
       const pageH = doc.internal.pageSize.getHeight();
+      doc.setFont(fontName);
       doc.setFontSize(7);
       doc.setTextColor(160, 160, 160);
       doc.text(
-        `LevelUp Academy  |  Стр. ${doc.internal.getCurrentPageInfo().pageNumber}`,
+        `LevelUp Academy  |  ${doc.internal.getCurrentPageInfo().pageNumber}-bet`,
         pageW / 2,
         pageH - 8,
         { align: 'center' }
       );
     },
-  });
+  };
+
+  // autoTable can be called as function(doc, opts) or doc.autoTable(opts)
+  if (typeof autoTable === 'function') {
+    autoTable(doc, tableOpts);
+  } else if (typeof doc.autoTable === 'function') {
+    doc.autoTable(tableOpts);
+  } else {
+    throw new Error('autoTable plugin not found');
+  }
 
   doc.save(`${filename}.pdf`);
 }
+
 
 // ═══════════════ CSV ═══════════════
 

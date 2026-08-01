@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
       port: 5176,
       proxy: {
         '/api': {
-          target: env.DEV_API_PROXY || 'https://levelup-academy-1.onrender.com',
+          target: env.DEV_API_PROXY || 'https://api.levelup-academy.uz',
           changeOrigin: true,
         },
       },
