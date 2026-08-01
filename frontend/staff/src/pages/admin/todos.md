@@ -4,9 +4,9 @@
 > Sana: 2026-08-01
 
 ## 1. Students — «Задолжен» filtri
-- ⬜ «Задолжен» tugmasi hozir **tasdiqlash so'rayapti** (confirm dialog) — bu noto'g'ri.
-- ⬜ Qarz har oy o'zgaradi, hamma qarzdor o'quvchilar **avtomatik** ko'rinishi kerak — dialogni olib tashlash.
-- ⬜ Qarzdor list avtomatik yangilanib turishi kerak (har oy).
+- ✅ «Задолжен» tugmasi hozir **tasdiqlash so'rayapti** (confirm dialog) — bu noto'g'ri. → Kodda confirm dialog **yo'q** (Students.jsx:214-233 — oddiy tab filter, `setStatusFilter('debt')`), olib tashlash kerak emas.
+- ✅ Qarz har oy o'zgaradi, hamma qarzdor o'quvchilar **avtomatik** ko'rinishi kerak — dialogni olib tashlash. → Qarzdorlar live filter: `filteredRows` → `studentDebt(s) > 0` (Students.jsx:128).
+- ✅ Qarzdor list avtomatik yangilanib turishi kerak (har oy). → **«Задолжен» tab faol paytda `refetchInterval: 60_000`** — ro'yxat har daqiqada avtomatik yangilanadi (queries.js `useAdminStudents(qs, opts)` + Students.jsx:99-104).
 
 ## 2. Export — to'liq style fix
 - ✅ ExportDialog / exportUtils style-ni to'liq o'rganish.

@@ -68,9 +68,9 @@ export function useAdminExpenses(qs = '') {
   return useAuthedQuery(['admin-expenses', qs], () => api.adminExpenses(token, qs));
 }
 
-export function useAdminStudents(qs = '') {
+export function useAdminStudents(qs = '', opts = {}) {
   const { token } = useAuth();
-  return useAuthedQuery(['admin-students', qs], () => api.adminStudents(token, qs));
+  return useAuthedQuery(['admin-students', qs], () => api.adminStudents(token, qs), opts);
 }
 
 export function useAdminStudentDetail(id) {

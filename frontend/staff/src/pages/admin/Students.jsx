@@ -96,7 +96,12 @@ export default function AdminStudents() {
   const [viewMode, setViewMode] = useState('card'); // 'card' | 'table'
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'frozen'
   const qs = search ? `?search=${encodeURIComponent(search)}` : '';
-  const { data, isLoading, error, refetch } = useAdminStudents(qs);
+  // «Задолжен» tab: qarzdorlar ro'yxati har daqiqada avtomatik yangilanadi
+  // (backenda qarz oyiga o'zgaradi; refetchOnWindowFocus global false — interval kerak)
+  const { data, isLoading, error, refetch } = useAdminStudents(
+    qs,
+    statusFilter === 'debt' ? { refetchInterval: 60_000 } : {}
+  );
   const { data: groupsData } = useAdminGroups('?limit=200');
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
