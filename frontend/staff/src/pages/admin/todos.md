@@ -34,10 +34,10 @@
 - ✅ **Backend gap (Karis kutilmoqda):** `updateMentorSchema` (admin.schemas.js:99) faqat firstName/lastName/phone/grade qabul qiladi — email/parolni zod tashlab yuboradi. Frontend **saved emailni PATCH javobidan tekshiradi**; o'zgarmagan bo'lsa — «Email/parol saqlanmadi — backend updateMentorSchema hali qabul qilmaydi» degan sariq ogohlantirish ko'rsatadi (modal ichida). Karis schema'ga `email` + `password` qo'shishi kerak.
 
 ## 7. Discipline — bug fix + yangi qoidalar
-- ⬜ Ranglar bug'i: qora bosganda yashil bo'lyapti — **hover'da yashil** bo'lishi kerak.
-- ⬜ Backendda bor **yangi qoida qo'shish** funksiyasi — modalka.
-- ⬜ Modalka uchun **yangi dizayn / yangi style**.
-- ⬜ Qoida va boshqalar **hamma mentorlarga** tegishli bo'lishi — bitta mentorni so'ramasligi.
+- ✅ Ranglar bug'i: qora bosganda yashil bo'lyapti — **hover'da yashil** bo'lishi kerak. → IssueModal tip tugmalari endi **daraja rangi bilan to'ldiriladi** (hover'da ham, tanlanganda ham): sariq `#eab308` (qora matn), qizil `#dc2626`, qora `#111827` — xuddi Super Admin panelidagi yangi dizayndek (discipline-meta.jsx TYPE_META, eski `btn-primary`/join o'chirildi). Yashil (primary) faqat umumiy aksent sifatida qoldi (sahifa tugmalari).
+- ✅ Backendda bor **yangi qoida qo'shish** funksiyasi — modalka. → RulesPanel'ga «Новое правило» tugmasi + **NewRuleModal** qo'shildi, `api.adminCreateDisciplineRule` → `POST /admin/discipline-rules`. **Backend gap (Karis kutilmoqda):** bu marshrut admin.routes.js'da yo'q (faqat `/admin/penalties`) — qoida yaratish hozircha faqat Super Admin'da (`/super/discipline-rules`). 404 bo'lsa modal ichida **sariq ogohlantirish** ko'rsatiladi (Task 6'deki usul). Karis admin.routes.js'ga `GET/POST /admin/discipline-rules` qo'shishi kerak (super.routes.js:1190-1191 dagi pattern, `createRuleSchema`).
+- ✅ Modalka uchun **yangi dizayn / yangi style**. → Daraja rangli kartochkalar grid (hover'da to'ldirish, `dark` matn), LevelBadge — hamma joyda shared discipline-meta.jsx (mahalliy oklch TYPE_META dublikati o'chirildi).
+- ✅ Qoida va boshqalar **hamma mentorlarga** tegishli bo'lishi — bitta mentorni so'ramasligi. → Backend `createRuleSchema` (type/amount/description) organizatsiya darajasida — mentorni so'ramaydi; RulesPanel org bo'yicha HAMMA qoidalarni ko'rsatadi. Modalda ham eslatma qo'shildi: «Правило применяется ко всем сотрудникам организации».
 
 ## 8. Payments
 - ✅ **«Просрочено» (overdue)** tugmasini/tag'ini olib tashlash → STATUS/STATUS_LIST/STATUS_LABELS dan olib tashlandi + «Просрочено» KPI o'chirildi (stats.overdue ham).
