@@ -126,8 +126,8 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
   const query = Object.fromEntries(new URLSearchParams(path.split('?')[1] || ''));
 
   // -- session --
-  if (path === '/auth/refresh') return { user: mock.user, accessToken: 'mock-token' };
-  if (path === '/auth/logout') return { success: true };
+  if (path === '/auth/member/refresh') return { user: mock.user, accessToken: 'mock-token' };
+  if (path === '/auth/member/logout') return { success: true };
 
   // TG-FRONT
   if (path === '/telegram/bind-token') {
@@ -242,9 +242,9 @@ async function rawRequest(path, { method = 'GET', body, skipAuth = false } = {})
 }
 
 async function refreshSession() {
-  if (USE_MOCKS) return mockRequest('/auth/refresh');
+  if (USE_MOCKS) return mockRequest('/auth/member/refresh');
   if (!refreshPromise) {
-    refreshPromise = rawRequest('/auth/refresh', { method: 'POST', skipAuth: true }).finally(() => {
+    refreshPromise = rawRequest('/auth/member/refresh', { method: 'POST', skipAuth: true }).finally(() => {
       refreshPromise = null;
     });
   }
@@ -277,7 +277,7 @@ async function request(path, opts = {}) {
 export const api = {
   // -------- SESSION (вход делает общий Auth-модуль; здесь только подхват) --------
   refresh: () => refreshSession(),
-  logout: () => (USE_MOCKS ? mockRequest('/auth/logout') : rawRequest('/auth/logout', { method: 'POST' })),
+  logout: () => (USE_MOCKS ? mockRequest('/auth/member/logout') : rawRequest('/auth/member/logout', { method: 'POST' })),
 
   // -------- STUDENT: Home --------
   home: () => request('/student/home'),

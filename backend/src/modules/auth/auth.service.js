@@ -108,7 +108,7 @@ export async function googleLogin({ idToken, allowedRoles = null } = {}) {
   return { user: publicUser(user), ...tokens };
 }
 
-export async function refresh(presentedToken) {
+export async function refresh(presentedToken, allowedRoles = null) {
   if (!presentedToken) throw new AppError(401, 'Refresh token required');
   const hash = hashToken(presentedToken);
 
@@ -132,6 +132,11 @@ export async function refresh(presentedToken) {
 
     const user = await repo.findUserById(row.user_id, client);
     if (!user) throw new AppError(401, 'Invalid refresh token');
+    // group-scoped refresh (main/staff/member): чужая роль в чужой cookie — 401,
+    // без отзыва токена (это не reuse, просто не тот endpoint).
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+      throw new AppError(401, 'Invalid refresh token');
+    }
     if (user.status === 'frozen') throw new AppError(403, 'Account is frozen');
 
     // rotation: гасим старый токен, выдаём новую пару

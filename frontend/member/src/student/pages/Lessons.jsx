@@ -1,108 +1,115 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Lock, Check, ChevronRight, Code2, Palette, LayoutGrid, Braces, MousePointerClick, Star,
+  Check, ChevronRight, ClipboardCheck, BookOpen, Star, Layers, Clock,
 } from 'lucide-react';
-import { IconTile, Ring, Pill, C } from '../components/ui.jsx';
+import { api } from '../api.js';
+import { useToast } from '../components/toast.jsx';
+import { IconTile, Ring, Pill, Skeleton, EmptyState, ErrorState, C } from '../components/ui.jsx';
 
 /**
- * «Мои уроки».
+ * «Мои уроки» — реальные темы/уроки методиста (training_types → topics →
+ * methodology_lessons), подключённые к группе студента админом.
  *
- * Данные захардкожены намеренно (Karis: «hozir ui statik qilib tur keyin
- * backend integratsiya qilamiz»). Учебного плана по дням на бэкенде нет:
- * training_types/topics — плоский каталог без привязки к дате и группе.
- * Когда появится эндпоинт — меняется только массив, вёрстка не тронется.
- *
- * Karis про прошлую версию: «слишком скучно и слишком пиксельный дизайн».
- * Поэтому здесь: крупные цветные значки у каждой темы (свой цвет = тему
- * видно с одного взгляда), кольцо с процентом выполнения, заметная
- * лаймовая карточка у текущего урока и общий прогресс курса сверху.
+ * Раньше это был статичный мок с придуманным прогрессом (дни, «замки»,
+ * оценки за тест/дз/видео на тему в целом). В базе нет ни порядка дней,
+ * ни блокировки следующей темы — поэтому здесь честно: все темы открыты,
+ * прогресс считается по каждому уроку отдельно (тест или домашка), без
+ * выдумки того, чего в системе нет.
  */
-export const MOCK_TOPICS = [
-  { id: '1', day: 1, icon: Code2, hue: 'blue', title: 'HTML — основы', subtitle: 'Теги, структура страницы', chapter: 'Вёрстка', locked: false, done: true, testScore: 100, hwScore: 100, videoDone: true },
-  { id: '2', day: 2, icon: Palette, hue: 'violet', title: 'CSS — стили', subtitle: 'Цвета, отступы, шрифты', locked: false, done: true, testScore: 80, hwScore: 90, videoDone: true },
-  { id: '3', day: 3, icon: LayoutGrid, hue: 'coral', title: 'Flexbox и Grid', subtitle: 'Раскладка элементов на странице', locked: false, done: false, testScore: null, hwScore: null, videoDone: false },
-  { id: '4', day: 4, icon: Braces, hue: 'amber', title: 'JavaScript — переменные', subtitle: 'Первые шаги в программировании', chapter: 'Программирование', locked: true, done: false, testScore: null, hwScore: null, videoDone: false },
-  { id: '5', day: 5, icon: MousePointerClick, hue: 'teal', title: 'DOM и события', subtitle: 'Как оживить страницу', locked: true, done: false, testScore: null, hwScore: null, videoDone: false },
-];
 
-/* Процент выполнения темы: тест + домашка + видео, равными долями.
-   Считается здесь, чтобы и список, и страница темы показывали одно число. */
-export function topicPercent(t) {
-  const parts = [
-    t.testScore != null ? t.testScore : 0,
-    t.hwScore != null ? t.hwScore : 0,
-    t.videoDone ? 100 : 0,
-  ];
-  return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length);
+/* Честный процент по одному уроку — только то, что реально есть в базе:
+   тест — фактический балл (0, если ещё не сдан); домашка — 100 при оценке,
+   50 пока на проверке, 0 если не сдана. */
+export function lessonPercent(lesson) {
+  if (lesson.type === 'test') return lesson.score ?? 0;
+  if (lesson.submissionStatus === 'graded') return lesson.submissionScore ?? 100;
+  if (lesson.submissionStatus === 'submitted' || lesson.submissionStatus === 'late') return 50;
+  return 0;
 }
 
-function TopicCard({ topic, onOpen }) {
-  const { icon, hue, day, title, subtitle, locked, done } = topic;
-  const current = !locked && !done;
-  const percent = topicPercent(topic);
+function LessonRow({ lesson, onOpen, delay = 0 }) {
+  const isTest = lesson.type === 'test';
+  const percent = lessonPercent(lesson);
+  const done = isTest ? lesson.score != null : lesson.submissionStatus === 'graded';
+  const inProgress = !isTest && (lesson.submissionStatus === 'submitted' || lesson.submissionStatus === 'late');
 
   return (
     <button
       type="button"
-      onClick={() => !locked && onOpen(topic)}
-      disabled={locked}
-      className={`k-card ${locked ? '' : 'k-hover'} w-full flex items-center gap-4 p-4 text-left ${
-        locked ? 'cursor-not-allowed' : ''
-      }`}
-      style={{
-        opacity: locked ? 0.6 : 1,
-        outline: current ? `2.5px solid ${C.lime}` : 'none',
-        outlineOffset: current ? -2.5 : 0,
-      }}
+      onClick={() => onOpen(lesson)}
+      className="k-card k-pop-in k-hover k-press w-full flex items-center gap-4 p-4 text-left"
+      style={{ animationDelay: `${delay}ms` }}
     >
-      {locked ? (
-        <span className="w-[56px] h-[56px] rounded-2xl grid place-items-center shrink-0" style={{ background: C.bg, color: C.muted }}>
-          <Lock size={22} strokeWidth={2.5} />
-        </span>
-      ) : (
-        <IconTile icon={icon} hue={hue} size={56} />
-      )}
+      <IconTile icon={isTest ? ClipboardCheck : BookOpen} hue={isTest ? 'blue' : 'coral'} size={52} />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[11px] font-extrabold uppercase tracking-[0.08em]" style={{ color: C.muted }}>
-            Урок {day}
+            {isTest ? 'Тест' : 'Домашнее задание'}
           </span>
-          {current && <Pill hue="lime">Сейчас</Pill>}
           {done && <Pill hue="teal"><Check size={11} strokeWidth={3.5} /> Готово</Pill>}
+          {inProgress && <Pill hue="amber"><Clock size={11} strokeWidth={3} /> На проверке</Pill>}
         </div>
-        <div className="text-[17px] font-extrabold leading-tight mt-1" style={{ color: C.text }}>{title}</div>
-        <div className="text-[13px] font-semibold mt-0.5 truncate" style={{ color: C.muted }}>
-          {locked ? 'Откроется после предыдущего урока' : subtitle}
-        </div>
+        <div className="text-[16px] font-extrabold leading-tight mt-1" style={{ color: C.text }}>{lesson.title}</div>
+        {lesson.coinReward > 0 && (
+          <div className="text-[12.5px] font-bold mt-0.5 flex items-center gap-1" style={{ color: C.limeDk }}>
+            <Star size={11} strokeWidth={3} fill="currentColor" /> +{lesson.coinReward} монет
+          </div>
+        )}
       </div>
 
-      {!locked && (
-        <Ring percent={percent} size={54} thickness={6} color={done ? C.teal : C.lime}>
-          <span className="k-num text-[13px]" style={{ color: C.text }}>{percent}%</span>
-        </Ring>
-      )}
-      {!locked && <ChevronRight size={18} strokeWidth={2.8} style={{ color: C.muted }} className="shrink-0" />}
+      <Ring percent={percent} size={50} thickness={6} color={done ? C.teal : C.lime}>
+        <span className="k-num text-[12px]" style={{ color: C.text }}>{percent}%</span>
+      </Ring>
+      <ChevronRight size={18} strokeWidth={2.8} style={{ color: C.muted }} className="shrink-0" />
     </button>
   );
 }
 
 export default function Lessons() {
   const navigate = useNavigate();
-  const doneCount = MOCK_TOPICS.filter((t) => t.done).length;
-  const coursePercent = Math.round(
-    MOCK_TOPICS.reduce((sum, t) => sum + topicPercent(t), 0) / MOCK_TOPICS.length,
-  );
+  const toast = useToast();
+  const [topics, setTopics] = useState(null);
+  const [error, setError] = useState(null);
 
-  const groups = [];
-  MOCK_TOPICS.forEach((t) => {
-    if (t.chapter || groups.length === 0) groups.push({ chapter: t.chapter, items: [t] });
-    else groups[groups.length - 1].items.push(t);
-  });
+  const load = () => {
+    setError(null);
+    return api
+      .lessons()
+      .then((d) => setTopics(d.data))
+      .catch((err) => { setError(err); toast(err.message, 'error'); });
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (error) return <ErrorState message={error.message} onRetry={load} />;
+  if (!topics) return <Skeleton h={90} count={3} />;
+
+  const allLessons = topics.flatMap((t) => t.lessons);
+
+  if (allLessons.length === 0) {
+    return (
+      <div className="k-card">
+        <EmptyState
+          icon={Layers}
+          hue="violet"
+          title="Уроков пока нет"
+          text="Курс твоей группы ещё не подключён методистом — загляни позже."
+        />
+      </div>
+    );
+  }
+
+  const doneCount = allLessons.filter((l) => (l.type === 'test' ? l.score != null : l.submissionStatus === 'graded')).length;
+  const coursePercent = Math.round(allLessons.reduce((sum, l) => sum + lessonPercent(l), 0) / allLessons.length);
+  let cardIndex = 0;
 
   return (
     <>
-      {/* Общий прогресс курса — кольцо + счётчики */}
       <div className="k-card p-5 mb-5 flex items-center gap-5">
         <Ring percent={coursePercent} size={84} thickness={8}>
           <div className="text-center leading-none">
@@ -114,30 +121,34 @@ export default function Lessons() {
             Мои уроки
           </h1>
           <p className="text-[13.5px] font-semibold mt-1" style={{ color: C.muted }}>
-            Пройдено {doneCount} из {MOCK_TOPICS.length} тем — следующая откроется после теста
+            Готово {doneCount} из {allLessons.length}
           </p>
-        </div>
-        <div className="hidden sm:flex items-center gap-2 shrink-0">
-          <Pill hue="amber"><Star size={11} strokeWidth={3} fill="currentColor" /> монеты за каждый тест</Pill>
         </div>
       </div>
 
       <div className="space-y-5">
-        {groups.map((g, gi) => (
-          <div key={gi}>
-            {g.chapter && (
-              <div className="flex items-center gap-3 mb-2.5 px-1">
-                <span className="text-[12px] font-extrabold uppercase tracking-[0.1em]" style={{ color: C.muted }}>
-                  {g.chapter}
-                </span>
-                <span className="flex-1 h-px" style={{ background: C.line }} />
+        {topics.map((topic) => (
+          <div key={topic.id}>
+            <div className="flex items-center gap-3 mb-2.5 px-1">
+              <span className="text-[12px] font-extrabold uppercase tracking-[0.1em]" style={{ color: C.muted }}>
+                {topic.name}
+              </span>
+              <span className="flex-1 h-px" style={{ background: C.line }} />
+            </div>
+            {topic.lessons.length === 0 ? (
+              <p className="text-[13px] font-semibold px-1" style={{ color: C.muted }}>Уроки скоро появятся</p>
+            ) : (
+              <div className="space-y-3">
+                {topic.lessons.map((lesson) => (
+                  <LessonRow
+                    key={lesson.id}
+                    lesson={lesson}
+                    onOpen={(l) => navigate(`/lessons/${l.id}`)}
+                    delay={Math.min(cardIndex++, 9) * 50}
+                  />
+                ))}
               </div>
             )}
-            <div className="space-y-3">
-              {g.items.map((topic) => (
-                <TopicCard key={topic.id} topic={topic} onOpen={(t) => navigate(`/lessons/${t.id}`)} />
-              ))}
-            </div>
           </div>
         ))}
       </div>

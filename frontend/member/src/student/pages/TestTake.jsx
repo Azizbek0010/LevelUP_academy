@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Timer, ArrowLeft } from 'lucide-react';
 import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { Skeleton, Button } from '../components/ui.jsx';
+import { Skeleton, Button, CountUp, Ring, C } from '../components/ui.jsx';
 import { fmtDuration } from '../format.js';
 
 /**
@@ -119,14 +119,18 @@ export default function TestTake() {
 
   if (phase === 'done') {
     return (
-      <div className="card bg-base-100 max-w-md mx-auto mt-8 sm:mt-12 p-8 text-center animate-scale-in">
+      <div className="k-card k-pop-in max-w-md mx-auto mt-8 sm:mt-12 p-8 text-center">
         {score !== null ? (
           <>
-            <div className="score-ring" style={{ '--score': score }}>
-              <span className={score >= 50 ? 'text-primary' : 'text-error'}>{score}%</span>
+            <div className="flex justify-center mb-[18px]">
+              <Ring percent={score} size={132} thickness={14} color={score >= 50 ? C.teal : C.coral}>
+                <span className="k-num text-[30px]" style={{ color: score >= 50 ? C.teal : C.coral }}>
+                  <CountUp value={score} />%
+                </span>
+              </Ring>
             </div>
-            <h2 className="text-xl font-extrabold mb-2">{score >= 50 ? 'Тест сдан!' : 'Тест не сдан'}</h2>
-            <p className="text-sm text-base-content/55 mb-6">
+            <h2 className="text-xl font-extrabold mb-2" style={{ color: C.text }}>{score >= 50 ? 'Тест сдан!' : 'Тест не сдан'}</h2>
+            <p className="text-sm font-semibold mb-6" style={{ color: C.muted }}>
               {score >= 50
                 ? row?.coin_reward > 0
                   ? `Коины за тест уже начислены (+${row.coin_reward}).`
@@ -136,11 +140,15 @@ export default function TestTake() {
           </>
         ) : (
           <>
-            <h2 className="text-xl font-extrabold mb-2">Попытка завершена</h2>
-            <p className="text-sm text-base-content/55 mb-6">{error}</p>
+            <h2 className="text-xl font-extrabold mb-2" style={{ color: C.text }}>Попытка завершена</h2>
+            <p className="text-sm font-semibold mb-6" style={{ color: C.muted }}>{error}</p>
           </>
         )}
-        <Link to="/tests" className="btn btn-neutral rounded-2xl gap-2">
+        <Link
+          to="/tests"
+          className="k-press inline-flex items-center justify-center gap-2 font-extrabold px-5 py-3 text-[14.5px] rounded-2xl"
+          style={{ background: C.violet, color: '#fff', boxShadow: '0 4px 0 #5C34E0' }}
+        >
           <ArrowLeft size={16} /> К списку тестов
         </Link>
       </div>
@@ -149,12 +157,12 @@ export default function TestTake() {
 
   if (phase === 'intro') {
     return (
-      <div className="card bg-base-100 max-w-lg mx-auto mt-8 sm:mt-12 p-7 animate-scale-in">
-        <h2 className="text-xl font-extrabold mb-3">{test?.title ?? 'Тест'}</h2>
+      <div className="k-card k-pop-in max-w-lg mx-auto mt-8 sm:mt-12 p-7">
+        <h2 className="text-xl font-extrabold mb-3" style={{ color: C.text }}>{test?.title ?? 'Тест'}</h2>
         {error ? (
-          <div className="rounded-xl bg-error/10 text-error text-sm font-semibold px-4 py-3 mb-5">{error}</div>
+          <div className="rounded-2xl text-sm font-semibold px-4 py-3 mb-5" style={{ background: '#FFE6E2', color: '#C23018' }}>{error}</div>
         ) : (
-          <p className="text-sm text-base-content/55 mb-6 leading-relaxed">
+          <p className="text-sm font-semibold mb-6 leading-relaxed" style={{ color: C.muted }}>
             {test.questions.length} вопросов · {test.duration_min} минут
             {test.coin_reward > 0 && ` · +${test.coin_reward} коинов при результате ≥ 50%`}.
             <br />
@@ -162,7 +170,7 @@ export default function TestTake() {
           </p>
         )}
         <div className="flex gap-2.5">
-          <Link to="/tests" className="btn btn-ghost rounded-2xl">Назад</Link>
+          <Link to="/tests" className="k-press-sm px-5 py-2.5 rounded-2xl text-[14.5px] font-extrabold" style={{ color: C.muted }}>Назад</Link>
           {!error && (
             <Button className="flex-1" onClick={start} disabled={busy}>
               {busy ? <span className="loading loading-spinner loading-sm" /> : 'Начать тест'}
@@ -177,21 +185,31 @@ export default function TestTake() {
   const low = remaining !== null && remaining < 60;
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="sticky top-4 z-10 mb-5 flex items-center justify-between gap-4 rounded-2xl bg-neutral text-neutral-content px-5 py-3.5 shadow-lg">
+      <div
+        className="sticky top-4 z-10 mb-5 flex items-center justify-between gap-4 rounded-2xl px-5 py-3.5"
+        style={{ background: C.ink, color: '#fff', boxShadow: '0 10px 24px rgba(60,40,10,0.18)' }}
+      >
         <div className="flex items-center gap-2.5 min-w-0">
           <Timer size={20} className="shrink-0" />
           <b className="truncate">{test.title}</b>
         </div>
-        <div className={`quiz-clock text-2xl font-extrabold ${low ? 'quiz-clock--low' : 'text-limebrand'}`}>
+        <div className="k-num text-2xl" style={{ color: low ? C.coral : C.lime }}>
           {remaining !== null ? fmtDuration(remaining) : '—'}
         </div>
       </div>
 
       <div className="space-y-4">
         {test.questions.map((q, qi) => (
-          <div key={qi} className="card bg-base-100 p-5">
+          <div
+            key={qi}
+            className="k-pop-in k-card p-5"
+            style={{ animationDelay: `${Math.min(qi, 9) * 50}ms` }}
+          >
             <div className="flex gap-3 mb-4">
-              <span className="shrink-0 h-6 min-w-6 px-2 rounded-full bg-primary text-primary-content text-xs font-extrabold grid place-items-center tabular-nums">
+              <span
+                className="shrink-0 h-6 min-w-6 px-2 rounded-full text-xs font-extrabold grid place-items-center tabular-nums"
+                style={{ background: C.lime, color: C.ink }}
+              >
                 {qi + 1}
               </span>
               <p className="font-bold text-[15px] leading-snug pt-0.5">{q.q}</p>
@@ -202,16 +220,16 @@ export default function TestTake() {
                 return (
                   <label
                     key={oi}
-                    className={`flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer text-sm transition-colors ${
-                      selected ? 'border-primary bg-primary/8 font-semibold' : 'border-base-300 bg-base-200/40 hover:bg-base-200'
-                    }`}
+                    className={`k-press flex items-center gap-3 rounded-2xl px-4 py-3 cursor-pointer text-sm transition-colors ${selected ? 'font-extrabold' : 'font-semibold'}`}
+                    style={selected ? { background: '#FFF1CE', color: '#8A5F00' } : { background: C.bg, color: C.text }}
                   >
                     <input
                       type="radio"
                       name={`q${qi}`}
-                      className="radio radio-primary radio-sm"
+                      className="radio radio-sm"
                       checked={selected}
                       onChange={() => setAnswers((prev) => prev.map((a, i) => (i === qi ? oi : a)))}
+                      style={{ accentColor: C.lime }}
                     />
                     {opt}
                   </label>
@@ -222,9 +240,9 @@ export default function TestTake() {
         ))}
       </div>
 
-      <div className="card bg-base-100 mt-4 p-4 flex-row items-center justify-between gap-4 sticky bottom-4 sm:static">
-        <span className="text-sm text-base-content/55">
-          Отвечено: <b className="tabular-nums text-base-content">{answered}/{test.questions.length}</b>
+      <div className="k-card mt-4 p-4 flex items-center justify-between gap-4 sticky bottom-4 sm:static">
+        <span className="text-sm font-bold" style={{ color: C.muted }}>
+          Отвечено: <b className="k-num" style={{ color: C.text }}><CountUp value={answered} />/{test.questions.length}</b>
         </span>
         <Button onClick={() => submit(false)} disabled={busy}>
           {busy ? <span className="loading loading-spinner loading-sm" /> : 'Завершить тест'}
