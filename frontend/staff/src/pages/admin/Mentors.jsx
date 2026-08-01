@@ -140,6 +140,7 @@ export default function AdminMentors() {
   const [busy, setBusy] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [apiErr, setApiErr] = useState('');
+  const [notice, setNotice] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [gradeBusy, setGradeBusy] = useState(null);
@@ -149,35 +150,68 @@ export default function AdminMentors() {
   const activeCount = rows.filter((m) => m.status !== 'frozen').length;
   const frozenCount = rows.filter((m) => m.status === 'frozen').length;
 
-  /* Validation — matches backend createMentorSchema */
+  /* Validation — matches backend createMentorSchema; в edit-режиме email/password
+     опциональны (предзаполнены/пустые), но при заполнении проверяются так же */
   const validate = () => {
     const errs = {};
     if (!form.firstName.trim()) errs.firstName = 'Ism majburiy';
     if (!form.lastName.trim()) errs.lastName = 'Familiya majburiy';
+    const emailOk = form.email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+    const passwordOk = form.password && form.password.length >= 8;
     if (!form.id) {
       if (!form.email.trim()) errs.email = 'Email majburiy';
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
-        errs.email = "Email noto'g'ri formatda";
+      else if (!emailOk) errs.email = "Email noto'g'ri formatda";
       if (!form.password) errs.password = 'Parol majburiy';
-      else if (form.password.length < 8) errs.password = 'Kamida 8 ta belgi bo\'lishi kerak';
+      else if (!passwordOk) errs.password = 'Kamida 8 ta belgi bo\'lishi kerak';
+    } else {
+      if (form.email.trim() && !emailOk) errs.email = "Email noto'g'ri formatda";
+      if (form.password && !passwordOk) errs.password = 'Kamida 8 ta belgi bo\'lishi kerak';
     }
     return errs;
   };
 
   const save = async () => {
     setApiErr('');
+    setNotice('');
     const errs = validate();
     if (Object.keys(errs).length > 0) { setFieldErrors(errs); return; }
     setFieldErrors({});
     setBusy(true);
     try {
       if (form.id) {
-        /* PATCH — backend updateMentorSchema: firstName, lastName, phone, grade (all optional) */
+        /* PATCH — backend updateMentorSchema: firstName, lastName, phone, grade (все
+           опциональны). email/password пока НЕ принимаются (zod их выкидывает) —
+           отправляем их всё равно и после ответа сверяем email: если бэкенд
+           «съел» поле, честно предупреждаем и ждём доработки Karis. */
+        const emailSent = form.email.trim().toLowerCase();
+        const passwordSent = !!form.password;
+        const prevMentor = rows.find((m) => m.id === form.id);
+        const prevEmail = (prevMentor?.email || '').trim().toLowerCase();
+        const emailChanged = emailSent !== prevEmail;
+
         const body = {};
         if (form.firstName.trim()) body.firstName = form.firstName.trim();
         if (form.lastName.trim()) body.lastName = form.lastName.trim();
         if (form.phone) body.phone = form.phone;
-        await api.adminUpdateMentor(token, form.id, body);
+        if (emailSent) body.email = emailSent;
+        if (passwordSent) body.password = form.password;
+
+        const res = await api.adminUpdateMentor(token, form.id, body);
+        const savedEmail = ((res?.mentor?.email) || '').trim().toLowerCase();
+
+        /* Стриппинг ловим так: email изменён, но ответ вернул старый — значит
+           updateMentorSchema не принял поле. Пароль в ответе не приходит, поэтому
+           при смене только пароля полагаемся на известный gap схемы. */
+        const stripped = (emailChanged && savedEmail !== emailSent) || (passwordSent && !emailChanged);
+
+        refetch();
+        if (stripped) {
+          setNotice(
+            'Email/parol saqlanmadi — backend updateMentorSchema hali bu maydonlarni qabul qilmaydi. Karis kengaytirguncha ular faqat yaratishda ishlaydi.'
+          );
+        } else {
+          setForm(null);
+        }
       } else {
         /* POST — backend createMentorSchema: firstName, lastName, email, password required; phone optional */
         const body = {
@@ -188,9 +222,9 @@ export default function AdminMentors() {
         };
         if (form.phone) body.phone = form.phone;
         await api.adminCreateMentor(token, body);
+        setForm(null);
+        refetch();
       }
-      setForm(null);
-      refetch();
     } catch (e) {
       setApiErr(e.message || 'Xatolik yuz berdi');
     } finally {
@@ -214,6 +248,7 @@ export default function AdminMentors() {
     setForm(emptyForm);
     setFieldErrors({});
     setApiErr('');
+    setNotice('');
     setShowPassword(false);
   };
 
@@ -228,6 +263,8 @@ export default function AdminMentors() {
     });
     setFieldErrors({});
     setApiErr('');
+    setNotice('');
+    setShowPassword(false);
   };
 
   const patch = (key, val) => {
@@ -297,6 +334,12 @@ export default function AdminMentors() {
               </div>
             )}
 
+            {notice && (
+              <div className="alert alert-warning py-2 text-sm mb-4">
+                <span>{notice}</span>
+              </div>
+            )}
+
             <div className="space-y-3">
               {/* Name row */}
               <div className="grid grid-cols-2 gap-3">
@@ -327,44 +370,42 @@ export default function AdminMentors() {
                 />
               </Field>
 
-              {/* Email + Password — create only */}
-              {!form.id && (
-                <>
-                  <Field label="Email * (kirish uchun)" error={fieldErrors.email}>
-                    <div className="relative">
-                      <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/35 pointer-events-none" />
-                      <input
-                        className={`input input-bordered w-full pl-9 ${fieldErrors.email ? 'input-error' : ''}`}
-                        type="email"
-                        placeholder="mentor@example.com"
-                        value={form.email}
-                        onChange={(e) => patch('email', e.target.value)}
-                      />
-                    </div>
-                  </Field>
+              {/* Email + Password — create: обязательны; edit: опциональны (предзаполнен email,
+                  пароль пуст — отправляется только если заполнен). Бэкенд-схема пока принимает
+                  их лишь при создании, при редактировании — известный gap, см. save() */}
+              <Field label={form.id ? 'Email (kirish uchun)' : 'Email * (kirish uchun)'} error={fieldErrors.email}>
+                <div className="relative">
+                  <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/35 pointer-events-none" />
+                  <input
+                    className={`input input-bordered w-full pl-9 ${fieldErrors.email ? 'input-error' : ''}`}
+                    type="email"
+                    placeholder="mentor@example.com"
+                    value={form.email}
+                    onChange={(e) => patch('email', e.target.value)}
+                  />
+                </div>
+              </Field>
 
-                  <Field label="Parol * (kamida 8 belgi)" error={fieldErrors.password}>
-                    <div className="relative">
-                      <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/35 pointer-events-none" />
-                      <input
-                        className={`input input-bordered w-full pl-9 pr-10 ${fieldErrors.password ? 'input-error' : ''}`}
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Kamida 8 ta belgi"
-                        value={form.password}
-                        onChange={(e) => patch('password', e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content transition-colors"
-                        onClick={() => setShowPassword((v) => !v)}
-                        tabIndex={-1}
-                      >
-                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                      </button>
-                    </div>
-                  </Field>
-                </>
-              )}
+              <Field label={form.id ? 'Parol (faqat o\'zgartirilganda)' : 'Parol * (kamida 8 belgi)'} error={fieldErrors.password}>
+                <div className="relative">
+                  <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/35 pointer-events-none" />
+                  <input
+                    className={`input input-bordered w-full pl-9 pr-10 ${fieldErrors.password ? 'input-error' : ''}`}
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={form.id ? 'Yangi parol (ixtiyoriy)' : 'Kamida 8 ta belgi'}
+                    value={form.password}
+                    onChange={(e) => patch('password', e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content transition-colors"
+                    onClick={() => setShowPassword((v) => !v)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </Field>
             </div>
 
             <div className="modal-action mt-5">

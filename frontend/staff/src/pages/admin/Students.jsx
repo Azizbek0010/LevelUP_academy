@@ -16,6 +16,9 @@ import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip } from '../mento
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
 
+/* Qarz summasi — backend `totalDebt` kabi qaytaradi (eski aliaslar ham saqlanadi) */
+const studentDebt = (s) => Number(s.totalDebt || s.debt || s.outstandingDebt || s.balance || 0);
+
 const emptyForm = { firstName: '', lastName: '', phone: '', birthDate: '', groupId: '', parentFirstName: '', parentLastName: '', parentPhone: '' };
 
 const STATUS_COLORS = {
@@ -28,6 +31,7 @@ const STATUS_COLORS = {
 function StudentCard({ s, onNavigate }) {
   const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
   const groupNames = (s.groups && s.groups.length > 0) ? s.groups.map((g) => g.name).filter(Boolean) : (s.groupName ? [s.groupName] : []);
+  const debt = studentDebt(s);
 
   return (
     <div className="card bg-base-100 p-4 card-hover-premium group cursor-pointer" onClick={() => onNavigate?.(s.id)}>
@@ -45,6 +49,12 @@ function StudentCard({ s, onNavigate }) {
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
                 style={{ background: status.bg, color: status.text }}>
                 {status.label}
+              </span>
+            )}
+            {debt > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                style={{ background: '#E8543E15', color: '#E8543E' }}>
+                <AlertTriangle size={10} /> Долг {debt.toLocaleString('ru-RU')} сум
               </span>
             )}
           </div>
@@ -100,7 +110,7 @@ export default function AdminStudents() {
 
   const activeCount = rows.filter((s) => s.status !== 'frozen').length;
   const frozenCount = rows.filter((s) => s.status === 'frozen').length;
-  const debtCount = rows.filter((s) => (s.debt || s.outstandingDebt || s.balance || 0) > 0).length;
+  const debtCount = rows.filter((s) => studentDebt(s) > 0).length;
   const filteredRows = useMemo(() => {
     let result = rows;
     if (search.trim()) {
@@ -115,7 +125,7 @@ export default function AdminStudents() {
     if (statusFilter === 'all') return result;
     if (statusFilter === 'active') return result.filter(s => s.status !== 'frozen');
     if (statusFilter === 'frozen') return result.filter(s => s.status === 'frozen');
-    if (statusFilter === 'debt') return result.filter(s => (s.debt || s.outstandingDebt || s.balance || 0) > 0);
+    if (statusFilter === 'debt') return result.filter(s => studentDebt(s) > 0);
     return result;
   }, [rows, search, statusFilter]);
 
@@ -247,10 +257,19 @@ export default function AdminStudents() {
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
       ) : filteredRows.length === 0 ? (
         <EmptyState
-          icon={GraduationCap}
-          title={search ? 'Попробуйте изменить запрос' : statusFilter === 'frozen' ? 'Нет замороженных студентов' : 'Нет студентов'}
-          hint={search || statusFilter === 'frozen' ? undefined : 'Добавьте первого студента'}
-          action={(!search && statusFilter !== 'frozen') ? (
+          icon={statusFilter === 'debt' ? AlertTriangle : GraduationCap}
+          title={
+            search ? 'Попробуйте изменить запрос'
+              : statusFilter === 'frozen' ? 'Нет замороженных студентов'
+              : statusFilter === 'debt' ? 'Нет должников'
+              : 'Нет студентов'
+          }
+          hint={
+            search || statusFilter === 'frozen' ? undefined
+              : statusFilter === 'debt' ? 'У всех студентов оплата в порядке'
+              : 'Добавьте первого студента'
+          }
+          action={(!search && statusFilter !== 'frozen' && statusFilter !== 'debt') ? (
             <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
               <Plus size={14} /> Добавить
             </button>
@@ -275,6 +294,7 @@ export default function AdminStudents() {
                   <th>Телефон</th>
                   <th>Группы</th>
                   <th>Коины</th>
+                  <th>Долг</th>
                   <th>Статус</th>
                 </tr>
               </thead>
@@ -312,6 +332,15 @@ export default function AdminStudents() {
                           <Coins size={11} /> {s.coins}
                         </span>
                       ) : '—'}
+                    </td>
+                    <td className="tabular-nums">
+                      {studentDebt(s) > 0 ? (
+                        <span className="inline-flex items-center gap-1 font-bold text-[11px]" style={{ color: '#E8543E' }}>
+                          <AlertTriangle size={11} /> {studentDebt(s).toLocaleString('ru-RU')}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-semibold" style={{ color: '#2ECC71' }}>Нет</span>
+                      )}
                     </td>
                     <td>
                       {s.status !== 'active' && (

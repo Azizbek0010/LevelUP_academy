@@ -121,6 +121,12 @@ function AttendanceTab({ groupId, token }) {
   const group = groupRaw.group || groupRaw;
   const students = group.students || [];
 
+  // Замороженные ученики: в журнале им отметки ставить/менять нельзя.
+  const frozenIds = useMemo(
+    () => new Set(students.filter((s) => s.status === 'frozen').map((s) => s.id || s.studentId)),
+    [students],
+  );
+
   // Determine lesson weekdays from group schedule
   // schedule may come as JSON string from DB — force parse to array
   const scheduleArray = useMemo(() => {
@@ -261,6 +267,7 @@ function AttendanceTab({ groupId, token }) {
   const toggleDay = useCallback((studentId, day) => {
     const dateKey = dateKeyFor(day);
     if (dateKey > todayStr) return; // будущий урок — не трогаем
+    if (frozenIds.has(studentId)) return; // замороженный ученик — не трогаем
     const key = `${studentId}_${dateKey}`;
     const cycle = { absent: 'present', present: 'late', late: 'absent' };
     const next = cycle[mapRef.current[key]] || 'present';
@@ -271,7 +278,7 @@ function AttendanceTab({ groupId, token }) {
     correctedRef.current = { ...correctedRef.current, [key]: true };
     setCorrectedMap({ ...correctedRef.current });
     queueSave(dateKey, studentId, next);
-  }, [year, month, groupId, token]);
+  }, [year, month, groupId, token, frozenIds]);
 
   /* ── Auto-save with debounce ── */
   const flush = useCallback(async () => {
@@ -388,12 +395,6 @@ function AttendanceTab({ groupId, token }) {
             Не пришёл
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="w-6 h-6 rounded-lg border border-gray-200 grid place-items-center text-gray-300">
-              <Minus size={13} />
-            </span>
-            Не отмечен
-          </li>
-          <li className="flex items-center gap-1.5">
             <span className="relative w-6 h-6 rounded-lg border border-base-300 grid place-items-center ring-2 ring-indigo-500 ring-offset-1">
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-base-100" />
             </span>
@@ -486,6 +487,7 @@ function AttendanceTab({ groupId, token }) {
                 const firstName = s.firstName || s.first_name || '';
                 const lastName = s.lastName || s.last_name || '';
                 const studentFullName = fullName(s);
+                const frozen = s.status === 'frozen';
                 // Count present days
                 let presentCount = 0;
                 DAYS.forEach((d) => {
@@ -510,6 +512,11 @@ function AttendanceTab({ groupId, token }) {
                           <div className="text-sm font-semibold truncate text-base-content group-hover:text-primary transition-colors">
                             {firstName} {lastName}
                           </div>
+                          {frozen && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
+                              Заморожен
+                            </span>
+                          )}
                         </div>
                       </Link>
                     </td>
@@ -520,8 +527,9 @@ function AttendanceTab({ groupId, token }) {
                       const cellKey = `${sid}_${dateKey}`;
                       const status = attendanceMap[cellKey];
                       const corrected = correctedMap[cellKey];
-                      // Будущий урок — не редактируется (как и у ментора).
+                      // Будущий урок и замороженный ученик — не редактируются.
                       const future = dateKey > todayStr;
+                      const notEditable = future || frozen;
                       return (
                         <td
                           key={d}
@@ -529,12 +537,13 @@ function AttendanceTab({ groupId, token }) {
                         >
                           <button
                             onClick={() => toggleDay(sid, d)}
-                            disabled={future}
+                            disabled={notEditable}
                             title={
-                              future ? 'Будущий урок — отметить нельзя'
+                              frozen ? 'Ученик заморожен — отметить нельзя'
+                                : future ? 'Будущий урок — отметить нельзя'
                                 : corrected ? 'Исправлено администратором' : undefined
                             }
-                            className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status)} ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''} ${future ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'}`}
+                            className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status)} ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''} ${notEditable ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'} ${future ? 'opacity-40' : frozen ? 'opacity-60' : ''}`}
                           >
                             {cellIcon(status)}
                             {/* Отметка «исправлено администратором»: клетка держит

@@ -1,6 +1,6 @@
 /**
  * Admin Panel Export Utilities
- * Supports: Excel (.xlsx), PDF, CSV
+ * Supports: Excel (.xlsx), PDF
  * Uses: xlsx (SheetJS), jspdf + jspdf-autotable
  */
 
@@ -195,74 +195,6 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
 }
 
 
-// ═══════════════ CSV ═══════════════
-
-export function exportToCSV(data, columns, filename = `export_${today()}`) {
-  const { header, rows } = buildRows(data, columns);
-
-  const escapeCSV = (val) => {
-    const str = String(val ?? '—');
-    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-      return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
-  };
-
-  const csvContent = [
-    header.map(escapeCSV).join(','),
-    ...rows.map((r) => r.map(escapeCSV).join(',')),
-  ].join('\n');
-
-  // Add BOM for proper Cyrillic support in Excel
-  const BOM = '\uFEFF';
-  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${filename}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-// ═══════════════ Markdown (.md) ═══════════════
-
-export function exportToMarkdown(data, columns, filename = `export_${today()}`, title = 'Отчёт') {
-  const { header, rows } = buildRows(data, columns);
-  const dateStr = new Date().toLocaleDateString('ru-RU');
-
-  const lines = [];
-  lines.push(`# ${title}`);
-  lines.push('');
-  lines.push(`> 📅 Дата: ${dateStr}  |  📊 Записей: ${data.length}`);
-  lines.push('');
-
-  // Table header
-  lines.push(`| ${header.join(' | ')} |`);
-  lines.push(`| ${header.map(() => '---').join(' | ')} |`);
-
-  // Table rows
-  for (const row of rows) {
-    const escaped = row.map((cell) => {
-      const str = String(cell ?? '—');
-      return str.replace(/\|/g, '\\|').replace(/\n/g, ' ');
-    });
-    lines.push(`| ${escaped.join(' | ')} |`);
-  }
-
-  lines.push('');
-  lines.push('---');
-  lines.push('*LevelUp Academy — Exported Report*');
-
-  const md = lines.join('\n');
-  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${filename}.md`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 // ═══════════════ Main Dispatcher ═══════════════
 
 export async function exportData(format, data, columns, filename, title) {
@@ -271,10 +203,6 @@ export async function exportData(format, data, columns, filename, title) {
       return exportToExcel(data, columns, filename);
     case 'pdf':
       return exportToPDF(data, columns, filename, title);
-    case 'csv':
-      return exportToCSV(data, columns, filename);
-    case 'markdown':
-      return exportToMarkdown(data, columns, filename, title);
     default:
       throw new Error(`Unknown format: ${format}`);
   }
