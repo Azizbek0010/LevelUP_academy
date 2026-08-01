@@ -9,11 +9,12 @@ import { fmt, dateShort, money, ADMIN_STATUS, ROLE_LABELS } from '../../format.j
 import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
-import Avatar from '../../components/Avatar.jsx';
 import { SkeletonKpis, SkeletonTable, SkeletonList } from '../../components/Skeleton.jsx';
 import { phoneDisplay } from '../../components/PhoneInput.jsx';
-import { Kpi, Panel, EmptyState } from '../mentor/_ui.jsx';
+import { Metric, Panel, EmptyState, PageHead, StatusBadge, Avatar } from './_ui.jsx';
 import { TYPE_META, LevelBadge } from '../../discipline-meta.jsx';
+
+const STATUS_CLS_TONE = { 'badge-success': 'success', 'badge-error': 'danger' };
 
 /**
  * Полная карточка сотрудника (Admin/Methodist) — отдельная страница, а не
@@ -120,46 +121,35 @@ export default function StaffDetail() {
 
   return (
     <div className="space-y-5">
-      <div className="text-xs breadcrumbs text-base-content/50">
-        <ul>
-          <li><Link to="/admins" className="hover:text-base-content font-medium">Сотрудники</Link></li>
-          <li className="font-semibold text-base-content">{fullName}</li>
-        </ul>
-      </div>
-
-      <div className="flex flex-wrap items-start justify-between gap-3 animate-page-enter">
-        <div className="flex items-center gap-3.5">
-          <Avatar name={fullName} size={44} />
-          <div>
-            <h1 className="text-[28px] font-extrabold tracking-tight leading-tight text-base-content">{fullName}</h1>
-            <p className="text-[13px] text-base-content/70 mt-0.5">{ROLE_LABELS[role] ?? role}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {role === 'mentor' && person.grade && GRADE_META[person.grade] && (
-            <span
-              className="badge badge-outline badge-sm gap-1.5 font-semibold"
-              style={{ borderColor: GRADE_META[person.grade].color, color: GRADE_META[person.grade].color }}
-            >
-              <Award size={11} /> {GRADE_META[person.grade].label}
-            </span>
-          )}
-          {lastViolation && (
-            <span className="badge badge-ghost badge-sm gap-1.5">
-              <ScrollText size={11} /> Последнее: {dateShort(lastViolation.created_at ?? lastViolation.createdAt)}
-            </span>
-          )}
-          <span className={`badge font-semibold ${status.cls}`}>{status.label}</span>
-        </div>
-      </div>
+      <PageHead
+        breadcrumbs={[{ label: 'Сотрудники', to: '/admins' }, { label: fullName }]}
+        avatar={<Avatar name={fullName} size="lg" />}
+        title={fullName}
+        subtitle={ROLE_LABELS[role] ?? role}
+      >
+        {role === 'mentor' && person.grade && GRADE_META[person.grade] && (
+          <span
+            className="badge badge-outline badge-sm gap-1.5 font-semibold"
+            style={{ borderColor: GRADE_META[person.grade].color, color: GRADE_META[person.grade].color }}
+          >
+            <Award size={11} /> {GRADE_META[person.grade].label}
+          </span>
+        )}
+        {lastViolation && (
+          <span className="badge badge-ghost badge-sm gap-1.5">
+            <ScrollText size={11} /> Последнее: {dateShort(lastViolation.created_at ?? lastViolation.createdAt)}
+          </span>
+        )}
+        <StatusBadge tone={STATUS_CLS_TONE[status.cls] ?? 'neutral'}>{status.label}</StatusBadge>
+      </PageHead>
 
       {penalties.isLoading ? (
         <SkeletonKpis count={3} className="grid-cols-1 sm:grid-cols-3" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Kpi Icon={TriangleAlert} tone="warning" title="Жёлтые" value={fmt(totals.sariq)} unit="предупреждений" />
-          <Kpi Icon={ShieldAlert} tone="danger" title="Красные" value={fmt(totals.qizil)} unit="предупреждений" />
-          <Kpi Icon={Ban} tone="danger" title="Увольнения" value={fmt(totals.qora)} unit="записей" />
+          <Metric Icon={TriangleAlert} tone="warning" label="Жёлтые" value={fmt(totals.sariq)} unit="предупреждений" />
+          <Metric Icon={ShieldAlert} tone="danger" label="Красные" value={fmt(totals.qizil)} unit="предупреждений" />
+          <Metric Icon={Ban} tone="danger" label="Увольнения" value={fmt(totals.qora)} unit="записей" />
         </div>
       )}
 

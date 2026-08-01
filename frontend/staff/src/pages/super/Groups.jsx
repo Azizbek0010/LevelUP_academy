@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { Archive, ArchiveRestore, Trash2, Search, Users, Layers, Banknote } from 'lucide-react';
+import { Archive, ArchiveRestore, Trash2, Users, Layers, Banknote } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import Avatar from '../../components/Avatar.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { fmt, money } from '../../format.js';
+import { Card, Metric, SearchInput, FilterPills, ConfirmDialog, Avatar } from './_ui.jsx';
 
 const DAY_LABEL = {
   mon: 'Пн', tue: 'Вт', wed: 'Ср',
@@ -90,48 +90,29 @@ export default function SuperGroups() {
 
       {/* Stat pills */}
       <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2 bg-base-100 rounded-xl px-4 py-2 shadow-sm border border-base-200">
-          <Layers size={16} className="text-primary" />
-          <span className="text-sm font-semibold">Всего: {allGroups.length}</span>
-        </div>
-        <div className="flex items-center gap-2 bg-base-100 rounded-xl px-4 py-2 shadow-sm border border-base-200">
-          <Layers size={16} className="text-success" />
-          <span className="text-sm font-semibold">Активных: {activeCount}</span>
-        </div>
-        <div className="flex items-center gap-2 bg-base-100 rounded-xl px-4 py-2 shadow-sm border border-base-200">
-          <Users size={16} className="text-info" />
-          <span className="text-sm font-semibold">Студентов: {totalStudents}</span>
-        </div>
-        <div className="flex items-center gap-2 bg-base-100 rounded-xl px-4 py-2 shadow-sm border border-base-200">
-          <Banknote size={16} className="text-warning" />
-          <span className="text-sm font-semibold">Оборот/мес: {money(totalRevenue)}</span>
-        </div>
+        <Metric size="sm" Icon={Layers} tone="primary" label="Всего" value={allGroups.length} />
+        <Metric size="sm" Icon={Layers} tone="success" label="Активных" value={activeCount} />
+        <Metric size="sm" Icon={Users} tone="info" label="Студентов" value={totalStudents} />
+        <Metric size="sm" Icon={Banknote} tone="warning" label="Оборот/мес" value={money(totalRevenue)} />
       </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <label className="input input-bordered flex items-center gap-2 flex-1 max-w-sm">
-          <Search size={16} className="text-base-content/40" />
-          <input
-            type="text"
-            placeholder="Поиск по названию..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="grow bg-transparent outline-none text-sm"
-          />
-        </label>
-
-        <div className="join">
-          {['active', 'archived', 'all'].map((f) => (
-            <button
-              key={f}
-              className={`join-item btn btn-sm ${filter === f ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => setFilter(f)}
-            >
-              {f === 'active' ? 'Активные' : f === 'archived' ? 'Архив' : 'Все'}
-            </button>
-          ))}
-        </div>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Поиск по названию..."
+          className="flex-1 max-w-sm"
+        />
+        <FilterPills
+          options={[
+            { key: 'active', label: 'Активные' },
+            { key: 'archived', label: 'Архив' },
+            { key: 'all', label: 'Все' },
+          ]}
+          value={filter}
+          onChange={setFilter}
+        />
       </div>
 
       {/* Content */}
@@ -146,7 +127,7 @@ export default function SuperGroups() {
           Группы не найдены
         </div>
       ) : (
-        <div className="card bg-base-100 shadow-sm">
+        <Card>
           <div className="overflow-x-auto">
             <table className="table table-sm">
               <thead>
@@ -177,7 +158,7 @@ export default function SuperGroups() {
                       <td>
                         {mentorName !== '—' ? (
                           <div className="flex items-center gap-2">
-                            <Avatar name={mentorName} size={28} />
+                            <Avatar name={mentorName} size="sm" />
                             <span className="text-sm">{mentorName}</span>
                           </div>
                         ) : (
@@ -229,42 +210,19 @@ export default function SuperGroups() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Delete confirm modal */}
-      {deleteTarget && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-sm">
-            <h3 className="font-bold text-lg mb-2">Удалить группу?</h3>
-            <p className="text-sm text-base-content/70 mb-6">
-              Вы уверены, что хотите удалить группу <strong>{deleteTarget.name}</strong>? Это действие необратимо.
-            </p>
-            {deleteMutation.error && (
-              <div className="alert alert-error text-xs mb-3">
-                <span>{deleteMutation.error.message}</span>
-              </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleteMutation.isPending}
-              >
-                Отмена
-              </button>
-              <button
-                className="btn btn-error btn-sm"
-                onClick={() => deleteMutation.mutate(deleteTarget.id)}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Удалить'}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setDeleteTarget(null)} />
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Удалить группу?"
+        text={<>Вы уверены, что хотите удалить группу <strong>{deleteTarget?.name}</strong>? Это действие необратимо.</>}
+        onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
+        pending={deleteMutation.isPending}
+        error={deleteMutation.error}
+      />
     </div>
   );
 }

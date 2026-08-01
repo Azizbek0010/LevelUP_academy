@@ -35,7 +35,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
 
 // Пути, которым нельзя подсовывать авто-refresh (иначе цикл/логин ломается)
 const AUTH_PATHS = new Set([
-  '/auth/main/login', '/auth/main/google', '/auth/refresh', '/auth/logout',
+  '/auth/main/login', '/auth/main/google', '/auth/main/refresh', '/auth/main/logout',
   '/auth/forgot-password', '/auth/reset-password',
 ]);
 
@@ -46,7 +46,7 @@ export function setOnTokenRefreshed(cb) { onTokenRefreshed = cb; }
 
 function refreshOnce() {
   if (!refreshPromise) {
-    refreshPromise = rawRequest('/auth/refresh', { method: 'POST' })
+    refreshPromise = rawRequest('/auth/main/refresh', { method: 'POST' })
       .then((d) => {
         onTokenRefreshed?.(d);
         return d.accessToken;
@@ -78,8 +78,8 @@ export const api = {
   loginMain: (login, password) =>
     request('/auth/main/login', { method: 'POST', body: { login, password } }),
   // используется в auth.jsx при загрузке — восстановление сессии по refresh-cookie
-  refresh: () => request('/auth/refresh', { method: 'POST' }),
-  logout: () => request('/auth/logout', { method: 'POST' }),
+  refresh: () => request('/auth/main/refresh', { method: 'POST' }),
+  logout: () => request('/auth/main/logout', { method: 'POST' }),
   googleLogin: (idToken) => request('/auth/main/google', { method: 'POST', body: { idToken } }),
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
   resetPassword: (body) => request('/auth/reset-password', { method: 'POST', body }),

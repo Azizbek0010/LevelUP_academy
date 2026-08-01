@@ -9,6 +9,7 @@ import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
+import { Card, SearchInput, StatusBadge } from './_ui.jsx';
 
 // ---- Constants ----
 
@@ -48,14 +49,14 @@ const ROLE_LABEL = {
   main_admin:  'Main Admin',
 };
 
-const ROLE_BADGE = {
-  superadmin: 'badge-primary',
-  admin:      'badge-info',
-  mentor:     'badge-success',
-  methodist:  'badge-warning',
-  student:    'badge-ghost',
-  parent:     'badge-ghost',
-  main_admin: 'badge-secondary',
+const ROLE_TONE = {
+  superadmin: 'primary',
+  admin:      'info',
+  mentor:     'success',
+  methodist:  'warning',
+  student:    'neutral',
+  parent:     'neutral',
+  main_admin: 'neutral',
 };
 
 // ---- Helpers ----
@@ -151,12 +152,11 @@ export default function SuperAudit() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <input
-          type="text"
-          placeholder="Поиск по имени, действию, IP..."
+        <SearchInput
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input input-bordered input-sm flex-1 max-w-sm"
+          onChange={setSearch}
+          placeholder="Поиск по имени, действию, IP..."
+          className="flex-1 max-w-sm"
         />
         <select
           className="select select-bordered select-sm"
@@ -177,7 +177,7 @@ export default function SuperAudit() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-base-content/40 text-sm">Записей не найдено</div>
       ) : (
-        <div className="card bg-base-100 shadow-sm">
+        <Card>
           <div className="overflow-x-auto">
             <table className="table table-sm">
               <thead>
@@ -229,9 +229,9 @@ export default function SuperAudit() {
                         <div className="flex flex-col gap-0.5">
                           <span className="text-sm font-medium">{actorName}</span>
                           {actorRole && (
-                            <span className={`badge badge-xs ${ROLE_BADGE[actorRole] ?? 'badge-ghost'}`}>
+                            <StatusBadge tone={ROLE_TONE[actorRole] ?? 'neutral'}>
                               {ROLE_LABEL[actorRole] ?? actorRole}
-                            </span>
+                            </StatusBadge>
                           )}
                         </div>
                       </td>
@@ -286,7 +286,7 @@ export default function SuperAudit() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

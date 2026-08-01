@@ -25,29 +25,27 @@ const MOCK_OVERVIEW = {
   currentInvoice: { totalAmount: 200000, paidAmount: 50000 },
   rank: { rank: 3, coins: 350 },
   groups: [
-    { id: 'g1', name: 'A1', subject: 'Ingliz tili', mentorName: 'Акбар Каримов' },
-    { id: 'g2', name: 'A2', subject: 'Ingliz tili', mentorName: 'Мария Иванова' },
-    { id: 'g3', name: 'B1', subject: 'Ingliz tili', mentorName: 'Шерзод Тўраев' },
+    { id: 'g1', name: 'A1', subject: 'A1', mentorName: 'Акбар Каримов', studentCount: 12 },
   ],
   attendance: {
     windowDays: 30,
     summary: { present: 18, absent: 2, late: 1, excused: 1, total: 22 },
     recent: [
       { lessonDate: '2026-07-14', status: 'present', comment: null, groupName: 'A1' },
-      { lessonDate: '2026-07-13', status: 'late', comment: 'Опоздал на 10 минут', groupName: 'A2' },
+      { lessonDate: '2026-07-13', status: 'late', comment: 'Опоздал на 10 минут', groupName: 'A1' },
       { lessonDate: '2026-07-12', status: 'present', comment: null, groupName: 'A1' },
-      { lessonDate: '2026-07-11', status: 'absent', comment: 'Без уважительной причины', groupName: 'A2' },
-      { lessonDate: '2026-07-10', status: 'present', comment: null, groupName: 'B1' },
+      { lessonDate: '2026-07-11', status: 'absent', comment: 'Без уважительной причины', groupName: 'A1' },
+      { lessonDate: '2026-07-10', status: 'present', comment: null, groupName: 'A1' },
       { lessonDate: '2026-07-09', status: 'excused', comment: 'Болел', groupName: 'A1' },
-      { lessonDate: '2026-07-08', status: 'present', comment: null, groupName: 'A2' },
+      { lessonDate: '2026-07-08', status: 'present', comment: null, groupName: 'A1' },
     ],
   },
   grades: {
     homework: [
       { id: 'hw-001', title: 'Упражнения на тему "Present Simple"', score: 88, maxScore: 100, gradedAt: '2026-07-14T10:00:00.000Z', groupName: 'A1', description: 'Выполнить упражнения на Present Simple (стр. 45, №№ 12-18). Показать все решения с проверкой.' },
-      { id: 'hw-002', title: 'Домашнее задание #4', score: 92, maxScore: 100, gradedAt: '2026-07-10T10:00:00.000Z', groupName: 'A2', description: 'Решить задачи на квадратные уравнения (стр. 38, №№ 5-10). Составить уравнения по условию задачи.' },
+      { id: 'hw-002', title: 'Домашнее задание #4', score: 92, maxScore: 100, gradedAt: '2026-07-10T10:00:00.000Z', groupName: 'A1', description: 'Решить задачи на квадратные уравнения (стр. 38, №№ 5-10). Составить уравнения по условию задачи.' },
       { id: 'hw-003', title: 'Практическая работа #3', score: 75, maxScore: 100, gradedAt: '2026-07-06T10:00:00.000Z', groupName: 'A1', description: 'Написать эссе на тему "Мой будущий профессия" (200-250 слов). Использовать Conditional Second Type минимум 3 раза.' },
-      { id: 'hw-004', title: 'Лабораторная работа #2', score: 95, maxScore: 100, gradedAt: '2026-07-02T10:00:00.000Z', groupName: 'B1', description: 'Написать программу на Python: сортировка массива методом пузырька. Добавить комментарии к каждому шагу.' },
+      { id: 'hw-004', title: 'Лабораторная работа #2', score: 95, maxScore: 100, gradedAt: '2026-07-02T10:00:00.000Z', groupName: 'A1', description: 'Написать программу на Python: сортировка массива методом пузырька. Добавить комментарии к каждому шагу.' },
     ],
     tests: [
       { id: 'test-001', title: 'Тест по английскому (Beginner)', score: 8, maxScore: 10, finishedAt: '2026-07-13T14:00:00.000Z', groupName: 'A1', durationMin: 30,
@@ -63,7 +61,7 @@ const MOCK_OVERVIEW = {
           { q: '"The book is ___ the table."', options: ['on', 'in', 'at', 'by'], correct: 0, studentAnswer: 0 },
           { q: '"He asked me where ___."', options: ['I lived', 'did I live', 'I live', 'do I live'], correct: 0, studentAnswer: 0 },
         ]},
-      { id: 'test-002', title: 'Тест по математике (Квадратные уравнения)', score: 6, maxScore: 10, finishedAt: '2026-07-08T14:00:00.000Z', groupName: 'A2', durationMin: 25,
+      { id: 'test-002', title: 'Тест по математике (Квадратные уравнения)', score: 6, maxScore: 10, finishedAt: '2026-07-08T14:00:00.000Z', groupName: 'A1', durationMin: 25,
         questions: [
           { q: 'Решите: x² - 5x + 6 = 0', options: ['x=2, x=3', 'x=1, x=6', 'x=-2, x=-3', 'x=0, x=5'], correct: 0, studentAnswer: 0 },
           { q: 'Дискриминант уравнения 2x² + 3x - 5 = 0 равен:', options: ['49', '25', '1', '9'], correct: 0, studentAnswer: 0 },
@@ -76,7 +74,7 @@ const MOCK_OVERVIEW = {
           { q: 'Корни уравнения 3x² - 12x + 9 = 0:', options: ['x=1, x=3', 'x=2, x=6', 'x=3, x=9', 'x=0, x=4'], correct: 0, studentAnswer: 0 },
           { q: 'Дискриминант: x² - 6x + 9 = 0', options: ['0', '36', '9', '12'], correct: 0, studentAnswer: 0 },
         ]},
-      { id: 'test-003', title: 'Тест по основам программирования', score: 9, maxScore: 10, finishedAt: '2026-07-05T14:00:00.000Z', groupName: 'B1', durationMin: 20,
+      { id: 'test-003', title: 'Тест по основам программирования', score: 9, maxScore: 10, finishedAt: '2026-07-05T14:00:00.000Z', groupName: 'A1', durationMin: 20,
         questions: [
           { q: 'Что такое переменная?', options: ['Именованная область памяти', 'Тип данных', 'Функция', 'Цикл'], correct: 0, studentAnswer: 0 },
           { q: 'Какой оператор используется для условий?', options: ['if', 'for', 'while', 'return'], correct: 0, studentAnswer: 0 },
@@ -92,6 +90,22 @@ const MOCK_OVERVIEW = {
     ],
   },
 };
+
+// Guruh reytingi — bitta gruppadagi barcha bolalar
+const MOCK_GROUP_RATING = [
+  { childId: 'mock-child-001', firstName: 'Диёр', lastName: 'Собиров', coins: 350, avgScore: 88, rank: 1 },
+  { childId: 'mock-child-003', firstName: 'Сардор', lastName: 'Каримов', coins: 320, avgScore: 85, rank: 2 },
+  { childId: 'mock-child-004', firstName: 'Нилуфар', lastName: 'Рустамова', coins: 290, avgScore: 82, rank: 3 },
+  { childId: 'mock-child-005', firstName: 'Жасур', lastName: 'Тўраев', coins: 270, avgScore: 79, rank: 4 },
+  { childId: 'mock-child-006', firstName: 'Малика', lastName: 'Холматова', coins: 250, avgScore: 76, rank: 5 },
+  { childId: 'mock-child-007', firstName: 'Умид', lastName: 'Жўраев', coins: 230, avgScore: 73, rank: 6 },
+  { childId: 'mock-child-008', firstName: 'Зарина', lastName: 'Назарова', coins: 210, avgScore: 70, rank: 7 },
+  { childId: 'mock-child-009', firstName: 'Бехзод', lastName: 'Алиев', coins: 190, avgScore: 67, rank: 8 },
+  { childId: 'mock-child-010', firstName: 'Гулнора', lastName: 'Маматова', coins: 170, avgScore: 64, rank: 9 },
+  { childId: 'mock-child-011', firstName: 'Даврон', lastName: 'Исмоилов', coins: 150, avgScore: 61, rank: 10 },
+  { childId: 'mock-child-012', firstName: 'Ойбек', lastName: 'Сатторов', coins: 130, avgScore: 58, rank: 11 },
+  { childId: 'mock-child-013', firstName: 'Лола', lastName: 'Эргашева', coins: 110, avgScore: 55, rank: 12 },
+];
 
 const MOCK_CHAT_MESSAGES = {
   global: [
@@ -176,7 +190,7 @@ let mockMsgCounter = 100;
 
 // FE-PARENT-PAGINATION: более длинные списки, чтобы в моке было что листать
 // (overview.recent/homework/tests короткие — там нужен только виджет обзора)
-const ATTENDANCE_GROUPS = ['Математика A', 'Английский B', 'Информатика'];
+const ATTENDANCE_GROUPS = ['A1'];
 const ATTENDANCE_STATUSES = ['present', 'present', 'present', 'late', 'absent', 'excused'];
 const MOCK_ATTENDANCE_HISTORY = Array.from({ length: 45 }, (_, i) => ({
   lessonDate: new Date(Date.now() - 86400000 * i).toISOString().slice(0, 10),
@@ -237,7 +251,7 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
     return { user, accessToken: `mock-jwt-${account.role}-xyz` };
   }
 
-  if (path === '/auth/refresh') {
+  if (path === '/auth/member/refresh') {
     const mockToken = localStorage.getItem('mock_member_token');
     const mockUser = JSON.parse(localStorage.getItem('mock_member_user') || 'null');
     if (mockToken && mockUser) return { user: mockUser, accessToken: mockToken };
@@ -246,7 +260,7 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
     throw err;
   }
 
-  if (path === '/auth/logout') {
+  if (path === '/auth/member/logout') {
     localStorage.removeItem('mock_member_token');
     localStorage.removeItem('mock_member_user');
     return { success: true };
@@ -258,6 +272,11 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
 
   if (path === '/parent/children/mock-child-001/overview') {
     return { data: MOCK_OVERVIEW };
+  }
+
+  // GROUP RATING — bitta guruhdagi barcha bolalar reytingi
+  if (/^\/parent\/children\/[^/]+\/group-rating/.test(path)) {
+    return { data: { groupId: 'g1', groupName: 'A1', students: MOCK_GROUP_RATING } };
   }
 
   // HOMEWORK DETAIL
@@ -408,7 +427,7 @@ export function mockChatSend(roomKey, body, user) {
 }
 
 // Пути, которым нельзя подсовывать авто-refresh (иначе цикл/логин ломается)
-const AUTH_PATHS = new Set(['/auth/member/login', '/auth/refresh', '/auth/logout']);
+const AUTH_PATHS = new Set(['/auth/member/login', '/auth/member/refresh', '/auth/member/logout']);
 
 // Единый refreshPromise — параллельные 401 ждут один и тот же refresh, не долбят его по отдельности
 let refreshPromise = null;
@@ -417,7 +436,7 @@ export function setOnTokenRefreshed(cb) { onTokenRefreshed = cb; }
 
 function refreshOnce() {
   if (!refreshPromise) {
-    refreshPromise = rawRequest('/auth/refresh', { method: 'POST' })
+    refreshPromise = rawRequest('/auth/member/refresh', { method: 'POST' })
       .then((d) => {
         onTokenRefreshed?.(d);
         return d.accessToken;
@@ -447,11 +466,12 @@ async function request(path, opts = {}) {
 export const api = {
   loginMember: (login, password) =>
     request('/auth/member/login', { method: 'POST', body: { login, password } }),
-  refresh: () => request('/auth/refresh', { method: 'POST' }),
-  logout: () => request('/auth/logout', { method: 'POST' }),
+  refresh: () => request('/auth/member/refresh', { method: 'POST' }),
+  logout: () => request('/auth/member/logout', { method: 'POST' }),
 
   parentChildren: (token) => request('/parent/children', { token }),
   parentOverview: (token, childId) => request(`/parent/children/${childId}/overview`, { token }),
+  parentGroupRating: (token, childId) => request(`/parent/children/${childId}/group-rating`, { token }),
   parentHomeworkDetail: (token, homeworkId) => request(`/parent/homework/${homeworkId}`, { token }),
   parentTestDetail: (token, testId) => request(`/parent/tests/${testId}`, { token }),
 

@@ -107,6 +107,26 @@ const mock = {
     { id: 'o1', item_id: 'i1', item_name: 'Стикерпак LevelUp', image_key: null, coin_price: 100, created_at: new Date(Date.now() - 7 * 864e5).toISOString() },
   ],
   attempts: {}, // testId -> { endsAt }
+  topics: [
+    {
+      id: 'top1', name: 'Алгебра — уравнения', description: 'Линейные уравнения и их решение', videoUrl: null,
+      lessons: [
+        {
+          id: 'lsn1', title: 'Проверь себя: линейные уравнения', type: 'test', description: null, coinReward: 25, videoUrl: null,
+          questions: [
+            { id: 'q1', question: 'Реши: 2x + 4 = 10. Чему равен x?', options: ['1', '3', '2', '4'], correct: 'B' },
+            { id: 'q2', question: 'Реши: x − 5 = 0. Чему равен x?', options: ['0', '−5', '5', '10'], correct: 'C' },
+            { id: 'q3', question: 'Реши: 3x = 12. Чему равен x?', options: ['3', '5', '6', '4'], correct: 'D' },
+          ],
+        },
+        {
+          id: 'lsn2', title: 'Домашнее задание: 5 уравнений', type: 'practical', description: 'Реши 5 уравнений в тетради и пришли фото решения.', coinReward: 15, videoUrl: null,
+        },
+      ],
+    },
+  ],
+  lessonAttempts: {}, // lessonId -> { started_at, finished_at, score, answers }
+  lessonSubmissions: {}, // lessonId -> { status, score, submitted_at, file_key, text_answer }
 };
 
 function mockLeaderboard(period) {
@@ -129,8 +149,8 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
   const query = Object.fromEntries(new URLSearchParams(path.split('?')[1] || ''));
 
   // -- session --
-  if (path === '/auth/refresh') return { user: mock.user, accessToken: 'mock-token' };
-  if (path === '/auth/logout') return { success: true };
+  if (path === '/auth/member/refresh') return { user: mock.user, accessToken: 'mock-token' };
+  if (path === '/auth/member/logout') return { success: true };
 
   // TG-FRONT
   if (path === '/telegram/bind-token') {
@@ -209,6 +229,118 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
     }
 
     if (area === 'leaderboard') return { data: mockLeaderboard(query.period || 'week') };
+
+    if (area === 'lessons') {
+      const findLesson = (lessonId) => {
+        for (const topic of mock.topics) {
+          const lesson = topic.lessons.find((l) => l.id === lessonId);
+          if (lesson) return { topic, lesson };
+        }
+        return null;
+      };
+
+      if (!id) {
+        return {
+          data: mock.topics.map((topic) => ({
+            id: topic.id,
+            name: topic.name,
+            description: topic.description,
+            videoUrl: topic.videoUrl,
+            lessons: topic.lessons.map((l) => {
+              const attempt = mock.lessonAttempts[l.id];
+              const submission = mock.lessonSubmissions[l.id];
+              return {
+                id: l.id,
+                title: l.title,
+                type: l.type,
+                description: l.description,
+                coinReward: l.coinReward,
+                videoUrl: l.videoUrl,
+                hasAttachment: !!submission?.file_key,
+                score: l.type === 'test' && attempt?.finished_at ? attempt.score : null,
+                submissionStatus: l.type === 'practical' ? (submission?.status ?? null) : null,
+                submissionScore: l.type === 'practical' ? (submission?.score ?? null) : null,
+              };
+            }),
+          })),
+        };
+      }
+
+      const found = findLesson(id);
+      if (!found) throw mkErr(404, 'Lesson not found');
+      const { lesson } = found;
+
+      if (!action) {
+        if (lesson.type === 'test') {
+          const attempt = mock.lessonAttempts[id];
+          return {
+            data: {
+              id: lesson.id, title: lesson.title, type: lesson.type, description: lesson.description,
+              coinReward: lesson.coinReward, videoUrl: lesson.videoUrl,
+              attempt: attempt
+                ? { startedAt: attempt.started_at, finished: !!attempt.finished_at, score: attempt.finished_at ? attempt.score : null }
+                : null,
+            },
+          };
+        }
+        const submission = mock.lessonSubmissions[id];
+        return {
+          data: {
+            id: lesson.id, title: lesson.title, type: lesson.type, description: lesson.description,
+            coinReward: lesson.coinReward, videoUrl: lesson.videoUrl,
+            submission: submission
+              ? { status: submission.status, score: submission.score, submittedAt: submission.submitted_at }
+              : null,
+          },
+        };
+      }
+
+      if (action === 'start') {
+        if (lesson.type !== 'test') throw mkErr(409, 'This lesson is not a test');
+        if (mock.lessonAttempts[id]) throw mkErr(409, 'Attempt already started');
+        mock.lessonAttempts[id] = { started_at: new Date().toISOString(), finished_at: null, score: null, answers: null };
+        return {
+          data: {
+            startedAt: mock.lessonAttempts[id].started_at,
+            questions: lesson.questions.map((q) => ({ id: q.id, type: 'choice', question: q.question, options: q.options })),
+          },
+        };
+      }
+
+      if (action === 'submit') {
+        if (lesson.type !== 'test') throw mkErr(409, 'This lesson is not a test');
+        const attempt = mock.lessonAttempts[id];
+        if (!attempt) throw mkErr(409, 'Attempt not started');
+        if (attempt.finished_at) throw mkErr(409, 'Already submitted');
+        const answers = body?.answers ?? {};
+        const correctCount = lesson.questions.reduce((acc, q) => acc + (answers[q.id] === q.correct ? 1 : 0), 0);
+        const score = Math.round((correctCount / lesson.questions.length) * 100);
+        attempt.finished_at = new Date().toISOString();
+        attempt.score = score;
+        attempt.answers = answers;
+        if (score >= 50 && lesson.coinReward > 0) mock.coins += lesson.coinReward;
+        return { data: { score } };
+      }
+
+      if (action === 'homework' && !seg[4]) {
+        // GET .../homework/upload-url has seg[3]='homework', seg[4]='upload-url'; POST .../homework has seg length 4
+        if (lesson.type !== 'practical') throw mkErr(409, 'This lesson has no homework');
+        if (mock.lessonSubmissions[id]?.status === 'graded') throw mkErr(409, 'Already graded, cannot resubmit');
+        mock.lessonSubmissions[id] = {
+          status: 'submitted',
+          score: null,
+          submitted_at: new Date().toISOString(),
+          file_key: body?.fileKey ?? null,
+          text_answer: body?.textAnswer ?? null,
+        };
+        return { data: { status: 'submitted', submittedAt: mock.lessonSubmissions[id].submitted_at } };
+      }
+
+      if (seg[3] === 'homework' && seg[4] === 'upload-url') {
+        if (lesson.type !== 'practical') throw mkErr(409, 'This lesson has no homework');
+        return { data: { uploadUrl: 'mock://skip', fileKey: `mock/${query.filename || 'file'}` } };
+      }
+    }
   }
 
   throw mkErr(404, `Mock route not implemented: ${path}`);
@@ -245,9 +377,9 @@ async function rawRequest(path, { method = 'GET', body, skipAuth = false } = {})
 }
 
 async function refreshSession() {
-  if (USE_MOCKS) return mockRequest('/auth/refresh');
+  if (USE_MOCKS) return mockRequest('/auth/member/refresh');
   if (!refreshPromise) {
-    refreshPromise = rawRequest('/auth/refresh', { method: 'POST', skipAuth: true }).finally(() => {
+    refreshPromise = rawRequest('/auth/member/refresh', { method: 'POST', skipAuth: true }).finally(() => {
       refreshPromise = null;
     });
   }
@@ -311,6 +443,19 @@ export const api = {
 
   // -------- STUDENT: Leaderboard --------
   leaderboard: (period = 'week') => request(`/student/leaderboard?period=${period}`),
+
+  // -------- STUDENT: Lessons (методика: темы → уроки → тест/дз) --------
+  lessons: () => request('/student/lessons'),
+  lesson: (lessonId) => request(`/student/lessons/${lessonId}`),
+  startLessonTest: (lessonId) => request(`/student/lessons/${lessonId}/start`, { method: 'POST' }),
+  submitLessonTest: (lessonId, answers) =>
+    request(`/student/lessons/${lessonId}/submit`, { method: 'POST', body: { answers } }),
+  lessonHomeworkUploadUrl: (lessonId, filename, contentType) =>
+    request(
+      `/student/lessons/${lessonId}/homework/upload-url?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(contentType)}`,
+    ),
+  submitLessonHomework: (lessonId, body) =>
+    request(`/student/lessons/${lessonId}/homework`, { method: 'POST', body }),
 
   // TG-FRONT
   telegramBindToken: () => request('/telegram/bind-token', { method: 'POST' }),

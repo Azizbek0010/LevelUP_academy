@@ -1,7 +1,7 @@
 import { AppError } from '../../../utils/AppError.js';
 import { getDownloadUrl } from '../../../config/s3.js';
 import { getStudentGroupIds, isStudentInGroup } from '../../../shared/membership.js';
-import * as videosRepo from './videos.repository.js';
+import * as videosRepo from '../../videos/videos.repository.js';
 
 export async function listForStudent(studentId) {
   const groupIds = await getStudentGroupIds(studentId);

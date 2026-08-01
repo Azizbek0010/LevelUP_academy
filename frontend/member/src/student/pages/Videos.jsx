@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { PlayCircle } from 'lucide-react';
 import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill } from '../components/ui.jsx';
+import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill, IconTile, C } from '../components/ui.jsx';
 import { fmtDate, fmtDuration } from '../format.js';
 
 export default function Videos() {
@@ -39,26 +39,25 @@ export default function Videos() {
       ) : !list ? (
         <Skeleton h={72} count={4} />
       ) : list.length === 0 ? (
-        <div className="card bg-base-100">
+        <div className="k-card">
           <EmptyState icon={PlayCircle} title="Видео пока нет" text="Записи появятся после занятий." />
         </div>
       ) : (
-        <div className="card bg-base-100 divide-y divide-base-200">
-          {list.map((v) => (
+        <div className="k-card divide-y" style={{ borderColor: C.line }}>
+          {list.map((v, i) => (
             <div
               key={v.id}
               role="button"
               tabIndex={0}
               onClick={() => play(v)}
               onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && play(v)}
-              className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-base-200/60 transition-colors"
+              className="k-pop-in k-press flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-[#FFF6E9] transition-colors"
+              style={{ animationDelay: `${Math.min(i, 9) * 50}ms` }}
             >
-              <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
-                <PlayCircle size={19} />
-              </span>
+              <IconTile icon={PlayCircle} hue="violet" size={42} />
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold truncate">{v.title}</div>
-                <div className="text-xs text-base-content/45 mt-0.5">{fmtDate(v.created_at)}</div>
+                <div className="text-sm font-extrabold truncate" style={{ color: C.text }}>{v.title}</div>
+                <div className="text-xs font-bold mt-0.5" style={{ color: C.muted }}>{fmtDate(v.created_at)}</div>
               </div>
               {v.duration_sec > 0 && <Pill hue="muted" className="tabular-nums">{fmtDuration(v.duration_sec)}</Pill>}
             </div>

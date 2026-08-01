@@ -7,6 +7,7 @@ import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { phoneDisplay } from '../../components/PhoneInput.jsx';
 import BranchFormModal from './BranchFormModal.jsx';
+import { Card, SearchInput, EmptyState } from './_ui.jsx';
 
 /**
  * Список филиалов — витрина, а не пульт управления.
@@ -53,30 +54,28 @@ export default function SuperBranches() {
       </PageHeader>
 
       {error && error.status !== 401 ? (
-        <div className="card bg-base-100 shadow-sm border border-error/20 max-w-lg mx-auto mt-6">
-          <div className="card-body items-center text-center p-6 gap-3">
-            <div className="p-3 bg-error/10 text-error rounded-full">
-              <AlertTriangle size={32} />
-            </div>
-            <h3 className="font-bold text-lg">Ошибка загрузки филиалов</h3>
-            <p className="text-sm text-base-content/60">{error.message || 'Произошла непредвиденная ошибка при запросе к серверу.'}</p>
-            <div className="card-actions mt-2">
+        <Card className="max-w-lg mx-auto mt-6">
+          <EmptyState
+            icon={AlertTriangle}
+            title="Ошибка загрузки филиалов"
+            hint={error.message || 'Произошла непредвиденная ошибка при запросе к серверу.'}
+            action={
               <button className="btn btn-primary btn-sm px-6" onClick={() => refetch()}>
                 Повторить попытку
               </button>
-            </div>
-          </div>
-        </div>
+            }
+          />
+        </Card>
       ) : isLoading ? (
         <SkeletonTable rows={5} cols={6} />
       ) : (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-3 justify-between">
-            <input
-              className="input input-bordered input-sm max-w-xs"
-              placeholder="Поиск филиалов…"
+            <SearchInput
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={setQ}
+              placeholder="Поиск филиалов…"
+              className="max-w-xs"
             />
             {topEarner && (topEarner.revenue > 0 || (topSpender && topSpender.expenses > 0)) && (
               <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
@@ -103,24 +102,20 @@ export default function SuperBranches() {
           </div>
 
           {rows.length === 0 ? (
-            <div className="card bg-base-100 shadow-sm border border-dashed border-base-300">
-              <div className="card-body text-center py-16 space-y-4">
-                <div className="mx-auto w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center text-base-content/40">
-                  <Building2 size={32} />
-                </div>
-                <div className="max-w-sm mx-auto">
-                  <h3 className="text-lg font-bold">Нет филиалов</h3>
-                  <p className="text-sm text-base-content/50 mt-1">
-                    {q ? 'По вашему запросу ничего не найдено. Попробуйте изменить поисковый запрос.' : 'Филиалов пока нет. Создайте первый филиал, чтобы начать работу.'}
-                  </p>
-                </div>
-                {!q && (
-                  <button className="btn btn-primary btn-sm mx-auto gap-1.5" onClick={() => setCreateOpen(true)}>
-                    <Plus size={16} /> Создать первый филиал
-                  </button>
-                )}
-              </div>
-            </div>
+            <Card className="border-dashed">
+              <EmptyState
+                icon={Building2}
+                title="Нет филиалов"
+                hint={q ? 'По вашему запросу ничего не найдено. Попробуйте изменить поисковый запрос.' : 'Филиалов пока нет. Создайте первый филиал, чтобы начать работу.'}
+                action={
+                  !q && (
+                    <button className="btn btn-primary btn-sm gap-1.5" onClick={() => setCreateOpen(true)}>
+                      <Plus size={16} /> Создать первый филиал
+                    </button>
+                  )
+                }
+              />
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {/* Карточка целиком — ссылка внутрь филиала. Ни одной кнопки:
@@ -129,9 +124,9 @@ export default function SuperBranches() {
                 <Link
                   key={b.id}
                   to={`/branches/${b.id}`}
-                  className={`card bg-base-100 border border-base-200 hover:border-base-300 transition-colors ${b.isArchived ? 'opacity-60' : ''}`}
+                  className={`block rounded-2xl border border-base-300 bg-base-100 hover:border-primary/40 transition-colors ${b.isArchived ? 'opacity-60' : ''}`}
                 >
-                  <div className="card-body p-4 gap-3">
+                  <div className="p-4 space-y-3">
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="font-semibold truncate">{b.name}</span>
                       <span className="text-xs text-base-content/45 shrink-0">

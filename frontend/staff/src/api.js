@@ -568,7 +568,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       return { user, accessToken: 'mock-jwt-superadmin-xyz' };
     }
 
-    if (path === '/auth/refresh') {
+    if (path === '/auth/staff/refresh') {
       const mockToken = localStorage.getItem('mock_token');
       const mockUser = JSON.parse(localStorage.getItem('mock_user'));
       if (mockToken && mockUser) {
@@ -579,7 +579,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       throw err;
     }
 
-    if (path === '/auth/logout') {
+    if (path === '/auth/staff/logout') {
       localStorage.removeItem('mock_token');
       localStorage.removeItem('mock_user');
       return { success: true };
@@ -2103,7 +2103,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
 
 // Пути, которым нельзя подсовывать авто-refresh (иначе цикл/логин ломается)
 const AUTH_PATHS = new Set([
-  '/auth/staff/login', '/auth/staff/google', '/auth/refresh', '/auth/logout',
+  '/auth/staff/login', '/auth/staff/google', '/auth/staff/refresh', '/auth/staff/logout',
   '/auth/forgot-password', '/auth/reset-password',
 ]);
 
@@ -2114,7 +2114,7 @@ export function setOnTokenRefreshed(cb) { onTokenRefreshed = cb; }
 
 function refreshOnce() {
   if (!refreshPromise) {
-    refreshPromise = rawRequest('/auth/refresh', { method: 'POST' })
+    refreshPromise = rawRequest('/auth/staff/refresh', { method: 'POST' })
       .then((d) => {
         onTokenRefreshed?.(d);
         return d.accessToken;
@@ -2216,8 +2216,8 @@ export const api = {
   // -------- AUTH (staff — admin/superadmin/mentor/methodist) --------
   loginStaff: (login, password) =>
     request('/auth/staff/login', { method: 'POST', body: { login, password } }),
-  refresh: () => request('/auth/refresh', { method: 'POST' }),
-  logout: () => request('/auth/logout', { method: 'POST' }),
+  refresh: () => request('/auth/staff/refresh', { method: 'POST' }),
+  logout: () => request('/auth/staff/logout', { method: 'POST' }),
   googleLogin: (idToken) => request('/auth/staff/google', { method: 'POST', body: { idToken } }),
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
   resetPassword: (body) => request('/auth/reset-password', { method: 'POST', body }),

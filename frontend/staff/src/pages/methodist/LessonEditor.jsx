@@ -3,14 +3,23 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, ArrowLeft, Trash2, Check, FileQuestion, ClipboardCheck, ArrowUp, ArrowDown, Settings, Upload, FileText, HelpCircle, Pencil, Layers } from 'lucide-react';
+import { Plus, ArrowLeft, Trash2, Check, FileQuestion, ClipboardCheck, ArrowUp, ArrowDown, Settings, Upload, FileText, HelpCircle, Pencil, Layers, Play, Puzzle, MessageCircle, ListChecks } from 'lucide-react';
 import { useLessonDetails, useInvalidate } from '../../queries.js';
 import { api, uploadToPresignedUrl } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 
-const questionSchema = z.object({
+// 'riddle' и 'open' на бэке проверяются одинаково (текст без учёта регистра) —
+// два значения существуют только чтобы методист различал их в списке, разница
+// не в логике, а в том, как сформулирован вопрос (загадка vs прямой вопрос).
+const QUESTION_TYPES = [
+  { value: 'choice', label: 'Варианты', icon: ListChecks },
+  { value: 'riddle', label: 'Загадка', icon: Puzzle },
+  { value: 'open', label: 'Вопрос и ответ', icon: MessageCircle },
+];
+
+const choiceQuestionSchema = z.object({
   questionText: z.string().trim().min(1, 'Вопрос обязателен').max(1000),
   optionA: z.string().trim().min(1, 'Вариант A обязателен').max(300),
   optionB: z.string().trim().min(1, 'Вариант B обязателен').max(300),
@@ -18,6 +27,44 @@ const questionSchema = z.object({
   optionD: z.string().trim().min(1, 'Вариант D обязателен').max(300),
   correctAnswer: z.enum(['A', 'B', 'C', 'D']),
 });
+const textQuestionSchema = z.object({
+  questionText: z.string().trim().min(1, 'Вопрос обязателен').max(1000),
+  correctTextAnswer: z.string().trim().min(1, 'Правильный ответ обязателен').max(300),
+});
+
+// Схема формы вопроса зависит от выбранного типа — обычный статический
+// resolver zodResolver() тут не подходит, поэтому свой маленький резолвер.
+function questionResolver(values) {
+  const schema = values.questionType === 'choice' ? choiceQuestionSchema : textQuestionSchema;
+  const result = schema.safeParse(values);
+  if (result.success) return { values: { ...values, ...result.data }, errors: {} };
+  const errors = {};
+  for (const issue of result.error.issues) {
+    errors[issue.path[0]] = { type: 'manual', message: issue.message };
+  }
+  return { values: {}, errors };
+}
+
+/** Из строки таблицы/API (snake_case или camelCase) — плоский payload под create/update. */
+function questionPayload(q) {
+  const questionType = q.question_type || q.questionType || 'choice';
+  if (questionType === 'choice') {
+    return {
+      questionType,
+      questionText: q.question_text ?? q.questionText,
+      optionA: q.option_a ?? q.optionA,
+      optionB: q.option_b ?? q.optionB,
+      optionC: q.option_c ?? q.optionC,
+      optionD: q.option_d ?? q.optionD,
+      correctAnswer: q.correct_answer ?? q.correctAnswer,
+    };
+  }
+  return {
+    questionType,
+    questionText: q.question_text ?? q.questionText,
+    correctTextAnswer: q.correct_text_answer ?? q.correctTextAnswer,
+  };
+}
 
 const lessonSettingsSchema = z.object({
   title: z.string().trim().min(1, 'Название обязательно').max(200),
@@ -35,6 +82,17 @@ const OPTION_COLORS = {
   D: { bg: 'bg-[rgba(168,85,247,0.06)]', border: 'border-[rgba(168,85,247,0.15)]', text: 'text-purple-500', ring: 'ring-purple-500/20' },
 };
 
+const EMPTY_QUESTION_FORM = {
+  questionType: 'choice',
+  questionText: '',
+  optionA: '',
+  optionB: '',
+  optionC: '',
+  optionD: '',
+  correctAnswer: 'A',
+  correctTextAnswer: '',
+};
+
 export default function LessonEditor() {
   const { lessonId } = useParams();
   const { token } = useAuth();
@@ -49,10 +107,11 @@ export default function LessonEditor() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    resolver: zodResolver(questionSchema),
-    defaultValues: { questionText: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A' },
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
+    resolver: questionResolver,
+    defaultValues: EMPTY_QUESTION_FORM,
   });
+  const questionType = watch('questionType');
 
   const { register: regSettings, handleSubmit: handleSettingsSubmit, reset: resetSettings, formState: { errors: settingsErrors } } = useForm({
     resolver: zodResolver(lessonSettingsSchema),
@@ -66,18 +125,14 @@ export default function LessonEditor() {
 
   const openAdd = () => {
     setEditingId(null);
-    reset({ questionText: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A' });
+    reset(EMPTY_QUESTION_FORM);
   };
 
   const openEdit = (q) => {
     setEditingId(q.id);
     reset({
-      questionText: q.question_text || q.questionText,
-      optionA: q.option_a || q.optionA,
-      optionB: q.option_b || q.optionB,
-      optionC: q.option_c || q.optionC,
-      optionD: q.option_d || q.optionD,
-      correctAnswer: q.correct_answer || q.correctAnswer,
+      ...EMPTY_QUESTION_FORM,
+      ...questionPayload(q),
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -97,13 +152,14 @@ export default function LessonEditor() {
   const onSubmit = async (formData) => {
     setErr(''); setBusy(true);
     try {
+      const payload = questionPayload(formData);
       if (editingId) {
-        await api.methodistUpdateQuestion(token, editingId, formData);
+        await api.methodistUpdateQuestion(token, editingId, payload);
       } else {
-        await api.methodistCreateQuestion(token, { lessonId, ...formData });
+        await api.methodistCreateQuestion(token, { lessonId, ...payload });
       }
       invalidate('lesson', lessonId);
-      reset({ questionText: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A' });
+      reset(EMPTY_QUESTION_FORM);
       setEditingId(null);
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
   };
@@ -153,27 +209,9 @@ export default function LessonEditor() {
       const q1 = questions[index];
       const q2 = questions[targetIndex];
 
-      const q1Data = {
-        questionText: q1.question_text || q1.questionText,
-        optionA: q1.option_a || q1.optionA,
-        optionB: q1.option_b || q1.optionB,
-        optionC: q1.option_c || q1.optionC,
-        optionD: q1.option_d || q1.optionD,
-        correctAnswer: q1.correct_answer || q1.correctAnswer,
-      };
-
-      const q2Data = {
-        questionText: q2.question_text || q2.questionText,
-        optionA: q2.option_a || q2.optionA,
-        optionB: q2.option_b || q2.optionB,
-        optionC: q2.option_c || q2.optionC,
-        optionD: q2.option_d || q2.optionD,
-        correctAnswer: q2.correct_answer || q2.correctAnswer,
-      };
-
       await Promise.all([
-        api.methodistUpdateQuestion(token, q1.id, q2Data),
-        api.methodistUpdateQuestion(token, q2.id, q1Data),
+        api.methodistUpdateQuestion(token, q1.id, questionPayload(q2)),
+        api.methodistUpdateQuestion(token, q2.id, questionPayload(q1)),
       ]);
 
       invalidate('lesson', lessonId);
@@ -191,6 +229,7 @@ export default function LessonEditor() {
       for (let i = 0; i < questionCount; i++) {
         qs.push({
           lessonId,
+          questionType: 'choice',
           questionText: `Вопрос ${questions.length + i + 1}`,
           optionA: 'Вариант A',
           optionB: 'Вариант B',
@@ -322,46 +361,87 @@ export default function LessonEditor() {
           </h3>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)] block">Тип вопроса</span>
+            <div className="inline-flex p-1 rounded-[12px] bg-[var(--surface-hover)] gap-1">
+              {QUESTION_TYPES.map(({ value, label, icon: Icon }) => {
+                const active = questionType === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setValue('questionType', value, { shouldValidate: true })}
+                    className={`flex items-center gap-1.5 h-9 px-3.5 rounded-[9px] text-[12.5px] font-semibold transition-all ${
+                      active ? 'bg-white shadow-sm text-[var(--primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text)]'
+                    }`}
+                  >
+                    <Icon size={14} /> {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <label className="form-control w-full">
-            <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)]">Текст вопроса *</span>
+            <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)]">
+              {questionType === 'choice' ? 'Текст вопроса *' : questionType === 'riddle' ? 'Текст загадки *' : 'Текст вопроса *'}
+            </span>
             <input
               type="text"
               {...register('questionText')}
-              placeholder="Какой тег используется для заголовка?"
+              placeholder={questionType === 'choice' ? 'Какой тег используется для заголовка?' : questionType === 'riddle' ? 'Мяукает и ловит мышей…'  : 'Столица Франции?'}
               className={`input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors ${errors.questionText ? 'input-error' : ''}`}
             />
             {errors.questionText && <span className="text-[11px] text-error mt-1">{errors.questionText.message}</span>}
           </label>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {OPTION_LETTERS.map((letter) => {
-              const c = OPTION_COLORS[letter];
-              return (
-                <label key={letter} className="form-control w-full">
-                  <span className={`label-text mb-1.5 font-semibold text-[12px] ${c.text}`}>Вариант {letter}</span>
-                  <div className="relative">
-                    <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-bold ${c.text} opacity-60`}>{letter})</span>
-                    <input
-                      type="text"
-                      {...register(`option${letter}`)}
-                      placeholder={`Вариант ${letter}`}
-                      className={`input input-bordered w-full pl-8 rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors ${errors[`option${letter}`] ? 'input-error' : ''}`}
-                    />
-                  </div>
-                </label>
-              );
-            })}
-          </div>
+          {questionType === 'choice' ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {OPTION_LETTERS.map((letter) => {
+                  const c = OPTION_COLORS[letter];
+                  return (
+                    <label key={letter} className="form-control w-full">
+                      <span className={`label-text mb-1.5 font-semibold text-[12px] ${c.text}`}>Вариант {letter}</span>
+                      <div className="relative">
+                        <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-bold ${c.text} opacity-60`}>{letter})</span>
+                        <input
+                          type="text"
+                          {...register(`option${letter}`)}
+                          placeholder={`Вариант ${letter}`}
+                          className={`input input-bordered w-full pl-8 rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors ${errors[`option${letter}`] ? 'input-error' : ''}`}
+                        />
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
 
-          <label className="form-control w-full max-w-xs">
-            <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)]">Правильный ответ *</span>
-            <select
-              {...register('correctAnswer')}
-              className="select select-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
-            >
-              {OPTION_LETTERS.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </label>
+              <label className="form-control w-full max-w-xs">
+                <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)]">Правильный ответ *</span>
+                <select
+                  {...register('correctAnswer')}
+                  className="select select-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
+                >
+                  {OPTION_LETTERS.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </label>
+            </>
+          ) : (
+            <label className="form-control w-full max-w-sm">
+              <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)]">Правильный ответ *</span>
+              <input
+                type="text"
+                {...register('correctTextAnswer')}
+                placeholder="Кошка"
+                className={`input input-bordered w-full rounded-[10px] h-11 text-[13px] hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors ${errors.correctTextAnswer ? 'input-error' : ''}`}
+              />
+              {errors.correctTextAnswer && <span className="text-[11px] text-error mt-1">{errors.correctTextAnswer.message}</span>}
+              <span className="text-[11px] text-[var(--text-muted)] mt-1.5">
+                Проверяется без учёта регистра и лишних пробелов — «кошка» и «  Кошка  » засчитаются одинаково.
+              </span>
+            </label>
+          )}
 
           <div className="flex gap-2 pt-2">
             <button
@@ -430,7 +510,9 @@ export default function LessonEditor() {
             </div>
           </div>
         ) : (
-          questions.map((q, idx) => (
+          questions.map((q, idx) => {
+            const qType = q.question_type || q.questionType || 'choice';
+            return (
             <div
               key={q.id}
               className={`glass-strong rounded-[16px] p-4 card-hover-premium group animate-slide-up ${editingId === q.id ? 'ring-2 ring-[var(--primary)]/30' : ''}`}
@@ -440,28 +522,42 @@ export default function LessonEditor() {
                   {idx + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-[var(--text)] mb-3 leading-relaxed">{q.question_text}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {OPTION_LETTERS.map((letter) => {
-                      const val = q[`option_${letter.toLowerCase()}`] || q[`option${letter}`];
-                      const isCorrect = (q.correct_answer || q.correctAnswer) === letter;
-                      const c = OPTION_COLORS[letter];
-                      return (
-                        <div
-                          key={letter}
-                          className={`flex items-center gap-2 p-2.5 rounded-[10px] text-[12px] transition-all ${
-                            isCorrect
-                              ? 'bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.2)] text-[var(--text)] font-medium'
-                              : `${c.bg} ${c.border} border text-[var(--text-secondary)]`
-                          }`}
-                        >
-                          {isCorrect && <Check size={12} className="text-success shrink-0" />}
-                          <span className={`${c.text} font-bold text-[11px]`}>{letter})</span>
-                          <span className="truncate">{val}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {qType !== 'choice' && (
+                    <span className="inline-flex items-center gap-1 mb-2 px-2 py-0.5 rounded-full bg-[rgba(168,85,247,0.08)] text-purple-500 text-[10.5px] font-bold">
+                      {qType === 'riddle'
+                        ? <><Puzzle size={11} /> Загадка</>
+                        : <><MessageCircle size={11} /> Вопрос и ответ</>}
+                    </span>
+                  )}
+                  <p className="text-[13px] font-semibold text-[var(--text)] mb-3 leading-relaxed">{q.question_text || q.questionText}</p>
+                  {qType === 'choice' ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {OPTION_LETTERS.map((letter) => {
+                        const val = q[`option_${letter.toLowerCase()}`] || q[`option${letter}`];
+                        const isCorrect = (q.correct_answer || q.correctAnswer) === letter;
+                        const c = OPTION_COLORS[letter];
+                        return (
+                          <div
+                            key={letter}
+                            className={`flex items-center gap-2 p-2.5 rounded-[10px] text-[12px] transition-all ${
+                              isCorrect
+                                ? 'bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.2)] text-[var(--text)] font-medium'
+                                : `${c.bg} ${c.border} border text-[var(--text-secondary)]`
+                            }`}
+                          >
+                            {isCorrect && <Check size={12} className="text-success shrink-0" />}
+                            <span className={`${c.text} font-bold text-[11px]`}>{letter})</span>
+                            <span className="truncate">{val}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 p-2.5 rounded-[10px] text-[12px] bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.2)] text-[var(--text)] font-medium">
+                      <Check size={12} className="text-success shrink-0" />
+                      {q.correct_text_answer || q.correctTextAnswer}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <button
@@ -497,7 +593,8 @@ export default function LessonEditor() {
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 

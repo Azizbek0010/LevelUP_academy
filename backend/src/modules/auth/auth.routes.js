@@ -227,11 +227,14 @@ router.post('/staff/google', ctrl.loginStaffGoogle); // admin / superadmin / men
  *   post:
  *     tags: [Auth]
  *     summary: Rotate refresh token and issue a new access token
+ *     deprecated: true
  *     description: >
- *       Reads the `refresh_token` httpOnly cookie (no request body). Implements
- *       rotation with reuse-detection: presenting an already-revoked token revokes
- *       the user's entire token family and returns 401. On success, the old token
- *       is revoked and a new refresh/access token pair is issued.
+ *       Legacy shared endpoint, kept only for already-deployed frontends. New
+ *       clients should use /api/auth/{main,staff,member}/refresh — those read a
+ *       group-scoped cookie so a session from one panel can't leak into another
+ *       (this endpoint's single `refresh_token` cookie has no role check).
+ *       Implements rotation with reuse-detection: presenting an already-revoked
+ *       token revokes the user's entire token family and returns 401.
  *     security: []
  *     responses:
  *       200:
@@ -258,13 +261,70 @@ router.post('/refresh', ctrl.refresh);
  *   post:
  *     tags: [Auth]
  *     summary: Revoke the current refresh token and clear the cookie
- *     description: Reads `refresh_token` cookie; silently no-ops if absent or already revoked.
+ *     deprecated: true
+ *     description: >
+ *       Legacy shared endpoint, kept only for already-deployed frontends. New
+ *       clients should use /api/auth/{main,staff,member}/logout.
  *     security: []
  *     responses:
  *       204:
  *         description: Logged out (cookie cleared, refresh token revoked if it existed)
  */
 router.post('/logout', ctrl.logout);
+
+/**
+ * @openapi
+ * /api/auth/main/refresh:
+ * /api/auth/staff/refresh:
+ * /api/auth/member/refresh:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Rotate refresh token, scoped to this panel's own cookie
+ *     description: >
+ *       Same rotation/reuse-detection as /api/auth/refresh, but reads/writes a
+ *       group-scoped cookie (`refresh_token_main` / `_staff` / `_member`) instead
+ *       of the shared one. A token belonging to a role outside this group is
+ *       rejected with 401 even if presented (defense in depth — in practice it
+ *       can't happen, since login only ever writes the matching group's cookie).
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: New token pair issued
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthResponse' }
+ *       401:
+ *         description: Refresh token missing, invalid, expired, wrong role, or reuse detected
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       403:
+ *         description: Account is frozen
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ */
+router.post('/main/refresh', ctrl.refreshMain);
+router.post('/staff/refresh', ctrl.refreshStaff);
+router.post('/member/refresh', ctrl.refreshMember);
+
+/**
+ * @openapi
+ * /api/auth/main/logout:
+ * /api/auth/staff/logout:
+ * /api/auth/member/logout:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Revoke the current refresh token, scoped to this panel's own cookie
+ *     description: Same as /api/auth/logout, but clears the group-scoped cookie.
+ *     security: []
+ *     responses:
+ *       204:
+ *         description: Logged out (cookie cleared, refresh token revoked if it existed)
+ */
+router.post('/main/logout', ctrl.logoutMain);
+router.post('/staff/logout', ctrl.logoutStaff);
+router.post('/member/logout', ctrl.logoutMember);
 
 // восстановление пароля — отдельный, ещё более жёсткий бакет
 const passwordResetLimiter = createRateLimiter({ keyPrefix: 'rl:auth:pwd', points: 5, duration: 60 });

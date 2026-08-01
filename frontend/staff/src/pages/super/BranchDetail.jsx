@@ -14,11 +14,10 @@ import { useSuperBranchDetail } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
-import Avatar from '../../components/Avatar.jsx';
 import { SkeletonList } from '../../components/Skeleton.jsx';
 import YMapPicker from '../../components/YMapPicker.jsx';
 import { phoneDisplay } from '../../components/PhoneInput.jsx';
-import { Kpi, Panel, EmptyState } from '../mentor/_ui.jsx';
+import { Metric, Panel, EmptyState, Avatar, Card } from './_ui.jsx';
 import BranchFormModal from './BranchFormModal.jsx';
 
 /**
@@ -93,12 +92,12 @@ function GroupPanel({ group, onBack }) {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Kpi Icon={Users} title="Учеников" value={fmt(group.students)} />
-        <Kpi Icon={Wallet} title="Цена в месяц" value={money(group.monthlyPrice)} />
-        <Kpi Icon={CalendarCheck} title="Отметок" value={fmt(total)} unit="в журнале" />
-        <Kpi
+        <Metric Icon={Users} label="Учеников" value={fmt(group.students)} />
+        <Metric Icon={Wallet} label="Цена в месяц" value={money(group.monthlyPrice)} />
+        <Metric Icon={CalendarCheck} label="Отметок" value={fmt(total)} unit="в журнале" />
+        <Metric
           Icon={TrendingUp}
-          title="Посещаемость"
+          label="Посещаемость"
           value={rate === null ? '—' : `${rate}%`}
           tone={rate === null ? 'neutral' : rate >= 80 ? 'success' : rate >= 60 ? 'warning' : 'danger'}
           unit={rate === null ? 'нет отметок' : 'был или опоздал'}
@@ -191,16 +190,14 @@ export default function SuperBranchDetail() {
             <li className="font-semibold text-base-content">Ошибка</li>
           </ul>
         </div>
-        <div className="card bg-base-100 shadow-sm border border-error/20 max-w-lg mx-auto mt-6">
-          <div className="card-body items-center text-center p-6 gap-3">
-            <div className="p-3 bg-error/10 text-error rounded-full"><AlertTriangle size={32} /></div>
-            <h3 className="font-bold text-lg">Ошибка загрузки филиала</h3>
-            <p className="text-sm text-base-content/60">{error.message || 'Не удалось получить данные.'}</p>
-            <div className="card-actions mt-2">
-              <button className="btn btn-primary btn-sm px-6" onClick={() => refetch()}>Повторить</button>
-            </div>
-          </div>
-        </div>
+        <Card className="max-w-lg mx-auto mt-6">
+          <EmptyState
+            icon={AlertTriangle}
+            title="Ошибка загрузки филиала"
+            hint={error.message || 'Не удалось получить данные.'}
+            action={<button className="btn btn-primary btn-sm px-6" onClick={() => refetch()}>Повторить</button>}
+          />
+        </Card>
       </div>
     );
   }
@@ -264,20 +261,20 @@ export default function SuperBranchDetail() {
       {tab === 'overview' && (
         <div className="space-y-5">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Kpi Icon={GraduationCap} title="Ученики" value={fmt(stats.students ?? 0)} unit="активных" />
-            <Kpi Icon={BookOpen} title="Группы" value={fmt(stats.groups ?? 0)} />
-            <Kpi Icon={UserCog} title="Сотрудники" value={fmt((stats.admins ?? 0) + (stats.mentors ?? 0))}
+            <Metric Icon={GraduationCap} label="Ученики" value={fmt(stats.students ?? 0)} unit="активных" />
+            <Metric Icon={BookOpen} label="Группы" value={fmt(stats.groups ?? 0)} />
+            <Metric Icon={UserCog} label="Сотрудники" value={fmt((stats.admins ?? 0) + (stats.mentors ?? 0))}
                  unit={`админы ${fmt(stats.admins ?? 0)} · менторы ${fmt(stats.mentors ?? 0)}`} />
-            <Kpi Icon={Wallet} title="Долг учеников" value={money(stats.debt ?? 0)}
+            <Metric Icon={Wallet} label="Долг учеников" value={money(stats.debt ?? 0)}
                  tone={(stats.debt ?? 0) > 0 ? 'danger' : 'neutral'} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <Kpi Icon={TrendingUp} title="Доход" value={money(stats.revenue ?? 0)} tone="success" />
-            <Kpi Icon={Wallet} title="Расход" value={money(stats.expenses ?? 0)} unit="траты филиала" />
-            <Kpi
+            <Metric Icon={TrendingUp} label="Доход" value={money(stats.revenue ?? 0)} tone="success" />
+            <Metric Icon={Wallet} label="Расход" value={money(stats.expenses ?? 0)} unit="траты филиала" />
+            <Metric
               Icon={Coins}
-              title="Разница"
+              label="Разница"
               value={money(stats.profit ?? 0)}
               tone={(stats.profit ?? 0) >= 0 ? 'success' : 'danger'}
               unit="доход минус расход"
@@ -356,7 +353,7 @@ export default function SuperBranchDetail() {
                     <tr key={s.id}>
                       <td>
                         <div className="flex items-center gap-2">
-                          <Avatar name={`${s.firstName} ${s.lastName}`} size="sm" />
+                          <Avatar name={`${s.firstName} ${s.lastName}`} size="md" />
                           <span className="font-semibold">{s.firstName} {s.lastName}</span>
                         </div>
                       </td>
@@ -424,7 +421,7 @@ export default function SuperBranchDetail() {
               <ul className="divide-y divide-base-200">
                 {admins.map((a) => (
                   <li key={a.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <Avatar name={`${a.firstName} ${a.lastName}`} size="sm" />
+                    <Avatar name={`${a.firstName} ${a.lastName}`} size="md" />
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm truncate">{a.firstName} {a.lastName}</div>
                       <div className="text-xs text-base-content/50 truncate">{a.email}</div>
@@ -444,7 +441,7 @@ export default function SuperBranchDetail() {
               <ul className="divide-y divide-base-200">
                 {mentors.map((m) => (
                   <li key={m.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <Avatar name={`${m.firstName} ${m.lastName}`} size="sm" />
+                    <Avatar name={`${m.firstName} ${m.lastName}`} size="md" />
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm truncate">{m.firstName} {m.lastName}</div>
                       <div className="text-xs text-base-content/50 truncate">{m.email || m.phone || '—'}</div>
