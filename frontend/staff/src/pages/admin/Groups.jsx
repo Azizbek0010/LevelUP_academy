@@ -94,7 +94,8 @@ function fmtDate(d) {
 /* ═══════════════ Group Card ═══════════════ */
 function GroupCard({ g, onEdit }) {
   const archived = isArchived(g);
-  const studentsCount = g.studentsCount ?? g.students_count ?? (g.students?.length ?? 0);
+  // Backend listGroups qaytaradi: students — NUMBER (count), array emas
+  const studentsCount = Number(g.students ?? g.studentsCount ?? g.students_count ?? 0);
   const mentorName = g.mentor?.name || g.mentorName || null;
   const full = studentsCount >= MAX_STUDENTS;
 
@@ -740,7 +741,7 @@ export default function AdminGroups() {
 
   const activeGroups = rows.filter((g) => !isArchived(g)).length;
   const archivedGroups = rows.filter((g) => isArchived(g)).length;
-  const totalStudents = rows.reduce((s, g) => s + Number(g.studentsCount ?? g.students_count ?? g.students?.length ?? 0), 0);
+  const totalStudents = rows.reduce((s, g) => s + Number(g.students ?? g.studentsCount ?? g.students_count ?? 0), 0);
   const filteredRows = search
     ? rows.filter(g => g.name?.toLowerCase().includes(search.toLowerCase()) || g.mentor?.name?.toLowerCase().includes(search.toLowerCase()))
     : rows;
@@ -879,7 +880,7 @@ export default function AdminGroups() {
               <tbody>
                 {filteredRows.map((g) => {
                   const archived = isArchived(g);
-                  const count = g.studentsCount ?? g.students_count ?? (g.students?.length ?? 0);
+                  const count = Number(g.students ?? g.studentsCount ?? g.students_count ?? 0);
                   return (
                     <tr key={g.id} className="hover:bg-base-200 cursor-pointer" onClick={() => navigate(`/groups/${g.id}`)}>
                       <td>

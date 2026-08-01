@@ -150,7 +150,7 @@ export default function AdminMentorDetail() {
               <div>
                 <p className="text-sm text-base-content/50 font-medium">Всего учеников</p>
                 <p className="text-2xl font-bold">
-                  {mentorGroups.reduce((acc, g) => acc + (g.studentsCount || g.students_count || g.students?.length || 0), 0)}
+                  {mentorGroups.reduce((acc, g) => acc + Number(g.students ?? g.studentsCount ?? g.students_count ?? 0), 0)}
                 </p>
               </div>
             </div>
@@ -182,7 +182,7 @@ export default function AdminMentorDetail() {
                   </thead>
                   <tbody>
                     {mentorGroups.map(g => {
-                      const count = g.studentsCount ?? g.students_count ?? g.students?.length ?? 0;
+                      const count = Number(g.students ?? g.studentsCount ?? g.students_count ?? 0);
                       const archived = g.isArchived ?? g.is_archived;
                       return (
                         <tr 
