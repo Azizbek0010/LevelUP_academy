@@ -38,5 +38,13 @@ export function deadlineLabel(deadline) {
   return `через ${days} дн.`;
 }
 
+/** 158000 → «154 КБ», 3400000 → «3.2 МБ» */
+export function fmtFileSize(bytes) {
+  if (!bytes && bytes !== 0) return '';
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} КБ`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+}
+
 export const initials = (firstName = '', lastName = '') =>
   `${(firstName[0] || '').toUpperCase()}${(lastName[0] || '').toUpperCase()}` || '?';
