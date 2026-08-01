@@ -6,7 +6,7 @@ import { useInvalidate } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import Avatar from '../../components/Avatar.jsx';
+import { Avatar, Modal } from '../mentor/_ui.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { dateShort } from '../../format.js';
 import { useQuery } from '@tanstack/react-query';
@@ -160,7 +160,7 @@ export default function SuperStudents() {
                     >
                       <td>
                         <div className="flex items-center gap-2">
-                          <Avatar name={fullName || 'S'} size={32} />
+                          <Avatar name={fullName || 'S'} size="md" />
                           <span className="font-medium text-sm">{fullName || '—'}</span>
                         </div>
                       </td>
@@ -215,42 +215,42 @@ export default function SuperStudents() {
       )}
 
       {/* Delete confirm modal */}
-      {deleteTarget && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-sm">
-            <h3 className="font-bold text-lg mb-2">Удалить студента?</h3>
-            <p className="text-sm text-base-content/70 mb-6">
-              Вы уверены, что хотите удалить{' '}
-              <strong>
-                {`${deleteTarget.firstName ?? deleteTarget.first_name ?? ''} ${deleteTarget.lastName ?? deleteTarget.last_name ?? ''}`.trim()}
-              </strong>
-              ? Это действие необратимо.
-            </p>
-            {deleteMutation.error && (
-              <div className="alert alert-error text-xs mb-3">
-                <span>{deleteMutation.error.message}</span>
-              </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleteMutation.isPending}
-              >
-                Отмена
-              </button>
-              <button
-                className="btn btn-error btn-sm"
-                onClick={() => deleteMutation.mutate(deleteTarget.id)}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Удалить'}
-              </button>
-            </div>
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Удалить студента?"
+        actions={
+          <div className="flex justify-end gap-2">
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Отмена
+            </button>
+            <button
+              className="btn btn-error btn-sm"
+              onClick={() => deleteMutation.mutate(deleteTarget.id)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Удалить'}
+            </button>
           </div>
-          <div className="modal-backdrop" onClick={() => setDeleteTarget(null)} />
-        </div>
-      )}
+        }
+      >
+        <p className="text-sm text-base-content/70 mb-6">
+          Вы уверены, что хотите удалить{' '}
+          <strong>
+            {`${deleteTarget?.firstName ?? deleteTarget?.first_name ?? ''} ${deleteTarget?.lastName ?? deleteTarget?.last_name ?? ''}`.trim()}
+          </strong>
+          ? Это действие необратимо.
+        </p>
+        {deleteMutation.error && (
+          <div className="alert alert-error text-xs mb-3">
+            <span>{deleteMutation.error.message}</span>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

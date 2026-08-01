@@ -6,7 +6,7 @@ import { Archive, ArchiveRestore, Trash2, Search, Users, Layers, Banknote } from
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import Avatar from '../../components/Avatar.jsx';
+import { Avatar, Modal } from '../mentor/_ui.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { fmt, money } from '../../format.js';
 
@@ -173,17 +173,17 @@ export default function SuperGroups() {
                         {g.subject && (
                           <div className="text-xs text-base-content/50">{g.subject}</div>
                         )}
-                      </td>
-                      <td>
-                        {mentorName !== '—' ? (
-                          <div className="flex items-center gap-2">
-                            <Avatar name={mentorName} size={28} />
-                            <span className="text-sm">{mentorName}</span>
-                          </div>
-                        ) : (
-                          <span className="text-base-content/40 text-sm">—</span>
-                        )}
-                      </td>
+</td>
+                       <td>
+                         {mentorName !== '—' ? (
+                           <div className="flex items-center gap-2">
+                             <Avatar name={mentorName} size="sm" />
+                             <span className="text-sm">{mentorName}</span>
+                           </div>
+                         ) : (
+                           <span className="text-base-content/40 text-sm">—</span>
+                         )}
+                       </td>
                       <td className="text-sm text-base-content/70">{formatSchedule(g)}</td>
                       <td className="text-right text-sm tabular-nums">{fmt(studentCount)}</td>
                       <td className="text-right text-sm tabular-nums">{formatPrice(g)}</td>
@@ -233,38 +233,38 @@ export default function SuperGroups() {
       )}
 
       {/* Delete confirm modal */}
-      {deleteTarget && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-sm">
-            <h3 className="font-bold text-lg mb-2">Удалить группу?</h3>
-            <p className="text-sm text-base-content/70 mb-6">
-              Вы уверены, что хотите удалить группу <strong>{deleteTarget.name}</strong>? Это действие необратимо.
-            </p>
-            {deleteMutation.error && (
-              <div className="alert alert-error text-xs mb-3">
-                <span>{deleteMutation.error.message}</span>
-              </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleteMutation.isPending}
-              >
-                Отмена
-              </button>
-              <button
-                className="btn btn-error btn-sm"
-                onClick={() => deleteMutation.mutate(deleteTarget.id)}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Удалить'}
-              </button>
-            </div>
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Удалить группу?"
+        actions={
+          <div className="flex justify-end gap-2">
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Отмена
+            </button>
+            <button
+              className="btn btn-error btn-sm"
+              onClick={() => deleteMutation.mutate(deleteTarget.id)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Удалить'}
+            </button>
           </div>
-          <div className="modal-backdrop" onClick={() => setDeleteTarget(null)} />
-        </div>
-      )}
+        }
+      >
+        <p className="text-sm text-base-content/70 mb-6">
+          Вы уверены, что хотите удалить группу <strong>{deleteTarget?.name}</strong>? Это действие необратимо.
+        </p>
+        {deleteMutation.error && (
+          <div className="alert alert-error text-xs mb-3">
+            <span>{deleteMutation.error.message}</span>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -1,42 +1,10 @@
 import { Link } from 'react-router-dom';
-import { Building2, GraduationCap, Users, Presentation, Wallet, TriangleAlert, RefreshCw, ChevronRight, ArrowRight } from 'lucide-react';
+import { Building2, GraduationCap, Users, Presentation, Wallet, TriangleAlert, RefreshCw, ArrowRight } from 'lucide-react';
 import { fmt } from '../../format.js';
 import { useSuperDashboard } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
-
-function Kpi({ Icon, tint, title, value, unit, to }) {
-  const body = (
-    <div className="card-body p-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="w-11 h-11 rounded-xl grid place-items-center shrink-0" style={{ background: tint.bg, color: tint.fg }}>
-            <Icon size={22} strokeWidth={2.2} />
-          </span>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 leading-tight">
-            {title}
-          </div>
-        </div>
-        {to && <ChevronRight size={16} className="text-base-content/25 shrink-0" />}
-      </div>
-      <div className="text-3xl font-extrabold mt-4 leading-none">{value}</div>
-      {unit && <div className="text-xs text-base-content/45 mt-1">{unit}</div>}
-    </div>
-  );
-
-  if (to) {
-    return (
-      <Link
-        to={to}
-        className="card bg-base-100 transition-all hover:shadow-md hover:-translate-y-0.5 hover:ring-1 hover:ring-primary/30"
-      >
-        {body}
-      </Link>
-    );
-  }
-
-  return <div className="card bg-base-100">{body}</div>;
-}
+import { Kpi } from '../mentor/_ui.jsx';
 
 export default function SuperDashboard() {
   const { data, isLoading, error, refetch } = useSuperDashboard();
@@ -77,12 +45,12 @@ function Loaded({ data }) {
     <>
       {/* KPI grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
-        <Kpi Icon={Building2} tint={{ bg: '#E0F2FE', fg: '#075985' }} title="Филиалы" value={fmt(t.branches)} unit="всего" to="/branches" />
-        <Kpi Icon={GraduationCap} tint={{ bg: '#EDE9FE', fg: '#5B21B6' }} title="Ученики" value={fmt(t.activeStudents)} unit="активных" to="/students" />
-        <Kpi Icon={Users} tint={{ bg: '#DCFCE7', fg: '#166534' }} title="Админы" value={fmt(t.admins)} unit="сотрудников" to="/admins" />
-        <Kpi Icon={Presentation} tint={{ bg: '#CCFBF1', fg: '#0F766E' }} title="Менторы" value={fmt(t.mentors)} unit="преподавателей" to="/admins" />
-        <Kpi Icon={Wallet} tint={{ bg: '#FFEDD5', fg: '#9A3412' }} title="Доход" value={fmt(t.revenue)} unit={cur} to="/stats" />
-        <Kpi Icon={TriangleAlert} tint={{ bg: '#FEE2E2', fg: '#DC2626' }} title="Долги" value={fmt(t.outstandingDebt)} unit={cur} to="/stats" />
+        <Kpi Icon={Building2} title="Филиалы" value={fmt(t.branches)} unit="всего" to="/branches" />
+        <Kpi Icon={GraduationCap} title="Ученики" value={fmt(t.activeStudents)} unit="активных" to="/students" />
+        <Kpi Icon={Users} title="Админы" value={fmt(t.admins)} unit="сотрудников" to="/admins" tone="success" />
+        <Kpi Icon={Presentation} title="Менторы" value={fmt(t.mentors)} unit="преподавателей" to="/admins" />
+        <Kpi Icon={Wallet} title="Доход" value={fmt(t.revenue)} unit={cur} to="/stats" />
+        <Kpi Icon={TriangleAlert} title="Долги" value={fmt(t.outstandingDebt)} unit={cur} to="/stats" tone="danger" />
       </div>
 
       {/* Филиалы — таблица */}

@@ -5,14 +5,14 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import {
-  ArrowUpRight, ArrowDownRight, Download,
-  Landmark, CreditCard, Users, Percent,
+  Download, Landmark, CreditCard, Users, Percent,
   TrendingUp, Wallet,
 } from 'lucide-react';
 import { useSuperStats } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
 import { fmt, money } from '../../format.js';
+import { Kpi } from '../mentor/_ui.jsx';
 
 /**
  * Статистика организации.
@@ -40,18 +40,6 @@ const PERIODS = [
   { key: '90d', label: '90 дней' },
 ];
 
-// ---- Delta chip ----
-function DeltaChip({ delta }) {
-  if (delta == null) return null;
-  const pos = delta >= 0;
-  return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${pos ? 'text-success' : 'text-error'}`}>
-      {pos ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-      {Math.abs(delta).toFixed(1)}%
-    </span>
-  );
-}
-
 // ---- Custom Tooltip ----
 function NeonTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -65,27 +53,6 @@ function NeonTooltip({ active, payload, label }) {
           <span className="font-bold">{typeof p.value === 'number' ? money(p.value) : p.value}</span>
         </div>
       ))}
-    </div>
-  );
-}
-
-// ---- KPI Card ----
-function KpiCard({ icon: Icon, iconColor, bgColor, label, value, sub, delta }) {
-  return (
-    <div className="card bg-base-100 shadow-sm">
-      <div className="card-body p-5">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl ${bgColor}`}>
-            <Icon size={20} className={iconColor} />
-          </div>
-          <span className="text-sm text-base-content/60 font-medium">{label}</span>
-        </div>
-        <div className="flex items-end gap-2 mt-2">
-          <div className="text-2xl font-extrabold tabular-nums">{value}</div>
-          <DeltaChip delta={delta} />
-        </div>
-        {sub && <div className="text-xs text-base-content/50 mt-1">{sub}</div>}
-      </div>
     </div>
   );
 }
@@ -203,37 +170,31 @@ export default function SuperStats() {
         {/* Первая карточка — за период, остальные про «сейчас». Пока выручка
             была за всё время, а графики под ней за 7 дней, на одном экране
             стояли два разных числа про одно и то же. */}
-        <KpiCard
-          icon={Landmark}
-          iconColor="text-primary"
-          bgColor="bg-primary/10"
-          label={`Выручка за ${periodLabel.toLowerCase()}`}
+        <Kpi
+          Icon={Landmark}
+          title={`Выручка за ${periodLabel.toLowerCase()}`}
           value={money(t.periodRevenue ?? 0, cur)}
-          sub={`Средняя: ${money(avgRevenue)} / филиал`}
+          unit={`Средняя: ${money(avgRevenue)} / филиал`}
         />
-        <KpiCard
-          icon={CreditCard}
-          iconColor="text-error"
-          bgColor="bg-error/10"
-          label="Долг"
+        <Kpi
+          Icon={CreditCard}
+          title="Долг"
           value={money(t.outstandingDebt ?? 0, cur)}
-          sub="Задолженность на сегодня"
+          unit="Задолженность на сегодня"
+          tone="danger"
         />
-        <KpiCard
-          icon={Users}
-          iconColor="text-primary"
-          bgColor="bg-primary/10"
-          label="Ученики"
+        <Kpi
+          Icon={Users}
+          title="Ученики"
           value={fmt(t.activeStudents ?? 0)}
-          sub={`В ${t.branches ?? 0} филиалах`}
+          unit={`В ${t.branches ?? 0} филиалах`}
         />
-        <KpiCard
-          icon={Percent}
-          iconColor="text-warning"
-          bgColor="bg-warning/10"
-          label="Доля долга"
+        <Kpi
+          Icon={Percent}
+          title="Доля долга"
           value={`${debtRatio}%`}
-          sub="От общей суммы счетов"
+          unit="От общей суммы счетов"
+          tone="warning"
         />
       </div>
 

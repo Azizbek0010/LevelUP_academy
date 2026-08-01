@@ -12,9 +12,9 @@ import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches, 
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
-import Avatar from '../../components/Avatar.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import PhoneInput from '../../components/PhoneInput.jsx';
+import { Avatar, Modal } from '../mentor/_ui.jsx';
 
 /**
  * «Сотрудники» — раньше две отдельные вкладки (Администраторы / Методисты),
@@ -115,46 +115,37 @@ function TempPasswordModal({ email, password, onClose }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <div className="modal modal-open">
-      <div className="modal-box max-w-lg">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-success/20 grid place-items-center">
-            <Check size={24} className="text-success" />
-          </div>
-          <div>
-            <h3 className="font-bold text-lg text-success">Готово!</h3>
-            <p className="text-sm text-base-content/60">Пароль сгенерирован автоматически</p>
-          </div>
+    <Modal isOpen onClose={onClose} title="Готово!" actions={<button className="btn btn-primary w-full" onClick={onClose}>Готово</button>}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-12 h-12 rounded-full bg-success/20 grid place-items-center">
+          <Check size={24} className="text-success" />
         </div>
-        <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
-          <div className="flex items-start gap-2 mb-3">
-            <AlertTriangle size={16} className="text-warning shrink-0 mt-0.5" />
-            <p className="text-sm font-semibold text-warning">Сохраните пароль — показывается только один раз!</p>
+        <p className="text-sm text-base-content/60">Пароль сгенерирован автоматически</p>
+      </div>
+      <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
+        <div className="flex items-start gap-2 mb-3">
+          <AlertTriangle size={16} className="text-warning shrink-0 mt-0.5" />
+          <p className="text-sm font-semibold text-warning">Сохраните пароль — показывается только один раз!</p>
+        </div>
+        <div className="bg-base-100 rounded-lg p-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-base-content/55 w-16 shrink-0">Логин:</span>
+            <span className="font-semibold">{email}</span>
           </div>
-          <div className="bg-base-100 rounded-lg p-3 space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-base-content/55 w-16 shrink-0">Логин:</span>
-              <span className="font-semibold">{email}</span>
-            </div>
-            <div className="border-t border-base-200 pt-2 mt-2">
-              <div className="text-xs text-base-content/50 mb-1.5 font-semibold uppercase tracking-wider">Пароль</div>
-              <div className="flex items-center gap-2">
-                <code className="font-mono font-bold text-xl tracking-widest bg-base-200 px-3 py-2 rounded-lg flex-1 text-center">
-                  {password}
-                </code>
-                <button className={`btn btn-sm ${copied ? 'btn-success' : 'btn-outline'} gap-1.5`} onClick={copy}>
-                  {copied ? <><Check size={14} /> Скопировано</> : <><Copy size={14} /> Копировать</>}
-                </button>
-              </div>
+          <div className="border-t border-base-200 pt-2 mt-2">
+            <div className="text-xs text-base-content/50 mb-1.5 font-semibold uppercase tracking-wider">Пароль</div>
+            <div className="flex items-center gap-2">
+              <code className="font-mono font-bold text-xl tracking-widest bg-base-200 px-3 py-2 rounded-lg flex-1 text-center">
+                {password}
+              </code>
+              <button className={`btn btn-sm ${copied ? 'btn-success' : 'btn-outline'} gap-1.5`} onClick={copy}>
+                {copied ? <><Check size={14} /> Скопировано</> : <><Copy size={14} /> Копировать</>}
+              </button>
             </div>
           </div>
-        </div>
-        <div className="modal-action">
-          <button className="btn btn-primary w-full" onClick={onClose}>Готово</button>
         </div>
       </div>
-      <div className="modal-backdrop" onClick={onClose} />
-    </div>
+    </Modal>
   );
 }
 
@@ -483,7 +474,7 @@ export default function SuperAdmins() {
                       >
                         <td>
                           <div className="flex items-center gap-2.5">
-                            <Avatar name={`${row.firstName} ${row.lastName}`} size={32} />
+                            <Avatar name={`${row.firstName} ${row.lastName}`} size="md" />
                             <span className="font-semibold">{row.firstName} {row.lastName}</span>
                           </div>
                         </td>
@@ -512,15 +503,16 @@ export default function SuperAdmins() {
         </div>
       </div>
 
-      {formModal && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-lg">
-            <h3 className="font-bold text-lg">
-              {formModal.mode === 'create'
-                ? `Создать ${formModal.role === 'admin' ? 'администратора' : 'методиста'}`
-                : `Редактировать ${formModal.role === 'admin' ? 'администратора' : 'методиста'}`}
-            </h3>
-            {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
+      <Modal
+        isOpen={!!formModal}
+        onClose={() => setFormModal(null)}
+        title={formModal
+          ? formModal.mode === 'create'
+            ? `Создать ${formModal.role === 'admin' ? 'администратора' : 'методиста'}`
+            : `Редактировать ${formModal.role === 'admin' ? 'администратора' : 'методиста'}`
+          : ''}
+      >
+        {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 mt-4">
               <div className="grid grid-cols-2 gap-3">
                 <label className="form-control w-full">
@@ -601,9 +593,7 @@ export default function SuperAdmins() {
                 </button>
               </div>
             </form>
-          </div>
-          <div className="modal-backdrop" onClick={() => setFormModal(null)} />
-        </div>
+      </Modal>
       )}
 
       {tempPassword && (

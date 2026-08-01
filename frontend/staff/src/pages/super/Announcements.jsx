@@ -8,6 +8,7 @@ import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonList } from '../../components/Skeleton.jsx';
+import { Modal } from '../mentor/_ui.jsx';
 
 // ---- Constants ----
 
@@ -254,106 +255,102 @@ export default function SuperAnnouncements() {
       )}
 
       {/* Create modal */}
-      {modalOpen && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-md">
-            <h3 className="font-bold text-lg mb-4">Новый анонс</h3>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="form-control">
-                <label className="label"><span className="label-text">Заголовок</span></label>
-                <input
-                  type="text"
-                  className="input input-bordered input-sm"
-                  placeholder="Важное объявление"
-                  value={form.title}
-                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                />
-              </div>
-              <div className="form-control">
-                <label className="label"><span className="label-text">Текст</span></label>
-                <textarea
-                  className="textarea textarea-bordered textarea-sm resize-none"
-                  rows={4}
-                  placeholder="Текст анонса..."
-                  value={form.body}
-                  onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-                />
-              </div>
-              <div className="form-control">
-                <label className="label"><span className="label-text">Получатели</span></label>
-                <select
-                  className="select select-bordered select-sm"
-                  value={form.targetType}
-                  onChange={(e) => setForm((f) => ({ ...f, targetType: e.target.value }))}
-                >
-                  <option value="all-staff">Все сотрудники</option>
-                  <option value="all-admins">Все администраторы</option>
-                  <option value="all-mentors">Все менторы</option>
-                </select>
-              </div>
-
-              {formError && (
-                <div className="alert alert-error text-xs py-2">
-                  <span>{formError}</span>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => { setModalOpen(false); setFormError(''); }}
-                  disabled={createMutation.isPending}
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm"
-                  disabled={createMutation.isPending}
-                >
-                  {createMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Отправить'}
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => { setModalOpen(false); setFormError(''); }}
+        title="Новый анонс"
+      >
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div className="form-control">
+            <label className="label"><span className="label-text">Заголовок</span></label>
+            <input
+              type="text"
+              className="input input-bordered input-sm"
+              placeholder="Важное объявление"
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            />
           </div>
-          <div className="modal-backdrop" onClick={() => { setModalOpen(false); setFormError(''); }} />
-        </div>
-      )}
+          <div className="form-control">
+            <label className="label"><span className="label-text">Текст</span></label>
+            <textarea
+              className="textarea textarea-bordered textarea-sm resize-none"
+              rows={4}
+              placeholder="Текст анонса..."
+              value={form.body}
+              onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+            />
+          </div>
+          <div className="form-control">
+            <label className="label"><span className="label-text">Получатели</span></label>
+            <select
+              className="select select-bordered select-sm"
+              value={form.targetType}
+              onChange={(e) => setForm((f) => ({ ...f, targetType: e.target.value }))}
+            >
+              <option value="all-staff">Все сотрудники</option>
+              <option value="all-admins">Все администраторы</option>
+              <option value="all-mentors">Все менторы</option>
+            </select>
+          </div>
+
+          {formError && (
+            <div className="alert alert-error text-xs py-2">
+              <span>{formError}</span>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => { setModalOpen(false); setFormError(''); }}
+              disabled={createMutation.isPending}
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary btn-sm"
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Отправить'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Delete confirm modal */}
-      {deleteTarget && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-sm">
-            <h3 className="font-bold text-lg mb-2">Удалить анонс?</h3>
-            <p className="text-sm text-base-content/70 mb-6">
-              Вы уверены, что хотите удалить анонс <strong>«{deleteTarget.title}»</strong>?
-            </p>
-            {deleteMutation.error && (
-              <div className="alert alert-error text-xs mb-3">
-                <span>{deleteMutation.error.message}</span>
-              </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleteMutation.isPending}
-              >
-                Отмена
-              </button>
-              <button
-                className="btn btn-error btn-sm"
-                onClick={() => deleteMutation.mutate(deleteTarget.id)}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Удалить'}
-              </button>
-            </div>
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Удалить анонс?"
+      >
+        <p className="text-sm text-base-content/70 mb-6">
+          Вы уверены, что хотите удалить анонс <strong>«{deleteTarget.title}»</strong>?
+        </p>
+        {deleteMutation.error && (
+          <div className="alert alert-error text-xs mb-3">
+            <span>{deleteMutation.error.message}</span>
           </div>
-          <div className="modal-backdrop" onClick={() => setDeleteTarget(null)} />
+        )}
+        <div className="flex justify-end gap-2">
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setDeleteTarget(null)}
+            disabled={deleteMutation.isPending}
+          >
+            Отмена
+          </button>
+          <button
+            className="btn btn-error btn-sm"
+            onClick={() => deleteMutation.mutate(deleteTarget.id)}
+            disabled={deleteMutation.isPending}
+          >
+            {deleteMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Удалить'}
+          </button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

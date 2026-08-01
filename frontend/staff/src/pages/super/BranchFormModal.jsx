@@ -7,6 +7,7 @@ import { useAuth } from '../../auth.jsx';
 import { useInvalidate } from '../../queries.js';
 import YMapPicker from '../../components/YMapPicker.jsx';
 import PhoneInput from '../../components/PhoneInput.jsx';
+import { Modal } from '../mentor/_ui.jsx';
 
 /**
  * Форма филиала — создание и настройки.
