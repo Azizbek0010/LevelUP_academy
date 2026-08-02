@@ -38,13 +38,16 @@ export default function Login() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!code.trim() || !password) {
+    // Пробелы по краям (автозаполнение, мобильная клавиатура, вставка) не должны
+    // превращать верный код/пароль в «неверный».
+    const pass = password.trim();
+    if (!code.trim() || !pass) {
       setError('Введите логин-код и пароль');
       return;
     }
     setBusy(true);
     try {
-      await login(code.trim(), password);
+      await login(code.trim(), pass);
       navigate('/', { replace: true });
     } catch (err) {
       if (err.status === 401) setError('Неверный логин-код или пароль');

@@ -115,10 +115,14 @@ function LoginForm({ onForgot }) {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!email.trim() || !password) { setError('Введите email и пароль'); return; }
+    // Пробелы по краям (автозаполнение, мобильная клавиатура, вставка) не должны
+    // превращать верный логин/пароль в «неверный». Внутренние пробели сохраняем.
+    const mail = email.trim();
+    const pass = password.trim();
+    if (!mail || !pass) { setError('Введите email и пароль'); return; }
     setBusy(true);
     try {
-      await login(email, password);
+      await login(mail, pass);
       navigate(from, { replace: true });
     } catch (err) {
       if (err.status === 401) setError('Неверный email или пароль');

@@ -28,7 +28,9 @@ function LoginForm({ onForgot }) {
     e.preventDefault();
     setError(''); setBusy(true);
     try {
-      await login(email, password);
+      // Пробелы по краям (автозаполнение, мобильная клавиатура, вставка) не должны
+      // превращать верный email/пароль в «неверный».
+      await login(email.trim(), password.trim());
       navigate('/', { replace: true });
     } catch (err) {
       setError(err.status === 401 ? 'Неверный email или пароль' : err.message);
