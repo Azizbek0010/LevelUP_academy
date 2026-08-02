@@ -55,7 +55,7 @@ function EmailField({ value, onChange, placeholder, autoFocus }) {
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="input input-bordered w-full pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(59,130,246,0.18)]"
+        className="input input-bordered w-full pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]"
       />
     </div>
   );
@@ -74,7 +74,7 @@ function PasswordField({ value, onChange, placeholder, autoComplete, minLength }
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="input input-bordered w-full pr-11 pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(59,130,246,0.18)]"
+        className="input input-bordered w-full pr-11 pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]"
       />
       <span className="absolute inset-y-0 left-0 grid w-11 place-items-center text-base-content/40 pointer-events-none">
         <LockIcon />
@@ -147,6 +147,7 @@ function LoginForm({ onForgot }) {
 
   return (
     <>
+      <div className="h-1 w-10 rounded-full bg-limebrand mb-4 animate-slide-up" />
       <h1 className="text-2xl font-bold tracking-tight animate-slide-up">Вход в панель</h1>
       <p className="text-sm opacity-60 mb-6 animate-slide-up stagger-1">Super Admin · Администратор · Ментор · Методист</p>
       {error && <div role="alert" className="alert alert-error text-sm py-2 mb-4 animate-fade-in"><span>{error}</span></div>}
@@ -248,7 +249,7 @@ function ForgotForm({ onBack }) {
           </p>
           <input inputMode="numeric" maxLength={6} required autoFocus autoComplete="one-time-code" value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-            placeholder="Код из письма (6 цифр)" className="input input-bordered w-full text-center text-lg tracking-[0.5em] transition-shadow focus:shadow-[0_0_0_4px_rgba(59,130,246,0.18)]" />
+            placeholder="Код из письма (6 цифр)" className="input input-bordered w-full text-center text-lg tracking-[0.5em] transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]" />
           <PasswordField
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}

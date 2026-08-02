@@ -18,6 +18,25 @@ function EyeIcon({ off }) {
   );
 }
 
+function LockIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="4" y="10" width="16" height="10" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+// Иконка логин-кода (карточка-бейдж) — визуальный «ключ доступа» ученика.
+function CodeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M7 15h4M15 15h2M7 11h10" />
+    </svg>
+  );
+}
+
 const FEATURES = [
   'Тесты и домашние задания',
   'Коины, магазин и рейтинг',
@@ -63,18 +82,18 @@ export default function Login() {
     <div className="min-h-screen grid lg:grid-cols-2 bg-base-200">
       {/* Левая панель — бренд */}
       <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-sidebar text-neutral-content p-12">
-        <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full" style={{ background: 'rgba(64, 131, 59, 0.12)', filter: 'blur(80px)' }} />
-        <div className="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full" style={{ background: 'rgba(64, 131, 59, 0.07)', filter: 'blur(80px)' }} />
-        <img src="/logo-white.svg" alt="LevelUp Academy" className="relative h-10 w-auto self-start" />
+        <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-limebrand/20 blur-3xl animate-float" />
+        <div className="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full bg-limebrand/10 blur-3xl animate-float" style={{ animationDelay: '1.2s' }} />
+        <img src="/logo-white.svg" alt="LevelUp Academy" className="relative h-10 w-auto self-start animate-slide-up" />
         <div className="relative">
-          <h2 className="text-3xl font-bold leading-tight">Кабинет ученика</h2>
-          <p className="opacity-60 mt-2 max-w-sm">
+          <h2 className="text-3xl font-bold leading-tight animate-slide-up">Кабинет ученика</h2>
+          <p className="opacity-60 mt-2 max-w-sm animate-slide-up stagger-1">
             Тесты, домашние задания, коины и рейтинг — всё в личном кабинете ученика и родителя.
           </p>
           <ul className="mt-8 space-y-3">
-            {FEATURES.map((f) => (
-              <li key={f} className="flex items-center gap-3 text-sm opacity-80">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full" style={{ background: 'rgba(64, 131, 59, 0.15)', color: '#40833B' }}>
+            {FEATURES.map((f, i) => (
+              <li key={f} className={`flex items-center gap-3 text-sm opacity-80 animate-slide-up stagger-${i + 2}`}>
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-limebrand/15 text-limebrand">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
@@ -91,35 +110,44 @@ export default function Login() {
       <div className="grid place-items-center p-6">
         <div className="w-full max-w-md">
           <img src="/logo-primary.svg" alt="LevelUp Academy" className="h-8 w-auto mb-6 lg:hidden" />
-          <div className="rounded-2xl border border-base-300 bg-base-100 p-8 shadow-[0_1px_2px_rgba(29,36,23,0.04),0_18px_50px_-12px_rgba(29,36,23,0.14)] sm:p-10">
-            <h1 className="text-2xl font-bold tracking-tight">Вход</h1>
-            <p className="text-sm opacity-60 mb-6">Ученик / Родитель</p>
+          <div className="rounded-2xl border border-base-300 bg-base-100 p-8 shadow-[0_1px_2px_rgba(29,36,23,0.04),0_18px_50px_-12px_rgba(29,36,23,0.14)] transition-shadow duration-300 hover:shadow-[0_1px_2px_rgba(29,36,23,0.05),0_24px_60px_-12px_rgba(29,36,23,0.18)] sm:p-10 animate-slide-up">
+            <div className="h-1 w-10 rounded-full bg-limebrand mb-4 animate-slide-up" />
+            <h1 className="text-2xl font-bold tracking-tight animate-slide-up">Вход</h1>
+            <p className="text-sm opacity-60 mb-6 animate-slide-up stagger-1">Ученик / Родитель</p>
             {error && (
-              <div role="alert" className="alert alert-error text-sm py-2 mb-4">
+              <div role="alert" className="alert alert-error text-sm py-2 mb-4 animate-fade-in">
                 <span>{error}</span>
               </div>
             )}
 
             <form onSubmit={onSubmit} className="space-y-4" noValidate>
-              <label className="form-control w-full">
+              <label className="form-control w-full animate-slide-up stagger-2">
                 <span className="label-text mb-1 font-medium">Логин-код</span>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  autoComplete="username"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.trim())}
-                  placeholder="напр. demostud"
-                  className="input input-bordered w-full tracking-widest"
-                />
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 grid w-11 place-items-center text-base-content/40 pointer-events-none">
+                    <CodeIcon />
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    autoComplete="username"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.trim())}
+                    placeholder="напр. demostud"
+                    className="input input-bordered w-full pl-11 tracking-widest transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]"
+                  />
+                </div>
               </label>
-              <label className="form-control w-full">
+              <label className="form-control w-full animate-slide-up stagger-3">
                 <span className="label-text mb-1 font-medium">Пароль</span>
                 <div className="relative">
+                  <span className="absolute inset-y-0 left-0 grid w-11 place-items-center text-base-content/40 pointer-events-none">
+                    <LockIcon />
+                  </span>
                   <input
                     type={showPw ? 'text' : 'password'}
                     required
@@ -128,7 +156,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="6-значный код"
-                    className="input input-bordered w-full pr-11"
+                    className="input input-bordered w-full pl-11 pr-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]"
                   />
                   <button
                     type="button"
@@ -141,12 +169,16 @@ export default function Login() {
                   </button>
                 </div>
               </label>
-              <button type="submit" className="btn btn-primary w-full" disabled={busy}>
+              <button
+                type="submit"
+                className="btn btn-primary w-full transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 animate-slide-up stagger-4"
+                disabled={busy}
+              >
                 {busy ? <span className="loading loading-spinner loading-sm" /> : 'Войти'}
               </button>
             </form>
 
-            <p className="text-xs opacity-50 text-center pt-4">
+            <p className="text-xs opacity-50 text-center pt-4 animate-slide-up stagger-5">
               Логин-код и пароль выдаёт администратор вашего учебного центра.
             </p>
           </div>

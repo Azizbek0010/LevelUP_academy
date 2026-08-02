@@ -15,6 +15,24 @@ function GoogleIcon() {
   );
 }
 
+function MailIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M22 6c0-1.1-.9-2-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6Z" />
+      <path d="m2 7 8.97 6.29a2 2 0 0 0 2.06 0L22 7" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="4" y="10" width="16" height="10" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
 // ---- вход по email + Google ----
 function LoginForm({ onForgot }) {
   const { login, loginWithGoogle } = useAuth();
@@ -51,29 +69,46 @@ function LoginForm({ onForgot }) {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Вход</h1>
+      <div className="h-1 w-10 rounded-full bg-limebrand mb-4" />
+      <h1 className="text-2xl font-bold tracking-tight">Вход</h1>
       <p className="text-sm opacity-60 mb-6">Main Admin</p>
       {error && <div role="alert" className="alert alert-error text-sm py-2 mb-4"><span>{error}</span></div>}
 
       <form onSubmit={onSubmit} className="space-y-3">
         <label className="form-control w-full">
           <span className="label-text mb-1">Email</span>
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@gmail.com" className="input input-bordered w-full" />
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 grid w-11 place-items-center text-base-content/40 pointer-events-none">
+              <MailIcon />
+            </span>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@gmail.com"
+              className="input input-bordered w-full pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]" />
+          </div>
         </label>
         <label className="form-control w-full">
           <span className="label-text mb-1">Пароль</span>
-          <PasswordInput required value={password} onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••" className="input input-bordered w-full" />
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 z-10 grid w-11 place-items-center text-base-content/40 pointer-events-none">
+              <LockIcon />
+            </span>
+            <PasswordInput required value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="input input-bordered w-full pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]" />
+          </div>
         </label>
-        <button type="submit" className="btn btn-primary w-full" disabled={busy}>
+        <button type="submit"
+          className="btn btn-primary w-full transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
+          disabled={busy}>
           {busy ? <span className="loading loading-spinner loading-sm" /> : 'Войти'}
         </button>
       </form>
 
       <div className="divider text-xs opacity-40">или</div>
 
-      <button type="button" className="btn btn-outline w-full gap-2" onClick={onGoogle}>
+      <button type="button"
+        className="btn btn-outline w-full gap-2 border-base-300 text-base-content transition-transform duration-150 hover:-translate-y-0.5 hover:border-base-content/30 hover:bg-base-200 hover:text-base-content active:translate-y-0"
+        onClick={onGoogle}>
         <GoogleIcon /> Войти через Google
       </button>
 
@@ -165,8 +200,8 @@ function ForgotForm({ onBack }) {
         <form onSubmit={sendCode} className="space-y-3 mt-4">
           <p className="text-sm opacity-60">Укажите email — пришлём 6-значный код на почту.</p>
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@gmail.com" className="input input-bordered w-full" />
-          <button className="btn btn-primary w-full" disabled={busy}>
+            placeholder="you@gmail.com" className="input input-bordered w-full transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]" />
+          <button className="btn btn-primary w-full transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0" disabled={busy}>
             {busy ? <span className="loading loading-spinner loading-sm" /> : 'Отправить код'}
           </button>
         </form>
@@ -179,11 +214,11 @@ function ForgotForm({ onBack }) {
           </p>
           <input inputMode="numeric" maxLength={6} required value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-            placeholder="Код из письма (6 цифр)" className="input input-bordered w-full tracking-widest" />
+            placeholder="Код из письма (6 цифр)" className="input input-bordered w-full tracking-widest transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]" />
           <PasswordInput required minLength={8} value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Новый пароль (мин. 8)" className="input input-bordered w-full" />
-          <button className="btn btn-primary w-full" disabled={busy}>
+            placeholder="Новый пароль (мин. 8)" className="input input-bordered w-full transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]" />
+          <button className="btn btn-primary w-full transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0" disabled={busy}>
             {busy ? <span className="loading loading-spinner loading-sm" /> : 'Сменить пароль'}
           </button>
           <div className="flex items-center justify-between gap-2">
@@ -216,13 +251,15 @@ export default function Login() {
   const [mode, setMode] = useState('login'); // login | forgot
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-base-200">
-      <div className="hidden lg:flex flex-col justify-between bg-sidebar text-neutral-content p-12">
-        <img src="/logo-white.svg" alt="LevelUp Academy" className="h-10 w-auto self-start" />
-        <div>
-          <h2 className="text-2xl font-bold">Панель владельца платформы</h2>
+      <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-sidebar text-neutral-content p-12">
+        <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-limebrand/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full bg-limebrand/10 blur-3xl" />
+        <img src="/logo-white.svg" alt="LevelUp Academy" className="relative h-10 w-auto self-start" />
+        <div className="relative">
+          <h2 className="text-3xl font-bold leading-tight">Панель владельца платформы</h2>
           <p className="opacity-60 mt-2 max-w-sm">Партнёры, заявки с лендинга, доход и тарифы — в одном месте.</p>
         </div>
-        <div className="text-xs opacity-40">SaaS · Main Admin</div>
+        <div className="relative text-xs opacity-40">SaaS · Main Admin</div>
       </div>
 
       <div className="grid place-items-center p-6">
