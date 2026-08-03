@@ -32,7 +32,10 @@
 | Триал | Первая неделя бесплатно |
 | Ниши посадочных страниц | `/landing/for-language-school`, `/landing/for-courses`, `/landing/crm-vs-excel` |
 | Логотип | `frontend/landing-page/public/logo.png` (растровый, есть готовый) |
-| ⚠️ Отсутствуют (не выдумывать, спросить владельца) | Год основания, размер команды, юр. адрес офиса, телефон компании — нужны для Crunchbase/Yandex Бизнес/2GIS |
+| Год основания | **2026** (от владельца, 03.08) |
+| Размер команды | **6 человек** (от владельца, 03.08) |
+| Соцсети (`sameAs`) | Telegram `t.me/levelupacademycrm`, Instagram `instagram.com/levelup_academy_uz`. LinkedIn нет |
+| 🚫 Отсутствуют (не выдумывать) | Юр. адрес офиса и телефон компании — офиса нет (владелец, 03.08). Блокирует Yandex Бизнес и 2GIS |
 
 ---
 
@@ -76,9 +79,15 @@
 - **Tags:** education, crm, saas, student-management
 
 ### Crunchbase
-- ⚠️ **Блокер:** нужен год основания и размер команды от владельца — без этого профиль
-  Crunchbase будет неполным/недостоверным. Остальное (описание, сайт, категория,
-  локация «Uzbekistan») готово к заполнению из таблицы выше.
+- ✅ **Блокер снят 03.08** — данные получены от владельца.
+- **Founded:** 2026
+- **Company size:** 1–10 employees (фактически 6)
+- **Headquarters:** Uzbekistan
+- **Categories:** Education CRM, SaaS, EdTech, Software
+- **Website:** https://levelup-academy.uz
+- **Social:** Telegram `t.me/levelupacademycrm`, Instagram `@levelup_academy_uz`
+- **Description:** см. Product Hunt description выше.
+- Готово к подаче владельцем — регистрация аккаунта на его стороне.
 
 ### Slashdot
 - **Category:** Business / Education Software
@@ -115,9 +124,9 @@
 
 ## Что нужно от владельца, чтобы продолжить
 
-1. **Адрес офиса + телефон** — разблокирует Yandex Бизнес и 2GIS (тот же блокер, что уже стоит в SEO-BACKLOG.md).
-2. **Год основания + размер команды** — для Crunchbase.
-3. Сами регистрации на площадках (Product Hunt, G2, Capterra, GetApp, SaaSHub, AlternativeTo, Slashdot) — тексты выше готовы к копированию, аккаунт/подача на стороне владельца.
+1. ~~**Год основания + размер команды**~~ — ✅ получены 03.08 (2026, 6 человек). Crunchbase разблокирован.
+2. 🚫 **Адрес офиса + телефон** — офиса нет (владелец, 03.08). Yandex Бизнес и 2GIS заблокированы до его появления; из активного списка убраны.
+3. Сами регистрации на площадках (Product Hunt, G2, Capterra, GetApp, SaaSHub, AlternativeTo, Slashdot, Crunchbase) — тексты выше готовы к копированию, аккаунт/подача на стороне владельца.
 
 ---
 
