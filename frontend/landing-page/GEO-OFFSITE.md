@@ -17,17 +17,21 @@ Perplexity / Google AI Overviews и чтобы окреп бренд-сигна�
 ## P0 — Соцсети компании (база для `sameAs`)
 
 > Зачем: `sameAs` в Organization-разметке — самый сильный сигнал для Google/AI,
-> что LevelUp Academy — отдельный бренд (сейчас его НЕ хватает; путается с другими
-> «Level Up»). Плюс закроет заглушку `https://t.me/` в футере.
+> что LevelUp Academy — отдельный бренд (путается с одноимённой IT-школой и западными
+> «Level Up CRM»).
 
 - [x] **Telegram-канал** ✅ `t.me/levelupacademycrm` создан, запущены посты (режим B2 — очередь
       `content_queue.py`, публикую по команде «постни следующий»).
-- [ ] **Instagram** — бизнес-аккаунт, bio, 3–5 постов (бренд + заявки).
-- [ ] **LinkedIn** — страница компании (About, логотип, сайт).
+- [x] **Instagram** ✅ аккаунт `instagram.com/levelup_academy_uz` существует — bio «LevelUp
+      Academy», категория Education. ⚠️ **Наполнения почти нет: 1 пост, 1 подписчик.**
+      Для `sameAs` этого достаточно (важен факт связи сущностей), для канала привлечения —
+      нет. Довести до 3–5 постов остаётся за владельцем.
+- [ ] **LinkedIn** — у компании нет (подтверждено владельцем 03.08). Заведут — допишу в `sameAs`.
 - [ ] **(опц.) Facebook / X** — если будет ресурс вести.
-- [x] **→ SEO (моя часть):** ✅ Telegram вписан — `sameAs: ["https://t.me/levelupacademycrm"]`
-      в Organization JSON-LD (`index.html`) + handle в футере (`Footer.jsx`). Добавлять
-      Instagram/LinkedIn в `sameAs` по мере появления.
+- [x] **→ SEO (моя часть):** ✅ 03.08 `sameAs` содержит **оба** живых профиля — Telegram и
+      Instagram (`index.html`, Organization JSON-LD); handle Telegram стоит и в футере
+      (`Footer.jsx:37`). Оба URL проверены живыми перед добавлением: битый `sameAs` вредит
+      доверию к разметке сильнее, чем его отсутствие.
 
 ---
 
