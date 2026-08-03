@@ -24,7 +24,7 @@
 
 ## 🚪 ВХОД В ПРОЕКТ: сначала спроси «Кто ты?» (ОБЯЗАТЕЛЬНО, ПЕРВЫМ ДЕЛОМ)
 
-**На первое сообщение любой сессии в этом проекте Claude ОБЯЗАН сначала задать вопрос-тест: «Кто ты?» — списком выбора из всех участников таблицы «Команда» (см. ниже).** Никакой работы до ответа.
+**На первое сообщение любой сессии в этом проекте Claude ОБЯЗАН сначала задать вопрос-тест: «Кто ты?» — списком выбора из всех участников таблицы «Команда» (см. ниже).** Никакой работы до ответа. Это система безопасности для участников команды.
 
 После выбора участника:
 
@@ -199,16 +199,17 @@ LevelUp-Academy/
 │   ├── tests/               # Тесты: mentor/ student/ parent/
 │   ├── worker.js            # Entry point для BullMQ worker
 │   └── package.json
-├── frontend/                 # React SPA — 5 независимых Vite-приложений (не монолит)
+├── frontend/                 # React SPA — 4 независимых Vite-приложения (не монолит)
 │   ├── landing-page/        # Лендинг (React + Vite), форма заявки → POST /api/leads
 │   ├── main-admin/          # Панель Main Admin (DaisyUI лайм), свой логин
 │   ├── staff/               # ОДНО приложение, ОДИН логин: Admin + Mentor + Methodist + Super Admin
 │   │   └── src/pages/super/ # Super Admin-секция (роуты /super/*, TS/TSX) — свой Layout,
 │   │                        # свой auth-store (zustand), синхронизируется с общим
 │   │                        # useAuth() через AuthSync.jsx (см. docs/FRONTEND-ARCHITECTURE.md §2)
-│   ├── member/               # Логин + кабинет Student/Parent (по логин-коду), Elyor
-│   ├── student/              # Student SPA: home/tests/homework/videos/shop/leaderboard
-│   │                         # (использует сессию из member/, своей страницы логина нет)
+│   ├── member/               # Логин + кабинеты Student и Parent (вход по логин-коду), Elyor
+│   │   └── src/student/     # Кабинет ученика: home/lessons/tests/homework/videos/shop/
+│   │                        # leaderboard. Роуты /student, /lessons, /tests, /homework,
+│   │                        # /videos, /shop, /leaderboard — см. member/src/App.jsx
 │   └── logos/                # Логотипы
 ├── docs/                     # Архитектурная документация
 │   ├── BACKEND-ARCHITECTURE.md
@@ -238,7 +239,7 @@ LevelUp-Academy/
 | **Shohjahon** | Main Admin фронт (завершил Super Admin → переведён на Main Admin) | только `frontend/main-admin` |
 | **Said Islom** | Methodist фронт (переведён из Super Admin — панель завершена) | только `frontend/staff` (methodist) |
 | **Aziz** | Methodist фронт (переведён из Super Admin — панель завершена) | только `frontend/staff` (methodist) |
-| **Abduloh** (@Corvin_0, git: yunusovabdullox36-hash) | Admin фронт + **весь фронтенд (полный доступ)** | **ВЕСЬ `frontend/`**: любая панель, любое из 5 Vite-приложений (`staff`, `main-admin`, `member`, `student`, `landing-page`). ❌ `backend/` по-прежнему НЕЛЬЗЯ |
+| **Abduloh** (@Corvin_0, git: yunusovabdullox36-hash) | Admin фронт + **весь фронтенд (полный доступ)** | **ВЕСЬ `frontend/`**: любая панель, любое из 4 Vite-приложений (`staff`, `main-admin`, `member`, `landing-page`). ❌ `backend/` по-прежнему НЕЛЬЗЯ |
 | **Odil** | Admin фронт | только `frontend/staff` (admin) |
 | **Hamidula** | Admin фронт | только `frontend/staff` (admin) |
 | **Sardor** | Mentor фронт | только `frontend/staff` (mentor) |
@@ -251,7 +252,7 @@ Abduloh — **единственный из фронт-команды, кто н
 
 Что это значит на практике:
 
-- ✅ Может: `frontend/staff` (admin, mentor, methodist, super), `frontend/main-admin`, `frontend/member`, `frontend/student`, `frontend/landing-page`
+- ✅ Может: `frontend/staff` (admin, mentor, methodist, super), `frontend/main-admin`, `frontend/member` (включая кабинет ученика в `member/src/student`), `frontend/landing-page`
 - ❌ Не может: `backend/` (правило Frontend ≠ Backend действует), root-файлы репозитория (зона Team Lead)
 - ⚠️ **Задачи у остальных НЕ отобраны.** Elyor, Shohjahon, Said Islom, Aziz, Odil, Hamidula, Sardor, Kozim, Alish, Kama остаются владельцами своих панелей. Полный доступ Abduloh — это право входить в чужую панель и чинить/дорабатывать, а не передача владения.
 - ⛔ **Правило «не затирать чужую работу» действует поверх этого доступа без исключений.** Он не имеет права удалять/перезаписывать чужой код или ветку. Конфликт — решается через merge и разговор с автором, а не через удаление. Переписал чужой файл — сначала сообщи владельцу панели.
@@ -286,15 +287,18 @@ cd frontend/main-admin && npm run dev
 # Staff (один логин: Admin + Super Admin + Mentor + Methodist)
 cd frontend/staff && npm run dev
 
-# Member — логин + кабинет Student/Parent
+# Member — логин + оба кабинета: Student и Parent
 cd frontend/member && npm run dev
-
-# Student SPA (использует сессию member/, своего логина нет)
-cd frontend/student && npm run dev
 ```
 
-⚠️ `frontend/member` и `frontend/student` по умолчанию просят один и тот же dev-порт (5175) —
-при одновременном локальном запуске обоих указывайте порт вручную (`npm run dev -- --port 5176`).
+Кабинет ученика отдельно поднимать не нужно: он живёт внутри `member` по роутам
+`/student`, `/lessons`, `/tests`, `/homework`, `/videos`, `/shop`, `/leaderboard`.
+После входа роль `student` редиректится на `/student` (`member/src/App.jsx:53`).
+
+> Отдельного приложения `frontend/student` больше нет — удалено 04.08.2026.
+> Оно дублировало кабинет, уже перенесённый в `member/src/student/`, и вдобавок
+> отставало: в нём не было страниц `Lessons` и `LessonDetail`. Заодно исчезла
+> старая проблема с общим dev-портом 5175 у двух приложений.
 
 ---
 
@@ -459,3 +463,45 @@ python scripts/rollback.py v0.1.1   # вернуть main к состоянию 
 6. **Git: один репо, свои ветки** — `karis/*` и `abdulaziz/*`, мерж в `main` через ревью
 7. **Коммиты на английском**
 8. **Не трогай чужие файлы** — нужна правка у соседа → TODO-комментарий + сообщить
+
+---
+
+## Порядок работы над задачей (ОБЯЗАТЕЛЬНО)
+
+1. **Спросить «Кто ты?»** — см. раздел «Вход в проект» выше. Это проектный гейт,
+   он идёт первым и ни на что не заменяется.
+2. Дальше — общий порядок из личного `CLAUDE.md` разработчика: Закон 0 (факт, а не
+   догадка) и 7 шагов с 3 гейтами. Здесь он не дублируется намеренно.
+
+Раньше в этом файле лежал свой список из шести пунктов. Он расходился с общим
+порядком, а два противоречащих регламента хуже одного плохого — не выполняется
+ни один. Проектным остаётся только то, чего нет в общем: гейт «Кто ты?»,
+зоны участников и Save Zone workflow.
+
+Коротко, что действует поверх проектных правил:
+
+- **Закон 0** — не знаешь, проверь или скажи «не знаю»; утверждение о коде только
+  после чтения файла целиком.
+- **Гейт «хватает ли контекста»** — нет: vault → память → спросить → веб.
+  Вопрос задаётся здесь, а не ритуально в начале задачи.
+- **Гейт необратимости** — `rm`, force-push, push в `main`, `seed`/`reset-db`,
+  `DROP`, деплой, отправка в Telegram: только с явного «да». Часть этого
+  блокируется автоматически.
+- **Триаж** — разобрать запрос, посчитать шаги; больше одного → план задач сразу.
+- **VERIFY** — «написал ≠ работает»: тесты/сборка/прогон. Тест, который не умеет
+  провалиться, ничего не доказывает.
+- **Честный стоп** — после трёх неудач отчёт с фактами, а не четвёртый круг наугад.
+
+---
+
+## Git-анализ команды
+
+Спрашивать в начале сессии: «Кинуть git-анализ команды в группы?». Если «да» — три команды подряд:
+
+1. `python C:\Users\user\.claude\scripts\levelup-git-report.py` — отчёт в `C:\Users\user\.claude\state\levelup\` (uz+ru).
+2. `"C:\Users\user\.claude\mcp-servers\telegram-mcp\.venv\Scripts\python.exe" C:\Users\user\.claude\scripts\levelup-tg-send.py` — узб → **Ichvoganlar + Siqilganlar** `-1004457716718` (frontend), рус → **levelUp** `-5325335302` (backend). Прямой Telethon, не MCP-инструмент.
+3. `python ...\levelup-git-report.py --mark` — сдвинуть точку «с прошлого отчёта».
+
+Без явного «да» в группы не уходит ничего. Язык по адресу жёстко: frontend=узб, backend=рус. Маппинг авторов и прогресс — внутри скрипта (`AUTHOR2MEMBER`/`MEMBER2PANEL`, `TASK.md`); новый человек — дописать туда.
+
+Падает `session not authorized` → сессия отозвана (AuthKeyDuplicated при dual-IP): перегенерить `tg_send_code.py`/`tg_sign_in.py`, номер `+998774548881`. Не запускать старый MCP-сервер одновременно с прямым скриптом.

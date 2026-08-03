@@ -54,9 +54,9 @@ realtime-чаты и presence через Socket.io, уведомления в Te
 | Frontend | React 18 + Vite + Tailwind + DaisyUI, TanStack Query |
 | Деплой | Render (backend) + Vercel (frontend) |
 
-Фронт — **не монолит**, а 5 независимых Vite-приложений:
+Фронт — **не монолит**, а 4 независимых Vite-приложения:
 `landing-page` · `main-admin` · `staff` (Admin + Super Admin + Mentor + Methodist) ·
-`member` (вход + кабинет Parent) · `student`.
+`member` (вход + кабинеты Student и Parent).
 
 ---
 
@@ -75,8 +75,9 @@ npm run worker:dev            # воркеры очередей — без ни�
 cd frontend/staff && npm install && npm run dev
 ```
 
-⚠️ `frontend/member` и `frontend/student` просят один и тот же порт 5175 —
-при одновременном запуске указывайте порт вручную (`npm run dev -- --port 5176`).
+ℹ️ Кабинет ученика отдельным приложением не запускается — он внутри `frontend/member`
+(роуты `/student`, `/lessons`, `/tests`, `/homework`, `/videos`, `/shop`, `/leaderboard`).
+Приложение `frontend/student` удалено 04.08.2026 как дубль.
 
 ⚠️ `backend/.env` должен указывать на **локальный** Postgres. Если там окажется строка Neon —
 `npm run seed` запишет демо-данные прямо в прод.
