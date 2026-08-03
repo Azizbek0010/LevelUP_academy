@@ -6,7 +6,15 @@
 services:
   # ─── API (HTTP) ───
   - type: web
-    name: levelup-backend
+    # ⚠️ Имя должно совпадать с именем РЕАЛЬНОГО сервиса в Render, иначе весь этот
+    # файл — фикция: Blueprint сопоставляет сервисы по имени и просто не находит,
+    # что настраивать. До 04.08 здесь стояло `levelup-backend`, а трафик
+    # обслуживал `levelup-academy-1` — проверено запросами:
+    # levelup-backend.onrender.com/health → 404, levelup-academy-1/health → 200.
+    # Из-за этого preDeployCommand и NODE_ENV ниже никогда не применялись:
+    # прод отдавал /api/docs.json (200), то есть работал с NODE_ENV=development.
+    # Переименовывать «покрасивее» нельзя — сначала переименуй сервис в дашборде.
+    name: levelup-academy-1
     runtime: node
     rootDir: backend
     region: frankfurt
@@ -67,6 +75,9 @@ services:
   #    Render free plannerда worker ham ~15 min o'tgandan keyin uxlaydi.
   #    Shuning uchun real-time Telegram uchun paid plan kerak bo'lishi mumkin.
   - type: worker
+    # ⚠️ Имя НЕ проверено (у worker'а нет HTTP-эндпоинта, снаружи не пингуется).
+    # Сверить с дашбордом Render: если реальный сервис называется иначе — этот
+    # блок так же не применяется, как было у web выше.
     name: levelup-worker
     runtime: node
     rootDir: backend
