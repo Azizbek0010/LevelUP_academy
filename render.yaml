@@ -9,23 +9,29 @@ services:
     # ⚠️ Имя должно совпадать с именем РЕАЛЬНОГО сервиса в Render, иначе весь этот
     # файл — фикция: Blueprint сопоставляет сервисы по имени и просто не находит,
     # что настраивать. До 04.08 здесь стояло `levelup-backend`, а трафик
-    # обслуживал `levelup-academy-1` — проверено запросами:
+    # обслуживал другой сервис — проверено запросами:
     # levelup-backend.onrender.com/health → 404, levelup-academy-1/health → 200.
     # Из-за этого preDeployCommand и NODE_ENV ниже никогда не применялись:
     # прод отдавал /api/docs.json (200), то есть работал с NODE_ENV=development.
-    # Переименовывать «покрасивее» нельзя — сначала переименуй сервис в дашборде.
-    name: levelup-academy-1
+    # Точное имя сверено с дашбордом (srv-d97r5vurnols738rhum0) — регистр и
+    # подчёркивание значимы. Переименовывать «покрасивее» нельзя: сначала
+    # переименуй сервис в дашборде.
+    name: LevelUP_academy-1
     runtime: node
     rootDir: backend
-    region: frankfurt
+    region: ohio          # сверено с дашбордом: сервис создан в ohio, не в frankfurt
     plan: free
     branch: main
     buildCommand: npm install
-    # Миграции гоняются ДО того, как новый код начнёт принимать трафик.
-    # Без этого деплой поднимал свежий код поверх старой схемы: код обращался
-    # к колонкам, которых в базе ещё нет, и страницы отдавали 500. Если
-    # миграция упадёт — Render прервёт деплой и оставит работать прошлую
-    # версию, что лучше, чем выкатить заведомо нерабочую.
+    # ⚠️ НЕ РАБОТАЕТ НА FREE-ПЛАНЕ. Дашборд Render 04.08 дословно:
+    # «Pre-Deploy Command is available for paid instances only» — поле
+    # заблокировано, Edit неактивен. Строка оставлена намеренно: при переходе
+    # на платный тариф это правильная настройка, и лучше пусть она уже стоит.
+    #
+    # Пока тариф free, миграции нужно вешать на Start Command:
+    #   npm run migrate && npm start
+    # Приложение тогда стартует только при успешной миграции — то же свойство
+    # «упало = прод остался на прошлой версии», ради которого нужен pre-deploy.
     preDeployCommand: npm run migrate
     startCommand: npm start
     healthCheckPath: /health
@@ -69,19 +75,39 @@ services:
       # URL фронта для CORS — пока фронт не задеплоен, можно указать URL самого сервиса
       - key: CLIENT_URL
         sync: false
+      # --- Telegram ---
+      # Бот живёт в ЭТОМ сервисе через webhook, а не в worker'е: long-polling
+      # на free-плане не работает (см. комментарий в modules/telegram/bot.js).
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      # Без username deep-link не построить → bind-token и login/start отдают 503
+      - key: TELEGRAM_BOT_USERNAME
+        sync: false
+      # Публичный адрес API: https://api.levelup-academy.uz
+      - key: PUBLIC_API_URL
+        sync: false
+      # Задан вместе с PUBLIC_API_URL → включается webhook. Render сгенерит сам.
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
 
   # ─── Worker (BullMQ + Telegram bot + Cron) ───
   # ⚠️ Worker uchun TELEGRAM_BOT_TOKEN va TELEGRAM_CHAT_ID kerak.
   #    Render free plannerда worker ham ~15 min o'tgandan keyin uxlaydi.
   #    Shuning uchun real-time Telegram uchun paid plan kerak bo'lishi mumkin.
   - type: worker
-    # ⚠️ Имя НЕ проверено (у worker'а нет HTTP-эндпоинта, снаружи не пингуется).
-    # Сверить с дашбордом Render: если реальный сервис называется иначе — этот
-    # блок так же не применяется, как было у web выше.
+    # ⚠️ ЭТОГО СЕРВИСА НЕ СУЩЕСТВУЕТ. В дашборде Render 04.08 всего четыре сервиса
+    # (LevelUP_academy-1, GreenHouseBackend, LevelUP_academy, ATTO-frontend) —
+    # ни одного worker'а. Значит очереди BullMQ (notifications, overdue, billing,
+    # due-soon) на проде не крутятся вообще: счета не выставляются автоматически,
+    # напоминания не уходят.
+    #
+    # Telegram-бота это больше НЕ касается — он переехал в web-сервис на webhook
+    # (см. modules/telegram/bot.js). Worker нужен только ради очередей и крона.
+    # Блок оставлен как готовая заготовка: создать сервис — и он поднимется.
     name: levelup-worker
     runtime: node
     rootDir: backend
-    region: frankfurt
+    region: ohio          # тот же регион, что у web — сервис ещё не создан
     plan: free
     branch: main
     buildCommand: npm install

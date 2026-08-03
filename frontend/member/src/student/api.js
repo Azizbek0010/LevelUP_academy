@@ -459,6 +459,8 @@ export const api = {
 
   // TG-FRONT
   telegramBindToken: () => request('/telegram/bind-token', { method: 'POST' }),
+  telegramStatus: () => request('/telegram/status'),
+  telegramUnlink: () => request('/telegram/unlink', { method: 'DELETE' }),
 };
 
 /** PUT файла напрямую в S3/MinIO по presigned URL (в mock-режиме URL 'mock://skip' — пропускаем). */
