@@ -163,9 +163,10 @@
 - [ ] **Ссылки из каталогов** (доверие домену): SaaS-каталоги (Product Hunt и т.п.) + узбекские
       бизнес-справочники. Ручная работа. Без ссылок новые страницы поднимаются медленно.
       Тексты листингов готовы — [GEO-OFFSITE.md](./GEO-OFFSITE.md) →
-      [DIRECTORY-LISTINGS.md](./DIRECTORY-LISTINGS.md). Yandex Бизнес/2GIS ждут адрес+телефон
-      офиса; Crunchbase — год основания + размер команды. Остальное (Product Hunt, G2, Capterra,
-      GetApp, SaaSHub, AlternativeTo, Slashdot) готово к подаче владельцем.
+      [DIRECTORY-LISTINGS.md](./DIRECTORY-LISTINGS.md). **03.08: Crunchbase разблокирован**
+      (2026, 6 человек — от владельца). Yandex Бизнес/2GIS сняты с активного списка — офиса нет.
+      Готово к подаче владельцем: Product Hunt, G2, Capterra, GetApp, SaaSHub, AlternativeTo,
+      Slashdot, Crunchbase.
 - [ ] **Развести бренд с одноимёнными** (entity disambiguation). Google AI Overview путает нас
       с другой «Levelup Academy» (IT-школа) и западными «Level Up CRM». Сделано в разметке:
       `alternateName`, описание «платформа/ПО, а не школа», `knowsAbout`, страна.
