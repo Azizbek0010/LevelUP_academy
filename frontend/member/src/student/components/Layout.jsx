@@ -261,6 +261,55 @@ export default function Layout() {
                   </div>
                 </div>
                 <div className="p-1.5">
+                  {/* Telegram живёт здесь, а не в подвале сайдбара: это настройка
+                      аккаунта, и место ей рядом с выходом, а не под меню разделов.
+                      Скрыт целиком, когда сервер отвечает configured: false —
+                      предлагать действие, которое заведомо вернёт ошибку, хуже,
+                      чем не предлагать вовсе. */}
+                  {tg?.configured !== false && (
+                    <>
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          setShowProfile(false);
+                          if (tg?.linked) setTgModal(true);
+                          else onBindTelegram();
+                        }}
+                        disabled={tgBusy}
+                        className="k-press-sm w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13.5px] font-bold disabled:opacity-40"
+                        style={{ color: tg?.linked ? C.text : '#1668B8' }}
+                      >
+                        <Send size={16} strokeWidth={2.6} className="shrink-0" />
+                        <span className="truncate">
+                          {tg?.linked
+                            ? tg.username
+                              ? `@${tg.username}`
+                              : 'Telegram ulangan'
+                            : 'Telegramni ulash'}
+                        </span>
+                        {tg?.linked && (
+                          <span
+                            className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded shrink-0"
+                            style={{ background: '#E8F6EC', color: '#1F7A3D' }}
+                          >
+                            ULANGAN
+                          </span>
+                        )}
+                      </button>
+
+                      {tgError && (
+                        <div
+                          className="px-3 pb-1.5 text-[11px] font-semibold leading-snug"
+                          style={{ color: '#C0392B' }}
+                        >
+                          {tgError}
+                        </div>
+                      )}
+
+                      <div className="my-1.5 mx-3" style={{ borderTop: `1px solid ${C.line}` }} />
+                    </>
+                  )}
+
                   <button
                     role="menuitem"
                     onClick={logout}
@@ -307,8 +356,8 @@ export default function Layout() {
 
         <div className="flex-1" />
 
-        {/* Виджет прогресса + Telegram/Выход — единой группой у низа сайдбара
-            (настоящие данные: те же coins, что и в шапке). */}
+        {/* Виджет прогресса у низа сайдбара (настоящие данные: те же coins,
+            что и в шапке). */}
         <div className="px-2.5 pb-3">
           <div className="rounded-xl p-4" style={{ background: C.card }}>
             <div className="text-[11px] font-semibold mb-2.5" style={{ color: C.muted }}>Твой прогресс</div>
@@ -316,56 +365,18 @@ export default function Layout() {
           </div>
         </div>
 
+        {/* Кнопки Telegram здесь больше нет — переехала в меню аккаунта в шапке
+            (настройка аккаунта, а не раздел кабинета). Выход остаётся: он тут
+            под рукой и дублирует пункт меню намеренно. */}
         <div className="p-3 shrink-0" style={{ borderTop: `1px solid ${C.line}` }}>
-          <div className="flex items-center gap-2">
-            {/* Сервер сам говорит, настроен ли Telegram (`configured`). Если нет —
-                кнопки нет вовсе: предлагать действие, которое гарантированно
-                вернёт ошибку, хуже, чем не предлагать. */}
-            {tg?.configured === false ? (
-              <div
-                className="flex-1 py-2.5 text-center text-[12px] font-semibold rounded-xl"
-                style={{ background: C.card, color: C.muted }}
-              >
-                Telegram sozlanmagan
-              </div>
-            ) : tg?.linked ? (
-              <button
-                onClick={() => setTgModal(true)}
-                title={tg.username ? `Ulangan: @${tg.username}` : 'Telegram ulangan'}
-                className="k-press-sm flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40 transition-colors"
-                style={{ background: '#E8F6EC', color: '#1F7A3D' }}
-              >
-                <Send size={15} strokeWidth={2.6} />
-                <span className="truncate">
-                  {tg.username ? `@${tg.username}` : 'Ulangan'}
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={onBindTelegram}
-                disabled={tgBusy}
-                title="Telegramni ulash"
-                className="k-press-sm flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40 transition-colors"
-                style={{ background: '#E4F1FF', color: '#1668B8' }}
-              >
-                <Send size={15} strokeWidth={2.6} /> Telegram
-              </button>
-            )}
-            <button
-              onClick={logout}
-              title="Выйти"
-              aria-label="Выйти"
-              className="k-press-sm w-10 h-10 rounded-xl grid place-items-center shrink-0"
-              style={{ background: '#FFE6E2', color: '#C0392B' }}
-            >
-              <LogOut size={17} strokeWidth={2.6} />
-            </button>
-          </div>
-          {tgError && (
-            <div className="mt-2 text-[11px] font-semibold leading-snug" style={{ color: '#C0392B' }}>
-              {tgError}
-            </div>
-          )}
+          <button
+            onClick={logout}
+            title="Выйти"
+            className="k-press-sm w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-extrabold"
+            style={{ background: '#FFE6E2', color: '#C0392B' }}
+          >
+            <LogOut size={16} strokeWidth={2.6} /> Chiqish
+          </button>
         </div>
       </aside>
 
