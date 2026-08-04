@@ -30,7 +30,22 @@ Architecture: [`docs/BACKEND-ARCHITECTURE.md`](../docs/BACKEND-ARCHITECTURE.md) 
 > Hosts that are not `localhost` mean you are on cloud services, and the Docker
 > step below is not for you.
 
-Local setup, from scratch:
+### Path A — cloud `.env` (what this project's machines actually use)
+
+If the check above showed Neon / Upstash / Storj hosts, this is you. **No Docker,
+no migrate, no seed** — those services are already running and the schema is
+already applied.
+
+```bash
+npm install
+npm run dev                 # API on :4000
+```
+
+### Path B — fully local `.env`
+
+Only when `DATABASE_URL` and `REDIS_URL` point at `localhost`. Starting Docker
+with a cloud `.env` just leaves four containers idling while the app talks to
+production anyway.
 
 ```bash
 cp .env.example .env        # fill JWT_ACCESS_SECRET (min 32 chars)
@@ -41,13 +56,6 @@ npm run migrate             # apply schema
 npm run seed                # main_admin + demo org/branch/superadmin — LOCAL DB ONLY
 npm run dev                 # API on :4000
 npm run worker:dev          # background worker (separate terminal)
-```
-
-Working against the shared cloud database instead — skip Docker and the seed:
-
-```bash
-npm install
-npm run dev                 # migrations are already applied there
 ```
 
 - MinIO console: http://localhost:9001 (minioadmin/minioadmin) — create bucket `levelup`
