@@ -54,6 +54,9 @@ const schema = z.object({
   // Секрет в пути webhook И в заголовке secret_token. Минимум 24 символа:
   // путь попадает в логи прокси, короткий секрет там подбирается.
   TELEGRAM_WEBHOOK_SECRET: z.string().min(24).optional().or(z.literal('')),
+  // Язык ответов бота. По умолчанию узбекский (см. bot.js) — аудитория ученики
+  // и родители в Узбекистане. 'ru' — если партнёру нужен русский.
+  TELEGRAM_BOT_LANG: z.enum(['uz', 'ru']).optional().or(z.literal('')),
 
   // Google/Firebase вход: Web client ID (из Firebase → Auth → Google → Web SDK).
   // Публичное значение. Пусто → /api/auth/google отдаёт 503.

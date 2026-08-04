@@ -33,7 +33,11 @@ export const bot = env.TELEGRAM_BOT_TOKEN ? new Bot(env.TELEGRAM_BOT_TOKEN) : nu
 export const usesWebhook = Boolean(bot && env.PUBLIC_API_URL && env.TELEGRAM_WEBHOOK_SECRET);
 
 if (bot) {
-  registerTelegramBotHandlers({ bot, pool, redis, logger });
+  // Узбекский по умолчанию, а не русский: бот пишет ученикам и родителям
+  // учебного центра в Узбекистане, и описание бота в BotFather тоже узбекское —
+  // ответы на русском выглядели рассинхроном. Переопределяется переменной,
+  // если у партнёра русскоязычная аудитория.
+  registerTelegramBotHandlers({ bot, pool, redis, logger, language: env.TELEGRAM_BOT_LANG || 'uz' });
 
   if (!usesWebhook) {
     // Fire-and-forget: не блокируем импорт модуля.
