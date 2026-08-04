@@ -42,7 +42,7 @@ function timeAgo(iso) {
 
 function targetIcon(targetType) {
   if (targetType === 'all-superadmins') return <Shield size={14} className="text-purple-600" />;
-  if (targetType === 'all-partners') return <Building2 size={14} className="text-lime-600" />;
+  if (targetType === 'all-partners') return <Building2 size={14} className="text-primary-content" />;
   return <Users size={14} className="text-primary" />;
 }
 
@@ -126,7 +126,7 @@ export default function Announcements() {
     <div className="space-y-6">
       <PageHeader title="Анонсы" subtitle="Сообщения для партнёров платформы">
         <button
-          className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 btn-sm gap-1.5"
+          className="btn btn-primary btn-sm gap-1.5"
           onClick={() => setModalOpen(true)}
         >
           <Plus size={16} /> Новый анонс
@@ -269,7 +269,7 @@ export default function Announcements() {
                 <label className="label"><span className="label-text">Заголовок</span></label>
                 <input
                   type="text"
-                  className="input input-bordered input-sm focus:border-lime-400 focus:outline-lime-200"
+                  className="input input-bordered input-sm focus:border-primary focus:outline-primary/40"
                   placeholder="Важное объявление"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -278,7 +278,7 @@ export default function Announcements() {
               <div className="form-control">
                 <label className="label"><span className="label-text">Текст</span></label>
                 <textarea
-                  className="textarea textarea-bordered textarea-sm resize-none focus:border-lime-400 focus:outline-lime-200"
+                  className="textarea textarea-bordered textarea-sm resize-none focus:border-primary focus:outline-primary/40"
                   rows={4}
                   placeholder="Текст анонса..."
                   value={form.body}
@@ -288,7 +288,7 @@ export default function Announcements() {
               <div className="form-control">
                 <label className="label"><span className="label-text">Получатели</span></label>
                 <select
-                  className="select select-bordered select-sm focus:border-lime-400 focus:outline-lime-200"
+                  className="select select-bordered select-sm focus:border-primary focus:outline-primary/40"
                   value={form.targetType}
                   onChange={(e) => setForm((f) => ({ ...f, targetType: e.target.value }))}
                 >
@@ -314,7 +314,7 @@ export default function Announcements() {
                 </button>
                 <button
                   type="submit"
-                  className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 btn-sm"
+                  className="btn btn-primary btn-sm"
                   disabled={createMutation.isPending}
                 >
                   {createMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Отправить'}
