@@ -14,11 +14,10 @@ import { useSuperBranchDetail } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
-import Avatar from '../../components/Avatar.jsx';
 import { SkeletonList } from '../../components/Skeleton.jsx';
 import YMapPicker from '../../components/YMapPicker.jsx';
 import { phoneDisplay } from '../../components/PhoneInput.jsx';
-import { Kpi, Panel, EmptyState } from '../mentor/_ui.jsx';
+import { Kpi, Panel, EmptyState, Avatar } from '../mentor/_ui.jsx';
 import BranchFormModal from './BranchFormModal.jsx';
 
 /**

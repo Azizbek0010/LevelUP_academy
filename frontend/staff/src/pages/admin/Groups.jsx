@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Archive, ArchiveRestore, ChevronRight, Users, User, FolderOpen, LayoutGrid, List, Download, Clock, Pencil, CalendarDays, KeyRound, UserPlus, Copy, Check } from 'lucide-react';
+import { Plus, Archive, ArchiveRestore, ChevronRight, Users, User, FolderOpen, LayoutGrid, List, Download, Clock, Pencil, CalendarDays, KeyRound, UserPlus, Copy, Check, BellRing } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminGroups, useAdminMentors, useAdminSettings } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
-import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip } from '../mentor/_ui.jsx';
+import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip, Modal } from '../mentor/_ui.jsx';
 
 const isArchived = (g) => g.isArchived ?? g.is_archived ?? false;
 const MAX_STUDENTS = 15;
@@ -167,7 +167,7 @@ function GroupCard({ g, onEdit }) {
 }
 
 /* ═══════════════ Group Form Modal ═══════════════ */
-function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, onSave, token, groups }) {
+function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, onSave, token, groups, subjectOptions = [] }) {
   const isEdit = Boolean(initial?.id);
   const [form, setForm] = useState(initial ?? emptyForm);
   const [busy, setBusy] = useState(false);
@@ -187,6 +187,22 @@ function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, on
   groupsRef.current = groups;
 
   const durationMin = Number(lessonDurationMin) || 80;
+
+  // Subject change → auto-fill price from any existing group with that subject
+  // (super admin's default price if set; otherwise Admin enters manually).
+  const handleSubjectChange = (value) => {
+    setForm((f) => {
+      const next = { ...f, subject: value };
+      if (isEdit || value.trim() === '') return next;
+      const match = (groupsRef.current || []).find(
+        (g) => String(g.subject || g.subject_name || '').trim().toLowerCase() === value.trim().toLowerCase() && Number(g.monthlyPrice || g.monthly_price || 0) > 0
+      );
+      if (match && !next.monthlyPrice) {
+        next.monthlyPrice = String(match.monthlyPrice || match.monthly_price || '');
+      }
+      return next;
+    });
+  };
 
   // При смене ментора — тянем расписания его групп и строим карту занятости
   useEffect(() => {
@@ -333,10 +349,24 @@ function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, on
   };
 
   return (
-    <dialog className="modal modal-open">
-      <div className="modal-box card bg-base-100 border border-base-300 max-w-md p-6 max-h-[92vh] overflow-y-auto">
-        <h3 className="font-bold text-lg mb-6">{isEdit ? 'Изменить группу' : 'Новая группа'}</h3>
-        {err && <div className="alert alert-error mb-4 py-2 text-sm rounded-lg">{err}</div>}
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      boxClass="max-w-md p-6 max-h-[92vh] overflow-y-auto"
+      title={creds ? 'Ученик создан' : (isEdit ? 'Изменить группу' : 'Новая группа')}
+      actions={creds ? (
+        <button className="btn btn-primary rounded-lg w-full" onClick={onClose}>Готово</button>
+      ) : (
+        <>
+          <button className="btn btn-ghost rounded-lg" onClick={onClose} disabled={busy}>Отмена</button>
+          <button className="btn btn-primary rounded-lg" onClick={submit} disabled={busy || !form.name || !form.mentorId}>
+            {busy && <span className="loading loading-spinner loading-xs" />}
+            {isEdit ? 'Сохранить изменения' : 'Создать группу'}
+          </button>
+        </>
+      )}
+    >
+      {err && <div className="alert alert-error mb-4 py-2 text-sm rounded-lg">{err}</div>}
 
         {/* Ученик создан — показываем логин-код и пароль */}
         {creds ? (
@@ -377,10 +407,6 @@ function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, on
                 ))}
               </div>
             </div>
-
-            <div className="modal-action mt-6">
-              <button className="btn btn-primary rounded-lg w-full" onClick={onClose}>Готово</button>
-            </div>
           </div>
         ) : (
         <>
@@ -405,9 +431,18 @@ function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, on
             <input
               className="input input-bordered w-full rounded-lg"
               placeholder="напр. Веб-разработка"
+              list="group-subject-list"
               value={form.subject}
-              onChange={(e) => setForm({ ...form, subject: e.target.value })}
+              onChange={(e) => handleSubjectChange(e.target.value)}
             />
+            <datalist id="group-subject-list">
+              {subjectOptions.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+            <span className="text-[10px] text-base-content/40 mt-1">
+              {subjectOptions.length > 0 ? 'Выберите из списка предметов (methodist)' : 'Введите новый предмет'}
+            </span>
           </label>
 
           <div className="grid grid-cols-2 gap-4">
@@ -423,6 +458,11 @@ function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, on
                 value={form.monthlyPrice}
                 onChange={(e) => setForm({ ...form, monthlyPrice: e.target.value })}
               />
+              {!isEdit && form.subject.trim() && !form.monthlyPrice && (
+                <span className="text-[10px] text-warning mt-1 flex items-center gap-1">
+                  <BellRing size={11} /> Narx belgilanmagan — Karisga xabar yuboriladi
+                </span>
+              )}
             </label>
             <label className="form-control">
               <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
@@ -691,19 +731,9 @@ function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, on
             </div>
           )}
         </div>
-
-        <div className="modal-action mt-6">
-          <button className="btn btn-ghost rounded-lg" onClick={onClose} disabled={busy}>Отмена</button>
-          <button className="btn btn-primary rounded-lg" onClick={submit} disabled={busy || !form.name || !form.mentorId}>
-            {busy && <span className="loading loading-spinner loading-xs" />}
-            {isEdit ? 'Сохранить изменения' : 'Создать группу'}
-          </button>
-        </div>
         </>
         )}
-      </div>
-      <div className="modal-backdrop bg-base-300/60 backdrop-blur-sm" onClick={onClose} />
-    </dialog>
+    </Modal>
   );
 }
 
@@ -745,6 +775,16 @@ export default function AdminGroups() {
   const filteredRows = search
     ? rows.filter(g => g.name?.toLowerCase().includes(search.toLowerCase()) || g.mentor?.name?.toLowerCase().includes(search.toLowerCase()))
     : rows;
+
+  // Unique subjects seen in existing groups (methodist-catalog fallback)
+  const subjectOptions = useMemo(() => {
+    const seen = new Set();
+    rows.forEach((g) => {
+      const s = (g.subject || g.subject_name || '').trim();
+      if (s) seen.add(s);
+    });
+    return [...seen].sort((a, b) => a.localeCompare(b, 'ru'));
+  }, [rows]);
 
   // Build API body from form state
   const buildBody = (f) => {
@@ -942,6 +982,7 @@ export default function AdminGroups() {
         onSave={handleSave}
         token={token}
         groups={rows}
+        subjectOptions={subjectOptions}
       />
     </div>
   );

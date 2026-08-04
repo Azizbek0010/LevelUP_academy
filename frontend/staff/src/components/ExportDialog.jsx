@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import { Download, FileSpreadsheet, FileDown, X, Check, Table2 } from 'lucide-react';
+import { Download, FileSpreadsheet, FileDown, Check, Table2 } from 'lucide-react';
 import { exportData, PAGE_EXPORT_CONFIG } from '../utils/exportUtils.js';
+import { Modal } from '../pages/mentor/_ui.jsx';
 
 const FORMAT_OPTIONS = [
   {
@@ -64,33 +65,26 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
   const activeFormat = FORMAT_OPTIONS.find((f) => f.key === format) || FORMAT_OPTIONS[0];
 
   return (
-    <dialog className="modal modal-open">
-      <div className="modal-box card !max-w-md !w-[26rem] overflow-hidden p-0 !border !border-[var(--glass-border)]"
-           style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(14px)' }}>
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      boxClass="!max-w-md !w-[26rem] !p-0 !overflow-hidden"
+    >
         {/* ── Header ─────────────────────────────────────── */}
         <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: 'var(--border)' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
-              >
-                <Download size={17} style={{ color: 'var(--primary)' }} />
-              </div>
-              <div>
-                <h3 className="font-bold text-[15px]" style={{ color: 'var(--text)' }}>Экспорт данных</h3>
-                <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                  {data.length} {data.length === 1 ? 'запись' : data.length < 5 ? 'записи' : 'записей'}
-                </p>
-              </div>
-            </div>
-            <button
-              className="btn btn-ghost btn-xs btn-circle hover:!bg-[var(--surface-hover)]"
-              onClick={onClose}
-              aria-label="Закрыть"
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
             >
-              <X size={16} style={{ color: 'var(--text-secondary)' }} />
-            </button>
+              <Download size={17} style={{ color: 'var(--primary)' }} />
+            </div>
+            <div>
+              <h3 className="font-bold text-[15px]" style={{ color: 'var(--text)' }}>Экспорт данных</h3>
+              <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                {data.length} {data.length === 1 ? 'запись' : data.length < 5 ? 'записи' : 'записей'}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -205,8 +199,6 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
             {done ? 'Готово!' : busy ? 'Создаём...' : 'Скачать'}
           </button>
         </div>
-      </div>
-      <div className="modal-backdrop" onClick={onClose} />
-    </dialog>
+    </Modal>
   );
 }

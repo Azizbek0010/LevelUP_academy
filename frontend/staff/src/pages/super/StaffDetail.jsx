@@ -9,10 +9,9 @@ import { fmt, dateShort, money, ADMIN_STATUS, ROLE_LABELS } from '../../format.j
 import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
-import Avatar from '../../components/Avatar.jsx';
 import { SkeletonKpis, SkeletonTable, SkeletonList } from '../../components/Skeleton.jsx';
 import { phoneDisplay } from '../../components/PhoneInput.jsx';
-import { Kpi, Panel, EmptyState } from '../mentor/_ui.jsx';
+import { Kpi, Panel, EmptyState, Avatar } from '../mentor/_ui.jsx';
 import { TYPE_META, LevelBadge } from '../../discipline-meta.jsx';
 
 /**
@@ -129,7 +128,7 @@ export default function StaffDetail() {
 
       <div className="flex flex-wrap items-start justify-between gap-3 animate-page-enter">
         <div className="flex items-center gap-3.5">
-          <Avatar name={fullName} size={44} />
+          <Avatar name={fullName} size="lg" />
           <div>
             <h1 className="text-[28px] font-extrabold tracking-tight leading-tight text-base-content">{fullName}</h1>
             <p className="text-[13px] text-base-content/70 mt-0.5">{ROLE_LABELS[role] ?? role}</p>

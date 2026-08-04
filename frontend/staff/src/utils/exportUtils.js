@@ -36,11 +36,49 @@ function today() {
 // ═══════════════ Excel (.xlsx) ═══════════════
 
 export async function exportToExcel(data, columns, filename = `export_${today()}`) {
-  const XLSX = await import('xlsx');
+  const XLSX = await import('xlsx-js-style');
   const { header, rows } = buildRows(data, columns);
 
   const wsData = [header, ...rows];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // ── Styling: brand header (green), zebra rows, borders ──
+  const HEADER_FILL = '217346';      // LevelUp green
+  const HEADER_FONT = { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 };
+  const ZEBRA_FILL = 'F2F7F2';       // light green tint on odd rows
+  const BORDER = {
+    top:  { style: 'thin', color: { rgb: 'D1D5DB' } },
+    bottom: { style: 'thin', color: { rgb: 'D1D5DB' } },
+    left: { style: 'thin', color: { rgb: 'D1D5DB' } },
+    right: { style: 'thin', color: { rgb: 'D1D5DB' } },
+  };
+
+  header.forEach((_, cIdx) => {
+    const cell = ws[XLSX.utils.encode_cell({ r: 0, c: cIdx })];
+    if (!cell) return;
+    cell.s = {
+      fill: { fgColor: { rgb: HEADER_FILL }, patternType: 'solid' },
+      font: HEADER_FONT,
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: BORDER,
+    };
+  });
+
+  rows.forEach((row, rIdx) => {
+    row.forEach((_, cIdx) => {
+      const cell = ws[XLSX.utils.encode_cell({ r: rIdx + 1, c: cIdx })];
+      if (!cell) return;
+      cell.s = {
+        font: { color: { rgb: '1F2937' }, sz: 10 },
+        fill: rIdx % 2 === 1 ? { fgColor: { rgb: ZEBRA_FILL }, patternType: 'solid' } : undefined,
+        alignment: { vertical: 'middle' },
+        border: BORDER,
+      };
+    });
+  });
+
+  // Freeze header row
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
 
   // Auto-size columns
   const colWidths = header.map((h, colIdx) => {
@@ -152,7 +190,6 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
     head: [header],
     body: rows,
     styles: {
-      font: fontName,
       fontSize: 9,
       cellPadding: 4,
       textColor: [40, 40, 40],
@@ -170,15 +207,16 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
     margin: { left: 14, right: 14 },
     didDrawPage: () => {
       const pageH = doc.internal.pageSize.getHeight();
-      doc.setFont(fontName);
+      const pageNum = doc.internal.getCurrentPageInfo().pageNumber;
+      const footerText = `LevelUp Academy  |  ${pageNum}-bet`;
+      // jsPDF v4 TTF metadata doesn't expose glyph widths, so `align: 'center'`
+      // throws ("Cannot read properties of undefined (reading 'widths')").
+      // Compute X manually instead: avg glyph ≈ 0.6em, 1mm ≈ 2.834pt.
+      const approxW = footerText.length * 7 * 0.6 / 2.834;
+      doc.setFont(fontName, 'normal');
       doc.setFontSize(7);
       doc.setTextColor(160, 160, 160);
-      doc.text(
-        `LevelUp Academy  |  ${doc.internal.getCurrentPageInfo().pageNumber}-bet`,
-        pageW / 2,
-        pageH - 8,
-        { align: 'center' }
-      );
+      doc.text(footerText, pageW / 2 - approxW / 2, pageH - 8);
     },
   };
 

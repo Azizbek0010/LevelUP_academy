@@ -11,7 +11,7 @@ import { formatPhone } from '../../format.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
-import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip } from '../mentor/_ui.jsx';
+import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip, Modal } from '../mentor/_ui.jsx';
 
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
@@ -364,85 +364,85 @@ export default function AdminStudents() {
       )}
 
       {/* ═══ Create Modal ═══ */}
-      {form && (
-        <dialog className="modal modal-open">
-          <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-4">Новый студент</h3>
-            {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-[12px] font-bold text-base-content/50 uppercase tracking-wider mb-2">Данные студента</h4>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <input className="input input-bordered w-full" placeholder="Имя" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
-                  <input className="input input-bordered w-full" placeholder="Фамилия" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <PhoneInput className="input input-bordered w-full" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-                  <input className="input input-bordered w-full" type="date" placeholder="Дата рождения" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
-                </div>
-
-              </div>
-              
-              <div>
-                <h4 className="text-[12px] font-bold text-base-content/50 uppercase tracking-wider mb-2">Данные родителя (опционально)</h4>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <input className="input input-bordered w-full" placeholder="Имя родителя" value={form.parentFirstName} onChange={(e) => setForm({ ...form, parentFirstName: e.target.value })} />
-                  <input className="input input-bordered w-full" placeholder="Фамилия родителя" value={form.parentLastName} onChange={(e) => setForm({ ...form, parentLastName: e.target.value })} />
-                </div>
-                <PhoneInput className="input input-bordered w-full" value={form.parentPhone} onChange={(v) => setForm({ ...form, parentPhone: v })} />
-              </div>
+      <Modal
+        isOpen={!!form}
+        onClose={() => setForm(null)}
+        title="Новый студент"
+        actions={
+          <div className="modal-action">
+            <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>
+            <button className="btn btn-primary" onClick={create} disabled={busy || !form?.firstName || !form?.lastName}>
+              {busy && <span className="loading loading-spinner loading-xs" />} Создать
+            </button>
+          </div>
+        }
+      >
+        {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-[12px] font-bold text-base-content/50 uppercase tracking-wider mb-2">Данные студента</h4>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <input className="input input-bordered w-full" placeholder="Имя" value={form?.firstName || ''} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+              <input className="input input-bordered w-full" placeholder="Фамилия" value={form?.lastName || ''} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
             </div>
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>
-              <button className="btn btn-primary" onClick={create} disabled={busy || !form.firstName || !form.lastName}>
-                {busy && <span className="loading loading-spinner loading-xs" />} Создать
-              </button>
+            <div className="grid grid-cols-2 gap-3">
+              <PhoneInput className="input input-bordered w-full" value={form?.phone || ''} onChange={(v) => setForm({ ...form, phone: v })} />
+              <input className="input input-bordered w-full" type="date" placeholder="Дата рождения" value={form?.birthDate || ''} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
             </div>
           </div>
-          <div className="modal-backdrop" onClick={() => setForm(null)} />
-        </dialog>
-      )}
+
+          <div>
+            <h4 className="text-[12px] font-bold text-base-content/50 uppercase tracking-wider mb-2">Данные родителя (опционально)</h4>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <input className="input input-bordered w-full" placeholder="Имя родителя" value={form?.parentFirstName || ''} onChange={(e) => setForm({ ...form, parentFirstName: e.target.value })} />
+              <input className="input input-bordered w-full" placeholder="Фамилия родителя" value={form?.parentLastName || ''} onChange={(e) => setForm({ ...form, parentLastName: e.target.value })} />
+            </div>
+            <PhoneInput className="input input-bordered w-full" value={form?.parentPhone || ''} onChange={(v) => setForm({ ...form, parentPhone: v })} />
+          </div>
+        </div>
+      </Modal>
 
       <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="students" data={filteredRows} />
 
       {/* ═══ Credentials Modal ═══ */}
-      {creds && (
-        <dialog className="modal modal-open">
-          <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-2">Данные для входа</h3>
-            <p className="text-sm text-base-content/45 mb-4">Передайте студенту. Пароль показывается один раз.</p>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
-                <span className="text-[13px] text-base-content/70">Логин-код</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-[14px]">{creds.login_code || '—'}</span>
-                  {creds.login_code && (
-                    <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
-                      onClick={() => copyToClipboard(creds.login_code, 'login')}>
-                      {copied === 'login' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
-                <span className="text-[13px] text-base-content/70">Пароль</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-[14px]">{creds.password || '—'}</span>
-                  {creds.password && (
-                    <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
-                      onClick={() => copyToClipboard(creds.password, 'pass')}>
-                      {copied === 'pass' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="modal-action">
-              <button className="btn btn-primary" onClick={() => setCreds(null)}>Понятно</button>
+      <Modal
+        isOpen={!!creds}
+        onClose={() => setCreds(null)}
+        title="Данные для входа"
+        actions={
+          <div className="modal-action">
+            <button className="btn btn-primary" onClick={() => setCreds(null)}>Понятно</button>
+          </div>
+        }
+      >
+        <p className="text-sm text-base-content/45 mb-4">Передайте студенту. Пароль показывается один раз.</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
+            <span className="text-[13px] text-base-content/70">Логин-код</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold text-[14px]">{creds?.login_code || '—'}</span>
+              {creds?.login_code && (
+                <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
+                  onClick={() => copyToClipboard(creds.login_code, 'login')}>
+                  {copied === 'login' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
+                </button>
+              )}
             </div>
           </div>
-        </dialog>
-      )}
+          <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
+            <span className="text-[13px] text-base-content/70">Пароль</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold text-[14px]">{creds?.password || '—'}</span>
+              {creds?.password && (
+                <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
+                  onClick={() => copyToClipboard(creds.password, 'pass')}>
+                  {copied === 'pass' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

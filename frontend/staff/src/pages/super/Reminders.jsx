@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
+import { Kpi } from '../mentor/_ui.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { dateShort } from '../../format.js';
 
@@ -40,24 +41,6 @@ function statusIcon(status) {
   if (status === 'sent') return <CheckCircle size={15} className="text-success" />;
   if (status === 'failed') return <XCircle size={15} className="text-error" />;
   return <Clock size={15} className="text-warning" />;
-}
-
-// ---- Stat card ----
-
-function StatCard({ icon: Icon, label, value, color }) {
-  return (
-    <div className="card bg-base-100 shadow-sm border border-base-200">
-      <div className="card-body p-5 flex-row items-center gap-4">
-        <div className={`p-2.5 rounded-xl ${color}`}>
-          <Icon size={20} />
-        </div>
-        <div>
-          <div className="text-2xl font-extrabold tabular-nums">{value}</div>
-          <div className="text-xs text-base-content/50">{label}</div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ---- Main Component ----
@@ -136,10 +119,10 @@ export default function SuperReminders() {
         <>
           {/* Stat cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard icon={Bell}        label="Всего"     value={totalCount}   color="bg-base-200 text-base-content" />
-            <StatCard icon={CheckCircle} label="Отправлено" value={sentCount}   color="bg-success/10 text-success" />
-            <StatCard icon={XCircle}     label="Ошибка"    value={failedCount}  color="bg-error/10 text-error" />
-            <StatCard icon={Clock}       label="В очереди"  value={pendingCount} color="bg-warning/10 text-warning" />
+            <Kpi Icon={Bell}        title="Всего"      value={totalCount}   tone="neutral" />
+            <Kpi Icon={CheckCircle} title="Отправлено" value={sentCount}    tone="success" />
+            <Kpi Icon={XCircle}     title="Ошибка"     value={failedCount}  tone="danger" />
+            <Kpi Icon={Clock}       title="В очереди"  value={pendingCount} tone="warning" />
           </div>
 
           {/* Filter buttons */}

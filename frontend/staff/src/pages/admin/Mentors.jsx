@@ -8,7 +8,7 @@ import { formatPhone } from '../../format.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
-import { Avatar, EmptyState, Kpi, RowSkeleton } from '../mentor/_ui.jsx';
+import { Avatar, EmptyState, Kpi, RowSkeleton, Modal } from '../mentor/_ui.jsx';
 
 const fullName = (m) =>
   [m.firstName || m.first_name, m.lastName || m.last_name].filter(Boolean).join(' ') || '—';
@@ -309,38 +309,42 @@ export default function AdminMentors() {
 
       {/* ═══ Create / Edit Modal ═══ */}
       {form && (
-        <dialog className="modal modal-open">
-          <div className="modal-box card bg-base-100 border border-base-300 max-w-md w-full">
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-[12px] bg-primary/10 flex items-center justify-center shrink-0">
-                <Users size={18} className="text-primary" />
-              </div>
-              <div>
-                <h3 className="font-bold text-[15px]">
-                  {form.id ? 'Mentorni tahrirlash' : "Yangi mentor qo'shish"}
-                </h3>
-                <p className="text-[11px] text-base-content/45">
-                  {form.id
-                    ? "Ma'lumotlarni yangilang"
-                    : "* bilan belgilangan maydonlar majburiy"}
-                </p>
-              </div>
-            </div>
+      <Modal
+        isOpen={!!form}
+        onClose={() => !busy && setForm(null)}
+        boxClass="max-w-md w-full"
+        title={form?.id ? 'Mentorni tahrirlash' : "Yangi mentor qo'shish"}
+        actions={
+          <div className="modal-action mt-5">
+            <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>
+              Bekor qilish
+            </button>
+            <button className="btn btn-primary gap-1.5" onClick={save} disabled={busy}>
+              {busy && <span className="loading loading-spinner loading-xs" />}
+              {form?.id ? 'Saqlash' : "Qo'shish"}
+            </button>
+          </div>
+        }
+      >
+        <p className="text-[11px] text-base-content/45 mb-4">
+          {form?.id
+            ? "Ma'lumotlarni yangilang"
+            : "* bilan belgilangan maydonlar majburiy"}
+        </p>
 
-            {apiErr && (
-              <div className="alert alert-error py-2 text-sm mb-4">
-                <span>{apiErr}</span>
-              </div>
-            )}
+        {apiErr && (
+          <div className="alert alert-error py-2 text-sm mb-4">
+            <span>{apiErr}</span>
+          </div>
+        )}
 
-            {notice && (
-              <div className="alert alert-warning py-2 text-sm mb-4">
-                <span>{notice}</span>
-              </div>
-            )}
+        {notice && (
+          <div className="alert alert-warning py-2 text-sm mb-4">
+            <span>{notice}</span>
+          </div>
+        )}
 
-            <div className="space-y-3">
+        <div className="space-y-3">
               {/* Name row */}
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Ism *" error={fieldErrors.firstName}>
@@ -407,19 +411,7 @@ export default function AdminMentors() {
                 </div>
               </Field>
             </div>
-
-            <div className="modal-action mt-5">
-              <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>
-                Bekor qilish
-              </button>
-              <button className="btn btn-primary gap-1.5" onClick={save} disabled={busy}>
-                {busy && <span className="loading loading-spinner loading-xs" />}
-                {form.id ? 'Saqlash' : "Qo'shish"}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => !busy && setForm(null)} />
-        </dialog>
+      </Modal>
       )}
     </div>
   );

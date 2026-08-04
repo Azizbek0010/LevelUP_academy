@@ -8,6 +8,7 @@ import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminExpenses } from '../../queries.js';
 import ExportDialog from '../../components/ExportDialog.jsx';
+import { Modal } from '../mentor/_ui.jsx';
 
 const CATEGORIES = ['All', 'Rent', 'Salary', 'Materials', 'Utility', 'Other'];
 const CATEGORY_LABELS = {
@@ -673,18 +674,18 @@ export default function Expenses() {
       </div>
 
       {/* ═══ View Detail Modal ═══ */}
-      {viewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box card bg-base-100 max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-base-content mb-4">Детали расхода</h3>
-          {viewTarget && (
-            <div className="space-y-5">
-              <div className="flex items-center gap-3 pb-4 border-b border-base-300">
-                <CategoryBadge category={viewTarget.category} />
-                <StatusBadge status={getStatusFromExpense(viewTarget)} />
-              </div>
+      <Modal
+        isOpen={viewModalOpen}
+        onClose={() => { setViewModalOpen(false); setViewTarget(null); }}
+        boxClass="max-w-lg"
+        title="Детали расхода"
+      >
+        {viewTarget && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-3 pb-4 border-b border-base-300">
+              <CategoryBadge category={viewTarget.category} />
+              <StatusBadge status={getStatusFromExpense(viewTarget)} />
+            </div>
 
               <div className="space-y-0">
                 <div className="flex justify-between items-center py-3 border-b border-base-300">
@@ -724,18 +725,29 @@ export default function Expenses() {
               </div>
             </div>
           )}
-        </div>
-        </div>
-      )}
+      </Modal>
 
       {/* ═══ Add/Edit Modal ═══ */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setModalOpen(false); }}>
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box card bg-base-100 max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setModalOpen(false)}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-base-content mb-4">{editingId ? 'Редактировать расход' : 'Добавить расход'}</h3>
-          <div className="space-y-5">
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => { if (!saving) setModalOpen(false); }}
+        boxClass="max-w-lg"
+        title={editingId ? 'Редактировать расход' : 'Добавить расход'}
+        actions={
+          <div className="flex justify-end gap-2.5 pt-2">
+            <button className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={saving}>Отмена</button>
+            <button className="btn btn-primary btn-sm gap-1.5" onClick={handleSave} disabled={saving || !formData.amount || (formData.category === 'Other' && !(formData.title || '').trim())}>
+              {saving ? (
+                <span className="flex items-center gap-1.5">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Сохранение...
+                </span>
+              ) : editingId ? "Сохранить" : "Добавить"}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
             <div>
               <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Категория *</label>
               <div className="grid grid-cols-3 gap-2">
@@ -825,70 +837,55 @@ export default function Expenses() {
                 {error}
               </div>
             )}
-
-            <div className="flex justify-end gap-2.5 pt-2">
-              <button className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={saving}>Отмена</button>
-              <button className="btn btn-primary btn-sm gap-1.5" onClick={handleSave} disabled={saving || !formData.amount || (formData.category === 'Other' && !(formData.title || '').trim())}>
-                {saving ? (
-                  <span className="flex items-center gap-1.5">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    Сохранение...
-                  </span>
-                ) : editingId ? "Сохранить" : "Добавить"}
-              </button>
-            </div>
-          </div>
         </div>
-        </div>
-      )}
+      </Modal>
 
       {/* ═══ Delete Confirmation Modal ═══ */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setDeleteTarget(null); }}>
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box card bg-base-100 max-w-md relative z-10" onClick={(e) => e.stopPropagation()}>
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setDeleteTarget(null)}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-base-content mb-4">Удалить расход</h3>
-          <div className="space-y-5">
-            <div className="flex items-start gap-4">
-              <div className="w-11 h-11 rounded-[14px] bg-[rgba(232,84,62,0.12)] flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-error" />
-              </div>
-              <div className="flex-1">
-                <p className="text-[14px] font-bold text-base-content mb-1.5">Вы уверены?</p>
-                <p className="text-[12px] text-base-content/70 leading-relaxed">
-                  <CategoryBadge category={deleteTarget?.category} />{' '}
-                  <span className="tabular-nums font-semibold text-base-content">{formatCurrency(deleteTarget?.amount)}</span>{' '}
-                  — удалить этот расход? Это действие нельзя отменить.
-                </p>
-              </div>
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => { if (!saving) setDeleteTarget(null); }}
+        boxClass="max-w-md"
+        title="Удалить расход"
+        actions={
+          <div className="flex justify-end gap-2.5 pt-2 border-t border-base-300">
+            <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Отмена</button>
+            <button className="btn btn-error btn-sm gap-1.5 text-white" onClick={handleDelete} disabled={saving}>
+              {saving ? (
+                <span className="flex items-center gap-1.5">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Удаление...
+                </span>
+              ) : "Удалить"}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 rounded-[14px] bg-[rgba(232,84,62,0.12)] flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5 text-error" />
             </div>
-
-            {error && (
-              <div
-                className="text-[12px] text-error font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
-                style={{ background: 'rgba(232,84,62,0.08)', border: '1px solid rgba(232,84,62,0.15)' }}
-              >
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                {error}
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2.5 pt-2 border-t border-base-300">
-              <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Отмена</button>
-              <button className="btn btn-error btn-sm gap-1.5 text-white" onClick={handleDelete} disabled={saving}>
-                {saving ? (
-                  <span className="flex items-center gap-1.5">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    Удаление...
-                  </span>
-                ) : "Удалить"}
-              </button>
+            <div className="flex-1">
+              <p className="text-[14px] font-bold text-base-content mb-1.5">Вы уверены?</p>
+              <p className="text-[12px] text-base-content/70 leading-relaxed">
+                <CategoryBadge category={deleteTarget?.category} />{' '}
+                <span className="tabular-nums font-semibold text-base-content">{formatCurrency(deleteTarget?.amount)}</span>{' '}
+                — удалить этот расход? Это действие нельзя отменить.
+              </p>
             </div>
           </div>
+
+          {error && (
+            <div
+              className="text-[12px] text-error font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
+              style={{ background: 'rgba(232,84,62,0.08)', border: '1px solid rgba(232,84,62,0.15)' }}
+            >
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
+          )}
         </div>
-        </div>
-      )}
+      </Modal>
 
       {/* ═══ Export Dialog ═══ */}
       <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="expenses" data={filtered} filename="расходы" />

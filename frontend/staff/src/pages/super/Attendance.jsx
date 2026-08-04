@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Calendar, ChevronRight, Filter } from 'lucide-react';
+import { Calendar, ChevronRight, Filter, BookOpen, UserCheck, UserX, Percent } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
+import { Kpi } from '../mentor/_ui.jsx';
 
 function toDateInput(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -47,22 +48,6 @@ function useGroupsQuery() {
     if (q.error?.status === 401) logout();
   }, [q.error, logout]);
   return q;
-}
-
-function StatCard({ label, value, tone }) {
-  const color =
-    tone === 'success' ? 'text-success'
-    : tone === 'error' ? 'text-error'
-    : tone === 'primary' ? 'text-primary'
-    : 'text-base-content';
-  return (
-    <div className="card bg-base-100 border border-base-300">
-      <div className="card-body py-3 px-4">
-        <div className="text-xs text-base-content/50">{label}</div>
-        <div className={`text-2xl font-bold ${color}`}>{value}</div>
-      </div>
-    </div>
-  );
 }
 
 function LessonRow({ lesson }) {
@@ -198,10 +183,10 @@ export default function SuperAttendance() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Уроков" value={String(filtered.length)} tone="neutral" />
-        <StatCard label="Присутствовало" value={String(totalPresent)} tone="success" />
-        <StatCard label="Пропустило" value={String(totalAbsent)} tone="error" />
-        <StatCard label="% посещаемости" value={`${attendanceRate}%`} tone="primary" />
+        <Kpi Icon={BookOpen} title="Уроков" value={String(filtered.length)} tone="neutral" />
+        <Kpi Icon={UserCheck} title="Присутствовало" value={String(totalPresent)} tone="success" />
+        <Kpi Icon={UserX} title="Пропустило" value={String(totalAbsent)} tone="danger" />
+        <Kpi Icon={Percent} title="Посещаемость" value={`${attendanceRate}%`} tone="neutral" />
       </div>
 
       {totalUnknown > 0 && (

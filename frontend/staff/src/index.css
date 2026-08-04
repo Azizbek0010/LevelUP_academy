@@ -130,13 +130,20 @@ body {
   position: fixed !important;
   inset: 0 !important;
   z-index: 999 !important;
+  overflow-y: auto;
+  align-items: safe center;
+  justify-items: safe center;
 }
 
-/* Modal box — always use our surface token */
+/* Modal box — always use our surface token; never stick to the top:
+   center it, and scroll inside when taller than the viewport */
 .modal-box {
   background: var(--surface) !important;
   border: 1px solid var(--glass-border) !important;
   box-shadow: var(--shadow-lg) !important;
+  max-height: calc(100dvh - 2.5rem) !important;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Modal backdrop — softer overlay */

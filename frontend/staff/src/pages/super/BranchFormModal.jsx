@@ -99,17 +99,6 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, branchId]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    /* Esc в полноэкранной карте закрывает карту, а не всё окно: иначе один
-       нажатый Esc выкидывал бы из формы вместе с набранным. */
-    const onKey = (e) => { if (e.key === 'Escape' && !document.fullscreenElement) onClose?.(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
   const onSubmit = async (formData) => {
     setErr('');
 
@@ -178,180 +167,182 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
   };
 
   return (
-    <div className="modal modal-open">
-      {/* Две колонки: слева поля, справа карта. В одну колонку карта уезжала
-          за нижний край и до кнопок приходилось прокручивать форму. */}
-      <div className={`modal-box rounded-2xl border border-base-200 ${confirmArchive ? 'max-w-md' : 'max-w-6xl'}`}>
-        {confirmArchive ? (
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      boxClass={confirmArchive ? 'max-w-md' : 'max-w-6xl'}
+      title={
+        confirmArchive
+          ? (branch.isArchived ? 'Вернуть из архива?' : 'Архивировать филиал?')
+          : (mode === 'create' ? 'Новый филиал' : `Настройки — ${branch?.name ?? 'филиал'}`)
+      }
+      actions={
+        confirmArchive ? (
           <>
-            <h3 className="font-bold text-base">
-              {branch.isArchived ? 'Вернуть из архива?' : 'Архивировать филиал?'}
-            </h3>
-            <p className="text-sm text-base-content/60 mt-3">
-              {branch.isArchived
-                ? `Филиал «${branch.name}» снова появится в списке активных.`
-                : `Филиал «${branch.name}» скроется из активного списка. Данные останутся на месте, вернуть его можно в любой момент.`}
-            </p>
-            {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
-            <div className="modal-action">
-              <button type="button" className="btn btn-ghost btn-sm rounded-xl" onClick={() => setConfirmArchive(false)} disabled={busy}>
-                Отмена
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm rounded-xl ${branch.isArchived ? 'btn-primary' : 'btn-error text-error-content'}`}
-                onClick={doArchive}
-                disabled={busy}
-              >
-                {busy && <span className="loading loading-spinner loading-sm" />}
-                {branch.isArchived ? 'Вернуть' : 'Архивировать'}
-              </button>
-            </div>
+            <button type="button" className="btn btn-ghost btn-sm rounded-xl" onClick={() => setConfirmArchive(false)} disabled={busy}>
+              Отмена
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm rounded-xl ${branch.isArchived ? 'btn-primary' : 'btn-error text-error-content'}`}
+              onClick={doArchive}
+              disabled={busy}
+            >
+              {busy && <span className="loading loading-spinner loading-sm" />}
+              {branch.isArchived ? 'Вернуть' : 'Архивировать'}
+            </button>
           </>
-        ) : (
-          <>
-            <h3 className="font-bold text-base">
-              {mode === 'create' ? 'Новый филиал' : `Настройки — ${branch?.name ?? 'филиал'}`}
-            </h3>
-            {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
+        ) : undefined
+      }
+    >
+      {confirmArchive ? (
+        <>
+          <p className="text-sm text-base-content/60 mt-3">
+            {branch.isArchived
+              ? `Филиал «${branch.name}» снова появится в списке активных.`
+              : `Филиал «${branch.name}» скроется из активного списка. Данные останутся на месте, вернуть его можно в любой момент.`}
+          </p>
+          {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
+        </>
+      ) : (
+        <>
+          {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="mt-4">
-              {/* Карте отдана большая часть окна: на ней работают, а поля
-                  заполняют один раз. Слева фиксированная колонка, чтобы карта
-                  забирала всё оставшееся место. */}
-              <div className="grid md:grid-cols-[300px_minmax(0,1fr)] gap-x-5 gap-y-3">
-                <div className="space-y-3">
-                  <label className="form-control w-full">
-                    <span className="text-xs text-base-content/60 mb-1">Название *</span>
-                    <input
-                      {...register('name')}
-                      autoFocus
-                      placeholder="Чиланзар"
-                      className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.name ? 'input-error' : ''}`}
-                    />
-                    {errors.name && <span className="text-xs text-error mt-1">{errors.name.message}</span>}
-                  </label>
+          <form onSubmit={handleSubmit(onSubmit)} className="mt-4">
+            {/* Карте отдана большая часть окна: на ней работают, а поля
+                заполняют один раз. Слева фиксированная колонка, чтобы карта
+                забирала всё оставшееся место. */}
+            <div className="grid md:grid-cols-[300px_minmax(0,1fr)] gap-x-5 gap-y-3">
+              <div className="space-y-3">
+                <label className="form-control w-full">
+                  <span className="text-xs text-base-content/60 mb-1">Название *</span>
+                  <input
+                    {...register('name')}
+                    autoFocus
+                    placeholder="Чиланзар"
+                    className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.name ? 'input-error' : ''}`}
+                  />
+                  {errors.name && <span className="text-xs text-error mt-1">{errors.name.message}</span>}
+                </label>
 
-                  <label className="form-control w-full">
-                    <span className="text-xs text-base-content/60 mb-1">Адрес</span>
-                    <input
-                      {...register('address')}
-                      placeholder="Улица, дом, ориентир"
-                      className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.address ? 'input-error' : ''}`}
-                    />
-                    {errors.address && <span className="text-xs text-error mt-1">{errors.address.message}</span>}
-                  </label>
+                <label className="form-control w-full">
+                  <span className="text-xs text-base-content/60 mb-1">Адрес</span>
+                  <input
+                    {...register('address')}
+                    placeholder="Улица, дом, ориентир"
+                    className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.address ? 'input-error' : ''}`}
+                  />
+                  {errors.address && <span className="text-xs text-error mt-1">{errors.address.message}</span>}
+                </label>
 
-                  <label className="form-control w-full">
-                    <span className="text-xs text-base-content/60 mb-1">Телефон</span>
-                    <Controller
-                      name="phone"
-                      control={control}
-                      render={({ field }) => (
-                        <PhoneInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.phone ? 'input-error' : ''}`}
-                        />
-                      )}
-                    />
-                    {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
-                  </label>
-
-                  {/* Координаты полями — на случай, когда карта недоступна
-                      (нет ключа, ограничения не применились), и чтобы вставить
-                      готовую пару, скопированную из Яндекс Карт. */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      step="any"
-                      min="-90"
-                      max="90"
-                      aria-label="Широта"
-                      className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
-                      placeholder="широта"
-                      value={location?.lat ?? ''}
-                      onChange={(e) => {
-                        const lat = e.target.value === '' ? null : round6(e.target.value);
-                        setLocation(lat === null && location?.lng == null
-                          ? null
-                          : { lat, lng: location?.lng ?? null });
-                      }}
-                    />
-                    <input
-                      type="number"
-                      step="any"
-                      min="-180"
-                      max="180"
-                      aria-label="Долгота"
-                      className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
-                      placeholder="долгота"
-                      value={location?.lng ?? ''}
-                      onChange={(e) => {
-                        const lng = e.target.value === '' ? null : round6(e.target.value);
-                        setLocation(lng === null && location?.lat == null
-                          ? null
-                          : { lat: location?.lat ?? null, lng });
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-base-content/60">
-                      На карте{mapAvailable && mode === 'create' && ' *'}
-                    </span>
-                    {location ? (
-                      <button
-                        type="button"
-                        className="text-xs text-base-content/45 hover:text-error"
-                        onClick={() => setLocation(null)}
-                      >
-                        сбросить
-                      </button>
-                    ) : (
-                      /* Подсказка строкой у заголовка, а не плашкой поверх карты:
-                         плашка закрывала часть карты и спорила с её же контролами. */
-                      <span className="text-xs text-base-content/40">найдите адрес или кликните по карте</span>
+                <label className="form-control w-full">
+                  <span className="text-xs text-base-content/60 mb-1">Телефон</span>
+                  <Controller
+                    name="phone"
+                    control={control}
+                    render={({ field }) => (
+                      <PhoneInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.phone ? 'input-error' : ''}`}
+                      />
                     )}
-                  </div>
+                  />
+                  {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
+                </label>
 
-                  <YMapPicker
-                    value={location}
-                    onChange={(p) => setLocation(p ? { lat: round6(p.lat), lng: round6(p.lng) } : null)}
-                    height="min(58vh, 520px)"
-                    onUnavailable={setMapBroken}
-                    onPickAddress={fillAddress}
+                {/* Координаты полями — на случай, когда карта недоступна
+                    (нет ключа, ограничения не применились), и чтобы вставить
+                    готовую пару, скопированную из Яндекс Карт. */}
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    step="any"
+                    min="-90"
+                    max="90"
+                    aria-label="Широта"
+                    className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
+                    placeholder="широта"
+                    value={location?.lat ?? ''}
+                    onChange={(e) => {
+                      const lat = e.target.value === '' ? null : round6(e.target.value);
+                      setLocation(lat === null && location?.lng == null
+                        ? null
+                        : { lat, lng: location?.lng ?? null });
+                    }}
+                  />
+                  <input
+                    type="number"
+                    step="any"
+                    min="-180"
+                    max="180"
+                    aria-label="Долгота"
+                    className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
+                    placeholder="долгота"
+                    value={location?.lng ?? ''}
+                    onChange={(e) => {
+                      const lng = e.target.value === '' ? null : round6(e.target.value);
+                      setLocation(lng === null && location?.lat == null
+                        ? null
+                        : { lat: location?.lat ?? null, lng });
+                    }}
                   />
                 </div>
               </div>
 
-              <div className="modal-action items-center">
-                {mode === 'edit' && (
-                  <button
-                    type="button"
-                    className="mr-auto text-xs text-base-content/45 hover:text-error"
-                    onClick={() => { setErr(''); setConfirmArchive(true); }}
-                    disabled={busy}
-                  >
-                    {branch?.isArchived ? 'вернуть из архива' : 'в архив'}
-                  </button>
-                )}
-                <button type="button" className="btn btn-ghost btn-sm rounded-xl" onClick={onClose} disabled={busy}>
-                  Отмена
-                </button>
-                <button type="submit" className="btn btn-primary btn-sm rounded-xl shadow-sm shadow-primary/10" disabled={busy}>
-                  {busy && <span className="loading loading-spinner loading-sm" />}
-                  {mode === 'create' ? 'Создать' : 'Сохранить'}
-                </button>
+              <div className="space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs text-base-content/60">
+                    На карте{mapAvailable && mode === 'create' && ' *'}
+                  </span>
+                  {location ? (
+                    <button
+                      type="button"
+                      className="text-xs text-base-content/45 hover:text-error"
+                      onClick={() => setLocation(null)}
+                    >
+                      сбросить
+                    </button>
+                  ) : (
+                    /* Подсказка строкой у заголовка, а не плашкой поверх карты:
+                       плашка закрывала часть карты и спорила с её же контролами. */
+                    <span className="text-xs text-base-content/40">найдите адрес или кликните по карте</span>
+                  )}
+                </div>
+
+                <YMapPicker
+                  value={location}
+                  onChange={(p) => setLocation(p ? { lat: round6(p.lat), lng: round6(p.lng) } : null)}
+                  height="min(58vh, 520px)"
+                  onUnavailable={setMapBroken}
+                  onPickAddress={fillAddress}
+                />
               </div>
-            </form>
-          </>
-        )}
-      </div>
-      <div className="modal-backdrop" onClick={onClose} />
-    </div>
+            </div>
+
+            <div className="modal-action items-center">
+              {mode === 'edit' && (
+                <button
+                  type="button"
+                  className="mr-auto text-xs text-base-content/45 hover:text-error"
+                  onClick={() => { setErr(''); setConfirmArchive(true); }}
+                  disabled={busy}
+                >
+                  {branch?.isArchived ? 'вернуть из архива' : 'в архив'}
+                </button>
+              )}
+              <button type="button" className="btn btn-ghost btn-sm rounded-xl" onClick={onClose} disabled={busy}>
+                Отмена
+              </button>
+              <button type="submit" className="btn btn-primary btn-sm rounded-xl shadow-sm shadow-primary/10" disabled={busy}>
+                {busy && <span className="loading loading-spinner loading-sm" />}
+                {mode === 'create' ? 'Создать' : 'Сохранить'}
+              </button>
+            </div>
+          </form>
+        </>
+      )}
+    </Modal>
   );
 }
