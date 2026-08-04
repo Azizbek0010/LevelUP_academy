@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Home, BookOpen, ShoppingBag, Trophy, LogOut, Send, Bell, BellOff, Star, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
-import { Avatar, C, StreakFlame, CountUp, LevelBar, levelFromCoins, EmptyState } from './ui.jsx';
+import { Avatar, C, StreakFlame, CountUp, LevelBar, levelFromCoins, EmptyState, Modal } from './ui.jsx';
 import { useDailyStreak } from '../useDailyStreak.js';
 import { api } from '../api.js';
 
@@ -113,6 +113,12 @@ export default function Layout() {
   const [tg, setTg] = useState(null); // null — ещё не загружено
   const [tgBusy, setTgBusy] = useState(false);
   const [tgError, setTgError] = useState('');
+  /* Кнопка привязанного Telegram открывает карточку аккаунта, а не отвязывает
+     сразу: одно случайное касание — и связь потеряна, а восстановить её можно
+     только заново пройдя привязку через бота. Отвязка живёт внутри карточки и
+     требует второго, явного подтверждения. */
+  const [tgModal, setTgModal] = useState(false);
+  const [tgConfirmUnlink, setTgConfirmUnlink] = useState(false);
 
   const loadTgStatus = async () => {
     try {
@@ -148,12 +154,21 @@ export default function Layout() {
     }
   };
 
+  const closeTgModal = () => {
+    setTgModal(false);
+    // Сбрасываем шаг подтверждения: иначе повторное открытие карточки сразу
+    // показало бы «точно отвязать?», хотя человек её только что открыл.
+    setTgConfirmUnlink(false);
+    setTgError('');
+  };
+
   const onUnlinkTelegram = async () => {
     setTgBusy(true);
     setTgError('');
     try {
       await api.telegramUnlink();
       await loadTgStatus();
+      closeTgModal();
     } catch {
       setTgError('Uzib bo‘lmadi, keyinroq urinib ko‘ring');
     } finally {
@@ -315,8 +330,7 @@ export default function Layout() {
               </div>
             ) : tg?.linked ? (
               <button
-                onClick={onUnlinkTelegram}
-                disabled={tgBusy}
+                onClick={() => setTgModal(true)}
                 title={tg.username ? `Ulangan: @${tg.username}` : 'Telegram ulangan'}
                 className="k-press-sm flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40 transition-colors"
                 style={{ background: '#E8F6EC', color: '#1F7A3D' }}
@@ -325,7 +339,6 @@ export default function Layout() {
                 <span className="truncate">
                   {tg.username ? `@${tg.username}` : 'Ulangan'}
                 </span>
-                <BellOff size={13} strokeWidth={2.6} className="opacity-70 shrink-0" />
               </button>
             ) : (
               <button
@@ -355,6 +368,96 @@ export default function Layout() {
           )}
         </div>
       </aside>
+
+      {/* ══ Карточка привязанного Telegram ══
+          Показывает, КАКОЙ именно аккаунт привязан: увидев чужой @username,
+          ученик поймёт, что бот ушёл на телефон брата, — по одному tg_chat_id
+          это было невозможно. Отвязка тут же, но в два шага. */}
+      {tgModal && tg?.linked && (
+        <Modal title="Telegram" onClose={closeTgModal}>
+          <div className="rounded-xl p-4 mb-4" style={{ background: C.bg }}>
+            <div className="flex items-center gap-3">
+              <div
+                className="w-11 h-11 rounded-xl grid place-items-center shrink-0"
+                style={{ background: '#E4F1FF', color: '#1668B8' }}
+              >
+                <Send size={19} strokeWidth={2.6} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[15px] font-extrabold truncate" style={{ color: C.text }}>
+                  {tg.username ? `@${tg.username}` : tg.firstName || 'Telegram ulangan'}
+                </div>
+                {tg.firstName && tg.username && (
+                  <div className="text-[12px] font-semibold truncate" style={{ color: C.muted }}>
+                    {tg.firstName}
+                  </div>
+                )}
+              </div>
+            </div>
+            {tg.linkedAt && (
+              <div className="text-[12px] font-semibold mt-3" style={{ color: C.muted }}>
+                Ulangan sana:{' '}
+                {new Date(tg.linkedAt).toLocaleDateString('ru-RU', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="text-[13px] leading-relaxed mb-4" style={{ color: C.muted }}>
+            Botda <b style={{ color: C.text }}>/home</b>, <b style={{ color: C.text }}>/coins</b> va{' '}
+            <b style={{ color: C.text }}>/rating</b> buyruqlari ishlaydi. Saytga parolsiz kirish
+            ham shu ulanish orqali.
+          </div>
+
+          {tgError && (
+            <div className="text-[12px] font-semibold mb-3" style={{ color: '#C0392B' }}>
+              {tgError}
+            </div>
+          )}
+
+          {/* Второй шаг: до него кнопка «Uzish» ничего не отвязывает. */}
+          {tgConfirmUnlink ? (
+            <div className="rounded-xl p-4" style={{ background: '#FFF2EF' }}>
+              <div className="text-[13px] font-bold mb-1" style={{ color: '#8E2C1B' }}>
+                Aniq uzmoqchimisiz?
+              </div>
+              <div className="text-[12px] leading-snug mb-3" style={{ color: '#8E2C1B' }}>
+                Xabarlar to‘xtaydi va Telegram orqali kirish ishlamay qoladi. Qayta ulash uchun
+                yana shu tugmadan o‘tish kerak.
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={onUnlinkTelegram}
+                  disabled={tgBusy}
+                  className="k-press-sm flex-1 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40"
+                  style={{ background: '#C0392B', color: '#fff' }}
+                >
+                  {tgBusy ? 'Uzilmoqda…' : 'Ha, uz'}
+                </button>
+                <button
+                  onClick={() => setTgConfirmUnlink(false)}
+                  disabled={tgBusy}
+                  className="k-press-sm flex-1 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40"
+                  style={{ background: C.card, color: C.text, border: `1px solid ${C.line}` }}
+                >
+                  Bekor qilish
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setTgConfirmUnlink(true)}
+              className="k-press-sm w-full py-2.5 rounded-xl text-[13px] font-extrabold"
+              style={{ background: '#FFE6E2', color: '#C0392B' }}
+            >
+              Ulanishni uzish
+            </button>
+          )}
+        </Modal>
+      )}
 
       {/* ══ Контент ══ */}
       <main className="pt-20 lg:pl-[252px] min-h-screen">
