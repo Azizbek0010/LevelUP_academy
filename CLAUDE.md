@@ -265,15 +265,32 @@ Abduloh — **единственный из фронт-команды, кто н
 
 ### Backend
 
+> ⚠️ **Docker поднимать НЕ надо, и `seed` не запускать.**
+>
+> В `backend/docker-compose.yml` есть Postgres, Redis, MinIO и Mailpit, а
+> `backend/README.md` до 04.08.2026 предлагал `docker compose up -d` вторым шагом.
+> Это осталось от времён, когда всё крутилось локально. Сейчас `backend/.env`
+> смотрит в облако целиком: база — Neon, Redis — Upstash, файлы — Storj,
+> почта — Resend. Контейнеры поднимутся и будут простаивать: приложение к ним
+> не подключится.
+>
+> `npm run seed` опаснее: `NODE_ENV` по умолчанию `development`
+> (`src/config/env.js`), а это ровно та ветка, что создаёт демо-организацию и
+> демо-учеников — то есть записала бы их **в боевую базу**. С 04.08 `seed.js`
+> сам отказывается работать с нелокальной базой, но полагаться на это не нужно.
+>
+> Полный запуск: `npm install && npm run dev`. Больше ничего.
+
 ```bash
 cd backend
 npm install
-npm run dev        #开发模式 (--watch)
+npm run dev        # режим разработки (--watch), API на :4000
 npm start          # продакшн
-npm run migrate    # миграции
-npm run seed       # тестовые данные
 npm run test       # тесты
-```     
+```
+
+Миграции и сид — только на локальной базе (`DATABASE_URL` на `localhost`),
+подробности и второй сценарий в `backend/README.md`.
 
 ### Frontend (отдельные приложения)
 
