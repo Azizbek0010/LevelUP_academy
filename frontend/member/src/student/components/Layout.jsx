@@ -365,19 +365,10 @@ export default function Layout() {
           </div>
         </div>
 
-        {/* Кнопки Telegram здесь больше нет — переехала в меню аккаунта в шапке
-            (настройка аккаунта, а не раздел кабинета). Выход остаётся: он тут
-            под рукой и дублирует пункт меню намеренно. */}
-        <div className="p-3 shrink-0" style={{ borderTop: `1px solid ${C.line}` }}>
-          <button
-            onClick={logout}
-            title="Выйти"
-            className="k-press-sm w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-extrabold"
-            style={{ background: '#FFE6E2', color: '#C0392B' }}
-          >
-            <LogOut size={16} strokeWidth={2.6} /> Chiqish
-          </button>
-        </div>
+        {/* Подвала здесь больше нет. Telegram и выход переехали в меню аккаунта
+            в шапке: и то и другое — про аккаунт, а сайдбар отвечает за разделы
+            кабинета. Дублировать выход в двух местах значило бы держать красную
+            кнопку прямо под навигацией, куда целятся мышью чаще всего. */}
       </aside>
 
       {/* ══ Карточка привязанного Telegram ══
