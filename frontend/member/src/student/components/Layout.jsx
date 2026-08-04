@@ -100,15 +100,62 @@ export default function Layout() {
     };
   }, []);
 
-  // TG-FRONT: привязка Telegram-бота (напоминания об оплате, объявления центра)
+  /* TG-FRONT: привязка Telegram-бота (напоминания об оплате, объявления центра,
+     вход без логин-кода).
+
+     Раньше здесь была одна кнопка без состояния и с `catch {}`. Из-за этого:
+       · привязанный ученик жал её снова и получал от бота «уже привязано»;
+       · когда на сервере не задан TELEGRAM_BOT_USERNAME (эндпоинт отвечал 500),
+         кнопка молча не делала НИЧЕГО — ни ошибки, ни следа в консоли.
+     Теперь состояние читается с сервера, ошибка показывается, а отвязка есть
+     прямо здесь — иначе потерявший доступ к Telegram не мог привязать новый
+     (user_id в telegram_accounts уникален). */
+  const [tg, setTg] = useState(null); // null — ещё не загружено
   const [tgBusy, setTgBusy] = useState(false);
+  const [tgError, setTgError] = useState('');
+
+  const loadTgStatus = async () => {
+    try {
+      const res = await api.telegramStatus();
+      setTg(res.data);
+    } catch {
+      // Статус — украшение: не смогли прочитать, показываем кнопку как есть.
+      setTg({ configured: true, linked: false });
+    }
+  };
+
+  useEffect(() => {
+    loadTgStatus();
+  }, []);
+
   const onBindTelegram = async () => {
     setTgBusy(true);
+    setTgError('');
     try {
       const res = await api.telegramBindToken();
       window.open(res.data.deepLink, '_blank', 'noopener,noreferrer');
+      // Бот подтверждает привязку не мгновенно — перечитываем через паузу,
+      // чтобы кнопка сама переключилась на «привязан», без перезагрузки страницы.
+      setTimeout(loadTgStatus, 4000);
+    } catch (e) {
+      setTgError(
+        e?.status === 503
+          ? 'Telegram hali sozlanmagan — administratorga ayting'
+          : 'Ulab bo‘lmadi, keyinroq urinib ko‘ring',
+      );
+    } finally {
+      setTgBusy(false);
+    }
+  };
+
+  const onUnlinkTelegram = async () => {
+    setTgBusy(true);
+    setTgError('');
+    try {
+      await api.telegramUnlink();
+      await loadTgStatus();
     } catch {
-      // тихо: кнопка — необязательное удобство, не блокирующий флоу
+      setTgError('Uzib bo‘lmadi, keyinroq urinib ko‘ring');
     } finally {
       setTgBusy(false);
     }
@@ -256,15 +303,41 @@ export default function Layout() {
 
         <div className="p-3 shrink-0" style={{ borderTop: `1px solid ${C.line}` }}>
           <div className="flex items-center gap-2">
-            <button
-              onClick={onBindTelegram}
-              disabled={tgBusy}
-              title="Привязать Telegram"
-              className="k-press-sm flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40 transition-colors"
-              style={{ background: '#E4F1FF', color: '#1668B8' }}
-            >
-              <Send size={15} strokeWidth={2.6} /> Telegram
-            </button>
+            {/* Сервер сам говорит, настроен ли Telegram (`configured`). Если нет —
+                кнопки нет вовсе: предлагать действие, которое гарантированно
+                вернёт ошибку, хуже, чем не предлагать. */}
+            {tg?.configured === false ? (
+              <div
+                className="flex-1 py-2.5 text-center text-[12px] font-semibold rounded-xl"
+                style={{ background: C.card, color: C.muted }}
+              >
+                Telegram sozlanmagan
+              </div>
+            ) : tg?.linked ? (
+              <button
+                onClick={onUnlinkTelegram}
+                disabled={tgBusy}
+                title={tg.username ? `Ulangan: @${tg.username}` : 'Telegram ulangan'}
+                className="k-press-sm flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40 transition-colors"
+                style={{ background: '#E8F6EC', color: '#1F7A3D' }}
+              >
+                <Send size={15} strokeWidth={2.6} />
+                <span className="truncate">
+                  {tg.username ? `@${tg.username}` : 'Ulangan'}
+                </span>
+                <BellOff size={13} strokeWidth={2.6} className="opacity-70 shrink-0" />
+              </button>
+            ) : (
+              <button
+                onClick={onBindTelegram}
+                disabled={tgBusy}
+                title="Telegramni ulash"
+                className="k-press-sm flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40 transition-colors"
+                style={{ background: '#E4F1FF', color: '#1668B8' }}
+              >
+                <Send size={15} strokeWidth={2.6} /> Telegram
+              </button>
+            )}
             <button
               onClick={logout}
               title="Выйти"
@@ -275,6 +348,11 @@ export default function Layout() {
               <LogOut size={17} strokeWidth={2.6} />
             </button>
           </div>
+          {tgError && (
+            <div className="mt-2 text-[11px] font-semibold leading-snug" style={{ color: '#C0392B' }}>
+              {tgError}
+            </div>
+          )}
         </div>
       </aside>
 

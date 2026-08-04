@@ -24,6 +24,13 @@ export function useParentOverview(childId) {
   });
 }
 
+export function useGroupRating(childId) {
+  const { token } = useAuth();
+  return useAuthedQuery(['group-rating', childId], () => api.parentGroupRating(token, childId), {
+    enabled: !!childId,
+  });
+}
+
 /** FE-PARENT-PAGINATION: постраничная история посещаемости (в отличие от overview.recent, не ограничена 5 записями). */
 export function useAttendancePage(childId, page, limit = 20) {
   const { token } = useAuth();

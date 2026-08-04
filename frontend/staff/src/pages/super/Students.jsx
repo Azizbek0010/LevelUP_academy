@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Trash2, Search, Users, UserCheck, UserX } from 'lucide-react';
+import { Trash2, Users, UserCheck } from 'lucide-react';
 import { useInvalidate } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import Avatar from '../../components/Avatar.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { dateShort } from '../../format.js';
 import { useQuery } from '@tanstack/react-query';
+import { Card, Metric, SearchInput, FilterPills, StatusBadge, ConfirmDialog, Avatar } from './_ui.jsx';
 
 function useStudentsQuery(search, statusFilter, page) {
   const { token, logout } = useAuth();
@@ -75,8 +75,8 @@ export default function SuperStudents() {
   const statusBadge = (student) => {
     const frozen = student.frozen || student.status === 'frozen';
     return frozen
-      ? <span className="badge badge-error badge-sm">Заморожен</span>
-      : <span className="badge badge-success badge-sm">Активен</span>;
+      ? <StatusBadge tone="danger">Заморожен</StatusBadge>
+      : <StatusBadge tone="success">Активен</StatusBadge>;
   };
 
   return (
@@ -85,44 +85,28 @@ export default function SuperStudents() {
 
       {/* Stat pills */}
       <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2 bg-base-100 rounded-xl px-4 py-2 shadow-sm border border-base-200">
-          <Users size={16} className="text-primary" />
-          <span className="text-sm font-semibold">Всего: {total}</span>
-        </div>
-        <div className="flex items-center gap-2 bg-base-100 rounded-xl px-4 py-2 shadow-sm border border-base-200">
-          <UserCheck size={16} className="text-success" />
-          <span className="text-sm font-semibold">На странице: {items.length}</span>
-        </div>
-        <div className="flex items-center gap-2 bg-base-100 rounded-xl px-4 py-2 shadow-sm border border-base-200">
-          <UserCheck size={16} className="text-info" />
-          <span className="text-sm font-semibold">Активных: {activeCount}</span>
-        </div>
+        <Metric size="sm" Icon={Users} tone="primary" label="Всего" value={total} />
+        <Metric size="sm" Icon={UserCheck} tone="success" label="На странице" value={items.length} />
+        <Metric size="sm" Icon={UserCheck} tone="info" label="Активных" value={activeCount} />
       </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <label className="input input-bordered flex items-center gap-2 flex-1 max-w-sm">
-          <Search size={16} className="text-base-content/40" />
-          <input
-            type="text"
-            placeholder="Поиск студентов..."
-            value={rawSearch}
-            onChange={(e) => setRawSearch(e.target.value)}
-            className="grow bg-transparent outline-none text-sm"
-          />
-        </label>
-
-        <div className="join">
-          {['all', 'active', 'frozen'].map((f) => (
-            <button
-              key={f}
-              className={`join-item btn btn-sm ${statusFilter === f ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => handleFilterChange(f)}
-            >
-              {f === 'all' ? 'Все' : f === 'active' ? 'Активные' : 'Заморожены'}
-            </button>
-          ))}
-        </div>
+        <SearchInput
+          value={rawSearch}
+          onChange={setRawSearch}
+          placeholder="Поиск студентов..."
+          className="flex-1 max-w-sm"
+        />
+        <FilterPills
+          options={[
+            { key: 'all', label: 'Все' },
+            { key: 'active', label: 'Активные' },
+            { key: 'frozen', label: 'Заморожены' },
+          ]}
+          value={statusFilter}
+          onChange={handleFilterChange}
+        />
       </div>
 
       {/* Content */}
@@ -137,7 +121,7 @@ export default function SuperStudents() {
           Студентов не найдено
         </div>
       ) : (
-        <div className="card bg-base-100 shadow-sm">
+        <Card>
           <div className="overflow-x-auto">
             <table className="table table-sm">
               <thead>
@@ -160,7 +144,7 @@ export default function SuperStudents() {
                     >
                       <td>
                         <div className="flex items-center gap-2">
-                          <Avatar name={fullName || 'S'} size={32} />
+                          <Avatar name={fullName || 'S'} size="md" />
                           <span className="font-medium text-sm">{fullName || '—'}</span>
                         </div>
                       </td>
@@ -211,46 +195,27 @@ export default function SuperStudents() {
               </div>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Delete confirm modal */}
-      {deleteTarget && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-sm">
-            <h3 className="font-bold text-lg mb-2">Удалить студента?</h3>
-            <p className="text-sm text-base-content/70 mb-6">
-              Вы уверены, что хотите удалить{' '}
-              <strong>
-                {`${deleteTarget.firstName ?? deleteTarget.first_name ?? ''} ${deleteTarget.lastName ?? deleteTarget.last_name ?? ''}`.trim()}
-              </strong>
-              ? Это действие необратимо.
-            </p>
-            {deleteMutation.error && (
-              <div className="alert alert-error text-xs mb-3">
-                <span>{deleteMutation.error.message}</span>
-              </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleteMutation.isPending}
-              >
-                Отмена
-              </button>
-              <button
-                className="btn btn-error btn-sm"
-                onClick={() => deleteMutation.mutate(deleteTarget.id)}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Удалить'}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setDeleteTarget(null)} />
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Удалить студента?"
+        text={
+          <>
+            Вы уверены, что хотите удалить{' '}
+            <strong>
+              {`${deleteTarget?.firstName ?? deleteTarget?.first_name ?? ''} ${deleteTarget?.lastName ?? deleteTarget?.last_name ?? ''}`.trim()}
+            </strong>
+            ? Это действие необратимо.
+          </>
+        }
+        onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
+        pending={deleteMutation.isPending}
+        error={deleteMutation.error}
+      />
     </div>
   );
 }

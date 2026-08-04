@@ -156,7 +156,7 @@ body {
 .modal .select-bordered:focus {
   border-color: var(--primary) !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(64, 131, 59, 0.15) !important;
 }
 .modal .btn-ghost {
   color: var(--text-secondary) !important;

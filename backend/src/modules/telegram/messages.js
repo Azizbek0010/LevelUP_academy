@@ -9,6 +9,13 @@ const RU = {
   stopSuccess: 'Telegram отвязан. Уведомления больше не будут приходить в этот чат.',
   stopMissing: 'Этот чат не был привязан к CRM.',
   genericError: 'Не удалось выполнить действие. Попробуйте позже или получите новый код в кабинете CRM.',
+  loginSuccess: 'Вход подтверждён. Вернитесь на вкладку с сайтом — она откроется сама.',
+  loginExpired: 'Ссылка для входа истекла. Нажмите «Войти через Telegram» на сайте ещё раз.',
+  // Вход не создаёт привязку намеренно: иначе любой, кто открыл ссылку входа,
+  // привязал бы к себе чужой чат. Привязка — только из кабинета, где человек
+  // уже доказал, что знает логин и пароль.
+  loginNotLinked:
+    'Этот Telegram не привязан ни к одному аккаунту. Войдите на сайте по логину и паролю, затем нажмите «Telegram» в кабинете.',
 };
 
 const UZ = {
@@ -21,6 +28,10 @@ const UZ = {
   stopSuccess: 'Telegram uzildi. Bu chatga xabarlar boshqa kelmaydi.',
   stopMissing: 'Bu chat CRMga ulanmagan.',
   genericError: 'Amalni bajarib bo‘lmadi. Keyinroq urinib ko‘ring yoki CRM kabinetidan yangi kod oling.',
+  loginSuccess: 'Kirish tasdiqlandi. Sayt ochilgan oynaga qayting — u o‘zi ochiladi.',
+  loginExpired: 'Kirish havolasining muddati tugagan. Saytda «Telegram orqali kirish» tugmasini yana bosing.',
+  loginNotLinked:
+    'Bu Telegram hech qaysi akkauntga ulanmagan. Avval saytga login va parol bilan kiring, so‘ng kabinetda «Telegram» tugmasini bosing.',
 };
 
 export function messages(language = 'ru') {

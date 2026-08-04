@@ -1,8 +1,10 @@
-# Member App — Parent Panel
+# Member App — Student + Parent Panel
 
 ## Overview
 
-`frontend/member/` is a **standalone Vite + React SPA** that serves as the login gateway and personal cabinet for **Students** and **Parents**. Students are redirected to `frontend/student/` after login; Parents see the full parent panel described below.
+`frontend/member/` is a **standalone Vite + React SPA** that serves as the login gateway and personal cabinet for **Students** and **Parents**. Both cabinets live in this one app: after login, `student` is redirected to `/student` (`src/App.jsx:53`) and served from `src/student/`; Parents see the full parent panel described below.
+
+> The separate `frontend/student/` app was deleted on 2026-08-04. Its pages had already been moved into `src/student/` here, and the standalone copy had fallen behind — it was missing `Lessons` and `LessonDetail`.
 
 - **Dev server:** `localhost:5175`
 - **Tech:** React 18, Tailwind CSS, DaisyUI, TanStack Query, react-router-dom v7
