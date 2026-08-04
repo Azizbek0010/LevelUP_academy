@@ -8,6 +8,7 @@ import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonList } from '../../components/Skeleton.jsx';
+import { Card, EmptyState, Modal, ConfirmDialog } from './_ui.jsx';
 
 // ---- Constants ----
 
@@ -131,10 +132,9 @@ export default function SuperAnnouncements() {
       ) : error && error.status !== 401 ? (
         <div className="alert alert-error text-sm"><span>{error.message}</span></div>
       ) : items.length === 0 ? (
-        <div className="text-center py-16 text-base-content/40">
-          <Megaphone size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Анонсов пока нет. Создайте первый!</p>
-        </div>
+        <Card>
+          <EmptyState icon={Megaphone} title="Анонсов пока нет" hint="Создайте первый!" />
+        </Card>
       ) : (
         <div className="space-y-3">
           {items.map((item) => {
@@ -149,8 +149,7 @@ export default function SuperAnnouncements() {
             const nonReaders = item.nonReaders ?? item.non_readers ?? [];
 
             return (
-              <div key={item.id} className="card bg-base-100 shadow-sm border border-base-200">
-                <div className="card-body p-5">
+              <Card key={item.id} className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -246,19 +245,20 @@ export default function SuperAnnouncements() {
                       )}
                     </div>
                   )}
-                </div>
-              </div>
+              </Card>
             );
           })}
         </div>
       )}
 
       {/* Create modal */}
-      {modalOpen && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-md">
-            <h3 className="font-bold text-lg mb-4">Новый анонс</h3>
-            <form onSubmit={handleCreate} className="space-y-4">
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => { setModalOpen(false); setFormError(''); }}
+        title="Новый анонс"
+        className="max-w-md border border-base-300"
+      >
+        <form onSubmit={handleCreate} className="space-y-4">
               <div className="form-control">
                 <label className="label"><span className="label-text">Заголовок</span></label>
                 <input
@@ -316,44 +316,18 @@ export default function SuperAnnouncements() {
                 </button>
               </div>
             </form>
-          </div>
-          <div className="modal-backdrop" onClick={() => { setModalOpen(false); setFormError(''); }} />
-        </div>
-      )}
+      </Modal>
 
       {/* Delete confirm modal */}
-      {deleteTarget && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-sm">
-            <h3 className="font-bold text-lg mb-2">Удалить анонс?</h3>
-            <p className="text-sm text-base-content/70 mb-6">
-              Вы уверены, что хотите удалить анонс <strong>«{deleteTarget.title}»</strong>?
-            </p>
-            {deleteMutation.error && (
-              <div className="alert alert-error text-xs mb-3">
-                <span>{deleteMutation.error.message}</span>
-              </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleteMutation.isPending}
-              >
-                Отмена
-              </button>
-              <button
-                className="btn btn-error btn-sm"
-                onClick={() => deleteMutation.mutate(deleteTarget.id)}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Удалить'}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setDeleteTarget(null)} />
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Удалить анонс?"
+        text={<>Вы уверены, что хотите удалить анонс <strong>«{deleteTarget?.title}»</strong>?</>}
+        onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
+        pending={deleteMutation.isPending}
+        error={deleteMutation.error}
+      />
     </div>
   );
 }

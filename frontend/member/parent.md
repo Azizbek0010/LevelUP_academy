@@ -29,7 +29,7 @@
 
 ---
 
-## ✅ YANGILANGAN TASKLAR (8/8 TUGADI)
+## ✅ YANGILANGAN TASKLAR (9/9 TUGADI)
 
 ### TASK 1: PARENT: Child overview ✅
 
@@ -107,6 +107,17 @@
 - [x] Border radius: 1rem (cards), 0.6rem (buttons), 0.75rem (inputs)
 - [x] CSS animations: fadeIn, slideUp, scaleIn, fadeInDown
 - [x] Mobile touch feedback
+
+### TASK 9: PARENT: Guruh reytingi ✅
+
+- [x] Dashboard'dagi guruh kartasi → click → reyting ko'rinishi
+- [x] Guruh ma'lumotlari — nomi, mentor, o'quvchilar soni
+- [x] Reyting jadvali — rank, avatar, ism, koinlar, o'rtacha ball
+- [x] Top-3: medal/trophy ranglar, qolganlar raqam bilan
+- [x] O'z bolasi highlight — `(вы)` belgisi + primary ring
+- [x] Backend API: `GET /parent/children/:childId/group-rating` (+ mock)
+- [x] Loading skeleton + EmptyState
+- [x] Responsive
 
 ---
 

@@ -1,14 +1,21 @@
-import { useParentOverview } from '../queries.js';
+import { useState } from 'react';
+import { useParentOverview, useGroupRating } from '../queries.js';
 import { useChild } from '../child-context.jsx';
 import { fmt, money, dateShort, timeAgo, ATTENDANCE_STATUS } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
+import Avatar from '../components/Avatar.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressRing, StatCard } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
 
+const RANK_COLORS = ['#f59e0b', '#94a3b8', '#cd7f32'];
+const RANK_ICONS = ['trophy', 'star', 'star'];
+
 export default function Dashboard() {
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
+  const { data: ratingData, isLoading: ratingLoading } = useGroupRating(selectedChild?.id);
+  const [showRating, setShowRating] = useState(false);
 
   if (!selectedChild) {
     return <EmptyState icon="user-circle" title="Выберите ребёнка" message="Добавьте ребёнка в профиль для просмотра данных" />;
@@ -44,6 +51,112 @@ export default function Dashboard() {
       ? Math.round(allGrades.reduce((s, g) => s + (g.score / g.maxScore) * 100, 0) / allGrades.length)
       : 0;
 
+  const group = d.groups?.[0];
+  const students = ratingData?.data?.students || [];
+
+  // Guruh reytingi ko'rinishi
+  if (showRating && group) {
+    return (
+      <>
+        <PageHeader title={`Группа ${group.name}`} subtitle={group.mentorName} />
+        <button
+          onClick={() => setShowRating(false)}
+          className="flex items-center gap-2 text-sm text-primary mb-4 hover:underline"
+        >
+          <Icon name="arrow-left" className="w-4 h-4" />
+          Назад к обзору
+        </button>
+
+        {/* Guruh ma'lumotlari */}
+        <div className="card bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 mb-6">
+          <div className="card-body py-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center">
+                <span className="text-xl font-extrabold text-primary">{group.name}</span>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold">{group.name}</h2>
+                <p className="text-sm opacity-50">{group.subject} · {group.mentorName}</p>
+                <p className="text-xs opacity-30 mt-0.5">{students.length} учеников</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Reyting jadvali */}
+        <div className="card bg-base-100">
+          <div className="card-body">
+            <h3 className="card-title text-sm gap-2 mb-3">
+              <Icon name="trophy" className="w-4 h-4 text-primary" />
+              Рейтинг группы
+            </h3>
+
+            {ratingLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="skeleton h-14 rounded-xl" />
+                ))}
+              </div>
+            ) : students.length === 0 ? (
+              <EmptyState icon="trophy" title="Нет данных" message="Рейтинг пока пуст" />
+            ) : (
+              <div className="space-y-2">
+                {students.map((s, i) => {
+                  const isMe = s.childId === selectedChild?.id;
+                  const rankColor = i < 3 ? RANK_COLORS[i] : null;
+                  return (
+                    <div
+                      key={s.childId}
+                      className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${
+                        isMe
+                          ? 'bg-primary/10 ring-2 ring-primary/30 shadow-sm'
+                          : 'bg-base-200/30 hover:bg-base-200/60'
+                      }`}
+                    >
+                      {/* Rank */}
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+                        {i < 3 ? (
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style={{ background: `${rankColor}15` }}
+                          >
+                            <Icon name={RANK_ICONS[i]} className="w-4 h-4" style={{ color: rankColor }} />
+                          </div>
+                        ) : (
+                          <span className="text-sm font-bold opacity-30">{s.rank}</span>
+                        )}
+                      </div>
+
+                      {/* Avatar + Name */}
+                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                        <Avatar name={`${s.firstName} ${s.lastName}`} size={36} />
+                        <div className="min-w-0">
+                          <p className={`text-sm font-semibold truncate ${isMe ? 'text-primary' : ''}`}>
+                            {s.firstName} {s.lastName}
+                            {isMe && <span className="text-[10px] ml-1 opacity-50">(вы)</span>}
+                          </p>
+                          <p className="text-[11px] opacity-40">{fmt(s.coins)} коинов</p>
+                        </div>
+                      </div>
+
+                      {/* Score */}
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold" style={{ color: s.avgScore >= 80 ? '#22c55e' : s.avgScore >= 60 ? '#f59e0b' : '#ef4444' }}>
+                          {s.avgScore}%
+                        </p>
+                        <p className="text-[10px] opacity-30">ср. балл</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <PageHeader title="Обзор" subtitle={`${d.child.firstName} ${d.child.lastName}`} />
@@ -65,10 +178,12 @@ export default function Dashboard() {
             <div className="flex-1 min-w-0">
               <h2 className="text-xl font-extrabold tracking-tight">{d.child.firstName} {d.child.lastName}</h2>
               <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                <span className="text-xs opacity-50 flex items-center gap-1">
-                  <Icon name="academic" className="w-3.5 h-3.5" />
-                  {d.groups?.length || 0} групп
-                </span>
+                {group && (
+                  <span className="text-xs opacity-50 flex items-center gap-1">
+                    <Icon name="academic" className="w-3.5 h-3.5" />
+                    {group.name}
+                  </span>
+                )}
                 <span className="opacity-20">·</span>
                 <span className="text-xs opacity-50 flex items-center gap-1">
                   <Icon name="trophy" className="w-3.5 h-3.5" />
@@ -99,7 +214,7 @@ export default function Dashboard() {
         <StatCard icon="chart-bar" label="Посещаемость" value={`${attPct}%`} color="#3b82f6" sub={`${att.present || 0} из ${attTotal}`} />
       </div>
 
-      {/* Attendance + Groups */}
+      {/* Attendance + Group */}
       <div className="grid lg:grid-cols-2 gap-4 mb-6">
         {/* Attendance Widget */}
         <div className="card bg-base-100">
@@ -137,45 +252,36 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Groups List */}
+        {/* Group Card — clickable → rating */}
         <div className="card bg-base-100">
           <div className="card-body">
             <h3 className="card-title text-sm gap-2">
               <Icon name="academic" className="w-4 h-4 text-primary" />
-              Группы
+              Группа
             </h3>
-            {d.groups?.length === 0 ? (
-              <EmptyState icon="folder" title="Нет групп" message="Ещё не записан" />
+            {!group ? (
+              <EmptyState icon="folder" title="Нет группы" message="Ещё не записан" />
             ) : (
-              <div className="space-y-2 mt-2">
-                {d.groups?.map((g, i) => {
-                  const colors = ['#C6FF34', '#3b82f6', '#a855f7', '#f59e0b'];
-                  const c = colors[i % colors.length];
-                  return (
-                    <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl bg-base-200/40 hover:bg-base-200/70 hover:-translate-y-0.5 transition-all duration-200 group cursor-default">
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-transform group-hover:scale-110"
-                        style={{ background: `${c}15`, color: c }}
-                      >
-                        {g.subject?.slice(0, 2) || '?'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">{g.name}</p>
-                        <p className="text-xs opacity-40 flex items-center gap-1">
-                          <Icon name="user" className="w-3 h-3" />
-                          {g.mentorName}
-                        </p>
-                      </div>
-                      <span
-                        className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                        style={{ background: `${c}12`, color: c }}
-                      >
-                        {g.subject}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              <button
+                onClick={() => setShowRating(true)}
+                className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:from-primary/10 hover:to-primary/15 hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer w-full text-left mt-2"
+              >
+                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-lg font-extrabold text-primary shrink-0 group-hover:scale-110 transition-transform">
+                  {group.name}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold">{group.name}</p>
+                  <p className="text-xs opacity-40 flex items-center gap-1 mt-0.5">
+                    <Icon name="user" className="w-3 h-3" />
+                    {group.mentorName}
+                  </p>
+                  <p className="text-[11px] opacity-30 mt-0.5">{group.studentCount || '—'} учеников</p>
+                </div>
+                <div className="flex items-center gap-1.5 text-primary shrink-0">
+                  <span className="text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">Рейтинг</span>
+                  <Icon name="chevron-right" className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </button>
             )}
           </div>
         </div>

@@ -40,6 +40,16 @@ export function AuthProvider({ children }) {
     setUser(d.user);
   };
 
+  /**
+   * Вход через Telegram: сессия уже выдана бэкендом (он проверил, что чат
+   * привязан к аккаунту), здесь её остаётся только принять. Отдельно от
+   * login(), потому что пароль в этом пути не участвует вовсе.
+   */
+  const adoptSession = ({ accessToken, user: u }) => {
+    setToken(accessToken);
+    setUser(u);
+  };
+
   const logout = async () => {
     await api.logout().catch(() => {});
     setToken(null);
@@ -47,7 +57,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthCtx.Provider value={{ token, user, loading, login, logout }}>
+    <AuthCtx.Provider value={{ token, user, loading, login, logout, adoptSession }}>
       {children}
     </AuthCtx.Provider>
   );

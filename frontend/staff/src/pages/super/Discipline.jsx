@@ -12,7 +12,7 @@ import { useAuth } from '../../auth.jsx';
 import { fmt } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
-import { Kpi, Panel, EmptyState, Modal } from '../mentor/_ui.jsx';
+import { Metric, Panel, EmptyState, Modal } from './_ui.jsx';
 import { TYPE_META, Dot, LevelBadge } from '../../discipline-meta.jsx';
 
 /**
@@ -581,9 +581,9 @@ export default function SuperDiscipline() {
         <SkeletonKpis count={3} className="grid-cols-1 sm:grid-cols-3" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Kpi Icon={TriangleAlert} tone="warning" title="Жёлтые" value={fmt(totals.sariq)} unit="предупреждений" />
-          <Kpi Icon={ShieldAlert} tone="danger" title="Красные" value={fmt(totals.qizil)} unit="предупреждений" />
-          <Kpi Icon={Ban} tone="danger" title="Увольнения" value={fmt(totals.qora)} unit="сотрудников" />
+          <Metric Icon={TriangleAlert} tone="warning" label="Жёлтые" value={fmt(totals.sariq)} unit="предупреждений" />
+          <Metric Icon={ShieldAlert} tone="danger" label="Красные" value={fmt(totals.qizil)} unit="предупреждений" />
+          <Metric Icon={Ban} tone="danger" label="Увольнения" value={fmt(totals.qora)} unit="сотрудников" />
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
+import { archiveGuard } from '../../middlewares/archiveGuard.js';
 import {
   createTestSchema,
   updateTestSchema,
@@ -21,7 +22,11 @@ import {
   createQuestionsBatchSchema,
   copyLessonSchema,
   lessonUploadUrlQuery,
+  trainingTypeIdParam,
+  topicIdParam,
+  lessonIdParam,
 } from './content.schemas.js';
+import { groupIdParam, videoUploadUrlQuery, createVideoBody } from './videos.schemas.js';
 import * as ctrl from './methodist.controller.js';
 
 /**
@@ -188,10 +193,12 @@ router.post('/topics', validate({ body: createTopicSchema }), ctrl.createTopic);
  *   get:
  *     tags: [Methodist]
  *     summary: List topics of a training type (with lesson counts)
- *     description: Path parameter is named `id` in the route but read as `trainingTypeId` by the controller.
  *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - { $ref: '#/components/parameters/IdParam' }
+ *       - name: trainingTypeId
+ *         in: path
+ *         required: true
+ *         schema: { type: string, format: uuid }
  *     responses:
  *       200:
  *         description: List of topics
@@ -217,7 +224,7 @@ router.post('/topics', validate({ body: createTopicSchema }), ctrl.createTopic);
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.get('/training-types/:trainingTypeId/topics', validate({ params: idParam }), ctrl.listTopics);
+router.get('/training-types/:trainingTypeId/topics', validate({ params: trainingTypeIdParam }), ctrl.listTopics);
 
 /**
  * @openapi
@@ -316,10 +323,12 @@ router.post('/lessons', validate({ body: createLessonSchema }), ctrl.createLesso
  *   get:
  *     tags: [Methodist]
  *     summary: List lessons of a topic (with question counts)
- *     description: Path parameter is named `id` in the route but read as `topicId` by the controller.
  *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - { $ref: '#/components/parameters/IdParam' }
+ *       - name: topicId
+ *         in: path
+ *         required: true
+ *         schema: { type: string, format: uuid }
  *     responses:
  *       200:
  *         description: List of lessons
@@ -345,7 +354,7 @@ router.post('/lessons', validate({ body: createLessonSchema }), ctrl.createLesso
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.get('/topics/:topicId/lessons', validate({ params: idParam }), ctrl.listLessons);
+router.get('/topics/:topicId/lessons', validate({ params: topicIdParam }), ctrl.listLessons);
 
 /**
  * @openapi
@@ -515,11 +524,7 @@ router.post('/lessons/:id/copy', validate({ params: idParam, body: copyLessonSch
  * /api/methodist/questions:
  *   post:
  *     tags: [Methodist]
- *     summary: Create a single A/B/C/D question for a lesson
- *     description: >
- *       Note: unlike most other content-mutation endpoints in this module, this
- *       one does not verify the lesson belongs to the caller's organization
- *       before inserting (no findLessonInOrg check in the service).
+ *     summary: Create a question for a lesson (choice / riddle / open — see CreateQuestionRequest)
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
@@ -607,7 +612,7 @@ router.post('/questions/batch', validate({ body: createQuestionsBatchSchema }), 
  *       403: { $ref: '#/components/responses/Forbidden' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.get('/lessons/:lessonId/questions', validate({ params: idParam }), ctrl.listQuestions);
+router.get('/lessons/:lessonId/questions', validate({ params: lessonIdParam }), ctrl.listQuestions);
 
 /**
  * @openapi
@@ -737,5 +742,156 @@ router.get('/groups', ctrl.getGroups);
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
 router.get('/difficulty', ctrl.getDifficultyReport);
+
+/**
+ * @openapi
+ * /api/methodist/videos/groups/{groupId}/upload-url:
+ *   get:
+ *     tags: [Methodist]
+ *     summary: Presigned S3 upload url for a group video
+ *     description: >
+ *       Возвращает presigned PUT url + videoKey. Клиент грузит файл на uploadUrl,
+ *       затем регистрирует его через POST /videos/groups/{groupId} { videoKey }.
+ *       Методист не привязан к конкретной группе как ментор — доступна любая
+ *       группа своей организации.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: groupId
+ *         in: path
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *       - name: filename
+ *         in: query
+ *         required: true
+ *         schema: { type: string }
+ *       - name: contentType
+ *         in: query
+ *         required: false
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Presigned upload URL + the key to reference in the create call
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     uploadUrl: { type: string, format: uri }
+ *                     videoKey: { type: string }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       404:
+ *         description: Group not found (outside methodist's organization)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get(
+  '/videos/groups/:groupId/upload-url',
+  validate({ params: groupIdParam, query: videoUploadUrlQuery }),
+  ctrl.getVideoUploadUrl,
+);
+
+/**
+ * @openapi
+ * /api/methodist/videos/groups/{groupId}:
+ *   post:
+ *     tags: [Methodist]
+ *     summary: Register an uploaded video for a group
+ *     description: Call this AFTER successfully PUTting the file to the presigned uploadUrl.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: groupId
+ *         in: path
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, videoKey]
+ *             properties:
+ *               title: { type: string }
+ *               videoKey: { type: string, description: 'The videoKey returned by the upload-url call' }
+ *               durationSec: { type: integer }
+ *     responses:
+ *       201:
+ *         description: Video registered
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string, format: uuid }
+ *                     group_id: { type: string, format: uuid }
+ *                     title: { type: string }
+ *                     duration_sec: { type: integer, nullable: true }
+ *                     is_archived: { type: boolean }
+ *                     created_at: { type: string, format: date-time }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       404:
+ *         description: Group not found (outside methodist's organization)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ *   get:
+ *     tags: [Methodist]
+ *     summary: List videos of a group (includes archived)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: groupId
+ *         in: path
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: List of videos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string, format: uuid }
+ *                       group_id: { type: string, format: uuid }
+ *                       title: { type: string }
+ *                       duration_sec: { type: integer, nullable: true }
+ *                       is_archived: { type: boolean }
+ *                       created_at: { type: string, format: date-time }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       404:
+ *         description: Group not found (outside methodist's organization)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ */
+router.post(
+  '/videos/groups/:groupId',
+  validate({ params: groupIdParam, body: createVideoBody }),
+  archiveGuard('groups', 'groupId'),
+  ctrl.createVideo,
+);
+
+router.get(
+  '/videos/groups/:groupId',
+  validate({ params: groupIdParam }),
+  ctrl.listVideosForGroup,
+);
 
 export default router;

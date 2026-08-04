@@ -1147,7 +1147,7 @@ export default {
     features: {
       title: 'Возможности — 12+ модулей CRM | LevelUp Academy',
       description:
-        'Платежи, davomat, тесты с серверным таймером, ДЗ, коины, realtime-чаты, видеоуроки, отчёты и Telegram-бот — все модули LevelUp Academy в одной системе.',
+        'Платежи, посещаемость (davomat), тесты с серверным таймером, ДЗ, коины, чаты, видеоуроки, отчёты и Telegram-бот — все модули LevelUp Academy.',
     },
     roles: {
       title: 'Роли и доступы — 6 кабинетов | LevelUp Academy',

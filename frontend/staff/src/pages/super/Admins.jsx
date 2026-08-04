@@ -1,20 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   Plus, Edit2, ShieldAlert, KeyRound, Copy, Check, AlertTriangle,
-  MoreVertical, ChevronDown, Search,
+  MoreVertical, ChevronDown,
 } from 'lucide-react';
 import { dateShort } from '../../format.js';
 import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
-import Avatar from '../../components/Avatar.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import PhoneInput from '../../components/PhoneInput.jsx';
+import { Card, SearchInput, StatusBadge, Modal, Dropdown, DropdownItem, Avatar } from './_ui.jsx';
 
 /**
  * «Сотрудники» — раньше две отдельные вкладки (Администраторы / Методисты),
@@ -76,34 +76,23 @@ function schemaFor(role, mode) {
 }
 
 const STATUS_META = {
-  active: { label: 'Активен', cls: 'badge-success' },
-  frozen: { label: 'Заморожен', cls: 'badge-error' },
-  fired:  { label: 'Уволен', cls: 'badge-error' },
+  active: { label: 'Активен', tone: 'success' },
+  frozen: { label: 'Заморожен', tone: 'danger' },
+  fired:  { label: 'Уволен', tone: 'danger' },
 };
 
-// Голый badge-outline (чёрная рамка на белом) рядом с залитым badge-success/
-// error статуса смотрелся недоделанным — будто про эту колонку забыли.
-// Тон + приглушённый цвет на роль — тот же приём, что и у KPI-плиток
-// (Kpi/_ui.jsx: bg-{tone}/10 text-{tone}) и у грейда ментора на карточке
-// сотрудника, а не рамка без заливки. Цвета — не success/warning/error:
-// те уже заняты статусом и уровнями дисциплины, брать их для роли было бы
-// путаницей («красный» ментор ≠ проблема).
+// Тон роли — не success/warning/error: те заняты статусом и уровнями
+// дисциплины, брать их для роли было бы путаницей («красный» ментор ≠
+// проблема). primary/info/neutral свободны на этой странице.
 const ROLE_META = {
-  admin:     { label: 'Администратор', color: '#4f46e5' },
-  mentor:    { label: 'Ментор',        color: '#0d9488' },
-  methodist: { label: 'Методист',      color: '#7c3aed' },
+  admin:     { label: 'Администратор', tone: 'primary' },
+  mentor:    { label: 'Ментор',        tone: 'info' },
+  methodist: { label: 'Методист',      tone: 'neutral' },
 };
 
 function RoleBadge({ role }) {
-  const m = ROLE_META[role] ?? { label: role, color: '#64748b' };
-  return (
-    <span
-      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
-      style={{ background: `${m.color}1a`, color: m.color }}
-    >
-      {m.label}
-    </span>
-  );
+  const m = ROLE_META[role] ?? { label: role, tone: 'neutral' };
+  return <StatusBadge tone={m.tone}>{m.label}</StatusBadge>;
 }
 
 // ─── Показ сгенерированного пароля (один раз) ────────────────
@@ -115,87 +104,40 @@ function TempPasswordModal({ email, password, onClose }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <div className="modal modal-open">
-      <div className="modal-box max-w-lg">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-success/20 grid place-items-center">
-            <Check size={24} className="text-success" />
-          </div>
-          <div>
-            <h3 className="font-bold text-lg text-success">Готово!</h3>
-            <p className="text-sm text-base-content/60">Пароль сгенерирован автоматически</p>
-          </div>
+    <Modal isOpen title="Пароль сгенерирован" onClose={onClose} className="max-w-lg border border-base-300" actions={<button className="btn btn-primary w-full" onClick={onClose}>Готово</button>}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-12 h-12 rounded-full bg-success/20 grid place-items-center">
+          <Check size={24} className="text-success" />
         </div>
-        <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
-          <div className="flex items-start gap-2 mb-3">
-            <AlertTriangle size={16} className="text-warning shrink-0 mt-0.5" />
-            <p className="text-sm font-semibold text-warning">Сохраните пароль — показывается только один раз!</p>
-          </div>
-          <div className="bg-base-100 rounded-lg p-3 space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-base-content/55 w-16 shrink-0">Логин:</span>
-              <span className="font-semibold">{email}</span>
-            </div>
-            <div className="border-t border-base-200 pt-2 mt-2">
-              <div className="text-xs text-base-content/50 mb-1.5 font-semibold uppercase tracking-wider">Пароль</div>
-              <div className="flex items-center gap-2">
-                <code className="font-mono font-bold text-xl tracking-widest bg-base-200 px-3 py-2 rounded-lg flex-1 text-center">
-                  {password}
-                </code>
-                <button className={`btn btn-sm ${copied ? 'btn-success' : 'btn-outline'} gap-1.5`} onClick={copy}>
-                  {copied ? <><Check size={14} /> Скопировано</> : <><Copy size={14} /> Копировать</>}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="modal-action">
-          <button className="btn btn-primary w-full" onClick={onClose}>Готово</button>
+        <div>
+          <h4 className="font-bold text-success">Готово!</h4>
+          <p className="text-sm text-base-content/60">Пароль сгенерирован автоматически</p>
         </div>
       </div>
-      <div className="modal-backdrop" onClick={onClose} />
-    </div>
-  );
-}
-
-// ─── Общий выпадающий список (клик вне закрывает, не всплывает на строку) ──
-function Dropdown({ trigger, children, align = 'right' }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
-      {trigger(() => setOpen((v) => !v))}
-      {open && (
-        <div
-          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1 z-50 min-w-[190px] rounded-[12px] border border-base-300 bg-base-100 shadow-[0_8px_24px_var(--shadow-lg)] py-1.5 animate-scale-in origin-top-right`}
-        >
-          {typeof children === 'function' ? children(() => setOpen(false)) : children}
+      <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
+        <div className="flex items-start gap-2 mb-3">
+          <AlertTriangle size={16} className="text-warning shrink-0 mt-0.5" />
+          <p className="text-sm font-semibold text-warning">Сохраните пароль — показывается только один раз!</p>
         </div>
-      )}
-    </div>
-  );
-}
-
-function DropdownItem({ icon: Icon, danger, disabled, onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-        danger ? 'text-error hover:bg-[rgba(232,84,62,0.08)]' : 'text-base-content/70 hover:text-base-content hover:bg-base-200'
-      }`}
-    >
-      <span className="w-5 h-5 flex items-center justify-center shrink-0">{Icon && <Icon size={15} />}</span>
-      {children}
-    </button>
+        <div className="bg-base-100 rounded-lg p-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-base-content/55 w-16 shrink-0">Логин:</span>
+            <span className="font-semibold">{email}</span>
+          </div>
+          <div className="border-t border-base-200 pt-2 mt-2">
+            <div className="text-xs text-base-content/50 mb-1.5 font-semibold uppercase tracking-wider">Пароль</div>
+            <div className="flex items-center gap-2">
+              <code className="font-mono font-bold text-xl tracking-widest bg-base-200 px-3 py-2 rounded-lg flex-1 text-center">
+                {password}
+              </code>
+              <button className={`btn btn-sm ${copied ? 'btn-success' : 'btn-outline'} gap-1.5`} onClick={copy}>
+                {copied ? <><Check size={14} /> Скопировано</> : <><Copy size={14} /> Копировать</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -434,18 +376,14 @@ export default function SuperAdmins() {
     <div className="space-y-5">
       <PageHeader title="Сотрудники" subtitle="Администраторы, менторы и методисты организации" />
 
-      <div className="card bg-base-100 shadow-sm">
-        <div className="card-body p-6">
+      <Card className="p-5 md:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div className="relative w-full max-w-xs">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 pointer-events-none" />
-              <input
-                className="input input-bordered input-sm w-full pl-9"
-                placeholder="Поиск по имени, email, филиалу…"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-            </div>
+            <SearchInput
+              value={q}
+              onChange={setQ}
+              placeholder="Поиск по имени, email, филиалу…"
+              className="w-full max-w-xs"
+            />
             <div className="flex items-center gap-3">
               <span className="text-xs text-base-content/45">
                 Показано {rows.length} из {allRows.length}
@@ -473,7 +411,7 @@ export default function SuperAdmins() {
                 </thead>
                 <tbody>
                   {rows.map((row) => {
-                    const s = STATUS_META[row.status] || { label: row.status, cls: 'badge-ghost' };
+                    const s = STATUS_META[row.status] || { label: row.status, tone: 'neutral' };
                     const dimmed = row.status === 'frozen' || row.status === 'fired';
                     return (
                       <tr
@@ -483,7 +421,7 @@ export default function SuperAdmins() {
                       >
                         <td>
                           <div className="flex items-center gap-2.5">
-                            <Avatar name={`${row.firstName} ${row.lastName}`} size={32} />
+                            <Avatar name={`${row.firstName} ${row.lastName}`} size="md" />
                             <span className="font-semibold">{row.firstName} {row.lastName}</span>
                           </div>
                         </td>
@@ -492,7 +430,7 @@ export default function SuperAdmins() {
                         <td className="text-sm font-mono">{row.phone || '—'}</td>
                         <td className="font-medium">{row.branchName || '—'}</td>
                         <td className="text-sm tabular-nums">{dateShort(row.createdAt)}</td>
-                        <td><span className={`badge badge-sm font-semibold ${s.cls}`}>{s.label}</span></td>
+                        <td><StatusBadge tone={s.tone}>{s.label}</StatusBadge></td>
                         <td className="text-right">
                           <StaffActionsMenu
                             row={row}
@@ -509,19 +447,21 @@ export default function SuperAdmins() {
               </table>
             </div>
           )}
-        </div>
-      </div>
+      </Card>
 
-      {formModal && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-lg">
-            <h3 className="font-bold text-lg">
-              {formModal.mode === 'create'
-                ? `Создать ${formModal.role === 'admin' ? 'администратора' : 'методиста'}`
-                : `Редактировать ${formModal.role === 'admin' ? 'администратора' : 'методиста'}`}
-            </h3>
-            {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 mt-4">
+      <Modal
+        isOpen={!!formModal}
+        onClose={() => setFormModal(null)}
+        title={formModal ? (
+          formModal.mode === 'create'
+            ? `Создать ${formModal.role === 'admin' ? 'администратора' : 'методиста'}`
+            : `Редактировать ${formModal.role === 'admin' ? 'администратора' : 'методиста'}`
+        ) : ''}
+      >
+        {formModal && (
+          <>
+            {err && <div className="alert alert-error text-sm py-2 mb-3"><span>{err}</span></div>}
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <label className="form-control w-full">
                   <span className="label-text mb-1">Имя *</span>
@@ -601,10 +541,9 @@ export default function SuperAdmins() {
                 </button>
               </div>
             </form>
-          </div>
-          <div className="modal-backdrop" onClick={() => setFormModal(null)} />
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
       {tempPassword && (
         <TempPasswordModal

@@ -52,7 +52,52 @@ async function getOrCreate(client, selectSql, selectParams, insertSql, insertPar
   return created.rows[0].id;
 }
 
+/**
+ * Отказаться работать, если DATABASE_URL смотрит не на локальную базу.
+ *
+ * Почему проверка в коде, а не предупреждение в README. Инструкция запуска в
+ * backend/README.md называет `npm run seed` пятым шагом, и это правда — но
+ * только для машины, где база локальная. На деле `.env` разработчика может
+ * указывать в облако: у владельца проекта DATABASE_URL ведёт в боевой Neon,
+ * REDIS_URL в Upstash, S3 в Storj. При NODE_ENV=development (значение по
+ * умолчанию из config/env.js) сид тогда создаёт демо-организацию и демо-учеников
+ * прямо в живой базе, где сидят настоящие пользователи.
+ *
+ * Прочитавший README человек — или агент — выполнит пятый шаг буквально.
+ * Текстовое предупреждение это не останавливает: его либо не заметят, либо
+ * README вообще не откроют. Останавливает только отказ запуститься.
+ *
+ * Данные сид не разрушает (идемпотентные upsert, ни TRUNCATE, ни DELETE), но
+ * мусор в проде вычищать придётся руками, а какие записи демо, а какие живые —
+ * потом уже не отличить.
+ *
+ * Сознательный запуск против удалённой базы остаётся возможен: SEED_ALLOW_REMOTE=yes.
+ * Осознанное действие требует одного лишнего слова — случайное не проходит.
+ */
+const LOCAL_DB_HOSTS = new Set(['localhost', '127.0.0.1', '::1', 'postgres', 'db']);
+
+function assertLocalDatabase() {
+  if (process.env.SEED_ALLOW_REMOTE === 'yes') {
+    logger.warn('SEED_ALLOW_REMOTE=yes — проверка локальной базы отключена вручную');
+    return;
+  }
+
+  const host = (env.DATABASE_URL.match(/@([^:/?]+)/) || [])[1] || '';
+  if (LOCAL_DB_HOSTS.has(host)) return;
+
+  logger.error(
+    { host },
+    'Сид остановлен: DATABASE_URL ведёт не на локальную базу.\n' +
+      'Похоже, это облачная (боевая) база — сид записал бы в неё демо-данные.\n' +
+      'Нужна локальная база: docker compose up -d и DATABASE_URL на localhost.\n' +
+      'Если удалённая база нужна намеренно: SEED_ALLOW_REMOTE=yes npm run seed',
+  );
+  process.exit(1);
+}
+
 async function seed() {
+  assertLocalDatabase();
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

@@ -1236,40 +1236,77 @@ export const components = {
     },
     Question: {
       type: 'object',
+      description:
+        "'riddle' and 'open' are graded identically (case-insensitive exact match on correctTextAnswer) — "
+        + 'the two values exist only so the methodist UI/analytics can tell a riddle-style question apart '
+        + 'from a plain open question, not because scoring differs.',
       properties: {
         id: { type: 'string', format: 'uuid' },
+        questionType: { type: 'string', enum: ['choice', 'riddle', 'open'] },
         questionText: { type: 'string' },
-        optionA: { type: 'string' },
-        optionB: { type: 'string' },
-        optionC: { type: 'string' },
-        optionD: { type: 'string' },
-        correctAnswer: { type: 'string', enum: ['A', 'B', 'C', 'D'] },
+        optionA: { type: 'string', nullable: true },
+        optionB: { type: 'string', nullable: true },
+        optionC: { type: 'string', nullable: true },
+        optionD: { type: 'string', nullable: true },
+        correctAnswer: { type: 'string', enum: ['A', 'B', 'C', 'D'], nullable: true },
+        correctTextAnswer: { type: 'string', nullable: true },
         sortOrder: { type: 'integer' },
       },
     },
     CreateQuestionRequest: {
-      type: 'object',
-      required: ['lessonId', 'questionText', 'optionA', 'optionB', 'optionC', 'optionD', 'correctAnswer'],
-      properties: {
-        lessonId: { type: 'string', format: 'uuid' },
-        questionText: { type: 'string', minLength: 1, maxLength: 1000 },
-        optionA: { type: 'string', minLength: 1, maxLength: 300 },
-        optionB: { type: 'string', minLength: 1, maxLength: 300 },
-        optionC: { type: 'string', minLength: 1, maxLength: 300 },
-        optionD: { type: 'string', minLength: 1, maxLength: 300 },
-        correctAnswer: { type: 'string', enum: ['A', 'B', 'C', 'D'] },
-      },
+      oneOf: [
+        {
+          type: 'object',
+          required: ['lessonId', 'questionType', 'questionText', 'optionA', 'optionB', 'optionC', 'optionD', 'correctAnswer'],
+          properties: {
+            lessonId: { type: 'string', format: 'uuid' },
+            questionType: { type: 'string', enum: ['choice'] },
+            questionText: { type: 'string', minLength: 1, maxLength: 1000 },
+            optionA: { type: 'string', minLength: 1, maxLength: 300 },
+            optionB: { type: 'string', minLength: 1, maxLength: 300 },
+            optionC: { type: 'string', minLength: 1, maxLength: 300 },
+            optionD: { type: 'string', minLength: 1, maxLength: 300 },
+            correctAnswer: { type: 'string', enum: ['A', 'B', 'C', 'D'] },
+          },
+        },
+        {
+          type: 'object',
+          required: ['lessonId', 'questionType', 'questionText', 'correctTextAnswer'],
+          properties: {
+            lessonId: { type: 'string', format: 'uuid' },
+            questionType: { type: 'string', enum: ['riddle', 'open'] },
+            questionText: { type: 'string', minLength: 1, maxLength: 1000 },
+            correctTextAnswer: { type: 'string', minLength: 1, maxLength: 300 },
+          },
+        },
+      ],
     },
     UpdateQuestionRequest: {
-      type: 'object',
-      properties: {
-        questionText: { type: 'string', maxLength: 1000 },
-        optionA: { type: 'string', maxLength: 300 },
-        optionB: { type: 'string', maxLength: 300 },
-        optionC: { type: 'string', maxLength: 300 },
-        optionD: { type: 'string', maxLength: 300 },
-        correctAnswer: { type: 'string', enum: ['A', 'B', 'C', 'D'] },
-      },
+      description: 'Full replacement, same shape as CreateQuestionRequest minus lessonId — changing questionType is allowed.',
+      oneOf: [
+        {
+          type: 'object',
+          required: ['questionType', 'questionText', 'optionA', 'optionB', 'optionC', 'optionD', 'correctAnswer'],
+          properties: {
+            questionType: { type: 'string', enum: ['choice'] },
+            questionText: { type: 'string', minLength: 1, maxLength: 1000 },
+            optionA: { type: 'string', minLength: 1, maxLength: 300 },
+            optionB: { type: 'string', minLength: 1, maxLength: 300 },
+            optionC: { type: 'string', minLength: 1, maxLength: 300 },
+            optionD: { type: 'string', minLength: 1, maxLength: 300 },
+            correctAnswer: { type: 'string', enum: ['A', 'B', 'C', 'D'] },
+          },
+        },
+        {
+          type: 'object',
+          required: ['questionType', 'questionText', 'correctTextAnswer'],
+          properties: {
+            questionType: { type: 'string', enum: ['riddle', 'open'] },
+            questionText: { type: 'string', minLength: 1, maxLength: 1000 },
+            correctTextAnswer: { type: 'string', minLength: 1, maxLength: 300 },
+          },
+        },
+      ],
     },
 
     // ---------- chat ----------

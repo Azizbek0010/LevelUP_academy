@@ -192,12 +192,14 @@ export function findLessonWithQuestions(lessonId, orgId, db = pool) {
                 json_agg(
                   json_build_object(
                     'id', q.id,
+                    'questionType', q.question_type,
                     'questionText', q.question_text,
                     'optionA', q.option_a,
                     'optionB', q.option_b,
                     'optionC', q.option_c,
                     'optionD', q.option_d,
                     'correctAnswer', q.correct_answer,
+                    'correctTextAnswer', q.correct_text_answer,
                     'sortOrder', q.sort_order
                   )
                   ORDER BY q.sort_order, q.created_at
@@ -262,13 +264,62 @@ export function archiveLesson(id, orgId, db = pool) {
 }
 
 // ==================== ВОПРОСЫ ====================
-export function insertQuestion({ lessonId, questionText, optionA, optionB, optionC, optionD, correctAnswer }, db = pool) {
+/** Урок принадлежит организации? — для проверки перед созданием вопроса
+ * (раньше createQuestion вообще не проверял lessonId, IDOR). */
+export function findLessonInOrgById(lessonId, orgId, db = pool) {
   return db
     .query(
-      `INSERT INTO methodology_questions (lesson_id, question_text, option_a, option_b, option_c, option_d, correct_answer)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `SELECT l.id
+         FROM methodology_lessons l
+         JOIN topics t ON t.id = l.topic_id
+         JOIN training_types tt ON tt.id = t.training_type_id
+        WHERE l.id = $1 AND tt.organization_id = $2
+          AND l.deleted_at IS NULL AND t.deleted_at IS NULL AND tt.deleted_at IS NULL`,
+      [lessonId, orgId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/** Вопрос принадлежит организации (через урок→тему→тип обучения)? —
+ * для update/delete, тот же IDOR-пробел. */
+export function findQuestionInOrg(id, orgId, db = pool) {
+  return db
+    .query(
+      `SELECT q.id, q.lesson_id
+         FROM methodology_questions q
+         JOIN methodology_lessons l ON l.id = q.lesson_id
+         JOIN topics t ON t.id = l.topic_id
+         JOIN training_types tt ON tt.id = t.training_type_id
+        WHERE q.id = $1 AND tt.organization_id = $2
+          AND l.deleted_at IS NULL AND t.deleted_at IS NULL AND tt.deleted_at IS NULL`,
+      [id, orgId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+function questionRow(q) {
+  const isChoice = q.questionType === 'choice';
+  return [
+    q.lessonId,
+    q.questionType,
+    q.questionText,
+    isChoice ? q.optionA : null,
+    isChoice ? q.optionB : null,
+    isChoice ? q.optionC : null,
+    isChoice ? q.optionD : null,
+    isChoice ? q.correctAnswer : null,
+    isChoice ? null : q.correctTextAnswer,
+  ];
+}
+
+export function insertQuestion(payload, db = pool) {
+  return db
+    .query(
+      `INSERT INTO methodology_questions
+         (lesson_id, question_type, question_text, option_a, option_b, option_c, option_d, correct_answer, correct_text_answer)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [lessonId, questionText, optionA, optionB, optionC, optionD, correctAnswer],
+      questionRow(payload),
     )
     .then((r) => r.rows[0]);
 }
@@ -279,13 +330,14 @@ export function insertQuestionsBatch(questions, db = pool) {
   const params = [];
   let i = 1;
   for (const q of questions) {
-    values.push(`($${i}, $${i + 1}, $${i + 2}, $${i + 3}, $${i + 4}, $${i + 5}, $${i + 6})`);
-    params.push(q.lessonId, q.questionText, q.optionA, q.optionB, q.optionC, q.optionD, q.correctAnswer);
-    i += 7;
+    values.push(`($${i}, $${i + 1}, $${i + 2}, $${i + 3}, $${i + 4}, $${i + 5}, $${i + 6}, $${i + 7}, $${i + 8})`);
+    params.push(...questionRow(q));
+    i += 9;
   }
   return db
     .query(
-      `INSERT INTO methodology_questions (lesson_id, question_text, option_a, option_b, option_c, option_d, correct_answer)
+      `INSERT INTO methodology_questions
+         (lesson_id, question_type, question_text, option_a, option_b, option_c, option_d, correct_answer, correct_text_answer)
        VALUES ${values.join(', ')}
        RETURNING *`,
       params,
@@ -296,7 +348,7 @@ export function insertQuestionsBatch(questions, db = pool) {
 export function listQuestions(lessonId, db = pool) {
   return db
     .query(
-      `SELECT id, question_text, option_a, option_b, option_c, option_d, correct_answer, sort_order
+      `SELECT id, question_type, question_text, option_a, option_b, option_c, option_d, correct_answer, correct_text_answer, sort_order
          FROM methodology_questions
         WHERE lesson_id = $1
         ORDER BY sort_order, created_at`,
@@ -305,31 +357,21 @@ export function listQuestions(lessonId, db = pool) {
     .then((r) => r.rows);
 }
 
+/** Полная замена (не partial-патч) — фронт всегда шлёт весь вопрос, включая
+ * возможную смену questionType, поэтому старые option/correct-поля чистятся
+ * явно, а не остаются "осиротевшими" от прежнего формата. */
 export function updateQuestion(id, fields, db = pool) {
-  const cols = [];
-  const vals = [];
-  let i = 1;
-  for (const [key, col] of [
-    ['questionText', 'question_text'],
-    ['optionA', 'option_a'],
-    ['optionB', 'option_b'],
-    ['optionC', 'option_c'],
-    ['optionD', 'option_d'],
-    ['correctAnswer', 'correct_answer'],
-  ]) {
-    if (fields[key] !== undefined) {
-      cols.push(`${col} = $${i++}`);
-      vals.push(fields[key]);
-    }
-  }
-  if (cols.length === 0) return null;
-  vals.push(id);
+  const [, questionType, questionText, optionA, optionB, optionC, optionD, correctAnswer, correctTextAnswer] =
+    questionRow({ ...fields, lessonId: null });
   return db
     .query(
-      `UPDATE methodology_questions SET ${cols.join(', ')}
-        WHERE id = $${i}
+      `UPDATE methodology_questions
+          SET question_type = $2, question_text = $3,
+              option_a = $4, option_b = $5, option_c = $6, option_d = $7,
+              correct_answer = $8, correct_text_answer = $9
+        WHERE id = $1
         RETURNING *`,
-      vals,
+      [id, questionType, questionText, optionA, optionB, optionC, optionD, correctAnswer, correctTextAnswer],
     )
     .then((r) => r.rows[0] ?? null);
 }
