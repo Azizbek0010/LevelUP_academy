@@ -11,6 +11,22 @@ export function registerTelegramBotHandlers({ bot, pool, redis, logger, language
   const bindTokens = new TelegramBindTokenService({ redis, botUsername: 'unused-for-consume-only' });
   const loginNonces = new TelegramLoginNonceService({ redis, botUsername: 'unused-for-approve-only' });
 
+  /**
+   * Что именно пришло от Telegram. Без этого молчание бота неотличимо от
+   * «обновление не дошло»: webhook отдаёт 200 и на update, который не совпал
+   * ни с одним обработчиком, поэтому по коду ответа диагноз не поставить.
+   */
+  bot.use(async (ctx, next) => {
+    const text = ctx.message?.text;
+    if (text) {
+      logger?.info(
+        { chatId: ctx.chat?.id, text: text.slice(0, 32), entities: ctx.message?.entities?.map((e) => e.type) },
+        'Telegram update received',
+      );
+    }
+    await next();
+  });
+
   bot.command('start', async (ctx) => {
     const payload = String(ctx.match || '').trim();
     if (!payload) {
