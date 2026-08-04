@@ -2,6 +2,7 @@ import { messages } from './messages.js';
 import { TelegramBindTokenService } from './bind-token.service.js';
 import { TelegramLoginNonceService } from './login-nonce.service.js';
 import { LOGIN_PAYLOAD_PREFIX } from './constants.js';
+import { resolveUser, coinsCommand, ratingCommand, homeCommand } from './bot.commands.js';
 
 export function registerTelegramBotHandlers({ bot, pool, redis, logger, language = 'ru' }) {
   if (!bot) return;
@@ -24,6 +25,44 @@ export function registerTelegramBotHandlers({ bot, pool, redis, logger, language
     }
 
     await handleBind({ ctx, pool, bindTokens, logger, messages: t, token: payload });
+  });
+
+  /**
+   * Команды «про меня». Обёртка одна на все три: каждая должна сначала узнать,
+   * кому принадлежит чат, и отказать, если привязки нет — дублировать эти
+   * пять строк в каждой команде значит однажды забыть их в одной.
+   */
+  const dataCommand = (name, handler) =>
+    bot.command(name, async (ctx) => {
+      const chatId = ctx.chat?.id;
+      if (!chatId) return;
+
+      try {
+        const user = await resolveUser(pool, chatId);
+        if (!user) {
+          await ctx.reply(t.loginNotLinked);
+          return;
+        }
+        // Родителю эти цифры не подходят: у него нет своих коинов и рейтинга,
+        // а данные ребёнка требуют выбора, какого именно.
+        if (user.role !== 'student') {
+          await ctx.reply(t.onlyForStudents);
+          return;
+        }
+
+        await ctx.reply(await handler(user), { parse_mode: 'HTML' });
+      } catch (err) {
+        logger?.error({ err, chatId, command: name }, 'Telegram data command failed');
+        await ctx.reply(t.dataError);
+      }
+    });
+
+  dataCommand('home', homeCommand);
+  dataCommand('coins', coinsCommand);
+  dataCommand('rating', ratingCommand);
+
+  bot.command('help', async (ctx) => {
+    await ctx.reply(t.helpText);
   });
 
   bot.command('stop', async (ctx) => {
