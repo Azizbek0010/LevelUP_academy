@@ -530,6 +530,10 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
         { email: 'hp8187081014laptop@gmail.com', password: 'ChangeMe123!', role: 'admin', firstName: 'Demo', lastName: 'Admin' },
         { email: 'mentor.demo@levelup.local', password: 'ChangeMe123!', role: 'mentor', firstName: 'Demo', lastName: 'Mentor' },
         { email: 'methodist@levelup.local', password: 'ChangeMe123!', role: 'methodist', firstName: 'Мадина', lastName: 'Рахимова' },
+        // Branch Manager — только mock-режим: backend-роли пока нет, страницы
+        // полностью статичные (pages/admin/branch-manager/). С VITE_USE_MOCKS=true
+        // вход этим аккаунтом в боевой бэкенд упадёт — это ожидаемо.
+        { email: 'kozim.manager@gmail.com', password: 'ChangeMe123!', role: 'branch_manager', firstName: 'Baxtiyor', lastName: 'Umarov' },
       ];
 
       const account = MOCK_ACCOUNTS.find(

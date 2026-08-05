@@ -25,6 +25,7 @@ export const ADMIN_STATUS = {
 export const ROLE_LABELS = {
   superadmin: 'Super Admin',
   admin: 'Администратор',
+  branch_manager: 'Branch Manager',
   mentor: 'Ментор',
   methodist: 'Методист',
 };
