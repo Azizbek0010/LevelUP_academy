@@ -98,6 +98,19 @@ const adminNav = [
 ];
 
 /**
+ * Меню Branch Manager — филиал целиком: расположение, доход, расходы,
+ * отчёты. Давомат и менторы сюда НЕ входят: они на совести админа и менторов.
+ * Это статический демо-раздел (backend-роль ещё не заведена).
+ */
+const branchManagerNav = [
+  { to: '/',          label: 'Boshqaruv', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/branch',    label: 'Filial',    Icon: HiOutlineBuildingOffice2 },
+  { to: '/income',    label: 'Daromad',   Icon: HiOutlineWallet },
+  { to: '/expenses',  label: 'Xarajatlar', Icon: HiOutlineReceiptPercent },
+  { to: '/reports',   label: 'Hisobotlar', Icon: HiOutlineChartBar },
+];
+
+/**
  * Меню ментора намеренно короткое.
  *
  * Было пять пунктов — Группы, Davomat, Тесты, Коины, Чат — и каждый из трёх
@@ -122,6 +135,7 @@ const methodistNav = [
 const ROLE_NAV = {
   superadmin: superNav,
   admin: adminNav,
+  branch_manager: branchManagerNav,
   mentor: mentorNav,
   methodist: methodistNav,
 };
@@ -129,6 +143,7 @@ const ROLE_NAV = {
 const ROLE_TITLE = {
   superadmin: 'Super Admin',
   admin: 'Администратор',
+  branch_manager: 'Branch Manager',
   mentor: 'Ментор',
   methodist: 'Методист',
 };
@@ -136,6 +151,7 @@ const ROLE_TITLE = {
 const ROLE_COLORS = {
   superadmin: '#8b5cf6',
   admin: '#3b82f6',
+  branch_manager: '#0ea5e9',
   mentor: '#3b82f6',
   methodist: '#f59e0b',
 };
@@ -789,6 +805,9 @@ function Header({ sidebarWidth, onMobileToggle }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const role = user?.role;
+  // Профиль есть не у всех ролей: у branch_manager отдельной страницы пока нет,
+  // и пункт «Профиль» в меню аккаунта был бы кнопкой, которая ведёт на «/».
+  const hasProfilePage = ['admin', 'superadmin', 'mentor', 'methodist'].includes(role);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 
@@ -890,16 +909,18 @@ function Header({ sidebarWidth, onMobileToggle }) {
             </div>
 
             <div className="p-1.5">
-              <button
-                role="menuitem"
-                onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[rgba(59,130,246,0.08)] hover:text-[var(--text)] transition-colors"
-              >
-                <span className="w-7 h-7 rounded-lg bg-[var(--surface-hover)] grid place-items-center shrink-0">
-                  <UserIcon size={14} />
-                </span>
-                Профиль
-              </button>
+              {hasProfilePage && (
+                <button
+                  role="menuitem"
+                  onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[rgba(59,130,246,0.08)] hover:text-[var(--text)] transition-colors"
+                >
+                  <span className="w-7 h-7 rounded-lg bg-[var(--surface-hover)] grid place-items-center shrink-0">
+                    <UserIcon size={14} />
+                  </span>
+                  Профиль
+                </button>
+              )}
               <button
                 role="menuitem"
                 onClick={onLogout}
