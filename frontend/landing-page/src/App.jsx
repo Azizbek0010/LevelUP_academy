@@ -10,9 +10,12 @@ import Pricing from './pages/Pricing.jsx';
 import ForLanguageSchool from './pages/ForLanguageSchool.jsx';
 import ForCourses from './pages/ForCourses.jsx';
 import CrmVsExcel from './pages/CrmVsExcel.jsx';
+import VsCompetitor from './pages/VsCompetitor.jsx';
 import Blog from './pages/Blog.jsx';
 import BlogArticle from './pages/BlogArticle.jsx';
 import Gamification from './pages/Gamification.jsx';
+import Faq from './pages/Faq.jsx';
+import About from './pages/About.jsx';
 import Contacts from './pages/Contacts.jsx';
 import NotFound from './pages/NotFound.jsx';
 import { trackPageView } from './lib/analytics.js';
@@ -33,9 +36,13 @@ export const PAGES = [
   { path: '/landing/for-language-school', element: <ForLanguageSchool /> },
   { path: '/landing/for-courses', element: <ForCourses /> },
   { path: '/landing/crm-vs-excel', element: <CrmVsExcel /> },
+  { path: '/landing/vs/modme', element: <VsCompetitor dictKey="vsModme" path="/landing/vs/modme" /> },
+  { path: '/landing/vs/umai', element: <VsCompetitor dictKey="vsUmai" path="/landing/vs/umai" /> },
   { path: '/landing/blog', element: <Blog /> },
   { path: '/landing/blog/:slug', element: <BlogArticle /> },
   { path: '/landing/gamification', element: <Gamification /> },
+  { path: '/landing/faq', element: <Faq /> },
+  { path: '/landing/about', element: <About /> },
   { path: '/landing/contacts', element: <Contacts /> },
 ];
 

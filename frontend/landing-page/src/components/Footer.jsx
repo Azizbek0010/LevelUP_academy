@@ -23,11 +23,15 @@ export default function Footer() {
             <Link to={lp('/landing/for-language-school')}>{t.nav.langSchool}</Link>
             <Link to={lp('/landing/for-courses')}>{t.nav.courses}</Link>
             <Link to={lp('/landing/crm-vs-excel')}>{t.nav.vsExcel}</Link>
+            <Link to={lp('/landing/vs/modme')}>{t.nav.vsModme}</Link>
+            <Link to={lp('/landing/vs/umai')}>{t.nav.vsUmai}</Link>
             <Link to={lp('/landing/blog')}>{t.nav.blog}</Link>
           </div>
           <div className="footer__col">
             <h4>{t.footer.navigation}</h4>
             <Link to={lp('/landing')}>{t.nav.home}</Link>
+            <Link to={lp('/landing/faq')}>{t.nav.faq}</Link>
+            <Link to={lp('/landing/about')}>{t.nav.about}</Link>
             <Link to={lp('/landing/contacts')}>{t.nav.contacts}</Link>
             <Link to={lp('/landing/contacts')}>{t.footer.leaveRequest}</Link>
           </div>

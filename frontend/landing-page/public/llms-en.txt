@@ -72,7 +72,11 @@ site: the LevelUp team creates the organization.
 - [For language schools](https://levelup-academy.uz/en/landing/for-language-school) — level-based groups (A1–C1, IELTS), attendance, payments.
 - [For courses and tutors](https://levelup-academy.uz/en/landing/for-courses) — groups and one-to-one lessons, course payments.
 - [CRM instead of Excel](https://levelup-academy.uz/en/landing/crm-vs-excel) — spreadsheets vs a CRM task by task, switching in a week.
+- [LevelUp Academy vs Modme](https://levelup-academy.uz/en/landing/vs/modme) — pricing and features compared, Modme data as of 05.08.2026.
+- [LevelUp Academy vs Umai CRM](https://levelup-academy.uz/en/landing/vs/umai) — pricing and features compared, Umai CRM data as of 05.08.2026.
 - [Gamification](https://levelup-academy.uz/en/landing/gamification) — coins, shop, leaderboards.
+- [FAQ](https://levelup-academy.uz/en/landing/faq) — login codes, access blocked on overdue invoices, split payments, freezing a student, access rights.
+- [About us](https://levelup-academy.uz/en/landing/about) — who builds the system: founded in 2026, a team of six, Uzbekistan.
 - [Contact](https://levelup-academy.uz/en/landing/contacts) — get in touch and request access.
 - [Knowledge base](https://levelup-academy.uz/en/landing/blog) — articles on moving to a CRM, debt control and automation.
   - [Moving from Excel to a CRM](https://levelup-academy.uz/en/landing/blog/excel-to-crm)
