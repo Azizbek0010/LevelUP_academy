@@ -23,10 +23,14 @@ already inside. No part of SEO here depends on the browser running JavaScript.
 
 ```
 npm run build
+  ├─ sitemap        node scripts/sitemap.js   → public/sitemap.xml (generated)
   ├─ build:client   vite build                → dist/ (assets + index.html template)
   ├─ build:server   vite build --ssr          → dist/server/entry-server.js
   └─ prerender      node scripts/prerender.js → dist/landing/**/index.html
 ```
+
+`sitemap` runs **first**: it writes into `public/`, and `vite build` copies that directory
+into `dist/`. Run it after `build:client` and the fresh map would not ship.
 
 `scripts/prerender.js` renders each route through `src/entry-server.jsx` and fills two
 markers in the `index.html` template:
@@ -55,42 +59,63 @@ the browser end up with different heads.
 
 ---
 
-## Languages (ru / uz)
+## Languages (ru / uz / en)
 
-The site is bilingual. **Language lives in the URL, never in state:**
+The site is trilingual. **Language lives in the URL, never in state:**
 
-| Language | URL | `<html lang>` |
-|---|---|---|
-| Russian (default) | `/landing/finance` | `ru` |
-| Uzbek | `/uz/landing/finance` | `uz` |
+| Language | URL | `<html lang>` | Targets |
+|---|---|---|---|
+| Russian (default) | `/landing/finance` | `ru` | Uzbekistan + CIS |
+| Uzbek | `/uz/landing/finance` | `uz` | Uzbekistan |
+| English | `/en/landing/finance` | `en` | global |
 
 Russian keeps its original paths — they are already indexed, and changing a URL throws away
-its ranking. Uzbek is added under a `/uz` prefix.
+its ranking. Every other language is added under its own prefix.
+
+**Adding a language** means one entry in `PREFIXED_LANGS` (`src/i18n/index.js`), the same
+list in `scripts/prerender.js` and `scripts/sitemap.js` (both run in Node before the client
+build and cannot import app modules), and a dictionary in `src/i18n/`. Routes, the language
+switcher, the `hreflang` set and the sitemap all derive from those lists — nothing else is
+enumerated by hand.
+
+The English version is **not a translation of the Russian one**: it targets different
+queries (`school management software`, `student management system`, `learning center
+software`) because the search intent outside the region is different. Its `<title>` and
+`<meta description>` are written for those, not converted from Russian.
+
+`x-default` points at **English** (`X_DEFAULT_LANG` in `src/lib/seo.js`): it is the version
+served to a visitor whose language matches none of the declared ones, and for an audience
+outside Uzbekistan and the CIS English is the meaningful default.
 
 A language toggle in `localStorage` would be **invisible to search engines**: one URL cannot
 rank in two languages. Each version needs its own address, and `hreflang` ties them together —
 without it Google treats them as competing duplicates and may serve the wrong one.
 
-- `src/i18n/{ru,uz}.js` — the dictionaries. **Structures must match key for key**; a missing
+- `src/i18n/{ru,uz,en}.js` — the dictionaries. **Structures must match key for key**; a missing
   key renders as `undefined` on the page, not a build error.
-- `src/i18n/index.js` — `useT()` (dictionary), `useLang()`, `useLocalizePath()` (`lp()` for links).
+- `src/i18n/index.js` — `useT()` (dictionary), `useLang()`, `useLocalizePath()` (`lp()` for links),
+  `dictOf()` (another language's dictionary — the switcher labels the others with it).
 - Pages pass the **canonical** path to `useSeo` (`/landing/finance`); it localises internally
-  and emits the `hreflang` set (ru + uz + x-default, each listing all three — Google drops a
-  cluster whose references are not reciprocal).
+  and emits the `hreflang` set (every language + x-default, each page listing all of them —
+  Google drops a cluster whose references are not reciprocal).
 - FAQ/Breadcrumb JSON-LD is generated **in code**, not in `index.html`: the markup has to be in
   the language of the page. A Russian FAQ on an Uzbek page would contradict its own content —
   and FAQ is exactly what AI assistants quote.
 
 ## Adding a page
 
-1. Add the strings to **both** `src/i18n/ru.js` and `src/i18n/uz.js`.
+1. Add the strings to **all three** dictionaries: `src/i18n/{ru,uz,en}.js`.
 2. Call `useSeo({ title, description, path, jsonLd })` with the **canonical** path.
    `jsonLd` **must have a stable reference** — wrap it in `useMemo`, otherwise the effect
-   re-runs every render.
-3. Add the route to `PAGES` in `src/App.jsx` — the `/uz` variant is generated from it.
+   re-runs every render. A `WebPage` node with the page's language is added automatically
+   by `useSeo` — do not declare it yourself.
+3. Add the route to `PAGES` in `src/App.jsx` — the prefixed variants are generated from it.
 4. Add the canonical path to `PAGES` in `scripts/prerender.js`. **Skip this and the page ships
    as an empty shell** — invisible to AI crawlers.
-5. Add **both** URLs to `public/sitemap.xml` with the full `hreflang` block.
+5. Add the canonical path to `PAGES` in `scripts/sitemap.js` with its `lastmod`, `changefreq`
+   and `priority`. All language variants and their `hreflang` blocks are generated —
+   `public/sitemap.xml` is **generated output, never edited by hand**.
+6. Add the page to every `public/llms*.txt` (one per language).
 
 Rules: one unique `<title>` (≤60 chars) and one `<meta description>` (150–160 chars) per page
 **per language**. `og:image` must stay raster (1200×630 PNG) — scrapers reject SVG.
@@ -186,9 +211,17 @@ External validators: Google **Rich Results Test** (JSON-LD), **Facebook Sharing 
   **live fetch when a user asks an assistant a question. These are the ones that generate the
   citation.** Block them and the assistant cannot cite you even if it knows you exist.
 
-`public/llms.txt` is a plain-language product summary. Keep it truthful, but don't lean on
-it — as of 2026 no major provider has confirmed acting on it. `robots.txt` and rendered HTML
-are what actually work.
+`public/llms.txt` is a plain-language product summary, and there is **one per language**
+(`llms.txt` ru, `llms-uz.txt`, `llms-en.txt`, cross-linked and listed in `robots.txt`): an
+assistant answering an Uzbek question should not have to read Russian to learn what the
+product is. Keep them truthful, but don't lean on them — as of 2026 no major provider has
+confirmed acting on the format. `robots.txt` and rendered HTML are what actually work.
+
+**What actually blocks AI citation here is not markup.** Measured on 2026-08-05 in Search
+Console: **0 external links** to the domain, and every query the site appears for is
+branded (`levelup academy`, `level up academy`, …) — there are zero impressions on
+commercial queries. Assistants cite what they can read *off* your own site; until mentions
+exist elsewhere, on-site GEO work has nothing to amplify. See `GEO-OFFSITE.md`.
 
 ---
 

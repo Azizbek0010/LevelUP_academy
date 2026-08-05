@@ -38,6 +38,13 @@
 | **Страница «CRM вместо Excel»** `/landing/crm-vs-excel` (+`/uz/...`) — сравнение таблиц и CRM по 8 задачам, FAQPage + Breadcrumb, ссылка из футера; разведена по намерению с блог-гайдом `excel-to-crm` | `pages/CrmVsExcel.jsx`, `i18n/`, `Footer.jsx`, sitemap, `llms.txt` | 24.07 |
 | **Entity disambiguation — разметка достроена и в проде**: `sameAs` (Telegram + Instagram, оба профиля проверены живыми), `foundingDate: 2026`, `numberOfEmployees: 6`. Цель — чтобы Google перестал смешивать нас с одноимённой IT-школой: датированная сущность с подтверждёнными профилями отличима, недатированная без соцсетей — нет. Доставлено cherry-pick'ом в `main` (полный промоушен `save-zone` не делался: там 10 чужих коммитов). После деплоя прогнан IndexNow (28 URL, HTTP 200) | `index.html` Organization | 03.08 |
 | **Ключевые слова в meta**: в узбекскую `for-language-school` возвращены `A1–C1, IELTS` (были в теле страницы, но не в description — а узбекоязычная аудитория ищет «IELTS» напрямую); в русскую `features` возвращено слово «посещаемость» — это была единственная meta, где `davomat` стоял без русского эквивалента. Verify: build 28 роутов + grep по `dist/` (обе meta на месте, 0 `undefined`) | `i18n/uz.js:1177`, `i18n/ru.js:1150` | 03.08 |
+| **Английская версия сайта `/en`** — третий язык (14 страниц), собственный словарь `en.js`. Тексты **не перевод русских**, а прицел в глобальные запросы, которые уже занял конкурент: `school management software`, `student management system`, `learning center software`, `education CRM`. `x-default` переведён на английский. Заодно `PREFIXED_LANGS` вместо хардкода двух языков — маршруты, prerender, переключатель, hreflang и sitemap теперь выводятся из одного списка | `i18n/en.js`, `i18n/index.js`, `App.jsx`, `Header.jsx`, `lib/seo.js`, `prerender.js`, `index.css` | 05.08 |
+| **Sitemap стал генерируемым** — `scripts/sitemap.js` + `npm run sitemap` в начале `build`. Причина: 14 страниц × 3 языка × 4 hreflang = 42 записи, ручная синхронизация уже подводила (Bing три недели обходил карту из 24 URL при 28 реальных). `public/sitemap.xml` теперь **не редактируется руками** | `scripts/sitemap.js`, `package.json`, `SEO.md` | 05.08 |
+| **`inLanguage` больше не врёт.** Статический `@graph` в `index.html` объявлял `"ru"` на **всех** страницах, включая узбекские — для Google и AI это значило «узбекского контента здесь нет». Теперь `useSeo` автоматически отдаёт `WebPage` с языком страницы (`ru-UZ` / `uz-UZ` / `en`), а `WebSite` и `SoftwareApplication` перечисляют все три | `lib/seo.js`, `index.html` | 05.08 |
+| **Дубли JSON-LD после гидратации** — prerender впечатывал разметку, а клиентский `useSeo` добавлял те же узлы повторно, и в `<head>` висели два одинаковых набора. `useSeo` снимает серверные теги перед вставкой своих. Проверено в браузере: 3 блока (WebPage, BreadcrumbList, FAQPage), дублей нет | `lib/seo.js` | 05.08 |
+| **`llms.txt` на каждый язык** — `llms.txt` (ru) + `llms-uz.txt` + `llms-en.txt`, перекрёстно слинкованы и перечислены в `robots.txt`. Раньше был только русский, прямо с пометкой «Язык: русский» — ассистент, отвечающий на узбекский вопрос, вынужден был читать русский. Добавлены таблицы тарифов и блок разведения бренда | `public/llms*.txt`, `public/robots.txt` | 05.08 |
+| **Entity disambiguation усилен** — `disambiguatingDescription` прямо называет одноимённые организации (США, Сербия, Сингапур, Молдова, Таджикистан) чужими, `featureList` из 12 пунктов, узбекские `alternateName` и `knowsAbout`. Повод: по запросу «levelup academy uz» в топ-10 десять разных «Level Up Academy», нас нет | `index.html` | 05.08 |
+| **`Product.offers.url` на узбекской странице** указывал на русский URL тарифов | `pages/Pricing.jsx` | 05.08 |
 | **favicon для Яндекса**: `favicon.ico` (16/32/48) + `apple-touch-icon.png` (180) сгенерированы из `logo-mark.svg` (Pillow) и слинкованы в `index.html`. Причина: Яндекс не принимает SVG-only иконку и тянет её от корня, который 308-редиректится. **В проде** (`/favicon.ico` → 200, cherry-pick в `main`, Vercel задеплоил) | `public/favicon.ico`, `public/apple-touch-icon.png`, `index.html`, `SEO.md` | 23.07 |
 
 ---
@@ -220,6 +227,55 @@ URL-prefix `https://levelup-academy.uz/`.
 > AI-видимость вручную («раз в неделю спросить ChatGPT/Perplexity»); теперь есть объективная
 > цифра, и стартовая точка честная — **ноль цитирований**. Это и есть базовая линия, от
 > которой мерить эффект off-site GEO из [GEO-OFFSITE.md](./GEO-OFFSITE.md).
+
+---
+
+## 🔬 Замер 05.08.2026 — почему сайт не ранжируется (главный вывод)
+
+Три цифры из Search Console, снятые вживую. Они меняют постановку задачи: раньше
+считалось, что мы «где-то в конце выдачи» — на деле нас там **нет вообще**.
+
+**1. Все запросы — брендовые. Тематических нет ни одного.**
+
+| Запрос | Клики | Показы |
+|---|---|---|
+| levelup academy | 11 | 28 |
+| level up academy | 9 | 34 |
+| academy level up | 1 | 2 |
+| level up crm | 0 | 1 |
+| level up education center | 0 | 1 |
+| левел ап цены красноярск | 0 | 1 |
+
+Всего 6 запросов за 3 месяца. Ни `CRM для учебного центра`, ни `o'quv markazi uchun CRM`
+не дали **ни одного показа**. Средняя позиция 6,5 — артефакт: она посчитана по одним
+брендовым запросам.
+
+**2. Внешних ссылок — 0.** (GSC → Ссылки: внешние 0, внутренние 80.) Это причина п.1:
+без ссылочного сигнала домен не допускается к конкурентным запросам.
+
+**3. Половина страниц не в индексе, и причины разные:** 14 из 28. «Просканирована, но не
+проиндексирована» — 6 страниц: Google их прочитал и **решил не брать**. Это вердикт о
+ценности контента, а не техническая ошибка — правкой мета-тегов не лечится.
+
+> [!important] Что из этого следует
+> On-site SEO здесь больше не является узким местом — он сделан. Узкое место —
+> **отсутствие сайта во внешнем мире**: 0 ссылок, 0 упоминаний, 0 цитирований.
+> Приоритет смещается с разметки на off-site ([GEO-OFFSITE.md](./GEO-OFFSITE.md)) и на
+> контент, который Google сочтёт достойным индекса.
+
+**Конкурентная разведка (sitemap, 05.08):** educationcrm.uz — 78 URL, umaicrm.uz — 78,
+**мы — 42** (было 28), edulog.uz — 12, modme.uz — 7, schoolup.uz — 2; у edusmart.uz и
+soffcrm.uz sitemap нет вовсе. Modme доминирует с 7 страницами — значит решает не объём,
+а возраст домена, бренд и ссылки. Но у двух конкурентов видна рабочая механика:
+
+- **umaicrm.uz** — страницы сравнений: `vs-alfa-crm`, `vs-amo-crm`, `vs-bitrix24`,
+  `vs-excel`, `vs-paraplan`, `vs-altegio` + ниши (детский центр, танцевальная студия,
+  музыкальная школа, спортивная секция) + услуги (внедрение, обучение, сопровождение).
+- **educationcrm.uz** — веер узбекских синонимов (`oquv-markaz-crm`, `oquv-markaz-dasturi`,
+  `oquv-markaz-tizimi`, `oquv-markaz-avtomatlashtirish`), ниши (`maktab-boshqaruv-tizimi`,
+  `bolalar-bogchasi-dasturi`, `ingliz-tili-kursi-dasturi`) и **английские** страницы:
+  `school-management-software`, `student-management-system`, `learning-center-software`,
+  `education-management-system`, `best-education-crm-uzbekistan`.
 
 ---
 
