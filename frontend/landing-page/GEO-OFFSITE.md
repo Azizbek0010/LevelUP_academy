@@ -118,7 +118,7 @@ Perplexity / Google AI Overviews и чтобы окреп бренд-сигна�
 | Telegram | соцсеть | ✅ создан + посты | 2026-07-18 | t.me/levelupacademycrm |
 | **SaaSHub** | каталог | ✅ **подан**, ждёт одобрения (до 32 дней) | 2026-08-05 | saashub.com/levelup-academy |
 | **Crunchbase** | каталог | ✅ **профиль создан** | 2026-08-05 | crunchbase.com/organization/levelup-academy |
-| AlternativeTo | каталог | ⛔ блокер: email аккаунта не подтверждён на их стороне, форма `/manage-item/` отдаёт 404 | 2026-08-05 | — |
+| AlternativeTo | каталог | ⏳ **ждём 12.08.2026** — email подтверждён, форма открывается, но действует антиспам: подача новых приложений только с аккаунта старше 7 дней | 2026-08-05 | подать после 12.08 10:39 |
 | A2IS (a2is.ru) | рейтинг | 🚫 платная реклама, бесплатной подачи нет | 2026-08-05 | — |
 | Instagram | соцсеть | ⬜ | — | — |
 | LinkedIn | соцсеть | ⬜ | — | — |
@@ -140,13 +140,17 @@ Classe365, Teachmint), ссылки на блог и тарифы, флаги Fr
 DreamClass, Fedena, Meritto, openSIS, Tutorially, Tutorlog, TutorWare.
 
 **Crunchbase** — имя, `LevelUp Academy CRM` как alternate name, описание, Founded 2026,
-сайт, контакт `info@levelup-academy.uz`, индустрии (CRM, SaaS, Education, EdTech).
+сайт, контакт `info@levelup-academy.uz`, индустрии (CRM, SaaS, Education, EdTech),
+**логотип** (`public/logo-square.png`).
 
 **Хвосты:**
 - SaaSHub: кнопка `Verify` не срабатывает (статус `No Verification`) — вероятно откроется
   после одобрения продукта. Ещё не заполнены Features и Q&A.
-- Crunchbase: логотип загружается только через нативный файловый диалог — сделать вручную;
-  Headquarters (Ташкент) не заведён.
+- Crunchbase: Headquarters (Ташкент) не заведён — требует отдельной формы «Create New
+  Headquarters».
+- 💡 Гоча для будущих каталогов: файловый инпут может быть скрыт за кнопкой «Choose Photo».
+  Искать его в дереве страницы (`read_page` по диалогу) и грузить прямо в него, а не кликать
+  кнопку — клик открывает нативный диалог ОС, до которого автоматизация не достаёт.
 - ⚠️ Цену в SaaSHub **намеренно не проставили**: в их списке валют нет UZS, 199 000 ушло бы
   как доллары. Оставлены флаги + ссылка на страницу тарифов.
 
