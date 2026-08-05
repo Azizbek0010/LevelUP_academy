@@ -121,16 +121,16 @@ export default function Settings() {
 
       {/* Admin profile hero */}
       <div className="card bg-base-100 border border-base-200/60 shadow-sm overflow-hidden">
-        <div className="h-1.5 bg-primary" />
+        <div className="h-1.5 bg-gradient-to-r from-lime-400 to-lime-600" />
         <div className="card-body flex-row flex-wrap items-center gap-5 py-5">
-          <div className="w-16 h-16 rounded-2xl bg-primary text-primary-content font-extrabold text-2xl grid place-items-center shrink-0 shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-lime-400 to-lime-600 text-lime-950 font-extrabold text-2xl grid place-items-center shrink-0 shadow-sm">
             {initials}
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-xl font-extrabold">{user?.firstName} {user?.lastName}</div>
             <div className="text-sm text-base-content/55 mt-0.5">{user?.email}</div>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <span className="badge badge-sm bg-primary/10 text-primary-content border-primary/30 gap-1">
+              <span className="badge badge-sm bg-lime-100 text-lime-800 border-lime-200 gap-1">
                 <Shield size={10} /> Main Admin
               </span>
               <span className="badge badge-sm badge-ghost gap-1">
@@ -152,7 +152,7 @@ export default function Settings() {
           <div className="card-body">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <User size={15} className="text-primary-content" />
+                <User size={15} className="text-lime-600" />
                 <h2 className="card-title text-base">Данные профиля</h2>
               </div>
               {!editMode && (
@@ -173,7 +173,7 @@ export default function Settings() {
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered input-sm focus:border-primary focus:outline-primary/40"
+                    className="input input-bordered input-sm focus:border-lime-400 focus:outline-lime-200"
                     value={editForm.firstName}
                     onChange={(e) => setEditForm((f) => ({ ...f, firstName: e.target.value }))}
                     placeholder="Имя"
@@ -186,7 +186,7 @@ export default function Settings() {
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered input-sm focus:border-primary focus:outline-primary/40"
+                    className="input input-bordered input-sm focus:border-lime-400 focus:outline-lime-200"
                     value={editForm.lastName}
                     onChange={(e) => setEditForm((f) => ({ ...f, lastName: e.target.value }))}
                     placeholder="Фамилия"
@@ -212,7 +212,7 @@ export default function Settings() {
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-primary btn-sm gap-1"
+                    className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 btn-sm gap-1"
                     disabled={editBusy}
                   >
                     {editBusy
@@ -246,7 +246,7 @@ export default function Settings() {
         <div className="card bg-base-100 border border-base-200/60 shadow-sm">
           <div className="card-body">
             <div className="flex items-center gap-2 mb-4">
-              <Info size={15} className="text-primary-content" />
+              <Info size={15} className="text-lime-600" />
               <h2 className="card-title text-base">Платформа</h2>
             </div>
             <Row label="Название" value="LevelUp Academy" />
@@ -267,7 +267,7 @@ export default function Settings() {
         <div className="card bg-base-100 border border-base-200/60 shadow-sm">
           <div className="card-body">
             <div className="flex items-center gap-2 mb-4">
-              <Building2 size={15} className="text-primary-content" />
+              <Building2 size={15} className="text-lime-600" />
               <h2 className="card-title text-base">Статистика платформы</h2>
             </div>
             {!t ? (
@@ -279,7 +279,7 @@ export default function Settings() {
                 <Row label="Филиалов всего" value={fmt(t.branches)} />
                 <Row
                   label="Доход / мес"
-                  value={<span className="text-primary-content font-bold">{fmt(t.ourMonthlyIncome)} {cur}</span>}
+                  value={<span className="text-lime-700 font-bold">{fmt(t.ourMonthlyIncome)} {cur}</span>}
                 />
                 {Object.keys(statusStats).length > 0 && (
                   <div className="mt-3 pt-3 border-t border-base-200">
@@ -306,7 +306,7 @@ export default function Settings() {
         <div className="card bg-base-100 border border-base-200/60 shadow-sm">
           <div className="card-body">
             <div className="flex items-center gap-2 mb-4">
-              <CreditCard size={15} className="text-primary-content" />
+              <CreditCard size={15} className="text-lime-600" />
               <h2 className="card-title text-base">Текущие тарифы</h2>
             </div>
             {!pricing ? (
@@ -346,7 +346,7 @@ export default function Settings() {
         <div className="card-body">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Wallet size={16} className="text-primary-content" />
+              <Wallet size={16} className="text-lime-600" />
               <h2 className="card-title text-base">Доход платформы — детали</h2>
             </div>
             <Link to="/revenue" className="btn btn-xs btn-outline gap-1">
@@ -356,9 +356,9 @@ export default function Settings() {
 
           {/* 3 KPI pills */}
           <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 text-center">
-              <div className="text-2xl font-extrabold text-primary-content">{fmt(t?.ourMonthlyIncome || 0)}</div>
-              <div className="text-xs text-primary-content font-semibold mt-0.5">{cur}/мес (этот месяц)</div>
+            <div className="bg-lime-50 border border-lime-100 rounded-xl p-3 text-center">
+              <div className="text-2xl font-extrabold text-lime-700">{fmt(t?.ourMonthlyIncome || 0)}</div>
+              <div className="text-xs text-lime-600 font-semibold mt-0.5">{cur}/мес (этот месяц)</div>
             </div>
             <div className="bg-base-200/40 rounded-xl p-3 text-center">
               <div className="text-2xl font-extrabold">{fmt(avgBillFromIncome)}</div>
@@ -388,11 +388,11 @@ export default function Settings() {
                       <span className="text-sm font-medium flex-1 truncate">{p.name}</span>
                       <div className="w-24 h-1.5 bg-base-200 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-primary rounded-full"
+                          className="h-full bg-lime-400 rounded-full"
                           style={{ width: `${Math.min(100, parseFloat(share))}%` }}
                         />
                       </div>
-                      <span className="text-sm font-bold text-primary-content w-20 text-right tabular-nums">
+                      <span className="text-sm font-bold text-lime-700 w-20 text-right tabular-nums">
                         {fmt(p.monthlyBill)}
                       </span>
                     </div>

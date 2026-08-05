@@ -39,7 +39,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   return (
     <div className="bg-base-100 border border-base-200 rounded-xl shadow-xl px-4 py-3 text-sm">
       <div className="font-semibold mb-1 truncate max-w-[200px]">{payload[0]?.payload?.fullName || label}</div>
-      <div className="text-primary-content font-bold">{fmt(payload[0]?.value)} UZS/мес</div>
+      <div className="text-lime-600 font-bold">{fmt(payload[0]?.value)} UZS/мес</div>
     </div>
   );
 };
@@ -51,9 +51,9 @@ function Modal({ open, onClose, title, subtitle, Icon, children, size = 'md' }) 
   return (
     <div className="modal modal-open modal-bottom sm:modal-middle">
       <div className={`modal-box ${w} p-0 overflow-hidden`}>
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-base-200 bg-gradient-to-r from-primary/10 to-transparent">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-base-200 bg-gradient-to-r from-lime-50 to-transparent">
           {Icon && (
-            <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary-content grid place-items-center shrink-0">
+            <span className="w-10 h-10 rounded-xl bg-lime-100 text-lime-700 grid place-items-center shrink-0">
               <Icon size={20} strokeWidth={2.2} />
             </span>
           )}
@@ -252,11 +252,11 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
           <div className="card-body">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Crown size={17} className="text-primary-content" />
+                <Crown size={17} className="text-lime-500" />
                 <h2 className="card-title text-base">Доход по партнёрам</h2>
                 <span className="text-xs text-base-content/40">({cur}/мес)</span>
               </div>
-              <Link to="/revenue" className="text-sm text-primary-content font-semibold hover:underline flex items-center gap-1">
+              <Link to="/revenue" className="text-sm text-lime-600 font-semibold hover:underline flex items-center gap-1">
                 Все <ArrowRight size={13} />
               </Link>
             </div>
@@ -297,7 +297,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
             <div className="card bg-base-100 shadow-sm border border-base-200/60">
               <div className="card-body p-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <PieIcon size={15} className="text-primary-content" />
+                  <PieIcon size={15} className="text-lime-500" />
                   <h2 className="card-title text-sm">По статусам</h2>
                 </div>
                 <div className="flex items-center gap-3">
@@ -328,7 +328,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
             <div className="card-body p-5">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <Inbox size={15} className="text-primary-content" />
+                  <Inbox size={15} className="text-lime-500" />
                   <h2 className="card-title text-sm">Активные заявки</h2>
                 </div>
                 {newLeadsCount > 0 && (
@@ -380,11 +380,11 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
           <div className="card-body">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Award size={18} className="text-primary-content" />
+                <Award size={18} className="text-lime-500" />
                 <h2 className="card-title text-base">ТОП партнёров</h2>
                 <span className="text-xs text-base-content/40">{activeCount} активных</span>
               </div>
-              <Link to="/organizations" className="text-sm text-primary-content font-semibold hover:underline flex items-center gap-1">
+              <Link to="/organizations" className="text-sm text-lime-600 font-semibold hover:underline flex items-center gap-1">
                 Все партнёры <ArrowRight size={13} />
               </Link>
             </div>
@@ -398,14 +398,14 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
                   <button
                     type="button"
                     key={p.id}
-                    className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-primary/10 transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-lime-50/60 transition-colors text-left"
                     onClick={() => setModal({ type: 'partner', p })}
                   >
                     <span className="w-6 text-center text-xs font-extrabold text-base-content/40 tabular-nums">{i + 1}</span>
                     <Avatar name={p.name} size={32} />
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between text-sm mb-1.5 gap-2 items-center">
-                        <span className="truncate font-medium hover:text-primary-content transition-colors">{p.name}</span>
+                        <span className="truncate font-medium hover:text-lime-600 transition-colors">{p.name}</span>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="text-[10px] text-base-content/50 tabular-nums">{share}%</span>
                           <span className={`badge badge-xs ${statusCls[p.status] || 'badge-ghost'}`}>{statusLabel[p.status] || p.status}</span>
@@ -464,7 +464,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         size="lg"
       >
         <div className="space-y-4">
-          <div className="rounded-2xl bg-primary p-5 text-primary-content">
+          <div className="rounded-2xl bg-gradient-to-br from-lime-400 to-lime-500 p-5 text-lime-950">
             <div className="text-xs font-semibold uppercase tracking-wider opacity-70">Итого / мес</div>
             <div className="text-4xl font-black mt-1">{fmt(t.ourMonthlyIncome)} <span className="text-base font-bold">{cur}</span></div>
             <div className="text-xs mt-2 opacity-70">Сумма счетов {partners.length} активных партнёров</div>
@@ -495,7 +495,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
             <div className="text-xs text-base-content/45 pt-1">Филиалы входят в тариф без доплаты</div>
           </div>
 
-          <Link to="/revenue" className="btn btn-primary w-full gap-2" onClick={() => setModal(null)}>
+          <Link to="/revenue" className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 w-full gap-2" onClick={() => setModal(null)}>
             <TrendingUp size={16} /> Открыть отчёт по доходу
           </Link>
         </div>
@@ -659,7 +659,7 @@ function StatusTile({ color, label, count, total, Icon }) {
 
 function PillMetric({ Icon, title, value, sub, tone }) {
   const tones = {
-    lime: 'bg-primary/10 text-primary-content',
+    lime: 'bg-lime-50 text-lime-700',
     green: 'bg-emerald-50 text-emerald-700',
     red: 'bg-rose-50 text-rose-700',
   };
@@ -707,7 +707,7 @@ function PartnerModal({ p, totalIncome, cur, onClose, onToggle, busy }) {
         <div className="flex gap-2 flex-wrap">
           <Link
             to={`/organizations/${p.id}`}
-            className="btn btn-primary gap-2 flex-1"
+            className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 gap-2 flex-1"
             onClick={onClose}
           >
             Открыть профиль <ArrowRight size={15} />
@@ -733,10 +733,10 @@ function PartnerModal({ p, totalIncome, cur, onClose, onToggle, busy }) {
 
 function MiniStat({ Icon, label, value, accent }) {
   return (
-    <div className={`rounded-xl p-3 border ${accent ? 'bg-primary border-primary text-primary-content' : 'border-base-200 bg-base-100'}`}>
+    <div className={`rounded-xl p-3 border ${accent ? 'bg-gradient-to-br from-lime-400 to-lime-500 border-lime-400 text-lime-950' : 'border-base-200 bg-base-100'}`}>
       <div className="flex items-center gap-1.5 mb-1">
-        <Icon size={12} className={accent ? 'text-primary-content/70' : 'text-base-content/40'} />
-        <span className={`text-[10px] font-semibold uppercase tracking-wider ${accent ? 'text-primary-content/70' : 'text-base-content/50'}`}>{label}</span>
+        <Icon size={12} className={accent ? 'text-lime-950/70' : 'text-base-content/40'} />
+        <span className={`text-[10px] font-semibold uppercase tracking-wider ${accent ? 'text-lime-950/70' : 'text-base-content/50'}`}>{label}</span>
       </div>
       <div className="text-lg font-extrabold tabular-nums">{value}</div>
     </div>

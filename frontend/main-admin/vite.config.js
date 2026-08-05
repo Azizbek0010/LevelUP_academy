@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         '/api': {
-          target: env.DEV_API_PROXY || 'https://api.levelup-academy.uz',
+          target: env.DEV_API_PROXY || 'https://levelup-academy-1.onrender.com',
           changeOrigin: true,
         },
       },

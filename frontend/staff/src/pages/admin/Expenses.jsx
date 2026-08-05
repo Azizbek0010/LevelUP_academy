@@ -1,28 +1,34 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
-  Search, Plus, Trash2, CalendarDays, RefreshCw, MoreVertical, Eye, Pencil,
-  X, Banknote, ChevronDown, AlertTriangle, Download,
+  Search, Plus, Trash2, DollarSign, CalendarDays, BarChart3,
+  RefreshCw, MoreVertical, Eye, Pencil, X, Banknote,
+  Clock, ChevronDown, AlertTriangle, Download, SlidersHorizontal,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminExpenses } from '../../queries.js';
+import PageHeader from '../../components/PageHeader.jsx';
+import { SearchInput, RowSkeleton, Kpi, Tip } from '../mentor/_ui.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
-import { Modal } from '../mentor/_ui.jsx';
 
 const CATEGORIES = ['All', 'Rent', 'Salary', 'Materials', 'Utility', 'Other'];
 const CATEGORY_LABELS = {
   All: 'Все', Rent: 'Аренда', Salary: 'Зарплата', Materials: 'Материалы', Utility: 'Коммунальные', Other: 'Другое',
 };
 const CATEGORY_COLORS = {
-  Rent: '#8FA283', Salary: '#8B5CF6', Materials: '#F59E0B',
+  Rent: '#3B82F6', Salary: '#8B5CF6', Materials: '#F59E0B',
   Utility: '#E8543E', Other: '#8FA283',
 };
 const CATEGORY_COLORS_LIGHT = {
-  Rent: 'rgba(143,162,131,0.12)', Salary: 'rgba(139,92,246,0.12)', Materials: 'rgba(245,158,11,0.12)',
+  Rent: 'rgba(59,130,246,0.12)', Salary: 'rgba(139,92,246,0.12)', Materials: 'rgba(245,158,11,0.12)',
   Utility: 'rgba(232,84,62,0.12)', Other: 'rgba(143,162,131,0.12)',
 };
 
+const STATUSES = ['All', 'Paid', 'Pending', 'Rejected', 'Cancelled'];
+const STATUS_LABELS = {
+  All: 'Все статусы', Paid: 'Оплачен', Pending: 'Ожидает', Rejected: 'Отклонён', Cancelled: 'Отменён',
+};
 const STATUS_MAP = {
   paid: { bg: 'rgba(46,204,113,0.14)', color: '#2ECC71', label: 'Оплачен', dot: '#2ECC71' },
   pending: { bg: 'rgba(245,158,11,0.14)', color: '#F59E0B', label: 'Ожидает', dot: '#F59E0B' },
@@ -30,7 +36,15 @@ const STATUS_MAP = {
   cancelled: { bg: 'rgba(143,162,131,0.14)', color: '#8FA283', label: 'Отменён', dot: '#8FA283' },
 };
 
-const PAYMENT_METHODS = ['Наличные', 'Карта'];
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Сначала новые' },
+  { value: 'oldest', label: 'Сначала старые' },
+  { value: 'amount-high', label: 'Сумма (большая)' },
+  { value: 'amount-low', label: 'Сумма (малая)' },
+  { value: 'category', label: 'Категория' },
+];
+
+const PAYMENT_METHODS = ['Наличные', 'Карта', 'Перевод', 'Банк'];
 
 function formatCurrency(n) {
   return Number(n || 0).toLocaleString('ru-RU') + ' сум';
@@ -168,19 +182,36 @@ function CategoryBadge({ category }) {
 export default function Expenses() {
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState(null);
-  const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', title: '', paymentMethod: 'Наличные' });
+  const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', paymentMethod: 'Наличные' });
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showExport, setShowExport] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [actionError, setActionError] = useState(null);
 
   const { token } = useAuth();
 
-  const { data: expensesRes, isLoading: loading, error: queryError, refetch } = useAdminExpenses();
+  const qs = useMemo(() => {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('from', dateFrom);
+    if (dateTo) params.set('to', dateTo);
+    /* со знаком вопроса: строка подставляется прямо в путь —
+       `/admin/expenses${qs}`. Без него первый же выбранный день давал
+       запрос к `/admin/expensesfrom=2026-01-01` и список расходов падал в 404.
+       Так же сделано на всех остальных страницах панели. */
+    const s = params.toString();
+    return s ? `?${s}` : '';
+  }, [dateFrom, dateTo]);
+
+  const { data: expensesRes, isLoading: loading, error: queryError, refetch } = useAdminExpenses(qs);
   const expenses = useMemo(() => {
     const data = expensesRes?.data?.expenses || expensesRes?.data || expensesRes || {};
     return data.expenses || [];
@@ -195,6 +226,10 @@ export default function Expenses() {
       result = result.filter((e) => e.category === filter);
     }
 
+    if (statusFilter !== 'All') {
+      result = result.filter((e) => getStatusFromExpense(e) === statusFilter.toLowerCase());
+    }
+
     if (search) {
       const q = search.toLowerCase();
       result = result.filter((e) => {
@@ -205,10 +240,61 @@ export default function Expenses() {
       });
     }
 
-    result.sort((a, b) => new Date(b.spentAt || 0) - new Date(a.spentAt || 0));
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      result = result.filter((e) => e.spentAt && new Date(e.spentAt) >= from);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      result = result.filter((e) => e.spentAt && new Date(e.spentAt) <= to);
+    }
+
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'oldest': return new Date(a.spentAt || 0) - new Date(b.spentAt || 0);
+        case 'amount-high': return (b.amount || 0) - (a.amount || 0);
+        case 'amount-low': return (a.amount || 0) - (b.amount || 0);
+        case 'category': return (a.category || '').localeCompare(b.category || '');
+        default: return new Date(b.spentAt || 0) - new Date(a.spentAt || 0);
+      }
+    });
 
     return result;
-  }, [expenses, filter, search]);
+  }, [expenses, filter, search, statusFilter, dateFrom, dateTo, sortBy]);
+
+  // ─── Statistics ───
+  const stats = useMemo(() => {
+    const total = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const now = new Date();
+    const thisMonthExpenses = expenses.filter((e) => {
+      if (!e.spentAt) return false;
+      const d = new Date(e.spentAt);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const thisMonth = thisMonthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthExpenses = expenses.filter((e) => {
+      if (!e.spentAt) return false;
+      const d = new Date(e.spentAt);
+      return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear();
+    });
+    const lastMonthTotal = lastMonthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const trend = lastMonthTotal > 0 ? ((thisMonth - lastMonthTotal) / lastMonthTotal) * 100 : 0;
+
+    const pendingAmount = expenses
+      .filter((e) => getStatusFromExpense(e) === 'pending')
+      .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+    const approvedAmount = expenses
+      .filter((e) => getStatusFromExpense(e) === 'paid')
+      .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+    const avgAmount = expenses.length > 0 ? Math.round(total / expenses.length) : 0;
+
+    return { total, thisMonth, pendingAmount, approvedAmount, avgAmount, trend, count: expenses.length, thisMonthCount: thisMonthExpenses.length };
+  }, [expenses]);
 
   // ─── Chart Data ───
   const budgetData = useMemo(() => CATEGORIES.filter((c) => c !== 'All').map((cat) => ({
@@ -238,9 +324,9 @@ export default function Expenses() {
   // ─── Modal handlers ───
   const openModal = () => {
     const today = new Date().toISOString().split('T')[0];
-    setFormData({ category: 'Other', amount: '', spentAt: today, note: '', title: '', paymentMethod: 'Наличные' });
+    setFormData({ category: 'Other', amount: '', spentAt: today, note: '', paymentMethod: 'Наличные' });
     setEditingId(null);
-    setActionError(null);
+    setError(null);
     setModalOpen(true);
   };
 
@@ -255,27 +341,23 @@ export default function Expenses() {
       amount: String(expense.amount || ''),
       spentAt: expense.spentAt ? expense.spentAt.split('T')[0] : new Date().toISOString().split('T')[0],
       note: expense.note || '',
-      title: expense.category === 'Other' ? (expense.note || '') : '',
       paymentMethod: getPaymentMethod(expense) !== '—' ? getPaymentMethod(expense) : 'Наличные',
     });
     setEditingId(expense.id);
-    setActionError(null);
+    setError(null);
     setModalOpen(true);
   };
 
   const handleSave = useCallback(async () => {
     setSaving(true);
-    setActionError(null);
+    setError(null);
     try {
-      const note = formData.category === 'Other'
-        ? (formData.title || '').trim()
-        : (formData.note || '').trim();
-
       const body = {
         category: formData.category,
         amount: Number(formData.amount),
         spentAt: formData.spentAt || undefined,
-        note: note || undefined,
+        paymentMethod: formData.paymentMethod || undefined,
+        note: formData.note || undefined,
       };
 
       if (editingId) {
@@ -320,12 +402,19 @@ export default function Expenses() {
   const clearFilters = () => {
     setSearch('');
     setFilter('All');
+    setStatusFilter('All');
+    setDateFrom('');
+    setDateTo('');
+    setSortBy('newest');
   };
 
-  const hasActiveFilters = search || filter !== 'All';
+  const hasActiveFilters = search || filter !== 'All' || statusFilter !== 'All' || dateFrom || dateTo || sortBy !== 'newest';
 
   const getCategoryCount = (cat) =>
     cat === 'All' ? expenses.length : expenses.filter((e) => e.category === cat).length;
+
+  const getStatusCount = (status) =>
+    status === 'All' ? expenses.length : expenses.filter((e) => getStatusFromExpense(e) === status.toLowerCase()).length;
 
   // ═══════════════════════════════════════════
   //  Render
@@ -345,13 +434,13 @@ export default function Expenses() {
           <span className="flex-1">{error}</span>
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => refetch()}
+              onClick={() => loadExpenses()}
               className="flex items-center gap-1.5 px-3 h-7 rounded-[8px] text-[11px] font-semibold hover:bg-[rgba(232,84,62,0.12)] transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Обновить
             </button>
-            <button onClick={() => setActionError(null)} className="w-7 h-7 rounded-[8px] flex items-center justify-center hover:bg-[rgba(232,84,62,0.1)] transition-all shrink-0">
+            <button onClick={() => setError(null)} className="w-7 h-7 rounded-[8px] flex items-center justify-center hover:bg-[rgba(232,84,62,0.1)] transition-all shrink-0">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -378,6 +467,19 @@ export default function Expenses() {
             Добавить расход
           </button>
         </div>
+      </div>
+
+      {/* Статистические карточки */}
+      {/* Раньше это была локальная копия KPI-плитки, и только у «Bu oy» была
+          строка тренда «+0.0% o'tgan oyga nisbatan» — из-за неё одна карточка
+          оказывалась выше остальных четырёх, и ряд ехал. Теперь общий Kpi без
+          тренда: все плитки одной высоты, как в панели ментора. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Kpi Icon={Banknote} title="Все расходы" value={formatCurrency(stats.total)} tone="neutral" />
+        <Kpi Icon={CalendarDays} title="В этом месяце" value={formatCurrency(stats.thisMonth)} tone="neutral" />
+        <Kpi Icon={Clock} title="Ожидает" value={formatCurrency(stats.pendingAmount)} tone="warning" />
+        <Kpi Icon={DollarSign} title="Одобрено" value={formatCurrency(stats.approvedAmount)} tone="success" />
+        <Kpi Icon={BarChart3} title="Средний расход" value={formatCurrency(stats.avgAmount)} tone="neutral" />
       </div>
 
       {/* ═══ Filter Toolbar ═══ */}
@@ -411,10 +513,106 @@ export default function Expenses() {
               options={CATEGORIES.map((cat) => ({ value: cat, label: `${CATEGORY_LABELS[cat] || cat} (${getCategoryCount(cat)})` }))}
               placeholder="Категория"
             />
+            <SelectFilter
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={STATUSES.map((s) => ({
+                value: s,
+                label: s === 'All' ? 'Все статусы' : `${STATUS_MAP[s.toLowerCase()]?.label || STATUS_LABELS[s] || s} (${getStatusCount(s)})`,
+              }))}
+              placeholder="Статус"
+            />
+            <div className="relative">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all [color-scheme:light] cursor-pointer"
+              />
+            </div>
+            <div className="relative">
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all [color-scheme:light] cursor-pointer"
+              />
+            </div>
+            <SelectFilter
+              value={sortBy}
+              onChange={setSortBy}
+              options={SORT_OPTIONS}
+              placeholder="Сортировка"
+            />
+          </div>
+
+          {/* Mobile filter toggle + clear */}
+          <div className="flex items-center gap-2 lg:hidden flex-nowrap">
+            <button
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              className={`flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] border text-[12px] font-semibold transition-all shrink-0 ${
+                filtersExpanded || hasActiveFilters
+                  ? 'border-primary text-primary bg-primary/10'
+                  : 'border-base-300 text-base-content/70 hover:border-base-content/45'
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Фильтры
+              {hasActiveFilters && (
+                <span className="w-5 h-5 rounded-full bg-primary text-[#141B10] text-[9px] font-bold flex items-center justify-center">
+                  {[filter !== 'All', statusFilter !== 'All', !!search, !!dateFrom, !!dateTo, sortBy !== 'newest'].filter(Boolean).length}
+                </span>
+              )}
+            </button>
           </div>
 
           {/* Desktop clear filters — moved to category pills row */}
         </div>
+
+        {/* Mobile expanded filters */}
+        {filtersExpanded && (
+          <div className="px-4 pb-4 lg:hidden space-y-2.5 animate-slide-up">
+            <div className="grid grid-cols-2 gap-2.5">
+              <SelectFilter
+                value={filter}
+                onChange={setFilter}
+                options={CATEGORIES.map((cat) => ({ value: cat, label: `${CATEGORY_LABELS[cat] || cat} (${getCategoryCount(cat)})` }))}
+                placeholder="Категория"
+              />
+              <SelectFilter
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={STATUSES.map((s) => ({
+                  value: s,
+                  label: s === 'All' ? 'Все статусы' : `${STATUS_MAP[s.toLowerCase()]?.label || STATUS_LABELS[s] || s} (${getStatusCount(s)})`,
+                }))}
+                placeholder="Статус"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                placeholder="С"
+                className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary [color-scheme:light] transition-all"
+              />
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                placeholder="По"
+                className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary [color-scheme:light] transition-all"
+              />
+            </div>
+            <SelectFilter
+              value={sortBy}
+              onChange={setSortBy}
+              options={SORT_OPTIONS}
+              placeholder="Сортировка"
+            />
+          </div>
+        )}
 
         {/* Category pills */}
         <div className="flex items-center gap-1.5 flex-wrap px-4 pb-4">
@@ -573,7 +771,7 @@ export default function Expenses() {
                             expense={e}
                             onView={openViewModal}
                             onEdit={openEditModal}
-                            onDelete={(exp) => { setDeleteTarget(exp); setActionError(null); }}
+                            onDelete={(exp) => { setDeleteTarget(exp); setError(null); }}
                           />
                         </td>
                       </tr>
@@ -672,18 +870,18 @@ export default function Expenses() {
       </div>
 
       {/* ═══ View Detail Modal ═══ */}
-      <Modal
-        isOpen={viewModalOpen}
-        onClose={() => { setViewModalOpen(false); setViewTarget(null); }}
-        boxClass="max-w-lg"
-        title="Детали расхода"
-      >
-        {viewTarget && (
-          <div className="space-y-5">
-            <div className="flex items-center gap-3 pb-4 border-b border-base-300">
-              <CategoryBadge category={viewTarget.category} />
-              <StatusBadge status={getStatusFromExpense(viewTarget)} />
-            </div>
+      {viewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="modal-box card bg-base-100 max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}><X className="w-4 h-4" /></button>
+          <h3 className="font-bold text-[16px] text-base-content mb-4">Детали расхода</h3>
+          {viewTarget && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-3 pb-4 border-b border-base-300">
+                <CategoryBadge category={viewTarget.category} />
+                <StatusBadge status={getStatusFromExpense(viewTarget)} />
+              </div>
 
               <div className="space-y-0">
                 <div className="flex justify-between items-center py-3 border-b border-base-300">
@@ -723,34 +921,24 @@ export default function Expenses() {
               </div>
             </div>
           )}
-      </Modal>
+        </div>
+        </div>
+      )}
 
       {/* ═══ Add/Edit Modal ═══ */}
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => { if (!saving) setModalOpen(false); }}
-        boxClass="max-w-lg"
-        title={editingId ? 'Редактировать расход' : 'Добавить расход'}
-        actions={
-          <div className="flex justify-end gap-2.5 pt-2">
-            <button className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={saving}>Отмена</button>
-            <button className="btn btn-primary btn-sm gap-1.5" onClick={handleSave} disabled={saving || !formData.amount || (formData.category === 'Other' && !(formData.title || '').trim())}>
-              {saving ? (
-                <span className="flex items-center gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  Сохранение...
-                </span>
-              ) : editingId ? "Сохранить" : "Добавить"}
-            </button>
-          </div>
-        }
-      >
-        <div className="space-y-5">
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setModalOpen(false); }}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="modal-box card bg-base-100 max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setModalOpen(false)}><X className="w-4 h-4" /></button>
+          <h3 className="font-bold text-[16px] text-base-content mb-4">{editingId ? 'Редактировать расход' : 'Добавить расход'}</h3>
+          <div className="space-y-5">
             <div>
               <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Категория *</label>
               <div className="grid grid-cols-3 gap-2">
                 {CATEGORIES.filter((c) => c !== 'All').map((cat) => {
                   const isActive = formData.category === cat;
+                  const catColor = CATEGORY_COLORS[cat] || '#8FA283';
                   return (
                     <button
                       key={cat}
@@ -758,39 +946,38 @@ export default function Expenses() {
                       onClick={() => setFormData({ ...formData, category: cat })}
                       className="px-3 py-2.5 rounded-[12px] text-[12px] font-semibold border transition-all duration-200"
                       style={{
-                        background: isActive ? 'var(--primary)' : 'var(--surface)',
-                        color: isActive ? '#fff' : 'var(--text-secondary)',
-                        borderColor: isActive ? 'var(--primary)' : 'var(--border)',
+                        background: isActive ? catColor : 'var(--surface)',
+                        color: isActive ? '#141B10' : 'var(--text-secondary)',
+                        borderColor: isActive ? catColor : 'var(--border)',
                       }}
                     >
-                      {CATEGORY_LABELS[cat] || cat}
+                {CATEGORY_LABELS[cat] || cat}
                     </button>
                   );
                 })}
               </div>
-
-              {formData.category === 'Other' && (
-                <div>
-                  <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Название расхода *</label>
-                  <input
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Например: Wi-Fi, канцелярия, ремонт"
-                    className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
-                  />
-                </div>
-              )}
             </div>
 
-            <div>
-              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Сумма *</label>
-              <input
-                type="number"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                placeholder="500000"
-                className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Сумма *</label>
+                <input
+                  type="number"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  placeholder="500000"
+                  className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Дата</label>
+                <input
+                  type="date"
+                  value={formData.spentAt}
+                  onChange={(e) => setFormData({ ...formData, spentAt: e.target.value })}
+                  className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 [color-scheme:light]"
+                />
+              </div>
             </div>
 
             <div>
@@ -814,17 +1001,15 @@ export default function Expenses() {
               </div>
             </div>
 
-            {formData.category !== 'Other' && (
-              <div>
-                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Примечание</label>
-                <input
-                  value={formData.note}
-                  onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                  placeholder="Комментарий к расходу"
-                  className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Примечание</label>
+              <input
+                value={formData.note}
+                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                placeholder="Комментарий к расходу"
+                className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
+              />
+            </div>
 
             {error && (
               <div
@@ -835,55 +1020,70 @@ export default function Expenses() {
                 {error}
               </div>
             )}
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <button className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={saving}>Отмена</button>
+              <button className="btn btn-primary btn-sm gap-1.5" onClick={handleSave} disabled={saving || !formData.amount}>
+                {saving ? (
+                  <span className="flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Сохранение...
+                  </span>
+                ) : editingId ? "Сохранить" : "Добавить"}
+              </button>
+            </div>
+          </div>
         </div>
-      </Modal>
+        </div>
+      )}
 
       {/* ═══ Delete Confirmation Modal ═══ */}
-      <Modal
-        isOpen={!!deleteTarget}
-        onClose={() => { if (!saving) setDeleteTarget(null); }}
-        boxClass="max-w-md"
-        title="Удалить расход"
-        actions={
-          <div className="flex justify-end gap-2.5 pt-2 border-t border-base-300">
-            <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Отмена</button>
-            <button className="btn btn-error btn-sm gap-1.5 text-white" onClick={handleDelete} disabled={saving}>
-              {saving ? (
-                <span className="flex items-center gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  Удаление...
-                </span>
-              ) : "Удалить"}
-            </button>
-          </div>
-        }
-      >
-        <div className="space-y-5">
-          <div className="flex items-start gap-4">
-            <div className="w-11 h-11 rounded-[14px] bg-[rgba(232,84,62,0.12)] flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-5 h-5 text-error" />
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setDeleteTarget(null); }}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="modal-box card bg-base-100 max-w-md relative z-10" onClick={(e) => e.stopPropagation()}>
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setDeleteTarget(null)}><X className="w-4 h-4" /></button>
+          <h3 className="font-bold text-[16px] text-base-content mb-4">Удалить расход</h3>
+          <div className="space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-[14px] bg-[rgba(232,84,62,0.12)] flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-error" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[14px] font-bold text-base-content mb-1.5">Вы уверены?</p>
+                <p className="text-[12px] text-base-content/70 leading-relaxed">
+                  <CategoryBadge category={deleteTarget?.category} />{' '}
+                  <span className="tabular-nums font-semibold text-base-content">{formatCurrency(deleteTarget?.amount)}</span>{' '}
+                  — удалить этот расход? Это действие нельзя отменить.
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="text-[14px] font-bold text-base-content mb-1.5">Вы уверены?</p>
-              <p className="text-[12px] text-base-content/70 leading-relaxed">
-                <CategoryBadge category={deleteTarget?.category} />{' '}
-                <span className="tabular-nums font-semibold text-base-content">{formatCurrency(deleteTarget?.amount)}</span>{' '}
-                — удалить этот расход? Это действие нельзя отменить.
-              </p>
-            </div>
-          </div>
 
-          {error && (
-            <div
-              className="text-[12px] text-error font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
-              style={{ background: 'rgba(232,84,62,0.08)', border: '1px solid rgba(232,84,62,0.15)' }}
-            >
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              {error}
+            {error && (
+              <div
+                className="text-[12px] text-error font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
+                style={{ background: 'rgba(232,84,62,0.08)', border: '1px solid rgba(232,84,62,0.15)' }}
+              >
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-base-300">
+              <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Отмена</button>
+              <button className="btn btn-error btn-sm gap-1.5 text-white" onClick={handleDelete} disabled={saving}>
+                {saving ? (
+                  <span className="flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Удаление...
+                  </span>
+                ) : "Удалить"}
+              </button>
             </div>
-          )}
+          </div>
         </div>
-      </Modal>
+        </div>
+      )}
 
       {/* ═══ Export Dialog ═══ */}
       <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="expenses" data={filtered} filename="расходы" />

@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Download, FileSpreadsheet, FileDown, Check, Table2 } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, FileDown, FileCode2, X, Check } from 'lucide-react';
 import { exportData, PAGE_EXPORT_CONFIG } from '../utils/exportUtils.js';
-import { Modal } from '../pages/mentor/_ui.jsx';
 
 const FORMAT_OPTIONS = [
   {
@@ -10,7 +9,7 @@ const FORMAT_OPTIONS = [
     ext: '.xlsx',
     icon: FileSpreadsheet,
     color: '#217346',
-    bg: 'rgba(33,115,70,0.08)',
+    bg: 'rgba(33,115,70,0.10)',
     desc: 'Таблица с авто-колонками',
   },
   {
@@ -19,8 +18,26 @@ const FORMAT_OPTIONS = [
     ext: '.pdf',
     icon: FileDown,
     color: '#E8543E',
-    bg: 'rgba(232,84,62,0.08)',
+    bg: 'rgba(232,84,62,0.10)',
     desc: 'Документ с заголовком',
+  },
+  {
+    key: 'markdown',
+    label: 'Markdown',
+    ext: '.md',
+    icon: FileCode2,
+    color: '#7C3AED',
+    bg: 'rgba(124,58,237,0.10)',
+    desc: 'Текстовый файл (.md)',
+  },
+  {
+    key: 'csv',
+    label: 'CSV',
+    ext: '.csv',
+    icon: FileText,
+    color: '#3B82F6',
+    bg: 'rgba(59,130,246,0.10)',
+    desc: 'Текстовый файл (Cyrillic)',
   },
 ];
 
@@ -61,131 +78,94 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
 
   if (!open) return null;
 
-  const colCount = (config.columns || []).filter((c) => !c.hidden).length;
-  const activeFormat = FORMAT_OPTIONS.find((f) => f.key === format) || FORMAT_OPTIONS[0];
-
   return (
-    <Modal
-      isOpen={open}
-      onClose={onClose}
-      boxClass="!max-w-md !w-[26rem] !p-0 !overflow-hidden"
-    >
-        {/* ── Header ─────────────────────────────────────── */}
-        <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: 'var(--border)' }}>
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
-            >
-              <Download size={17} style={{ color: 'var(--primary)' }} />
+    <dialog className="modal modal-open">
+      <div className="modal-box card bg-base-100 border border-base-300 max-w-md">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-primary/10">
+              <Download size={16} className="text-primary" />
             </div>
             <div>
-              <h3 className="font-bold text-[15px]" style={{ color: 'var(--text)' }}>Экспорт данных</h3>
-              <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                {data.length} {data.length === 1 ? 'запись' : data.length < 5 ? 'записи' : 'записей'}
-              </p>
+              <h3 className="font-bold text-[15px] text-base-content">Экспорт данных</h3>
+              <p className="text-[11px] text-base-content/45">{data.length} записей</p>
             </div>
           </div>
+          <button className="btn btn-ghost btn-xs btn-circle" onClick={onClose}>
+            <X size={16} />
+          </button>
         </div>
 
-        {/* ── Format selector ────────────────────────────── */}
-        <div className="px-5 pt-4 pb-1">
-          <div className="text-[10px] font-bold uppercase tracking-wider mb-2.5" style={{ color: 'var(--text-muted)' }}>
-            Формат файла
-          </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            {FORMAT_OPTIONS.map((f) => {
-              const active = format === f.key;
-              const Icon = f.icon;
-              return (
-                <button
-                  key={f.key}
-                  onClick={() => setFormat(f.key)}
-                  className="relative flex items-center gap-3 p-3.5 rounded-[14px] transition-all duration-200 cursor-pointer"
-                  style={{
-                    border: `1.5px solid ${active ? f.color : 'var(--border)'}`,
-                    background: active ? f.bg : 'var(--surface)',
-                    boxShadow: active ? `0 0 0 3px ${f.bg}, 0 4px 14px rgba(0,0,0,0.06)` : 'none',
-                  }}
-                >
-                  {active && (
-                    <div
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow-sm"
-                      style={{ background: f.color }}
-                    >
-                      <Check size={11} className="text-white" strokeWidth={3.5} />
-                    </div>
-                  )}
+        {/* Format selector */}
+        <div className="grid grid-cols-4 gap-2 mb-5">
+          {FORMAT_OPTIONS.map((f) => {
+            const active = format === f.key;
+            const Icon = f.icon;
+            return (
+              <button
+                key={f.key}
+                onClick={() => setFormat(f.key)}
+                className="relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 hover:shadow-sm cursor-pointer"
+                style={{
+                  borderColor: active ? f.color : 'var(--border)',
+                  background: active ? f.bg : 'var(--surface)',
+                }}
+              >
+                {active && (
                   <div
-                    className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 transition-colors duration-200"
-                    style={{ background: active ? f.color : 'var(--surface-hover)', border: `1px solid ${active ? f.color : 'var(--border)'}` }}
+                    className="absolute top-2 right-2 w-4.5 h-4.5 rounded-full flex items-center justify-center"
+                    style={{ background: f.color }}
                   >
-                    <Icon size={19} style={{ color: active ? '#fff' : 'var(--text-secondary)' }} />
+                    <Check size={10} className="text-white" strokeWidth={3} />
                   </div>
-                  <div className="text-left min-w-0">
-                    <div className="text-[13px] font-bold leading-tight" style={{ color: active ? f.color : 'var(--text)' }}>
-                      {f.label}
-                    </div>
-                    <div className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
-                      {f.desc}
-                    </div>
+                )}
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center"
+                  style={{ background: active ? f.color : 'var(--border)' }}
+                >
+                  <Icon size={18} style={{ color: active ? '#fff' : 'var(--text-secondary)' }} />
+                </div>
+                <div className="text-center">
+                  <div className="text-[12px] font-bold" style={{ color: active ? f.color : 'var(--text)' }}>
+                    {f.label}
                   </div>
-                </button>
-              );
-            })}
-          </div>
+                  <div className="text-[9px] text-base-content/45 mt-0.5">{f.ext}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        {/* ── Title input ────────────────────────────────── */}
-        <div className="px-5 pt-4">
-          <label className="text-[10px] font-bold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+        {/* Title input */}
+        <div className="mb-5">
+          <label className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider mb-1.5 block">
             Заголовок документа
           </label>
           <input
-            className="w-full text-[13px] px-3.5 py-2.5 rounded-xl outline-none transition-all duration-200"
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-            }}
-            onFocus={(e) => (e.target.style.borderColor = 'var(--primary)')}
-            onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+            className="input input-bordered w-full text-[13px]"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Введите заголовок..."
           />
         </div>
 
-        {/* ── Preview info ───────────────────────────────── */}
-        <div className="px-5 pt-4">
-          <div
-            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl"
-            style={{ background: 'var(--surface-hover)', border: '1px dashed var(--border)' }}
-          >
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <Table2 size={13} style={{ color: 'var(--text-secondary)' }} />
-            </div>
-            <div className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>
-              <span className="font-semibold" style={{ color: 'var(--text)' }}>{data.length}</span> строк ·{' '}
-              <span className="font-semibold" style={{ color: 'var(--text)' }}>{colCount}</span> колонок ·{' '}
-              <span className="font-semibold uppercase" style={{ color: activeFormat.color }}>{format}</span>
-            </div>
+        {/* Preview info */}
+        <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-[10px] bg-base-200 mb-5">
+          <div className="text-[11px] text-base-content/60">
+            <span className="font-semibold">{data.length}</span> строк ·{' '}
+            <span className="font-semibold">{(config.columns || []).filter((c) => !c.hidden).length}</span> колонок ·{' '}
+            <span className="font-semibold uppercase">{format}</span>
           </div>
         </div>
 
-        {/* ── Actions ────────────────────────────────────── */}
-        <div className="px-5 py-4 mt-1 border-t flex justify-end items-center gap-2" style={{ borderColor: 'var(--border)', background: 'rgba(255,255,255,0.4)' }}>
-          <button
-            className="px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-colors duration-200 cursor-pointer"
-            style={{ background: 'var(--surface-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
-            onClick={onClose}
-            disabled={busy}
-          >
+        {/* Actions */}
+        <div className="modal-action">
+          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>
             Отмена
           </button>
           <button
-            className="px-4 py-2.5 rounded-xl text-[13px] font-bold text-white gap-1.5 flex items-center transition-all duration-200 cursor-pointer"
-            style={{ background: 'var(--primary)', boxShadow: '0 4px 12px rgba(64,131,59,0.3)' }}
+            className="btn btn-primary gap-1.5"
             onClick={handleExport}
             disabled={busy || !data.length || done}
           >
@@ -199,6 +179,8 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
             {done ? 'Готово!' : busy ? 'Создаём...' : 'Скачать'}
           </button>
         </div>
-    </Modal>
+      </div>
+      <div className="modal-backdrop" onClick={onClose} />
+    </dialog>
   );
 }

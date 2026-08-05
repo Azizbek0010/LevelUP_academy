@@ -5,7 +5,7 @@ import { useAuth } from './auth.jsx';
 
 function useAuthedQuery(queryKey, queryFn, opts = {}) {
   const { token, logout } = useAuth();
-  const q = useQuery({ queryKey, queryFn, ...opts, enabled: !!token && (opts.enabled ?? true) });
+  const q = useQuery({ queryKey, queryFn, enabled: !!token, ...opts });
   useEffect(() => {
     if (q.error?.status === 401) logout();
   }, [q.error, logout]);
@@ -68,9 +68,9 @@ export function useAdminExpenses(qs = '') {
   return useAuthedQuery(['admin-expenses', qs], () => api.adminExpenses(token, qs));
 }
 
-export function useAdminStudents(qs = '', opts = {}) {
+export function useAdminStudents(qs = '') {
   const { token } = useAuth();
-  return useAuthedQuery(['admin-students', qs], () => api.adminStudents(token, qs), opts);
+  return useAuthedQuery(['admin-students', qs], () => api.adminStudents(token, qs));
 }
 
 export function useAdminStudentDetail(id) {
@@ -133,11 +133,6 @@ export function useAdminGroupFeedback(groupId) {
 export function useAdminSettings() {
   const { token } = useAuth();
   return useAuthedQuery(['admin-settings'], () => api.adminSettings(token), { retry: false });
-}
-
-export function useAdminPenalties(qs = '') {
-  const { token } = useAuth();
-  return useAuthedQuery(['admin-penalties', qs], () => api.adminPenalties(token, qs));
 }
 
 // -------- MENTOR --------

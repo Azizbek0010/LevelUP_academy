@@ -1,7 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Wallet, TriangleAlert, Receipt, TrendingUp, Users, GraduationCap, Clock,
-  Building2, CalendarDays, Sparkles, ChevronRight, CreditCard, Coins, Plus,
+  Building2, CalendarDays, Sparkles, ChevronRight, CreditCard, Coins,
 } from 'lucide-react';
 import { fmt, money, dateShort } from '../../format.js';
 import { useAdminDashboard, useAdminInvoices } from '../../queries.js';
@@ -52,7 +52,6 @@ function StatRow({ Icon, label, value, danger, accent, to }) {
 }
 
 export default function AdminDashboard() {
-  const navigate = useNavigate();
   const { data, isLoading, error } = useAdminDashboard();
   const { data: invoicesData } = useAdminInvoices();
 
@@ -91,15 +90,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title="Дашборд" subtitle={`Сегодня ${today} · обзор вашего филиала`}>
-        <button
-          className="btn btn-primary btn-sm gap-1"
-          onClick={() => navigate('/groups', { state: { openCreate: true } })}
-          title="Создать новую группу"
-        >
-          <Plus size={16} /> Новая группа
-        </button>
-      </PageHeader>
+      <PageHeader title="Дашборд" subtitle={`Сегодня ${today} · обзор вашего филиала`} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Операционные показатели — счётчики, а не деньги. */}

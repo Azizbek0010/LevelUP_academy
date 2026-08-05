@@ -102,14 +102,7 @@ function HomeworkDetail({ data }) {
 }
 
 function TestDetail({ data }) {
-  // defensive: если бэк (или мок) не прислал счётчики — выводим из вопросов/баллов
-  const totalQuestions = data.totalQuestions ?? data.questions?.length ?? data.maxScore ?? 0;
-  const correctCount = data.correctCount ?? (data.questions
-    ? data.questions.filter((q) => q.studentAnswer === q.correct).length
-    : data.score ?? 0);
-  const wrongCount = data.wrongCount ?? Math.max(totalQuestions - correctCount, 0);
-  const pct = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100)
-    : data.maxScore > 0 ? Math.round((data.score / data.maxScore) * 100) : 0;
+  const pct = data.totalQuestions > 0 ? Math.round((data.correctCount / data.totalQuestions) * 100) : 0;
   const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
 
   return (
@@ -132,15 +125,15 @@ function TestDetail({ data }) {
 
       <div className="grid grid-cols-3 gap-3">
         <div className="text-center p-3 rounded-xl bg-base-200/50">
-          <p className="text-xl font-extrabold">{totalQuestions}</p>
+          <p className="text-xl font-extrabold">{data.totalQuestions}</p>
           <p className="text-[11px] opacity-40">Всего</p>
         </div>
         <div className="text-center p-3 rounded-xl bg-success/5">
-          <p className="text-xl font-extrabold text-success">{correctCount}</p>
+          <p className="text-xl font-extrabold text-success">{data.correctCount}</p>
           <p className="text-[11px] opacity-40">Правильно</p>
         </div>
         <div className="text-center p-3 rounded-xl bg-error/5">
-          <p className="text-xl font-extrabold text-error">{wrongCount}</p>
+          <p className="text-xl font-extrabold text-error">{data.wrongCount}</p>
           <p className="text-[11px] opacity-40">Ошибки</p>
         </div>
       </div>
@@ -201,42 +194,7 @@ function TestDetail({ data }) {
   );
 }
 
-function SummaryFallback({ item, isHomework }) {
-  const pct = item.maxScore > 0 ? Math.round((item.score / item.maxScore) * 100) : 0;
-  const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
-  return (
-    <div className="space-y-5">
-      <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}15` }}>
-          <Icon name={isHomework ? 'document-text' : 'academic'} className="w-6 h-6" style={{ color }} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold">{item.title}</h3>
-          <p className="text-sm opacity-50 flex items-center gap-2 mt-0.5">
-            {item.groupName && (
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: `${color}15`, color }}>
-                {item.groupName}
-              </span>
-            )}
-            <span>{dateShort(item.gradedAt || item.finishedAt)}</span>
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="flex-1">
-          <div className="flex justify-between text-xs opacity-50 mb-1">
-            <span>Балл</span>
-            <span className="font-bold" style={{ color }}>{item.score} / {item.maxScore} ({pct}%)</span>
-          </div>
-          <ProgressBar value={pct} color={color} height={8} />
-        </div>
-      </div>
-      <p className="text-xs opacity-40">Детали по этому результату появятся, когда бэкенд добавит API детализации.</p>
-    </div>
-  );
-}
-
-export default function GradeDetail({ type, id, item, onClose }) {
+export default function GradeDetail({ type, id, onClose }) {
   const isHomework = type === 'hw';
   const { data, isLoading, error } = isHomework ? useHomeworkDetail(id) : useTestDetail(id);
 
@@ -256,8 +214,7 @@ export default function GradeDetail({ type, id, item, onClose }) {
 
         <div className="flex-1 overflow-y-auto p-5">
           {isLoading && <Loading />}
-          {error && item && <SummaryFallback item={item} isHomework={isHomework} />}
-          {error && !item && (
+          {error && (
             <div className="text-center py-8">
               <Icon name="exclamation-circle" className="w-10 h-10 text-error mx-auto mb-3" />
               <p className="text-sm opacity-60">{error.message}</p>

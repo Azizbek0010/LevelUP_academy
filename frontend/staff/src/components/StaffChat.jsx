@@ -1,10 +1,8 @@
 import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
 import {
-  Send, ChevronLeft, MessageSquare, Lock, WifiOff, ArrowDown, AlertCircle, Check, Smile, Search,
+  Send, ChevronLeft, MessageSquare, Lock, WifiOff, ArrowDown, AlertCircle, Check,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import EmojiPicker from 'emoji-picker-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../auth.jsx';
 import { api, USING_MOCKS } from '../api.js';
 import { getSocket } from '../socket.js';
@@ -91,18 +89,11 @@ const clock = (iso) =>
    Теперь поле на месте и само объясняет, чего не хватает. */
 function Composer({ value, onChange, onSend, disabled, sending, placeholder }) {
   const ref = useRef(null);
-  const [showEmoji, setShowEmoji] = useState(false);
-  const emojiRef = useRef(null);
 
-  useEffect(() => {
-    if (!showEmoji) return;
-    const handler = (e) => {
-      if (emojiRef.current && !emojiRef.current.contains(e.target)) setShowEmoji(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showEmoji]);
-
+  // Авто-высота: textarea растёт под текст до потолка, дальше — свой скролл.
+  // Полосу прокрутки включаем только по достижении потолка: иначе Chrome
+  // рисовал стрелки скролла даже в пустом поле — высота совпадала со
+  // scrollHeight ровно, и браузер считал содержимое «переполненным».
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -114,65 +105,27 @@ function Composer({ value, onChange, onSend, disabled, sending, placeholder }) {
 
   const nearLimit = value.length > MAX_LEN - 200;
 
-  const onEmojiClick = (emojiData) => {
-    onChange(value + emojiData.emoji);
-  };
-
   return (
-    <motion.footer
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="shrink-0 border-t border-base-200/50 bg-base-100/80 backdrop-blur-xl px-4 pt-3 relative z-10"
-      style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+    // pb с safe-area: на айфонах нижнюю полосу занимает индикатор «домой»,
+    // и поле ввода упиралось прямо в него.
+    <footer
+      className="shrink-0 border-t border-base-200 bg-base-100 px-3 pt-2.5"
+      style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom, 0px))' }}
     >
-      <div className="max-w-4xl mx-auto flex items-end gap-3">
-        <div className="relative" ref={emojiRef}>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            type="button"
-            className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-colors ${showEmoji ? 'text-primary bg-primary/10' : 'text-base-content/40 hover:text-primary hover:bg-base-200'}`}
-            onClick={() => setShowEmoji((v) => !v)}
-            disabled={disabled}
-          >
-            <Smile size={22} strokeWidth={2.5} />
-          </motion.button>
-          
-          <AnimatePresence>
-            {showEmoji && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9, y: 10, originBottomLeft: true }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                className="absolute bottom-14 left-0 shadow-2xl rounded-3xl overflow-hidden border border-base-200"
-              >
-                <EmojiPicker
-                  onEmojiClick={onEmojiClick}
-                  width={320}
-                  height={400}
-                  searchPlaceHolder="Поиск emoji..."
-                  previewConfig={{ showPreview: false }}
-                  skinTonesDisabled
-                  lazyLoadEmojis
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <motion.div 
-          layout
-          className="flex-1 min-w-0 relative bg-base-200/50 focus-within:bg-base-100 rounded-[24px] border border-transparent focus-within:border-primary/30 focus-within:shadow-[0_0_0_4px_rgba(59,130,246,0.1)] transition-all duration-300"
-        >
+      <div className="flex items-end gap-2">
+        <div className="flex-1 min-w-0">
+          {/* text-base на мобильном — не косметика: Safari на iOS
+              принудительно зумит страницу при фокусе в поле с размером
+              шрифта меньше 16px, и выйти из этого зума потом нельзя. */}
           <textarea
             ref={ref}
             rows={1}
-            className="w-full bg-transparent resize-none min-h-[3rem] max-h-40 text-[15px] leading-relaxed px-5 py-3.5 !outline-none placeholder:text-base-content/40 disabled:opacity-50"
+            className="textarea textarea-bordered w-full resize-none min-h-[2.75rem] max-h-40 text-base sm:text-sm leading-relaxed py-2.5 disabled:bg-base-200/60"
             placeholder={placeholder}
             value={value}
             maxLength={MAX_LEN}
             disabled={disabled}
+            aria-label="Текст сообщения"
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -182,31 +135,30 @@ function Composer({ value, onChange, onSend, disabled, sending, placeholder }) {
             }}
           />
           {nearLimit && (
-            <div className="absolute -top-6 right-2 text-[10px] text-base-content/45 tabular-nums bg-base-100 px-2 py-0.5 rounded-full shadow-sm border border-base-200">
+            <div className="text-[10px] text-base-content/45 text-right mt-1 tabular-nums">
               {value.length} / {MAX_LEN}
             </div>
           )}
-        </motion.div>
+        </div>
 
-        <motion.button
-          whileHover={!disabled && !sending && value.trim() ? { scale: 1.05 } : {}}
-          whileTap={!disabled && !sending && value.trim() ? { scale: 0.95 } : {}}
-          className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
-            disabled || sending || !value.trim() 
-              ? 'bg-base-200 text-base-content/30' 
-              : 'bg-gradient-to-r from-primary to-secondary text-primary-content shadow-lg shadow-primary/30'
-          }`}
+        {/* Кнопка отправки.
+            DaisyUI в `:disabled` красит и фон, и текст в один тон с alpha 0.2 —
+            иконка сливалась с подложкой в ровный серый кружок, и вся панель
+            ввода читалась как неактивная заглушка. Поэтому выключенное
+            состояние переопределяем явно. */}
+        <button
+          className="btn btn-primary btn-circle shrink-0 disabled:!bg-base-200 disabled:!text-base-content/50 disabled:!border-base-300"
           onClick={onSend}
           disabled={disabled || sending || !value.trim()}
+          aria-label="Отправить"
+          title="Enter — отправить, Shift+Enter — новая строка"
         >
-          {sending ? (
-            <span className="loading loading-spinner loading-sm" />
-          ) : (
-            <Send size={20} className={value.trim() ? "translate-x-[2px] -translate-y-[1px]" : ""} strokeWidth={2.5} />
-          )}
-        </motion.button>
+          {sending
+            ? <span className="loading loading-spinner loading-xs" />
+            : <Send size={17} />}
+        </button>
       </div>
-    </motion.footer>
+    </footer>
   );
 }
 
@@ -386,7 +338,6 @@ export default function StaffChat({ variant = 'mentor' }) {
   };
 
   const filtered = contacts.filter((c) => {
-    if (variant === 'admin' && c.peer_type === 'student') return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return fullName(c).toLowerCase().includes(q)
@@ -397,8 +348,8 @@ export default function StaffChat({ variant = 'mentor' }) {
      В режиме ментора секции не нужны — там только родители и ученики. */
   const groupedSections = useMemo(() => {
     if (variant !== 'admin') return [{ label: null, items: filtered }];
-    const order = ['mentor', 'parent'];
-    const labels = { mentor: 'Менторы', parent: 'Родители' };
+    const order = ['mentor', 'parent', 'student'];
+    const labels = { mentor: 'Менторы', parent: 'Родители', student: 'Ученики' };
     const groups = new Map(order.map((t) => [t, []]));
     filtered.forEach((c) => {
       const bucket = groups.get(c.peer_type);
@@ -483,7 +434,7 @@ export default function StaffChat({ variant = 'mentor' }) {
     // страницы, ни отступов — мессенджер занимает экран целиком.
     <div className="flex-1 min-h-0 flex flex-col bg-base-100">
       {!USING_MOCKS && !connected && (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-warning/10 border-b border-warning/25 text-warning shrink-0 animate-pulse">
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-warning/10 border-b border-warning/25 text-warning shrink-0">
           <WifiOff size={14} className="shrink-0" />
           <span className="text-xs">Соединение потеряно — переподключение...</span>
         </div>
@@ -502,11 +453,11 @@ export default function StaffChat({ variant = 'mentor' }) {
             activeId ? 'hidden md:flex' : 'flex'
           }`}
         >
-          <div className="px-3 py-3 border-b border-base-200 shrink-0 bg-gradient-to-b from-primary/5 to-transparent">
+          <div className="px-3 py-3 border-b border-base-200 shrink-0">
             <div className="flex items-baseline justify-between mb-2.5">
-              <h1 className="text-base font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Сообщения</h1>
+              <h1 className="text-base font-bold">Сообщения</h1>
               {totalUnread > 0 && (
-                <span className="badge badge-primary badge-sm animate-pulse shadow-sm shadow-primary/30">{totalUnread} новых</span>
+                <span className="badge badge-primary badge-sm">{totalUnread} новых</span>
               )}
             </div>
             <SearchInput
@@ -557,10 +508,10 @@ export default function StaffChat({ variant = 'mentor' }) {
                             <button
                               onClick={() => { setActiveId(c.id); setError(''); setAtBottom(true); }}
                               aria-current={active ? 'true' : undefined}
-                              className={`w-full text-left px-3 py-3 flex items-start gap-3 transition-all duration-200 border-l-2 ${
+                              className={`w-full text-left px-3 py-3 flex items-start gap-3 transition-colors border-l-2 ${
                                 active
-                                  ? 'bg-primary/8 border-primary shadow-[inset_0_0_20px_rgba(59,130,246,0.05)]'
-                                  : 'border-transparent hover:bg-base-200/60 hover:border-primary/20'
+                                  ? 'bg-primary/8 border-primary'
+                                  : 'border-transparent hover:bg-base-200/60'
                               }`}
                             >
                               <Avatar name={fullName(c)} size="lg" />
@@ -620,11 +571,10 @@ export default function StaffChat({ variant = 'mentor' }) {
 
         {/* ═══════════ Переписка ═══════════ */}
         <section
-          className={`min-w-0 min-h-0 flex-col ${activeId ? 'flex' : 'hidden md:flex'}`}
-          style={{ background: 'linear-gradient(180deg, oklch(97% 0.005 260 / 0.5) 0%, oklch(95% 0.008 260 / 0.3) 100%)' }}
+          className={`min-w-0 min-h-0 flex-col bg-base-200/25 ${activeId ? 'flex' : 'hidden md:flex'}`}
         >
           {/* Шапка диалога */}
-          <header className="shrink-0 px-3 sm:px-4 py-2.5 border-b border-base-200 bg-base-100/95 backdrop-blur-sm flex items-center gap-3 min-h-[3.5rem]">
+          <header className="shrink-0 px-3 sm:px-4 py-2.5 border-b border-base-200 bg-base-100 flex items-center gap-3 min-h-[3.5rem]">
             {activeContact ? (
               <>
                 {/* На телефоне это основная кнопка навигации — btn-sm давал
@@ -701,41 +651,40 @@ export default function StaffChat({ variant = 'mentor' }) {
                         </span>
                       </div>
                     )}
-                    <motion.div
-                      layout="position"
-                      initial={{ opacity: 0, scale: 0.8, y: 10, originX: mine ? 1 : 0 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    <div
                       className={`flex ${mine ? 'justify-end' : 'justify-start'} ${
                         groupEnd ? 'mb-2.5' : 'mb-0.5'
                       }`}
                     >
                       <div
-                        className={`max-w-[85%] sm:max-w-[70%] px-3.5 py-2 transition-all duration-200 hover:shadow-md relative group ${
+                        className={`max-w-[85%] sm:max-w-[70%] px-3.5 py-2 shadow-sm ${
                           mine
-                            ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-content shadow-sm shadow-primary/20'
-                            : 'bg-base-100 border border-base-200/50 shadow-sm backdrop-blur-md'
+                            ? 'bg-primary text-primary-content'
+                            : 'bg-base-100 border border-base-200'
                         } ${
+                          // «Хвостик» — только у последнего пузыря пачки: так
+                          // видно, где реплика закончилась.
                           mine
-                            ? `rounded-[20px] ${groupStart ? 'rounded-tr-md' : 'rounded-tr-[20px]'} ${groupEnd ? 'rounded-br-sm' : 'rounded-br-[20px]'}`
-                            : `rounded-[20px] ${groupStart ? 'rounded-tl-md' : 'rounded-tl-[20px]'} ${groupEnd ? 'rounded-bl-sm' : 'rounded-bl-[20px]'}`
+                            ? `rounded-2xl ${groupStart ? 'rounded-tr-md' : 'rounded-tr-2xl'} ${groupEnd ? 'rounded-br-sm' : 'rounded-br-2xl'}`
+                            : `rounded-2xl ${groupStart ? 'rounded-tl-md' : 'rounded-tl-2xl'} ${groupEnd ? 'rounded-bl-sm' : 'rounded-bl-2xl'}`
                         }`}
                       >
-                        <p className="text-[15px] whitespace-pre-wrap break-words leading-relaxed font-medium">
+                        <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                           {m.body}
                         </p>
+                        {/* Время — раз на пачку, а не под каждой строкой. */}
                         {groupEnd && (
                           <span
-                            className={`flex items-center justify-end gap-1 text-[10px] mt-1 tabular-nums font-semibold ${
-                              mine ? 'text-primary-content/75' : 'text-base-content/40'
+                            className={`flex items-center justify-end gap-1 text-[10px] mt-0.5 tabular-nums ${
+                              mine ? 'text-primary-content/65' : 'text-base-content/40'
                             }`}
                           >
                             {clock(m.created_at)}
-                            {mine && <Check size={12} strokeWidth={3} />}
+                            {mine && <Check size={11} />}
                           </span>
                         )}
                       </div>
-                    </motion.div>
+                    </div>
                   </div>
                 ))
               )}
@@ -745,7 +694,7 @@ export default function StaffChat({ variant = 'mentor' }) {
             {activeContact && !atBottom && rows.length > 0 && (
               <button
                 onClick={scrollToBottom}
-                className="absolute bottom-4 right-4 btn btn-circle btn-sm bg-base-100 border-base-300 shadow-lg animate-bounce hover:shadow-xl transition-all"
+                className="absolute bottom-4 right-4 btn btn-circle btn-sm bg-base-100 border-base-300 shadow-md"
                 aria-label="К последнему сообщению"
               >
                 <ArrowDown size={16} />
