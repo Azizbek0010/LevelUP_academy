@@ -3,8 +3,7 @@
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
     {
-      "_comment": "Everything but the public login page is noindex. sitemap.xml and robots.txt must be excluded too: they are instructions FOR the crawler, not pages to index, and Search Console rejected the sitemap outright ('Не получено', 0 pages) because it was served with noindex, nofollow.",
-      "source": "/((?!login$|sitemap\\.xml$|robots\\.txt$).*)",
+      "source": "/((?!login$).*)",
       "headers": [
         {
           "key": "X-Robots-Tag",

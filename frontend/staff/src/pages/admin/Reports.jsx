@@ -1,19 +1,19 @@
 import { useState, useMemo } from 'react';
 import {
   BarChart3, TrendingUp, Users, AlertTriangle, Activity, Filter, Search,
-  Download, X, RefreshCw,
+  Download, X, RefreshCw, Banknote
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import { money, fmt } from '../../format.js';
+import { useAuth } from '../../auth.jsx';
 import { useAdminReports } from '../../queries.js';
-import { Kpi, RowSkeleton } from '../mentor/_ui.jsx';
+import { Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
 
-/* Design-system palette (index.css :root) — coherent shades instead of random hues */
-const COLORS = ['#40833B', '#dc2626', '#b45309', '#2563eb', '#15803d', '#5c6b53', '#7d8c73'];
+const COLORS = ['#3B82F6', '#E8543E', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899', '#2ECC71'];
 
 /* ═══════════════ KPI Card ═══════════════ */
 /* ═══════════════ Custom Tooltip ═══════════════ */
@@ -33,6 +33,7 @@ function ChartTooltip({ active, payload, label }) {
 
 /* ═══════════════ Main Reports ═══════════════ */
 export default function AdminReports() {
+  const { token } = useAuth();
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [search, setSearch] = useState('');
@@ -66,6 +67,7 @@ export default function AdminReports() {
   const totalDebt = byGroup.reduce((s, g) => s + Number(g.debt || g.outstandingDebt || 0), 0);
   const totalStudents = byGroup.reduce((s, g) => s + Number(g.students ?? g.studentsCount ?? 0), 0);
   const avgRevenue = byGroup.length > 0 ? totalRevenue / byGroup.length : 0;
+  const maxRevenue = byGroup.length > 0 ? Math.max(...byGroup.map((g) => Number(g.revenue || 0))) : 0;
   const groupsWithDebt = byGroup.filter((g) => Number(g.debt || g.outstandingDebt || 0) > 0).length;
 
   const barData = useMemo(() =>
@@ -276,8 +278,8 @@ export default function AdminReports() {
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <RechartsTooltip content={<ChartTooltip />} />
-                <Bar dataKey="revenue" name="Доход" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="debt" name="Долг" fill="var(--danger)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="revenue" name="Доход" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="debt" name="Долг" fill="#E8543E" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -314,6 +316,102 @@ export default function AdminReports() {
             </ResponsiveContainer>
           )}
         </div>
+      </div>
+
+      {/* ═══ Table ═══ */}
+      <div className="card bg-base-100 overflow-hidden card-hover-premium animate-fade-in stagger-5">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-[10px] font-bold uppercase tracking-[0.07em] text-base-content/45 bg-base-100">
+                <th className="px-5 py-4">Группа</th>
+                <th className="px-5 py-4 text-right">Ученики</th>
+                <th className="px-5 py-4 text-right">Доход</th>
+                <th className="px-5 py-4 text-right">Долг</th>
+                <th className="px-5 py-4 text-right">Соотношение</th>
+              </tr>
+            </thead>
+            <tbody>
+              {byGroup.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="w-14 h-14 rounded-full bg-base-100 flex items-center justify-center mb-3">
+                        <Banknote className="w-7 h-7 text-base-content/45" />
+                      </div>
+                      <p className="text-[14px] font-bold text-base-content mb-1">
+                        {search ? "Ничего не найдено" : "Данные отсутствуют"}
+                      </p>
+                      <p className="text-[12px] text-base-content/70 max-w-[280px]">
+                        {search ? "Попробуйте другой запрос" : "Пока нет данных по отчётам"}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                byGroup.map((g, i) => {
+                  const debt = Number(g.debt || g.outstandingDebt || 0);
+                  const revenue = Number(g.revenue || 0);
+                  const ratio = revenue > 0 ? ((revenue - debt) / revenue * 100) : 0;
+                  return (
+                    <tr
+                      key={g.id || g.groupId || i}
+                      className="group border-t border-base-300 text-[13px] transition-all duration-150 hover:bg-base-200"
+                    >
+                      <td className="px-5 py-4">
+                        <span className="text-base-content font-medium">
+                          {g.name || g.groupName || '—'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right tabular-nums text-base-content/70">
+                        {fmt(g.students ?? g.studentsCount ?? 0)}
+                      </td>
+                      <td className="px-5 py-4 text-right tabular-nums font-bold text-primary">
+                        {money(revenue)}
+                      </td>
+                      <td className="px-5 py-4 text-right tabular-nums font-semibold" style={{ color: debt > 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
+                        {money(debt)}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold"
+                          style={{
+                            background: ratio >= 80 ? 'rgba(46,204,113,0.14)' : ratio >= 50 ? 'rgba(245,158,11,0.14)' : 'rgba(232,84,62,0.14)',
+                            color: ratio >= 80 ? '#2ECC71' : ratio >= 50 ? '#F59E0B' : '#E8543E',
+                          }}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full" style={{
+                            background: ratio >= 80 ? '#2ECC71' : ratio >= 50 ? '#F59E0B' : '#E8543E',
+                          }} />
+                          {ratio.toFixed(0)}%
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Table footer */}
+        {byGroup.length > 0 && (
+          <div className="flex items-center justify-between px-5 py-3.5 border-t border-base-300 bg-base-100">
+            <span className="text-[11px] text-base-content/45">
+              {byGroup.length} группа(-ы)
+            </span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Общий доход:</span>
+                <span className="text-[13px] font-extrabold text-primary tabular-nums">{money(totalRevenue)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Общий долг:</span>
+                <span className="text-[13px] font-extrabold text-error tabular-nums">{money(totalDebt)}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <ExportDialog

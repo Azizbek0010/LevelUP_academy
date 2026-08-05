@@ -115,7 +115,7 @@ export default function OnboardModal({ lead, onClose, onDone }) {
             </div>
 
             <div className="modal-action">
-              <button className="btn btn-primary w-full" onClick={() => onDone?.()}>
+              <button className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 w-full" onClick={() => onDone?.()}>
                 Готово
               </button>
             </div>
@@ -128,11 +128,11 @@ export default function OnboardModal({ lead, onClose, onDone }) {
                 {lead && <span className="text-sm font-normal opacity-60 ml-2">из заявки</span>}
               </h3>
               <div className="flex items-center gap-1.5">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${step >= 1 ? 'bg-primary text-primary-content' : 'bg-base-200 text-base-content/40'}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${step >= 1 ? 'bg-lime-400 text-lime-950' : 'bg-base-200 text-base-content/40'}`}>
                   1
                 </div>
-                <div className={`w-8 h-0.5 rounded transition-colors ${step >= 2 ? 'bg-primary' : 'bg-base-200'}`} />
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${step >= 2 ? 'bg-primary text-primary-content' : 'bg-base-200 text-base-content/40'}`}>
+                <div className={`w-8 h-0.5 rounded transition-colors ${step >= 2 ? 'bg-lime-400' : 'bg-base-200'}`} />
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${step >= 2 ? 'bg-lime-400 text-lime-950' : 'bg-base-200 text-base-content/40'}`}>
                   2
                 </div>
               </div>
@@ -143,7 +143,7 @@ export default function OnboardModal({ lead, onClose, onDone }) {
             {step === 1 ? (
               <form onSubmit={goNext} className="space-y-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Building2 size={15} className="text-primary-content" />
+                  <Building2 size={15} className="text-lime-600" />
                   <span className="font-semibold text-sm">Данные учебного центра</span>
                 </div>
                 <label className="form-control">
@@ -169,7 +169,7 @@ export default function OnboardModal({ lead, onClose, onDone }) {
                 </label>
                 <div className="modal-action mt-6">
                   <button type="button" className="btn btn-ghost" onClick={onClose}>Отмена</button>
-                  <button type="submit" className="btn btn-primary">
+                  <button type="submit" className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950">
                     Далее →
                   </button>
                 </div>
@@ -178,7 +178,7 @@ export default function OnboardModal({ lead, onClose, onDone }) {
               <form onSubmit={submit} className="space-y-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <User size={15} className="text-primary-content" />
+                    <User size={15} className="text-lime-600" />
                     <span className="font-semibold text-sm">Аккаунт Super Admin</span>
                   </div>
                   <span className="text-xs text-base-content/50 bg-base-200 px-2 py-1 rounded-lg">{form.organizationName}</span>
@@ -229,7 +229,7 @@ export default function OnboardModal({ lead, onClose, onDone }) {
                   <button type="button" className="btn btn-ghost" onClick={() => { setStep(1); setError(''); }}>
                     ← Назад
                   </button>
-                  <button type="submit" className="btn btn-primary" disabled={busy}>
+                  <button type="submit" className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950" disabled={busy}>
                     {busy ? <span className="loading loading-spinner loading-sm" /> : 'Создать партнёра'}
                   </button>
                 </div>

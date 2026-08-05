@@ -89,7 +89,7 @@
       • Bekendga ikkita yangi funksiya: `api.myPenalties`/`api.myCharter`
         (`GET /api/users/me/penalties`, `/users/me/charter`) — ilgari frontda umuman
         chaqirilmagan edi
-- [x] K-DISC-FRONT-ADMIN 🔄 EGASI: **ABDULOH** (Hamidula'dan o'tkazildi, 2026-07-28, Karis).
+- [ ] K-DISC-FRONT-ADMIN 🔄 EGASI: **ABDULOH** (Hamidula'dan o'tkazildi, 2026-07-28, Karis).
       Admin panelda: shtraf berish formasi + ro'yxat (`POST/GET /api/admin/penalties`),
       ustavni faqat o'qish (`GET /api/admin/charter`). Huquqlar matritsasi bo'yicha
       admin → mentor/methodist'ga shtraf bera oladi, qora ro'yxat esa FAQAT mentor'ga —
@@ -622,7 +622,7 @@
 - [x] ADMIN ✅ (Abduloh) `GroupDetail.jsx` real API ga ulangan ekan — tekshirildi 2026-07-28
       (Karis, `646060e`/27.07): attendance/homework/feedback oltala endpoint ham chaqirilyapti,
       mock qolmagan. TASK.md eskirgan edi
-- [x] ADMIN (Abduloh): 🔄 **Odil'dan o'tkazildi (2026-07-28, Karis qarori)** — Guruh formasi:
+- [ ] ADMIN (Abduloh): 🔄 **Odil'dan o'tkazildi (2026-07-28, Karis qarori)** — Guruh formasi:
       mentor majburiy + kunlar (1-3-5/2-4-6 preset yoki boshqa kunlar galochka) + boshlanish
       vaqti + tugash vaqti AVTO (GET /api/admin/settings) → POST/PATCH { days, startTime };
       kontrakt TEAM-TASKS §9.2

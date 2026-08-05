@@ -60,7 +60,7 @@ function PartnerCard({ p, cur, maxBill, totalIncome, onToggle, busyId, onCardCli
   return (
     <div
       onClick={() => onCardClick(p)}
-      className="card bg-base-100 shadow-sm border border-base-200/60 hover:shadow-lg hover:border-primary/60 hover:-translate-y-0.5 transition-all cursor-pointer"
+      className="card bg-base-100 shadow-sm border border-base-200/60 hover:shadow-lg hover:border-lime-400/60 hover:-translate-y-0.5 transition-all cursor-pointer"
     >
       <div className="card-body p-5 gap-3">
         <div className="flex items-start gap-3">
@@ -91,9 +91,9 @@ function PartnerCard({ p, cur, maxBill, totalIncome, onToggle, busyId, onCardCli
             <div className="text-xs text-base-content/50">Филиалы</div>
             <div className="font-extrabold text-base tabular-nums">{fmt(p.branches)}</div>
           </div>
-          <div className="text-center rounded-lg bg-primary/10 p-2">
-            <div className="text-xs text-primary-content/70">Счёт/мес</div>
-            <div className="font-extrabold text-base tabular-nums text-primary-content">{fmt(p.monthlyBill)}</div>
+          <div className="text-center rounded-lg bg-lime-50 p-2">
+            <div className="text-xs text-lime-700/70">Счёт/мес</div>
+            <div className="font-extrabold text-base tabular-nums text-lime-700">{fmt(p.monthlyBill)}</div>
           </div>
         </div>
 
@@ -103,7 +103,7 @@ function PartnerCard({ p, cur, maxBill, totalIncome, onToggle, busyId, onCardCli
             <span>{share}%</span>
           </div>
           <div className="h-1.5 rounded-full bg-base-200 overflow-hidden">
-            <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${pct}%` }} />
+            <div className="h-full rounded-full bg-lime-400 transition-all duration-700" style={{ width: `${pct}%` }} />
           </div>
         </div>
 
@@ -232,7 +232,7 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
     <div className="modal modal-open modal-bottom sm:modal-middle">
       <div className="modal-box max-w-lg p-0 overflow-hidden">
         {/* Header */}
-        <div className="flex items-start gap-3 px-6 py-4 border-b border-base-200 bg-gradient-to-r from-primary/10 to-transparent">
+        <div className="flex items-start gap-3 px-6 py-4 border-b border-base-200 bg-gradient-to-r from-lime-50 to-transparent">
           <Avatar name={partner.name} size={56} />
           <div className="min-w-0 flex-1">
             <div className="font-extrabold text-lg leading-tight truncate">{partner.name}</div>
@@ -269,7 +269,7 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
               key={key}
               onClick={() => setDetailTab(key)}
               className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors -mb-px ${
-                detailTab === key ? 'border-primary text-primary-content' : 'border-transparent text-base-content/50 hover:text-base-content'
+                detailTab === key ? 'border-lime-500 text-lime-700' : 'border-transparent text-base-content/50 hover:text-base-content'
               }`}
             >
               {label}
@@ -291,9 +291,9 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
                   <div className="text-xs text-base-content/50">Ученики</div>
                   <div className="font-extrabold text-lg tabular-nums">{fmt(partner.students)}</div>
                 </div>
-                <div className="text-center rounded-lg bg-primary/10 p-3">
-                  <div className="text-xs text-primary-content/70">Счёт/мес</div>
-                  <div className="font-extrabold text-lg tabular-nums text-primary-content">{fmt(partner.monthlyBill)}</div>
+                <div className="text-center rounded-lg bg-lime-50 p-3">
+                  <div className="text-xs text-lime-700/70">Счёт/мес</div>
+                  <div className="font-extrabold text-lg tabular-nums text-lime-700">{fmt(partner.monthlyBill)}</div>
                 </div>
               </div>
 
@@ -307,7 +307,7 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
                 </div>
                 <div className="h-2 rounded-full bg-base-200 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-primary transition-all duration-700"
+                    className="h-full rounded-full bg-lime-400 transition-all duration-700"
                     style={{ width: `${sharePct}%` }}
                   />
                 </div>
@@ -410,7 +410,7 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
                     <span className="text-base-content/60">Счёт / мес</span>
-                    <span className="font-bold text-primary-content tabular-nums">
+                    <span className="font-bold text-lime-700 tabular-nums">
                       {fmt(partner.monthlyBill)} {cur}
                     </span>
                   </div>
@@ -438,7 +438,7 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
                   onChange={(e) => onNotesChange(e.target.value)}
                   placeholder="Заметки о партнёре: причина инвестиции, история переговоров..."
                   rows={5}
-                  className="textarea textarea-bordered w-full text-sm focus:border-primary focus:outline-primary/40 resize-none"
+                  className="textarea textarea-bordered w-full text-sm focus:border-lime-400 focus:outline-lime-200 resize-none"
                 />
                 <div className="text-[11px] text-base-content/40 mt-1">
                   Сохраняется локально в браузере
@@ -451,7 +451,7 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
         <div className="px-6 py-4 border-t border-base-200 flex gap-2 flex-wrap">
           <Link
             to={`/organizations/${partner.id}`}
-            className="btn btn-primary gap-2 flex-1"
+            className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 gap-2 flex-1"
             onClick={onClose}
           >
             Открыть профиль <ArrowRight size={15} />
@@ -575,7 +575,7 @@ export default function Organizations() {
     <div className="space-y-5">
       <PageHeader title="Партнёры" subtitle="Учебные центры на платформе — статус, ученики, счёт">
         <button
-          className="btn btn-primary gap-2"
+          className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 gap-2"
           onClick={() => setOnboard(true)}
         >
           <UserPlus size={17} /> Новый партнёр
@@ -615,7 +615,7 @@ export default function Organizations() {
                     <button
                       key={f.key}
                       type="button"
-                      className={`join-item btn btn-sm ${statusFilter === f.key ? 'btn-primary' : 'btn-ghost'}`}
+                      className={`join-item btn btn-sm ${statusFilter === f.key ? 'bg-lime-400 hover:bg-lime-500 border-0 text-lime-950' : 'btn-ghost'}`}
                       onClick={() => setStatusFilter(f.key)}
                     >
                       {f.label}
