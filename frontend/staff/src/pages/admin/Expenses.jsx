@@ -317,8 +317,6 @@ export default function Expenses() {
 
   const filteredTotal = useMemo(() => filtered.reduce((s, e) => s + (e.amount || 0), 0), [filtered]);
 
-  // handleExport removed — replaced by ExportDialog (Excel/PDF/CSV)
-
   const clearFilters = () => {
     setSearch('');
     setFilter('All');

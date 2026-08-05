@@ -115,7 +115,7 @@ export default function AdminStudents() {
 
   const activeCount = rows.filter((s) => s.status !== 'frozen').length;
   const frozenCount = rows.filter((s) => s.status === 'frozen').length;
-  const debtCount = rows.filter((s) => studentDebt(s) > 0).length;
+const debtCount = rows.filter((s) => studentDebt(s) > 0).length;
   const filteredRows = useMemo(() => {
     let result = rows;
     if (search.trim()) {
@@ -216,7 +216,7 @@ export default function AdminStudents() {
           className="flex-1"
         />
         {/* Status filter tabs */}
-        <div className="hidden sm:flex items-center gap-1 p-1 rounded-[12px]" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="hidden sm:flex items-center gap-1 p-1 rounded-[12px] bg-base-100 border border-base-300">
           {[
             { key: 'all', label: 'Все', count: rows.length },
             { key: 'active', label: 'Активные', count: activeCount },
@@ -226,29 +226,35 @@ export default function AdminStudents() {
             <button
               key={f.key}
               onClick={() => setStatusFilter(f.key)}
-              className="px-3 py-1.5 rounded-[12px] text-[11px] font-bold transition-all duration-200"
-              style={{
-                background: statusFilter === f.key ? 'rgba(59,130,246,0.12)' : 'transparent',
-                color: statusFilter === f.key ? 'var(--primary)' : 'var(--text-muted)',
-              }}
+              className={`px-3 py-1.5 rounded-[12px] text-[11px] font-bold transition-all duration-200 ${
+                statusFilter === f.key
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-base-content/50 hover:text-base-content'
+              }`}
             >
               {f.label} ({f.count})
             </button>
           ))}
         </div>
         {/* View toggle */}
-        <div className="flex items-center gap-1 p-1 rounded-[12px]" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-1 p-1 rounded-[12px] bg-base-100 border border-base-300">
           <button
             onClick={() => setViewMode('card')}
-            className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
-            style={{ background: viewMode === 'card' ? 'rgba(59,130,246,0.12)' : 'transparent', color: viewMode === 'card' ? 'var(--primary)' : 'var(--text-muted)' }}
+            className={`w-8 h-8 rounded-[12px] flex items-center justify-center transition-all ${
+              viewMode === 'card'
+                ? 'bg-primary/10 text-primary'
+                : 'text-base-content/50 hover:text-base-content'
+            }`}
           >
             <LayoutGrid size={14} />
           </button>
           <button
             onClick={() => setViewMode('table')}
-            className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
-            style={{ background: viewMode === 'table' ? 'rgba(59,130,246,0.12)' : 'transparent', color: viewMode === 'table' ? 'var(--primary)' : 'var(--text-muted)' }}
+            className={`w-8 h-8 rounded-[12px] flex items-center justify-center transition-all ${
+              viewMode === 'table'
+                ? 'bg-primary/10 text-primary'
+                : 'text-base-content/50 hover:text-base-content'
+            }`}
           >
             <List size={14} />
           </button>
