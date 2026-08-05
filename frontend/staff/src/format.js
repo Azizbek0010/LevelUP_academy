@@ -17,20 +17,6 @@ export const formatPhone = (raw) => {
 export const dateShort = (iso) =>
   iso ? new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(iso)) : '—';
 
-/** Format Uzbek phone number: +998XXXXXXXXX → +998 XX XXX XX XX */
-export const formatPhone = (phone) => {
-  if (!phone) return '—';
-  const digits = phone.replace(/\D/g, '');
-  // +998XXXXXXXXX (12 digits with country code) or 9XXXXXXXXX (9 digits local)
-  if (digits.length === 12 && digits.startsWith('998')) {
-    return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 12)}`;
-  }
-  if (digits.length === 9) {
-    return `+998 ${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 7)} ${digits.slice(7, 9)}`;
-  }
-  return phone; // fallback: return as-is
-};
-
 export const ORG_STATUS = {
   active: { label: 'Активен', cls: 'badge-success' },
   trial: { label: 'Триал', cls: 'badge-warning' },

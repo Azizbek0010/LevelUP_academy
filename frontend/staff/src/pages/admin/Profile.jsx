@@ -62,7 +62,7 @@ export default function Profile() {
       return;
     }
     if (form.newPassword.length < 6) {
-      setMsg({ type: 'err', text: 'Пароль должен быть не менее 6 символов' });
+      setMsg({ type: 'err', text: 'Минимум 6 символов' });
       return;
     }
     setSaving(true);
@@ -73,7 +73,7 @@ export default function Profile() {
         newPassword: form.newPassword,
       });
       setForm(f => ({ ...f, currentPassword: '', newPassword: '', confirmPassword: '' }));
-      setMsg({ type: 'ok', text: 'Пароль успешно изменён!' });
+      setMsg({ type: 'ok', text: 'Пароль изменён!' });
     } catch (err) {
       setMsg({ type: 'err', text: err.message || 'Ошибка смены пароля' });
     } finally {
@@ -83,10 +83,14 @@ export default function Profile() {
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title="Мой профиль" subtitle="Управление личными данными и безопасностью" />
+      {/* ═══ Page Header ═══ */}
+      <div>
+        <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Профиль</h1>
+        <p className="text-[13px] text-base-content/70 mt-1">Личные данные и настройки безопасности</p>
+      </div>
 
-      {/* Profile avatar + role badge */}
-      <div className="card bg-base-100 p-6 animate-fade-in">
+      {/* ═══ Profile Card ═══ */}
+      <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-0">
         <div className="flex items-center gap-5">
           <div
             className="w-20 h-20 rounded-[18px] flex items-center justify-center text-2xl font-black shrink-0"
@@ -99,14 +103,13 @@ export default function Profile() {
             {user?.firstName?.[0] ?? 'U'}{user?.lastName?.[0] ?? ''}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-extrabold" style={{ color: 'var(--text)' }}>
+            <h2 className="text-xl font-extrabold text-base-content">
               {user?.firstName} {user?.lastName}
             </h2>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>{user?.email}</p>
+            <p className="text-sm mt-0.5 text-base-content/70">{user?.email}</p>
             <div className="flex items-center gap-2 mt-2">
               <span
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg"
-                style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--primary)' }}
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-primary/10 text-primary"
               >
                 <BadgeCheck size={12} />
                 {ROLE_LABELS[user?.role] || user?.role}
@@ -133,126 +136,100 @@ export default function Profile() {
       {/* Personal info form */}
       <form onSubmit={handleSaveProfile} className="card bg-base-100 p-6 animate-fade-in stagger-1">
         <div className="flex items-center gap-2.5 mb-5">
-          <h2 className="text-[15px] font-extrabold" style={{ color: 'var(--text)' }}>Личные данные</h2>
+          <h2 className="text-[15px] font-extrabold text-base-content">Личные данные</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* First name */}
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block text-base-content/50">
               Имя
             </label>
             <div className="relative">
-              <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+              <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
               <input
                 type="text"
                 value={form.firstName}
                 onChange={e => set('firstName', e.target.value)}
-                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary"
-                style={{
-                  background: 'var(--surface)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)',
-                }}
+                className="w-full h-10 pl-9 pr-3 rounded-[10px] border border-base-300 bg-base-100 text-base-content text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           {/* Last name */}
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block text-base-content/50">
               Фамилия
             </label>
             <div className="relative">
-              <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+              <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
               <input
                 type="text"
                 value={form.lastName}
                 onChange={e => set('lastName', e.target.value)}
-                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary"
-                style={{
-                  background: 'var(--surface)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)',
-                }}
+                className="w-full h-10 pl-9 pr-3 rounded-[10px] border border-base-300 bg-base-100 text-base-content text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           {/* Nickname */}
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block text-base-content/50">
               Никнейм
             </label>
             <div className="relative">
-              <AtSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+              <AtSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
               <input
                 type="text"
                 value={form.nickname}
                 onChange={e => set('nickname', e.target.value)}
                 placeholder="Отображаемое имя"
-                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-base-content/45"
-                style={{
-                  background: 'var(--surface)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)',
-                }}
+                className="w-full h-10 pl-9 pr-3 rounded-[10px] border border-base-300 bg-base-100 text-base-content text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-base-content/45"
               />
             </div>
           </div>
 
           {/* Age */}
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block text-base-content/50">
               Возраст
             </label>
             <div className="relative">
-              <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+              <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
               <input
                 type="number"
-                min="16"
+                min="5"
                 max="100"
                 value={form.age}
                 onChange={e => set('age', e.target.value)}
-                placeholder="25"
-                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-base-content/45"
-                style={{
-                  background: 'var(--surface)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)',
-                }}
+                className="w-full h-10 pl-9 pr-3 rounded-[10px] border border-base-300 bg-base-100 text-base-content text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           {/* Email (read-only) */}
           <div className="sm:col-span-2">
-            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block text-base-content/50">
               Email
             </label>
             <div className="relative">
-              <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+              <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
               <input
                 type="email"
-                value={form.email}
+                value={user?.email || ''}
                 readOnly
-                className="w-full h-10 pl-9 pr-3 rounded-[10px] border text-[13px] outline-none cursor-not-allowed opacity-70"
-                style={{
-                  background: 'var(--surface-hover)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-secondary)',
-                }}
+                className="w-full h-10 pl-9 pr-3 rounded-[10px] border border-base-300 bg-base-200 text-base-content/50 text-[13px] outline-none cursor-not-allowed"
               />
             </div>
+            <span className="text-[10px] text-base-content/40 mt-1">Email меняется через Super Admin</span>
           </div>
         </div>
 
-        <div className="mt-5 flex justify-end">
+        <div className="flex justify-end mt-6">
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-[13px] font-bold transition-all duration-200 hover:brightness-110 disabled:opacity-50"
-            style={{ background: 'var(--primary)', color: '#fff' }}
+            className="btn btn-primary btn-sm gap-2"
           >
             {saving ? <span className="loading loading-spinner loading-sm" /> : <Save size={14} />}
             Сохранить
@@ -263,71 +240,56 @@ export default function Profile() {
       {/* Change password form */}
       <form onSubmit={handleChangePassword} className="card bg-base-100 p-6 animate-fade-in stagger-2">
         <div className="flex items-center gap-2.5 mb-5">
-          <h2 className="text-[15px] font-extrabold" style={{ color: 'var(--text)' }}>Смена пароля</h2>
+          <h2 className="text-[15px] font-extrabold text-base-content">Смена пароля</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Current password */}
           <div className="sm:col-span-2">
-            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block text-base-content/50">
               Текущий пароль
             </label>
             <div className="relative">
-              <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+              <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={form.currentPassword}
                 onChange={e => set('currentPassword', e.target.value)}
-                className="w-full h-10 pl-9 pr-10 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary"
-                style={{
-                  background: 'var(--surface)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)',
-                }}
+                className="w-full h-10 pl-9 pr-10 rounded-[10px] border border-base-300 bg-base-100 text-base-content text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           {/* New password */}
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block text-base-content/50">
               Новый пароль
             </label>
             <div className="relative">
-              <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+              <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={form.newPassword}
                 onChange={e => set('newPassword', e.target.value)}
                 placeholder="Минимум 6 символов"
-                className="w-full h-10 pl-9 pr-10 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-base-content/45"
-                style={{
-                  background: 'var(--surface)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)',
-                }}
+                className="w-full h-10 pl-9 pr-10 rounded-[10px] border border-base-300 bg-base-100 text-base-content text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-base-content/45"
               />
             </div>
           </div>
 
           {/* Confirm password */}
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+            <label className="text-[11px] font-bold uppercase tracking-wider mb-1.5 block text-base-content/50">
               Подтвердите пароль
             </label>
             <div className="relative">
-              <Shield size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+              <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={form.confirmPassword}
                 onChange={e => set('confirmPassword', e.target.value)}
-                placeholder="Повторите пароль"
-                className="w-full h-10 pl-9 pr-10 rounded-[10px] border text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-base-content/45"
-                style={{
-                  background: 'var(--surface)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text)',
-                }}
+                placeholder="Повторите новый пароль"
+                className="w-full h-10 pl-9 pr-10 rounded-[10px] border border-base-300 bg-base-100 text-base-content text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-base-content/45"
               />
             </div>
           </div>
@@ -337,21 +299,19 @@ export default function Profile() {
         <button
           type="button"
           onClick={() => setShowPassword(v => !v)}
-          className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium transition-colors"
-          style={{ color: 'var(--text-muted)' }}
+          className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium transition-colors text-base-content/50"
         >
           {showPassword ? <EyeOff size={12} /> : <Eye size={12} />}
           {showPassword ? 'Скрыть пароли' : 'Показать пароли'}
         </button>
 
-        <div className="mt-5 flex justify-end">
+        <div className="flex justify-end mt-6">
           <button
             type="submit"
-            disabled={saving || !form.currentPassword || !form.newPassword}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-[13px] font-bold transition-all duration-200 hover:brightness-110 disabled:opacity-50"
-            style={{ background: 'var(--danger)', color: '#fff' }}
+            disabled={saving}
+            className="btn btn-primary btn-sm gap-2"
           >
-            {saving ? <span className="loading loading-spinner loading-sm" /> : <Lock size={14} />}
+            {saving ? <span className="loading loading-spinner loading-sm" /> : <Save size={14} />}
             Изменить пароль
           </button>
         </div>

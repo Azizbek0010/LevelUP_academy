@@ -39,14 +39,13 @@ export default function AdminSettings() {
             <div className="p-5 sm:p-6">
               <div className="flex items-center gap-3 mb-5">
                 <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: '#3b82f615' }}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-primary/10"
                 >
-                  <Clock size={17} style={{ color: '#3b82f6' }} />
+                  <Clock size={17} className="text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold" style={{ color: 'var(--text)' }}>Параметры обучения</h3>
-                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>Глобальные настройки организации</p>
+                  <h3 className="text-sm font-bold text-base-content">Параметры обучения</h3>
+                  <p className="text-[11px] mt-0.5 text-base-content/50">Глобальные настройки организации</p>
                 </div>
               </div>
               
