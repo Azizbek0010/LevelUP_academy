@@ -11,10 +11,21 @@ import Icon from '../components/Icons.jsx';
 const RANK_COLORS = ['#f59e0b', '#94a3b8', '#cd7f32'];
 const RANK_ICONS = ['trophy', 'star', 'star'];
 
+/** Инициалы группы («JavaScript Basics» → «JB»), чтобы длинное имя не вылезало из квадратика. */
+function groupInitials(name) {
+  return String(name || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+}
+
 export default function Dashboard() {
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
-  const { data: ratingData, isLoading: ratingLoading } = useGroupRating(selectedChild?.id);
+  const { data: ratingData, isLoading: ratingLoading, error: ratingError } = useGroupRating(selectedChild?.id);
   const [showRating, setShowRating] = useState(false);
 
   if (!selectedChild) {
@@ -52,7 +63,10 @@ export default function Dashboard() {
       : 0;
 
   const group = d.groups?.[0];
-  const students = ratingData?.data?.students || [];
+  // дедупликация по childId — если бэк вдруг вернёт повторы, дублей в списке не будет
+  const students = (ratingData?.data?.students || []).filter(
+    (s, i, arr) => arr.findIndex((x) => x.childId === s.childId) === i,
+  );
 
   // Guruh reytingi ko'rinishi
   if (showRating && group) {
@@ -72,11 +86,11 @@ export default function Dashboard() {
           <div className="card-body py-4">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center">
-                <span className="text-xl font-extrabold text-primary">{group.name}</span>
+                <span className="text-lg font-extrabold text-primary leading-none">{groupInitials(group.name)}</span>
               </div>
-              <div className="flex-1">
-                <h2 className="text-lg font-bold">{group.name}</h2>
-                <p className="text-sm opacity-50">{group.subject} · {group.mentorName}</p>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold truncate">{group.name}</h2>
+                <p className="text-sm opacity-50 truncate">{group.subject} · {group.mentorName}</p>
                 <p className="text-xs opacity-30 mt-0.5">{students.length} учеников</p>
               </div>
             </div>
@@ -96,6 +110,11 @@ export default function Dashboard() {
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="skeleton h-14 rounded-xl" />
                 ))}
+              </div>
+            ) : ratingError ? (
+              <div className="text-center py-8">
+                <Icon name="exclamation-circle" className="w-10 h-10 text-error mx-auto mb-3" />
+                <p className="text-sm opacity-60">Рейтинг недоступен</p>
               </div>
             ) : students.length === 0 ? (
               <EmptyState icon="trophy" title="Нет данных" message="Рейтинг пока пуст" />
@@ -266,11 +285,11 @@ export default function Dashboard() {
                 onClick={() => setShowRating(true)}
                 className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:from-primary/10 hover:to-primary/15 hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer w-full text-left mt-2"
               >
-                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-lg font-extrabold text-primary shrink-0 group-hover:scale-110 transition-transform">
-                  {group.name}
+                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-base font-extrabold text-primary shrink-0 group-hover:scale-110 transition-transform">
+                  {groupInitials(group.name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold">{group.name}</p>
+                  <p className="text-sm font-bold truncate">{group.name}</p>
                   <p className="text-xs opacity-40 flex items-center gap-1 mt-0.5">
                     <Icon name="user" className="w-3 h-3" />
                     {group.mentorName}

@@ -1,7 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import {
-  Wallet, CreditCard, Banknote, Clock, CheckCircle2, AlertTriangle,
+  Wallet, CreditCard, Banknote, Clock, CheckCircle2,
   AlertCircle, TrendingUp, Search, ChevronLeft, ChevronRight, Plus, X,
   Upload, RotateCcw, Ban, Info, Download
 } from 'lucide-react';
@@ -12,20 +11,18 @@ import { useAdminInvoices, useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
-import { Avatar, Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
+import { Avatar, Kpi, RowSkeleton, Tip, Modal } from '../mentor/_ui.jsx';
 
 const STATUS = {
   paid: { label: 'Оплачен', bg: '#2ECC7115', text: '#2ECC71', icon: CheckCircle2 },
   partially_paid: { label: 'Частично', bg: '#F59E0B15', text: '#F59E0B', icon: Clock },
   pending: { label: 'Ожидает', bg: '#6B728015', text: '#6B7280', icon: AlertCircle },
-  overdue: { label: 'Просрочен', bg: '#E8543E15', text: '#E8543E', icon: AlertTriangle },
-  cancelled: { label: 'Отменён', bg: '#6B728008', text: '#6B7280', icon: AlertCircle },
 };
 
-const STATUS_LIST = ['all', 'pending', 'partially_paid', 'paid', 'overdue', 'cancelled'];
+const STATUS_LIST = ['all', 'pending', 'partially_paid', 'paid'];
 const STATUS_LABELS = {
   all: 'Все', pending: 'Ожидает', partially_paid: 'Частично',
-  paid: 'Оплачен', overdue: 'Просрочен', cancelled: 'Отменён',
+  paid: 'Оплачен',
 };
 
 const METHODS = { cash: 'Наличные', card: 'Карта', transfer: 'Перевод' };
@@ -205,7 +202,6 @@ export default function AdminPayments() {
       total,
       paid: allRows.filter((inv) => inv.status === 'paid').length,
       waiting: allRows.filter((inv) => inv.status === 'pending' || inv.status === 'partially_paid').length,
-      overdue: allRows.filter((inv) => inv.status === 'overdue').length,
     };
   }, [allRows]);
 
@@ -383,11 +379,10 @@ export default function AdminPayments() {
       </div>
 
       {/* ═══ Stats ═══ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Kpi Icon={TrendingUp} title="Всего счетов" value={allRows.length}  tone="neutral" />
         <Kpi Icon={CheckCircle2} title="Оплачено" value={stats.paid}  tone="success" />
         <Kpi Icon={Clock} title="Ожидает" value={stats.waiting}  tone="warning" />
-        <Kpi Icon={AlertTriangle} title="Просрочено" value={stats.overdue}  tone="danger" />
       </div>
 
       {/* ═══ Invoice List ═══ */}
@@ -443,46 +438,57 @@ export default function AdminPayments() {
       <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="payments" data={rows} />
 
       {/* ═══════════════ MODAL: Pay Invoice ═══════════════ */}
-      {pay && createPortal(
-        <dialog className="modal modal-open">
-          <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-1">Приём оплаты</h3>
-            <p className="text-sm text-base-content/45 mb-4">{pay.student} · {pay.group || '—'}</p>
-            <p className="text-xs text-base-content/45 mb-3">
-              Счёт: {dateShort(pay.dueDate || pay.due_date)} · Остаток: {money(Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0))}
-            </p>
-            {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
-            <SplitPartsForm parts={payParts} onChange={(i, f, v) => {
-              const u = [...payParts]; u[i] = { ...u[i], [f]: v }; setPayParts(u);
-            }} onAdd={() => setPayParts([...payParts, { method: 'card', amount: '' }])}
-              onRemove={(i) => setPayParts(payParts.filter((_, idx) => idx !== i))} />
-            {payParts.length > 1 && (
-              <p className="text-xs text-base-content/45 mt-2 tabular-nums">
-                Итого: {money(payPartsSum)}
-                {payPartsSum > Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0) && (
-                  <span className="text-error ml-1">· Превышает остаток!</span>
-                )}
-              </p>
-            )}
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setPay(null)} disabled={busy}>Отмена</button>
-              <button className="btn btn-primary" onClick={submitPay}
-                disabled={busy || payParts.some((p) => !p.amount || Number(p.amount) <= 0) || payPartsSum > Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0)}>
-                {busy && <span className="loading loading-spinner loading-xs" />} Принять
-              </button>
-            </div>
+      <Modal
+        isOpen={!!pay}
+        onClose={() => setPay(null)}
+        title="Приём оплаты"
+        actions={
+          <div className="modal-action">
+            <button className="btn btn-ghost" onClick={() => setPay(null)} disabled={busy}>Отмена</button>
+            <button className="btn btn-primary" onClick={submitPay}
+              disabled={busy || payParts.some((p) => !p.amount || Number(p.amount) <= 0) || payPartsSum > Number(pay?.totalAmount || pay?.amount || 0) - Number(pay?.paidAmount || pay?.paid_amount || 0)}>
+              {busy && <span className="loading loading-spinner loading-xs" />} Принять
+            </button>
           </div>
-          <div className="modal-backdrop" onClick={() => setPay(null)} />
-        </dialog>
-      , document.body)}
+        }
+      >
+        <p className="text-sm text-base-content/45 mb-4">{pay?.student} · {pay?.group || '—'}</p>
+        <p className="text-xs text-base-content/45 mb-3">
+          Счёт: {dateShort(pay?.dueDate || pay?.due_date)} · Остаток: {money(Number(pay?.totalAmount || pay?.amount || 0) - Number(pay?.paidAmount || pay?.paid_amount || 0))}
+        </p>
+        {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
+        <SplitPartsForm parts={payParts} onChange={(i, f, v) => {
+          const u = [...payParts]; u[i] = { ...u[i], [f]: v }; setPayParts(u);
+        }} onAdd={() => setPayParts([...payParts, { method: 'card', amount: '' }])}
+          onRemove={(i) => setPayParts(payParts.filter((_, idx) => idx !== i))} />
+        {(
+          <p className="text-xs text-base-content/45 mt-2 tabular-nums">
+            Итого: {money(payPartsSum)}
+            {payPartsSum > Number(pay?.totalAmount || pay?.amount || 0) - Number(pay?.paidAmount || pay?.paid_amount || 0) && (
+              <span className="text-error ml-1">· Превышает остаток!</span>
+            )}
+          </p>
+        )}
+      </Modal>
 
       {/* ═══════════════ MODAL: Razoviy (Ad-hoc) Payment ═══════════════ */}
-      {showAdHoc && createPortal(
-        <dialog className="modal modal-open">
-          <div className="modal-box card bg-base-100 border border-base-300 max-w-lg">
-            <h3 className="font-bold text-lg mb-1">Разовый платёж</h3>
-            <p className="text-sm text-base-content/45 mb-4">Создать счёт и принять оплату вне графика начислений</p>
-            {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
+      <Modal
+        isOpen={showAdHoc}
+        onClose={() => { setShowAdHoc(false); setErr(''); setStudentSearch(''); }}
+        boxClass="max-w-lg"
+        title="Разовый платёж"
+        actions={
+          <div className="modal-action">
+            <button className="btn btn-ghost" onClick={() => { setShowAdHoc(false); setErr(''); setStudentSearch(''); }} disabled={busy}>Отмена</button>
+            <button className="btn btn-primary" onClick={submitAdHoc}
+              disabled={busy || !adhocForm.studentId || !adhocForm.totalAmount || Number(adhocForm.totalAmount) <= 0 || adhocTotal <= 0 || adhocTotal > Number(adhocForm.totalAmount)}>
+              {busy && <span className="loading loading-spinner loading-xs" />} Создать
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm text-base-content/45 mb-4">Создать счёт и принять оплату вне графика начислений</p>
+        {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
 
             <div className="space-y-3">
               {/* Searchable student selection */}
@@ -550,7 +556,7 @@ export default function AdminPayments() {
                   maxParts={5} />
               </div>
 
-              {adhocParts.length > 1 && (
+              {(
                 <p className={`text-xs tabular-nums ${adhocTotal > Number(adhocForm.totalAmount) ? 'text-error' : 'text-base-content/45'}`}>
                   Итого частей: {money(adhocTotal)}
                   {adhocTotal > Number(adhocForm.totalAmount) && (
@@ -570,50 +576,42 @@ export default function AdminPayments() {
                   onChange={(e) => setAdhocForm((f) => ({ ...f, comment: e.target.value }))} />
               </div>
             </div>
-
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => { setShowAdHoc(false); setErr(''); setStudentSearch(''); }} disabled={busy}>Отмена</button>
-              <button className="btn btn-primary" onClick={submitAdHoc}
-                disabled={busy || !adhocForm.studentId || !adhocForm.totalAmount || Number(adhocForm.totalAmount) <= 0 || adhocTotal <= 0 || adhocTotal > Number(adhocForm.totalAmount)}>
-                {busy && <span className="loading loading-spinner loading-xs" />} Создать
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => { setShowAdHoc(false); setErr(''); setStudentSearch(''); }} />
-        </dialog>
-      , document.body)}
+      </Modal>
 
       {/* ═══════════════ MODAL: Invoice Detail ═══════════════ */}
-      {detail && createPortal(
-        <dialog className="modal modal-open">
-          <div className="modal-box card bg-base-100 border border-base-300 max-w-xl">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="font-bold text-lg">{detail.student || '—'}</h3>
-                <p className="text-sm text-base-content/45">{detail.group || '—'}</p>
-              </div>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                style={{ background: (STATUS[detail.status] || STATUS.pending).bg, color: (STATUS[detail.status] || STATUS.pending).text }}>
-                {(STATUS[detail.status] || STATUS.pending).icon && (
-                  <StatusIcon s={detail.status} />
-                )}
-                {(STATUS[detail.status] || STATUS.pending).label}
-              </span>
-            </div>
+      <Modal
+        isOpen={!!detail}
+        onClose={() => setDetail(null)}
+        boxClass="max-w-xl"
+      >
+        <div className="flex items-start justify-between mb-4 -mt-2">
+          <div>
+            <h3 className="font-bold text-lg">{detail?.student || '—'}</h3>
+            <p className="text-sm text-base-content/45">{detail?.group || '—'}</p>
+          </div>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
+            style={{ background: (STATUS[detail?.status] || STATUS.pending).bg, color: (STATUS[detail?.status] || STATUS.pending).text }}>
+            {(STATUS[detail?.status] || STATUS.pending).icon && (
+              <StatusIcon s={detail?.status} />
+            )}
+            {(STATUS[detail?.status] || STATUS.pending).label}
+          </span>
+        </div>
 
+            {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
             {/* Summary */}
             <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="card bg-base-100 p-3 text-center">
                 <div className="text-[10px] font-bold text-base-content/45 uppercase">Сумма</div>
-                <div className="text-[16px] font-extrabold tabular-nums">{money(Number(detail.totalAmount || detail.amount || 0))}</div>
+                <div className="text-[16px] font-extrabold tabular-nums">{money(Number(detail?.totalAmount || detail?.amount || 0))}</div>
               </div>
               <div className="card bg-base-100 p-3 text-center">
                 <div className="text-[10px] font-bold text-base-content/45 uppercase">Оплачено</div>
-                <div className="text-[16px] font-extrabold tabular-nums" style={{ color: '#2ECC71' }}>{money(Number(detail.paidAmount || detail.paid_amount || 0))}</div>
+                <div className="text-[16px] font-extrabold tabular-nums" style={{ color: '#2ECC71' }}>{money(Number(detail?.paidAmount || detail?.paid_amount || 0))}</div>
               </div>
               <div className="card bg-base-100 p-3 text-center">
                 <div className="text-[10px] font-bold text-base-content/45 uppercase">Срок</div>
-                <div className="text-[12px] font-bold tabular-nums">{dateShort(detail.dueDate || detail.due_date)}</div>
+                <div className="text-[12px] font-bold tabular-nums">{dateShort(detail?.dueDate || detail?.due_date)}</div>
               </div>
             </div>
 
@@ -692,7 +690,7 @@ export default function AdminPayments() {
                       placeholder="Причина (обязательно для возврата)" value={reverseReason}
                       onChange={(e) => setReverseReason(e.target.value)} />
                     <button className="btn btn-error btn-sm w-full" onClick={submitReverse}
-                      disabled={busy || (reverseMode === 'refund' && !reverseReason.trim())}>
+                      disabled={busy || !reverseReason.trim()}>
                       {busy && <span className="loading loading-spinner loading-xs" />}
                       {reverseMode === 'refund' ? 'Выполнить возврат' : 'Аннулировать'}
                     </button>
@@ -725,7 +723,9 @@ export default function AdminPayments() {
                     <Upload size={24} className="mx-auto mb-2 text-base-content/45" />
                     <p className="text-[12px] text-base-content/45">{uploadFile ? uploadFile.name : 'Нажмите для выбора файла'}</p>
                     <input id="receipt-file-input" type="file" accept="image/*,.pdf" className="hidden"
+                      onClick={(e) => e.stopPropagation()}
                       onChange={(e) => {
+                        e.stopPropagation();
                         setUploadFile(e.target.files?.[0] || null);
                         handleReceiptFile(e);
                       }} />
@@ -742,10 +742,7 @@ export default function AdminPayments() {
             <div className="modal-action">
               <button className="btn btn-ghost" onClick={() => { setDetail(null); setErr(''); }}>Закрыть</button>
             </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => { setDetail(null); setErr(''); }} />
-        </dialog>
-      , document.body)}
+      </Modal>
     </div>
   );
 }

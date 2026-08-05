@@ -28,7 +28,7 @@ const PERIODS = [
 
 function Kpi({ Icon, tint, title, value, unit, accent }) {
   return (
-    <div className={`card shadow-sm border transition-shadow hover:shadow-md ${accent ? 'bg-gradient-to-br from-lime-400 to-lime-500 border-lime-400' : 'bg-base-100 border-base-200/60'}`}>
+    <div className={`card shadow-sm border transition-shadow hover:shadow-md ${accent ? 'bg-primary border-primary' : 'bg-base-100 border-base-200/60'}`}>
       <div className="card-body p-5">
         <div className="flex items-center gap-3">
           <span
@@ -37,12 +37,12 @@ function Kpi({ Icon, tint, title, value, unit, accent }) {
           >
             <Icon size={20} strokeWidth={2.2} />
           </span>
-          <div className={`text-[11px] font-semibold uppercase tracking-wider leading-tight ${accent ? 'text-lime-950/60' : 'text-base-content/45'}`}>
+          <div className={`text-[11px] font-semibold uppercase tracking-wider leading-tight ${accent ? 'text-primary-content/60' : 'text-base-content/45'}`}>
             {title}
           </div>
         </div>
-        <div className={`text-3xl font-extrabold mt-3 leading-none ${accent ? 'text-lime-950' : ''}`}>{value}</div>
-        {unit && <div className={`text-xs mt-1.5 ${accent ? 'text-lime-950/55' : 'text-base-content/45'}`}>{unit}</div>}
+        <div className={`text-3xl font-extrabold mt-3 leading-none ${accent ? 'text-primary-content' : ''}`}>{value}</div>
+        {unit && <div className={`text-xs mt-1.5 ${accent ? 'text-primary-content/55' : 'text-base-content/45'}`}>{unit}</div>}
       </div>
     </div>
   );
@@ -53,7 +53,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   return (
     <div className="bg-base-100 border border-base-200 rounded-xl shadow-lg px-4 py-3 text-sm">
       <div className="font-semibold mb-1 max-w-[160px] truncate">{label}</div>
-      <div className="text-lime-600 font-bold">{fmt(payload[0]?.value)} UZS</div>
+      <div className="text-primary-content font-bold">{fmt(payload[0]?.value)} UZS</div>
     </div>
   );
 };
@@ -68,7 +68,7 @@ function BarDetailModal({ bar, partner, total, cur, onClose }) {
   return (
     <div className="modal modal-open modal-bottom sm:modal-middle">
       <div className="modal-box max-w-md p-0 overflow-hidden">
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-base-200 bg-gradient-to-r from-lime-50 to-transparent">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-base-200 bg-gradient-to-r from-primary/10 to-transparent">
           {partner && <Avatar name={partner.name} size={40} />}
           <div className="min-w-0 flex-1">
             <div className="font-extrabold text-base leading-tight truncate">{bar.fullName || bar.name}</div>
@@ -79,7 +79,7 @@ function BarDetailModal({ bar, partner, total, cur, onClose }) {
           </button>
         </div>
         <div className="px-6 py-5 space-y-3">
-          <div className="rounded-xl bg-gradient-to-br from-lime-400 to-lime-500 p-4 text-lime-950">
+          <div className="rounded-xl bg-primary p-4 text-primary-content">
             <div className="text-[11px] font-semibold uppercase tracking-wider opacity-70">Счёт / мес</div>
             <div className="text-3xl font-black mt-1">{fmt(bar.value)} <span className="text-sm font-bold">{cur}</span></div>
             <div className="text-xs mt-1 opacity-70">Доля в общем доходе: {share}%</div>
@@ -90,7 +90,7 @@ function BarDetailModal({ bar, partner, total, cur, onClose }) {
               <span className="font-bold tabular-nums">{share}%</span>
             </div>
             <div className="h-2 rounded-full bg-base-200 overflow-hidden">
-              <div className="h-full rounded-full bg-lime-400" style={{ width: `${Math.min(100, parseFloat(share))}%` }} />
+              <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, parseFloat(share))}%` }} />
             </div>
           </div>
           {partner && (
@@ -111,7 +111,7 @@ function BarDetailModal({ bar, partner, total, cur, onClose }) {
           {bar.id && (
             <Link
               to={`/organizations/${bar.id}`}
-              className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 gap-2 flex-1"
+              className="btn btn-primary gap-2 flex-1"
               onClick={onClose}
             >
               Детали <ArrowRight size={15} />
@@ -221,7 +221,7 @@ export default function Revenue() {
             <button
               key={p.key}
               type="button"
-              className={`join-item btn btn-sm ${period === p.key ? 'bg-lime-400 hover:bg-lime-500 border-0 text-lime-950' : 'btn-outline'}`}
+              className={`join-item btn btn-sm ${period === p.key ? 'btn-primary' : 'btn-outline'}`}
               onClick={() => setPeriod(p.key)}
             >
               {p.label}
@@ -260,7 +260,7 @@ export default function Revenue() {
             <div className="card bg-base-100 shadow-sm border border-base-200/60 lg:col-span-2">
               <div className="card-body">
                 <div className="flex items-center gap-2 mb-4">
-                  <Crown size={16} className="text-lime-500" />
+                  <Crown size={16} className="text-primary-content" />
                   <h2 className="card-title text-base">ТОП партнёров по доходу</h2>
                   <span className="text-xs text-base-content/40 ml-auto">{stats.cur}/мес</span>
                 </div>
@@ -342,7 +342,7 @@ export default function Revenue() {
             <div className="card bg-base-100 shadow-sm border border-base-200/60">
               <div className="card-body">
                 <div className="flex items-center gap-2 mb-4">
-                  <Award size={18} className="text-lime-500" />
+                  <Award size={18} className="text-primary-content" />
                   <h2 className="card-title text-base">Анализ партнёров</h2>
                   <span className="text-xs text-base-content/40">с кем лучше / хуже работать</span>
                 </div>
@@ -425,7 +425,7 @@ export default function Revenue() {
                           <td>
                             <div className="flex items-center gap-2.5">
                               <Avatar name={p.name} size={28} />
-                              <Link to={`/organizations/${p.id}`} className="font-medium hover:text-lime-600 transition-colors">
+                              <Link to={`/organizations/${p.id}`} className="font-medium hover:text-primary-content transition-colors">
                                 {p.name}
                               </Link>
                             </div>
@@ -442,7 +442,7 @@ export default function Revenue() {
                   <tfoot>
                     <tr className="font-bold border-t-2 border-base-300">
                       <td colSpan={5} className="text-right text-sm opacity-60">Итого:</td>
-                      <td className="text-right text-lime-600 tabular-nums">{fmt(stats.total)}</td>
+                      <td className="text-right text-primary-content tabular-nums">{fmt(stats.total)}</td>
                       <td className="text-right text-xs text-base-content/40">100%</td>
                     </tr>
                   </tfoot>

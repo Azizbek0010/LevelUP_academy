@@ -10,7 +10,7 @@ import { useAdminStudentDetail } from '../../queries.js';
 import { api } from '../../api.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, RowSkeleton } from '../mentor/_ui.jsx';
+import { Avatar, RowSkeleton, Modal } from '../mentor/_ui.jsx';
 
 /* ─── helpers ─── */
 const fullName = (s) =>
@@ -61,9 +61,7 @@ export default function AdminStudentDetail() {
       firstName: student.firstName || '',
       lastName: student.lastName || '',
       phone: student.phone || '',
-      parentPhone: student.parentPhone || '',
-      age: student.age || '',
-      gender: student.gender || 'male',
+      birthDate: student.birthDate ? new Date(student.birthDate).toISOString().split('T')[0] : '',
     });
     setEditing(true);
   };
@@ -75,9 +73,7 @@ export default function AdminStudentDetail() {
         firstName: form.firstName,
         lastName: form.lastName,
         phone: form.phone || undefined,
-        parentPhone: form.parentPhone || undefined,
-        age: form.age ? Number(form.age) : undefined,
-        gender: form.gender || undefined,
+        birthDate: form.birthDate || undefined,
       });
       setEditing(false);
       refetch();
@@ -259,7 +255,7 @@ export default function AdminStudentDetail() {
 
           {/* Groups count */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[10px] flex items-center justify-center bg-blue-50 text-blue-600">
+            <div className="w-10 h-10 rounded-[10px] flex items-center justify-center bg-base-200 text-primary">
               <Users size={18} />
             </div>
             <div>
@@ -291,14 +287,9 @@ export default function AdminStudentDetail() {
                 }`}>
                   {isActive ? 'Активен' : 'Заморожен'}
                 </span>
-                {student.gender && (
+                {student.birthDate && (
                   <span className="text-[11px] text-base-content/45">
-                    {student.gender === 'male' ? 'Мужской' : 'Женский'}
-                  </span>
-                )}
-                {student.age && (
-                  <span className="text-[11px] text-base-content/45">
-                    {student.age} лет
+                    {new Date(student.birthDate).toLocaleDateString('ru-RU')}
                   </span>
                 )}
               </div>
@@ -489,7 +480,7 @@ export default function AdminStudentDetail() {
             onClick={handleRegen}
             disabled={busy}
           >
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-blue-50 text-blue-600 group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-base-200 text-primary group-hover:scale-105 transition-transform">
               <KeyRound size={16} />
             </div>
             <div>
@@ -535,88 +526,66 @@ export default function AdminStudentDetail() {
       </div>
 
       {/* ═══ Edit Modal ═══ */}
-      {editing && (
-        <dialog className="modal modal-open">
-          <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-4">Редактирование ученика</h3>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Имя</label>
-                  <input
-                    className="input input-bordered w-full"
-                    placeholder="Имя"
-                    value={form.firstName}
-                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Фамилия</label>
-                  <input
-                    className="input input-bordered w-full"
-                    placeholder="Фамилия"
-                    value={form.lastName}
-                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Telefon</label>
-                <PhoneInput
-                  className="input input-bordered w-full"
-                  value={form.phone}
-                  onChange={(v) => setForm({ ...form, phone: v })}
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Ota-ona telefoni</label>
-                <PhoneInput
-                  className="input input-bordered w-full"
-                  value={form.parentPhone}
-                  onChange={(v) => setForm({ ...form, parentPhone: v })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Возраст</label>
-                  <input
-                    className="input input-bordered w-full"
-                    type="number"
-                    min="5"
-                    max="100"
-                    placeholder="Возраст"
-                    value={form.age}
-                    onChange={(e) => setForm({ ...form, age: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Пол</label>
-                  <select
-                    className="select select-bordered w-full"
-                    value={form.gender}
-                    onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                  >
-                    <option value="male">Мужской</option>
-                    <option value="female">Женский</option>
-                  </select>
-                </div>
-              </div>
+      <Modal
+        isOpen={!!editing}
+        onClose={() => setEditing(false)}
+        title="Редактирование ученика"
+        actions={
+          <div className="modal-action">
+            <button className="btn btn-ghost" onClick={() => setEditing(false)} disabled={saving}>Отмена</button>
+            <button
+              className="btn btn-primary gap-1"
+              onClick={saveEdit}
+              disabled={saving || !form?.firstName || !form?.lastName}
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              Сохранить
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Имя</label>
+              <input
+                className="input input-bordered w-full"
+                placeholder="Имя"
+                value={form?.firstName || ''}
+                onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+              />
             </div>
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setEditing(false)} disabled={saving}>Отмена</button>
-              <button
-                className="btn btn-primary gap-1"
-                onClick={saveEdit}
-                disabled={saving || !form.firstName || !form.lastName}
-              >
-                {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                Сохранить
-              </button>
+            <div>
+              <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Фамилия</label>
+              <input
+                className="input input-bordered w-full"
+                placeholder="Фамилия"
+                value={form?.lastName || ''}
+                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+              />
             </div>
           </div>
-          <div className="modal-backdrop" onClick={() => setEditing(false)} />
-        </dialog>
-      )}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Телефон</label>
+              <PhoneInput
+                className="input input-bordered w-full"
+                value={form?.phone || ''}
+                onChange={(v) => setForm({ ...form, phone: v })}
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Дата рождения</label>
+              <input
+                className="input input-bordered w-full"
+                type="date"
+                value={form?.birthDate || ''}
+                onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
