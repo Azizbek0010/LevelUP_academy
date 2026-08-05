@@ -95,6 +95,90 @@
 
 ---
 
+## SaaSHub — хвосты (готово к вставке, 05.08)
+
+Продукт **уже опубликован публично** — `saashub.com/levelup-academy` отдаёт страницу без
+логина. Осталось три вещи, и все требуют входа в аккаунт SaaSHub.
+
+> [!warning] Главное, что выяснилось 05.08
+> Страница продукта отдаётся с `robots: noindex`, и на ней написано: «The primary details
+> have not been verified within the last quarter, and they might be outdated». То есть
+> ссылка сейчас **не работает как SEO-сигнал** — Google эту страницу в индекс не берёт.
+> Это меняет приоритет: сначала верификация, потом всё остальное.
+
+### 1. Верификация — делать первой
+
+Два способа, оба на странице `saashub.com/verify/levelup-academy` (нужен логин):
+
+1. **По email** — требуется активный адрес **на домене** `@levelup-academy.uz`. У нас он
+   есть: `info@levelup-academy.uz`. Письмо со ссылкой придёт на `thermidorplus@gmail.com`
+   (Cloudflare Email Routing), по ссылке — подтверждение. **Отправлять с этого адреса
+   ничего не нужно** — только принять, а приём у нас работает.
+2. **Кодом на сайте** — SaaSHub выдаёт код, его надо разместить на `levelup-academy.uz`.
+   Если первый способ не сработает, пришли мне код — размещу в `index.html` и задеплою.
+
+### 2. Features — вставить как есть
+
+- Split payments: one invoice paid part in cash, part by card, with the receipt stored in the cloud
+- Automatic debt tracking with a debtor list per branch
+- Access to the student portal is blocked automatically while an invoice is overdue
+- Attendance (davomat) with a per-group register and parent-visible history
+- Tests with a server-side timer and auto-submit
+- Homework with file attachments, deadlines and grading
+- Video lessons scoped to the student's own group
+- Gamification: coins, a rewards shop and weekly/monthly leaderboards
+- Realtime chat plus a direct parent-to-administrator channel
+- Telegram bot: absences, payments, grades and debts, no app to install
+- Multi-branch by design — branches are isolated, the owner sees the whole network
+- Seven roles with server-side RBAC: Main Admin, Super Admin, Admin, Mentor, Methodist, Student, Parent
+
+### 3. Q&A — вставить как есть
+
+- **Is there a free plan?** Yes — free for up to 30 active students, with no time limit.
+  Paid plans start at 199,000 UZS/month for 31–100 students.
+- **Does the price depend on the number of branches?** No. Branches are unlimited on every
+  plan; the price depends only on the number of active students.
+- **Is there a mobile app?** No. The system runs in the phone browser, and notifications
+  are delivered through Telegram.
+- **What happens when a student pays late?** The student's access is blocked automatically
+  while the invoice is overdue and restored on the next request after payment — including
+  a partial one.
+- **How long does onboarding take?** Seven days, done by our team. If we miss that, the
+  next month is free.
+- **Which languages does it support?** The site and materials are in Russian, Uzbek and
+  English.
+
+---
+
+## crmindex.ru и picktech.ru — тексты для подачи (05.08)
+
+Обе площадки проверены: бесплатная подача есть (см. [GEO-OFFSITE.md](./GEO-OFFSITE.md)).
+Аудитория российская, поэтому описания — на русском, и в них сразу указан регион, чтобы
+карточка не выглядела как заявка на российский рынок.
+
+- **Название:** LevelUp Academy — CRM для учебного центра
+- **Сайт:** https://levelup-academy.uz
+- **Категории:** CRM-системы · Образование / EdTech · Отраслевые решения
+- **Краткое описание (до 150 знаков):**
+  > CRM для учебных центров и языковых школ: ученики, оплаты и долги, посещаемость, тесты,
+  > мотивация и Telegram-уведомления в одной системе.
+- **Полное описание:**
+  > LevelUp Academy — SaaS-платформа для управления учебным центром: приём оплат со
+  > сплит-платежами (часть наличными, часть картой), автоматический учёт долгов,
+  > посещаемость (davomat), тесты с серверным таймером, домашние задания, видеоуроки,
+  > геймификация (коины, магазин наград, лидерборды), realtime-чаты и Telegram-бот для
+  > родителей. Семь ролей с проверкой прав на сервере, мультифилиальность с первого дня.
+  > Разработана в Узбекистане, интерфейс сайта на русском, узбекском и английском.
+  > До 30 учеников — бесплатно, далее от 199 000 сум в месяц, филиалы безлимитно.
+- **Цена:** от 0 (до 30 учеников); платные тарифы от 199 000 сум/мес
+- ⚠️ **Валюта:** если в форме нет UZS — цену **не проставлять** (та же ошибка, что чуть не
+  ушла на SaaSHub: 199 000 без валюты читается как доллары). Оставить ссылку на страницу
+  тарифов.
+- ⚠️ **crmindex:** после подачи — попросить их добавить продукт **во все подходящие
+  рубрики**. Их собственный совет: трафик идёт на страницы рейтингов, а не на карточку.
+
+---
+
 ## Локальные площадки (RU/UZ)
 
 ### Yandex Бизнес
