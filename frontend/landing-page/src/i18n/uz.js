@@ -16,8 +16,12 @@ export default {
     langSchool: 'Til markazlariga',
     courses: 'Kurs va repetitorlarga',
     vsExcel: "Excel o'rniga CRM",
+    vsModme: 'Modme bilan taqqoslash',
+    vsUmai: 'Umai CRM bilan taqqoslash',
     blog: 'Bilimlar bazasi',
     gamification: 'Motivatsiya',
+    faq: 'Savol va javoblar',
+    about: 'Kompaniya haqida',
     contacts: 'Aloqa',
     home: 'Bosh sahifa',
     login: 'Kirish',
@@ -1138,6 +1142,400 @@ export default {
     ],
   },
 
+  vsModme: {
+    badge: 'Taqqoslash',
+    h1: 'LevelUp Academy yoki Modme',
+    lead: "Ikkala tizim ham bitta vazifani hal qiladi — o'quv markazida o'quvchilar, to'lovlar va davomat hisobi. Farq narxda, tarifga nima kirishida va mobil qismning yetukligida.",
+    checkedNote:
+      "Modme narxlari va shartlari ularning tariflar sahifasidan olingan va 2026-yil 5-avgustda tekshirilgan. Qaror qabul qilishdan oldin ularning saytini solishtirib ko'ring — shartlar o'zgargan bo'lishi mumkin.",
+
+    priceHead: 'Oyiga qancha turadi',
+    priceLead:
+      "Modme'da to'lov kamida 3 oyga amalga oshiriladi, shuning uchun taqqoslash uchun ularning narxi oyiga qayta hisoblangan.",
+    priceTable: {
+      param: 'Markaz hajmi',
+      us: 'LevelUp Academy',
+      them: 'Modme',
+      rows: [
+        { task: "30 tagacha o'quvchi", before: "0 so'm — bepul tarif", after: "bepul tarif yo'q" },
+        { task: "100 o'quvchi", before: "199 000 so'm/oy", after: "500 000 so'm/oy (3 oyga 1 500 000)" },
+        { task: "300 o'quvchi", before: "349 000 so'm/oy", after: "1 040 000 so'm/oy (3 oyga 3 120 000)" },
+        { task: "600 o'quvchi", before: "599 000 so'm/oy", after: "1 560 000 so'm/oy (3 oyga 4 680 000)" },
+        { task: "1000 dan ortiq o'quvchi", before: 'kelishuv asosida', after: "3 000 000 so'm/oy (3 oyga 9 000 000)" },
+      ],
+    },
+
+    compareHead: 'Narxga nima kiradi',
+    compare: {
+      task: 'Parametr',
+      before: 'LevelUp Academy',
+      after: 'Modme',
+      rows: [
+        { task: "Eng kam to'lov muddati", before: 'bir oy', after: '3 oy' },
+        { task: "Bepul sinab ko'rish", before: 'birinchi hafta, kartasiz', after: "demo versiya, 7 kungacha" },
+        { task: 'Geymifikatsiya (koinlar, reytinglar)', before: 'har qanday tarifga kiradi', after: "alohida modul, oyiga 150 000 so'm" },
+        { task: 'Filiallar', before: 'har qanday tarifda cheklovsiz', after: "o'quvchilar soniga bog'liq tarifga qarab" },
+        { task: 'Uzoq muddatga chegirma', before: "yillik to'lovda 15%", after: "12 oylik tarifda +2 oy bonus" },
+        { task: 'Pulni qaytarish', before: "30 kun, summaning 100%", after: 'shartlar ularning ofertasida' },
+        { task: 'Mobil ilovalar', before: "yo'q — telefon brauzerida ishlaydi", after: "bor: o'quvchilar va o'qituvchilar uchun ilovalar" },
+        { task: 'Sayt va materiallar tillari', before: "русский, o'zbekcha, English", after: "o'zbekcha, русский, English" },
+      ],
+    },
+
+    themHead: "Qaysi holatda Modme'ni tanlash to'g'riroq",
+    themLead: "Biz hammaga mos kelamiz deb hisoblamaymiz. Mana, ularni tanlash mantiqiy bo'lgan holatlar.",
+    them: [
+      {
+        icon: 'grid',
+        title: 'Nativ ilovalar kerak',
+        text: "Modme'da o'quvchilar va o'qituvchilar uchun alohida ilovalar bor. Bizda hammasi telefon brauzerida ishlaydi — funksional jihatdan bir xil, lekin ish stolida ikonka bo'lmaydi.",
+      },
+      {
+        icon: 'check',
+        title: "Siz allaqachon Modme'dasiz va hammasi joyida",
+        text: "O'tish uchun o'tish o'zini oqlamaydi. Agar tizim markaz vazifalarini yopsa va jamoa unga o'rgangan bo'lsa, tejash bir haftalik ko'chirishga arzimaydi.",
+      },
+      {
+        icon: 'building',
+        title: 'Vendor tajribasi muhim',
+        text: "Modme bozorda uzoqroq ishlaydi va tanilganroq. Biz 2026-yilda tashkil etilganmiz — agar bu siz uchun tamoyilli mezon bo'lsa, buni darhol aytganimiz halolroq.",
+      },
+    ],
+
+    usHead: 'Qaysi holatda biz foydaliroq',
+    us: [
+      {
+        icon: 'coin',
+        title: "30 tagacha o'quvchisi bor markaz",
+        text: "Bizda bu — muddatsiz bepul tarif. Modme'da bepul tarif yo'q — boshlash uchun darhol 3 oylik to'lov kerak bo'ladi.",
+      },
+      {
+        icon: 'receipt',
+        title: "Chorak oldindan to'lashni istamasangiz",
+        text: "Bizda oylik to'lov: mos kelmadi — uzaytirmaysiz. Bundan tashqari, to'lovdan keyin ham tizim mos kelmasa, 30 kun ichida summa to'liq qaytariladi.",
+      },
+      {
+        icon: 'trophy',
+        title: 'Motivatsiya darhol kerak',
+        text: "Koinlar, mukofotlar do'koni va reytinglar har qanday tarifga kiradi. Modme'da geymifikatsiya — tarif ustiga oyiga 150 000 so'm turadigan alohida modul.",
+      },
+      {
+        icon: 'building',
+        title: 'Filiallar tarmog\'i',
+        text: "Filiallar har qanday tarifga cheklovsiz kiradi, siz faqat faol o'quvchilar soni uchun to'laysiz. Rahbar butun tarmoq bo'yicha tushum, qarz va davomatni ko'radi.",
+      },
+    ],
+
+    faqHead: "O'tish haqida ko'p beriladigan savollar",
+    faq: [
+      {
+        q: "300 o'quvchili markaz uchun qaysi biri arzon — LevelUp Academy yoki Modme?",
+        a: "LevelUp Academy: oyiga 349 000 so'm. Modme'da bu hajm uchun Basic tarifi — 3 oyga 3 120 000 so'm, ya'ni oyiga 1 040 000 so'm. Farq taxminan uch baravar; bunda geymifikatsiya bizda tarifga kiradi, Modme'da esa bu oyiga alohida 150 000 so'm. Ma'lumotlar Modme saytidan, 2026-yil 5-avgust holatiga.",
+      },
+      {
+        q: "Modme'dan ma'lumotlarni ko'chirish mumkinmi?",
+        a: "Ha. Faol o'quvchilar, guruhlar, mentorlar va ochiq qarzlarni ko'chirish kerak — o'tgan yillar tarixini ko'chirish shart emas. Modme'dan avtomatik import bizda yo'q: ko'chirishni 7 kunlik ishga tushirish doirasida bizning jamoamiz bajaradi. Birinchi haftada markaz odatda parallel ishlaydi va tushum bilan qarzni solishtiradi.",
+      },
+      {
+        q: 'LevelUp Academy mobil ilovasi bormi?',
+        a: "Alohida ilova yo'q — tizim telefon brauzerida ochiladi va o'quvchi o'sha yerdan uy vazifasini topshiradi, testdan o'tadi va video darslarni ko'radi. Bildirishnomalar Telegram'ga keladi. Modme'da nativ ilovalar bor — agar bu tamoyilli bo'lsa, bu ular foydasiga dalil.",
+      },
+      {
+        q: "LevelUp Academy to'lovlarga yondashuvi bilan nimasi bilan farq qiladi?",
+        a: "Bitta hisobni bir nechta to'lov bilan yopish mumkin — bir qismi naqd, bir qismi karta bilan — va qolgan qarz aniq hisoblanadi. Hisob muddati o'tganda o'quvchining kabinetiga kirishi avtomatik bloklanadi, to'lovdan keyin esa qayta hisoblashni kutmasdan darhol tiklanadi.",
+      },
+    ],
+
+    ctaTitle: 'Farqni markazingizda hisoblab beraylikmi?',
+    ctaText:
+      "Ariza qoldiring — o'quvchilaringiz soni bo'yicha narxni hisoblaymiz va tizimni sizning stsenariylaringizda ko'rsatamiz. Birinchi hafta bepul.",
+  },
+
+  vsUmai: {
+    badge: 'Taqqoslash',
+    h1: 'LevelUp Academy yoki Umai CRM',
+    lead: "Umai CRM — savdo va marketingga urg'u bergan kuchli tizim: voronkalar, AI-bot, tarqatmalar. Biz esa o'quv qismi va narxga urg'u beramiz. Quyida — shiorlar emas, faktlar.",
+    checkedNote:
+      "Umai CRM narxlari va funksiyalari ularning sayti va tariflar sahifasidan olingan, 2026-yil 5-avgustda tekshirilgan. Qaror qabul qilishdan oldin ularning saytini solishtirib ko'ring.",
+
+    priceHead: 'Oyiga qancha turadi',
+    priceLead:
+      "Umai CRM'da narx o'quvchilar soniga bog'liq emas — u funksiyalar to'plamiga bog'liq. Bizda aksincha: funksiyalar to'plami bitta, narx esa markaz hajmi bilan o'sadi.",
+    priceTable: {
+      param: 'Markaz hajmi',
+      us: 'LevelUp Academy',
+      them: 'Umai CRM',
+      rows: [
+        { task: "30 tagacha o'quvchi", before: "0 so'm — bepul tarif", after: "bepul tarif yo'q" },
+        { task: "100 o'quvchi", before: "199 000 so'm/oy", after: "500 000 so'm/oydan (yillik to'lovda 416 667)" },
+        { task: "300 o'quvchi", before: "349 000 so'm/oy", after: "500 000 so'm/oydan — narx o'quvchilar soniga bog'liq emas" },
+        { task: "600 o'quvchi", before: "599 000 so'm/oy", after: "500 000 so'm/oydan" },
+        { task: "1000 dan ortiq o'quvchi", before: 'kelishuv asosida', after: 'Enterprise tarifi — kelishuv asosida' },
+      ],
+    },
+
+    compareHead: 'Narxga nima kiradi',
+    compare: {
+      task: 'Parametr',
+      before: 'LevelUp Academy',
+      after: 'Umai CRM',
+      rows: [
+        { task: "Bepul sinab ko'rish", before: 'birinchi hafta, kartasiz', after: '7 kun, kartasiz' },
+        { task: "Narx nimaga bog'liq", before: "faol o'quvchilar soniga", after: "funksiyalar to'plamiga; o'quvchilar cheklanmagan" },
+        { task: 'Yuqori tarif', before: "799 000 so'm/oy (601–1000 o'quvchi)", after: "2 250 000 so'm/oy — AI tarifi (yillik to'lovda)" },
+        { task: 'Joriy etish va sozlash', before: 'kiradi, 7 kunda ishga tushirish', after: "bir martalik 3 750 000 so'm; 12 oylik to'lovda bepul" },
+        { task: 'Ekspert ish soati', before: "qo'llab-quvvatlashga kiradi", after: "375 000 so'm" },
+        { task: 'Savdo voronkalari, lidlar kanbani, AI chat-bot', before: "yo'q", after: 'bor, kengaytirilgan tariflardan boshlab' },
+        { task: 'WhatsApp va Instagram tarqatmalari', before: "yo'q — bildirishnomalar Telegram'da", after: 'bor' },
+        { task: 'Mobil ilovalar', before: "yo'q — telefon brauzerida ishlaydi", after: "bor: o'quvchi, o'qituvchi va administrator uchun" },
+        { task: 'Pulni qaytarish', before: "30 kun, summaning 100%", after: '21 ish kunigacha, ofertasi bo\'yicha' },
+      ],
+    },
+
+    themHead: "Qaysi holatda Umai CRM'ni tanlash to'g'riroq",
+    themLead: "Ularning kuchli tomonlari haqiqiy — mana, ular foydasiga tanlov asosli bo'lgan holatlar.",
+    them: [
+      {
+        icon: 'send',
+        title: 'Markaz savdo bilan yashaydi',
+        text: "Agar asosiy muammo hisob emas, balki arizalarni qayta ishlash bo'lsa: voronkalar, lidlar kanbani, AI-bot va WhatsApp bilan Instagram'dagi tarqatmalar. Bizda bu yo'q va yaqin rejalarda ham yo'q.",
+      },
+      {
+        icon: 'grid',
+        title: 'Nativ ilovalar kerak',
+        text: "Umai CRM'da uchta ilova bor — o'quvchi, o'qituvchi va administrator uchun. Bizda hammasi telefon brauzerida.",
+      },
+      {
+        icon: 'building',
+        title: 'Juda katta markaz',
+        text: "Ularda narx o'quvchilar soni bilan o'smaydi. Mingdan ortiq faol o'quvchi hajmida qat'iy tarif biznikidan foydaliroq bo'lishi mumkin.",
+      },
+    ],
+
+    usHead: 'Qaysi holatda biz foydaliroq',
+    us: [
+      {
+        icon: 'coin',
+        title: "Kichik va o'rta markaz",
+        text: "30 tagacha o'quvchi — bepul, 100 tagacha — oyiga 199 000 so'm. Umai CRM'ning minimal tarifi esa sizda o'nta o'quvchi bormi yoki uch yuztami, oyiga 500 000 so'mdan boshlanadi.",
+      },
+      {
+        icon: 'rocket',
+        title: "Joriy etish uchun alohida to'lashni istamasangiz",
+        text: "Biz markazni 7 kunda sozlab ishga tushiramiz va bu tarifga kiradi. Umai CRM'da joriy etish — alohida 3 750 000 so'm, faqat 12 oylik to'lovda bepul.",
+      },
+      {
+        icon: 'book',
+        title: "Asosiysi — o'quv qismi",
+        text: "Davomat, server taymerli testlar, uy vazifalari, video darslar, koinlar va reytinglar. Biz marketing voronkalariga emas, darsda sodir bo'ladigan narsaga sarmoya kiritamiz.",
+      },
+      {
+        icon: 'lock',
+        title: 'Filiallar izolyatsiyasi muhim',
+        text: "Har bir so'rov serverda tekshiriladi va tashkilot hamda filial bo'yicha filtrlanadi: bir filial administratori sahifa manzilini bilgan holda ham boshqasining ma'lumotlarini ko'rmaydi.",
+      },
+    ],
+
+    faqHead: "O'tish haqida ko'p beriladigan savollar",
+    faq: [
+      {
+        q: "100 o'quvchili markaz uchun qaysi biri arzon — LevelUp Academy yoki Umai CRM?",
+        a: "LevelUp Academy: oyiga 199 000 so'm. Umai CRM: oylik to'lovda oyiga 500 000 so'mdan (yiliga birdan to'lansa 416 667 so'm), bundan tashqari 12 oyni oldindan to'lamasangiz, joriy etish uchun 3 750 000 so'm. Ma'lumotlar Umai CRM saytidan, 2026-yil 5-avgust holatiga.",
+      },
+      {
+        q: "LevelUp Academy'da WhatsApp va Instagram integratsiyasi bormi?",
+        a: "Yo'q. Bildirishnomalar — ota-onalar va o'quvchilarga dars qoldirish, to'lov va qarz haqida — Telegram bot orqali keladi. Agar markazga WhatsApp va Instagram'dagi marketing tarqatmalari va voronkalar kerak bo'lsa, bu Umai CRM'da bor, bizda esa yo'q.",
+      },
+      {
+        q: "Umai CRM'dan ma'lumotlarni ko'chirish mumkinmi?",
+        a: "Ha. Faol o'quvchilar, guruhlar, mentorlar va ochiq qarzlarni ko'chiramiz; o'tgan yillar tarixini ko'chirish shart emas. Aynan Umai CRM'dan avtomatik import bizda yo'q — ko'chirishni 7 kunlik ishga tushirish doirasida bizning jamoamiz bajaradi.",
+      },
+      {
+        q: "LevelUp Academy narxi o'quvchilar soni bilan o'sishi rostmi?",
+        a: "Ha, va bu ongli tanlov: kichik markaz tarmoq kabi to'lamasligi kerak. 30 tagacha o'quvchi — bepul, 31–100 — 199 000, 101–300 — 349 000, 301–600 — 599 000, 601–1000 — oyiga 799 000 so'm. Filiallar esa har qanday tarifga cheklovsiz kiradi.",
+      },
+    ],
+
+    ctaTitle: 'Farqni markazingizda hisoblab beraylikmi?',
+    ctaText:
+      "Ariza qoldiring — o'quvchilaringiz soni bo'yicha narxni hisoblaymiz va agar stsenariyingiz boshqa yechimga yaqinroq bo'lsa, buni halol aytamiz.",
+  },
+
+  faqHub: {
+    badge: 'Savol va javoblar',
+    h1: "LevelUp Academy haqida ko'p beriladigan savollar",
+    lead: "Ulanishdan oldin so'raladigan savollarga javoblar: o'quvchilar qanday kiradi, to'lov kechikkanda nima bo'ladi, kim nimani ko'radi va markazni tizimga ko'chirish qanday kechadi.",
+    intro:
+      "Narxlar, Excel'dan o'tish va til markazi bilan ishlash haqidagi savollar alohida sahifalarda — havolalar quyida.",
+
+    groups: [
+      {
+        title: 'Ishni boshlash',
+        items: [
+          {
+            q: "Biror dastur o'rnatish kerakmi?",
+            a: "Yo'q. LevelUp Academy brauzerda ishlaydi — kompyuterda, planshetda va telefonda. Alohida mobil ilova kerak emas: o'quvchi uy vazifasini topshiradi va video darsni to'g'ridan-to'g'ri telefon brauzeridan ko'radi.",
+          },
+          {
+            q: 'Tizimni kim sozlaydi — bizmi yoki markazmi?',
+            a: "Biz sozlaymiz. Filiallar, guruhlar, mentorlar va faol o'quvchilarni kiritamiz va markazni 7 kunda ishga tushiramiz. Muddatga ulgurmasak, keyingi oy bepul.",
+          },
+          {
+            q: 'O\'quvchilar va ota-onalar qanday kiradi?',
+            a: "O'quvchi va ota-onalarda email bo'lmaydi: administrator ularga 8 belgidan iborat login-kod va 6 raqamli parol beradi. Kodda o'xshash belgilar (0/O, 1/I) yo'q — uni telefonda xatosiz aytib berish mumkin. Xodimlar — administrator, mentor, metodist — email va parol bilan kiradi.",
+          },
+          {
+            q: 'Telegram bildirishnomalarini qanday ulash mumkin?',
+            a: "Akkaunt botga kabinetdagi bir martalik havola orqali bog'lanadi — havola bir necha daqiqa yashaydi va faqat bir marta ishlaydi. Bog'langandan so'ng dars qoldirish, to'lov va qarz haqidagi xabarlar oddiy Telegram'ga keladi, alohida ilova kerak emas.",
+          },
+        ],
+      },
+      {
+        title: "To'lovlar va qarzlar",
+        items: [
+          {
+            q: "O'quvchi o'z vaqtida to'lamasa nima bo'ladi?",
+            a: "Hisob muddati o'tganda o'quvchining kabinetiga — uy vazifalari, testlar, video darslar va do'konga — kirishi avtomatik bloklanadi. To'lov o'tishi bilan, hatto qisman bo'lsa ham, kirish keyingi sahifa ochilishidayoq tiklanadi: tungi qayta hisoblashni kutish shart emas.",
+          },
+          {
+            q: "To'lovni bo'lib va turli usulda qabul qilsa bo'ladimi?",
+            a: "Ha. Bitta hisobni bir nechta to'lov bilan yopish mumkin — bir qismi kassada naqd, bir qismi karta bilan. Barcha to'lovlar bitta hisobga bog'langani uchun qolgan qarz «taxminan» emas, aniq ko'rinadi.",
+          },
+          {
+            q: "O'quvchining qarzi qanday hisoblanadi?",
+            a: "Qarz hisob chiqarilgan va to'langan paytda tizim tomonidan qayta hisoblanadi — qo'lda jamlash shart emas. Filial administratori qarzdorlar ro'yxatini va filial bo'yicha summani ko'radi, tarmoq rahbari esa barcha filiallar manzarasini birdan ko'radi.",
+          },
+          {
+            q: "O'quvchini vaqtincha muzlatib qo'yish mumkinmi?",
+            a: "Ha. Muzlatish hisoblashni to'xtatadi: o'quvchi qatnamayotgan paytda qarz o'smaydi, to'lovlar, baholar va davomat tarixi esa to'liq saqlanadi. Qaytgach, o'sha joydan davom etadi.",
+          },
+        ],
+      },
+      {
+        title: "O'quv jarayoni, huquqlar va ma'lumotlar",
+        items: [
+          {
+            q: 'Testdagi taymerni aldash mumkinmi?',
+            a: "Yo'q. Test vaqtini brauzer emas, server hisoblaydi: sahifani qayta yuklash, aloqa uzilishi yoki ikkinchi oyna ochish taymerni uzaytirmaydi.",
+          },
+          {
+            q: "Xodimlardan kim nimani ko'radi?",
+            a: "Mentor faqat o'z guruhlarini, administrator faqat o'z filialini, tarmoq rahbari barcha filiallarni ko'radi. Huquqlar har bir so'rovda serverda tekshiriladi, shuning uchun sahifa manzilini bilgan holda ham begona filialni ochib bo'lmaydi.",
+          },
+          {
+            q: "Ota-ona nimani ko'radi?",
+            a: "O'z farzandining o'zlashtirishi, davomati va qarzini, shuningdek administrator va mentor bilan to'g'ridan-to'g'ri chatni. Dars qoldirish, baho va to'lov eslatmasi Telegram'ga o'zi keladi — qo'ng'iroq qilib so'rash shart emas.",
+          },
+          {
+            q: "Vaqt o'tishi bilan markaz ma'lumotlariga nima bo'ladi?",
+            a: "Ma'lumotlar jismonan o'chirilmaydi: ketgan o'quvchi «faqat o'qish» rejimidagi arxivga o'tadi, uning to'lovlari, baholari va davomati hisobotlar uchun ochiq qoladi. Bundan tashqari, har kuni zaxira nusxa olinadi.",
+          },
+        ],
+      },
+    ],
+
+    moreHead: 'Mavzular bo\'yicha savollar — alohida sahifalarda',
+    more: [
+      { label: "Narxlar, tariflar va qaytarish", path: '/landing/pricing' },
+      { label: "Excel'dan CRM'ga o'tish", path: '/landing/crm-vs-excel' },
+      { label: 'Til markazlari uchun', path: '/landing/for-language-school' },
+      { label: 'Kurs va repetitorlar uchun', path: '/landing/for-courses' },
+      { label: 'Rollar va kirish huquqlari', path: '/landing/roles' },
+      { label: 'Kompaniya haqida', path: '/landing/about' },
+    ],
+
+    ctaTitle: 'Savolingizni topmadingizmi?',
+    ctaText: "Ariza qoldiring — sizning stsenariyingiz bo'yicha javob beramiz va tizimni jonli ko'rsatamiz.",
+  },
+
+  about: {
+    badge: 'Kompaniya haqida',
+    h1: "LevelUp Academy'ni kim yaratmoqda",
+    lead: "LevelUp Academy — o'quv markazlari uchun dastur: o'quvchilar, to'lovlar, davomat va o'quv jarayoni shu tizimda yuritiladi. Mahsulotni olti kishilik jamoa yaratmoqda, kompaniya 2026-yilda O'zbekistonda tashkil etilgan.",
+    intro:
+      "Biz o'quv markazi ham, dasturlash maktabi ham emasmiz. Biz — o'quv markazlari har kuni foydalanadigan tizimni ishlab chiquvchilarmiz.",
+
+    whyHead: "Mahsulot qaysi uchta muammo atrofida qurilgan",
+    whyLead: "Bular markazlarda eng ko'p takrorlanadigan holatlar — tizim aynan shular uchun kerak.",
+    why: [
+      {
+        icon: 'receipt',
+        title: "Pul turli jadvallarda yashaydi",
+        text: "To'lovlar, qarzlar va bo'lib to'lashlar turli odamlarda va turli fayllarda yozilgan. Markaz bo'yicha umumiy qarz summasi birinchi urinishda deyarli hech qachon to'g'ri chiqmaydi.",
+      },
+      {
+        icon: 'calendar',
+        title: "Davomat bir joyga yig'ilmaydi",
+        text: "Davomat qog'ozda belgilanadi, oy oxirida esa o'quvchi darslarning yarmiga kelmagani ma'lum bo'ladi. Ota-onalar buni eng oxirida bilib qoladi.",
+      },
+      {
+        icon: 'grid',
+        title: "Filiallarni solishtirib bo'lmaydi",
+        text: "Har bir filial hisobni o'zicha yuritadi, shuning uchun tarmoq bo'yicha umumiy manzara yo'q: tushum qayerda tushgani va qarz qayerda o'sayotgani faqat keyin ma'lum bo'ladi.",
+      },
+    ],
+
+    principlesHead: 'Tizim qanday tamoyillar ustiga qurilgan',
+    principlesLead: "Bular shior emas — mahsulot arxitekturasiga kiritilgan yechimlar.",
+    principles: [
+      {
+        icon: 'lock',
+        title: 'Huquqlarni server tekshiradi',
+        text: "Rol tokenga yoziladi va har bir so'rovda tekshiriladi, ma'lumotlar esa tashkilot va filial bo'yicha filtrlanadi. Sahifa manzilini bilgan holda ham begona filialni ochib bo'lmaydi.",
+      },
+      {
+        icon: 'shield',
+        title: "Ma'lumot yangi funksiyalardan muhimroq",
+        text: "Har kuni zaxira nusxa olinadi, o'chirish esa «yumshoq»: to'lovlar, baholar va davomat tarixi arxiv yozuvlarda ham hisobotlar uchun ochiq qoladi.",
+      },
+      {
+        icon: 'coin',
+        title: 'Har bir raqam — jurnaldagi yozuv',
+        text: "To'lovlar (naqd va karta bilan bo'lib to'lash ham) va koinlar faqat sabab ko'rsatilgan holda jurnal orqali o'zgaradi. Balansni orqaga qaytib o'zgartirib bo'lmaydi.",
+      },
+      {
+        icon: 'rocket',
+        title: 'Bir haftada ishga tushirish',
+        text: "Markazni tizimga 7 kunda ko'chiramiz, birinchi hafta bepul. Muddatga ulgurmasak — keyingi oy bepul.",
+      },
+    ],
+
+    factsHead: 'Kompaniya kartochkasi',
+    factsLead: "Qisqa ma'lumotnoma — kim bilan ish ko'rayotganini tekshirmoqchi bo'lganlar uchun.",
+    facts: [
+      { label: 'Nomi', value: 'LevelUp Academy (LevelUp Academy CRM)' },
+      { label: 'Bu nima', value: "O'quv markazini boshqarish uchun SaaS platforma" },
+      { label: 'Tashkil etilgan', value: '2026-yil' },
+      { label: 'Jamoa', value: '6 kishi' },
+      { label: 'Mamlakat', value: "O'zbekiston" },
+      { label: 'Tillar', value: "русский, o'zbekcha, English" },
+      {
+        label: 'Kimlar uchun',
+        value: "O'quv markazlari, til markazlari, kurslar va repetitorlik markazlari",
+      },
+      { label: 'Sayt', value: 'levelup-academy.uz' },
+      { label: 'Pochta', value: 'info@levelup-academy.uz' },
+      { label: 'Telegram', value: '@levelupacademycrm' },
+      { label: 'Instagram', value: '@levelup_academy_uz' },
+    ],
+
+    sameHead: "Bizni ko'pincha boshqalar bilan adashtirishadi",
+    sameText:
+      "LevelUp Academy nomi AQSH, Serbiya, Singapur, Moldova va Tojikistondagi tashkilotlarda ham bor — maktablar, kurslar va IT-akademiyalar. Bizning ularga aloqamiz yo'q: levelup-academy.uz'dagi LevelUp Academy — O'zbekiston o'quv markazlari uchun CRM tizimi, ya'ni dastur, o'qitiladigan joy emas.",
+
+    linksHead: "Keyin nimani ko'rish mumkin",
+    links: [
+      { label: 'Tizim imkoniyatlari', path: '/landing/features' },
+      { label: 'Tariflar va narxlar', path: '/landing/pricing' },
+      { label: 'Rollar va huquqlar', path: '/landing/roles' },
+      { label: 'Aloqa va ariza', path: '/landing/contacts' },
+    ],
+
+    ctaTitle: "Tizimni ichidan ko'rmoqchimisiz?",
+    ctaText:
+      "Ariza qoldiring — LevelUp Academy'ni markazingiz stsenariysida ko'rsatamiz va birinchi haftani bepul ulaymiz.",
+  },
+
   notFound: {
     badge: '404',
     h1: "Bunday sahifa yo'q",
@@ -1200,6 +1598,26 @@ export default {
       title: 'Aloqa va ariza | LevelUp Academy',
       description:
         'Ariza qoldiring — LevelUp Academy haqida gapirib beramiz va savollarga javob beramiz. Birinchi hafta bepul, karta va majburiyatsiz.',
+    },
+    vsModme: {
+      title: 'LevelUp Academy yoki Modme — narx va funksiyalar taqqoslovi',
+      description:
+        "LevelUp Academy va Modme'ning halol taqqoslovi: o'quvchilar soni bo'yicha narxlar, eng kam to'lov muddati, tarifdagi geymifikatsiya va mobil ilovalar. Ma'lumotlar 05.08.2026 holatiga.",
+    },
+    vsUmai: {
+      title: 'LevelUp Academy yoki Umai CRM — narx va funksiyalar taqqoslovi',
+      description:
+        "LevelUp Academy va Umai CRM'ning halol taqqoslovi: narx nimaga bog'liq, joriy etish qiymati, savdo voronkalari va mobil ilovalar. Ma'lumotlar 05.08.2026 holatiga.",
+    },
+    faqHub: {
+      title: "Savol va javoblar — o'quv markazi uchun CRM | LevelUp",
+      description:
+        "LevelUp Academy haqida savollar: o'quvchining login-kod bilan kirishi, to'lov kechikkanda bloklash, bo'lib to'lash, o'quvchini muzlatish, kirish huquqlari va ma'lumotlar saqlanishi.",
+    },
+    about: {
+      title: "Kompaniya haqida — LevelUp Academy CRM ishlab chiquvchisi",
+      description:
+        "LevelUp Academy — O'zbekistondagi o'quv markazlari uchun CRM: kompaniya 2026-yilda tashkil etilgan, jamoa 6 kishi. Biz kimmiz, tizim qanday ishlaydi va biz nima emasmiz.",
     },
     notFound: {
       title: "Sahifa topilmadi — LevelUp Academy",

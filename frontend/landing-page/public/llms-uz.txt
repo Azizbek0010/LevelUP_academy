@@ -70,7 +70,11 @@ qoldirish kerak: tashkilotni LevelUp jamoasi yaratib beradi.
 - [Til markazi uchun](https://levelup-academy.uz/uz/landing/for-language-school) — darajali guruhlar (A1–C1, IELTS), davomat, to'lovlar.
 - [Kurslar va repetitorlar uchun](https://levelup-academy.uz/uz/landing/for-courses) — guruh va yakkama-yakka darslar, kurs uchun to'lovlar.
 - [Excel o'rniga CRM](https://levelup-academy.uz/uz/landing/crm-vs-excel) — jadvallar va CRM taqqoslash, bir haftada o'tish.
+- [LevelUp Academy yoki Modme](https://levelup-academy.uz/uz/landing/vs/modme) — narx va funksiyalar taqqoslash, Modme sayti ma'lumotlari 05.08.2026 holatiga.
+- [LevelUp Academy yoki Umai CRM](https://levelup-academy.uz/uz/landing/vs/umai) — narx va funksiyalar taqqoslash, Umai CRM sayti ma'lumotlari 05.08.2026 holatiga.
 - [Geymifikatsiya](https://levelup-academy.uz/uz/landing/gamification) — koinlar, do'kon, reytinglar.
+- [Savol va javoblar](https://levelup-academy.uz/uz/landing/faq) — login-kod bilan kirish, to'lov kechikkanda bloklash, bo'lib to'lash, o'quvchini muzlatish, kirish huquqlari.
+- [Kompaniya haqida](https://levelup-academy.uz/uz/landing/about) — tizimni kim ishlab chiqmoqda: 2026-yilda tashkil etilgan, 6 kishilik jamoa, O'zbekiston.
 - [Aloqa](https://levelup-academy.uz/uz/landing/contacts) — bog'lanish va ulanish uchun ariza.
 - [Bilimlar bazasi](https://levelup-academy.uz/uz/landing/blog) — CRM'ga o'tish, qarzlarni nazorat qilish va avtomatlashtirish haqida maqolalar.
   - [Excel'dan CRM'ga o'tish](https://levelup-academy.uz/uz/landing/blog/excel-to-crm)

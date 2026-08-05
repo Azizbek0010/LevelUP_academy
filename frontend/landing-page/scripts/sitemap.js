@@ -41,12 +41,16 @@ const PAGES = [
   { path: '/landing/for-language-school', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.8' },
   { path: '/landing/for-courses', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.8' },
   { path: '/landing/crm-vs-excel', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.8' },
+  { path: '/landing/vs/modme', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.8' },
+  { path: '/landing/vs/umai', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.8' },
   { path: '/landing/roles', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.7' },
   { path: '/landing/gamification', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.7' },
   { path: '/landing/blog', lastmod: '2026-08-05', changefreq: 'weekly', priority: '0.7' },
   { path: '/landing/blog/excel-to-crm', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.6' },
   { path: '/landing/blog/student-debts', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.6' },
   { path: '/landing/blog/attendance-automation', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.6' },
+  { path: '/landing/faq', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.8' },
+  { path: '/landing/about', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.6' },
   { path: '/landing/contacts', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.6' },
 ];
 
