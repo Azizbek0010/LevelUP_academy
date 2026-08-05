@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect } from 'react';
-import { localizePath, useLang } from '../i18n/index.js';
+import { LANGS, localizePath, useLang } from '../i18n/index.js';
 
 // Боевой домен лендинга — база для canonical, og:url, sitemap.
 export const SITE_URL = 'https://levelup-academy.uz';
@@ -8,16 +8,56 @@ export const OG_IMAGE = `${SITE_URL}/og-cover.png`;
 /**
  * hreflang-набор для канонического пути ('/landing/finance').
  *
- * x-default указывает на русскую версию: это язык по умолчанию для тех, чей язык
- * не совпал ни с ru, ни с uz. Каждая версия обязана перечислять ВСЕ варианты, включая
- * саму себя — иначе Google игнорирует связку целиком.
+ * Набор строится из LANGS, а не перечисляется руками: добавленный язык, забытый здесь,
+ * выпал бы из связки молча — страница проиндексировалась бы как самостоятельный дубль.
+ *
+ * x-default — версия для посетителя, чей язык не совпал ни с одним из объявленных.
+ * Указывает на АНГЛИЙСКУЮ: продукт позиционируется глобально, и для аудитории вне
+ * Узбекистана и СНГ английский — осмысленный дефолт, а русский был бы случайным.
+ *
+ * Каждая версия обязана перечислять ВСЕ варианты, включая саму себя — иначе Google
+ * игнорирует связку целиком.
  */
+export const X_DEFAULT_LANG = 'en';
+
 export function hreflangsFor(path) {
   return [
-    { hreflang: 'ru', href: `${SITE_URL}${localizePath(path, 'ru')}` },
-    { hreflang: 'uz', href: `${SITE_URL}${localizePath(path, 'uz')}` },
-    { hreflang: 'x-default', href: `${SITE_URL}${localizePath(path, 'ru')}` },
+    ...LANGS.map((lang) => ({ hreflang: lang, href: `${SITE_URL}${localizePath(path, lang)}` })),
+    { hreflang: 'x-default', href: `${SITE_URL}${localizePath(path, X_DEFAULT_LANG)}` },
   ];
+}
+
+/**
+ * WebPage-узел конкретной страницы.
+ *
+ * Генерируется автоматически для каждого маршрута, а не объявляется страницами:
+ * `inLanguage` в статическом @graph (index.html) один на весь сайт и всегда сообщал
+ * `ru` — включая узбекские страницы. Для поисковика и AI это означало «узбекского
+ * контента здесь нет». Язык страницы обязан объявляться на самой странице.
+ *
+ * Ссылается на узлы статического графа по @id, а не дублирует их: так Organization,
+ * WebSite и SoftwareApplication остаются единственными в своём роде.
+ */
+const BCP47 = { ru: 'ru-UZ', uz: 'uz-UZ', en: 'en' };
+const OG_LOCALE = { ru: 'ru_UZ', uz: 'uz_UZ', en: 'en_US' };
+
+/** Язык страницы в формате BCP 47. `en` без региона — версия не привязана к стране. */
+export const bcp47 = (lang) => BCP47[lang] ?? BCP47.ru;
+export const ogLocale = (lang) => OG_LOCALE[lang] ?? OG_LOCALE.ru;
+
+export function webPage({ title, description, url, lang }) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    '@id': `${url}#webpage`,
+    url,
+    name: title,
+    description,
+    inLanguage: bcp47(lang),
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    about: { '@id': `${SITE_URL}/#software` },
+    publisher: { '@id': `${SITE_URL}/#organization` },
+  };
 }
 
 /**
@@ -115,7 +155,7 @@ export function useSeo({ title, description, path, jsonLd, noindex = false }) {
     if (noindex) removeCanonical();
     else setCanonical(url);
     setMetaProp('og:url', url);
-    setMetaProp('og:locale', lang === 'uz' ? 'uz_UZ' : 'ru_UZ');
+    setMetaProp('og:locale', ogLocale(lang));
 
     // hreflang: связывает языковые версии одной страницы. Без него Google считает их
     // конкурирующими дублями и показывает не ту, что нужна пользователю.
@@ -130,7 +170,17 @@ export function useSeo({ title, description, path, jsonLd, noindex = false }) {
       return l;
     });
 
-    const nodes = (jsonLd ?? []).map((obj) => {
+    // WebPage идёт первым и добавляется автоматически — см. webPage(). Для noindex-страницы
+    // (404) его нет: объявлять несуществующий URL как страницу сайта незачем.
+    const graph = noindex ? (jsonLd ?? []) : [webPage({ title, description, url, lang }), ...(jsonLd ?? [])];
+
+    // Разметку, впечатанную prerender'ом, надо снять перед вставкой своей: она описывает
+    // ту же страницу теми же узлами, и без этого после гидратации в <head> висели два
+    // одинаковых набора JSON-LD. Свой cleanup удаляет только то, что создал сам, — до
+    // серверных тегов он не дотягивался.
+    document.head.querySelectorAll('script[data-seo-jsonld]').forEach((n) => n.remove());
+
+    const nodes = graph.map((obj) => {
       const s = document.createElement('script');
       s.type = 'application/ld+json';
       s.setAttribute('data-seo-jsonld', '');
@@ -181,7 +231,7 @@ export function renderSeoHead(seo) {
   // canonical на несуществующий URL указывать нельзя — см. noindex в useSeo.
   if (!noindex) tags.push(`<link rel="canonical" href="${escapeAttr(url)}" />`);
   tags.push(`<meta property="og:url" content="${escapeAttr(url)}" />`);
-  tags.push(`<meta property="og:locale" content="${lang === 'uz' ? 'uz_UZ' : 'ru_UZ'}" />`);
+  tags.push(`<meta property="og:locale" content="${ogLocale(lang)}" />`);
 
   if (!noindex) {
     for (const { hreflang, href } of hreflangsFor(path)) {
@@ -189,7 +239,11 @@ export function renderSeoHead(seo) {
     }
   }
 
-  for (const obj of jsonLd ?? []) {
+  // Тот же автоматический WebPage, что и в useSeo — списки обязаны совпадать, иначе
+  // гидратация даст странице другой набор разметки, чем видел краулер.
+  const graph = noindex ? (jsonLd ?? []) : [webPage({ title, description, url, lang }), ...(jsonLd ?? [])];
+
+  for (const obj of graph) {
     // </script> внутри JSON закрыл бы тег раньше времени.
     const json = JSON.stringify(obj).replace(/</g, '\\u003c');
     tags.push(`<script type="application/ld+json" data-seo-jsonld>${json}</script>`);

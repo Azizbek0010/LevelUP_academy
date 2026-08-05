@@ -121,6 +121,12 @@ function AttendanceTab({ groupId, token }) {
   const group = groupRaw.group || groupRaw;
   const students = group.students || [];
 
+  // Замороженные ученики: в журнале им отметки ставить/менять нельзя.
+  const frozenIds = useMemo(
+    () => new Set(students.filter((s) => s.status === 'frozen').map((s) => s.id || s.studentId)),
+    [students],
+  );
+
   // Determine lesson weekdays from group schedule
   // schedule may come as JSON string from DB — force parse to array
   const scheduleArray = useMemo(() => {
@@ -261,6 +267,7 @@ function AttendanceTab({ groupId, token }) {
   const toggleDay = useCallback((studentId, day) => {
     const dateKey = dateKeyFor(day);
     if (dateKey > todayStr) return; // будущий урок — не трогаем
+    if (frozenIds.has(studentId)) return; // замороженный ученик — не трогаем
     const key = `${studentId}_${dateKey}`;
     const cycle = { absent: 'present', present: 'late', late: 'absent' };
     const next = cycle[mapRef.current[key]] || 'present';
@@ -271,7 +278,7 @@ function AttendanceTab({ groupId, token }) {
     correctedRef.current = { ...correctedRef.current, [key]: true };
     setCorrectedMap({ ...correctedRef.current });
     queueSave(dateKey, studentId, next);
-  }, [year, month, groupId, token]);
+  }, [year, month, groupId, token, frozenIds]);
 
   /* ── Auto-save with debounce ── */
   const flush = useCallback(async () => {
@@ -388,12 +395,6 @@ function AttendanceTab({ groupId, token }) {
             Не пришёл
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="w-6 h-6 rounded-lg border border-gray-200 grid place-items-center text-gray-300">
-              <Minus size={13} />
-            </span>
-            Не отмечен
-          </li>
-          <li className="flex items-center gap-1.5">
             <span className="relative w-6 h-6 rounded-lg border border-base-300 grid place-items-center ring-2 ring-indigo-500 ring-offset-1">
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-base-100" />
             </span>
@@ -418,7 +419,7 @@ function AttendanceTab({ groupId, token }) {
             onClick={() => { setSlideDir('right'); setPageIndex((p) => Math.max(0, p - 1)); }}
             disabled={pageIndex === 0}
             className="w-8 h-8 rounded-xl border border-base-300 grid place-items-center text-base-content/45 hover:bg-base-100 hover:text-base-content disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
-            aria-label="Oldingi sahifa"
+            aria-label="Предыдущая страница"
           >
             <ChevronLeft size={15} />
           </button>
@@ -429,7 +430,7 @@ function AttendanceTab({ groupId, token }) {
             onClick={() => { setSlideDir('left'); setPageIndex((p) => Math.min(totalPages - 1, p + 1)); }}
             disabled={pageIndex >= totalPages - 1}
             className="w-8 h-8 rounded-xl border border-base-300 grid place-items-center text-base-content/45 hover:bg-base-100 hover:text-base-content disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
-            aria-label="Keyingi sahifa"
+            aria-label="Следующая страница"
           >
             <ChevronRight size={15} />
           </button>
@@ -476,7 +477,7 @@ function AttendanceTab({ groupId, token }) {
                 })}
                 {/* Summary column */}
                 <th className="sticky right-0 top-0 z-20 bg-base-100 w-[80px] min-w-[80px] px-4 py-3 text-center border-l border-base-300 text-[13px] font-bold text-base-content">
-                  Jami
+                  Итого
                 </th>
               </tr>
             </thead>
@@ -486,10 +487,12 @@ function AttendanceTab({ groupId, token }) {
                 const firstName = s.firstName || s.first_name || '';
                 const lastName = s.lastName || s.last_name || '';
                 const studentFullName = fullName(s);
+                const frozen = s.status === 'frozen';
                 // Count present days
                 let presentCount = 0;
                 DAYS.forEach((d) => {
-                  if (attendanceMap[`${sid}_${dateKeyFor(d)}`] === 'present') presentCount++;
+                  const st = attendanceMap[`${sid}_${dateKeyFor(d)}`];
+                  if (st === 'present' || st === 'late') presentCount++;
                 });
 
                 return (
@@ -509,6 +512,11 @@ function AttendanceTab({ groupId, token }) {
                           <div className="text-sm font-semibold truncate text-base-content group-hover:text-primary transition-colors">
                             {firstName} {lastName}
                           </div>
+                          {frozen && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
+                              Заморожен
+                            </span>
+                          )}
                         </div>
                       </Link>
                     </td>
@@ -519,8 +527,9 @@ function AttendanceTab({ groupId, token }) {
                       const cellKey = `${sid}_${dateKey}`;
                       const status = attendanceMap[cellKey];
                       const corrected = correctedMap[cellKey];
-                      // Будущий урок — не редактируется (как и у ментора).
+                      // Будущий урок и замороженный ученик — не редактируются.
                       const future = dateKey > todayStr;
+                      const notEditable = future || frozen;
                       return (
                         <td
                           key={d}
@@ -528,12 +537,13 @@ function AttendanceTab({ groupId, token }) {
                         >
                           <button
                             onClick={() => toggleDay(sid, d)}
-                            disabled={future}
+                            disabled={notEditable}
                             title={
-                              future ? 'Будущий урок — отметить нельзя'
+                              frozen ? 'Ученик заморожен — отметить нельзя'
+                                : future ? 'Будущий урок — отметить нельзя'
                                 : corrected ? 'Исправлено администратором' : undefined
                             }
-                            className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status)} ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''} ${future ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'}`}
+                            className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status)} ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''} ${notEditable ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'} ${future ? 'opacity-40' : frozen ? 'opacity-60' : ''}`}
                           >
                             {cellIcon(status)}
                             {/* Отметка «исправлено администратором»: клетка держит
@@ -601,7 +611,7 @@ function AttendanceTab({ groupId, token }) {
               </div>
               {hsDebt > 0 && (
                 <div className="flex items-center gap-2 text-red-500 font-semibold">
-                  <span>Qarz: {hsDebt.toLocaleString()} so'm</span>
+                  <span>Долг: {hsDebt.toLocaleString()} сум</span>
                 </div>
               )}
             </div>
@@ -613,7 +623,7 @@ function AttendanceTab({ groupId, token }) {
 }
 
 /* ═══════════════ HomeworkTab ═══════════════ */
-function HomeworkTab({ groupId }) {
+function HomeworkTab({ groupId, token }) {
   const { data: hwData, refetch } = useAdminGroupHomework(groupId);
   const hw = hwData?.data || hwData || [];
   const [showAdd, setShowAdd] = useState(false);
@@ -624,7 +634,7 @@ function HomeworkTab({ groupId }) {
 
   const statusBadge = (s) => {
     if (s === 'active') return 'bg-emerald-100 text-emerald-700';
-    if (s === 'completed') return 'bg-blue-100 text-blue-700';
+    if (s === 'completed') return 'bg-success/15 text-success';
     if (s === 'overdue') return 'bg-red-100 text-red-700';
     return 'bg-gray-100 text-gray-500';
   };
@@ -640,7 +650,10 @@ function HomeworkTab({ groupId }) {
     if (!form.title.trim()) return;
     setSubmitting(true);
     try {
-      await api.adminCreateGroupHomework(null, groupId, form);
+      const body = { title: form.title.trim() };
+      if (form.description?.trim()) body.description = form.description.trim();
+      if (form.dueDate) body.dueDate = form.dueDate;
+      await api.adminCreateGroupHomework(token, groupId, body);
       setForm({ title: '', description: '', dueDate: '' });
       setShowAdd(false);
       refetch();
@@ -705,8 +718,8 @@ function HomeworkTab({ groupId }) {
                 </span>
               </div>
               <div className="flex items-center gap-4 text-[11px] text-base-content/45">
-                {h.dueDate && <span>Muddat: {h.dueDate}</span>}
-                <span>{h.submissions || 0} / {h.totalStudents || 0} topshirilgan</span>
+                {h.dueDate && <span>Срок: {h.dueDate}</span>}
+                <span>{h.submissions || 0} / {h.totalStudents || 0} сдано</span>
               </div>
               {h.totalStudents > 0 && (
                 <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
@@ -725,7 +738,7 @@ function HomeworkTab({ groupId }) {
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Добавить задание"
         actions={
           <>
-            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Бекор қилиш</button>
+            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Отмена</button>
             <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.title.trim() || submitting}>
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
               Добавить
@@ -760,7 +773,7 @@ function HomeworkTab({ groupId }) {
 }
 
 /* ═══════════════ FeedbackTab ═══════════════ */
-function FeedbackTab({ groupId }) {
+function FeedbackTab({ groupId, token }) {
   const { data: fbData, refetch } = useAdminGroupFeedback(groupId);
   const fb = fbData?.data || fbData || [];
   const [filter, setFilter] = useState('all');
@@ -784,7 +797,7 @@ function FeedbackTab({ groupId }) {
     if (!form.content.trim()) return;
     setSubmitting(true);
     try {
-      await api.adminCreateGroupFeedback(null, groupId, form);
+      await api.adminCreateGroupFeedback(token, groupId, form);
       setForm({ type: 'student', authorName: '', content: '', rating: 5 });
       setShowAdd(false);
       refetch();
@@ -824,7 +837,7 @@ function FeedbackTab({ groupId }) {
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-base-content/45 text-[13px]">
           <MessageSquare size={32} className="mx-auto mb-2 opacity-30" />
-          Ҳали фикр-мулоҳоза йўқ
+          Пока нет отзывов
         </div>
       ) : (
         <div className="space-y-3">
@@ -833,13 +846,13 @@ function FeedbackTab({ groupId }) {
               <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                    f.type === 'student' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                    f.type === 'student' ? 'bg-success/15 text-success' : 'bg-purple-100 text-purple-700'
                   }`}>
                     {f.type === 'student' ? 'О' : 'М'}
                   </div>
                   <span className="text-[13px] font-bold text-base-content">{f.authorName || 'Аноним'}</span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                    f.type === 'student' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
+                    f.type === 'student' ? 'bg-success/10 text-success' : 'bg-purple-50 text-purple-600'
                   }`}>
                     {f.type === 'student' ? 'Ученик' : 'Ментор'}
                   </span>
@@ -857,7 +870,7 @@ function FeedbackTab({ groupId }) {
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Добавить отзыв"
         actions={
           <>
-            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Бекор қилиш</button>
+            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Отмена</button>
             <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.content.trim() || submitting}>
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               Отправить
@@ -893,7 +906,7 @@ function FeedbackTab({ groupId }) {
             onChange={(e) => setForm({ ...form, content: e.target.value })}
           />
           <div>
-            <label className="text-[12px] font-bold text-base-content/70 mb-1 block">Баҳо</label>
+            <label className="text-[12px] font-bold text-base-content/70 mb-1 block">Оценка</label>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((i) => (
                 <button
@@ -932,8 +945,9 @@ export default function AdminGroupDetail() {
   const group = raw.group || raw;
   const students = group.students || raw.students || [];
   const totalDebt = students.reduce((sum, s) => sum + Number(s.totalDebt ?? s.total_debt ?? 0), 0);
-  const allStudents = (studentsData?.data || studentsData || {}).students || [];
-  const candidates = allStudents.filter((s) => !students.some((gs) => gs.id === s.id));
+  const sRaw = studentsData?.data || studentsData || {};
+  const allStudents = sRaw.students || (Array.isArray(sRaw) ? sRaw : []);
+  const candidates = allStudents.filter((s) => !students.some((gs) => (gs.id || gs.studentId || gs.student_id) === (s.id || s.studentId || s.student_id)));
 
   const add = async () => {
     if (!pick) return;
@@ -1012,21 +1026,21 @@ export default function AdminGroupDetail() {
       {/* Tab Content */}
       <div className="card bg-base-100 p-5 animate-fade-in stagger-3">
         {activeTab === 'attendance' && <AttendanceTab groupId={id} token={token} />}
-        {activeTab === 'homework' && <HomeworkTab groupId={id} />}
-        {activeTab === 'feedback' && <FeedbackTab groupId={id} />}
+        {activeTab === 'homework' && <HomeworkTab groupId={id} token={token} />}
+        {activeTab === 'feedback' && <FeedbackTab groupId={id} token={token} />}
       </div>
 
       {/* Add Student Modal */}
       <Modal isOpen={adding} onClose={() => setAdding(false)} title="Добавить ученика"
         actions={
           <>
-            <button className="btn btn-ghost" onClick={() => setAdding(false)}>Бекор қилиш</button>
+            <button className="btn btn-ghost" onClick={() => setAdding(false)}>Отмена</button>
             <button className="btn btn-primary" onClick={add} disabled={!pick}>Добавить</button>
           </>
         }
       >
         <select className="select select-bordered w-full" value={pick} onChange={(e) => setPick(e.target.value)}>
-          <option value="">О'кувчини танланг...</option>
+          <option value="">Выберите ученика...</option>
           {candidates.map((s) => <option key={s.id} value={s.id}>{fullName(s)}</option>)}
         </select>
       </Modal>

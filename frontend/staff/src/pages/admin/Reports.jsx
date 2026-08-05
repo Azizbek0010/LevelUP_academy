@@ -1,42 +1,19 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import {
   BarChart3, TrendingUp, Users, AlertTriangle, Activity, Filter, Search,
-  Download, X, RefreshCw, Banknote
+  Download, X, RefreshCw,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import { money, fmt } from '../../format.js';
-import { useAuth } from '../../auth.jsx';
 import { useAdminReports } from '../../queries.js';
-import { Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
+import { Kpi, RowSkeleton } from '../mentor/_ui.jsx';
+import ExportDialog from '../../components/ExportDialog.jsx';
 
-const COLORS = ['#2ECC71', '#E8543E', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899', '#43893E'];
-
-/* ── Cyrillic font loading for jsPDF (v4 instance API) ── */
-async function loadCyrillicFont(doc) {
-  const [regularRes, boldRes] = await Promise.all([
-    fetch('/fonts/Roboto-Regular.ttf'),
-    fetch('/fonts/Roboto-Bold.ttf'),
-  ]);
-  const regularBuf = await regularRes.arrayBuffer();
-  const boldBuf = await boldRes.arrayBuffer();
-  const regular = new Uint8Array(regularBuf);
-  const bold = new Uint8Array(boldBuf);
-
-  const toBase64 = (bytes) => {
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-    return btoa(binary);
-  };
-
-  doc.addFileToVFS('Roboto-Regular.ttf', toBase64(regular));
-  doc.addFileToVFS('Roboto-Bold.ttf', toBase64(bold));
-  doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
-  doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
-  return 'Roboto';
-}
+/* Design-system palette (index.css :root) — coherent shades instead of random hues */
+const COLORS = ['#40833B', '#dc2626', '#b45309', '#2563eb', '#15803d', '#5c6b53', '#7d8c73'];
 
 /* ═══════════════ KPI Card ═══════════════ */
 /* ═══════════════ Custom Tooltip ═══════════════ */
@@ -56,16 +33,19 @@ function ChartTooltip({ active, payload, label }) {
 
 /* ═══════════════ Main Reports ═══════════════ */
 export default function AdminReports() {
-  const { token } = useAuth();
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [search, setSearch] = useState('');
-  const [exporting, setExporting] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   // Build query string for backend period filter
-  const qs = from || to
-    ? `?${from ? `from=${encodeURIComponent(from)}` : ''}${from && to ? '&' : ''}${to ? `to=${encodeURIComponent(to)}` : ''}`
-    : '';
+  const qs = useMemo(() => {
+    if (!from && !to) return '';
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    return `?${params.toString()}`;
+  }, [from, to]);
 
   const { data, isLoading, error, refetch } = useAdminReports(qs);
 
@@ -86,7 +66,6 @@ export default function AdminReports() {
   const totalDebt = byGroup.reduce((s, g) => s + Number(g.debt || g.outstandingDebt || 0), 0);
   const totalStudents = byGroup.reduce((s, g) => s + Number(g.students ?? g.studentsCount ?? 0), 0);
   const avgRevenue = byGroup.length > 0 ? totalRevenue / byGroup.length : 0;
-  const maxRevenue = byGroup.length > 0 ? Math.max(...byGroup.map((g) => Number(g.revenue || 0))) : 0;
   const groupsWithDebt = byGroup.filter((g) => Number(g.debt || g.outstandingDebt || 0) > 0).length;
 
   const barData = useMemo(() =>
@@ -113,86 +92,6 @@ export default function AdminReports() {
     setTo('');
     setSearch('');
   };
-
-  /* ── PDF Export ── */
-  const handleExport = useCallback(async () => {
-    setExporting(true);
-    try {
-      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-        import('jspdf'),
-        import('jspdf-autotable'),
-      ]);
-
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-      const fontName = await loadCyrillicFont(doc);
-      doc.setFont(fontName, 'normal');
-      const pageW = doc.internal.pageSize.getWidth();
-      const dateStr = new Date().toLocaleDateString('ru-RU');
-
-      doc.setFontSize(16);
-      doc.setTextColor(30, 30, 30);
-      doc.setFont(fontName, 'bold');
-      doc.text('Отчёт — Доходы и долги', 14, 18);
-      doc.setFont(fontName, 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(120, 120, 120);
-      doc.text(`Дата: ${dateStr}  |  Общий доход: ${money(totalRevenue)}  |  Групп: ${byGroup.length}`, 14, 25);
-
-      autoTable(doc, {
-        startY: 30,
-        head: [['#', 'Группа', 'Ученики', "Доход (сум)", "Долг (сум)"]],
-        body: byGroup.map((g, i) => [
-          i + 1,
-          g.name || g.groupName || '—',
-          fmt(g.students ?? g.studentsCount ?? 0),
-          fmt(g.revenue || 0),
-          fmt(g.debt || g.outstandingDebt || 0),
-        ]),
-        foot: [['', 'ИТОГО', fmt(totalStudents), fmt(totalRevenue), fmt(totalDebt)]],
-        styles: {
-          font: 'Roboto',
-          fontSize: 8,
-          cellPadding: 3,
-          textColor: [30, 30, 30],
-          lineColor: [220, 229, 212],
-          lineWidth: 0.3,
-        },
-        headStyles: {
-          fillColor: [67, 137, 62],
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-          fontSize: 8,
-        },
-        footStyles: {
-          fillColor: [245, 248, 241],
-          textColor: [30, 30, 30],
-          fontStyle: 'bold',
-          fontSize: 8,
-        },
-        alternateRowStyles: { fillColor: [248, 251, 245] },
-        columnStyles: {
-          0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 24, halign: 'center' },
-          3: { cellWidth: 40, halign: 'right' },
-          4: { cellWidth: 40, halign: 'right' },
-        },
-        margin: { left: 14, right: 14 },
-        didDrawPage: (data) => {
-          const pageH = doc.internal.pageSize.getHeight();
-          doc.setFontSize(7);
-          doc.setTextColor(160, 160, 160);
-          doc.text(`LevelUp Academy  |  Стр. ${doc.internal.getCurrentPageInfo().pageNumber}`, pageW / 2, pageH - 8, { align: 'center' });
-        },
-      });
-
-      doc.save(`отчёт_${new Date().toISOString().split('T')[0]}.pdf`);
-    } catch (err) {
-      console.error('PDF export error:', err);
-    } finally {
-      setExporting(false);
-    }
-  }, [byGroup, totalRevenue, totalDebt, totalStudents]);
 
   /* ═══ Loading ═══ */
   if (isLoading) {
@@ -262,11 +161,11 @@ export default function AdminReports() {
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             className="btn btn-ghost btn-sm gap-1.5"
-            onClick={handleExport}
-            disabled={exporting || byGroup.length === 0}
+            onClick={() => setShowExport(true)}
+            disabled={byGroup.length === 0}
           >
             <Download className="w-4 h-4" />
-            {exporting ? 'Экспорт...' : 'PDF'}
+            Экспорт
           </button>
         </div>
       </div>
@@ -377,8 +276,8 @@ export default function AdminReports() {
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <RechartsTooltip content={<ChartTooltip />} />
-                <Bar dataKey="revenue" name="Доход" fill="#2ECC71" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="debt" name="Долг" fill="#E8543E" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="revenue" name="Доход" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="debt" name="Долг" fill="var(--danger)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -417,101 +316,12 @@ export default function AdminReports() {
         </div>
       </div>
 
-      {/* ═══ Table ═══ */}
-      <div className="card bg-base-100 overflow-hidden card-hover-premium animate-fade-in stagger-5">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-[10px] font-bold uppercase tracking-[0.07em] text-base-content/45 bg-base-100">
-                <th className="px-5 py-4">Группа</th>
-                <th className="px-5 py-4 text-right">Ученики</th>
-                <th className="px-5 py-4 text-right">Доход</th>
-                <th className="px-5 py-4 text-right">Долг</th>
-                <th className="px-5 py-4 text-right">Соотношение</th>
-              </tr>
-            </thead>
-            <tbody>
-              {byGroup.length === 0 ? (
-                <tr>
-                  <td colSpan={5}>
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <div className="w-14 h-14 rounded-full bg-base-100 flex items-center justify-center mb-3">
-                        <Banknote className="w-7 h-7 text-base-content/45" />
-                      </div>
-                      <p className="text-[14px] font-bold text-base-content mb-1">
-                        {search ? "Ничего не найдено" : "Данные отсутствуют"}
-                      </p>
-                      <p className="text-[12px] text-base-content/70 max-w-[280px]">
-                        {search ? "Попробуйте другой запрос" : "Пока нет данных по отчётам"}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                byGroup.map((g, i) => {
-                  const debt = Number(g.debt || g.outstandingDebt || 0);
-                  const revenue = Number(g.revenue || 0);
-                  const ratio = revenue > 0 ? ((revenue - debt) / revenue * 100) : 0;
-                  return (
-                    <tr
-                      key={g.id || g.groupId || i}
-                      className="group border-t border-base-300 text-[13px] transition-all duration-150 hover:bg-base-200"
-                    >
-                      <td className="px-5 py-4">
-                        <span className="text-base-content font-medium">
-                          {g.name || g.groupName || '—'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-right tabular-nums text-base-content/70">
-                        {fmt(g.students ?? g.studentsCount ?? 0)}
-                      </td>
-                      <td className="px-5 py-4 text-right tabular-nums font-bold text-primary">
-                        {money(revenue)}
-                      </td>
-                      <td className="px-5 py-4 text-right tabular-nums font-semibold" style={{ color: debt > 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
-                        {money(debt)}
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <span
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold"
-                          style={{
-                            background: ratio >= 80 ? 'rgba(46,204,113,0.14)' : ratio >= 50 ? 'rgba(245,158,11,0.14)' : 'rgba(232,84,62,0.14)',
-                            color: ratio >= 80 ? '#2ECC71' : ratio >= 50 ? '#F59E0B' : '#E8543E',
-                          }}
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full" style={{
-                            background: ratio >= 80 ? '#2ECC71' : ratio >= 50 ? '#F59E0B' : '#E8543E',
-                          }} />
-                          {ratio.toFixed(0)}%
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Table footer */}
-        {byGroup.length > 0 && (
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-base-300 bg-base-100">
-            <span className="text-[11px] text-base-content/45">
-              {byGroup.length} группа(-ы)
-            </span>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Общий доход:</span>
-                <span className="text-[13px] font-extrabold text-primary tabular-nums">{money(totalRevenue)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Общий долг:</span>
-                <span className="text-[13px] font-extrabold text-error tabular-nums">{money(totalDebt)}</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <ExportDialog
+        open={showExport}
+        onClose={() => setShowExport(false)}
+        pageKey="reports"
+        data={byGroup}
+      />
     </div>
   );
 }

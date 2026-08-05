@@ -1174,7 +1174,7 @@ export default {
     langSchool: {
       title: "Til markazi uchun CRM — guruhlar, to'lovlar | LevelUp",
       description:
-        "Til o'quv markazi uchun CRM: darajali guruhlar, davomat, uy vazifalari, testlar, to'lovlar va o'quvchilar motivatsiyasi bitta tizimda. Birinchi hafta bepul.",
+        "Til markazi uchun CRM: darajali guruhlar (A1–C1, IELTS), davomat, uy vazifalari, testlar, to'lovlar va motivatsiya bitta tizimda. Birinchi hafta bepul.",
     },
     courses: {
       title: "Kurslar va repetitorlar uchun CRM | LevelUp Academy",

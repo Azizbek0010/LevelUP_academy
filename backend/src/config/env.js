@@ -43,7 +43,20 @@ const schema = z.object({
   SMS_API_TOKEN: z.string().optional().or(z.literal('')),
 
   TELEGRAM_BOT_TOKEN: z.string().optional().or(z.literal('')),
+  // Без него bind-token.service бросает исключение → POST /api/telegram/bind-token
+  // отдаёт 500, а кнопка «Telegram» в кабинете молча ничего не делает.
+  // Значение — @username бота без «@».
   TELEGRAM_BOT_USERNAME: z.string().optional().or(z.literal('')),
+
+  // Публичный адрес API (например https://api.levelup-academy.uz). Задан вместе
+  // с TELEGRAM_WEBHOOK_SECRET → бот работает через webhook, иначе long-polling.
+  PUBLIC_API_URL: z.string().url().optional().or(z.literal('')),
+  // Секрет в пути webhook И в заголовке secret_token. Минимум 24 символа:
+  // путь попадает в логи прокси, короткий секрет там подбирается.
+  TELEGRAM_WEBHOOK_SECRET: z.string().min(24).optional().or(z.literal('')),
+  // Язык ответов бота. По умолчанию узбекский (см. bot.js) — аудитория ученики
+  // и родители в Узбекистане. 'ru' — если партнёру нужен русский.
+  TELEGRAM_BOT_LANG: z.enum(['uz', 'ru']).optional().or(z.literal('')),
 
   // Google/Firebase вход: Web client ID (из Firebase → Auth → Google → Web SDK).
   // Публичное значение. Пусто → /api/auth/google отдаёт 503.

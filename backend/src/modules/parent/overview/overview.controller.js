@@ -12,3 +12,17 @@ export const getChildOverview = asyncHandler(async (req, res) => {
   const data = await service.getChildOverview(req.user.id, req.params.childId);
   res.json({ success: true, data });
 });
+
+/** GET /children/:childId/attendance — постраничная история посещаемости. */
+export const getChildAttendance = asyncHandler(async (req, res) => {
+  const { page, limit } = req.query;
+  const data = await service.getChildAttendance(req.user.id, req.params.childId, page, limit);
+  res.json({ success: true, data });
+});
+
+/** GET /children/:childId/grades — постраничные оценки (ДЗ или тесты). */
+export const getChildGrades = asyncHandler(async (req, res) => {
+  const { type, page, limit } = req.query;
+  const data = await service.getChildGrades(req.user.id, req.params.childId, type, page, limit);
+  res.json({ success: true, data });
+});

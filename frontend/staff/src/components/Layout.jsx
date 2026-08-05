@@ -11,6 +11,7 @@ import {
   HiOutlineChartBar, HiOutlineCog,
   HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
+  HiOutlineExclamationTriangle,
 } from 'react-icons/hi2';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
@@ -60,7 +61,7 @@ const superNav = [
     label: 'Аналитика',
     Icon: HiOutlineChartBar,
     items: [
-      { to: '/reports', label: 'Отчёты' },
+      // «Отчёты» слиты в «Статистику» 2026-07-28 — были одной и той же выборкой
       { to: '/stats',   label: 'Статистика' },
       // общие срезы по всей организации; разбор по одному филиалу — внутри него
       { to: '/students',   label: 'Все ученики' },
@@ -90,6 +91,7 @@ const adminNav = [
   { to: '/students',  label: 'Студенты',    Icon: HiOutlineAcademicCap },
   { to: '/groups',    label: 'Группы',      Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Менторы',     Icon: HiOutlineUserCircle },
+  { to: '/discipline', label: 'Дисциплина', Icon: HiOutlineExclamationTriangle },
   { to: '/chat',      label: 'Чат',         Icon: HiOutlineChatBubbleLeftRight },
   { to: '/payments',  label: 'Платежи',     Icon: HiOutlineWallet },
   { to: '/expenses',  label: 'Расходы',     Icon: HiOutlineReceiptPercent },

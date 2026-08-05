@@ -16,11 +16,12 @@ import Gamification from './pages/Gamification.jsx';
 import Contacts from './pages/Contacts.jsx';
 import NotFound from './pages/NotFound.jsx';
 import { trackPageView } from './lib/analytics.js';
-import { useT } from './i18n/index.js';
+import { PREFIXED_LANGS, useT } from './i18n/index.js';
 
 /**
- * Канонические пути лендинга. Русская версия живёт на них как есть, узбекская — под
- * префиксом /uz (см. src/i18n/index.js). Один список на оба языка: разойтись они не могут.
+ * Канонические пути лендинга. Русская версия живёт на них как есть, остальные языки —
+ * под своим префиксом (`/uz`, `/en` — см. PREFIXED_LANGS в src/i18n/index.js). Один
+ * список на все языки: разойтись они не могут.
  * Держать в синхроне с ROUTES в scripts/prerender.js и с public/sitemap.xml.
  */
 export const PAGES = [
@@ -67,14 +68,18 @@ export default function App() {
         {/* В проде корень редиректит Vercel (308). Здесь — для dev-сервера и для
             прямого перехода внутри SPA. */}
         <Route path="/" element={<Navigate to="/landing" replace />} />
-        <Route path="/uz" element={<Navigate to="/uz/landing" replace />} />
+        {PREFIXED_LANGS.map((lang) => (
+          <Route key={lang} path={`/${lang}`} element={<Navigate to={`/${lang}/landing`} replace />} />
+        ))}
 
         {PAGES.map(({ path, element }) => (
           <Route key={path} path={path} element={element} />
         ))}
-        {PAGES.map(({ path, element }) => (
-          <Route key={`uz${path}`} path={`/uz${path}`} element={element} />
-        ))}
+        {PREFIXED_LANGS.flatMap((lang) =>
+          PAGES.map(({ path, element }) => (
+            <Route key={`${lang}${path}`} path={`/${lang}${path}`} element={element} />
+          )),
+        )}
         {/* Битый URL — это 404, а не повод молча увести на главную: редирект
             делал из любого несуществующего адреса «живую» страницу (soft-404). */}
         <Route path="*" element={<NotFound />} />

@@ -9,6 +9,8 @@ body,
   background-color: var(--bg) !important;
 }
 
+img { max-width: 100%; display: block; }
+
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -127,6 +129,14 @@ body {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+/* Из редизайна родительской панели: этим классом открываются выпадающие меню
+   в Layout. Правило жило в его версии index.css, а здесь осталась наша — без
+   него меню появлялись бы рывком. */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-in { animation: fadeInDown 0.15s ease-out; }
 @keyframes slide-up {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: none; }
@@ -377,4 +387,177 @@ main > * {
   max-width: 100vw;
   height: 100dvh;
   max-height: 100dvh;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Перенесено из frontend/student/index.css при объединении кабинета
+   student+parent внутри member
+   ═══════════════════════════════════════════════════════════════ */
+
+.modal-box {
+  background: var(--surface) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+.modal-backdrop { background: rgba(0, 0, 0, 0.4) !important; backdrop-filter: blur(4px); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Кольцо результата теста — конический градиент primary по проценту */
+.score-ring {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  background: conic-gradient(var(--primary) calc(var(--score, 0) * 1%), var(--base-300, #e7eede) 0);
+}
+.score-ring > span {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Таймер прохождения теста */
+.quiz-clock { font-variant-numeric: tabular-nums; }
+.quiz-clock--low { color: var(--danger) !important; }
+
+/* ═══════════════════════════════════════════════════════════════
+   КАБИНЕТ УЧЕНИКА (7-15 лет)
+   ═══════════════════════════════════════════════════════════════
+
+   2026-08-01, версия 2. Версия 1 («Adventure Camp» — золото, маскот,
+   объёмные игровые кнопки, значки-«стикеры», сильное скругление везде)
+   отклонена прямым фидбеком: слишком по-детски/AI-сгенерированно,
+   не хватало серьёзности. Правки:
+   · палитра — приглушённый лайм (не неон), тона глубже
+   · значки — тонированный фон + цветная иконка (Apple Health), не
+     сплошная плашка-«стикер»
+   · скругления заметно меньше везде
+   · кнопки — Apple-нажатие scale(0.97), без «проседающей» игровой тени
+   · вход карточек — чистый ease-out без пружинного нахлёста
+   · маскот убран целиком (CSS для него тоже — k-float/k-sparkle были
+     только под него)
+
+   Анимации — только transform/opacity/box-shadow (GPU-дешёвые). Общий
+   @media (prefers-reduced-motion) выше по файлу уже глушит все duration —
+   отдельно дублировать не нужно. */
+.kid {
+  --k-bg: #F6F8F3;
+  --k-card: #FFFFFF;
+  --k-text: #1C231A;
+  --k-muted: #707F68;
+  --k-line: #E4EAE0;
+  --k-lime: #5C9A3B;
+  --k-lime-dk: #457329;
+  --k-ink: #12190E;
+
+  --k-violet: #6E62A6;
+  --k-blue: #3E7CAE;
+  --k-coral: #BD5B45;
+  --k-amber: #B9832E;
+  --k-teal: #2E8F76;
+  --k-pink: #AD5A78;
+
+  background: var(--k-bg);
+  color: var(--k-text);
+}
+
+/* Карточка: белая, спокойная тень, умеренное скругление */
+.k-card {
+  background: var(--k-card);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(18, 25, 14, 0.04), 0 6px 16px rgba(18, 25, 14, 0.06);
+}
+/* Выпадающая панель от кнопки (уведомления, профиль) — тот же приём,
+   что .popover-surface в Staff: белая, окантована, приподнята тенью. */
+.k-popover {
+  background: var(--k-card);
+  border: 1px solid var(--k-line);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(18, 25, 14, 0.16), 0 4px 12px rgba(18, 25, 14, 0.08);
+}
+
+/* Лёгкий "подъём" для нажимаемых карточек (задания и т.п.) */
+.k-hover { transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease; }
+.k-hover:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(18, 25, 14, 0.05), 0 10px 20px rgba(18, 25, 14, 0.08);
+}
+
+/* Apple-нажатие: scale(0.97) на :active — быстрая, тихая обратная связь
+   (emil-design-eng/apple-design), без игровой "проседающей" тени. */
+.k-press { transition: transform 0.12s ease-out, box-shadow 0.12s ease-out; }
+.k-press:active:not(:disabled) { transform: scale(0.97); }
+.k-press-sm { transition: transform 0.12s ease-out; }
+.k-press-sm:active:not(:disabled) { transform: scale(0.94); }
+
+/* Кольцо прогресса (страницы, которым нужен percent+children) */
+.k-ring { border-radius: 50%; display: grid; place-items: center; }
+.k-ring > i { border-radius: 50%; background: #fff; display: grid; place-items: center; font-style: normal; }
+
+/* Активный пункт навигации — залитая лаймовая таблетка */
+.k-nav-on {
+  background: var(--k-lime);
+  color: #fff;
+}
+
+.k-num { font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: -0.01em; }
+
+/* Мягкое «дыхание» для текущего/призывного элемента */
+@keyframes k-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+.k-pulse { animation: k-pulse 2.4s ease-in-out infinite; }
+
+/* Вход карточек/модалок — чистый ease-out, без пружинного нахлёста
+   (сериознее, чем bounce; всё ещё не с нуля — из 0.96, не 0). */
+@keyframes k-pop-in {
+  0%   { opacity: 0; transform: scale(0.96) translateY(4px); }
+  100% { opacity: 1; transform: none; }
+}
+.k-pop-in { animation: k-pop-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Блик, бегущий по заполненной части полосы уровня */
+@keyframes k-levelbar-sheen {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+.k-levelbar-fill {
+  position: relative;
+  transition: width 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  overflow: hidden;
+}
+.k-levelbar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: k-levelbar-sheen 2.4s ease-in-out infinite;
+}
+
+/* Конфетти — падение с вращением и затуханием, ~900мс, чисто декоративно */
+@keyframes k-confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(160px) translateX(var(--drift, 0px)) rotate(280deg); opacity: 0; }
+}
+.k-confetti-piece {
+  position: absolute;
+  top: -10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  animation: k-confetti-fall 0.9s cubic-bezier(0.4, 0.2, 0.6, 1) forwards;
 }

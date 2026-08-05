@@ -5,6 +5,7 @@ import { pool } from './config/db.js';
 import { closeRedis } from './config/redis.js';
 import { createApp } from './app.js';
 import { initSockets } from './sockets/index.js';
+import { initTelegramWebhook } from './modules/telegram/bot.js';
 
 const app = createApp();
 const httpServer = createServer(app);
@@ -12,6 +13,11 @@ const io = initSockets(httpServer);
 
 httpServer.listen(env.PORT, () => {
   logger.info(`API listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
+
+  // После listen, а не до: Telegram проверяет webhook сразу после setWebhook,
+  // и до открытия порта проверка пришлась бы в закрытую дверь.
+  // Не await — падение регистрации бота не должно мешать API отвечать.
+  initTelegramWebhook().catch((err) => logger.error({ err }, 'Telegram webhook init failed'));
 });
 
 // --- graceful shutdown: stop accepting → drain sockets → close pool/redis ---

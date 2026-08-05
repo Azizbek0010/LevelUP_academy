@@ -1154,23 +1154,6 @@ router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl
 
 /**
  * @openapi
- * /api/admin/charter:
- *   get:
- *     tags: [Discipline]
- *     summary: View organization charter (read-only for Admin)
- *     security: [{ bearerAuth: [] }]
- *     responses:
- *       200:
- *         description: Charter
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 data: { $ref: '#/components/schemas/Charter' }
- *       401: { $ref: '#/components/responses/Unauthorized' }
- *       403: { $ref: '#/components/responses/Forbidden' }
  * /api/admin/penalties:
  *   get:
  *     tags: [Discipline]
@@ -1217,7 +1200,6 @@ router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl
  *       409: { $ref: '#/components/responses/Conflict' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.get('/charter', discipline.getCharter);
 router.get('/penalties', validate({ query: listPenaltiesQuery }), discipline.listPenalties);
 router.post('/penalties', validate({ body: issuePenaltySchema }), discipline.issuePenalty);
 

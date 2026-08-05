@@ -53,25 +53,41 @@ export const lessonUploadUrlQuery = z.object({
   contentType: z.string().trim().max(150).optional(),
 });
 
-// ---------- Вопросы (A/B/C/D) ----------
-export const createQuestionSchema = z.object({
-  lessonId: z.string().uuid(),
-  questionText: z.string().trim().min(1, 'Текст вопроса обязателен').max(1000),
-  optionA: z.string().trim().min(1).max(300),
-  optionB: z.string().trim().min(1).max(300),
-  optionC: z.string().trim().min(1).max(300),
-  optionD: z.string().trim().min(1).max(300),
-  correctAnswer: z.enum(['A', 'B', 'C', 'D']),
-});
+// ---------- Вопросы: 3 формата ----------
+// 'choice' — классический A/B/C/D. 'riddle'/'open' технически одно и то же
+// (свободный текстовый ответ, сверяется без учёта регистра при проверке) —
+// разные значения оставлены для UI/аналитики методиста, а не потому что
+// логика проверки отличается (см. lessons.service.js student-стороны).
+const questionText = z.string().trim().min(1, 'Текст вопроса обязателен').max(1000);
+const optionField = z.string().trim().min(1).max(300);
+const textAnswerField = z.string().trim().min(1, 'Правильный ответ обязателен').max(300);
 
-export const updateQuestionSchema = z.object({
-  questionText: z.string().trim().min(1).max(1000).optional(),
-  optionA: z.string().trim().min(1).max(300).optional(),
-  optionB: z.string().trim().min(1).max(300).optional(),
-  optionC: z.string().trim().min(1).max(300).optional(),
-  optionD: z.string().trim().min(1).max(300).optional(),
-  correctAnswer: z.enum(['A', 'B', 'C', 'D']).optional(),
-});
+const choiceQuestionBody = {
+  questionType: z.literal('choice'),
+  questionText,
+  optionA: optionField,
+  optionB: optionField,
+  optionC: optionField,
+  optionD: optionField,
+  correctAnswer: z.enum(['A', 'B', 'C', 'D']),
+};
+const riddleQuestionBody = { questionType: z.literal('riddle'), questionText, correctTextAnswer: textAnswerField };
+const openQuestionBody = { questionType: z.literal('open'), questionText, correctTextAnswer: textAnswerField };
+
+export const createQuestionSchema = z.discriminatedUnion('questionType', [
+  z.object({ lessonId: z.string().uuid(), ...choiceQuestionBody }),
+  z.object({ lessonId: z.string().uuid(), ...riddleQuestionBody }),
+  z.object({ lessonId: z.string().uuid(), ...openQuestionBody }),
+]);
+
+// Полная замена вопроса (тот же приём, что уже использовал фронт для
+// реордера — своп двух вопросов целиком через два PATCH), включая смену
+// формата — поэтому не partial-патч, а тот же discriminated union.
+export const updateQuestionSchema = z.discriminatedUnion('questionType', [
+  z.object(choiceQuestionBody),
+  z.object(riddleQuestionBody),
+  z.object(openQuestionBody),
+]);
 
 // Пакетное создание вопросов
 export const createQuestionsBatchSchema = z.object({
@@ -84,3 +100,6 @@ export const copyLessonSchema = z.object({
 });
 
 export const idParam = z.object({ id: z.string().uuid('Invalid id') });
+export const trainingTypeIdParam = z.object({ trainingTypeId: z.string().uuid('Invalid trainingTypeId') });
+export const topicIdParam = z.object({ topicId: z.string().uuid('Invalid topicId') });
+export const lessonIdParam = z.object({ lessonId: z.string().uuid('Invalid lessonId') });

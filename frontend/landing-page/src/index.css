@@ -132,24 +132,32 @@ h1, h2, h3, h4, .display {
 
 /* Переключатель языка — не кнопка действия, а вторичная навигация: рядом с меню,
    но тише основного CTA. */
+/* Языков больше двух, поэтому это контейнер со списком, а не одна ссылка-тумблер:
+   рамка и отступы живут на самих ссылках, иначе она обвела бы весь список разом. */
 .lang-switch {
+  display: inline-flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.lang-switch a {
   font-size: 14px;
   font-weight: 700;
   color: var(--text);
+  text-decoration: none;
   opacity: 0.72;
   padding: 7px 12px;
   border: 1px solid var(--border, #e6edd8);
   border-radius: 999px;
-  white-space: nowrap;
   transition: opacity 0.15s, border-color 0.15s;
 }
 
-.lang-switch:hover {
+.lang-switch a:hover {
   opacity: 1;
   border-color: var(--accent);
 }
 
-/* В мобильном меню он идёт строкой среди ссылок — рамка там лишняя. */
+/* В мобильном меню он идёт строкой среди ссылок. */
 .drawer__nav .lang-switch {
   align-self: flex-start;
   margin-top: 6px;

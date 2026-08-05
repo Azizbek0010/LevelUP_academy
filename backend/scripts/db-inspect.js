@@ -14,10 +14,10 @@ import pg from 'pg';
 
 const TABLES = [
   'attendance', 'audit_log', 'branches', 'chat_messages', 'coin_history',
-  'expenses', 'group_feedback', 'group_students', 'groups', 'homework',
+  'discipline_rules', 'expenses', 'group_feedback', 'group_students', 'groups', 'homework',
   'homework_submissions', 'invoices', 'leads', 'mentor_profiles',
   'mentor_salaries', 'methodology_lessons', 'methodology_questions',
-  'org_announcements', 'org_charters', 'organizations', 'payment_schedules',
+  'org_announcements', 'organizations', 'payment_schedules',
   'platform_announcements', 'platform_pricing', 'refresh_tokens', 'reminders',
   'shop_items', 'shop_orders', 'staff_penalties', 'student_profiles',
   'telegram_accounts', 'test_results', 'tests', 'topics', 'training_types',

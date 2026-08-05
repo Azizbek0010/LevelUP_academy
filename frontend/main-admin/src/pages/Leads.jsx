@@ -34,7 +34,7 @@ function StatCard({ Icon, tint, title, value, active, onClick }) {
       type="button"
       onClick={onClick}
       className={`card shadow-sm border transition-all hover:shadow-md hover:-translate-y-0.5 text-left ${
-        active ? 'border-lime-400 bg-lime-50/50' : 'bg-base-100 border-base-200/60'
+        active ? 'border-primary bg-primary/10' : 'bg-base-100 border-base-200/60'
       }`}
     >
       <div className="card-body p-4">
@@ -112,7 +112,7 @@ export default function Leads() {
         subtitle="Обработка и онбординг новых учебных центров"
       >
         <button
-          className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 gap-2"
+          className="btn btn-primary gap-2"
           onClick={() => setOnboard({})}
         >
           <UserPlus size={17} /> Новый партнёр
@@ -139,7 +139,7 @@ export default function Leads() {
                   <button
                     key={t.key}
                     type="button"
-                    className={`join-item btn btn-sm ${tab === t.key ? 'bg-lime-400 hover:bg-lime-500 border-0 text-lime-950' : 'btn-ghost'}`}
+                    className={`join-item btn btn-sm ${tab === t.key ? 'btn-primary' : 'btn-ghost'}`}
                     onClick={() => setTab(t.key)}
                   >
                     {t.label}
@@ -266,7 +266,7 @@ function LeadDetail({ lead, onClose, onChangeStatus, onOnboard, busy }) {
     <div className="modal modal-open modal-bottom sm:modal-middle">
       <div className="modal-box max-w-2xl p-0 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-5 bg-gradient-to-br from-lime-50 to-transparent border-b border-base-200 flex items-start gap-4">
+        <div className="px-6 py-5 bg-gradient-to-br from-primary/10 to-transparent border-b border-base-200 flex items-start gap-4">
           <Avatar name={lead.centerName || lead.name} size={56} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -295,16 +295,16 @@ function LeadDetail({ lead, onClose, onChangeStatus, onOnboard, busy }) {
                     <div key={step.key} className="flex items-center flex-1 last:flex-none">
                       <div className="flex flex-col items-center gap-1">
                         <div className={`w-9 h-9 rounded-full grid place-items-center shrink-0 transition-colors ${
-                          done ? 'bg-lime-400 text-lime-950' : 'bg-base-200 text-base-content/40'
-                        } ${active ? 'ring-4 ring-lime-100' : ''}`}>
+                          done ? 'bg-primary text-primary-content' : 'bg-base-200 text-base-content/40'
+                        } ${active ? 'ring-4 ring-primary/30' : ''}`}>
                           <step.Icon size={15} />
                         </div>
-                        <span className={`text-[10.5px] font-semibold ${done ? 'text-lime-700' : 'text-base-content/40'}`}>
+                        <span className={`text-[10.5px] font-semibold ${done ? 'text-primary-content' : 'text-base-content/40'}`}>
                           {step.label}
                         </span>
                       </div>
                       {i < STEPS.length - 1 && (
-                        <div className={`flex-1 h-0.5 mx-2 -mt-4 ${i < currentStep ? 'bg-lime-400' : 'bg-base-200'}`} />
+                        <div className={`flex-1 h-0.5 mx-2 -mt-4 ${i < currentStep ? 'bg-primary' : 'bg-base-200'}`} />
                       )}
                     </div>
                   );
@@ -327,17 +327,17 @@ function LeadDetail({ lead, onClose, onChangeStatus, onOnboard, busy }) {
                 <span className="text-sm font-medium">{lead.name || '—'}</span>
               </div>
               {lead.phone && (
-                <a href={`tel:${lead.phone}`} className="flex items-center gap-3 p-3 rounded-xl border border-base-200 hover:border-lime-400 hover:bg-lime-50/40 transition-colors">
+                <a href={`tel:${lead.phone}`} className="flex items-center gap-3 p-3 rounded-xl border border-base-200 hover:border-primary hover:bg-primary/10 transition-colors">
                   <Phone size={16} className="text-base-content/40 shrink-0" />
                   <span className="text-sm font-medium">{lead.phone}</span>
-                  <span className="ml-auto text-xs text-lime-600 font-semibold">Позвонить</span>
+                  <span className="ml-auto text-xs text-primary-content font-semibold">Позвонить</span>
                 </a>
               )}
               {lead.email && (
-                <a href={`mailto:${lead.email}`} className="flex items-center gap-3 p-3 rounded-xl border border-base-200 hover:border-lime-400 hover:bg-lime-50/40 transition-colors">
+                <a href={`mailto:${lead.email}`} className="flex items-center gap-3 p-3 rounded-xl border border-base-200 hover:border-primary hover:bg-primary/10 transition-colors">
                   <Mail size={16} className="text-base-content/40 shrink-0" />
                   <span className="text-sm font-medium truncate">{lead.email}</span>
-                  <span className="ml-auto text-xs text-lime-600 font-semibold">Написать</span>
+                  <span className="ml-auto text-xs text-primary-content font-semibold">Написать</span>
                 </a>
               )}
             </div>
@@ -375,7 +375,7 @@ function LeadDetail({ lead, onClose, onChangeStatus, onOnboard, busy }) {
                   <PhoneCall size={15} /> Связались
                 </button>
               )}
-              <button className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 gap-2 flex-1" onClick={onOnboard}>
+              <button className="btn btn-primary gap-2 flex-1" onClick={onOnboard}>
                 <Send size={15} /> Онбордить
               </button>
               <button className="btn btn-outline btn-error gap-2" onClick={() => onChangeStatus('rejected')}>

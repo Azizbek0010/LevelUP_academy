@@ -9,6 +9,7 @@ import { api } from '../../api.js';
 import { dateShort } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
+import { Card, StatusBadge } from './_ui.jsx';
 
 const domainRegex = /^[a-z0-9.-]+\.[a-z]{2,}$/;
 
@@ -20,6 +21,7 @@ const settingsSchema = z.object({
     .toLowerCase()
     .regex(domainRegex, 'Неверный формат (например, levelup.uz)')
     .or(z.literal('')),
+  lessonDurationMin: z.coerce.number().int().min(10, 'Мин. 10 мин').max(600, 'Макс. 600 мин'),
 });
 
 export default function SuperSettings() {
@@ -34,8 +36,8 @@ export default function SuperSettings() {
 
   const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { name: org?.name || '', domain: org?.domain || '' },
-    values: org ? { name: org.name || '', domain: org.domain || '' } : undefined,
+    defaultValues: { name: org?.name || '', domain: org?.domain || '', lessonDurationMin: org?.lessonDurationMin || 60 },
+    values: org ? { name: org.name || '', domain: org.domain || '', lessonDurationMin: org.lessonDurationMin || 60 } : undefined,
   });
 
   const onSubmit = async (formData) => {
@@ -45,6 +47,7 @@ export default function SuperSettings() {
       await api.superUpdateOrganization(token, {
         name: formData.name.trim(),
         domain: formData.domain.trim() || null,
+        lessonDurationMin: formData.lessonDurationMin,
       });
       invalidate('super-organization');
       setSuccessMsg('Настройки сохранены!');
@@ -84,8 +87,7 @@ export default function SuperSettings() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Profile card */}
         <div className="md:col-span-1">
-          <div className="card bg-base-100 shadow-sm">
-            <div className="card-body p-5 items-center text-center">
+          <Card className="p-5 flex flex-col items-center text-center">
               <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <Building2 size={36} className="text-primary" />
               </div>
@@ -97,23 +99,21 @@ export default function SuperSettings() {
               <div className="w-full space-y-3 text-left text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-base-content/50">Статус:</span>
-                  <span className={`badge badge-sm ${org.status === 'active' ? 'badge-success' : 'badge-ghost'}`}>
+                  <StatusBadge tone={org.status === 'active' ? 'success' : 'neutral'}>
                     {org.status === 'active' ? 'Активен' : org.status}
-                  </span>
+                  </StatusBadge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-base-content/50">Создана:</span>
                   <span className="font-semibold">{dateShort(org.createdAt)}</span>
                 </div>
               </div>
-            </div>
-          </div>
+          </Card>
         </div>
 
         {/* Form + Security */}
         <div className="md:col-span-2 space-y-6">
-          <div className="card bg-base-100 shadow-sm">
-            <div className="card-body p-6">
+          <Card className="p-5 md:p-6">
               <h2 className="text-base font-bold mb-4">Основные настройки</h2>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <label className="form-control w-full">
@@ -140,6 +140,20 @@ export default function SuperSettings() {
                   </span>
                   {errors.domain && <span className="text-xs text-error mt-1">{errors.domain.message}</span>}
                 </label>
+                <label className="form-control w-full max-w-[220px]">
+                  <span className="label-text mb-1.5 font-medium">Длительность урока (мин)</span>
+                  <input
+                    type="number"
+                    min={10}
+                    max={600}
+                    {...register('lessonDurationMin')}
+                    className={`input input-bordered w-full ${errors.lessonDurationMin ? 'input-error' : ''}`}
+                  />
+                  <span className="text-[11px] text-base-content/40 mt-1">
+                    Используется для авторасчёта конца занятия в форме группы (Admin-панель).
+                  </span>
+                  {errors.lessonDurationMin && <span className="text-xs text-error mt-1">{errors.lessonDurationMin.message}</span>}
+                </label>
                 <div className="flex justify-end pt-4">
                   <button type="submit" className="btn btn-primary" disabled={!isDirty || busy}>
                     {busy && <span className="loading loading-spinner loading-sm" />}
@@ -147,11 +161,9 @@ export default function SuperSettings() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
+          </Card>
 
-          <div className="card bg-base-100 shadow-sm">
-            <div className="card-body p-6">
+          <Card className="p-5 md:p-6">
               <h2 className="text-base font-bold mb-2 flex items-center gap-2">
                 <ShieldCheck size={18} /> Лицензия и лимиты
               </h2>
@@ -170,8 +182,7 @@ export default function SuperSettings() {
                   <div className="text-base-content/50">{org.plan?.diskSpace || '500 ГБ'}</div>
                 </div>
               </div>
-            </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

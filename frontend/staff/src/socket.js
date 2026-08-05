@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { USING_MOCKS } from './api.js';
 
@@ -41,37 +41,6 @@ export function disconnectSocket() {
     socket.disconnect();
     socket = null;
   }
-}
-
-/**
- * Хук для получения количества "онлайн" (presence:count).
- * Слушает событие `presence:count` и возвращает последнее значение.
- */
-export function useOnlineCount(token) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (!token) {
-      setCount(0);
-      return;
-    }
-
-    const s = getSocket(token);
-
-    const handler = (data) => {
-      // data может быть числом или { count: number }
-      const val = typeof data === 'object' ? data.count ?? 0 : Number(data) || 0;
-      setCount(val);
-    };
-
-    s.on('presence:count', handler);
-
-    return () => {
-      s.off('presence:count', handler);
-    };
-  }, [token]);
-
-  return count;
 }
 
 /**

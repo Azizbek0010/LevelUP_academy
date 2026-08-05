@@ -3,14 +3,14 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Edit3, Save, X, Loader2, Coins, Wallet, Users, CalendarDays,
   KeyRound, Phone, Mail, Snowflake, Sun, Trash2, Copy, Check, CreditCard,
-  Clock, AlertCircle, User, GraduationCap, Shield, Hash, CoinsIcon,
+  Clock, AlertCircle, User, GraduationCap, Shield, Hash,
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudentDetail } from '../../queries.js';
 import { api } from '../../api.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Avatar, RowSkeleton } from '../mentor/_ui.jsx';
+import { Avatar, RowSkeleton, Modal } from '../mentor/_ui.jsx';
 import { formatPhone } from '../../format.js';
 
 /* ─── helpers ─── */
@@ -23,7 +23,7 @@ const formatDate = (d) => {
   const dt = new Date(d);
   return dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 };
-const PAYMENT_TYPE_LABELS = { cash: 'Нақт', card: 'Карта', transfer: 'Перечисление' };
+const PAYMENT_TYPE_LABELS = { cash: 'Наличные', card: 'Карта', transfer: 'Перечисление' };
 const PAYMENT_STATUS_LABELS = { paid: 'Оплачен', pending: 'Ожидание', overdue: 'Просрочен', cancelled: 'Отменён' };
 const PAYMENT_STATUS_COLORS = {
   paid: 'bg-emerald-100 text-emerald-700',
@@ -62,9 +62,7 @@ export default function AdminStudentDetail() {
       firstName: student.firstName || '',
       lastName: student.lastName || '',
       phone: student.phone || '',
-      parentPhone: student.parentPhone || '',
-      age: student.age || '',
-      gender: student.gender || 'male',
+      birthDate: student.birthDate ? new Date(student.birthDate).toISOString().split('T')[0] : '',
     });
     setEditing(true);
   };
@@ -76,14 +74,12 @@ export default function AdminStudentDetail() {
         firstName: form.firstName,
         lastName: form.lastName,
         phone: form.phone || undefined,
-        parentPhone: form.parentPhone || undefined,
-        age: form.age ? Number(form.age) : undefined,
-        gender: form.gender || undefined,
+        birthDate: form.birthDate || undefined,
       });
       setEditing(false);
       refetch();
     } catch (e) {
-      alert(e.message || 'Xatolik');
+      alert(e.message || 'Ошибка');
     } finally {
       setSaving(false);
     }
@@ -96,20 +92,20 @@ export default function AdminStudentDetail() {
       await api.adminFreezeStudent(token, id, !frozen, '');
       refetch();
     } catch (e) {
-      alert(e.message || 'Xatolik');
+      alert(e.message || 'Ошибка');
     } finally {
       setBusy(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(`O'chirishni xohlaysizmi: ${fullName(student)}?`)) return;
+    if (!confirm(`Вы уверены, что хотите удалить: ${fullName(student)}?`)) return;
     setBusy(true);
     try {
       await api.adminDeleteStudent(token, id);
       navigate('/students');
     } catch (e) {
-      alert(e.message || 'Xatolik');
+      alert(e.message || 'Ошибка');
     } finally {
       setBusy(false);
     }
@@ -120,10 +116,10 @@ export default function AdminStudentDetail() {
     try {
       const res = await api.adminRegenStudentPassword(token, id);
       const r = res?.data || res;
-      alert(`Yangi parol: ${r.password || r.loginCode || 'generate qilindi'}`);
+      alert(`Новый пароль: ${r.password || r.loginCode || 'сгенерирован'}`);
       refetch();
     } catch (e) {
-      alert(e.message || 'Xatolik');
+      alert(e.message || 'Ошибка');
     } finally {
       setBusy(false);
     }
@@ -133,7 +129,7 @@ export default function AdminStudentDetail() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Talaba" />
+        <PageHeader title="Ученик" />
         <div className="mt-6"><RowSkeleton count={2} /></div>
       </div>
     );
@@ -143,13 +139,13 @@ export default function AdminStudentDetail() {
   if (error) {
     return (
       <div>
-        <PageHeader title="Talaba" />
+        <PageHeader title="Ученик" />
         <div className="card bg-base-100 p-8 text-center">
           <AlertCircle size={40} className="mx-auto mb-3 text-red-400" />
-          <p className="text-[14px] font-bold text-base-content">Xatolik yuz berdi</p>
+          <p className="text-[14px] font-bold text-base-content">Произошла ошибка</p>
           <p className="text-[12px] text-base-content/45 mt-1">{error.message}</p>
           <Link to="/students" className="btn btn-primary btn-sm mt-4">
-            <ArrowLeft size={14} /> Ortga
+            <ArrowLeft size={14} /> Назад
           </Link>
         </div>
       </div>
@@ -159,12 +155,12 @@ export default function AdminStudentDetail() {
   if (!student || !student.id) {
     return (
       <div>
-        <PageHeader title="Talaba" />
+        <PageHeader title="Ученик" />
         <div className="card bg-base-100 p-8 text-center">
           <User size={40} className="mx-auto mb-3 text-base-content/45 opacity-30" />
-          <p className="text-[14px] font-bold text-base-content">Talaba topilmadi</p>
+          <p className="text-[14px] font-bold text-base-content">Ученик не найден</p>
           <Link to="/students" className="btn btn-primary btn-sm mt-4">
-            <ArrowLeft size={14} /> Ortga
+            <ArrowLeft size={14} /> Назад
           </Link>
         </div>
       </div>
@@ -180,13 +176,13 @@ export default function AdminStudentDetail() {
         to="/students"
         className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-base-content/45 hover:text-primary transition-colors animate-fade-in"
       >
-        <ArrowLeft size={16} /> Talabalarga
+        <ArrowLeft size={16} /> К ученикам
       </Link>
 
       {/* Header */}
       <PageHeader
         title={fullName(student)}
-        subtitle={student.groupName ? `Guruh: ${student.groupName}` : undefined}
+        subtitle={student.groupName ? `Группа: ${student.groupName}` : undefined}
       >
         <div className="flex items-center gap-2">
           <button
@@ -194,7 +190,7 @@ export default function AdminStudentDetail() {
             onClick={startEdit}
             disabled={busy}
           >
-            <Edit3 size={14} /> Tahrirlash
+            <Edit3 size={14} /> Редактировать
           </button>
           <button
             className={`btn btn-sm gap-1 ${isActive ? 'btn-warning' : 'btn-success'}`}
@@ -202,7 +198,7 @@ export default function AdminStudentDetail() {
             disabled={busy}
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : isActive ? <Snowflake size={14} /> : <Sun size={14} />}
-            {isActive ? 'Muzlatish' : 'Tiklash'}
+            {isActive ? 'Заморозить' : 'Восстановить'}
           </button>
           <button
             className="btn btn-ghost btn-sm gap-1 text-red-500 hover:bg-red-50"
@@ -225,9 +221,9 @@ export default function AdminStudentDetail() {
               {isActive ? <User size={18} /> : <Snowflake size={18} />}
             </div>
             <div>
-              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Holat</div>
+              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Статус</div>
               <div className={`text-[14px] font-extrabold ${isActive ? 'text-emerald-600' : 'text-red-500'}`}>
-                {isActive ? 'Aktiv' : 'Muzlatilgan'}
+                {isActive ? 'Активен' : 'Заморожен'}
               </div>
             </div>
           </div>
@@ -238,7 +234,7 @@ export default function AdminStudentDetail() {
               <Coins size={18} />
             </div>
             <div>
-              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Koinlar</div>
+              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Коины</div>
               <div className="text-[14px] font-extrabold text-base-content tabular-nums">
                 {student.coins ?? 0}
               </div>
@@ -251,7 +247,7 @@ export default function AdminStudentDetail() {
               <Wallet size={18} />
             </div>
             <div>
-              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Balans</div>
+              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Баланс</div>
               <div className="text-[14px] font-extrabold text-base-content tabular-nums">
                 {formatMoney(student.balance)}
               </div>
@@ -260,11 +256,11 @@ export default function AdminStudentDetail() {
 
           {/* Groups count */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[10px] flex items-center justify-center bg-blue-50 text-blue-600">
+            <div className="w-10 h-10 rounded-[10px] flex items-center justify-center bg-base-200 text-primary">
               <Users size={18} />
             </div>
             <div>
-              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Guruhlar</div>
+              <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Группы</div>
               <div className="text-[14px] font-extrabold text-base-content tabular-nums">
                 {groups.length || (student.groupName ? 1 : 0)}
               </div>
@@ -277,7 +273,7 @@ export default function AdminStudentDetail() {
       <div className="card bg-base-100 p-5 animate-fade-in stagger-2">
         <div className="flex items-center gap-2 mb-4">
           <Shield size={16} className="text-primary" />
-          <h3 className="text-[14px] font-bold text-base-content">Shaxsiy ma'lumotlar</h3>
+          <h3 className="text-[14px] font-bold text-base-content">Личные данные</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -290,16 +286,11 @@ export default function AdminStudentDetail() {
                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                   isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'
                 }`}>
-                  {isActive ? 'Aktiv' : 'Muzlatilgan'}
+                  {isActive ? 'Активен' : 'Заморожен'}
                 </span>
-                {student.gender && (
+                {student.birthDate && (
                   <span className="text-[11px] text-base-content/45">
-                    {student.gender === 'male' ? 'Erkak' : 'Ayol'}
-                  </span>
-                )}
-                {student.age && (
-                  <span className="text-[11px] text-base-content/45">
-                    {student.age} yosh
+                    {new Date(student.birthDate).toLocaleDateString('ru-RU')}
                   </span>
                 )}
               </div>
@@ -313,8 +304,8 @@ export default function AdminStudentDetail() {
               <div className="flex items-center gap-2.5">
                 <Phone size={14} className="text-base-content/45" />
                 <div>
-                  <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Telefon</div>
-                  <div className="text-[13px] font-semibold text-base-content">{student.phone ? formatPhone(student.phone) : "Ko'rsatilmagan"}</div>
+                  <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Телефон</div>
+                  <div className="text-[13px] font-semibold text-base-content">{student.phone ? formatPhone(student.phone) : 'Не указан'}</div>
                 </div>
               </div>
               {student.phone && (
@@ -332,9 +323,9 @@ export default function AdminStudentDetail() {
               <div className="flex items-center gap-2.5">
                 <Hash size={14} className="text-base-content/45" />
                 <div>
-                  <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Login-kod</div>
+                  <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Логин-код</div>
                   <div className="text-[13px] font-mono font-bold text-base-content">
-                    {student.login_code || student.loginCode || "Yo'q"}
+                    {student.login_code || student.loginCode || 'Нет'}
                   </div>
                 </div>
               </div>
@@ -354,7 +345,7 @@ export default function AdminStudentDetail() {
                 <div className="flex items-center gap-2.5">
                   <Phone size={14} className="text-base-content/45" />
                   <div>
-                    <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Ota-ona telefoni</div>
+                    <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Телефон родителя</div>
                     <div className="text-[13px] font-semibold text-base-content">{formatPhone(student.parentPhone)}</div>
                   </div>
                 </div>
@@ -371,7 +362,7 @@ export default function AdminStudentDetail() {
             <div className="flex items-center gap-2.5 p-3 rounded-[10px] bg-base-100 border border-base-300">
               <CalendarDays size={14} className="text-base-content/45" />
               <div>
-                <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Qo'shilgan sana</div>
+                <div className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider">Дата добавления</div>
                 <div className="text-[13px] font-semibold text-base-content">{formatDate(student.createdAt)}</div>
               </div>
             </div>
@@ -383,16 +374,16 @@ export default function AdminStudentDetail() {
       <div className="card bg-base-100 p-5 animate-fade-in stagger-3">
         <div className="flex items-center gap-2 mb-4">
           <GraduationCap size={16} className="text-primary" />
-          <h3 className="text-[14px] font-bold text-base-content">Guruhlar</h3>
+          <h3 className="text-[14px] font-bold text-base-content">Группы</h3>
           <span className="text-[12px] text-base-content/45 ml-auto">
-            {groups.length || (student.groupName ? 1 : 0)} ta
+            {groups.length || (student.groupName ? 1 : 0)}
           </span>
         </div>
 
         {groups.length === 0 && !student.groupName ? (
           <div className="text-center py-8">
             <Users size={32} className="mx-auto mb-2 text-base-content/45 opacity-30" />
-            <p className="text-[13px] text-base-content/45">Guruhga biriktirilmagan</p>
+            <p className="text-[13px] text-base-content/45">Не привязан к группе</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -410,7 +401,7 @@ export default function AdminStudentDetail() {
                   to={`/groups/${g.id}`}
                   className="text-[11px] font-semibold text-primary hover:underline"
                 >
-                  Ko'rish
+                  Просмотр
                 </Link>
               </div>
             ))}
@@ -422,26 +413,26 @@ export default function AdminStudentDetail() {
       <div className="card bg-base-100 p-5 animate-fade-in stagger-4">
         <div className="flex items-center gap-2 mb-4">
           <CreditCard size={16} className="text-primary" />
-          <h3 className="text-[14px] font-bold text-base-content">To'lovlar tarixi</h3>
+          <h3 className="text-[14px] font-bold text-base-content">История платежей</h3>
           <span className="text-[12px] text-base-content/45 ml-auto">
-            {payments.length} ta
+            {payments.length}
           </span>
         </div>
 
         {payments.length === 0 ? (
           <div className="text-center py-8">
             <CreditCard size={32} className="mx-auto mb-2 text-base-content/45 opacity-30" />
-            <p className="text-[13px] text-base-content/45">To'lovlar mavjud emas</p>
+            <p className="text-[13px] text-base-content/45">Нет платежей</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="table w-full text-[13px]">
               <thead>
                 <tr>
-                  <th className="text-base-content/70">Sana</th>
-                  <th className="text-base-content/70">Summa</th>
-                  <th className="text-base-content/70">Usul</th>
-                  <th className="text-base-content/70">Holat</th>
+                  <th className="text-base-content/70">Дата</th>
+                  <th className="text-base-content/70">Сумма</th>
+                  <th className="text-base-content/70">Способ</th>
+                  <th className="text-base-content/70">Статус</th>
                 </tr>
               </thead>
               <tbody>
@@ -470,7 +461,7 @@ export default function AdminStudentDetail() {
         {/* Total */}
         {payments.length > 0 && (
           <div className="mt-3 pt-3 border-t border-base-300 flex items-center justify-between">
-            <span className="text-[12px] font-bold text-base-content/70">Jami to'langan</span>
+            <span className="text-[12px] font-bold text-base-content/70">Итого оплачено</span>
             <span className="text-[14px] font-extrabold text-primary tabular-nums">
               {formatMoney(payments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + (p.amount || 0), 0))}
             </span>
@@ -482,7 +473,7 @@ export default function AdminStudentDetail() {
       <div className="card bg-base-100 p-5 animate-fade-in stagger-5">
         <div className="flex items-center gap-2 mb-4">
           <Clock size={16} className="text-primary" />
-          <h3 className="text-[14px] font-bold text-base-content">Tezkor amallar</h3>
+          <h3 className="text-[14px] font-bold text-base-content">Быстрые действия</h3>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <button
@@ -490,12 +481,12 @@ export default function AdminStudentDetail() {
             onClick={handleRegen}
             disabled={busy}
           >
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-blue-50 text-blue-600 group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-base-200 text-primary group-hover:scale-105 transition-transform">
               <KeyRound size={16} />
             </div>
             <div>
-              <div className="text-[12px] font-bold text-base-content">Parolni yangilash</div>
-              <div className="text-[10px] text-base-content/45">Yangi login-kod</div>
+              <div className="text-[12px] font-bold text-base-content">Обновить пароль</div>
+              <div className="text-[10px] text-base-content/45">Новый логин-код</div>
             </div>
           </button>
 
@@ -511,10 +502,10 @@ export default function AdminStudentDetail() {
             </div>
             <div>
               <div className="text-[12px] font-bold text-base-content">
-                {isActive ? 'Muzlatish' : 'Tiklash'}
+                {isActive ? 'Заморозить' : 'Восстановить'}
               </div>
               <div className="text-[10px] text-base-content/45">
-                {isActive ? 'Kirishni cheklash' : 'Kirishni tiklash'}
+                {isActive ? 'Ограничить доступ' : 'Восстановить доступ'}
               </div>
             </div>
           </button>
@@ -528,96 +519,74 @@ export default function AdminStudentDetail() {
               <Trash2 size={16} />
             </div>
             <div>
-              <div className="text-[12px] font-bold text-base-content">O'chirish</div>
-              <div className="text-[10px] text-base-content/45">Butunlay o'chirish</div>
+              <div className="text-[12px] font-bold text-base-content">Удалить</div>
+              <div className="text-[10px] text-base-content/45">Удалить навсегда</div>
             </div>
           </button>
         </div>
       </div>
 
       {/* ═══ Edit Modal ═══ */}
-      {editing && (
-        <dialog className="modal modal-open">
-          <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-4">Talabani tahrirlash</h3>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Ism</label>
-                  <input
-                    className="input input-bordered w-full"
-                    placeholder="Ism"
-                    value={form.firstName}
-                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Familiya</label>
-                  <input
-                    className="input input-bordered w-full"
-                    placeholder="Familiya"
-                    value={form.lastName}
-                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Telefon</label>
-                <PhoneInput
-                  className="input input-bordered w-full"
-                  value={form.phone}
-                  onChange={(v) => setForm({ ...form, phone: v })}
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Ota-ona telefoni</label>
-                <PhoneInput
-                  className="input input-bordered w-full"
-                  value={form.parentPhone}
-                  onChange={(v) => setForm({ ...form, parentPhone: v })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Yosh</label>
-                  <input
-                    className="input input-bordered w-full"
-                    type="number"
-                    min="5"
-                    max="100"
-                    placeholder="Yosh"
-                    value={form.age}
-                    onChange={(e) => setForm({ ...form, age: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Jins</label>
-                  <select
-                    className="select select-bordered w-full"
-                    value={form.gender}
-                    onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                  >
-                    <option value="male">Erkak</option>
-                    <option value="female">Ayol</option>
-                  </select>
-                </div>
-              </div>
+      <Modal
+        isOpen={!!editing}
+        onClose={() => setEditing(false)}
+        title="Редактирование ученика"
+        actions={
+          <div className="modal-action">
+            <button className="btn btn-ghost" onClick={() => setEditing(false)} disabled={saving}>Отмена</button>
+            <button
+              className="btn btn-primary gap-1"
+              onClick={saveEdit}
+              disabled={saving || !form?.firstName || !form?.lastName}
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              Сохранить
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Имя</label>
+              <input
+                className="input input-bordered w-full"
+                placeholder="Имя"
+                value={form?.firstName || ''}
+                onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+              />
             </div>
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setEditing(false)} disabled={saving}>Bekor qilish</button>
-              <button
-                className="btn btn-primary gap-1"
-                onClick={saveEdit}
-                disabled={saving || !form.firstName || !form.lastName}
-              >
-                {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                Saqlash
-              </button>
+            <div>
+              <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Фамилия</label>
+              <input
+                className="input input-bordered w-full"
+                placeholder="Фамилия"
+                value={form?.lastName || ''}
+                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+              />
             </div>
           </div>
-          <div className="modal-backdrop" onClick={() => setEditing(false)} />
-        </dialog>
-      )}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Телефон</label>
+              <PhoneInput
+                className="input input-bordered w-full"
+                value={form?.phone || ''}
+                onChange={(v) => setForm({ ...form, phone: v })}
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Дата рождения</label>
+              <input
+                className="input input-bordered w-full"
+                type="date"
+                value={form?.birthDate || ''}
+                onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

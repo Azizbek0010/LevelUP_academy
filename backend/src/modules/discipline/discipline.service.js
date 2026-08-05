@@ -3,15 +3,25 @@ import { withTransaction } from '../../config/db.js';
 import * as repo from './discipline.repository.js';
 
 /**
- * Матрица прав выдачи (кто → кому, по типу):
- *   super_admin → admin, mentor, methodist   (shtraf и qora)
- *   admin       → mentor, methodist          (shtraf)
+ * Матрица прав выдачи (кто → кому, по типу). sariq/qizil (предупреждения) —
+ * некритичные записи без последствий для входа, в отличие от qora, которую
+ * admin может выдать только ментору.
+ *   super_admin → admin, mentor, methodist   (sariq, qizil, qora)
+ *   admin       → mentor, methodist          (sariq, qizil)
  *   admin       → mentor                       (qora — только ментор)
  *   main_admin  → НИЧЕГО
  */
 const CAN_ISSUE = {
-  superadmin: { shtraf: ['admin', 'mentor', 'methodist'], qora: ['admin', 'mentor', 'methodist'] },
-  admin: { shtraf: ['mentor', 'methodist'], qora: ['mentor'] },
+  superadmin: {
+    sariq: ['admin', 'mentor', 'methodist'],
+    qizil: ['admin', 'mentor', 'methodist'],
+    qora: ['admin', 'mentor', 'methodist'],
+  },
+  admin: {
+    sariq: ['mentor', 'methodist'],
+    qizil: ['mentor', 'methodist'],
+    qora: ['mentor'],
+  },
 };
 
 function assertCanIssue(issuerRole, targetRole, type) {
@@ -50,7 +60,8 @@ export async function issuePenalty(issuer, scope, body) {
     issuedBy: issuer.id,
     issuerRole: issuer.role,
     type: body.type,
-    amount: body.type === 'shtraf' ? body.amount : null,
+    // необязательный довесок — сумма не привязана к типу
+    amount: body.amount ?? null,
     reason: body.reason,
   };
 
@@ -86,19 +97,28 @@ export async function reactivateStaff(orgId, targetUserId) {
   return repo.setUserStatus(targetUserId, orgId, 'active');
 }
 
-/** Устав организации — если ещё не создан, отдаём пустой шаблон. */
-export async function getCharter(orgId) {
-  return (
-    (await repo.getCharter(orgId)) ?? {
-      organization_id: orgId,
-      title: 'Устав',
-      content: '',
-      updated_by: null,
-      updated_at: null,
-    }
-  );
+/**
+ * Каталог правил (qoyda) — «нарушение → уровень», настраивается один раз и
+ * используется как справочник при выдаче взыскания. Ручной процесс: правило
+ * само по себе ничего не выдаёт и не считает пороги.
+ */
+export async function listRules(orgId) {
+  return repo.listRules(orgId);
 }
 
-export async function upsertCharter(orgId, userId, body) {
-  return repo.upsertCharter({ orgId, title: body.title, content: body.content, updatedBy: userId });
+export async function createRule(orgId, createdBy, { type, amount, description }) {
+  return repo.insertRule({
+    orgId,
+    type,
+    // необязательный довесок — сумма не привязана к типу
+    amount: amount ?? null,
+    description,
+    createdBy,
+  });
+}
+
+export async function deleteRule(orgId, id) {
+  const row = await repo.deleteRule(id, orgId);
+  if (!row) throw new AppError(404, 'Правило не найдено в вашей организации');
+  return { id: row.id };
 }

@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:client && npm run build:server && npm run prerender",
+    "build": "npm run sitemap && npm run build:client && npm run build:server && npm run prerender",
     "build:client": "vite build",
     "build:server": "vite build --ssr src/entry-server.jsx --outDir dist/server",
     "prerender": "node scripts/prerender.js",
+    "sitemap": "node scripts/sitemap.js",
     "preview": "vite preview",
     "indexnow": "node scripts/indexnow.js"
   },

@@ -15,7 +15,7 @@ export async function listByOrg(orgId, limit = 200) {
 /** kind + payload — нужны сервису, чтобы повторно поставить тот же job в очередь (resend). */
 export async function getById(orgId, id) {
   const { rows: [row] } = await pool.query(
-    `SELECT id, kind, payload FROM reminders WHERE id = $1 AND organization_id = $2`,
+    `SELECT id, student_id, kind, payload FROM reminders WHERE id = $1 AND organization_id = $2`,
     [id, orgId],
   );
   return row ?? null;
@@ -27,6 +27,15 @@ export async function deleteById(orgId, id) {
     [id, orgId],
   );
   return row ?? null;
+}
+
+/** Текущий долг студента — чтобы не долбить повторным напоминанием уже оплаченный счёт. */
+export async function getStudentDebt(studentId) {
+  const { rows: [row] } = await pool.query(
+    `SELECT total_debt FROM student_profiles WHERE user_id = $1`,
+    [studentId],
+  );
+  return row ? Number(row.total_debt) : null;
 }
 
 /** Организация/филиал + ФИО студента и его родителя (для денормализации в лог). */

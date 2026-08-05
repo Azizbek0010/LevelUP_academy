@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 26.07.2026 02:48 (UTC+5, Toshkent vaqti)
-> Statistika: 161/215 task tugallangan (74%)
+> Oxirgi yangilanish: 28.07.2026 10:49 (UTC+5, Toshkent vaqti)
+> Statistika: 190/207 task tugallangan (91%)
 
 ---
 
-## Progress: [##############......] 74%
+## Progress: [##################..] 91%
 
 ## Tugallangan vazifalar
 
@@ -48,6 +48,7 @@
 - [x] K-DISC: Ustav (org_charters, erkin matn, upsert, barcha xodimlarga ko'rinadi)
 - [x] K-DISC: Endpointlar — super PUT/GET /charter, POST/GET /penalties, POST /staff/:id/reactivate; admin GET /charter, POST/GET /penalties; shared GET /users/me/penalties, /users/me/charter
 - [x] K-DISC: Swagger — Discipline tegi, 10 endpoint, swagger/*.md qayta generatsiya (139 endpoint)
+- [x] K-DISC-FRONT ✅ BAJARILDI 2026-07-28 (Karis, Hamidula'ning o'rniga — vaqtni tejash uchun
 
 ### Backend — V1 To'lovlar 🔥 (Karis — Team Lead, 2 task) ✅
 - [x] K-PAY: Payments modul: oylik avto-hisoblash (billing.worker, 1-sana, muddat 5-sana) + invoice + full + split (FOR UPDATE, split_batch_id, validatsiya BEGIN dan oldin) + ad-hoc to'lov + refund/void + chek S3 ga; commit dan KEYIN notificationQueue ('payment.received'/'payment.due'/'payment.refunded'); total_debt + invoice.status qayta hisob. To'lamasa (5-sanadan keyin, invoice='overdue') — student panelga umuman data qaytmaydi (paymentGate, 402). NASIYA YO'Q
@@ -61,6 +62,7 @@
 - [x] MP-CHAT: Chat qayta yozildi — kompozer HAR DOIM render bo'ladi (ilgari `activeContact` ichida edi →
 - [x] MP-SHELL: Staff qobig'i — sidebar hover'da ochiladi/yopiladi, ishlaydigan bildirishnomalar paneli,
 - [x] MP-SEED: `seed-mentor-demo.mjs` (demo mentorni real data bilan to'ldiradi),
+- [x] MP-VERIFY ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Docker ko'tarildi (`docker compose up
 
 ### Backend — Integration (Karis) 🔥 hozirgi fokus
 - [x] K-INT: admin GroupDetail — **QAROR QABUL QILINDI 2026-07-19**, Abdulaziz bloki OCHILDI.
@@ -71,6 +73,7 @@
 - [x] ~~BUG-STACK~~ ✅ TUZATILGAN (2026-07-19 auditda tekshirildi, TASK.md eskirgan edi): `render.yaml:19-20` da `NODE_ENV=production` O'RNATILGAN, `errorHandler.js:41` stack'ni faqat `env.NODE_ENV === 'development'` da qaytaradi (qat'iy tenglik — yangi hostingda o'zgaruvchi unutilsa ham stack chiqmaydi). Bundan tashqari 5xx da `details` ham berkitildi, o'rniga `errorId` (pino req.id) qaytadi — commit `5a1f177`
 - [x] ~~BUG-LOCAL-PROD-DB~~ ✅ TUZATILGAN — **DUBLIKAT yozuv edi, 2026-07-26 da yopildi.**
 - [x] BUG-TESTS-RED ✅ TUZATILDI 2026-07-19 (commit `b22c3e4`):
+- [x] BUG-REDIS-SILENT ✅ **TASDIQLANDI 2026-07-28 (Karis)** — aslida allaqachon `7226ab6` (26.07)
 - [x] ~~BUG-BILLING~~ ✅ YOPILDI 2026-07-26 (Karis): `Billing.jsx` bakit modeliga o'tkazildi,
 
 ### Swagger / API hujjatlari (Karis) ✅ 2026-07-18
@@ -93,23 +96,27 @@
 - [x] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa (repository listOrgStudents: ILIKE search + LIMIT/OFFSET)
 - [x] K-SUPER-INT: GET /api/super/groups (+archive/unarchive + DELETE) — Groups sahifa
 - [x] K-SUPER-INT: GET /api/super/attendance (date/group filter) — Attendance
+- [x] K-SUPER-INT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Dashboard, Филиалы, Студенты, Группы,
 
 ### Backend — YANGI TOPSHIRIQ (Abdulaziz) 🔥 2026-07-19, Karis bergan
-- [x] AB-INT-GROUP ✅ **BAJARILGAN — Abdulaziz 2026-07-20 da yopgan, TASK.md yangilanmagan edi.**
-- [x] AB-SUPER-ANN ✅ 2026-07-20 (`460914b`): `GET/POST/DELETE /api/super/announcements`
-- [x] AB-SUPER-REM ✅ 2026-07-21 (`870d1c5`): `GET /api/super/reminders` +
-- [x] AB-SUPER-AUDIT ✅ 2026-07-20 (`460914b`): `GET /api/super/audit` (`super.routes.js:547`),
-- [x] AB-SUPER-STATS ✅ 2026-07-20 (`460914b`): `GET /api/super/stats` (`super.routes.js:586`,
-- [x] AB-SUPER-REPORTS ✅ 2026-07-20 (`460914b`): `GET /api/super/reports` yozilgan
-- [x] AB-EXPENSE-PATCH ✅ TUZATILDI (2026-07-21 audit): `PATCH /api/admin/expenses/:id`
-- [x] AB-MAIN-REVENUE ✅ **BACKEND BAJARILGAN** 2026-07-20 (`460914b`):
-- [x] AB-VERIFY: Parent Chat — Socket.io realtime ✅ TASDIQLANDI (2026-07-21, Kama auditi):
+- [x] AB-INT-GROUP — attendance/homework/feedback endpointlar `admin.routes.js` da,
+- [x] AB-SUPER-ANN — `GET/POST/DELETE /api/super/announcements` (`460914b`)
+- [x] AB-SUPER-REM — `GET /api/super/reminders` + resend/delete (`870d1c5`)
+- [x] AB-SUPER-AUDIT — `GET /api/super/audit` (`460914b`)
+- [x] AB-SUPER-STATS — `GET /api/super/stats` (`460914b`); front tomoni FE-SUPER-STATS'da
+- [x] AB-SUPER-SWAGGER ✅ TUZATILDI 2026-07-28 (Karis): announcements GET/POST/DELETE va
+- [x] AB-SUPER-REPORTS — `GET /api/super/reports` (`460914b`); front FE-SUPER-REPORTS'da
+- [x] AB-EXPENSE-PATCH — `PATCH /api/admin/expenses/:id` qo'shildi
+- [x] AB-MAIN-REVENUE — `GET /api/main/revenue` (`460914b`); front tomoni Shohjahon'da (MAIN: Revenue)
+- [x] AB-VERIFY ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis, Abdulaziz'ning ishiga tegmasdan —
+- [x] AB-VERIFY: Parent Chat — Socket.io realtime tasdiqlandi (2026-07-21)
 
 ### Telegram bot (Bilol) ⚠️ TASK.md ga 2026-07-19 da QO'SHILDI
 - [x] TG-SYNC ✅ BAJARILDI 2026-07-26 (Karis): `docs/TASK-telegram-bot.md` kod bilan sverka
 - [x] TG-BIND ✅ BAJARILGAN (Bilol; 2026-07-26 auditda tasdiqlandi):
 - [x] TG-DUE ✅ BAJARILGAN (Bilol): `payment.due_soon` handler `notification.worker.js:21` da,
 - [x] TG-ANN ✅ BAJARILGAN (Bilol): `announcement.created` handler `notification.worker.js:37` da.
+- [x] TG-FRONT ✅ BAJARILDI 2026-07-28 (Karis): parent — `member/Profile.jsx` da karta
 
 ### Backend — Infrastructure (Abdulaziz) ✅
 - [x] AB-INFRA: Scaffold + structure + deps + docker-compose
@@ -160,12 +167,18 @@
 - [x] AUTH: Redux authSlice — KERAK EMAS (useAuth() context yetarli, qaror 2026-07-15)
 - [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617). Auditda tasdiqlandi: `refreshPromise` 4 ta app da ham bor
 - [x] AUTH: Socket.io client — `staff/socket.js` (presence + davomat live + ack-request), `member/socket.js`. `main-admin` va `student` da realtime sahifa YO'Q (Chat yo'q) → ularga socket kerak emas
+- [x] AUTH-FORGOT ✅ TUZATILDI 2026-07-28 (Karis): `staff/api.js` mock-blokiga
+- [x] AUTH-ELYOR-4 ✅ 4/4 YOPILDI 2026-07-28 (Karis): 1) admin dashboard — tuzatilgan
 
 ### Frontend — Super Admin ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 - [x] SUPER (front): Dashboard (org income, branches, admins, students)
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
 - [x] SUPER (front): CRUD admins
 - [x] SUPER (front): Organization settings + ComingSoon (Shohjahon) — backend /api/super/organization TAYYOR (Karis, 35586f6)
+- [x] SUPER (front) ✅ BAJARILDI 2026-07-28 (Karis): Settings sahifasiga "Длительность урока"
+- [x] FE-SUPER-STATS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/stats?period=` ga
+- [x] FE-SUPER-REPORTS ✅ **BAJARILDI 2026-07-27 (Karis)** — sahifa `GET /api/super/reports` ga
+- [x] FE-SUPER-WIRE ✅ **TASDIQLANDI 2026-07-28 (Karis)** — kod tekshirildi: uchala sahifa
 
 ### Main Admin (Karis) 🔥 to'liq egasi — 2026-07-26 dan, front + backend
 - [x] MAIN: Dashboard — KPI + grafiklar (Dashboard.jsx, 805 qator)
@@ -187,12 +200,17 @@
 - [x] ADMIN: Dashboard (income + expenses = profit) — Dashboard.jsx, api ga ulangan
 - [x] ADMIN: Students CRUD (xob integratsiyasi bor — reviewdan o'tkazish) — Students.jsx + StudentDetail.jsx
 - [x] ADMIN: Groups CRUD — Groups.jsx + GroupDetail.jsx
+- [x] ADMIN ✅ (Abduloh) `GroupDetail.jsx` real API ga ulangan ekan — tekshirildi 2026-07-28
 - [x] ADMIN: Payments UI (full/split modal; K-PAY chiqqach ulanadi) — Payments.jsx (775 qator)
 - [x] ADMIN: Expenses CRUD — Expenses.jsx + PDF eksport (Abduloh, jspdf)
 - [x] ADMIN: Reports — Reports.jsx, GET /api/admin/reports ga ulangan
 
 ### Frontend — YANGI TASKLAR: Kozim / Alish 🆕 2026-07-19 (2026-07-26 da yangilandi)
 - [x] FE-CHAT-ADMIN ✅ BAJARILDI 2026-07-21 (Karis): chat endi HAQIQIY.
+- [x] FE-DEAD-CODE ✅ hammasi allaqachon o'chirilgan ekan (tekshirildi 2026-07-28, Karis):
+- [x] FE-ROUTER-FLAG ✅ QO'SHILDI 2026-07-28 (Karis): `future={{ v7_startTransition: true,
+- [x] FE-COOP ✅ TUZATILDI 2026-07-28 (Karis): `Cross-Origin-Opener-Policy:
+- [x] FE-THIN-PAGES ✅ BAJARILDI 2026-07-28 (Karis): `member/Debt.jsx` 108→142 qator (haqiqiy
 
 ### Frontend — Mentor (Sardor, Kozim, Alish)
 - [x] MENTOR: Dashboard (groups, upcoming lessons)
@@ -210,6 +228,9 @@
 - [x] STUDENT: Videos
 - [x] STUDENT: Leaderboard
 - [x] STUDENT: staff design-system'ga ko'chirildi (Tailwind + DaisyUI) — 2026-07-25, Karis (`a458c1b`)
+- [x] STUDENT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan): login,
+- [x] STUDENT ✅ BAJARILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan) —
+- [x] STUDENT UI-STATES ✅ 2026-07-28 (Karis): audit qilindi — `Home.jsx` va `TestTake.jsx`
 
 ### Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
 - [x] PARENT: Child overview — Dashboard.jsx (useParentOverview hook)
@@ -219,6 +240,12 @@
 - [x] PARENT: To'lov / qarz — Debt.jsx
 - [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ✅ Socket.io realtime tasdiqlandi (2026-07-21)
 - [x] PARENT: Bildirishnomalar — Notifications.jsx
+- [x] PARENT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Обзор, Посещаемость, Оценки, Оплата,
+- [x] AB-PARENT-NOTIF ✅ allaqachon bajarilgan ekan (Abdulaziz, `870d1c5`, 2026-07-21) —
+- [x] FE-PARENT-DEBT ✅ TUZATILDI 2026-07-28 (Karis): backendga `overview.repository.js`
+- [x] FE-PARENT-PROFILE-PREF ✅ TUZATILDI 2026-07-28 (Karis): haqiqiy push-bildirishnoma
+- [x] FE-PARENT-SIDEBAR-NOTIF ✅ allaqachon yopilgan ekan — `Layout.jsx` umumiy
+- [x] FE-PARENT-PAGINATION ✅ TUZATILDI 2026-07-28 (Karis): backendga ikkita yangi
 
 ### Frontend — Landing Page ✅
 - [x] LANDING: Home, Features, Roles, Finance, Gamification, Contacts
@@ -233,11 +260,13 @@
 
 ### Frontend — Design / UX 🆕 EGALARI BELGILANDI (2026-07-19)
 - [x] UI-SHARED ✅ BAJARILDI 2026-07-21 (Karis): admin sahifalari endi `mentor/_ui.jsx` dan
+- [x] UI-TABLES ✅ AUDIT + TUZATILDI 2026-07-28 (Karis): 162 ta `tabular-nums` ishlatilishi
+- [x] UI-CACHE ✅ AUDIT 2026-07-28 (Karis): barcha admin/mentor/methodist/super sahifalari
 
 ---
 
 ## Jamoa boyicha
 
-- Karis (Backend): 102 task
-- Abdulaziz (Backend): 67 task
-- Frontend jamoasi: 46 task
+- Karis (Backend): 115 task
+- Abdulaziz (Backend): 79 task
+- Frontend jamoasi: 68 task

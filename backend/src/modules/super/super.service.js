@@ -3,6 +3,7 @@ import { AppError } from '../../utils/AppError.js';
 import { planLimits } from '../../config/plans.js';
 import { logger } from '../../config/logger.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
+import { genTempPassword } from '../auth/credentials.js';
 import * as repo from './super.repository.js';
 
 // ---------- филиалы ----------
@@ -149,12 +150,17 @@ export async function branchDetail(orgId, id) {
 
 // ---------- админы ----------
 
-export async function createAdmin(orgId, { firstName, lastName, email, password, branchId, phone }) {
+export async function createAdmin(orgId, { firstName, lastName, email, branchId, phone }) {
   // филиал должен принадлежать ЭТОЙ организации — иначе super admin суёт чужой филиал
   const branch = await repo.findBranchInOrg(branchId, orgId);
   if (!branch) throw new AppError(404, 'Branch not found in your organization');
 
-  const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
+  // пароль всегда генерится сервером и показывается один раз — так же, как
+  // Main Admin заводит Super Admin. Ручной ввод убрали: опечатка/автозаполнение
+  // браузера в форме создания приводили к аккаунту с паролем, который никто
+  // не мог вспомнить, а сбросить его было нечем.
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
 
   let admin;
   try {
@@ -178,7 +184,18 @@ export async function createAdmin(orgId, { firstName, lastName, email, password,
     lastName: admin.last_name,
     email: admin.email,
     branchId: admin.branch_id,
+    // показать один раз — Super Admin передаёт сотруднику
+    tempPassword,
   };
+}
+
+/** Новый случайный пароль для админа — когда старый забыт/введён неверно при создании. */
+export async function resetAdminPassword(orgId, id) {
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
+  const admin = await repo.setAdminPasswordHash(id, orgId, passwordHash);
+  if (!admin) throw new AppError(404, 'Admin not found in your organization');
+  return { ...mapAdmin(admin), tempPassword };
 }
 
 export async function listAdmins(orgId) {
@@ -191,6 +208,8 @@ export async function listAdmins(orgId) {
     status: u.status,
     branchId: u.branch_id,
     branchName: u.branch_name,
+    phone: u.phone,
+    monthlySalary: u.monthly_salary,
     createdAt: u.created_at,
   }));
 }
@@ -203,6 +222,8 @@ function mapAdmin(u) {
     email: u.email,
     status: u.status,
     branchId: u.branch_id,
+    phone: u.phone,
+    monthlySalary: u.monthly_salary,
   };
 }
 
@@ -227,8 +248,9 @@ export async function setAdminFrozen(orgId, id, frozen) {
 
 // ---------- методисты ----------
 
-export async function createMethodist(orgId, { firstName, lastName, email, password, phone }) {
-  const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
+export async function createMethodist(orgId, { firstName, lastName, email, phone }) {
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
   try {
     const row = await repo.insertMethodist({
       orgId,
@@ -238,11 +260,40 @@ export async function createMethodist(orgId, { firstName, lastName, email, passw
       phone,
       passwordHash,
     });
-    return mapMethodist(row);
+    return { ...mapMethodist(row), tempPassword };
   } catch (err) {
     if (err.code === '23505') throw new AppError(409, 'Email already in use');
     throw err;
   }
+}
+
+/** Новый случайный пароль для методиста — тот же сценарий, что и у админа. */
+export async function resetMethodistPassword(orgId, id) {
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
+  const row = await repo.setMethodistPasswordHash(id, orgId, passwordHash);
+  if (!row) throw new AppError(404, 'Methodist not found in your organization');
+  return { ...mapMethodist(row), tempPassword };
+}
+
+// ---------- менторы (только чтение, для выбора в «Взыскании») ----------
+
+export async function listMentors(orgId) {
+  const rows = await repo.listMentors(orgId);
+  return rows.map((u) => ({
+    id: u.id,
+    firstName: u.first_name,
+    lastName: u.last_name,
+    email: u.email,
+    status: u.status,
+    branchId: u.branch_id,
+    branchName: u.branch_name,
+    phone: u.phone,
+    grade: u.grade,
+    bio: u.bio,
+    skills: u.skills ?? [],
+    createdAt: u.created_at,
+  }));
 }
 
 export async function listMethodists(orgId) {
@@ -254,6 +305,7 @@ export async function listMethodists(orgId) {
     email: u.email,
     status: u.status,
     phone: u.phone,
+    monthlySalary: u.monthly_salary,
     createdAt: u.created_at,
   }));
 }
@@ -278,6 +330,7 @@ function mapMethodist(u) {
     email: u.email,
     status: u.status,
     phone: u.phone,
+    monthlySalary: u.monthly_salary,
   };
 }
 
@@ -497,10 +550,17 @@ export async function stats(orgId, period = '30d') {
   const revenue = Number(t.revenue);
   const debt = Number(t.outstanding_debt);
   const branchCount = Number(t.branches);
+  /* Выручка именно за выбранный период. Без неё страница противоречила себе:
+     сверху стояла карточка «Выручка» за всё время, а графики под ней — за
+     7 дней, и партнёр видел на одном экране два разных числа про одно и то же.
+     Считаем по уже полученному ряду по дням — лишнего запроса в базу нет. */
+  const periodRevenue = series.reduce((sum, r) => sum + Number(r.revenue), 0);
   return {
     period,
     totals: {
       revenue,
+      periodRevenue,
+      periodAvgRevenue: branchCount > 0 ? periodRevenue / branchCount : 0,
       outstandingDebt: debt,
       activeStudents: Number(t.active_students),
       admins: Number(t.admins),
@@ -515,40 +575,14 @@ export async function stats(orgId, period = '30d') {
       revenue: Number(b.revenue),
       debt: Number(b.debt),
       students: Number(b.students),
+      admins: Number(b.admins),
+      // доля филиала в выручке организации — раньше жила только в /super/reports;
+      // Отчёты слиты в Статистику 2026-07-28 (была одна и та же выборка на двух
+      // страницах), поле переехало сюда.
+      share: revenue > 0 ? Number(((Number(b.revenue) / revenue) * 100).toFixed(1)) : 0,
     })),
     revenueSeries: series.map((s) => ({ date: s.day, revenue: Number(s.revenue) })),
     paymentMethods: methods.map((m) => ({ method: m.method, amount: Number(m.amount) })),
-  };
-}
-
-// ---------- отчёт организации (Super Reports) ----------
-
-export async function reports(orgId) {
-  const [t, branches] = await Promise.all([repo.orgTotals(orgId), repo.branchBreakdown(orgId)]);
-  const revenue = Number(t.revenue);
-  const branchCount = Number(t.branches);
-  return {
-    totals: {
-      branches: branchCount,
-      activeStudents: Number(t.active_students),
-      admins: Number(t.admins),
-      revenue,
-      outstandingDebt: Number(t.outstanding_debt),
-      avgRevenue: branchCount > 0 ? revenue / branchCount : 0,
-      currency: 'UZS',
-    },
-    branches: branches.map((b) => {
-      const r = Number(b.revenue);
-      return {
-        id: b.id,
-        name: b.name,
-        students: Number(b.students),
-        admins: Number(b.admins),
-        revenue: r,
-        debt: Number(b.debt),
-        share: revenue > 0 ? Number(((r / revenue) * 100).toFixed(1)) : 0,
-      };
-    }),
   };
 }
 
@@ -561,6 +595,7 @@ export async function dashboard(orgId) {
       branches: Number(t.branches),
       activeStudents: Number(t.active_students),
       admins: Number(t.admins),
+      mentors: Number(t.mentors),
       revenue: Number(t.revenue),
       outstandingDebt: Number(t.outstanding_debt),
       currency: 'UZS',

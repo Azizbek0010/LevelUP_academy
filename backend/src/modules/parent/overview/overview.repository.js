@@ -36,6 +36,20 @@ export async function getChild(parentId, childId) {
   return row ? mapChild(row) : null;
 }
 
+/** Текущий неоплаченный/частично оплаченный счёт ребёнка — для прогресс-бара оплаты. */
+export async function getCurrentInvoice(childId) {
+  const { rows: [row] } = await pool.query(
+    `SELECT total_amount, paid_amount
+       FROM invoices
+      WHERE student_id = $1 AND status IN ('pending', 'partially_paid', 'overdue')
+      ORDER BY due_date DESC
+      LIMIT 1`,
+    [childId],
+  );
+  if (!row) return null;
+  return { totalAmount: Number(row.total_amount), paidAmount: Number(row.paid_amount) };
+}
+
 /** Группы ребёнка (активное членство) с ФИО ментора. */
 export async function getGroups(childId) {
   const { rows } = await pool.query(
@@ -93,6 +107,29 @@ export async function getRecentAttendance(childId, limit) {
   }));
 }
 
+/** FE-PARENT-PAGINATION: полная (постраничная) история посещаемости — не ограничена RECENT_LIMIT обзора. */
+export async function getAttendancePage(childId, page, limit) {
+  const offset = (page - 1) * limit;
+  const { rows } = await pool.query(
+    `SELECT a.lesson_date, a.status, a.comment, g.name AS group_name,
+            count(*) OVER() AS total
+       FROM attendance a
+       JOIN groups g ON g.id = a.group_id
+      WHERE a.student_id = $1
+      ORDER BY a.lesson_date DESC
+      LIMIT $2 OFFSET $3`,
+    [childId, limit, offset],
+  );
+  const total = rows[0] ? Number(rows[0].total) : 0;
+  const items = rows.map((r) => ({
+    lessonDate: r.lesson_date,
+    status: r.status,
+    comment: r.comment,
+    groupName: r.group_name,
+  }));
+  return { items, total, page, pageCount: Math.max(1, Math.ceil(total / limit)) };
+}
+
 /** Последние оценённые ДЗ ребёнка. */
 export async function getRecentHomeworkGrades(childId, limit) {
   const { rows } = await pool.query(
@@ -131,6 +168,44 @@ export async function getRecentTestResults(childId, limit) {
     maxScore: r.max_score,
     finishedAt: r.finished_at,
   }));
+}
+
+/** FE-PARENT-PAGINATION: полная история оценок (ДЗ или тестов) постранично. */
+export async function getGradesPage(childId, type, page, limit) {
+  const offset = (page - 1) * limit;
+  if (type === 'tests') {
+    const { rows } = await pool.query(
+      `SELECT t.title,
+              jsonb_array_length(t.questions) AS max_score,
+              tr.score, tr.finished_at, count(*) OVER() AS total
+         FROM test_results tr
+         JOIN tests t ON t.id = tr.test_id
+        WHERE tr.student_id = $1 AND tr.finished_at IS NOT NULL
+        ORDER BY tr.finished_at DESC
+        LIMIT $2 OFFSET $3`,
+      [childId, limit, offset],
+    );
+    const total = rows[0] ? Number(rows[0].total) : 0;
+    const items = rows.map((r) => ({
+      title: r.title, score: r.score, maxScore: r.max_score, finishedAt: r.finished_at,
+    }));
+    return { items, total, page, pageCount: Math.max(1, Math.ceil(total / limit)) };
+  }
+
+  const { rows } = await pool.query(
+    `SELECT hw.title, hw.max_score, s.score, s.graded_at, count(*) OVER() AS total
+       FROM homework_submissions s
+       JOIN homework hw ON hw.id = s.homework_id
+      WHERE s.student_id = $1 AND s.status = 'graded'
+      ORDER BY s.graded_at DESC
+      LIMIT $2 OFFSET $3`,
+    [childId, limit, offset],
+  );
+  const total = rows[0] ? Number(rows[0].total) : 0;
+  const items = rows.map((r) => ({
+    title: r.title, score: r.score, maxScore: r.max_score, gradedAt: r.graded_at,
+  }));
+  return { items, total, page, pageCount: Math.max(1, Math.ceil(total / limit)) };
 }
 
 function mapChild(r) {

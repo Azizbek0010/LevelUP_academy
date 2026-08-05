@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Search, Inbox, X, ArrowRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
@@ -15,12 +16,13 @@ import { Search, Inbox, X, ArrowRight, ArrowUpRight, ArrowDownRight } from 'luci
    Было `bg-primary/20 text-primary-content`: primary-content — БЕЛЫЙ, то есть
    белая буква на бледно-зелёной заливке (контраст ~1.3:1, инициал не читался).
    Теперь буква — сам primary на его же светлой подложке. */
-export function Avatar({ name, size = 'md', onPrimary = false }) {
+export function Avatar({ name, size = 'md', onPrimary = false, className = '' }) {
   const letter = (name?.trim()?.[0] || '?').toUpperCase();
   const cls = {
     sm: 'w-8 h-8 text-xs',
     md: 'w-9 h-9 text-sm',
     lg: 'w-11 h-11 text-base',
+    xl: 'w-14 h-14 text-lg',
   }[size];
   // `onPrimary` — аватар лежит на заливке primary (выделенная строка списка).
   // Без него зелёная буква на зелёном фоне сливается ровно так же, как раньше
@@ -30,7 +32,7 @@ export function Avatar({ name, size = 'md', onPrimary = false }) {
     : 'bg-primary/15 text-primary';
   return (
     <span
-      className={`${cls} ${tone} rounded-full grid place-items-center font-bold shrink-0`}
+      className={`${cls} ${tone} rounded-full grid place-items-center font-bold shrink-0 ${className}`}
       aria-hidden="true"
     >
       {letter}
@@ -120,8 +122,15 @@ export function Panel({ title, icon: Icon, action, children, bodyClass = 'p-4' }
    Везде в админке/менторе были сырые `<dialog className="modal modal-open">`.
    Теперь одна точка сборки: открытие через `isOpen`, закрытие по X / backdrop /
    Escape (браузерный `<dialog>` сам ловит Escape, но для единообразия
-   прописано и здесь). */
-export function Modal({ isOpen, onClose, title, children, actions }) {
+   прописано и здесь).
+
+   Портал в document.body — раньше <dialog> рендерился прямо в дереве страницы.
+   position:fixed у него ловил чужой containing block, если у ЛЮБОГО предка
+   был transform (анимация входа страницы, коллапс сайдбара и т.п.) — тогда
+   backdrop не докрывал экран сверху/слева (см. Discipline.jsx: «tepa va yon
+   tomonida blur yoq»). Портал прямо в body убирает эту зависимость целиком —
+   не нужно искать, у какого именно предка transform. */
+export function Modal({ isOpen, onClose, title, children, actions, boxClass = '' }) {
   const ref = useRef(null);
   useEffect(() => {
     const el = ref.current;
@@ -130,14 +139,14 @@ export function Modal({ isOpen, onClose, title, children, actions }) {
   }, [isOpen]);
 
   if (!isOpen) return null;
-  return (
+  return createPortal(
     <dialog ref={ref} className="modal modal-open" onClose={onClose}>
-      <div className="modal-box glass-strong border border-[var(--border)]">
+      <div className={`modal-box glass-strong border border-[var(--border)] ${boxClass}`}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-lg">{title}</h3>
+          {title && <h3 className="font-bold text-lg">{title}</h3>}
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors"
+            className="w-8 h-8 rounded-lg grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors ml-auto"
             aria-label="Yopish"
           >
             <X size={16} />
@@ -147,7 +156,8 @@ export function Modal({ isOpen, onClose, title, children, actions }) {
         {actions && <div className="modal-action">{actions}</div>}
       </div>
       <div className="modal-backdrop" onClick={onClose} />
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }
 

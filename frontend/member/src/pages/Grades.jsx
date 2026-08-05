@@ -1,23 +1,36 @@
 import { useState } from 'react';
-import { FileText, GraduationCap, BarChart3, Trophy, ChevronRight } from 'lucide-react';
-import { useParentOverview } from '../queries.js';
+import { useGradesPage } from '../queries.js';
 import { useChild } from '../child-context.jsx';
 import { dateShort } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressBar } from '../components/ui.jsx';
+import Icon from '../components/Icons.jsx';
 import GradeDetail from '../components/GradeDetail.jsx';
 
 const TABS = [
-  { key: 'homework', label: 'Домашние задания', Icon: FileText },
-  { key: 'tests', label: 'Тесты', Icon: GraduationCap },
+  { key: 'homework', label: 'Домашние задания', icon: 'document-text' },
+  { key: 'tests', label: 'Тесты', icon: 'academic' },
 ];
+const PAGE_SIZE = 15;
 
 export default function Grades() {
   const { selectedChild } = useChild();
-  const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
   const [tab, setTab] = useState('homework');
+  const [page, setPage] = useState(1);
   const [detail, setDetail] = useState(null);
+
+  // FE-PARENT-PAGINATION: overview.grades.{homework,tests} ограничены последними 5 —
+  // список ниже идёт отдельным постраничным запросом. Счётчики на вкладках — по 1
+  // записи каждого типа (нужен только total из ответа, не сами данные).
+  const { data, isLoading, error, refetch } = useGradesPage(selectedChild?.id, tab, page, PAGE_SIZE);
+  const { data: hwCountData } = useGradesPage(selectedChild?.id, 'homework', 1, 1);
+  const { data: testsCountData } = useGradesPage(selectedChild?.id, 'tests', 1, 1);
+
+  const onTabChange = (next) => {
+    setTab(next);
+    setPage(1);
+  };
 
   if (!selectedChild) return <EmptyState icon="user-circle" title="Выберите ребёнка" />;
 
@@ -32,12 +45,13 @@ export default function Grades() {
 
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
-  const d = data?.data;
-  if (!d) return null;
+  const p = data?.data;
+  if (!p) return null;
 
-  const hw = d.grades?.homework || [];
-  const tests = d.grades?.tests || [];
-  const list = tab === 'homework' ? hw : tests;
+  const list = p.items || [];
+  const pageCount = p.pageCount || 1;
+  const hwCount = hwCountData?.data?.total ?? 0;
+  const testsCount = testsCountData?.data?.total ?? 0;
 
   const avg =
     list.length > 0
@@ -55,55 +69,70 @@ export default function Grades() {
         subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
       />
 
-      {/* Tab switcher */}
+      {/* Tabs */}
       <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit shadow-sm">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              tab === t.key
-                ? 'bg-primary text-primary-content shadow-sm'
-                : 'text-base-content/50 hover:bg-base-200'
-            }`}
-          >
-            <t.Icon className="w-4 h-4" />
-            {t.label}
-          </button>
-        ))}
+        {TABS.map((t) => {
+          const count = t.key === 'homework' ? hwCount : testsCount;
+          return (
+            <button
+              key={t.key}
+              onClick={() => onTabChange(t.key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                tab === t.key
+                  ? 'bg-primary text-primary-content shadow-sm'
+                  : 'text-base-content/50 hover:bg-base-200'
+              }`}
+            >
+              <Icon name={t.icon} className="w-4 h-4" />
+              {t.label}
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                tab === t.key ? 'bg-primary-content/20' : 'bg-base-200'
+              }`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Stat cards */}
+      {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="card bg-base-100 p-4 text-center hover:shadow-md transition-shadow">
+        <div className="card bg-base-100 p-4 text-center hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center mx-auto mb-2">
-            <FileText className="w-5 h-5 text-base-content/40" />
+            <Icon name="document-text" className="w-5 h-5 text-base-content/40" />
           </div>
-          <p className="text-2xl font-extrabold">{list.length}</p>
+          <p className="text-2xl font-extrabold">{p.total}</p>
           <p className="text-[11px] opacity-40 mt-1">Всего</p>
         </div>
-        <div className="card bg-base-100 p-4 text-center hover:shadow-md transition-shadow">
+        <div className="card bg-base-100 p-4 text-center hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2"
             style={{ background: avg >= 80 ? 'rgba(34,197,94,.1)' : avg >= 60 ? 'rgba(245,158,11,.1)' : 'rgba(239,68,68,.1)' }}
           >
-            <BarChart3 className="w-5 h-5" style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }} />
+            <Icon
+              name="chart-bar"
+              className="w-5 h-5"
+              style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }}
+            />
           </div>
-          <p className="text-2xl font-extrabold" style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }}>
+          <p
+            className="text-2xl font-extrabold"
+            style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }}
+          >
             {avg}%
           </p>
           <p className="text-[11px] opacity-40 mt-1">Средний</p>
         </div>
-        <div className="card bg-base-100 p-4 text-center hover:shadow-md transition-shadow">
+        <div className="card bg-base-100 p-4 text-center hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
-            <Trophy className="w-5 h-5 text-primary" />
+            <Icon name="trophy" className="w-5 h-5 text-primary" />
           </div>
           <p className="text-2xl font-extrabold text-primary">{best}%</p>
           <p className="text-[11px] opacity-40 mt-1">Лучший</p>
         </div>
       </div>
 
-      {/* Grade list */}
+      {/* Grade List */}
       <div className="card bg-base-100">
         <div className="card-body">
           {list.length === 0 ? (
@@ -121,29 +150,40 @@ export default function Grades() {
                 return (
                   <button
                     key={itemId}
-                    onClick={() => setDetail({ type: tab === 'homework' ? 'hw' : 'test', id: g.id })}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-base-200/30 hover:bg-base-200/60 transition-all duration-200 group text-left cursor-pointer"
+                    onClick={() => setDetail({ type: tab === 'homework' ? 'hw' : 'test', id: g.id, item: g })}
+                    className="w-full flex items-center gap-3 p-3.5 rounded-xl bg-base-200/30 hover:bg-base-200/60 hover:-translate-y-0.5 transition-all duration-200 group text-left cursor-pointer"
                   >
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-transform group-hover:scale-105"
+                      className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-transform group-hover:scale-110"
                       style={{ background: `${color}15`, color }}
                     >
                       {pct}%
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{g.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1.5">
                         <ProgressBar value={pct} color={color} height={4} />
                         <span className="text-[11px] font-mono opacity-50">{g.score}/{g.maxScore}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] opacity-30 whitespace-nowrap">{dateShort(g.gradedAt || g.finishedAt)}</span>
-                      <ChevronRight className="w-4 h-4 opacity-20 group-hover:opacity-50 transition-opacity" />
+                      <Icon name="chevron-right" className="w-4 h-4 opacity-20 group-hover:opacity-50 transition-opacity" />
                     </div>
                   </button>
                 );
               })}
+            </div>
+          )}
+
+          {/* FE-PARENT-PAGINATION */}
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between px-1 py-3 mt-2 border-t border-base-200">
+              <span className="text-xs text-base-content/50">Страница {page} из {pageCount}</span>
+              <div className="join">
+                <button className="join-item btn btn-xs" disabled={page <= 1} onClick={() => setPage((pg) => pg - 1)}>«</button>
+                <button className="join-item btn btn-xs" disabled={page >= pageCount} onClick={() => setPage((pg) => pg + 1)}>»</button>
+              </div>
             </div>
           )}
         </div>
@@ -153,6 +193,7 @@ export default function Grades() {
         <GradeDetail
           type={detail.type}
           id={detail.id}
+          item={detail.item}
           onClose={() => setDetail(null)}
         />
       )}
