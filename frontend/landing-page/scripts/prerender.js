@@ -33,10 +33,14 @@ const PAGES = [
   '/landing/contacts',
 ];
 
-// Русская версия — на своих путях, узбекская — под /uz (src/i18n/index.js).
-const ROUTES = [...PAGES, ...PAGES.map((p) => `/uz${p}`)];
+// Русская версия — на своих путях, остальные языки — под своим префиксом.
+// Держать в синхроне с PREFIXED_LANGS в src/i18n/index.js: этот скрипт запускается в
+// Node до сборки клиента и импортировать модуль приложения не может.
+const PREFIXED_LANGS = ['uz', 'en'];
 
-const langOf = (route) => (route.startsWith('/uz/') ? 'uz' : 'ru');
+const ROUTES = [...PAGES, ...PREFIXED_LANGS.flatMap((lang) => PAGES.map((p) => `/${lang}${p}`))];
+
+const langOf = (route) => PREFIXED_LANGS.find((l) => route.startsWith(`/${l}/`)) ?? 'ru';
 
 /** '/landing' → 'dist/landing/index.html' (directory index — Vercel отдаёт его по /landing). */
 const outputFor = (route) => resolve(dist, `.${route}`, 'index.html');

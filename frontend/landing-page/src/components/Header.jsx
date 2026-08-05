@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { canonicalPath, localizePath, useLang, useLocalizePath, useT } from '../i18n/index.js';
+import { LANGS, canonicalPath, dictOf, localizePath, useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -20,19 +20,27 @@ export default function Header() {
 
   // Переключатель ведёт на ЭТУ ЖЕ страницу на другом языке, а не на главную:
   // сбрасывать пользователя на главную при смене языка — потеря контекста.
-  const otherLang = lang === 'ru' ? 'uz' : 'ru';
-  const switchHref = localizePath(canonicalPath(pathname), otherLang);
+  //
+  // Языков больше двух, поэтому это список, а не тумблер. Каждый вариант — обычная
+  // <a> с hrefLang: перекрёстные ссылки между версиями сами по себе сигнал для
+  // краулера, что версии связаны, и работают они без JavaScript.
+  const canonical = canonicalPath(pathname);
+  const otherLangs = LANGS.filter((l) => l !== lang);
 
   const LangSwitch = ({ className = '' }) => (
-    <Link
-      to={switchHref}
-      className={`lang-switch ${className}`}
-      hrefLang={otherLang}
-      aria-label={t.lang.switchTo}
-      onClick={close}
-    >
-      {t.lang.switchTo}
-    </Link>
+    <span className={`lang-switch ${className}`}>
+      {otherLangs.map((l) => (
+        <Link
+          key={l}
+          to={localizePath(canonical, l)}
+          hrefLang={l}
+          aria-label={dictOf(l).lang.label}
+          onClick={close}
+        >
+          {dictOf(l).lang.label}
+        </Link>
+      ))}
+    </span>
   );
 
   return (
