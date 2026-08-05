@@ -3,13 +3,17 @@ import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
 import { SITE_URL, breadcrumb, faqPage, useSeo } from '../lib/seo.js';
-import { useLang, useLocalizePath, useT } from '../i18n/index.js';
+import { localizePath, useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 // Space-grouped thousands ("199 000") — matches both ru and uz number style.
 const nf = new Intl.NumberFormat('ru-RU');
 
-/** JSON-LD Product with AggregateOffer — the price signal AI search and Google read. */
-function pricingLd(p) {
+/**
+ * JSON-LD Product with AggregateOffer — the price signal AI search and Google read.
+ * `lang` is needed for the offer URL: it used to be hardcoded to the Russian path, so
+ * the Uzbek page priced itself against a Russian URL.
+ */
+function pricingLd(p, lang) {
   const offers = p.plans
     .filter((plan) => plan.amount !== null)
     .map((plan) => ({
@@ -33,7 +37,7 @@ function pricingLd(p) {
       lowPrice: '0',
       highPrice: '799000',
       offerCount: p.plans.length,
-      url: `${SITE_URL}/landing/pricing`,
+      url: `${SITE_URL}${localizePath('/landing/pricing', lang)}`,
       offers,
     },
   };
@@ -54,7 +58,7 @@ export default function Pricing() {
         ],
         lang,
       ),
-      pricingLd(p),
+      pricingLd(p, lang),
       faqPage(p.faq),
     ],
     [t.seo.breadcrumbHome, p, lang],
