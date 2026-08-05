@@ -469,6 +469,11 @@ export const api = {
   refresh: () => request('/auth/member/refresh', { method: 'POST' }),
   logout: () => request('/auth/member/logout', { method: 'POST' }),
 
+  // Вход через Telegram: сработает только у тех, кто уже привязал бота в кабинете.
+  telegramLoginStart: () => request('/telegram/login/start', { method: 'POST' }),
+  telegramLoginPoll: (nonce) =>
+    request(`/telegram/login/poll?nonce=${encodeURIComponent(nonce)}`),
+
   parentChildren: (token) => request('/parent/children', { token }),
   parentOverview: (token, childId) => request(`/parent/children/${childId}/overview`, { token }),
   parentGroupRating: (token, childId) => request(`/parent/children/${childId}/group-rating`, { token }),

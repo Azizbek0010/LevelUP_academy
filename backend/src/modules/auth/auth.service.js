@@ -77,6 +77,28 @@ export async function login({ login, password }, allowedRoles = null) {
   return { user: publicUser(user), ...tokens };
 }
 
+/**
+ * Выдать сессию пользователю, личность которого уже доказана НЕ паролем.
+ *
+ * Сейчас единственный такой канал — вход через Telegram: чат уже привязан к
+ * аккаунту в `telegram_accounts`, значит владение им и есть доказательство.
+ * Пароль в этом пути не участвует, поэтому проверки роли и статуса тут
+ * обязательны — они единственные, что осталось между чужим чатом и сессией.
+ */
+export async function loginByUserId(userId, allowedRoles = null) {
+  // findUserById уже отсекает deleted_at IS NULL — отдельная проверка была бы мёртвой.
+  const user = await repo.findUserById(userId);
+  if (!user) throw new AppError(401, 'Account not found');
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    throw new AppError(403, 'This account is not allowed here');
+  }
+  if (user.status === 'frozen') throw new AppError(403, 'Account is frozen');
+  if (user.status !== 'active') throw new AppError(403, 'Account is not active');
+
+  const tokens = await issueTokens(user);
+  return { user: publicUser(user), ...tokens };
+}
+
 // ---------- вход через Google (Firebase popup → Google id-token) ----------
 
 const googleClient = new OAuth2Client();

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
+import { api } from '../api.js';
 
 function EyeIcon({ off }) {
   return off ? (
@@ -27,13 +28,76 @@ const FEATURES = [
 // Вход учеников и родителей: логин-код + пароль.
 // Google-входа НЕТ. «Забыли пароль» НЕТ — код перевыдаёт администратор центра.
 export default function Login() {
-  const { login } = useAuth();
+  const { login, adoptSession } = useAuth();
   const navigate = useNavigate();
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  /* ── Вход через Telegram ────────────────────────────────────────────────
+     Логин-код из 8 символов и пароль из 6 цифр ребёнок забывает; открытый
+     Telegram у него в телефоне всегда. Работает ТОЛЬКО у тех, кто уже привязал
+     бота в кабинете: бот ищет чат в telegram_accounts и, не найдя, отвечает
+     отказом. То есть это не обход пароля, а второй ключ к уже доказанному
+     владению аккаунтом.
+
+     Опрос, а не редирект обратно: deep-link уводит в приложение Telegram, и
+     вернуть человека на вкладку автоматически неоткуда — вкладка ждёт сама. */
+  const [tgBusy, setTgBusy] = useState(false);
+  const [tgWaiting, setTgWaiting] = useState(false);
+  const [tgAvailable, setTgAvailable] = useState(true);
+  const pollTimer = useRef(null);
+
+  // Оставленный таймер продолжил бы опрашивать сервер после ухода со страницы.
+  useEffect(() => () => clearInterval(pollTimer.current), []);
+
+  const onTelegramLogin = async () => {
+    setError('');
+    setTgBusy(true);
+    try {
+      const { data } = await api.telegramLoginStart();
+      window.open(data.deepLink, '_blank', 'noopener,noreferrer');
+      setTgWaiting(true);
+
+      clearInterval(pollTimer.current);
+      const startedAt = Date.now();
+
+      pollTimer.current = setInterval(async () => {
+        // Ждём ровно столько, сколько живёт nonce на сервере (expiresIn) —
+        // дольше опрашивать бессмысленно, ключа уже нет.
+        if (Date.now() - startedAt > data.expiresIn * 1000) {
+          clearInterval(pollTimer.current);
+          setTgWaiting(false);
+          setError('Telegram orqali kirish muddati tugadi — qaytadan urinib ko‘ring');
+          return;
+        }
+
+        try {
+          const res = await api.telegramLoginPoll(data.nonce);
+          if (res.data.status === 'approved') {
+            clearInterval(pollTimer.current);
+            setTgWaiting(false);
+            adoptSession(res.data);
+            navigate('/', { replace: true });
+          } else if (res.data.status === 'unknown') {
+            clearInterval(pollTimer.current);
+            setTgWaiting(false);
+            setError('Telegram orqali kirish muddati tugadi — qaytadan urinib ko‘ring');
+          }
+        } catch {
+          // Разовый сбой сети не должен обрывать ожидание — следующий тик повторит.
+        }
+      }, 2000);
+    } catch (err) {
+      // 503 — на сервере не задан бот. Кнопку прячем: она гарантированно не сработает.
+      if (err?.status === 503) setTgAvailable(false);
+      else setError('Telegram orqali kirib bo‘lmadi — keyinroq urinib ko‘ring');
+    } finally {
+      setTgBusy(false);
+    }
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -143,8 +207,42 @@ export default function Login() {
               </button>
             </form>
 
+            {tgAvailable && (
+              <>
+                <div className="divider text-xs opacity-40 my-4">или</div>
+                <button
+                  type="button"
+                  onClick={onTelegramLogin}
+                  disabled={tgBusy || tgWaiting}
+                  className="btn w-full gap-2"
+                  style={{ background: '#E4F1FF', color: '#1668B8', border: 'none' }}
+                >
+                  {tgWaiting ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm" />
+                      Telegram’da tasdiqlang…
+                    </>
+                  ) : (
+                    <>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                        <path d="M21.9 4.3 18.9 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.3.3-.5.5-1 .5l.3-4.7 8.5-7.7c.4-.3-.1-.5-.6-.2L6.9 13 2.4 11.6c-1-.3-1-1 .2-1.4l18-7c.8-.3 1.5.2 1.3 1.1z" />
+                      </svg>
+                      Telegram orqali kirish
+                    </>
+                  )}
+                </button>
+                {tgWaiting && (
+                  <p className="text-xs opacity-60 text-center pt-2 leading-snug">
+                    Telegram ochildi — botdagi «Start» tugmasini bosing.
+                    Bu oyna o‘zi ochiladi.
+                  </p>
+                )}
+              </>
+            )}
+
             <p className="text-xs opacity-50 text-center pt-4">
               Логин-код и пароль выдаёт администратор вашего учебного центра.
+              {tgAvailable && ' Telegram orqali kirish faqat kabinetda botni ulaganlarda ishlaydi.'}
             </p>
           </div>
           <p className="text-center text-xs opacity-40 mt-6">© LevelUp Academy</p>

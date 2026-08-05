@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Home, BookOpen, ShoppingBag, Trophy, LogOut, Send, Bell, BellOff, Star, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
-import { Avatar, C, StreakFlame, CountUp, LevelBar, levelFromCoins, EmptyState } from './ui.jsx';
+import { Avatar, C, StreakFlame, CountUp, LevelBar, levelFromCoins, EmptyState, Modal } from './ui.jsx';
 import { useDailyStreak } from '../useDailyStreak.js';
 import { api } from '../api.js';
 
@@ -100,15 +100,77 @@ export default function Layout() {
     };
   }, []);
 
-  // TG-FRONT: привязка Telegram-бота (напоминания об оплате, объявления центра)
+  /* TG-FRONT: привязка Telegram-бота (напоминания об оплате, объявления центра,
+     вход без логин-кода).
+
+     Раньше здесь была одна кнопка без состояния и с `catch {}`. Из-за этого:
+       · привязанный ученик жал её снова и получал от бота «уже привязано»;
+       · когда на сервере не задан TELEGRAM_BOT_USERNAME (эндпоинт отвечал 500),
+         кнопка молча не делала НИЧЕГО — ни ошибки, ни следа в консоли.
+     Теперь состояние читается с сервера, ошибка показывается, а отвязка есть
+     прямо здесь — иначе потерявший доступ к Telegram не мог привязать новый
+     (user_id в telegram_accounts уникален). */
+  const [tg, setTg] = useState(null); // null — ещё не загружено
   const [tgBusy, setTgBusy] = useState(false);
+  const [tgError, setTgError] = useState('');
+  /* Кнопка привязанного Telegram открывает карточку аккаунта, а не отвязывает
+     сразу: одно случайное касание — и связь потеряна, а восстановить её можно
+     только заново пройдя привязку через бота. Отвязка живёт внутри карточки и
+     требует второго, явного подтверждения. */
+  const [tgModal, setTgModal] = useState(false);
+  const [tgConfirmUnlink, setTgConfirmUnlink] = useState(false);
+
+  const loadTgStatus = async () => {
+    try {
+      const res = await api.telegramStatus();
+      setTg(res.data);
+    } catch {
+      // Статус — украшение: не смогли прочитать, показываем кнопку как есть.
+      setTg({ configured: true, linked: false });
+    }
+  };
+
+  useEffect(() => {
+    loadTgStatus();
+  }, []);
+
   const onBindTelegram = async () => {
     setTgBusy(true);
+    setTgError('');
     try {
       const res = await api.telegramBindToken();
       window.open(res.data.deepLink, '_blank', 'noopener,noreferrer');
+      // Бот подтверждает привязку не мгновенно — перечитываем через паузу,
+      // чтобы кнопка сама переключилась на «привязан», без перезагрузки страницы.
+      setTimeout(loadTgStatus, 4000);
+    } catch (e) {
+      setTgError(
+        e?.status === 503
+          ? 'Telegram hali sozlanmagan — administratorga ayting'
+          : 'Ulab bo‘lmadi, keyinroq urinib ko‘ring',
+      );
+    } finally {
+      setTgBusy(false);
+    }
+  };
+
+  const closeTgModal = () => {
+    setTgModal(false);
+    // Сбрасываем шаг подтверждения: иначе повторное открытие карточки сразу
+    // показало бы «точно отвязать?», хотя человек её только что открыл.
+    setTgConfirmUnlink(false);
+    setTgError('');
+  };
+
+  const onUnlinkTelegram = async () => {
+    setTgBusy(true);
+    setTgError('');
+    try {
+      await api.telegramUnlink();
+      await loadTgStatus();
+      closeTgModal();
     } catch {
-      // тихо: кнопка — необязательное удобство, не блокирующий флоу
+      setTgError('Uzib bo‘lmadi, keyinroq urinib ko‘ring');
     } finally {
       setTgBusy(false);
     }
@@ -199,6 +261,55 @@ export default function Layout() {
                   </div>
                 </div>
                 <div className="p-1.5">
+                  {/* Telegram живёт здесь, а не в подвале сайдбара: это настройка
+                      аккаунта, и место ей рядом с выходом, а не под меню разделов.
+                      Скрыт целиком, когда сервер отвечает configured: false —
+                      предлагать действие, которое заведомо вернёт ошибку, хуже,
+                      чем не предлагать вовсе. */}
+                  {tg?.configured !== false && (
+                    <>
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          setShowProfile(false);
+                          if (tg?.linked) setTgModal(true);
+                          else onBindTelegram();
+                        }}
+                        disabled={tgBusy}
+                        className="k-press-sm w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13.5px] font-bold disabled:opacity-40"
+                        style={{ color: tg?.linked ? C.text : '#1668B8' }}
+                      >
+                        <Send size={16} strokeWidth={2.6} className="shrink-0" />
+                        <span className="truncate">
+                          {tg?.linked
+                            ? tg.username
+                              ? `@${tg.username}`
+                              : 'Telegram ulangan'
+                            : 'Telegramni ulash'}
+                        </span>
+                        {tg?.linked && (
+                          <span
+                            className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded shrink-0"
+                            style={{ background: '#E8F6EC', color: '#1F7A3D' }}
+                          >
+                            ULANGAN
+                          </span>
+                        )}
+                      </button>
+
+                      {tgError && (
+                        <div
+                          className="px-3 pb-1.5 text-[11px] font-semibold leading-snug"
+                          style={{ color: '#C0392B' }}
+                        >
+                          {tgError}
+                        </div>
+                      )}
+
+                      <div className="my-1.5 mx-3" style={{ borderTop: `1px solid ${C.line}` }} />
+                    </>
+                  )}
+
                   <button
                     role="menuitem"
                     onClick={logout}
@@ -245,8 +356,8 @@ export default function Layout() {
 
         <div className="flex-1" />
 
-        {/* Виджет прогресса + Telegram/Выход — единой группой у низа сайдбара
-            (настоящие данные: те же coins, что и в шапке). */}
+        {/* Виджет прогресса у низа сайдбара (настоящие данные: те же coins,
+            что и в шапке). */}
         <div className="px-2.5 pb-3">
           <div className="rounded-xl p-4" style={{ background: C.card }}>
             <div className="text-[11px] font-semibold mb-2.5" style={{ color: C.muted }}>Твой прогресс</div>
@@ -254,29 +365,101 @@ export default function Layout() {
           </div>
         </div>
 
-        <div className="p-3 shrink-0" style={{ borderTop: `1px solid ${C.line}` }}>
-          <div className="flex items-center gap-2">
+        {/* Подвала здесь больше нет. Telegram и выход переехали в меню аккаунта
+            в шапке: и то и другое — про аккаунт, а сайдбар отвечает за разделы
+            кабинета. Дублировать выход в двух местах значило бы держать красную
+            кнопку прямо под навигацией, куда целятся мышью чаще всего. */}
+      </aside>
+
+      {/* ══ Карточка привязанного Telegram ══
+          Показывает, КАКОЙ именно аккаунт привязан: увидев чужой @username,
+          ученик поймёт, что бот ушёл на телефон брата, — по одному tg_chat_id
+          это было невозможно. Отвязка тут же, но в два шага. */}
+      {tgModal && tg?.linked && (
+        <Modal title="Telegram" onClose={closeTgModal}>
+          <div className="rounded-xl p-4 mb-4" style={{ background: C.bg }}>
+            <div className="flex items-center gap-3">
+              <div
+                className="w-11 h-11 rounded-xl grid place-items-center shrink-0"
+                style={{ background: '#E4F1FF', color: '#1668B8' }}
+              >
+                <Send size={19} strokeWidth={2.6} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[15px] font-extrabold truncate" style={{ color: C.text }}>
+                  {tg.username ? `@${tg.username}` : tg.firstName || 'Telegram ulangan'}
+                </div>
+                {tg.firstName && tg.username && (
+                  <div className="text-[12px] font-semibold truncate" style={{ color: C.muted }}>
+                    {tg.firstName}
+                  </div>
+                )}
+              </div>
+            </div>
+            {tg.linkedAt && (
+              <div className="text-[12px] font-semibold mt-3" style={{ color: C.muted }}>
+                Ulangan sana:{' '}
+                {new Date(tg.linkedAt).toLocaleDateString('ru-RU', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="text-[13px] leading-relaxed mb-4" style={{ color: C.muted }}>
+            Botda <b style={{ color: C.text }}>/home</b>, <b style={{ color: C.text }}>/coins</b> va{' '}
+            <b style={{ color: C.text }}>/rating</b> buyruqlari ishlaydi. Saytga parolsiz kirish
+            ham shu ulanish orqali.
+          </div>
+
+          {tgError && (
+            <div className="text-[12px] font-semibold mb-3" style={{ color: '#C0392B' }}>
+              {tgError}
+            </div>
+          )}
+
+          {/* Второй шаг: до него кнопка «Uzish» ничего не отвязывает. */}
+          {tgConfirmUnlink ? (
+            <div className="rounded-xl p-4" style={{ background: '#FFF2EF' }}>
+              <div className="text-[13px] font-bold mb-1" style={{ color: '#8E2C1B' }}>
+                Aniq uzmoqchimisiz?
+              </div>
+              <div className="text-[12px] leading-snug mb-3" style={{ color: '#8E2C1B' }}>
+                Xabarlar to‘xtaydi va Telegram orqali kirish ishlamay qoladi. Qayta ulash uchun
+                yana shu tugmadan o‘tish kerak.
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={onUnlinkTelegram}
+                  disabled={tgBusy}
+                  className="k-press-sm flex-1 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40"
+                  style={{ background: '#C0392B', color: '#fff' }}
+                >
+                  {tgBusy ? 'Uzilmoqda…' : 'Ha, uz'}
+                </button>
+                <button
+                  onClick={() => setTgConfirmUnlink(false)}
+                  disabled={tgBusy}
+                  className="k-press-sm flex-1 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40"
+                  style={{ background: C.card, color: C.text, border: `1px solid ${C.line}` }}
+                >
+                  Bekor qilish
+                </button>
+              </div>
+            </div>
+          ) : (
             <button
-              onClick={onBindTelegram}
-              disabled={tgBusy}
-              title="Привязать Telegram"
-              className="k-press-sm flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40 transition-colors"
-              style={{ background: '#E4F1FF', color: '#1668B8' }}
-            >
-              <Send size={15} strokeWidth={2.6} /> Telegram
-            </button>
-            <button
-              onClick={logout}
-              title="Выйти"
-              aria-label="Выйти"
-              className="k-press-sm w-10 h-10 rounded-xl grid place-items-center shrink-0"
+              onClick={() => setTgConfirmUnlink(true)}
+              className="k-press-sm w-full py-2.5 rounded-xl text-[13px] font-extrabold"
               style={{ background: '#FFE6E2', color: '#C0392B' }}
             >
-              <LogOut size={17} strokeWidth={2.6} />
+              Ulanishni uzish
             </button>
-          </div>
-        </div>
-      </aside>
+          )}
+        </Modal>
+      )}
 
       {/* ══ Контент ══ */}
       <main className="pt-20 lg:pl-[252px] min-h-screen">
