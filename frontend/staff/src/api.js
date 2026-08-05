@@ -2296,6 +2296,15 @@ export const api = {
   // -------- ADMIN: Reports --------
   adminReports: (token, qs = '') => request(`/admin/reports${qs}`, { token }),
 
+  // -------- ADMIN: Discipline (штрафы и увольнения сотрудников) --------
+  adminPenalties: (token, qs = '') => request(`/admin/penalties${qs}`, { token }),
+  adminIssuePenalty: (token, body) => request('/admin/penalties', { method: 'POST', token, body }),
+  // Создание правила (qoyda). Фронт готов, но маршрута /admin/discipline-rules
+  // в admin.routes.js пока НЕТ (правила создаёт только Super Admin через
+  // /super/discipline-rules) — вызов упадёт с 404, модалка покажет честную
+  // заглушку. Karis должен добавить POST /admin/discipline-rules по образцу
+  // super.routes.js:1191 (createRuleSchema: type/amount/description).
+  adminCreateDisciplineRule: (token, body) => request('/admin/discipline-rules', { method: 'POST', token, body }),
   // -------- SUPER ADMIN --------
   superDashboard: (token) => request('/super/dashboard', { token }),
   // «Отчёты» слиты в «Статистику» 2026-07-28 — это был один и тот же набор
