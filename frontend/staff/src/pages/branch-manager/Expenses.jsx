@@ -1,30 +1,46 @@
 import { useState } from 'react';
 import { Receipt, Tag, TrendingUp, Layers } from 'lucide-react';
-import { money } from '../../../format.js';
-import PageHeader from '../../../components/PageHeader.jsx';
-import { Panel, Kpi } from '../../mentor/_ui.jsx';
-import { EXPENSES, MONTHS, CURRENT_MONTH, EXPENSE_CATEGORIES, BRANCH } from './_data.js';
+import { money } from '../../format.js';
+import PageHeader from '../../components/PageHeader.jsx';
+import { Panel, Kpi } from '../mentor/_ui.jsx';
+import { useState } from 'react';
+import { TrendingUp, Tag, Layers, Receipt } from 'lucide-react';
+import { money } from '../../format.js';
+import PageHeader from '../../components/PageHeader.jsx';
+import { Panel, Kpi } from '../mentor/_ui.jsx';
+import { useBranchManagerExpenses } from '../../queries.js';
 
 export default function BranchManagerExpenses() {
-  const [monthKey, setMonthKey] = useState(CURRENT_MONTH);
+  const [monthKey, setMonthKey] = useState('2026-08');
   const [cat, setCat] = useState('');
+  const { data, isLoading, error } = useBranchManagerExpenses(monthKey);
 
-  const month = MONTHS.find((m) => m.key === monthKey) ?? MONTHS[MONTHS.length - 1];
-  const rows = EXPENSES.filter(
-    (e) => e.monthKey === monthKey && (!cat || e.category === cat),
+  if (isLoading) return <div className="p-8 text-center text-base-content/45">Yuklanmoqda...</div>;
+  if (error) return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
+
+  const rows = (data?.expenses || []).filter(
+    (e) => !cat || e.category === cat,
   );
+  const total = data?.totalAmount || 0;
+  const categories = new Set((data?.expenses || []).map((e) => e.category));
+  const top = rows.length ? [...rows].sort((a, b) => b.amount - a.amount)[0] : null;
 
-  const total = rows.reduce((s, e) => s + e.amount, 0);
-  const categories = new Set(rows.map((e) => e.category));
-  const top = rows.length
-    ? [...rows].sort((a, b) => b.amount - a.amount)[0]
-    : null;
+  const MONTHS = [
+    { key: '2026-03', label: 'Mart' },
+    { key: '2026-04', label: 'Aprel' },
+    { key: '2026-05', label: 'May' },
+    { key: '2026-06', label: 'Iyun' },
+    { key: '2026-07', label: 'Iyul' },
+    { key: '2026-08', label: 'Avgust' },
+  ];
+  const month = MONTHS.find((m) => m.key === monthKey) ?? MONTHS[MONTHS.length - 1];
+  const EXPENSE_CATEGORIES = [...categories].sort();
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader
         title="Xarajatlar"
-        subtitle={`${BRANCH.name} · filial xarajatlari`}
+        subtitle={`Filial · xarajatlari`}
       />
 
       {/* ── Oy tanlash ── */}

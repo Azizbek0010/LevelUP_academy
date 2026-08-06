@@ -391,10 +391,79 @@ export async function listStudents(orgId, { search, frozen, page, limit }) {
   };
 }
 
+/**
+ * Динамика набора учеников — «в этом месяце пришло N, в прошлом было M»,
+ * тот же приём, что и у stats() для выручки (period=12m → по месяцам +
+ * дельта месяц-к-месяцу по двум последним точкам, иначе по дням).
+ * PERIOD_DAYS/MONTHLY_MONTHS_BACK объявлены ниже в файле, при статистике —
+ * не при определении функции, так что порядок в файле не важен.
+ */
+export async function studentsStats(orgId, period = '30d', branchId = null) {
+  const isMonthly = period === '12m';
+  const from = isMonthly
+    ? new Date(new Date().getFullYear(), new Date().getMonth() - (MONTHLY_MONTHS_BACK - 1), 1)
+    : new Date(Date.now() - (PERIOD_DAYS[period] ?? 30) * 24 * 60 * 60 * 1000);
+
+  const series = isMonthly
+    ? await repo.newStudentsSeriesMonthly(orgId, from, branchId)
+    : await repo.newStudentsSeriesDaily(orgId, from, branchId);
+
+  const totalNew = series.reduce((s, r) => s + Number(r.cnt), 0);
+
+  let momDelta = null;
+  let momDeltaPct = null;
+  if (isMonthly && series.length >= 1) {
+    const last = Number(series[series.length - 1]?.cnt ?? 0);
+    const prev = Number(series[series.length - 2]?.cnt ?? 0);
+    momDelta = last - prev;
+    momDeltaPct = prev > 0 ? Number((((last - prev) / prev) * 100).toFixed(1)) : (last > 0 ? 100 : 0);
+  }
+
+  return {
+    period,
+    branchId,
+    totalNew,
+    momDelta,
+    momDeltaPct,
+    series: series.map((s) => ({ date: s.day ?? s.month, count: Number(s.cnt) })),
+  };
+}
+
 export async function deleteStudent(orgId, id) {
   const row = await repo.softDeleteOrgStudent(id, orgId);
   if (!row) throw new AppError(404, 'Student not found in your organization');
   return { id: row.id };
+}
+
+/** Полная карточка ученика: сам ученик + его активные группы. */
+export async function studentDetail(orgId, id) {
+  const s = await repo.findStudentInOrg(id, orgId);
+  if (!s) throw new AppError(404, 'Student not found in your organization');
+  const groups = await repo.studentGroupsOrg(id);
+  return {
+    id: s.id,
+    firstName: s.first_name,
+    lastName: s.last_name,
+    phone: s.phone,
+    status: s.status,
+    loginCode: s.login_code,
+    coinBalance: s.coin_balance,
+    totalDebt: Number(s.total_debt),
+    hasOverdueInvoice: Boolean(s.has_overdue_invoice),
+    birthDate: s.birth_date,
+    frozenAt: s.frozen_at,
+    frozenReason: s.frozen_reason,
+    hasParent: Boolean(s.parent_id),
+    branchName: s.branch_name,
+    createdAt: s.created_at,
+    groups: groups.map((g) => ({
+      id: g.id,
+      name: g.name,
+      subject: g.subject,
+      monthlyPrice: Number(g.monthly_price),
+      mentor: g.mentor_first ? `${g.mentor_first} ${g.mentor_last}` : null,
+    })),
+  };
 }
 
 // ---------- группы организации (Super Groups страница) ----------
@@ -429,6 +498,35 @@ export async function deleteGroup(orgId, id) {
   const row = await repo.softDeleteOrgGroup(id, orgId);
   if (!row) throw new AppError(404, 'Group not found in your organization');
   return { id: row.id };
+}
+
+/** Полная карточка группы: сама группа + её текущий состав учеников. */
+export async function groupDetail(orgId, id) {
+  const g = await repo.findGroupInOrg(id, orgId);
+  if (!g) throw new AppError(404, 'Group not found in your organization');
+  const students = await repo.groupStudentsOrg(id);
+  return {
+    id: g.id,
+    name: g.name,
+    subject: g.subject,
+    monthlyPrice: Number(g.monthly_price),
+    schedule: g.schedule ?? [],
+    room: g.room,
+    isArchived: g.is_archived,
+    branchName: g.branch_name,
+    mentor: g.mentor_id ? { id: g.mentor_id, name: `${g.mentor_first} ${g.mentor_last}` } : null,
+    createdAt: g.created_at,
+    students: students.map((s) => ({
+      id: s.id,
+      firstName: s.first_name,
+      lastName: s.last_name,
+      phone: s.phone,
+      status: s.status,
+      totalDebt: Number(s.total_debt),
+      coinBalance: s.coin_balance,
+      joinedAt: s.joined_at,
+    })),
+  };
 }
 
 // ---------- посещаемость организации (Super Attendance страница) ----------
@@ -537,15 +635,29 @@ export async function recordAudit(entry) {
 // ---------- статистика организации (Super Stats) ----------
 
 const PERIOD_DAYS = { '7d': 7, '30d': 30, '90d': 90 };
+const MONTHLY_MONTHS_BACK = 12;
 
-export async function stats(orgId, period = '30d') {
-  const days = PERIOD_DAYS[period] ?? 30;
-  const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+/**
+ * `period='12m'` — отдельная ветка: ряд по месяцам за год вместо ряда по дням,
+ * плюс дельта «этот месяц к прошлому» (totals.momDelta / momDeltaPct), посчитанная
+ * тут же по двум последним точкам ряда — второго запроса в базу не нужно.
+ *
+ * `branchId` — сузить всю статистику (итоги, ряд, способы оплаты) до одного
+ * филиала; без него — организация целиком. Таблица `branches` ниже всегда
+ * возвращает все филиалы разом, независимо от фильтра — сравнение и сводка
+ * должны быть видны, даже когда смотришь конкретный филиал.
+ */
+export async function stats(orgId, period = '30d', branchId = null) {
+  const isMonthly = period === '12m';
+  const from = isMonthly
+    ? new Date(new Date().getFullYear(), new Date().getMonth() - (MONTHLY_MONTHS_BACK - 1), 1)
+    : new Date(Date.now() - (PERIOD_DAYS[period] ?? 30) * 24 * 60 * 60 * 1000);
+
   const [t, branches, series, methods] = await Promise.all([
-    repo.orgTotals(orgId),
+    repo.orgTotals(orgId, branchId),
     repo.branchBreakdown(orgId),
-    repo.revenueSeries(orgId, from),
-    repo.revenueByMethod(orgId, from),
+    isMonthly ? repo.revenueSeriesMonthly(orgId, from, branchId) : repo.revenueSeries(orgId, from, branchId),
+    repo.revenueByMethod(orgId, from, branchId),
   ]);
   const revenue = Number(t.revenue);
   const debt = Number(t.outstanding_debt);
@@ -555,8 +667,20 @@ export async function stats(orgId, period = '30d') {
      7 дней, и партнёр видел на одном экране два разных числа про одно и то же.
      Считаем по уже полученному ряду по дням — лишнего запроса в базу нет. */
   const periodRevenue = series.reduce((sum, r) => sum + Number(r.revenue), 0);
+
+  // дельта месяц-к-месяцу — только для 12m, только по двум последним точкам ряда
+  let momDelta = null;
+  let momDeltaPct = null;
+  if (isMonthly && series.length >= 1) {
+    const last = Number(series[series.length - 1]?.revenue ?? 0);
+    const prev = Number(series[series.length - 2]?.revenue ?? 0);
+    momDelta = last - prev;
+    momDeltaPct = prev > 0 ? Number((((last - prev) / prev) * 100).toFixed(1)) : (last > 0 ? 100 : 0);
+  }
+
   return {
     period,
+    branchId,
     totals: {
       revenue,
       periodRevenue,
@@ -568,6 +692,8 @@ export async function stats(orgId, period = '30d') {
       avgRevenue: branchCount > 0 ? revenue / branchCount : 0,
       debtRatio: revenue + debt > 0 ? Number(((debt / (revenue + debt)) * 100).toFixed(1)) : 0,
       currency: 'UZS',
+      momDelta,
+      momDeltaPct,
     },
     branches: branches.map((b) => ({
       id: b.id,
@@ -581,7 +707,7 @@ export async function stats(orgId, period = '30d') {
       // страницах), поле переехало сюда.
       share: revenue > 0 ? Number(((Number(b.revenue) / revenue) * 100).toFixed(1)) : 0,
     })),
-    revenueSeries: series.map((s) => ({ date: s.day, revenue: Number(s.revenue) })),
+    revenueSeries: series.map((s) => ({ date: s.day ?? s.month, revenue: Number(s.revenue) })),
     paymentMethods: methods.map((m) => ({ method: m.method, amount: Number(m.amount) })),
   };
 }
@@ -611,4 +737,74 @@ export async function dashboard(orgId) {
       debt: Number(b.debt),
     })),
   };
+}
+
+// ---------- методики / цены абонемента ----------
+
+export async function listTrainingTypes(orgId) {
+  const rows = await repo.listTrainingTypesWithPrice(orgId);
+  return rows.map((tt) => ({
+    id: tt.id,
+    name: tt.name,
+    icon: tt.icon,
+    price: tt.price === null ? null : Number(tt.price),
+    isArchived: tt.is_archived,
+    groupsCount: Number(tt.groups_count),
+  }));
+}
+
+export async function setTrainingTypePrice(orgId, id, price) {
+  const row = await repo.setTrainingTypePrice(id, orgId, price);
+  if (!row) throw new AppError(404, 'Training type not found in your organization');
+  return { id: row.id, name: row.name, icon: row.icon, price: Number(row.price) };
+}
+
+// ---------- branch managers ----------
+
+export async function createBranchManager(orgId, { firstName, lastName, email, branchId, phone }) {
+  const branch = await repo.findBranchInOrg(branchId, orgId);
+  if (!branch) throw new AppError(404, 'Branch not found in your organization');
+
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
+
+  let manager;
+  try {
+    manager = await repo.insertBranchManager({
+      orgId,
+      branchId,
+      firstName,
+      lastName,
+      email,
+      phone,
+      passwordHash,
+    });
+  } catch (err) {
+    if (err.code === '23505') throw new AppError(409, 'Email already in use');
+    throw err;
+  }
+
+  return {
+    id: manager.id,
+    firstName: manager.first_name,
+    lastName: manager.last_name,
+    email: manager.email,
+    branchId: manager.branch_id,
+    tempPassword,
+  };
+}
+
+export async function listBranchManagers(orgId) {
+  const rows = await repo.listBranchManagers(orgId);
+  return rows.map((u) => ({
+    id: u.id,
+    firstName: u.first_name,
+    lastName: u.last_name,
+    email: u.email,
+    status: u.status,
+    branchId: u.branch_id,
+    branchName: u.branch_name,
+    phone: u.phone,
+    createdAt: u.created_at,
+  }));
 }
