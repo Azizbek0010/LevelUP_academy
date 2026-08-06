@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, ArrowLeft, Trash2, Check, FileQuestion, Settings, Upload, FileText, HelpCircle, Pencil, Layers, Play, Puzzle, MessageCircle, ListChecks, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Plus, ArrowLeft, Trash2, Check, FileQuestion, Settings, FileText, HelpCircle, Pencil, Layers, Play, Puzzle, MessageCircle, ListChecks, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useLessonDetails, useInvalidate } from '../../queries.js';
 import { api, uploadToPresignedUrl } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
@@ -439,11 +439,13 @@ function LessonEditorView() {
                 )}
               </div>
             </div>
-            <label className="btn btn-ghost btn-sm gap-2 border border-[#E6EDD8] cursor-pointer" disabled={uploading}>
-              <Upload size={14} />
-              {uploading ? t('editor.uploading') : t('editor.upload')}
-              <input type="file" onChange={handleFileUpload} className="hidden" accept=".pdf,.zip,.rar,.tar,.gz,.7z" />
-            </label>
+            <input
+              type="file"
+              className="file-input file-input-bordered file-input-sm max-w-[240px]"
+              accept=".pdf,.zip,.rar,.tar,.gz,.7z"
+              disabled={uploading}
+              onChange={handleFileUpload}
+            />
           </div>
         </div>
       )}
