@@ -1,6 +1,6 @@
 /**
  * Admin Panel Export Utilities
- * Supports: Excel (.xlsx), PDF, CSV
+ * Supports: Excel (.xlsx), PDF
  * Uses: xlsx (SheetJS), jspdf + jspdf-autotable
  */
 
@@ -36,11 +36,49 @@ function today() {
 // ═══════════════ Excel (.xlsx) ═══════════════
 
 export async function exportToExcel(data, columns, filename = `export_${today()}`) {
-  const XLSX = await import('xlsx');
+  const XLSX = await import('xlsx-js-style');
   const { header, rows } = buildRows(data, columns);
 
   const wsData = [header, ...rows];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // ── Styling: brand header (green), zebra rows, borders ──
+  const HEADER_FILL = '217346';      // LevelUp green
+  const HEADER_FONT = { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 };
+  const ZEBRA_FILL = 'F2F7F2';       // light green tint on odd rows
+  const BORDER = {
+    top:  { style: 'thin', color: { rgb: 'D1D5DB' } },
+    bottom: { style: 'thin', color: { rgb: 'D1D5DB' } },
+    left: { style: 'thin', color: { rgb: 'D1D5DB' } },
+    right: { style: 'thin', color: { rgb: 'D1D5DB' } },
+  };
+
+  header.forEach((_, cIdx) => {
+    const cell = ws[XLSX.utils.encode_cell({ r: 0, c: cIdx })];
+    if (!cell) return;
+    cell.s = {
+      fill: { fgColor: { rgb: HEADER_FILL }, patternType: 'solid' },
+      font: HEADER_FONT,
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: BORDER,
+    };
+  });
+
+  rows.forEach((row, rIdx) => {
+    row.forEach((_, cIdx) => {
+      const cell = ws[XLSX.utils.encode_cell({ r: rIdx + 1, c: cIdx })];
+      if (!cell) return;
+      cell.s = {
+        font: { color: { rgb: '1F2937' }, sz: 10 },
+        fill: rIdx % 2 === 1 ? { fgColor: { rgb: ZEBRA_FILL }, patternType: 'solid' } : undefined,
+        alignment: { vertical: 'middle' },
+        border: BORDER,
+      };
+    });
+  });
+
+  // Freeze header row
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
 
   // Auto-size columns
   const colWidths = header.map((h, colIdx) => {
@@ -99,20 +137,47 @@ async function loadCyrillicFont(doc) {
 }
 
 export async function exportToPDF(data, columns, filename = `export_${today()}`, title = 'Отчёт') {
-  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-    import('jspdf'),
-    import('jspdf-autotable'),
-  ]);
+  // jsPDF v4.x exports { jsPDF } as named export
+  const jspdfModule = await import('jspdf');
+  const JsPDF = jspdfModule.jsPDF ?? jspdfModule.default?.jsPDF ?? jspdfModule.default;
+  if (!JsPDF) throw new Error('jsPDF not found in module');
 
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  // jspdf-autotable v5.x: call autoTable(doc, options) — it mutates doc
+  const autoTableMod = await import('jspdf-autotable');
+  const autoTable = autoTableMod.default ?? autoTableMod.autoTable ?? autoTableMod;
+
+  const doc = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const dateStr = new Date().toLocaleDateString('ru-RU');
   const { header, rows } = buildRows(data, columns);
 
-  // Load Cyrillic font (DejaVuSans) — supports Russian, Uzbek, etc.
-  await loadCyrillicFont(doc);
+  // Load Cyrillic font — best-effort, falls back to helvetica
+  let fontName = 'helvetica';
+  try {
+    const [nr, br] = await Promise.all([
+      fetch('/fonts/DejaVuSans.ttf'),
+      fetch('/fonts/DejaVuSans-Bold.ttf'),
+    ]);
+    if (nr.ok && br.ok) {
+      const toB64 = async (r) => {
+        const buf = await r.arrayBuffer();
+        const arr = new Uint8Array(buf);
+        let s = '';
+        for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]);
+        return btoa(s);
+      };
+      const [nb, bb] = await Promise.all([toB64(nr), toB64(br)]);
+      doc.addFileToVFS('DejaVuSans.ttf', nb);
+      doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+      doc.addFileToVFS('DejaVuSans-Bold.ttf', bb);
+      doc.addFont('DejaVuSans-Bold.ttf', 'DejaVuSans', 'bold');
+      fontName = 'DejaVuSans';
+    }
+  } catch (e) {
+    console.warn('PDF: Cyrillic font load failed, using helvetica', e);
+  }
 
-  // Header
+  doc.setFont(fontName);
   doc.setFontSize(16);
   doc.setTextColor(30, 30, 30);
   doc.text(title, 14, 18);
@@ -120,110 +185,53 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
   doc.setTextColor(120, 120, 120);
   doc.text(`Дата: ${dateStr}  |  Записей: ${data.length}`, 14, 25);
 
-  // Table
-  autoTable(doc, {
+  const tableOpts = {
     startY: 30,
     head: [header],
     body: rows,
     styles: {
-      font: 'DejaVuSans',
-      fontSize: 8,
-      cellPadding: 3,
-      textColor: [30, 30, 30],
-      lineColor: [220, 229, 212],
-      lineWidth: 0.3,
+      fontSize: 9,
+      cellPadding: 4,
+      textColor: [40, 40, 40],
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1,
     },
     headStyles: {
-      fillColor: [143, 162, 131], // #8FA283 design system muted green
+      fillColor: [15, 23, 42],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8,
+      fontSize: 9,
+      cellPadding: 5,
     },
-    alternateRowStyles: { fillColor: [248, 251, 245] },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 14, right: 14 },
     didDrawPage: () => {
       const pageH = doc.internal.pageSize.getHeight();
+      const pageNum = doc.internal.getCurrentPageInfo().pageNumber;
+      const footerText = `LevelUp Academy  |  ${pageNum}-bet`;
+      // jsPDF v4 TTF metadata doesn't expose glyph widths, so `align: 'center'`
+      // throws ("Cannot read properties of undefined (reading 'widths')").
+      // Compute X manually instead: avg glyph ≈ 0.6em, 1mm ≈ 2.834pt.
+      const approxW = footerText.length * 7 * 0.6 / 2.834;
+      doc.setFont(fontName, 'normal');
       doc.setFontSize(7);
       doc.setTextColor(160, 160, 160);
-      doc.text(
-        `LevelUp Academy  |  Стр. ${doc.internal.getCurrentPageInfo().pageNumber}`,
-        pageW / 2,
-        pageH - 8,
-        { align: 'center' }
-      );
+      doc.text(footerText, pageW / 2 - approxW / 2, pageH - 8);
     },
-  });
+  };
+
+  // autoTable can be called as function(doc, opts) or doc.autoTable(opts)
+  if (typeof autoTable === 'function') {
+    autoTable(doc, tableOpts);
+  } else if (typeof doc.autoTable === 'function') {
+    doc.autoTable(tableOpts);
+  } else {
+    throw new Error('autoTable plugin not found');
+  }
 
   doc.save(`${filename}.pdf`);
 }
 
-// ═══════════════ CSV ═══════════════
-
-export function exportToCSV(data, columns, filename = `export_${today()}`) {
-  const { header, rows } = buildRows(data, columns);
-
-  const escapeCSV = (val) => {
-    const str = String(val ?? '—');
-    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-      return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
-  };
-
-  const csvContent = [
-    header.map(escapeCSV).join(','),
-    ...rows.map((r) => r.map(escapeCSV).join(',')),
-  ].join('\n');
-
-  // Add BOM for proper Cyrillic support in Excel
-  const BOM = '\uFEFF';
-  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${filename}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-// ═══════════════ Markdown (.md) ═══════════════
-
-export function exportToMarkdown(data, columns, filename = `export_${today()}`, title = 'Отчёт') {
-  const { header, rows } = buildRows(data, columns);
-  const dateStr = new Date().toLocaleDateString('ru-RU');
-
-  const lines = [];
-  lines.push(`# ${title}`);
-  lines.push('');
-  lines.push(`> 📅 Дата: ${dateStr}  |  📊 Записей: ${data.length}`);
-  lines.push('');
-
-  // Table header
-  lines.push(`| ${header.join(' | ')} |`);
-  lines.push(`| ${header.map(() => '---').join(' | ')} |`);
-
-  // Table rows
-  for (const row of rows) {
-    const escaped = row.map((cell) => {
-      const str = String(cell ?? '—');
-      return str.replace(/\|/g, '\\|').replace(/\n/g, ' ');
-    });
-    lines.push(`| ${escaped.join(' | ')} |`);
-  }
-
-  lines.push('');
-  lines.push('---');
-  lines.push('*LevelUp Academy — Exported Report*');
-
-  const md = lines.join('\n');
-  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${filename}.md`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
 
 // ═══════════════ Main Dispatcher ═══════════════
 
@@ -233,10 +241,6 @@ export async function exportData(format, data, columns, filename, title) {
       return exportToExcel(data, columns, filename);
     case 'pdf':
       return exportToPDF(data, columns, filename, title);
-    case 'csv':
-      return exportToCSV(data, columns, filename);
-    case 'markdown':
-      return exportToMarkdown(data, columns, filename, title);
     default:
       throw new Error(`Unknown format: ${format}`);
   }

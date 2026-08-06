@@ -1,6 +1,8 @@
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
+// По конвенции проекта: по умолчанию — БОЕВОЙ бэкенд (npm run dev идёт на него через
+// vite-прокси). Моки — только демо-режим по явному VITE_USE_MOCKS=true.
 const USE_MOCKS =
-  typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS !== 'false' : true;
+  typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS === 'true' : false;
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -295,19 +297,22 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
     const testId = path.split('/').pop();
     const test = MOCK_OVERVIEW.grades.tests.find((t) => t.id === testId);
     if (!test) { const e = new Error('Not found'); e.status = 404; throw e; }
-    const wrongAnswers = test.questions.filter((q) => q.studentAnswer !== q.correct).map((q, i) => ({
+    const questions = test.questions || [];
+    const correctCount = questions.filter((q) => q.studentAnswer === q.correct).length;
+    const wrongCount = questions.length - correctCount;
+    const wrongAnswers = questions.filter((q) => q.studentAnswer !== q.correct).map((q) => ({
       question: q.q,
       studentAnswer: q.options[q.studentAnswer],
       correctAnswer: q.options[q.correct],
       isCorrect: false,
     }));
-    const correctAnswers = test.questions.filter((q) => q.studentAnswer === q.correct).map((q) => ({
+    const correctAnswers = questions.filter((q) => q.studentAnswer === q.correct).map((q) => ({
       question: q.q,
       studentAnswer: q.options[q.studentAnswer],
       correctAnswer: q.options[q.correct],
       isCorrect: true,
     }));
-    return { data: { ...test, wrongAnswers, correctAnswers, totalQuestions: test.questions.length, correctCount: correctAnswers.length, wrongCount: wrongAnswers.length } };
+    return { data: { ...test, totalQuestions: questions.length, correctCount, wrongCount, wrongAnswers, correctAnswers } };
   }
 
   // CHAT — match both encoded and non-encoded
@@ -400,7 +405,25 @@ async function realRequest(path, { method = 'GET', body, token } = {}) {
 
 // -------- PUBLIC API --------
 async function rawRequest(path, opts = {}) {
-  return USE_MOCKS ? mockRequest(path, opts) : realRequest(path, opts);
+  if (USE_MOCKS) return mockRequest(path, opts);
+  try {
+    return await realRequest(path, opts);
+  } catch (err) {
+    // Бэкенд вернул 404 — эндпоинт ещё не реализован. Если для пути есть мок-обработчик,
+    // подставляем его, чтобы панель работала (остальные запросы идут на реальный бэк).
+    if (err.status === 404 && mockHandles(path)) return mockRequest(path, opts);
+    throw err;
+  }
+}
+
+// Есть ли мок-обработчик для этого пути?
+function mockHandles(path) {
+  try {
+    mockRequest(path, {});
+    return true;
+  } catch (e) {
+    return !(e.status === 404 && String(e.message).includes('Mock route not implemented'));
+  }
 }
 
 // Mock chat send — returns message object

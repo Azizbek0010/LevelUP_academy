@@ -1943,32 +1943,32 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     // grade сюда НЕ пишется: на бэкенде PATCH /users/me его срезает схемой,
     // ставит только админ. Мок повторяет это правило, иначе фронт можно было
     // бы «проверить» на поведении, которого в бою нет.
-    const DEFAULT_ME = {
-      id: 'mentor-demo-id',
-      firstName: 'Demo',
-      lastName: 'Mentor',
-      email: 'mentor.demo@levelup.local',
-      phone: '+998 90 123 45 67',
-      role: 'mentor',
-      branchName: 'Chilonzor filiali',
-      createdAt: '2026-02-01T09:00:00Z',
-      bio: "5 yildan beri ingliz tili o'qitaman. IELTS 8.0. Darslarni suhbat asosida olib boraman.",
-      skills: ['Ingliz tili', 'IELTS', 'Speaking', 'Grammar'],
-      grade: 'middle',
-      gradeSetAt: '2026-06-01T10:00:00Z',
+    // Fallback: use the logged-in user from mock_user, not a hardcoded mentor
+    const fallbackUser = () => {
+      const me = JSON.parse(localStorage.getItem('mock_me') || 'null');
+      if (me) return me;
+      const mu = JSON.parse(localStorage.getItem('mock_user') || 'null');
+      if (mu) return mu;
+      // Last resort: admin default (not mentor)
+      return { id: 'admin-demo', firstName: 'Demo', lastName: 'Admin', email: 'hp8187081014laptop@gmail.com', role: 'admin' };
     };
 
     if (path === '/users/me' && method === 'GET') {
-      const saved = JSON.parse(localStorage.getItem('mock_me') || 'null');
-      return { success: true, data: saved || DEFAULT_ME };
+      return { success: true, data: fallbackUser() };
     }
 
     if (path === '/users/me' && method === 'PATCH') {
-      const current = JSON.parse(localStorage.getItem('mock_me') || 'null') || DEFAULT_ME;
+      const current = fallbackUser();
       const { grade, ...allowed } = body;   // grade игнорируем — как на бэкенде
       const next = { ...current, ...allowed };
       localStorage.setItem('mock_me', JSON.stringify(next));
       return { success: true, data: next };
+    }
+
+    /* -------- PROFILE: смена пароля (мок) -------- */
+    if (path === '/auth/change-password' && method === 'POST') {
+      // В моках просто имитируем успешную смену пароля
+      return { success: true, message: 'Пароль успешно изменён' };
     }
 
     /* -------- MENTOR: Davomat --------
@@ -2152,6 +2152,9 @@ export const api = {
   me: (token) => request('/users/me', { token }),
   updateMe: (token, body) => request('/users/me', { method: 'PATCH', token, body }),
 
+  // -------- PROFILE: смена пароля --------
+  changePassword: (token, body) => request('/auth/change-password', { method: 'POST', token, body }),
+
   // -------- MENTOR: Students --------
   // Одна сводка вместо тридцати запросов: собрать её на клиенте значило бы
   // тянуть submissions по каждому ДЗ и results по каждому тесту.
@@ -2235,8 +2238,8 @@ export const api = {
   adminCreateStudent: (token, body) => request('/admin/students', { method: 'POST', token, body }),
   adminStudentDetail: (token, id) => request(`/admin/students/${id}`, { token }),
   adminUpdateStudent: (token, id, body) => request(`/admin/students/${id}`, { method: 'PATCH', token, body }),
-  adminFreezeStudent: (token, id, frozen) => request(`/admin/students/${id}/freeze`, { method: 'POST', token, body: { frozen } }),
-  adminDeleteStudent: (token, id) => request(`/admin/students/${id}`, { method: 'DELETE', token }),
+  adminFreezeStudent: (token, id, frozen, reason) => request(`/admin/students/${id}/freeze`, { method: 'POST', token, body: { frozen, reason } }),
+  adminDeleteStudent: (token, id, reason) => request(`/admin/students/${id}`, { method: 'DELETE', token, body: reason ? { reason } : undefined }),
   adminGroups: (token, qs = '') => request(`/admin/groups${qs}`, { token }),
   adminCreateGroup: (token, body) => request('/admin/groups', { method: 'POST', token, body }),
   adminGroupDetail: (token, id) => request(`/admin/groups/${id}`, { token }),
@@ -2299,6 +2302,12 @@ export const api = {
   // -------- ADMIN: Discipline (штрафы и увольнения сотрудников) --------
   adminPenalties: (token, qs = '') => request(`/admin/penalties${qs}`, { token }),
   adminIssuePenalty: (token, body) => request('/admin/penalties', { method: 'POST', token, body }),
+  // Создание правила (qoyda). Фронт готов, но маршрута /admin/discipline-rules
+  // в admin.routes.js пока НЕТ (правила создаёт только Super Admin через
+  // /super/discipline-rules) — вызов упадёт с 404, модалка покажет честную
+  // заглушку. Karis должен добавить POST /admin/discipline-rules по образцу
+  // super.routes.js:1191 (createRuleSchema: type/amount/description).
+  adminCreateDisciplineRule: (token, body) => request('/admin/discipline-rules', { method: 'POST', token, body }),
   // -------- SUPER ADMIN --------
   superDashboard: (token) => request('/super/dashboard', { token }),
   // «Отчёты» слиты в «Статистику» 2026-07-28 — это был один и тот же набор

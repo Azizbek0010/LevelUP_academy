@@ -5,18 +5,21 @@ import {
   Copy, Check, Coins, LayoutGrid, List, AlertTriangle, Download
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
-import { useAdminStudents } from '../../queries.js';
+import { useAdminStudents, useAdminGroups } from '../../queries.js';
 import { api } from '../../api.js';
 import { formatPhone } from '../../format.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
-import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip } from '../mentor/_ui.jsx';
+import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip, Modal } from '../mentor/_ui.jsx';
 
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
 
-const emptyForm = { firstName: '', lastName: '', phone: '', parentPhone: '', age: '', gender: 'male', coins: 0, frozen: false };
+/* Qarz summasi — backend `totalDebt` kabi qaytaradi (eski aliaslar ham saqlanadi) */
+const studentDebt = (s) => Number(s.totalDebt || s.debt || s.outstandingDebt || s.balance || 0);
+
+const emptyForm = { firstName: '', lastName: '', phone: '', birthDate: '', groupId: '', parentFirstName: '', parentLastName: '', parentPhone: '' };
 
 const STATUS_COLORS = {
   active: { bg: '#2ECC7115', text: '#2ECC71', label: 'Активен' },
@@ -28,6 +31,7 @@ const STATUS_COLORS = {
 function StudentCard({ s, onNavigate }) {
   const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
   const groupNames = (s.groups && s.groups.length > 0) ? s.groups.map((g) => g.name).filter(Boolean) : (s.groupName ? [s.groupName] : []);
+  const debt = studentDebt(s);
 
   return (
     <div className="card bg-base-100 p-4 card-hover-premium group cursor-pointer" onClick={() => onNavigate?.(s.id)}>
@@ -45,6 +49,12 @@ function StudentCard({ s, onNavigate }) {
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
                 style={{ background: status.bg, color: status.text }}>
                 {status.label}
+              </span>
+            )}
+            {debt > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                style={{ background: '#E8543E15', color: '#E8543E' }}>
+                <AlertTriangle size={10} /> Долг {debt.toLocaleString('ru-RU')} сум
               </span>
             )}
           </div>
@@ -86,7 +96,13 @@ export default function AdminStudents() {
   const [viewMode, setViewMode] = useState('card'); // 'card' | 'table'
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'frozen'
   const qs = search ? `?search=${encodeURIComponent(search)}` : '';
-  const { data, isLoading, error, refetch } = useAdminStudents(qs);
+  // «Задолжен» tab: qarzdorlar ro'yxati har daqiqada avtomatik yangilanadi
+  // (backenda qarz oyiga o'zgaradi; refetchOnWindowFocus global false — interval kerak)
+  const { data, isLoading, error, refetch } = useAdminStudents(
+    qs,
+    statusFilter === 'debt' ? { refetchInterval: 60_000 } : {}
+  );
+  const { data: groupsData } = useAdminGroups('?limit=200');
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -99,7 +115,7 @@ export default function AdminStudents() {
 
   const activeCount = rows.filter((s) => s.status !== 'frozen').length;
   const frozenCount = rows.filter((s) => s.status === 'frozen').length;
-  const debtCount = rows.filter((s) => (s.debt || s.outstandingDebt || s.balance || 0) > 0).length;
+const debtCount = rows.filter((s) => studentDebt(s) > 0).length;
   const filteredRows = useMemo(() => {
     let result = rows;
     if (search.trim()) {
@@ -114,20 +130,30 @@ export default function AdminStudents() {
     if (statusFilter === 'all') return result;
     if (statusFilter === 'active') return result.filter(s => s.status !== 'frozen');
     if (statusFilter === 'frozen') return result.filter(s => s.status === 'frozen');
-    if (statusFilter === 'debt') return result.filter(s => (s.debt || s.outstandingDebt || s.balance || 0) > 0);
+    if (statusFilter === 'debt') return result.filter(s => studentDebt(s) > 0);
     return result;
   }, [rows, search, statusFilter]);
 
   const create = async () => {
     setBusy(true); setErr('');
     try {
-      const res = await api.adminCreateStudent(token, {
-        firstName: form.firstName, lastName: form.lastName,
-        phone: form.phone || undefined, parentPhone: form.parentPhone || undefined,
-        age: form.age ? Number(form.age) : undefined,
-        gender: form.gender || undefined,
-        coins: form.coins ? Number(form.coins) : undefined,
-      });
+      const payload = {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phone || undefined,
+        birthDate: form.birthDate || undefined,
+        groupId: form.groupId || undefined,
+      };
+      
+      if (form.parentFirstName || form.parentLastName || form.parentPhone) {
+        payload.parent = {
+          firstName: form.parentFirstName || form.firstName,
+          lastName: form.parentLastName || form.lastName,
+          phone: form.parentPhone || undefined,
+        };
+      }
+      
+      const res = await api.adminCreateStudent(token, payload);
       const r = res?.data || res;
       setForm(null);
       setCreds({ login_code: r.login_code || r.loginCode || r.student?.login_code || r.student?.loginCode, password: r.password || r.student?.password });
@@ -167,9 +193,11 @@ export default function AdminStudents() {
         <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={filteredRows.length === 0}>
           <Download size={14} /> Экспорт
         </button>
-        <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
-          <Plus size={16} /> Добавить студента
-        </button>
+        {statusFilter !== 'frozen' && (
+          <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
+            <Plus size={16} /> Добавить студента
+          </button>
+        )}
       </PageHeader>
 
       {/* ═══ Stats ═══ */}
@@ -188,7 +216,7 @@ export default function AdminStudents() {
           className="flex-1"
         />
         {/* Status filter tabs */}
-        <div className="hidden sm:flex items-center gap-1 p-1 rounded-[12px]" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="hidden sm:flex items-center gap-1 p-1 rounded-[12px] bg-base-100 border border-base-300">
           {[
             { key: 'all', label: 'Все', count: rows.length },
             { key: 'active', label: 'Активные', count: activeCount },
@@ -198,29 +226,35 @@ export default function AdminStudents() {
             <button
               key={f.key}
               onClick={() => setStatusFilter(f.key)}
-              className="px-3 py-1.5 rounded-[12px] text-[11px] font-bold transition-all duration-200"
-              style={{
-                background: statusFilter === f.key ? 'rgba(59,130,246,0.12)' : 'transparent',
-                color: statusFilter === f.key ? 'var(--primary)' : 'var(--text-muted)',
-              }}
+              className={`px-3 py-1.5 rounded-[12px] text-[11px] font-bold transition-all duration-200 ${
+                statusFilter === f.key
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-base-content/50 hover:text-base-content'
+              }`}
             >
               {f.label} ({f.count})
             </button>
           ))}
         </div>
         {/* View toggle */}
-        <div className="flex items-center gap-1 p-1 rounded-[12px]" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-1 p-1 rounded-[12px] bg-base-100 border border-base-300">
           <button
             onClick={() => setViewMode('card')}
-            className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
-            style={{ background: viewMode === 'card' ? 'rgba(59,130,246,0.12)' : 'transparent', color: viewMode === 'card' ? 'var(--primary)' : 'var(--text-muted)' }}
+            className={`w-8 h-8 rounded-[12px] flex items-center justify-center transition-all ${
+              viewMode === 'card'
+                ? 'bg-primary/10 text-primary'
+                : 'text-base-content/50 hover:text-base-content'
+            }`}
           >
             <LayoutGrid size={14} />
           </button>
           <button
             onClick={() => setViewMode('table')}
-            className="w-8 h-8 rounded-[12px] flex items-center justify-center transition-all"
-            style={{ background: viewMode === 'table' ? 'rgba(59,130,246,0.12)' : 'transparent', color: viewMode === 'table' ? 'var(--primary)' : 'var(--text-muted)' }}
+            className={`w-8 h-8 rounded-[12px] flex items-center justify-center transition-all ${
+              viewMode === 'table'
+                ? 'bg-primary/10 text-primary'
+                : 'text-base-content/50 hover:text-base-content'
+            }`}
           >
             <List size={14} />
           </button>
@@ -234,10 +268,19 @@ export default function AdminStudents() {
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
       ) : filteredRows.length === 0 ? (
         <EmptyState
-          icon={GraduationCap}
-          title={search ? 'Попробуйте изменить запрос' : 'Нет студентов'}
-          hint={search ? undefined : 'Добавьте первого студента'}
-          action={!search ? (
+          icon={statusFilter === 'debt' ? AlertTriangle : GraduationCap}
+          title={
+            search ? 'Попробуйте изменить запрос'
+              : statusFilter === 'frozen' ? 'Нет замороженных студентов'
+              : statusFilter === 'debt' ? 'Нет должников'
+              : 'Нет студентов'
+          }
+          hint={
+            search || statusFilter === 'frozen' ? undefined
+              : statusFilter === 'debt' ? 'У всех студентов оплата в порядке'
+              : 'Добавьте первого студента'
+          }
+          action={(!search && statusFilter !== 'frozen' && statusFilter !== 'debt') ? (
             <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
               <Plus size={14} /> Добавить
             </button>
@@ -262,6 +305,7 @@ export default function AdminStudents() {
                   <th>Телефон</th>
                   <th>Группы</th>
                   <th>Коины</th>
+                  <th>Долг</th>
                   <th>Статус</th>
                 </tr>
               </thead>
@@ -300,6 +344,15 @@ export default function AdminStudents() {
                         </span>
                       ) : '—'}
                     </td>
+                    <td className="tabular-nums">
+                      {studentDebt(s) > 0 ? (
+                        <span className="inline-flex items-center gap-1 font-bold text-[11px]" style={{ color: '#E8543E' }}>
+                          <AlertTriangle size={11} /> {studentDebt(s).toLocaleString('ru-RU')}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-semibold" style={{ color: '#2ECC71' }}>Нет</span>
+                      )}
+                    </td>
                     <td>
                       {s.status !== 'active' && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
@@ -317,89 +370,85 @@ export default function AdminStudents() {
       )}
 
       {/* ═══ Create Modal ═══ */}
-      {form && (
-        <dialog className="modal modal-open">
-          <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-4">Новый студент</h3>
-            {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <input className="input input-bordered w-full" placeholder="Имя" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
-                <input className="input input-bordered w-full" placeholder="Фамилия" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input className="input input-bordered w-full" type="number" placeholder="Возраст" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
-                <select className="select select-bordered w-full" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
-                  <option value="male">Мужской</option>
-                  <option value="female">Женский</option>
-                </select>
-              </div>
-              <PhoneInput className="input input-bordered w-full" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-              <input className="input input-bordered w-full" placeholder="Телефон родителя (необязательно)" value={form.parentPhone} onChange={(e) => setForm({ ...form, parentPhone: e.target.value })} />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Коины</label>
-                  <input className="input input-bordered w-full" type="number" min="0" value={form.coins} onChange={(e) => setForm({ ...form, coins: Number(e.target.value) })} />
-                </div>
-                <div className="flex items-end pb-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" className="checkbox checkbox-sm" checked={form.frozen} onChange={(e) => setForm({ ...form, frozen: e.target.checked })} />
-                    <span className="text-[13px] text-base-content">Заморожен</span>
-                  </label>
-                </div>
-              </div>
+      <Modal
+        isOpen={!!form}
+        onClose={() => setForm(null)}
+        title="Новый студент"
+        actions={
+          <div className="modal-action">
+            <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>
+            <button className="btn btn-primary" onClick={create} disabled={busy || !form?.firstName || !form?.lastName}>
+              {busy && <span className="loading loading-spinner loading-xs" />} Создать
+            </button>
+          </div>
+        }
+      >
+        {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-[12px] font-bold text-base-content/50 uppercase tracking-wider mb-2">Данные студента</h4>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <input className="input input-bordered w-full" placeholder="Имя" value={form?.firstName || ''} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+              <input className="input input-bordered w-full" placeholder="Фамилия" value={form?.lastName || ''} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
             </div>
-            <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>
-              <button className="btn btn-primary" onClick={create} disabled={busy || !form.firstName || !form.lastName}>
-                {busy && <span className="loading loading-spinner loading-xs" />} Создать
-              </button>
+            <div className="grid grid-cols-2 gap-3">
+              <PhoneInput className="input input-bordered w-full" value={form?.phone || ''} onChange={(v) => setForm({ ...form, phone: v })} />
+              <input className="input input-bordered w-full" type="date" placeholder="Дата рождения" value={form?.birthDate || ''} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
             </div>
           </div>
-          <div className="modal-backdrop" onClick={() => setForm(null)} />
-        </dialog>
-      )}
+
+          <div>
+            <h4 className="text-[12px] font-bold text-base-content/50 uppercase tracking-wider mb-2">Данные родителя (опционально)</h4>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <input className="input input-bordered w-full" placeholder="Имя родителя" value={form?.parentFirstName || ''} onChange={(e) => setForm({ ...form, parentFirstName: e.target.value })} />
+              <input className="input input-bordered w-full" placeholder="Фамилия родителя" value={form?.parentLastName || ''} onChange={(e) => setForm({ ...form, parentLastName: e.target.value })} />
+            </div>
+            <PhoneInput className="input input-bordered w-full" value={form?.parentPhone || ''} onChange={(v) => setForm({ ...form, parentPhone: v })} />
+          </div>
+        </div>
+      </Modal>
 
       <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="students" data={filteredRows} />
 
       {/* ═══ Credentials Modal ═══ */}
-      {creds && (
-        <dialog className="modal modal-open">
-          <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-2">Данные для входа</h3>
-            <p className="text-sm text-base-content/45 mb-4">Передайте студенту. Пароль показывается один раз.</p>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
-                <span className="text-[13px] text-base-content/70">Логин-код</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-[14px]">{creds.login_code || '—'}</span>
-                  {creds.login_code && (
-                    <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
-                      onClick={() => copyToClipboard(creds.login_code, 'login')}>
-                      {copied === 'login' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
-                <span className="text-[13px] text-base-content/70">Пароль</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-[14px]">{creds.password || '—'}</span>
-                  {creds.password && (
-                    <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
-                      onClick={() => copyToClipboard(creds.password, 'pass')}>
-                      {copied === 'pass' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="modal-action">
-              <button className="btn btn-primary" onClick={() => setCreds(null)}>Понятно</button>
+      <Modal
+        isOpen={!!creds}
+        onClose={() => setCreds(null)}
+        title="Данные для входа"
+        actions={
+          <div className="modal-action">
+            <button className="btn btn-primary" onClick={() => setCreds(null)}>Понятно</button>
+          </div>
+        }
+      >
+        <p className="text-sm text-base-content/45 mb-4">Передайте студенту. Пароль показывается один раз.</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
+            <span className="text-[13px] text-base-content/70">Логин-код</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold text-[14px]">{creds?.login_code || '—'}</span>
+              {creds?.login_code && (
+                <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
+                  onClick={() => copyToClipboard(creds.login_code, 'login')}>
+                  {copied === 'login' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
+                </button>
+              )}
             </div>
           </div>
-        </dialog>
-      )}
+          <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
+            <span className="text-[13px] text-base-content/70">Пароль</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold text-[14px]">{creds?.password || '—'}</span>
+              {creds?.password && (
+                <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
+                  onClick={() => copyToClipboard(creds.password, 'pass')}>
+                  {copied === 'pass' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

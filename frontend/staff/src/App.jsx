@@ -31,6 +31,7 @@ const AdminPayments = lazy(() => import('./pages/admin/Payments.jsx'));
 const AdminExpenses = lazy(() => import('./pages/admin/Expenses.jsx'));
 const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'));
 const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
+const AdminMentorDetail = lazy(() => import('./pages/admin/MentorDetail.jsx'));
 const AdminChat = lazy(() => import('./pages/admin/Chat.jsx'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings.jsx'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile.jsx'));
@@ -133,6 +134,7 @@ export default function App() {
           <Route path="/payments" element={<SW><AdminPayments /></SW>} />
           <Route path="/expenses" element={<SW><AdminExpenses /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
+          <Route path="/mentors/:id" element={<SW><AdminMentorDetail /></SW>} />
         </Route>
 
         {/* Super Admin routes */}
