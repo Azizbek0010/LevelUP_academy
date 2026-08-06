@@ -821,3 +821,72 @@
       tekshirildi — qayerda mutatsiya bo'lsa, o'sha yerda `invalidate()`/`invalidateQueries`/
       `refetch()` bor. Chat va Attendance (mentor) — sokat orqali live yangilanadi,
       alohida invalidatsiya kerak emas. Tuzatishga hojat topilmadi
+
+## 🆕 YANGI ROLLAR — Branch Manager + Finance Manager (2026-08-04, Karis og'zaki berdi)
+
+> ⚠️ Hozircha faqat REJALASHTIRISH — kod yozilmagan. Ikkalasi ham hozirgi 7 ta rolga
+> (main_admin/super_admin/admin/mentor/student/parent/methodist) qo'shiladigan YANGI rol.
+> **Karis o'zi 2026-08-04 aytdi: backend integratsiyani (DB migratsiya, `authorize`
+> middleware, RBAC) O'ZI qiladi — jamoadan FAQAT frontend (UI, mock-rejim bilan) kerak.**
+> Backend tomon `backend/src/middlewares/authorize.js`da: rol nomi `req.user.role` bilan
+> to'g'ridan-to'g'ri solishtiriladi, scope esa `else` shoxobchasida (org+branch, xuddi
+> admin'dek) — Branch Manager va Finance Manager ikkalasi ham shu naqshga tushadi,
+> Karis uchun bu kichik o'zgarish. Jamoa bemalol UI'ni mock data bilan boshlashi mumkin,
+> backend keyin ulanadi (xuddi boshqa panellar VITE_USE_MOCKS bilan qurilgani kabi).
+
+- [ ] ROLE-BRANCH 🔄 EGASI (frontend, jamoa): **Elyor, Said Islom, Kozim** (Karis
+      tayinladi, 2026-08-04 — Abduloh'dan bu uchoviga o'tkazildi).
+      Yangi rol — **Branch Manager** (Filial menejeri). Karis ta'rifi: "Admin'lar bilan bir
+      qatorda turadi, filialga TO'LIQ javobgar odam — Admin'dan KO'PROQ ma'lumotga ega
+      bo'ladi". Ya'ni Branch Manager ⊃ Admin (kengroq), Admin'dan esa 1-2 narsa OLIB
+      TASHLANADI (qaysi huquq/sahifa — Karis hali aniq aytmadi).
+      **BU UCHOVNING ISHI — aniq QANCHA va NIMA ko'rinishini HAL QILISH** (Karis: "shuni
+      hal qilishi kerak"): Admin panelidagi (`frontend/staff/src/pages/admin/`) qaysi
+      sahifa/ma'lumot Branch Manager'da QO'SHIMCHA ko'rinadi (masalan: boshqa filiallar bilan
+      solishtirish, filial darajasidagi to'liqroq moliyaviy ko'rinish, xodimlar bo'yicha
+      kengroq hisobot — aniq ro'yxat SHU UCHOVDAN chiqishi kerak, keyin Karis bilan
+      tasdiqlanadi), va Admin'dan aynan NIMA olib tashlanishi kerak.
+      Amaliy boshlanish nuqtasi: Admin panelining nusxasini olib (`pages/admin/*` —
+      Dashboard/Students/Groups/Mentors/Payments/Reports/Expenses), yangi `pages/branch/`
+      papkasida Branch Manager variantini qurish, farqlarni taklif sifatida yozib qo'yish.
+      Mock-rejimda ishlang — backend Karis'da.
+
+- [ ] ROLE-RENAME-SUPERADMIN 🔄 EGASI: tasdiqlanmagan. "Super Admin" nomini
+      **CEO**ga o'zgartirish (taxmin — Karis og'zaki xabarida "SEO" deb yozilgan/eshitilgan,
+      lekin SEO — qidiruv-optimallashtirish, bu yerga umuman mos emas; "CEO" mantiqan to'g'ri
+      keladi, chunki Super Admin = hamkor tashkilot egasi). **Karis tasdiqlashi kerak: CEO
+      to'g'rimi, yoki chindan boshqa nom nazarda tutilgan edi?**
+      Faqat KO'RINADIGAN nom (UI matni) o'zgaradi — huquqlar (Full) va kod darajasidagi
+      `role: 'super_admin'` qiymati o'zgarmaydi (backward-compat uchun xavfli/keraksiz).
+
+- [ ] ROLE-FINANCE 🔄 EGASI (frontend, jamoa): **Shohjahon, Aziz, Alish** (Karis
+      tayinladi, 2026-08-04). Yangi rol — **Finance Manager** (Finans menejeri). Karis
+      ta'rifi: daromad, rashod, xodimlar oyligi va boshqa BARCHA xarajatlarni kuzatadi.
+      Scope hali aniqlanmagan (butun tashkilotmi — super_admin darajasida, yoki filial —
+      admin darajasida?) — bu ham jamoa taklifi bilan Karis'ga qaytishi kerak.
+      Boshlanish nuqtasi: mavjud moliyaviy sahifalarni ko'rib chiqish —
+      `admin/Expenses.jsx`, `admin/Reports.jsx`, `super/Reports.jsx`, `main/Revenue.jsx`,
+      `main/Billing.jsx` (oylik/xodim xarajati hali alohida sahifa sifatida YO'Q — buni
+      ham shu jamoa loyihalashi kerak). Mock-rejimda, yangi `pages/finance/` papkasida.
+
+## 🆕 STUDENT — chat kabinetga qo'shiladi (2026-08-04, Karis)
+
+> ⚠️ **DIQQAT — ehtimoliy to'qnashuv:** shu kunning o'zida bu ish OpenCode (avtomat agent)
+> orqali ALLAQACHON boshlangan edi — `frontend/member/src/student/api.js` ga mock chat
+> hisob-kitobi (`mockChatAppend`, `chatThreads`/`chatMessages`/`chatMarkRead`) yozib
+> ulgurgan, `student/pages/Chat.jsx` yozishga tayyorlangan edi. Karis to'xtatishni
+> so'ragan edi, lekin tool chaqiruvi RAD ETILDI — ya'ni OpenCode sessiyasi hali ham
+> shu faylni yozib turgan yoki yozib bo'lgan bo'lishi mumkin. **Sardor va Odil
+> boshlashdan OLDIN albatta tekshirsin: `frontend/member/src/student/` papkasida
+> `Chat.jsx`/`api.js` allaqachon bormi — bo'lsa, NOLDAN yozmasdan O'SHANI ko'rib
+> chiqib davom ettirsin, aks holda ikki xil chat ustma-ust qurilib chiqadi.**
+
+- [ ] STUDENT-CHAT 🔄 EGASI: **Sardor, Odil** (Karis tayinladi, 2026-08-04). Hozircha
+      Student kabineti (`frontend/member/src/student/`, roulari `/student /lessons /tests
+      /homework /videos /shop /leaderboard`)da chat sahifasi UMUMAN yo'q edi — faqat
+      Parent'da bor (`member/src/pages/Chat.jsx`, `roomKey = parent:${user.id}`).
+      Namuna: `frontend/staff/components/StaffChat.jsx` (variant bilan mentor/admin
+      ikkalasiga xizmat qiladi) va yuqoridagi Parent Chat.jsx — bir xil naqsh, roomKey/rol
+      farqi bilan. Backend tomon (`backend/src/sockets/chat.js`, `modules/chat`) allaqachon
+      tayyor, student→mentor yo'nalishi ham (`AB-VERIFY` yozuviga qara yuqorida) ishlaydi —
+      demak bu asosan FRONTEND ish, mock kerak emas, real socket bilan qurilishi mumkin.
