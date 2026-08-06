@@ -95,14 +95,11 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
         </div>
         <div className="text-right">
           <div className="text-[10px] font-bold text-base-content/45 uppercase tracking-wider">Оплачено</div>
-          <div className="text-[14px] font-bold tabular-nums" style={{ color: paidPercent >= 100 ? '#2ECC71' : 'var(--text)' }}>{money(paid)}</div>
+          <div className="text-[14px] font-bold tabular-nums text-success">{money(paid)}</div>
         </div>
       </div>
       <div className="w-full h-1.5 rounded-full bg-base-100 mb-3 overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500" style={{
-          width: `${paidPercent}%`,
-          background: paidPercent >= 100 ? '#2ECC71' : paidPercent > 0 ? '#F59E0B' : 'var(--border)',
-        }} />
+        <div className="h-full rounded-full transition-all duration-500 bg-warning" style={{ width: `${paidPercent}%` }} />
       </div>
       <div className="flex items-center justify-between">
         <button className="flex items-center gap-1 text-[11px] text-base-content/45 hover:text-secondary transition-colors"
@@ -114,8 +111,7 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
             <Clock size={10} /> {dateShort(inv.dueDate || inv.due_date)}
           </span>
           {inv.status !== 'paid' && inv.status !== 'cancelled' && (
-            <button className="h-7 px-3 rounded-[8px] flex items-center gap-1 text-[11px] font-bold text-white transition-all hover:opacity-90 active:scale-95"
-              style={{ background: 'var(--primary)' }} onClick={() => onPay(inv)}>
+            <button className="btn btn-primary btn-sm gap-1 h-7 px-3" onClick={() => onPay(inv)}>
               <Wallet size={12} /> {remaining > 0 ? money(remaining) : 'Оплатить'}
             </button>
           )}
@@ -509,7 +505,7 @@ export default function AdminPayments() {
                       value={studentSearch} onChange={(e) => setStudentSearch(e.target.value)}
                       autoFocus />
                     {studentSearch && filteredStudents.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-[10px] border border-base-300 shadow-lg z-50" style={{ background: 'var(--surface)' }}>
+                      <div className="popover-surface absolute top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-[10px] border border-base-300 shadow-lg z-50">
                         {filteredStudents.map((s) => (
                           <button key={s.id} type="button"
                             className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-base-200 transition-colors border-b border-base-300 last:border-0"

@@ -22,6 +22,12 @@ const SuperAudit = lazy(() => import('./pages/super/Audit.jsx'));
 const SuperDiscipline = lazy(() => import('./pages/super/Discipline.jsx'));
 const SuperAttendance = lazy(() => import('./pages/super/Attendance.jsx'));
 
+const BranchManagerDashboard = lazy(() => import('./pages/admin/branch-manager/Dashboard.jsx'));
+const BranchManagerIncome = lazy(() => import('./pages/admin/branch-manager/Income.jsx'));
+const BranchManagerExpenses = lazy(() => import('./pages/admin/branch-manager/Expenses.jsx'));
+const BranchManagerReports = lazy(() => import('./pages/admin/branch-manager/Reports.jsx'));
+const BranchManagerBranch = lazy(() => import('./pages/admin/branch-manager/Branch.jsx'));
+
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
 const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
 const AdminGroups = lazy(() => import('./pages/admin/Groups.jsx'));
@@ -63,6 +69,7 @@ function DashboardRedirect() {
   const role = user?.role;
   if (role === 'superadmin') return <SuperDashboard />;
   if (role === 'admin') return <AdminDashboard />;
+  if (role === 'branch_manager') return <BranchManagerDashboard />;
   if (role === 'mentor') return <MentorDashboard />;
   if (role === 'methodist') return <MethodistDashboard />;
   return <AdminDashboard />;
@@ -111,7 +118,7 @@ export default function App() {
             тот же путь обслуживает и ментора — RoleView так же не пускает
             чужие роли (уводит на «/»), поэтому доступ админа не расширился. */}
         <Route path="/groups/:id" element={<SW><RoleView views={{ admin: AdminGroupDetail, mentor: MentorGroupWorkspace }} /></SW>} />
-        <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReportsRedirect, admin: AdminReports }} /></SW>} />
+        <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReportsRedirect, admin: AdminReports, branch_manager: BranchManagerReports }} /></SW>} />
         <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
         <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile, mentor: MentorProfile, methodist: MethodistProfile }} /></SW>} />
         <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: () => <MentorLegacyRedirect tab="davomat" /> }} /></SW>} />
@@ -129,8 +136,15 @@ export default function App() {
 
         <Route element={<RoleGuard allow={['admin']} />}>
           <Route path="/payments" element={<SW><AdminPayments /></SW>} />
-          <Route path="/expenses" element={<SW><AdminExpenses /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
+        </Route>
+        {/* Расходы — общий путь для админа и branch manager (RoleView разбирает) */}
+        <Route path="/expenses" element={<SW><RoleView views={{ admin: AdminExpenses, branch_manager: BranchManagerExpenses }} /></SW>} />
+
+        {/* Branch Manager routes — static demo (backend rol hali yo'q) */}
+        <Route element={<RoleGuard allow={['branch_manager']} />}>
+          <Route path="/income" element={<SW><BranchManagerIncome /></SW>} />
+          <Route path="/branch" element={<SW><BranchManagerBranch /></SW>} />
         </Route>
 
         {/* Super Admin routes */}
