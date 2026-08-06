@@ -54,15 +54,27 @@ export const listStudents = asyncHandler(async (req, res) => {
   res.json(await service.listStudents(orgId(req), { search, frozen, page, limit }));
 });
 
+export const studentsStats = asyncHandler(async (req, res) => {
+  res.json(await service.studentsStats(orgId(req), req.query.period, req.query.branchId));
+});
+
 export const deleteStudent = asyncHandler(async (req, res) => {
   const result = await service.deleteStudent(orgId(req), req.params.id);
   await audit(req, { action: 'student.delete', entityType: 'student', entityId: req.params.id });
   res.json(result);
 });
 
+export const studentDetail = asyncHandler(async (req, res) => {
+  res.json({ student: await service.studentDetail(orgId(req), req.params.id) });
+});
+
 // --- группы организации (Super Groups) ---
 export const listGroups = asyncHandler(async (req, res) => {
   res.json(await service.listGroups(orgId(req)));
+});
+
+export const groupDetail = asyncHandler(async (req, res) => {
+  res.json({ group: await service.groupDetail(orgId(req), req.params.id) });
 });
 export const archiveGroup = asyncHandler(async (req, res) => {
   const group = await service.setGroupArchived(orgId(req), req.params.id, true);
@@ -115,7 +127,7 @@ export const listAudit = asyncHandler(async (req, res) => {
 
 // --- статистика / отчёты ---
 export const stats = asyncHandler(async (req, res) => {
-  res.json(await service.stats(orgId(req), req.query.period));
+  res.json(await service.stats(orgId(req), req.query.period, req.query.branchId));
 });
 
 // --- филиалы ---
@@ -265,4 +277,37 @@ export const resetMethodistPassword = asyncHandler(async (req, res) => {
     entityLabel: `${methodist.firstName} ${methodist.lastName}`,
   });
   res.json({ methodist });
+});
+
+// --- branch managers ---
+
+export const createBranchManager = asyncHandler(async (req, res) => {
+  const manager = await service.createBranchManager(orgId(req), req.body);
+  await audit(req, {
+    action: 'branch_manager.create',
+    entityType: 'branch_manager',
+    entityId: manager.id,
+    entityLabel: `${manager.firstName} ${manager.lastName}`,
+  });
+  res.status(201).json({ manager });
+});
+
+export const listBranchManagers = asyncHandler(async (req, res) => {
+  res.json({ managers: await service.listBranchManagers(orgId(req)) });
+});
+
+// --- методики / цена абонемента ---
+export const listTrainingTypes = asyncHandler(async (req, res) => {
+  res.json({ trainingTypes: await service.listTrainingTypes(orgId(req)) });
+});
+
+export const setTrainingTypePrice = asyncHandler(async (req, res) => {
+  const trainingType = await service.setTrainingTypePrice(orgId(req), req.params.id, req.body.price);
+  await audit(req, {
+    action: 'training_type.set_price',
+    entityType: 'training_type',
+    entityId: trainingType.id,
+    entityLabel: trainingType.name,
+  });
+  res.json({ trainingType });
 });

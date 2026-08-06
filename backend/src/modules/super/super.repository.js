@@ -275,26 +275,32 @@ export function setAdminStatus(id, orgId, status, client = pool) {
 
 // ---------- дашборд организации ----------
 
-export function orgTotals(orgId, client = pool) {
+/** `branchId` — сузить те же итоги до одного филиала, без него организация целиком
+ * (Статистика: переключатель «все филиалы / конкретный филиал» на одних и тех же виджетах). */
+export function orgTotals(orgId, branchId = null, client = pool) {
   return client
     .query(
       `SELECT
          (SELECT count(*) FROM branches
-            WHERE organization_id = $1 AND deleted_at IS NULL) AS branches,
+            WHERE organization_id = $1 AND deleted_at IS NULL
+              AND ($2::uuid IS NULL OR id = $2)) AS branches,
          (SELECT count(*) FROM users
             WHERE organization_id = $1 AND role = 'student'
-              AND status = 'active' AND deleted_at IS NULL) AS active_students,
+              AND status = 'active' AND deleted_at IS NULL
+              AND ($2::uuid IS NULL OR branch_id = $2)) AS active_students,
          (SELECT count(*) FROM users
-            WHERE organization_id = $1 AND role = 'admin' AND deleted_at IS NULL) AS admins,
+            WHERE organization_id = $1 AND role = 'admin' AND deleted_at IS NULL
+              AND ($2::uuid IS NULL OR branch_id = $2)) AS admins,
          (SELECT count(*) FROM users
-            WHERE organization_id = $1 AND role = 'mentor' AND deleted_at IS NULL) AS mentors,
+            WHERE organization_id = $1 AND role = 'mentor' AND deleted_at IS NULL
+              AND ($2::uuid IS NULL OR branch_id = $2)) AS mentors,
          (SELECT COALESCE(SUM(i.paid_amount), 0) FROM invoices i
             JOIN branches b ON b.id = i.branch_id
-           WHERE b.organization_id = $1) AS revenue,
+           WHERE b.organization_id = $1 AND ($2::uuid IS NULL OR b.id = $2)) AS revenue,
          (SELECT COALESCE(SUM(sp.total_debt), 0) FROM student_profiles sp
             JOIN branches b ON b.id = sp.branch_id
-           WHERE b.organization_id = $1) AS outstanding_debt`,
-      [orgId],
+           WHERE b.organization_id = $1 AND ($2::uuid IS NULL OR b.id = $2)) AS outstanding_debt`,
+      [orgId, branchId],
     )
     .then((r) => r.rows[0]);
 }
@@ -392,9 +398,39 @@ export function listMethodists(orgId, client = pool) {
   return client
     .query(
       `SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.phone, u.created_at,
-              u.monthly_salary
+               u.monthly_salary
+          FROM users u
+         WHERE u.organization_id = $1 AND u.role = 'methodist' AND u.deleted_at IS NULL
+         ORDER BY u.created_at DESC`,
+      [orgId],
+    )
+    .then((r) => r.rows);
+}
+
+// ---------- branch managers ----------
+
+export function insertBranchManager(
+  { orgId, branchId, firstName, lastName, email, phone, passwordHash },
+  client = pool,
+) {
+  return client
+    .query(
+      `INSERT INTO users (organization_id, branch_id, role, first_name, last_name, email, phone, password_hash)
+       VALUES ($1, $2, 'branch_manager', $3, $4, $5, $6, $7)
+       RETURNING id, role, organization_id, branch_id, first_name, last_name, email`,
+      [orgId, branchId, firstName, lastName, email, phone ?? null, passwordHash],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function listBranchManagers(orgId, client = pool) {
+  return client
+    .query(
+      `SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.created_at,
+               u.branch_id, b.name AS branch_name, u.phone
          FROM users u
-        WHERE u.organization_id = $1 AND u.role = 'methodist' AND u.deleted_at IS NULL
+         JOIN branches b ON b.id = u.branch_id
+        WHERE u.organization_id = $1 AND u.role = 'branch_manager' AND u.deleted_at IS NULL
         ORDER BY u.created_at DESC`,
       [orgId],
     )
@@ -533,6 +569,40 @@ export async function listOrgStudents(orgId, { search, frozen, page, limit }, cl
   return { rows: rows.rows, total: cnt.rows[0].n };
 }
 
+/** Сколько учеников заведено за месяц — для «Студенты: динамика набора» (period=12m).
+ * По `created_at` самого users, не student_profiles: профиль создаётся в той же
+ * транзакции, что и сам пользователь, дата не разъедется. */
+export function newStudentsSeriesMonthly(orgId, fromDate, branchId = null, client = pool) {
+  return client
+    .query(
+      `SELECT date_trunc('month', u.created_at)::date AS month, count(*)::int AS cnt
+         FROM users u
+        WHERE u.organization_id = $1 AND u.role = 'student' AND u.deleted_at IS NULL
+          AND u.created_at >= $2
+          AND ($3::uuid IS NULL OR u.branch_id = $3)
+        GROUP BY month
+        ORDER BY month`,
+      [orgId, fromDate, branchId],
+    )
+    .then((r) => r.rows);
+}
+
+/** То же самое по дням — для 7d/30d/90d, тот же принцип, что и у revenueSeries. */
+export function newStudentsSeriesDaily(orgId, fromDate, branchId = null, client = pool) {
+  return client
+    .query(
+      `SELECT date_trunc('day', u.created_at)::date AS day, count(*)::int AS cnt
+         FROM users u
+        WHERE u.organization_id = $1 AND u.role = 'student' AND u.deleted_at IS NULL
+          AND u.created_at >= $2
+          AND ($3::uuid IS NULL OR u.branch_id = $3)
+        GROUP BY day
+        ORDER BY day`,
+      [orgId, fromDate, branchId],
+    )
+    .then((r) => r.rows);
+}
+
 export function softDeleteOrgStudent(id, orgId, client = pool) {
   return client
     .query(
@@ -542,6 +612,43 @@ export function softDeleteOrgStudent(id, orgId, client = pool) {
       [id, orgId],
     )
     .then((r) => r.rows[0] ?? null);
+}
+
+export function findStudentInOrg(id, orgId, client = pool) {
+  return client
+    .query(
+      `SELECT u.id, u.first_name, u.last_name, u.phone, u.status, u.login_code, u.created_at,
+              sp.coin_balance, sp.total_debt, sp.parent_id, sp.birth_date,
+              sp.frozen_at, sp.frozen_reason, b.name AS branch_name,
+              EXISTS (
+                SELECT 1 FROM invoices i
+                 WHERE i.student_id = u.id AND i.status = 'overdue' AND i.deleted_at IS NULL
+              ) AS has_overdue_invoice
+         FROM users u
+         JOIN student_profiles sp ON sp.user_id = u.id
+         LEFT JOIN branches b ON b.id = u.branch_id
+        WHERE u.id = $1 AND u.organization_id = $2 AND u.role = 'student' AND u.deleted_at IS NULL`,
+      [id, orgId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/** Активные группы ученика — тот же запрос, что и у Admin (studentGroups в
+ * admin.repository.js), продублирован здесь: у него нет branch/org-скоупа
+ * (id ученика уже проверен в findStudentInOrg), а модуль владеет своим repo. */
+export function studentGroupsOrg(studentId, client = pool) {
+  return client
+    .query(
+      `SELECT g.id, g.name, g.subject, g.monthly_price,
+              m.first_name AS mentor_first, m.last_name AS mentor_last
+         FROM group_students gs
+         JOIN groups g ON g.id = gs.group_id
+         LEFT JOIN users m ON m.id = g.mentor_id
+        WHERE gs.student_id = $1 AND gs.left_at IS NULL AND g.deleted_at IS NULL
+        ORDER BY g.name`,
+      [studentId],
+    )
+    .then((r) => r.rows);
 }
 
 // ---------- группы организации (Super Groups страница) ----------
@@ -589,6 +696,38 @@ export function softDeleteOrgGroup(id, orgId, client = pool) {
       [id, orgId],
     )
     .then((r) => r.rows[0] ?? null);
+}
+
+export function findGroupInOrg(id, orgId, client = pool) {
+  return client
+    .query(
+      `SELECT g.id, g.name, g.subject, g.monthly_price, g.schedule, g.room,
+              g.is_archived, g.created_at, g.mentor_id, b.name AS branch_name,
+              m.first_name AS mentor_first, m.last_name AS mentor_last
+         FROM groups g
+         JOIN branches b ON b.id = g.branch_id
+         LEFT JOIN users m ON m.id = g.mentor_id
+        WHERE g.id = $1 AND b.organization_id = $2 AND g.deleted_at IS NULL`,
+      [id, orgId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/** Состав группы — тот же запрос, что и groupStudents в admin.repository.js
+ * (id группы уже проверен в findGroupInOrg, branch/org-скоуп здесь не нужен). */
+export function groupStudentsOrg(groupId, client = pool) {
+  return client
+    .query(
+      `SELECT u.id, u.first_name, u.last_name, u.phone, u.status,
+              sp.total_debt, sp.coin_balance, gs.joined_at
+         FROM group_students gs
+         JOIN users u ON u.id = gs.student_id
+         JOIN student_profiles sp ON sp.user_id = u.id
+        WHERE gs.group_id = $1 AND gs.left_at IS NULL AND u.deleted_at IS NULL
+        ORDER BY u.first_name`,
+      [groupId],
+    )
+    .then((r) => r.rows);
 }
 
 // ---------- объявления организации (Super Announcements) ----------
@@ -710,7 +849,7 @@ export function listAudit(orgId, limit = 200, client = pool) {
 // ---------- статистика организации (Super Stats) ----------
 
 /** Выручка по дням за период (из завершённых транзакций филиалов орг). */
-export function revenueSeries(orgId, fromDate, client = pool) {
+export function revenueSeries(orgId, fromDate, branchId = null, client = pool) {
   return client
     .query(
       `SELECT date_trunc('day', t.created_at)::date AS day,
@@ -719,15 +858,35 @@ export function revenueSeries(orgId, fromDate, client = pool) {
          JOIN branches b ON b.id = t.branch_id
         WHERE b.organization_id = $1 AND t.status = 'completed'
           AND t.created_at >= $2
+          AND ($3::uuid IS NULL OR b.id = $3)
         GROUP BY day
         ORDER BY day`,
-      [orgId, fromDate],
+      [orgId, fromDate, branchId],
+    )
+    .then((r) => r.rows);
+}
+
+/** Тот же ряд, но по месяцам — для «Статистики» за 12 месяцев (period=12m):
+ * день-в-день график на год растягивался бы в нечитаемую гребёнку. */
+export function revenueSeriesMonthly(orgId, fromDate, branchId = null, client = pool) {
+  return client
+    .query(
+      `SELECT date_trunc('month', t.created_at)::date AS month,
+              COALESCE(SUM(t.amount), 0) AS revenue
+         FROM transactions t
+         JOIN branches b ON b.id = t.branch_id
+        WHERE b.organization_id = $1 AND t.status = 'completed'
+          AND t.created_at >= $2
+          AND ($3::uuid IS NULL OR b.id = $3)
+        GROUP BY month
+        ORDER BY month`,
+      [orgId, fromDate, branchId],
     )
     .then((r) => r.rows);
 }
 
 /** Разбивка выручки по способу оплаты (за период). */
-export function revenueByMethod(orgId, fromDate, client = pool) {
+export function revenueByMethod(orgId, fromDate, branchId = null, client = pool) {
   return client
     .query(
       `SELECT t.method, COALESCE(SUM(t.amount), 0) AS amount
@@ -735,8 +894,9 @@ export function revenueByMethod(orgId, fromDate, client = pool) {
          JOIN branches b ON b.id = t.branch_id
         WHERE b.organization_id = $1 AND t.status = 'completed'
           AND t.created_at >= $2
+          AND ($3::uuid IS NULL OR b.id = $3)
         GROUP BY t.method`,
-      [orgId, fromDate],
+      [orgId, fromDate, branchId],
     )
     .then((r) => r.rows);
 }
@@ -763,4 +923,33 @@ export function orgAttendance(orgId, { groupId, date }, client = pool) {
       vals,
     )
     .then((r) => r.rows);
+}
+
+// ---------- методики / цены абонемента (Super Settings — цена ставится один раз на методику) ----------
+
+/** Методики организации с ценой и числом групп, которые её уже используют —
+ * чтобы Super Admin видел, скольких абонемент затронет при смене цены. */
+export function listTrainingTypesWithPrice(orgId, client = pool) {
+  return client
+    .query(
+      `SELECT tt.id, tt.name, tt.icon, tt.price, tt.is_archived,
+              (SELECT count(*)::int FROM groups g
+                 WHERE g.training_type_id = tt.id AND g.deleted_at IS NULL) AS groups_count
+         FROM training_types tt
+        WHERE tt.organization_id = $1 AND tt.deleted_at IS NULL
+        ORDER BY tt.sort_order ASC, tt.created_at DESC`,
+      [orgId],
+    )
+    .then((r) => r.rows);
+}
+
+export function setTrainingTypePrice(id, orgId, price, client = pool) {
+  return client
+    .query(
+      `UPDATE training_types SET price = $3, updated_at = now()
+        WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL
+        RETURNING id, name, icon, price`,
+      [id, orgId, price],
+    )
+    .then((r) => r.rows[0] ?? null);
 }

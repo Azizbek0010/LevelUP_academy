@@ -40,7 +40,7 @@ const readRefreshCookie = (req) => readCookie(req, REFRESH_COOKIE);
 //   member → student, parent (вход по логин-коду)
 const ROLE_GROUPS = {
   main: ['main_admin'],
-  staff: ['admin', 'superadmin', 'mentor', 'methodist'],
+  staff: ['admin', 'superadmin', 'mentor', 'methodist', 'branch_manager'],
   member: ['student', 'parent'],
 };
 

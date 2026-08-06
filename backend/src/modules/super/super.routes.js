@@ -983,6 +983,70 @@ router.post('/admins/:id/reset-password', validate({ params: idParam }), ctrl.re
 router.post('/methodists', validate({ body: createMethodistSchema }), ctrl.createMethodist);
 router.get('/methodists', ctrl.listMethodists);
 
+// --- branch managers ---
+
+/**
+ * @openapi
+ * /api/super/branch-managers:
+ *   post:
+ *     tags: [Super Admin]
+ *     summary: Create a branch manager assigned to one of the organization's branches
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/CreateBranchManagerRequest' }
+ *     responses:
+ *       201:
+ *         description: Branch manager created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties: { manager: { $ref: '#/components/schemas/BranchManagerSummary' } }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Branch not found in your organization
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       409:
+ *         description: Email already in use
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ *   get:
+ *     tags: [Super Admin]
+ *     summary: List branch managers of the organization
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: List of branch managers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 managers:
+ *                   type: array
+ *                   items:
+ *                     allOf:
+ *                       - { $ref: '#/components/schemas/BranchManagerSummary' }
+ *                       - type: object
+ *                         properties:
+ *                           branchName: { type: string }
+ *                           createdAt: { type: string, format: date-time }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.post('/branch-managers', validate({ body: createBranchManagerSchema }), ctrl.createBranchManager);
+router.get('/branch-managers', ctrl.listBranchManagers);
+
+// --- методики / цена абонемента ---
+
 /**
  * @openapi
  * /api/super/mentors:

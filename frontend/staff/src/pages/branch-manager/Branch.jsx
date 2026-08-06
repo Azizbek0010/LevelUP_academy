@@ -2,10 +2,10 @@ import {
   MapPin, Phone, Mail, Clock, Building2, User as UserIcon,
   ExternalLink, Navigation, CalendarDays, Landmark,
 } from 'lucide-react';
-import { fmt, money } from '../../../format.js';
-import PageHeader from '../../../components/PageHeader.jsx';
-import { Panel } from '../../mentor/_ui.jsx';
-import { BRANCH } from './_data.js';
+import { fmt, money } from '../../format.js';
+import PageHeader from '../../components/PageHeader.jsx';
+import { Panel } from '../mentor/_ui.jsx';
+import { useBranchManagerInfo } from '../../queries.js';
 
 function InfoRow({ Icon, label, value, href }) {
   const inner = (
@@ -35,11 +35,18 @@ function InfoRow({ Icon, label, value, href }) {
 }
 
 export default function BranchManagerBranch() {
-  const s = BRANCH.stats;
+  const { data, isLoading, error } = useBranchManagerInfo();
+  const branch = data?.branch;
+
+  if (isLoading) return <div className="p-8 text-center text-base-content/45">Yuklanmoqda...</div>;
+  if (error) return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
+  if (!branch) return <div className="p-8 text-center text-base-content/45">Ma'lumot topilmadi</div>;
+
+  const s = branch.stats;
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title="Filial" subtitle={`${BRANCH.name} · joylashuv va kontaktlar`} />
+      <PageHeader title="Filial" subtitle={`${branch.name} · joylashuv va kontaktlar`} />
 
       {/* ── Bosh karta ── */}
       <Panel title="Filial haqida" icon={Building2} bodyClass="p-5">
@@ -49,9 +56,9 @@ export default function BranchManagerBranch() {
               <Landmark size={22} />
             </span>
             <div>
-              <h3 className="text-lg font-extrabold text-base-content">{BRANCH.name}</h3>
+              <h3 className="text-lg font-extrabold text-base-content">{branch.name}</h3>
               <p className="text-[12px] text-base-content/50">
-                {BRANCH.founded} dan beri ishlaydi
+                {branch.founded} dan beri ishlaydi
               </p>
             </div>
           </div>
@@ -96,7 +103,7 @@ export default function BranchManagerBranch() {
               <Navigation size={20} />
             </span>
             <span className="absolute bottom-3 left-3 text-[11px] font-semibold text-base-content/60 bg-base-100/90 backdrop-blur rounded-lg px-2.5 py-1.5">
-              {BRANCH.coords}
+              {branch.coords}
             </span>
           </div>
 
@@ -104,25 +111,25 @@ export default function BranchManagerBranch() {
             <InfoRow
               Icon={MapPin}
               label="Manzil"
-              value={BRANCH.address}
-              href={BRANCH.mapUrl}
+              value={branch.address}
+              href={branch.mapUrl}
             />
             <InfoRow
               Icon={Phone}
               label="Telefon"
-              value={BRANCH.phone}
+              value={branch.phone}
               href={`tel:${BRANCH.phone.replace(/\s/g, '')}`}
             />
-            <InfoRow Icon={Clock} label="Ish vaqti" value={BRANCH.workHours} />
-            <InfoRow Icon={CalendarDays} label="Ochilgan" value={BRANCH.founded} />
+            <InfoRow Icon={Clock} label="Ish vaqti" value={branch.workHours} />
+            <InfoRow Icon={CalendarDays} label="Ochilgan" value={branch.founded} />
           </div>
         </Panel>
 
         {/* ── Kontaktlar va rahbar ── */}
         <Panel title="Kontaktlar" icon={Building2} bodyClass="p-5">
           <div className="space-y-1">
-            <InfoRow Icon={Mail} label="Email" value={BRANCH.email} href={`mailto:${BRANCH.email}`} />
-            <InfoRow Icon={Phone} label="Telegram" value={BRANCH.telegram} href="https://t.me" />
+            <InfoRow Icon={Mail} label="Email" value={branch.email} href={`mailto:${branch.email}`} />
+            <InfoRow Icon={Phone} label="Telegram" value={branch.telegram} href="https://t.me" />
           </div>
 
           <div className="mt-5 pt-5 border-t border-base-200">
@@ -131,12 +138,12 @@ export default function BranchManagerBranch() {
             </h4>
             <div className="flex items-center gap-3 rounded-xl border border-base-200 p-4">
               <span className="w-11 h-11 rounded-full grid place-items-center bg-primary/15 text-primary font-bold text-base shrink-0">
-                {BRANCH.manager.firstName[0]}
-                {BRANCH.manager.lastName[0]}
+                {branch.manager.firstName[0]}
+                {branch.manager.lastName[0]}
               </span>
               <div className="min-w-0">
                 <div className="text-[14px] font-bold text-base-content truncate">
-                  {BRANCH.manager.firstName} {BRANCH.manager.lastName}
+                  {branch.manager.firstName} {branch.manager.lastName}
                 </div>
                 <div className="text-[12px] text-base-content/50 flex items-center gap-1">
                   <UserIcon size={12} /> Branch Manager
@@ -146,7 +153,7 @@ export default function BranchManagerBranch() {
                 href={`tel:${BRANCH.manager.phone.replace(/\s/g, '')}`}
                 className="btn btn-ghost btn-xs text-primary gap-1 ml-auto shrink-0"
               >
-                <Phone size={13} /> {BRANCH.manager.phone}
+                <Phone size={13} /> {branch.manager.phone}
               </a>
             </div>
           </div>
