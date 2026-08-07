@@ -46,3 +46,14 @@ export function attendanceStatus() {
 
 // Совместимость: некоторые места зовут ATTENDANCE_STATUS[s] — теперь это функция.
 export const ATTENDANCE_STATUS = attendanceStatus;
+
+/**
+ * Процент результата по оценке.
+ * ДЗ: score — набранные баллы, maxScore — максимум (обычно 100).
+ * Тест: backend хранит score КАК ПРОЦЕНТ (0–100), maxScore = число вопросов,
+ * поэтому делить нельзя — иначе 80/10*100 = 800%.
+ */
+export function gradePercent(score, maxScore, type) {
+  if (type === 'test') return Number(score ?? 0);
+  return maxScore > 0 ? Math.round((Number(score ?? 0) / Number(maxScore)) * 100) : 0;
+}

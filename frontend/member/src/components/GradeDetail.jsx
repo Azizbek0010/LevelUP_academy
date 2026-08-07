@@ -1,5 +1,5 @@
 import { useHomeworkDetail, useTestDetail } from '../queries.js';
-import { dateShort } from '../format.js';
+import { dateShort, gradePercent } from '../format.js';
 import Icon from './Icons.jsx';
 import { ProgressBar } from './ui.jsx';
 import { useI18n } from '../i18n.jsx';
@@ -14,7 +14,7 @@ function Loading() {
 
 function HomeworkDetail({ data }) {
   const { t } = useI18n();
-  const pct = data.maxScore > 0 ? Math.round((data.score / data.maxScore) * 100) : 0;
+  const pct = gradePercent(data.score, data.maxScore, 'hw');
   const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
 
   return (
@@ -26,18 +26,22 @@ function HomeworkDetail({ data }) {
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-bold">{data.title}</h3>
           <p className="text-sm opacity-50 flex items-center gap-2 mt-0.5">
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: 'rgba(59,130,246,.1)', color: '#3b82f6' }}>
-              {data.groupName}
-            </span>
+            {data.groupName && (
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: 'rgba(59,130,246,.1)', color: '#3b82f6' }}>
+                {data.groupName}
+              </span>
+            )}
             <span>{dateShort(data.gradedAt)}</span>
           </p>
         </div>
       </div>
 
-      <div className="bg-base-200/50 rounded-xl p-4">
-        <p className="text-xs font-semibold opacity-50 mb-1">{t('gd.taskCondition')}</p>
-        <p className="text-sm leading-relaxed">{data.description}</p>
-      </div>
+      {data.description && (
+        <div className="bg-base-200/50 rounded-xl p-4">
+          <p className="text-xs font-semibold opacity-50 mb-1">{t('gd.taskCondition')}</p>
+          <p className="text-sm leading-relaxed">{data.description}</p>
+        </div>
+      )}
 
       <div className="flex items-center gap-4">
         <div className="flex-1">
@@ -105,7 +109,7 @@ function HomeworkDetail({ data }) {
 
 function TestDetail({ data }) {
   const { t } = useI18n();
-  const pct = data.maxScore > 0 ? Math.round((data.score / data.maxScore) * 100) : 0;
+  const pct = gradePercent(data.score, data.maxScore, 'test');
   const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
 
   return (
@@ -117,34 +121,38 @@ function TestDetail({ data }) {
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-bold">{data.title}</h3>
           <p className="text-sm opacity-50 flex items-center gap-2 mt-0.5">
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: 'rgba(168,85,247,.1)', color: '#a855f7' }}>
-              {data.groupName}
-            </span>
+            {data.groupName && (
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: 'rgba(168,85,247,.1)', color: '#a855f7' }}>
+                {data.groupName}
+              </span>
+            )}
             <span>{dateShort(data.finishedAt)}</span>
             {data.durationMin && <span className="opacity-40">· {t('gd.min', { min: data.durationMin })}</span>}
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="text-center p-3 rounded-xl bg-base-200/50">
-          <p className="text-xl font-extrabold">{data.totalQuestions}</p>
-          <p className="text-[11px] opacity-40">{t('gd.total')}</p>
+      {data.totalQuestions != null && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center p-3 rounded-xl bg-base-200/50">
+            <p className="text-xl font-extrabold">{data.totalQuestions}</p>
+            <p className="text-[11px] opacity-40">{t('gd.total')}</p>
+          </div>
+          <div className="text-center p-3 rounded-xl bg-success/5">
+            <p className="text-xl font-extrabold text-success">{data.correctCount}</p>
+            <p className="text-[11px] opacity-40">{t('gd.correctCount')}</p>
+          </div>
+          <div className="text-center p-3 rounded-xl bg-error/5">
+            <p className="text-xl font-extrabold text-error">{data.wrongCount}</p>
+            <p className="text-[11px] opacity-40">{t('gd.wrongCount')}</p>
+          </div>
         </div>
-        <div className="text-center p-3 rounded-xl bg-success/5">
-          <p className="text-xl font-extrabold text-success">{data.correctCount}</p>
-          <p className="text-[11px] opacity-40">{t('gd.correctCount')}</p>
-        </div>
-        <div className="text-center p-3 rounded-xl bg-error/5">
-          <p className="text-xl font-extrabold text-error">{data.wrongCount}</p>
-          <p className="text-[11px] opacity-40">{t('gd.wrongCount')}</p>
-        </div>
-      </div>
+      )}
 
       <div>
         <div className="flex justify-between text-xs opacity-50 mb-1">
           <span>{t('gd.result')}</span>
-          <span className="font-bold" style={{ color }}>{data.score} / {data.maxScore} ({pct}%)</span>
+          <span className="font-bold" style={{ color }}>{pct}%</span>
         </div>
         <ProgressBar value={pct} color={color} height={8} />
       </div>

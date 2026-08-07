@@ -2,6 +2,11 @@ export default {
   // ---------- common ----------
   'common.retry': 'Попробовать снова',
   'common.error': 'Ошибка',
+  'common.errorMsg': 'Произошла непредвиденная ошибка',
+  'common.empty': 'Пусто',
+  'common.noData': 'Данных пока нет',
+  'common.wentWrong': 'Что-то пошло не так',
+  'common.reload': 'Обновить страницу',
   'common.back': 'Назад к обзору',
   'common.all': 'Все',
   'common.send': 'Отправить',

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParentOverview, useGroupRating } from '../queries.js';
 import { useChild } from '../child-context.jsx';
-import { fmt, money, dateShort, timeAgo, ATTENDANCE_STATUS } from '../format.js';
+import { fmt, money, dateShort, timeAgo, ATTENDANCE_STATUS, gradePercent } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
@@ -60,7 +60,7 @@ export default function Dashboard() {
 
   const avgScore =
     allGrades.length > 0
-      ? Math.round(allGrades.reduce((s, g) => s + (g.score / g.maxScore) * 100, 0) / allGrades.length)
+      ? Math.round(allGrades.reduce((s, g) => s + gradePercent(g.score, g.maxScore, g.type), 0) / allGrades.length)
       : 0;
 
   const group = d.groups?.[0];
@@ -370,7 +370,7 @@ export default function Dashboard() {
                 </thead>
                 <tbody>
                   {allGrades.map((g, i) => {
-                    const pct = g.maxScore > 0 ? Math.round((g.score / g.maxScore) * 100) : 0;
+                    const pct = gradePercent(g.score, g.maxScore, g.type);
                     const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
                     return (
                       <tr key={i} className="hover:bg-base-200/50 transition-colors">
@@ -391,7 +391,7 @@ export default function Dashboard() {
                             <div className="w-14 h-1.5 bg-base-200 rounded-full overflow-hidden">
                               <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${pct}%`, background: color }} />
                             </div>
-                            <span className="text-xs font-mono" style={{ color }}>{g.score}/{g.maxScore}</span>
+                            <span className="text-xs font-mono" style={{ color }}>{g.type === 'test' ? `${pct}%` : `${g.score}/${g.maxScore}`}</span>
                           </div>
                         </td>
                         <td className="text-xs opacity-40 text-right whitespace-nowrap">

@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import Icon from './Icons.jsx';
+import { t } from '../i18n.jsx';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -20,9 +21,9 @@ export default class ErrorBoundary extends Component {
               <div className="w-16 h-16 rounded-2xl bg-error/10 flex items-center justify-center mx-auto mb-4">
                 <Icon name="exclamation-circle" className="w-8 h-8 text-error" />
               </div>
-              <h2 className="card-title justify-center text-lg">Что-то пошло не так</h2>
+              <h2 className="card-title justify-center text-lg">{t('common.wentWrong')}</h2>
               <p className="text-sm text-base-content/60 mt-1">
-                {this.state.error?.message || 'Произошла непредвиденная ошибка'}
+                {this.state.error?.message || t('common.errorMsg')}
               </p>
               <div className="card-actions justify-center mt-4">
                 <button
@@ -33,7 +34,7 @@ export default class ErrorBoundary extends Component {
                   }}
                 >
                   <Icon name="arrow-trending-up" className="w-4 h-4" />
-                  Обновить страницу
+                  {t('common.reload')}
                 </button>
               </div>
             </div>

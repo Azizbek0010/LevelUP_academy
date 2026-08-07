@@ -2,6 +2,11 @@ export default {
   // ---------- common ----------
   'common.retry': 'Qayta urinish',
   'common.error': 'Xatolik',
+  'common.errorMsg': 'Kutilmagan xatolik yuz berdi',
+  'common.empty': 'Bo‘sh',
+  'common.noData': 'Hozircha ma’lumot yo‘q',
+  'common.wentWrong': 'Nimadir xato ketdi',
+  'common.reload': 'Sahifani yangilash',
   'common.back': 'Umumiy ko‘rinishga qaytish',
   'common.all': 'Hammasi',
   'common.send': 'Yuborish',

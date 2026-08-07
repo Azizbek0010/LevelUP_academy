@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGradesPage } from '../queries.js';
 import { useChild } from '../child-context.jsx';
-import { dateShort } from '../format.js';
+import { dateShort, gradePercent } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressBar } from '../components/ui.jsx';
@@ -57,11 +57,11 @@ export default function Grades() {
 
   const avg =
     list.length > 0
-      ? Math.round(list.reduce((s, g) => s + (g.score / g.maxScore) * 100, 0) / list.length)
+      ? Math.round(list.reduce((s, g) => s + gradePercent(g.score, g.maxScore, tab), 0) / list.length)
       : 0;
 
   const best = list.length > 0
-    ? Math.max(...list.map((g) => Math.round((g.score / g.maxScore) * 100)))
+    ? Math.max(...list.map((g) => gradePercent(g.score, g.maxScore, tab)))
     : 0;
 
   return (
@@ -146,7 +146,7 @@ export default function Grades() {
           ) : (
             <div className="space-y-2 mt-2">
               {list.map((g, i) => {
-                const pct = g.maxScore > 0 ? Math.round((g.score / g.maxScore) * 100) : 0;
+                const pct = gradePercent(g.score, g.maxScore, tab);
                 const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
                 const itemId = g.id || `${tab}-${i}`;
                 return (
@@ -165,7 +165,9 @@ export default function Grades() {
                       <p className="text-sm font-semibold truncate">{g.title}</p>
                       <div className="flex items-center gap-2 mt-1.5">
                         <ProgressBar value={pct} color={color} height={4} />
-                        <span className="text-[11px] font-mono opacity-50">{g.score}/{g.maxScore}</span>
+                        <span className="text-[11px] font-mono opacity-50">
+                          {tab === 'tests' ? `${pct}%` : `${g.score}/${g.maxScore}`}
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

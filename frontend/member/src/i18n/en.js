@@ -2,6 +2,11 @@ export default {
   // ---------- common ----------
   'common.retry': 'Try again',
   'common.error': 'Error',
+  'common.errorMsg': 'Something went wrong',
+  'common.empty': 'Empty',
+  'common.noData': 'No data yet',
+  'common.wentWrong': 'Something went wrong',
+  'common.reload': 'Reload page',
   'common.back': 'Back to overview',
   'common.all': 'All',
   'common.send': 'Send',
