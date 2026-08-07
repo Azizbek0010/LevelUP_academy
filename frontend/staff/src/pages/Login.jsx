@@ -313,6 +313,13 @@ export default function Login() {
             {mode === 'login'
               ? <LoginForm onForgot={() => setMode('forgot')} />
               : <ForgotForm onBack={() => setMode('login')} />}
+            {mode === 'login' && (
+              <div className="mt-4 rounded-xl border border-dashed border-base-300 bg-base-200/50 p-3 text-[11px] leading-relaxed text-base-content/50 animate-fade-in">
+                <p className="font-semibold uppercase tracking-wider text-base-content/40 mb-1">Демо-доступ (без бэкенда)</p>
+                <p><b>Finance Manager:</b> finance.manager@gmail.com · pass123</p>
+                <p><b>Branch Manager:</b> kozim.manager@gmail.com · ChangeMe123!</p>
+              </div>
+            )}
           </div>
           <p className="text-center text-xs opacity-40 mt-6">© LevelUp Academy</p>
         </div>
