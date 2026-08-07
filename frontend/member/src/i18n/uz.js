@@ -68,6 +68,8 @@ export default {
 
   // ---------- dashboard ----------
   'dash.title': 'Umumiy',
+  'dash.noChildTitle': 'Bolani tanlang',
+  'dash.noChildMsg': "Ma'lumotlarni ko'rish uchun profilga bola qo'shing",
   'dash.attendanceShort': 'davomat',
   'dash.hero.group': 'Guruh',
   'dash.hero.rating': 'Reyting {rank}',
@@ -144,7 +146,8 @@ export default {
   'debt.coins': 'Koinlar',
   'debt.coinsSub': "Yutuqlar uchun olingan ballar",
   'debt.status.debt': 'Qarzdorlik bor',
-  'debt.status.debtMsg': 'Qarz miqdori {sum}. To‘lash uchun administratorga murojaat qiling.',
+  'debt.status.debtMsgStart': 'Qarz miqdori',
+  'debt.status.debtMsgEnd': ". To'lash uchun administratorga murojaat qiling.",
   'debt.status.noDebt': 'Qarzdorlik yo‘q',
   'debt.status.noDebtMsg': "Barcha hisoblar o'z vaqtida to'langan",
 

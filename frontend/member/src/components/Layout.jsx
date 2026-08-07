@@ -2,18 +2,21 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
+import { useI18n } from '../i18n.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icons.jsx';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
 
 const NAV = [
-  { to: '/dashboard', label: 'Обзор', icon: 'home' },
-  { to: '/attendance', label: 'Посещаемость', icon: 'calendar-check' },
-  { to: '/grades', label: 'Оценки', icon: 'academic' },
-  { to: '/debt', label: 'Оплата', icon: 'wallet' },
-  { to: '/chat', label: 'Чат', icon: 'chat' },
+  { to: '/dashboard', label: 'nav.dashboard', icon: 'home' },
+  { to: '/attendance', label: 'nav.attendance', icon: 'calendar-check' },
+  { to: '/grades', label: 'nav.grades', icon: 'academic' },
+  { to: '/debt', label: 'nav.debt', icon: 'wallet' },
+  { to: '/chat', label: 'nav.chat', icon: 'chat' },
 ];
 
 function ChildCard({ child }) {
+  const { t } = useI18n();
   if (!child) return null;
   return (
     <div className="px-4 pb-3">
@@ -23,7 +26,7 @@ function ChildCard({ child }) {
           <p className="text-sm font-semibold truncate">{child.firstName}</p>
           <p className="text-[11px] opacity-40 flex items-center gap-1">
             <Icon name="user" className="w-3 h-3" />
-            Ребёнок
+            {t('nav.child')}
           </p>
         </div>
       </div>
@@ -33,6 +36,7 @@ function ChildCard({ child }) {
 
 export default function Layout() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const { selectedChild } = useChild();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -59,17 +63,18 @@ export default function Layout() {
             }
           >
             <Icon name={item.icon} className="w-5 h-5 shrink-0" />
-            <span>{item.label}</span>
+            <span>{t(item.label)}</span>
           </NavLink>
         ))}
       </nav>
 
-      <div className="mt-auto p-3 border-t border-white/5">
+      <div className="mt-auto p-3 space-y-2 border-t border-white/5">
+        <LanguageSwitcher />
         <NavLink
           to="/notifications"
           onClick={() => setMobileOpen(false)}
           className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 mb-1 ${
+            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
               isActive
                 ? 'bg-primary text-primary-content font-bold shadow-lg shadow-primary/20'
                 : 'text-neutral-content/50 hover:bg-white/5 hover:text-neutral-content'
@@ -77,7 +82,7 @@ export default function Layout() {
           }
         >
           <Icon name="bell" className="w-5 h-5 shrink-0" />
-          <span>Уведомления</span>
+          <span>{t('nav.notifications')}</span>
         </NavLink>
 
         <NavLink
@@ -92,7 +97,7 @@ export default function Layout() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">{user?.firstName} {user?.lastName}</p>
             <p className="text-[11px] opacity-40 flex items-center gap-1">
-              Профиль
+              {t('nav.profile')}
               <Icon name="chevron-right" className="w-3 h-3" />
             </p>
           </div>
@@ -120,10 +125,13 @@ export default function Layout() {
             </button>
             <img src="/logo-white.svg" alt="LevelUp" className="h-5 w-auto" />
           </div>
-          <NavLink to="/notifications" className="btn btn-ghost btn-sm btn-circle relative">
-            <Icon name="bell" className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full" />
-          </NavLink>
+          <div className="flex items-center gap-2">
+            <div className="w-28"><LanguageSwitcher /></div>
+            <NavLink to="/notifications" className="btn btn-ghost btn-sm btn-circle relative">
+              <Icon name="bell" className="w-5 h-5" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full" />
+            </NavLink>
+          </div>
         </div>
 
         <main className="flex-1 p-4 lg:p-6 max-w-6xl mx-auto w-full">

@@ -2,6 +2,7 @@ import { useHomeworkDetail, useTestDetail } from '../queries.js';
 import { dateShort } from '../format.js';
 import Icon from './Icons.jsx';
 import { ProgressBar } from './ui.jsx';
+import { useI18n } from '../i18n.jsx';
 
 function Loading() {
   return (
@@ -12,6 +13,7 @@ function Loading() {
 }
 
 function HomeworkDetail({ data }) {
+  const { t } = useI18n();
   const pct = data.maxScore > 0 ? Math.round((data.score / data.maxScore) * 100) : 0;
   const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
 
@@ -33,14 +35,14 @@ function HomeworkDetail({ data }) {
       </div>
 
       <div className="bg-base-200/50 rounded-xl p-4">
-        <p className="text-xs font-semibold opacity-50 mb-1">Условие задания</p>
+        <p className="text-xs font-semibold opacity-50 mb-1">{t('gd.taskCondition')}</p>
         <p className="text-sm leading-relaxed">{data.description}</p>
       </div>
 
       <div className="flex items-center gap-4">
         <div className="flex-1">
           <div className="flex justify-between text-xs opacity-50 mb-1">
-            <span>Балл</span>
+            <span>{t('gd.score')}</span>
             <span className="font-bold" style={{ color }}>{data.score} / {data.maxScore}</span>
           </div>
           <ProgressBar value={pct} color={color} height={8} />
@@ -51,7 +53,7 @@ function HomeworkDetail({ data }) {
         <div className={`flex items-start gap-3 p-3 rounded-xl ${pct >= 80 ? 'bg-success/5 border border-success/20' : 'bg-warning/5 border border-warning/20'}`}>
           <Icon name={pct >= 80 ? 'check-circle' : 'information-circle'} className="w-5 h-5 shrink-0 mt-0.5" style={{ color: pct >= 80 ? '#22c55e' : '#f59e0b' }} />
           <div>
-            <p className="text-xs font-semibold opacity-60 mb-0.5">Комментарий преподавателя</p>
+            <p className="text-xs font-semibold opacity-60 mb-0.5">{t('gd.mentorComment')}</p>
             <p className="text-sm">{data.comment}</p>
           </div>
         </div>
@@ -61,7 +63,7 @@ function HomeworkDetail({ data }) {
         <div>
           <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
             <Icon name="alert" className="w-4 h-4 text-error" />
-            Замечания ({data.mistakes.length})
+            {t('gd.mistakes', { count: data.mistakes.length })}
           </h4>
           <div className="space-y-2">
             {data.mistakes.map((m, i) => (
@@ -70,12 +72,12 @@ function HomeworkDetail({ data }) {
                 <div className="space-y-1 text-xs">
                   <p className="flex items-center gap-2">
                     <Icon name="x-circle" className="w-3.5 h-3.5 text-error shrink-0" />
-                    <span className="opacity-60">Ваш ответ:</span>
+                    <span className="opacity-60">{t('gd.yourAnswer')}</span>
                     <span className="text-error">{m.studentAnswer}</span>
                   </p>
                   <p className="flex items-center gap-2">
                     <Icon name="check-circle" className="w-3.5 h-3.5 text-success shrink-0" />
-                    <span className="opacity-60">Правильный:</span>
+                    <span className="opacity-60">{t('gd.correct')}</span>
                     <span className="text-success">{m.correctAnswer}</span>
                   </p>
                   {m.comment && (
@@ -94,7 +96,7 @@ function HomeworkDetail({ data }) {
       {pct >= 90 && (
         <div className="flex items-center gap-3 p-3 rounded-xl bg-success/5 border border-success/20">
           <Icon name="sparkles" className="w-5 h-5 text-success shrink-0" />
-          <p className="text-sm">Превосходная работа! Так держать!</p>
+          <p className="text-sm">{t('gd.excellent')}</p>
         </div>
       )}
     </div>
@@ -102,6 +104,7 @@ function HomeworkDetail({ data }) {
 }
 
 function TestDetail({ data }) {
+  const { t } = useI18n();
   const pct = data.maxScore > 0 ? Math.round((data.score / data.maxScore) * 100) : 0;
   const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
 
@@ -118,7 +121,7 @@ function TestDetail({ data }) {
               {data.groupName}
             </span>
             <span>{dateShort(data.finishedAt)}</span>
-            {data.durationMin && <span className="opacity-40">· {data.durationMin} мин</span>}
+            {data.durationMin && <span className="opacity-40">· {t('gd.min', { min: data.durationMin })}</span>}
           </p>
         </div>
       </div>
@@ -126,21 +129,21 @@ function TestDetail({ data }) {
       <div className="grid grid-cols-3 gap-3">
         <div className="text-center p-3 rounded-xl bg-base-200/50">
           <p className="text-xl font-extrabold">{data.totalQuestions}</p>
-          <p className="text-[11px] opacity-40">Всего</p>
+          <p className="text-[11px] opacity-40">{t('gd.total')}</p>
         </div>
         <div className="text-center p-3 rounded-xl bg-success/5">
           <p className="text-xl font-extrabold text-success">{data.correctCount}</p>
-          <p className="text-[11px] opacity-40">Правильно</p>
+          <p className="text-[11px] opacity-40">{t('gd.correctCount')}</p>
         </div>
         <div className="text-center p-3 rounded-xl bg-error/5">
           <p className="text-xl font-extrabold text-error">{data.wrongCount}</p>
-          <p className="text-[11px] opacity-40">Ошибки</p>
+          <p className="text-[11px] opacity-40">{t('gd.wrongCount')}</p>
         </div>
       </div>
 
       <div>
         <div className="flex justify-between text-xs opacity-50 mb-1">
-          <span>Результат</span>
+          <span>{t('gd.result')}</span>
           <span className="font-bold" style={{ color }}>{data.score} / {data.maxScore} ({pct}%)</span>
         </div>
         <ProgressBar value={pct} color={color} height={8} />
@@ -150,7 +153,7 @@ function TestDetail({ data }) {
         <div>
           <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
             <Icon name="x-circle" className="w-4 h-4 text-error" />
-            Ошибки ({data.wrongAnswers.length})
+            {t('gd.wrongAnswers', { count: data.wrongAnswers.length })}
           </h4>
           <div className="space-y-2">
             {data.wrongAnswers.map((q, i) => (
@@ -159,12 +162,12 @@ function TestDetail({ data }) {
                 <div className="space-y-1 text-xs">
                   <p className="flex items-center gap-2">
                     <Icon name="x-circle" className="w-3.5 h-3.5 text-error shrink-0" />
-                    <span className="opacity-60">Ваш ответ:</span>
+                    <span className="opacity-60">{t('gd.yourAnswer')}</span>
                     <span className="text-error font-medium">{q.studentAnswer}</span>
                   </p>
                   <p className="flex items-center gap-2">
                     <Icon name="check-circle" className="w-3.5 h-3.5 text-success shrink-0" />
-                    <span className="opacity-60">Правильный:</span>
+                    <span className="opacity-60">{t('gd.correct')}</span>
                     <span className="text-success font-medium">{q.correctAnswer}</span>
                   </p>
                 </div>
@@ -178,7 +181,7 @@ function TestDetail({ data }) {
         <div>
           <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
             <Icon name="check-circle" className="w-4 h-4 text-success" />
-            Правильные ответы ({data.correctAnswers.length})
+            {t('gd.correctAnswers', { count: data.correctAnswers.length })}
           </h4>
           <div className="space-y-1.5">
             {data.correctAnswers.map((q, i) => (
@@ -195,6 +198,7 @@ function TestDetail({ data }) {
 }
 
 export default function GradeDetail({ type, id, item, onClose }) {
+  const { t } = useI18n();
   const isHomework = type === 'hw';
   const { data, isLoading, error } = isHomework ? useHomeworkDetail(id) : useTestDetail(id);
 
@@ -210,7 +214,7 @@ export default function GradeDetail({ type, id, item, onClose }) {
         <div className="flex items-center justify-between px-5 py-4 border-b border-base-300">
           <h2 className="text-base font-bold flex items-center gap-2">
             <Icon name={isHomework ? 'document-text' : 'academic'} className="w-5 h-5 text-primary" />
-            {isHomework ? 'Домашнее задание' : 'Результаты теста'}
+            {isHomework ? t('gd.homework') : t('gd.testResult')}
           </h2>
           <button onClick={onClose} className="btn btn-ghost btn-sm btn-circle">
             <Icon name="xmark" className="w-5 h-5" />

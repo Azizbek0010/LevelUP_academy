@@ -7,37 +7,38 @@ import Avatar from '../components/Avatar.jsx';
 import { EmptyState, ErrorState } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
 import { mockChatSend } from '../api.js';
+import { useI18n, t, getLang } from '../i18n.jsx';
 
 const ROOMS = [
-  { key: 'global', label: 'Общий чат', icon: 'globe', desc: 'Чат для всех родителей и сотрудников', color: '#3b82f6' },
-  { key: 'mentors', label: 'Учителя', icon: 'academic', desc: 'Личные сообщения с преподавателями', color: '#a855f7' },
+  { key: 'global', label: 'chat.global', icon: 'globe', desc: 'chat.globalDesc', color: '#3b82f6' },
+  { key: 'mentors', label: 'chat.mentors', icon: 'academic', desc: 'chat.mentorsDesc', color: '#a855f7' },
 ];
 
-const STAFF_ROLE_LABELS = { mentor: 'Учитель', admin: 'Админ', superadmin: 'Super Admin' };
+const STAFF_ROLE_LABELS = { mentor: 'chat.role.mentor', admin: 'chat.role.admin', superadmin: 'chat.role.superadmin' };
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
 function formatTime(iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(getLang(), { hour: '2-digit', minute: '2-digit' });
 }
 
 function formatDayLabel(iso) {
   const d = new Date(iso);
   const today = new Date();
-  if (d.toDateString() === today.toDateString()) return 'Сегодня';
+  if (d.toDateString() === today.toDateString()) return t('chat.today');
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+  if (d.toDateString() === yesterday.toDateString()) return t('chat.yesterday');
+  return d.toLocaleDateString(getLang(), { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 const ROLE_STYLES = {
-  admin: { bg: 'rgba(59,130,246,.12)', text: '#3b82f6', label: 'Админ', icon: 'shield-check' },
-  mentor: { bg: 'rgba(168,85,247,.12)', text: '#a855f7', label: 'Учитель', icon: 'academic' },
-  parent: { bg: 'rgba(34,197,94,.12)', text: '#22c55e', label: 'Родитель', icon: 'user' },
-  superadmin: { bg: 'rgba(245,158,11,.12)', text: '#f59e0b', label: 'Super Admin', icon: 'cog' },
+  admin: { bg: 'rgba(59,130,246,.12)', text: '#3b82f6', labelKey: 'chat.role.admin', icon: 'shield-check' },
+  mentor: { bg: 'rgba(168,85,247,.12)', text: '#a855f7', labelKey: 'chat.role.mentor', icon: 'academic' },
+  parent: { bg: 'rgba(34,197,94,.12)', text: '#22c55e', labelKey: 'common.role.parent', icon: 'user' },
+  superadmin: { bg: 'rgba(245,158,11,.12)', text: '#f59e0b', labelKey: 'chat.role.superadmin', icon: 'cog' },
 };
 
 function TypingIndicator() {
@@ -53,6 +54,7 @@ function TypingIndicator() {
 }
 
 function MessageBubble({ m, mine, groupStart, groupEnd, showSender }) {
+  const { t } = useI18n();
   const role = ROLE_STYLES[m.sender_role] || ROLE_STYLES.parent;
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${groupEnd ? 'mb-3' : 'mb-0.5'}`}>
@@ -73,7 +75,7 @@ function MessageBubble({ m, mine, groupStart, groupEnd, showSender }) {
               className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
               style={{ background: role.bg, color: role.text }}
             >
-              {role.label}
+              {t(role.labelKey)}
             </span>
           </div>
         )}
@@ -110,6 +112,7 @@ function MessageBubble({ m, mine, groupStart, groupEnd, showSender }) {
 }
 
 export default function Chat() {
+  const { t } = useI18n();
   const { token, user } = useAuth();
   const { selectedChild } = useChild();
   const connected = useSocketConnected(token);
@@ -266,17 +269,17 @@ export default function Chat() {
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold truncate">
-              {activeThread ? `${activeThread.first_name} ${activeThread.last_name}` : roomInfo?.label}
+              {activeThread ? `${activeThread.first_name} ${activeThread.last_name}` : t(roomInfo?.label)}
             </h1>
             <p className="text-xs opacity-40 truncate">
               {activeThread
-                ? STAFF_ROLE_LABELS[activeThread.staff_role] || 'Сотрудник'
-                : roomInfo?.desc}
+                ? t(STAFF_ROLE_LABELS[activeThread.staff_role] || 'chat.role.staff')
+                : t(roomInfo?.desc)}
             </p>
           </div>
           <div className="flex items-center gap-1.5">
             <div className={`w-2 h-2 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
-            <span className="text-[11px] opacity-40">{connected ? 'Онлайн' : 'Оффлайн'}</span>
+            <span className="text-[11px] opacity-40">{connected ? t('common.online') : t('common.offline')}</span>
           </div>
         </div>
       </div>
@@ -296,7 +299,7 @@ export default function Chat() {
               }`}
             >
               <Icon name={r.icon} className="w-4 h-4" />
-              <span className="hidden sm:inline">{r.label}</span>
+              <span className="hidden sm:inline">{t(r.label)}</span>
             </button>
           );
         })}
@@ -306,7 +309,7 @@ export default function Chat() {
       {!connected && (
         <div className="flex items-center gap-2 px-4 py-2 bg-warning/10 border-b border-warning/20 text-warning shrink-0">
           <Icon name="wifi-off" className="w-3.5 h-3.5 shrink-0" />
-          <span className="text-xs font-medium">Соединение потеряно — переподключение...</span>
+          <span className="text-xs font-medium">{t('chat.connectionLost')}</span>
         </div>
       )}
 
@@ -314,30 +317,30 @@ export default function Chat() {
       <div ref={boxRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 bg-base-200/15" aria-live="polite">
         {activeRoom === 'mentors' && !activeThread ? (
           <>
-            <p className="text-sm font-semibold opacity-50 mb-3">Выберите преподавателя</p>
+            <p className="text-sm font-semibold opacity-50 mb-3">{t('chat.selectMentor')}</p>
             {threads.length === 0 ? (
               <div className="h-full grid place-items-center">
-                <EmptyState icon="chat" title="Нет диалогов" message="Преподаватели ещё не писали вам" />
+                <EmptyState icon="chat" title={t('chat.noThreads')} message={t('chat.noThreadsMsg')} />
               </div>
             ) : (
               <div className="space-y-2">
-                {threads.map((t) => (
+                {threads.map((th) => (
                   <button
-                    key={t.id}
-                    onClick={() => selectThread(t)}
+                    key={th.id}
+                    onClick={() => selectThread(th)}
                     className="w-full flex items-center gap-3 p-3 rounded-xl bg-base-100 border border-base-200/60 hover:border-primary/40 hover:shadow-sm transition-all duration-200 text-left"
                   >
-                    <Avatar name={`${t.first_name} ${t.last_name}`} size={40} />
+                    <Avatar name={`${th.first_name} ${th.last_name}`} size={40} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold truncate">{t.first_name} {t.last_name}</p>
-                        {t.last_message_at && (
-                          <span className="text-[10px] opacity-30 whitespace-nowrap">{formatTime(t.last_message_at)}</span>
+                        <p className="text-sm font-semibold truncate">{th.first_name} {th.last_name}</p>
+                        {th.last_message_at && (
+                          <span className="text-[10px] opacity-30 whitespace-nowrap">{formatTime(th.last_message_at)}</span>
                         )}
                       </div>
-                      <p className="text-xs opacity-40 truncate mt-0.5">{t.last_message || 'Нет сообщений'}</p>
+                      <p className="text-xs opacity-40 truncate mt-0.5">{th.last_message || t('chat.noMessagesThread')}</p>
                     </div>
-                    {t.unread_count > 0 && <span className="badge badge-primary badge-sm">{t.unread_count}</span>}
+                    {th.unread_count > 0 && <span className="badge badge-primary badge-sm">{th.unread_count}</span>}
                     <Icon name="chevron-right" className="w-4 h-4 opacity-20 shrink-0" />
                   </button>
                 ))}
@@ -360,8 +363,8 @@ export default function Chat() {
               <div className="h-full grid place-items-center">
                 <EmptyState
                   icon="chat"
-                  title="Пока нет сообщений"
-                  message={activeRoom === 'global' ? 'Начните общение первым' : 'Напишите преподавателю первым'}
+                  title={t('chat.noMessages')}
+                  message={activeRoom === 'global' ? t('chat.startGlobal') : t('chat.startDm')}
                 />
               </div>
             )}
@@ -391,7 +394,7 @@ export default function Chat() {
         <button
           onClick={scrollToBottom}
           className="absolute bottom-24 right-4 btn btn-circle btn-sm bg-base-100 border-base-300 shadow-lg z-10 hover:scale-110 transition-transform"
-          aria-label="К последнему сообщению"
+          aria-label={t('chat.toLast')}
         >
           <Icon name="chevron-down" className="w-4 h-4" />
         </button>
@@ -406,7 +409,7 @@ export default function Chat() {
               ref={textareaRef}
               rows={1}
               className="textarea textarea-bordered w-full resize-none min-h-[2.75rem] max-h-32 text-sm leading-relaxed py-2.5 pr-10 rounded-2xl bg-base-200/30 border-base-200/60 focus:border-primary focus:bg-base-100 transition-colors"
-              placeholder={activeRoom === 'global' ? 'Напишите сообщение...' : 'Напишите учителю...'}
+              placeholder={activeRoom === 'global' ? t('chat.placeholderGlobal') : t('chat.placeholderDm')}
               value={input}
               maxLength={4000}
               onChange={(e) => setInput(e.target.value)}
@@ -421,7 +424,7 @@ export default function Chat() {
             }`}
             onClick={handleSend}
             disabled={!input.trim() || sending}
-            aria-label="Отправить"
+            aria-label={t('common.send')}
           >
             {sending ? (
               <span className="loading loading-spinner loading-sm" />

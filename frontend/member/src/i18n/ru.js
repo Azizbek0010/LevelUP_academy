@@ -68,6 +68,8 @@ export default {
 
   // ---------- dashboard ----------
   'dash.title': 'Обзор',
+  'dash.noChildTitle': 'Выберите ребёнка',
+  'dash.noChildMsg': 'Добавьте ребёнка в профиль для просмотра данных',
   'dash.attendanceShort': 'посещ.',
   'dash.hero.group': 'Группа',
   'dash.hero.rating': 'Рейтинг {rank}',
@@ -144,7 +146,8 @@ export default {
   'debt.coins': 'Коины',
   'debt.coinsSub': 'Заработанные баллы за достижения',
   'debt.status.debt': 'Есть задолженность',
-  'debt.status.debtMsg': 'Сумма долга составляет {sum}. Обратитесь к администратору для оплаты.',
+  'debt.status.debtMsgStart': 'Сумма долга составляет',
+  'debt.status.debtMsgEnd': '. Обратитесь к администратору для оплаты.',
   'debt.status.noDebt': 'Задолженностей нет',
   'debt.status.noDebtMsg': 'Все счета оплачены вовремя',
 

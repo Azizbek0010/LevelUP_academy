@@ -68,6 +68,8 @@ export default {
 
   // ---------- dashboard ----------
   'dash.title': 'Overview',
+  'dash.noChildTitle': 'Select a child',
+  'dash.noChildMsg': 'Add a child in the profile to view data',
   'dash.attendanceShort': 'attend.',
   'dash.hero.group': 'Group',
   'dash.hero.rating': 'Rating {rank}',
@@ -144,7 +146,8 @@ export default {
   'debt.coins': 'Coins',
   'debt.coinsSub': 'Points earned for achievements',
   'debt.status.debt': 'There is a debt',
-  'debt.status.debtMsg': 'The debt is {sum}. Contact the administrator to pay.',
+  'debt.status.debtMsgStart': 'The debt is',
+  'debt.status.debtMsgEnd': '. Contact the administrator to pay.',
   'debt.status.noDebt': 'No debts',
   'debt.status.noDebtMsg': 'All invoices paid on time',
 
