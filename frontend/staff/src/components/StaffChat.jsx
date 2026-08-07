@@ -385,13 +385,14 @@ export default function StaffChat({ variant = 'mentor' }) {
     if (box) box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
   };
 
-  const filtered = contacts.filter((c) => {
-    if (variant === 'admin' && c.peer_type === 'student') return false;
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return fullName(c).toLowerCase().includes(q)
-      || (c.child_names ?? '').toLowerCase().includes(q);
-  });
+const filtered = contacts.filter((c) => {
+  if (variant === 'admin' && c.peer_type === 'student') return false;
+  if (variant === 'admin' && c.peer_type === 'parent') return false;
+  if (!search.trim()) return true;
+  const q = search.toLowerCase();
+  return fullName(c).toLowerCase().includes(q)
+    || (c.child_names ?? '').toLowerCase().includes(q);
+});
 
   /* Группировка по типу для отрисовки секций: Менторы → Родители → Ученики.
      В режиме ментора секции не нужны — там только родители и ученики. */

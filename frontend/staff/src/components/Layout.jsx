@@ -81,7 +81,6 @@ const superNav = [
       { to: '/announcements', label: 'Объявления' },
       { to: '/reminders',     label: 'Напоминания' },
       { to: '/audit',         label: 'Аудит' },
-      { to: '/settings',      label: 'Настройки' },
     ],
   },
 ];
@@ -96,7 +95,6 @@ const adminNav = [
   { to: '/payments',  label: 'Платежи',     Icon: HiOutlineWallet },
   { to: '/expenses',  label: 'Расходы',     Icon: HiOutlineReceiptPercent },
   { to: '/reports',   label: 'Отчёты',      Icon: HiOutlineChartBar },
-  { to: '/settings',  label: 'Настройки',   Icon: HiOutlineCog },
 ];
 
 /**

@@ -92,17 +92,16 @@ function fmtDate(d) {
 }
 
 /* ═══════════════ Group Card ═══════════════ */
-function GroupCard({ g, onEdit }) {
+function GroupCard({ g, onEdit, onArchive, onOpen, isExpanded, students = [] }) {
   const archived = isArchived(g);
-  // Backend listGroups qaytaradi: students — NUMBER (count), array emas
   const studentsCount = Number(g.students ?? g.studentsCount ?? g.students_count ?? 0);
   const mentorName = g.mentor?.name || g.mentorName || null;
   const full = studentsCount >= MAX_STUDENTS;
 
   return (
-    <Link
-      to={`/groups/${g.id}`}
-      className={`card bg-base-100 p-5 card-hover-premium hover:border-primary/40 group relative block ${archived ? 'opacity-60' : ''}`}
+    <div
+      className={`card bg-base-100 p-5 card-hover-premium hover:border-primary/40 group relative block cursor-pointer select-none ${archived ? 'opacity-60' : ''}`}
+      onClick={() => onOpen && onOpen(g)}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -112,23 +111,44 @@ function GroupCard({ g, onEdit }) {
           <div className="min-w-0">
             <h3 className="text-[14px] font-bold text-base-content group-hover:text-primary transition-colors flex items-center gap-1 truncate">
               {g.name}
-              <ChevronRight size={14} className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <ChevronRight size={14} className={`shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'opacity-0 group-hover:opacity-100 transition-opacity'}`} />
             </h3>
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider mt-0.5 ${archived ? 'bg-base-200 text-base-content/45' : 'bg-success/10 text-success'}`}>
               {archived ? 'Архив' : 'Активна'}
             </span>
           </div>
         </div>
-        {/* Edit button — stops propagation so click doesn't navigate */}
-        {!archived && onEdit && (
-          <button
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-base-content/45 hover:text-primary hover:bg-primary/10 transition-all opacity-0 group-hover:opacity-100 shrink-0"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(g); }}
-            title="Изменить группу"
-          >
-            <Pencil size={13} />
-          </button>
-        )}
+        {/* Action buttons — grouped, pinned to the right edge of the card */}
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Edit button — stops propagation so click doesn't navigate */}
+          {!archived && onEdit && (
+            <button
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-base-content/45 hover:text-primary hover:bg-primary/10 transition-all opacity-0 group-hover:opacity-100"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(g); }}
+              title="Изменить группу"
+            >
+              <Pencil size={13} />
+            </button>
+          )}
+          {!archived && (
+            <button
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-base-content/45 hover:text-warning hover:bg-warning/10 transition-all opacity-0 group-hover:opacity-100"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onArchive(g); }}
+              title="Архивировать"
+            >
+              <Archive size={13} />
+            </button>
+          )}
+          {archived && (
+            <button
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-base-content/45 hover:text-success hover:bg-success/10 transition-all opacity-0 group-hover:opacity-100"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onArchive(g); }}
+              title="Восстановить из архива"
+            >
+              <ArchiveRestore size={13} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-4 text-[12px]">
@@ -155,19 +175,49 @@ function GroupCard({ g, onEdit }) {
         <div className="h-1.5 rounded-full bg-base-200 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              full ? 'bg-error' : studentsCount >= MAX_STUDENTS * 0.8 ? 'bg-warning' : 'bg-primary'
+              full ? 'bg-error' : studentsCount >= MAX_STUDENTS * 0.75 ? 'bg-warning' : 'bg-success'
             }`}
-            style={{ width: `${Math.min((studentsCount / MAX_STUDENTS) * 100, 100)}%` }}
+            style={{ width: `${Math.min(100, (studentsCount / MAX_STUDENTS) * 100)}%` }}
           />
         </div>
-        {full && <p className="text-[10px] text-error mt-1 font-semibold">Группа заполнена</p>}
       </div>
-    </Link>
+
+      {/* Expandable student list */}
+      <div className={`mt-3 overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+        {isExpanded && (
+          <div className="space-y-2 pt-2 border-t border-base-200">
+            {students.length > 0 ? (
+              students.map((s) => (
+                <div key={s.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg hover:bg-base-200 transition-colors">
+                  <Avatar name={[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-base-content truncate">
+                      {[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')}
+                    </div>
+                    <div className="text-xs text-base-content/50 truncate">
+                      {s.phone || s.loginCode || '—'}
+                    </div>
+                  </div>
+                  {s.status === 'frozen' && (
+                    <span className="badge badge-warning badge-xs">Заморожен</span>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-base-content/45 text-sm">
+                Студентов пока нет
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
 /* ═══════════════ Group Form Modal ═══════════════ */
-function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, onSave, token, groups, subjectOptions = [] }) {
+/* Экспортируется: переиспользуется в GroupDetail.jsx (кнопка «Редактировать»). */
+export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, onSave, token, groups, subjectOptions = [] }) {
   const isEdit = Boolean(initial?.id);
   const [form, setForm] = useState(initial ?? emptyForm);
   const [busy, setBusy] = useState(false);
@@ -745,12 +795,18 @@ export default function AdminGroups() {
   const { data, isLoading, error, refetch } = useAdminGroups();
   const { data: mentorsData } = useAdminMentors();
   const { data: settingsData } = useAdminSettings();
-  const [form, setForm] = useState(null);   // null = closed | object = open (new or edit)
+  const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState('card');
   const [showExport, setShowExport] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
+  const [groupStudents, setGroupStudents] = useState({});
+  // Archive confirm modal — asks for a reason before archiving
+  const [archiveTarget, setArchiveTarget] = useState(null);
+  const [archiveReason, setArchiveReason] = useState('');
+  const [archiving, setArchiving] = useState(false);
 
   // Auto-open the create modal when arriving from Dashboard «Новая группа»
   // (navigate('/groups', { state: { openCreate: true } })). State is cleared
@@ -762,6 +818,32 @@ export default function AdminGroups() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const fetchGroupStudents = async (groupId) => {
+    if (groupStudents[groupId]) return;
+    try {
+      // Отдельного GET /admin/groups/:id/students нет ни в api.js, ни в бэкенде:
+      // список учеников приходит внутри GET /admin/groups/:id (groupDetail) —
+      // раньше здесь был вызов несуществующего api.adminGroupStudents → TypeError.
+      const res = await api.adminGroupDetail(token, groupId);
+      const students = res?.data?.students || res?.students || res?.data?.group?.students || res?.group?.students || [];
+      setGroupStudents(prev => ({ ...prev, [groupId]: students }));
+    } catch (e) {
+      console.error('Group students fetch error:', e);
+      setGroupStudents(prev => ({ ...prev, [groupId]: [] }));
+    }
+  };
+
+  const toggleGroupExpand = (groupId) => {
+    const newExpanded = new Set(expandedGroups);
+    if (newExpanded.has(groupId)) {
+      newExpanded.delete(groupId);
+    } else {
+      newExpanded.add(groupId);
+      fetchGroupStudents(groupId);
+    }
+    setExpandedGroups(newExpanded);
+  };
 
   const raw = data?.data || data || {};
   const rows = raw.groups || (Array.isArray(raw) ? raw : []);
@@ -827,12 +909,32 @@ export default function AdminGroups() {
     return res; // возвращаем созданную группу — нужна для привязки нового ученика
   };
 
-  const toggleArchive = async (g) => {
+  const handleArchiveClick = (g) => {
+    // Restore (unarchive) — no reason needed, direct confirm
+    if (isArchived(g)) {
+      if (!window.confirm(`Восстановить группу «${g.name}» из архива?`)) return;
+      api.adminUnarchiveGroup(token, g.id)
+        .then(() => refetch())
+        .catch((e) => alert(e.message || 'Ошибка'));
+      return;
+    }
+    // Archive — ask for a reason in a modal
+    setArchiveReason('');
+    setArchiveTarget(g);
+  };
+
+  const confirmArchive = async () => {
+    if (!archiveTarget) return;
+    setArchiving(true);
     try {
-      if (isArchived(g)) await api.adminUnarchiveGroup(token, g.id);
-      else await api.adminArchiveGroup(token, g.id);
+      await api.adminArchiveGroup(token, archiveTarget.id, archiveReason.trim() || undefined);
       refetch();
-    } catch (e) { alert(e.message || 'Ошибка'); }
+      setArchiveTarget(null);
+    } catch (e) {
+      alert(e.message || 'Ошибка');
+    } finally {
+      setArchiving(false);
+    }
   };
 
   return (
@@ -899,7 +1001,7 @@ export default function AdminGroups() {
       ) : viewMode === 'card' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredRows.map((g) => (
-            <GroupCard key={g.id} g={g} onEdit={openEdit} />
+            <GroupCard key={g.id} g={g} onEdit={openEdit} onArchive={handleArchiveClick} onOpen={(grp) => navigate(`/groups/${grp.id}`)} isExpanded={expandedGroups.has(g.id)} students={groupStudents[g.id] ?? []} />
           ))}
         </div>
       ) : (
@@ -984,6 +1086,49 @@ export default function AdminGroups() {
         groups={rows}
         subjectOptions={subjectOptions}
       />
+
+      {/* ═══ Archive Confirm Modal (asks for a reason) ═══ */}
+      <Modal
+        isOpen={Boolean(archiveTarget)}
+        onClose={() => !archiving && setArchiveTarget(null)}
+        boxClass="max-w-md p-6"
+        title="Архивировать группу"
+        actions={
+          <>
+            <button className="btn btn-ghost rounded-lg" onClick={() => setArchiveTarget(null)} disabled={archiving}>
+              Отмена
+            </button>
+            <button className="btn btn-warning rounded-lg gap-1" onClick={confirmArchive} disabled={archiving}>
+              {archiving && <span className="loading loading-spinner loading-xs" />}
+              <Archive size={14} /> В архив
+            </button>
+          </>
+        }
+      >
+        {archiveTarget && (
+          <div className="space-y-4">
+            <p className="text-sm text-base-content/70">
+              Вы уверены, что хотите архивировать группу{' '}
+              <b className="text-base-content">{archiveTarget.name}</b>? Ученики и история останутся,
+              группа просто скроется из активного списка.
+            </p>
+            <label className="form-control">
+              <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
+                Причина архивации
+              </span>
+              <textarea
+                className="textarea textarea-bordered w-full rounded-lg"
+                rows={3}
+                placeholder="напр. Группа завершена, ученики переведены…"
+                value={archiveReason}
+                onChange={(e) => setArchiveReason(e.target.value)}
+                autoFocus
+              />
+              <span className="text-[10px] text-base-content/40 mt-1">Необязательно, но поможет менеджеру</span>
+            </label>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

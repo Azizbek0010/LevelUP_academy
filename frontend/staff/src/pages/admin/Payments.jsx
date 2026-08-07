@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   Wallet, CreditCard, Banknote, Clock, CheckCircle2,
   AlertCircle, TrendingUp, Search, ChevronLeft, ChevronRight, Plus, X,
@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { money, dateShort } from '../../format.js';
 import { useAuth } from '../../auth.jsx';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAdminInvoices, useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
@@ -15,7 +15,7 @@ import { Avatar, Kpi, RowSkeleton, Tip, Modal } from '../mentor/_ui.jsx';
 
 const STATUS = {
   paid: { label: 'Оплачен', bg: '#2ECC7115', text: '#2ECC71', icon: CheckCircle2 },
-  partially_paid: { label: 'Частично', bg: '#F59E0B15', text: '#F59E0B', icon: Clock },
+  partially_paid: { label: 'Частично', bg: '#10B98115', text: '#10B981', icon: Clock },
   pending: { label: 'Ожидает', bg: '#6B728015', text: '#6B7280', icon: AlertCircle },
 };
 
@@ -96,7 +96,7 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
         </div>
       </div>
       <div className="w-full h-1.5 rounded-full bg-base-100 mb-3 overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500 bg-warning" style={{ width: `${paidPercent}%` }} />
+        <div className="h-full rounded-full transition-all duration-500 bg-success" style={{ width: `${paidPercent}%` }} />
       </div>
       <div className="flex items-center justify-between">
         <button className="flex items-center gap-1 text-[11px] text-base-content/45 hover:text-secondary transition-colors"
@@ -122,6 +122,7 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
 export default function AdminPayments() {
   const { token } = useAuth();
   const navigate = useNavigate();
+  const params = useParams();
 
   // Filter & pagination
   const [statusFilter, setStatusFilter] = useState('all');
@@ -135,11 +136,23 @@ export default function AdminPayments() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  // Ad-hoc modal
+  // Ad-hoc modal - pre-fill from URL params if provided
   const [showAdHoc, setShowAdHoc] = useState(false);
-  const [adhocForm, setAdhocForm] = useState({ studentName: '', studentId: '', totalAmount: '', comment: '' });
+  const [adhocForm, setAdhocForm] = useState({ 
+    studentName: '', 
+    studentId: params.studentId || '', 
+    totalAmount: params.amount || '', 
+    comment: '' 
+  });
   const [adhocParts, setAdhocParts] = useState([{ method: 'cash', amount: '' }]);
   const [studentSearch, setStudentSearch] = useState('');
+
+  // Clear params after using them
+  useEffect(() => {
+    if (params.studentId || params.amount) {
+      // Params will be used on first render
+    }
+  }, []);
 
   // Invoice detail modal
   const [detail, setDetail] = useState(null);
@@ -378,7 +391,7 @@ export default function AdminPayments() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Kpi Icon={TrendingUp} title="Всего счетов" value={allRows.length}  tone="neutral" />
         <Kpi Icon={CheckCircle2} title="Оплачено" value={stats.paid}  tone="success" />
-        <Kpi Icon={Clock} title="Ожидает" value={stats.waiting}  tone="warning" />
+        <Kpi Icon={Clock} title="Ожидает" value={stats.waiting}  tone="success" />
       </div>
 
       {/* ═══ Invoice List ═══ */}
@@ -559,7 +572,7 @@ export default function AdminPayments() {
                     <span className="ml-1">· Превышает сумму счёта!</span>
                   )}
                   {adhocTotal < Number(adhocForm.totalAmount) && (
-                    <span className="ml-1 text-warning">· Остаток: {money(Number(adhocForm.totalAmount) - adhocTotal)}</span>
+                    <span className="ml-1 text-success">· Остаток: {money(Number(adhocForm.totalAmount) - adhocTotal)}</span>
                   )}
                 </p>
               )}

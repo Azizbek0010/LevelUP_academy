@@ -4,25 +4,36 @@ import {
   ArrowLeft, UserPlus, X, Users, KeyRound, Phone,
   CalendarDays, Check, Minus, Clock, CreditCard,
   BookOpen, Plus, Star, MessageSquare, Send, Loader2,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Pencil, Archive, ArchiveRestore,
 } from 'lucide-react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth.jsx';
 import {
   useAdminGroupDetail, useAdminStudents,
   useAdminGroupHomework, useAdminGroupFeedback,
+  useAdminGroups, useAdminMentors, useAdminSettings,
 } from '../../queries.js';
 import { api, USING_MOCKS } from '../../api.js';
 import { getSocket } from '../../socket.js';
 import { money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Avatar, RowSkeleton, EmptyState, Modal } from '../mentor/_ui.jsx';
+import { GroupFormModal } from './Groups.jsx';
 
 /* ─── helpers ─── */
 const fullName = (s) => s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
 
 /* Короткие ярлыки дней для строки расписания в шапке группы. */
 const DAY_LABEL = { mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс' };
+
+const groupArchived = (g) => g?.isArchived ?? g?.is_archived ?? false;
+
+/* Совпадает с PRESETS в Groups.jsx — определяет, показывать ли пресеты
+   (1-3-5 / 2-4-6) или кастомные галочки в edit-режиме модалки. */
+const GROUP_PRESETS = [
+  { label: '1-3-5', days: ['mon', 'wed', 'fri'] },
+  { label: '2-4-6', days: ['tue', 'thu', 'sat'] },
+];
 
 function scheduleText(group) {
   let sched = group?.schedule;
@@ -940,6 +951,31 @@ export default function AdminGroupDetail() {
   const [activeTab, setActiveTab] = useState('attendance');
   const [adding, setAdding] = useState(false);
   const [pick, setPick] = useState('');
+  const [editForm, setEditForm] = useState(null);
+
+  // Данные для модалки «Изменить группу» (переиспользуем GroupFormModal из Groups.jsx)
+  const { data: mentorsData } = useAdminMentors();
+  const { data: settingsData } = useAdminSettings();
+  const { data: groupsData } = useAdminGroups();
+
+  const mraw = mentorsData?.data || mentorsData || {};
+  const mentors = mraw.mentors || (Array.isArray(mraw) ? mraw : []);
+  const lessonDurationMin = settingsData?.lessonDurationMin ?? settingsData?.data?.lessonDurationMin ?? null;
+
+  // Предметы из существующих групп — datalist в модалке (как в Groups.jsx)
+  const subjectOptions = useMemo(() => {
+    const gRaw = groupsData?.data || groupsData || {};
+    const list = gRaw.groups || (Array.isArray(gRaw) ? gRaw : []);
+    const seen = new Set();
+    list.forEach((g) => {
+      const s = (g.subject || g.subject_name || '').trim();
+      if (s) seen.add(s);
+    });
+    return [...seen].sort((a, b) => a.localeCompare(b, 'ru'));
+  }, [groupsData]);
+
+  const gRaw = groupsData?.data || groupsData || {};
+  const allGroups = gRaw.groups || (Array.isArray(gRaw) ? gRaw : []);
 
   const raw = data?.data || data || {};
   const group = raw.group || raw;
@@ -958,6 +994,44 @@ export default function AdminGroupDetail() {
     if (!confirm('Убрать студента из группы?')) return;
     try { await api.adminRemoveStudentFromGroup(token, id, sid); refetch(); }
     catch (e) { alert(e.message || 'Ошибка'); }
+  };
+
+  /* ── Edit / Archive ── */
+  const openEdit = () => {
+    let sched = group?.schedule;
+    if (typeof sched === 'string') { try { sched = JSON.parse(sched); } catch { sched = []; } }
+    const scheduleDays = (Array.isArray(sched) ? sched : []).map((s) => String(s.day).toLowerCase());
+    const initialDays = (Array.isArray(group?.days) && group.days.length > 0) ? group.days : scheduleDays;
+    setEditForm({
+      id: group.id,
+      name: group.name || '',
+      subject: group.subject || '',
+      monthlyPrice: group.monthlyPrice || group.monthly_price || '',
+      room: group.room || '',
+      mentorId: group.mentor?.id || group.mentorId || '',
+      days: initialDays,
+      startTime: group.startTime || group.start_time || '',
+      showCustomDays: initialDays.length > 0
+        && !GROUP_PRESETS.some((p) => JSON.stringify([...p.days].sort()) === JSON.stringify([...initialDays].sort())),
+    });
+  };
+
+  const handleSave = async (payload) => {
+    await api.adminUpdateGroup(token, id, payload);
+    refetch();
+    // Модалка закроется сама (onClose после onSave)
+  };
+
+  const toggleArchive = async () => {
+    if (groupArchived(group)) {
+      if (!confirm('Вернуть группу из архива?')) return;
+      try { await api.adminUnarchiveGroup(token, group.id); refetch(); }
+      catch (e) { alert(e.message || 'Ошибка'); }
+    } else {
+      if (!confirm('Архивировать группу? Данные и расписание сохранятся.')) return;
+      try { await api.adminArchiveGroup(token, group.id); refetch(); }
+      catch (e) { alert(e.message || 'Ошибка'); }
+    }
   };
 
   if (isLoading) {
@@ -984,7 +1058,31 @@ export default function AdminGroupDetail() {
         <ArrowLeft size={16} /> К группам
       </Link>
 
-      <PageHeader title={group.name || 'Группа'} subtitle={group.mentorName ? `Ментор: ${group.mentorName}` : group.mentor?.name ? `Ментор: ${group.mentor.name}` : undefined}>
+      <PageHeader
+        title={
+          <span className="inline-flex items-center gap-2.5 flex-wrap">
+            {group.name || 'Группа'}
+            {groupArchived(group) && (
+              <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-base-200 text-base-content/50 uppercase tracking-wider">
+                Архив
+              </span>
+            )}
+          </span>
+        }
+        subtitle={group.mentorName ? `Ментор: ${group.mentorName}` : group.mentor?.name ? `Ментор: ${group.mentor.name}` : undefined}
+      >
+        {!groupArchived(group) && (
+          <button className="btn btn-ghost btn-sm gap-1.5" onClick={openEdit}>
+            <Pencil size={14} /> Редактировать
+          </button>
+        )}
+        <button
+          className={`btn btn-sm gap-1.5 ${groupArchived(group) ? 'btn-outline' : 'btn-ghost text-warning hover:text-warning'}`}
+          onClick={toggleArchive}
+        >
+          {groupArchived(group) ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+          {groupArchived(group) ? 'Вернуть из архива' : 'Архивировать'}
+        </button>
         <button className="btn btn-primary btn-sm gap-1" onClick={() => setAdding(true)}>
           <UserPlus size={16} /> Добавить
         </button>
@@ -1044,6 +1142,20 @@ export default function AdminGroupDetail() {
           {candidates.map((s) => <option key={s.id} value={s.id}>{fullName(s)}</option>)}
         </select>
       </Modal>
+
+      {/* Edit Group Modal — переиспользуем GroupFormModal из Groups.jsx */}
+      <GroupFormModal
+        key={editForm?.id || 'create'}
+        open={Boolean(editForm)}
+        onClose={() => setEditForm(null)}
+        mentors={mentors}
+        lessonDurationMin={lessonDurationMin}
+        initial={editForm}
+        onSave={handleSave}
+        token={token}
+        groups={allGroups}
+        subjectOptions={subjectOptions}
+      />
     </div>
   );
 }

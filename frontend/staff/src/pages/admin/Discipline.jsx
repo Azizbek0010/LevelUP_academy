@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ShieldAlert, Ban, Coins, Plus, ScrollText, UserX, BookOpen, AlertTriangle, AlertCircle, Percent } from 'lucide-react';
+import { ShieldAlert, Ban, Coins, Plus, ScrollText, UserX, BookOpen, AlertTriangle, AlertCircle, Percent, Lightbulb, Info } from 'lucide-react';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { fmt } from '../../format.js';
@@ -48,8 +48,36 @@ function IssueModal({ open, onClose, staffList, onDone }) {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [rules, setRules] = useState([]);
+  const [selectedRuleId, setSelectedRuleId] = useState('');
+  const [rulesError, setRulesError] = useState(false);
 
-  if (!open) return null;
+  // Load discipline rules when modal opens.
+  // GET /super/discipline-rules — супер-эндпоинт (authorize('superadmin')):
+  // Admin получает 403, пока Karis не добавит GET /admin/discipline-rules
+  // (см. todos.md Task 7). Тогда молча прячем селектор и честно подсказываем.
+  useEffect(() => {
+    if (open) {
+      setRulesError(false);
+      api.superDisciplineRules(token)
+        .then(res => {
+          const data = res?.data?.rules || res?.data || res || [];
+          setRules(data);
+        })
+        .catch(() => {
+          setRules([]);
+          setRulesError(true);
+        });
+    }
+  }, [open, token]);
+
+  // Auto-fill amount when a rule is selected
+  useEffect(() => {
+    const rule = rules.find(r => r.id === selectedRuleId);
+    if (rule && rule.amount !== undefined && rule.amount !== null) {
+      setAmount(String(rule.amount));
+    }
+  }, [selectedRuleId, rules]);
 
   const submit = async () => {
     setErr('');
@@ -71,7 +99,7 @@ function IssueModal({ open, onClose, staffList, onDone }) {
       });
       onDone();
       onClose();
-      setTarget(''); setAmount(''); setReason(''); setType('sariq');
+      setTarget(''); setAmount(''); setReason(''); setType('sariq'); setSelectedRuleId('');
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -190,6 +218,45 @@ function IssueModal({ open, onClose, staffList, onDone }) {
             <span>Сотрудник потеряет доступ к системе. Вернуть его может Super Admin.</span>
           </div>
         )}
+
+        {rules.length > 0 && (
+          <label className="form-control">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5 flex items-center gap-1.5">
+              Правило дисциплины
+              <Info size={13} className="text-primary" />
+            </span>
+            <div className="relative">
+              <select
+                className="select select-bordered select-sm rounded-lg w-full pr-10"
+                value={selectedRuleId}
+                onChange={(e) => setSelectedRuleId(e.target.value)}
+              >
+                <option value="">Правило танланг (avtomatik foiz)</option>
+                {rules.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.description} — {TYPE_META[r.type]?.short || r.type} {r.amount !== undefined ? `(${r.amount}%)` : ''}
+                  </option>
+                ))}
+              </select>
+              <Lightbulb size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500" title="Tanlanganda foiz avtomatik to'ldiriladi" />
+            </div>
+            <span className="text-xs text-base-content/45 mt-1">
+              Super Admin belgilagan qoidalardan birini tanlang — foiz avtomatik to'ldiriladi
+            </span>
+          </label>
+        )}
+
+        {rulesError && (
+          <div className="alert alert-warning text-sm py-2">
+            <Info size={15} className="shrink-0" />
+            <span>
+              Список правил для Admin пока недоступен — заполните процент вручную.
+              Правила ведёт Super Admin (фронт ждёт{' '}
+              <code>GET /admin/discipline-rules</code> от Karis).
+            </span>
+          </div>
+        )}
+
       </div>
     </Modal>
   );

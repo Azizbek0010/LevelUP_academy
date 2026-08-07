@@ -1226,15 +1226,15 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       const groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
       const group = groups.find(g => g.id === id);
       if (!group) { const err = new Error('Группа не найдена'); err.status = 404; throw err; }
+      // Форма — как у реального бэкенда: students на верхнем уровне, а не
+      // под ключом `group` (GroupDetail читает оба варианта: raw.group || raw).
       return {
-        group: {
-          ...group,
-          students: [
-            { id: 'st-1', firstName: 'Sardor', lastName: 'O\'zbekov', phone: '+998901112233' },
-            { id: 'st-3', firstName: 'Botir', lastName: 'Hasanov', phone: '+998903334455' },
-            { id: 'st-6', firstName: 'Dilshod', lastName: 'Tursunov', phone: '+998906667788' },
-          ],
-        },
+        ...group,
+        students: [
+          { id: 'st-1', firstName: 'Sardor', lastName: 'O\'zbekov', phone: '+998901112233' },
+          { id: 'st-3', firstName: 'Botir', lastName: 'Hasanov', phone: '+998903334455' },
+          { id: 'st-6', firstName: 'Dilshod', lastName: 'Tursunov', phone: '+998906667788' },
+        ],
       };
     }
 
@@ -2244,7 +2244,7 @@ export const api = {
   adminCreateGroup: (token, body) => request('/admin/groups', { method: 'POST', token, body }),
   adminGroupDetail: (token, id) => request(`/admin/groups/${id}`, { token }),
   adminUpdateGroup: (token, id, body) => request(`/admin/groups/${id}`, { method: 'PATCH', token, body }),
-  adminArchiveGroup: (token, id) => request(`/admin/groups/${id}/archive`, { method: 'POST', token }),
+  adminArchiveGroup: (token, id, reason) => request(`/admin/groups/${id}/archive`, { method: 'POST', token, body: reason ? { reason } : undefined }),
   adminUnarchiveGroup: (token, id) => request(`/admin/groups/${id}/unarchive`, { method: 'POST', token }),
   adminMentors: (token) => request('/admin/mentors', { token }),
   adminCreateMentor: (token, body) => request('/admin/mentors', { method: 'POST', token, body }),

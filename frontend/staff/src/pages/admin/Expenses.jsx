@@ -15,19 +15,19 @@ const CATEGORY_LABELS = {
   All: 'Все', Rent: 'Аренда', Salary: 'Зарплата', Materials: 'Материалы', Utility: 'Коммунальные', Other: 'Другое',
 };
 const CATEGORY_COLORS = {
-  Rent: '#8FA283', Salary: '#8B5CF6', Materials: '#F59E0B',
-  Utility: '#E8543E', Other: '#8FA283',
+  Rent: '#2ECC71', Salary: '#8B5CF6', Materials: '#F59E0B',
+  Utility: '#E8543E', Other: '#2ECC71',
 };
 const CATEGORY_COLORS_LIGHT = {
-  Rent: 'rgba(143,162,131,0.12)', Salary: 'rgba(139,92,246,0.12)', Materials: 'rgba(245,158,11,0.12)',
-  Utility: 'rgba(232,84,62,0.12)', Other: 'rgba(143,162,131,0.12)',
+  Rent: 'rgba(46,204,113,0.12)', Salary: 'rgba(139,92,246,0.12)', Materials: 'rgba(245,158,11,0.12)',
+  Utility: 'rgba(232,84,62,0.12)', Other: 'rgba(46,204,113,0.12)',
 };
 
 const STATUS_MAP = {
   paid: { bg: 'rgba(46,204,113,0.14)', color: '#2ECC71', label: 'Оплачен', dot: '#2ECC71' },
   pending: { bg: 'rgba(245,158,11,0.14)', color: '#F59E0B', label: 'Ожидает', dot: '#F59E0B' },
   rejected: { bg: 'rgba(232,84,62,0.14)', color: '#E8543E', label: 'Отклонён', dot: '#E8543E' },
-  cancelled: { bg: 'rgba(143,162,131,0.14)', color: '#8FA283', label: 'Отменён', dot: '#8FA283' },
+  cancelled: { bg: 'rgba(46,204,113,0.14)', color: '#2ECC71', label: 'Отменён', dot: '#2ECC71' },
 };
 
 const PAYMENT_METHODS = ['Наличные', 'Карта'];
@@ -149,8 +149,8 @@ function StatusBadge({ status }) {
 
 // ─── Category Badge ───
 function CategoryBadge({ category }) {
-  const color = CATEGORY_COLORS[category] || '#8FA283';
-  const bg = CATEGORY_COLORS_LIGHT[category] || 'rgba(143,162,131,0.12)';
+  const color = CATEGORY_COLORS[category] || '#2ECC71';
+  const bg = CATEGORY_COLORS_LIGHT[category] || 'rgba(46,204,113,0.12)';
   return (
     <span
       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[11px] font-semibold whitespace-nowrap"
@@ -421,7 +421,7 @@ export default function Expenses() {
           <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em] mr-0.5">Категория:</span>
           {CATEGORIES.map((cat) => {
             const isActive = filter === cat;
-            const catColor = cat === 'All' ? 'var(--primary)' : CATEGORY_COLORS[cat] || '#8FA283';
+            const catColor = cat === 'All' ? 'var(--primary)' : CATEGORY_COLORS[cat] || '#2ECC71';
             return (
               <button
                 key={cat}

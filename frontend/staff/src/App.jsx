@@ -33,7 +33,6 @@ const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'));
 const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
 const AdminMentorDetail = lazy(() => import('./pages/admin/MentorDetail.jsx'));
 const AdminChat = lazy(() => import('./pages/admin/Chat.jsx'));
-const AdminSettings = lazy(() => import('./pages/admin/Settings.jsx'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile.jsx'));
 const AdminDiscipline = lazy(() => import('./pages/admin/Discipline.jsx'));
 
@@ -114,8 +113,7 @@ export default function App() {
             чужие роли (уводит на «/»), поэтому доступ админа не расширился. */}
         <Route path="/groups/:id" element={<SW><RoleView views={{ admin: AdminGroupDetail, mentor: MentorGroupWorkspace }} /></SW>} />
         <Route path="/reports" element={<SW><RoleView views={{ superadmin: SuperReportsRedirect, admin: AdminReports }} /></SW>} />
-        <Route path="/settings" element={<SW><RoleView views={{ superadmin: SuperSettings, admin: AdminSettings }} /></SW>} />
-        <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile, mentor: MentorProfile, methodist: MethodistProfile }} /></SW>} />
+<Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, superadmin: AdminProfile, mentor: MentorProfile, methodist: MethodistProfile }} /></SW>} />
         <Route path="/attendance" element={<SW><RoleView views={{ superadmin: SuperAttendance, mentor: () => <MentorLegacyRedirect tab="davomat" /> }} /></SW>} />
         <Route path="/tests" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="testlar" /> }} /></SW>} />
         <Route path="/coins" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="koinlar" /> }} /></SW>} />
@@ -132,6 +130,7 @@ export default function App() {
 
         <Route element={<RoleGuard allow={['admin']} />}>
           <Route path="/payments" element={<SW><AdminPayments /></SW>} />
+          <Route path="/payments/:studentId/:amount?" element={<SW><AdminPayments /></SW>} />
           <Route path="/expenses" element={<SW><AdminExpenses /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
           <Route path="/mentors/:id" element={<SW><AdminMentorDetail /></SW>} />
