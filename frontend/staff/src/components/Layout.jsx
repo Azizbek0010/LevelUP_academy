@@ -152,6 +152,7 @@ const financeManagerNav = [
   { to: '/finance/expenses',  label: 'Xarajatlar', labelKey: 'nav.expenses', Icon: HiOutlineReceiptPercent },
   { to: '/finance/salaries',  label: 'Oyliklar',   labelKey: 'nav.salaries', Icon: HiOutlineCurrencyDollar },
   { to: '/finance/reports',   label: 'Tahlil',     labelKey: 'nav.reports', Icon: HiOutlineChartBar },
+  { to: '/finance/settings',  label: 'Sozlamalar', labelKey: 'nav.settings', Icon: HiOutlineCog },
 ];
 
 const ROLE_NAV = {

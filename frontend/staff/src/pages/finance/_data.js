@@ -13,6 +13,16 @@ export const ORG = {
   city: 'Toshkent',
 };
 
+/* ── Профиль Finance Manager (демо-данные, редактируется локально) ── */
+export const PROFILE = {
+  firstName: 'Jamshid',
+  lastName: 'Nazarov',
+  role: 'Finance Manager',
+  email: 'finance.manager@gmail.com',
+  phone: '+998 90 555-77-88',
+  city: 'Toshkent',
+};
+
 export const BRANCHES = [
   { id: 'downtown',   name: 'Downtown Academy', address: "Toshkent sh., Amir Temur ko'chasi 108", phone: '+998 90 123-45-67', students: 450, groups: 12, staff: 9,  isMain: true },
   { id: 'chilanzar',  name: 'Chilanzar Campus',  address: 'Toshkent sh., Chilanzar 9-kvartal 12',    phone: '+998 90 234-56-78', students: 310, groups: 8,  staff: 6,  isMain: false },
