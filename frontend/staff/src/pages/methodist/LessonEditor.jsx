@@ -114,6 +114,7 @@ function LessonEditorView() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
     resolver: makeQuestionResolver(t),
@@ -231,10 +232,7 @@ function LessonEditorView() {
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const doUpload = async (file) => {
     setErr('');
     setUploading(true);
     try {
@@ -246,8 +244,14 @@ function LessonEditorView() {
       setErr(err.message);
     } finally {
       setUploading(false);
-      e.target.value = '';
     }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await doUpload(file);
+    e.target.value = '';
   };
 
   const deleteQ = async (id) => {
@@ -422,7 +426,17 @@ function LessonEditorView() {
 
       {/* Practical task attachment */}
       {isPractical && (
-        <div className="card bg-white border border-[#E6EDD8] hover:shadow-sm transition-shadow">
+        <div
+          className={`card bg-white border transition-shadow ${dragOver ? 'border-[#7CB342] border-dashed bg-[#FAFDF3]' : 'border-[#E6EDD8] hover:shadow-sm'}`}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            const f = e.dataTransfer.files?.[0];
+            if (f) doUpload(f);
+          }}
+        >
           <div className="card-body p-4 flex flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-[#F6FBEA] rounded-lg text-[#1D2417]">
@@ -439,13 +453,16 @@ function LessonEditorView() {
                 )}
               </div>
             </div>
-            <input
-              type="file"
-              className="file-input file-input-bordered file-input-sm max-w-[240px]"
-              accept=".pdf,.zip,.rar,.tar,.gz,.7z"
-              disabled={uploading}
-              onChange={handleFileUpload}
-            />
+            <div className="flex flex-col items-end gap-1.5">
+              <input
+                type="file"
+                className="file-input file-input-bordered file-input-sm max-w-[240px]"
+                accept=".pdf,.zip,.rar,.tar,.gz,.7z"
+                disabled={uploading}
+                onChange={handleFileUpload}
+              />
+              <span className="text-[11px] opacity-40">{t('editor.upload_drop_hint')}</span>
+            </div>
           </div>
         </div>
       )}

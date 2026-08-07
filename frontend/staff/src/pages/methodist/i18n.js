@@ -171,6 +171,7 @@ const translations = {
   'editor.task_desc': { ru: 'Описание задания', uz: 'Topshiriq tavsifi', en: 'Task description' },
   'editor.attachment_label': { ru: 'Вложенный файл к заданию:', uz: 'Topshiriqqa biriktirilgan fayl:', en: 'Attached file to the task:' },
   'editor.no_file': { ru: 'Файл не прикреплен', uz: 'Fayl biriktirilmagan', en: 'No file attached' },
+  'editor.upload_drop_hint': { ru: 'или перетащите файл сюда', uz: 'yoki faylni shu yerga tashlang', en: 'or drag and drop a file here' },
   'editor.instruction': { ru: 'Инструкция / Объяснение', uz: 'Yo\'riqnoma / Tushuntirish', en: 'Instruction / Explanation' },
   'editor.edit_question': { ru: 'Редактировать вопрос', uz: 'Savolni tahrirlash', en: 'Edit question' },
   'editor.add_question': { ru: 'Добавить вопрос', uz: 'Savol qo\'shish', en: 'Add question' },
