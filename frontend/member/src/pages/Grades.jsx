@@ -150,7 +150,7 @@ export default function Grades() {
                 return (
                   <button
                     key={itemId}
-                    onClick={() => setDetail({ type: tab === 'homework' ? 'hw' : 'test', id: g.id })}
+                    onClick={() => setDetail({ type: tab === 'homework' ? 'hw' : 'test', id: g.id, item: g })}
                     className="w-full flex items-center gap-3 p-3.5 rounded-xl bg-base-200/30 hover:bg-base-200/60 hover:-translate-y-0.5 transition-all duration-200 group text-left cursor-pointer"
                   >
                     <div

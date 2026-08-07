@@ -83,7 +83,7 @@ export default function Attendance() {
             <div className="flex-1 w-full">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {['present', 'absent', 'late', 'excused'].map((s) => {
-                  const st = ATTENDANCE_STATUS[s];
+                  const st = ATTENDANCE_STATUS()[s];
                   const count = summary[s] || 0;
                   const isActive = filter === s;
                   return (
@@ -115,7 +115,7 @@ export default function Attendance() {
       <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl flex-wrap shadow-sm">
         {FILTERS.map((f) => {
           const isActive = filter === f.key;
-          const statusData = ATTENDANCE_STATUS[f.key];
+          const statusData = ATTENDANCE_STATUS()[f.key];
           return (
             <button
               key={f.key}
@@ -162,7 +162,7 @@ export default function Attendance() {
                   </thead>
                   <tbody>
                     {filtered.map((r, i) => {
-                      const st = ATTENDANCE_STATUS[r.status];
+                      const st = ATTENDANCE_STATUS()[r.status];
                       return (
                         <tr key={i} className="hover:bg-base-200/50 transition-colors">
                           <td className="text-sm whitespace-nowrap font-medium">{dateShort(r.lessonDate)}</td>

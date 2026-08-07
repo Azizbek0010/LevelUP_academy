@@ -102,7 +102,7 @@ function HomeworkDetail({ data }) {
 }
 
 function TestDetail({ data }) {
-  const pct = data.totalQuestions > 0 ? Math.round((data.correctCount / data.totalQuestions) * 100) : 0;
+  const pct = data.maxScore > 0 ? Math.round((data.score / data.maxScore) * 100) : 0;
   const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
 
   return (
@@ -194,9 +194,14 @@ function TestDetail({ data }) {
   );
 }
 
-export default function GradeDetail({ type, id, onClose }) {
+export default function GradeDetail({ type, id, item, onClose }) {
   const isHomework = type === 'hw';
   const { data, isLoading, error } = isHomework ? useHomeworkDetail(id) : useTestDetail(id);
+
+  // API возвращает { data: {...} }; в списке же строка — без обёртки.
+  // Если detail-эндпоинт недоступен (нет id в списке, 404) — показываем
+  // read-only вариант из данных строки (score/maxScore достаточно для %).
+  const detail = data?.data ?? item;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -214,13 +219,13 @@ export default function GradeDetail({ type, id, onClose }) {
 
         <div className="flex-1 overflow-y-auto p-5">
           {isLoading && <Loading />}
-          {error && (
+          {error && !item && (
             <div className="text-center py-8">
               <Icon name="exclamation-circle" className="w-10 h-10 text-error mx-auto mb-3" />
               <p className="text-sm opacity-60">{error.message}</p>
             </div>
           )}
-          {data && (isHomework ? <HomeworkDetail data={data} /> : <TestDetail data={data} />)}
+          {detail && (isHomework ? <HomeworkDetail data={detail} /> : <TestDetail data={detail} />)}
         </div>
       </div>
     </div>

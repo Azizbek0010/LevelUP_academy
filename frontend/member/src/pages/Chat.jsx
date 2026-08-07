@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
-import { useChatMessages } from '../queries.js';
+import { useChatMessages, useChatThreads } from '../queries.js';
 import { getSocket, useSocketConnected } from '../socket.js';
 import Avatar from '../components/Avatar.jsx';
 import { EmptyState, ErrorState } from '../components/ui.jsx';
@@ -12,6 +12,8 @@ const ROOMS = [
   { key: 'global', label: 'Общий чат', icon: 'globe', desc: 'Чат для всех родителей и сотрудников', color: '#3b82f6' },
   { key: 'mentors', label: 'Учителя', icon: 'academic', desc: 'Личные сообщения с преподавателями', color: '#a855f7' },
 ];
+
+const STAFF_ROLE_LABELS = { mentor: 'Учитель', admin: 'Админ', superadmin: 'Super Admin' };
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
@@ -113,7 +115,7 @@ export default function Chat() {
   const connected = useSocketConnected(token);
 
   const [activeRoom, setActiveRoom] = useState('global');
-  const [activeStaffId, setActiveStaffId] = useState(null);
+  const [activeThreadId, setActiveThreadId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -123,7 +125,15 @@ export default function Chat() {
   const socketRef = useRef(null);
   const textareaRef = useRef(null);
 
-  const roomKey = activeRoom === 'mentors' ? `parent:${user?.id}` : 'global';
+  // AB-VERIFY: диалоги родителя со staff приходят из my-threads; родитель не может
+  // начать сам — только отвечать в существующую комнату (dm:<staffId>:<parentId>).
+  const { data: threadsData } = useChatThreads();
+  const threads = useMemo(() => threadsData?.data || [], [threadsData]);
+  const activeThread = useMemo(
+    () => threads.find((t) => t.id === activeThreadId) || null,
+    [threads, activeThreadId],
+  );
+  const roomKey = activeRoom === 'global' ? 'global' : activeThread?.room_key || null;
   const roomInfo = ROOMS.find((r) => r.key === activeRoom);
   const { data, isLoading, error, refetch } = useChatMessages(roomKey);
 
@@ -208,8 +218,8 @@ export default function Chat() {
           if (textareaRef.current) textareaRef.current.style.height = 'auto';
         }
       });
-    } else {
-      socketRef.current.emit('chat:parent:send', { body: text }, (res) => {
+    } else if (activeThread) {
+      socketRef.current.emit('chat:dm:reply', { staffId: activeThread.id, body: text }, (res) => {
         setSending(false);
         if (res?.ok) {
           setInput('');
@@ -219,7 +229,13 @@ export default function Chat() {
       });
     }
     textareaRef.current?.focus();
-  }, [input, sending, activeRoom]);
+  }, [input, sending, activeRoom, activeThread]);
+
+  const selectThread = (t) => {
+    setActiveThreadId(t.id);
+    setMessages([]);
+    setAtBottom(true);
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -249,8 +265,14 @@ export default function Chat() {
             <Icon name={roomInfo?.icon} className="w-5 h-5" style={{ color: roomInfo?.color }} />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-bold truncate">{roomInfo?.label}</h1>
-            <p className="text-xs opacity-40 truncate">{roomInfo?.desc}</p>
+            <h1 className="text-base font-bold truncate">
+              {activeThread ? `${activeThread.first_name} ${activeThread.last_name}` : roomInfo?.label}
+            </h1>
+            <p className="text-xs opacity-40 truncate">
+              {activeThread
+                ? STAFF_ROLE_LABELS[activeThread.staff_role] || 'Сотрудник'
+                : roomInfo?.desc}
+            </p>
           </div>
           <div className="flex items-center gap-1.5">
             <div className={`w-2 h-2 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
@@ -266,7 +288,7 @@ export default function Chat() {
           return (
             <button
               key={r.key}
-              onClick={() => { setActiveRoom(r.key); setMessages([]); setAtBottom(true); }}
+              onClick={() => { setActiveRoom(r.key); setActiveThreadId(null); setMessages([]); setAtBottom(true); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? 'bg-primary text-primary-content shadow-md shadow-primary/20'
@@ -290,42 +312,78 @@ export default function Chat() {
 
       {/* Messages */}
       <div ref={boxRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 bg-base-200/15" aria-live="polite">
-        {isLoading && rows.length === 0 && (
-          <div className="space-y-4 py-4">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className={i % 2 ? 'flex justify-end' : ''}>
-                <div className="skeleton h-12 w-2/5 rounded-2xl" />
+        {activeRoom === 'mentors' && !activeThread ? (
+          <>
+            <p className="text-sm font-semibold opacity-50 mb-3">Выберите преподавателя</p>
+            {threads.length === 0 ? (
+              <div className="h-full grid place-items-center">
+                <EmptyState icon="chat" title="Нет диалогов" message="Преподаватели ещё не писали вам" />
               </div>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="space-y-2">
+                {threads.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => selectThread(t)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-base-100 border border-base-200/60 hover:border-primary/40 hover:shadow-sm transition-all duration-200 text-left"
+                  >
+                    <Avatar name={`${t.first_name} ${t.last_name}`} size={40} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold truncate">{t.first_name} {t.last_name}</p>
+                        {t.last_message_at && (
+                          <span className="text-[10px] opacity-30 whitespace-nowrap">{formatTime(t.last_message_at)}</span>
+                        )}
+                      </div>
+                      <p className="text-xs opacity-40 truncate mt-0.5">{t.last_message || 'Нет сообщений'}</p>
+                    </div>
+                    {t.unread_count > 0 && <span className="badge badge-primary badge-sm">{t.unread_count}</span>}
+                    <Icon name="chevron-right" className="w-4 h-4 opacity-20 shrink-0" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {isLoading && rows.length === 0 && (
+              <div className="space-y-4 py-4">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className={i % 2 ? 'flex justify-end' : ''}>
+                    <div className="skeleton h-12 w-2/5 rounded-2xl" />
+                  </div>
+                ))}
+              </div>
+            )}
 
-        {!isLoading && rows.length === 0 && (
-          <div className="h-full grid place-items-center">
-            <EmptyState
-              icon="chat"
-              title="Пока нет сообщений"
-              message={activeRoom === 'global' ? 'Начните общение первым' : 'Напишите преподавателю first'}
-            />
-          </div>
-        )}
+            {!isLoading && rows.length === 0 && (
+              <div className="h-full grid place-items-center">
+                <EmptyState
+                  icon="chat"
+                  title="Пока нет сообщений"
+                  message={activeRoom === 'global' ? 'Начните общение первым' : 'Напишите преподавателю первым'}
+                />
+              </div>
+            )}
 
-        {rows.map(({ m, mine, newDay, groupStart, groupEnd }) => {
-          const showSender = groupStart && !mine;
-          return (
-            <div key={m.id}>
-              {newDay && (
-                <div className="flex justify-center my-5">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-base-content/40 bg-base-100 border border-base-200/50 rounded-full px-4 py-1.5 shadow-sm">
-                    {formatDayLabel(m.created_at)}
-                  </span>
+            {rows.map(({ m, mine, newDay, groupStart, groupEnd }) => {
+              const showSender = groupStart && !mine;
+              return (
+                <div key={m.id}>
+                  {newDay && (
+                    <div className="flex justify-center my-5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-base-content/40 bg-base-100 border border-base-200/50 rounded-full px-4 py-1.5 shadow-sm">
+                        {formatDayLabel(m.created_at)}
+                      </span>
+                    </div>
+                  )}
+                  <MessageBubble m={m} mine={mine} groupStart={groupStart} groupEnd={groupEnd} showSender={showSender} />
                 </div>
-              )}
-              <MessageBubble m={m} mine={mine} groupStart={groupStart} groupEnd={groupEnd} showSender={showSender} />
-            </div>
-          );
-        })}
-        <div ref={bottomRef} />
+              );
+            })}
+            <div ref={bottomRef} />
+          </>
+        )}
       </div>
 
       {/* Scroll to bottom */}
@@ -340,6 +398,7 @@ export default function Chat() {
       )}
 
       {/* Input */}
+      {(activeRoom === 'global' || activeThread) && (
       <div className="shrink-0 border-t border-base-200/60 bg-base-100 px-3 pt-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
         <div className="flex items-end gap-2.5">
           <div className="flex-1 min-w-0 relative">
@@ -372,6 +431,7 @@ export default function Chat() {
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 }

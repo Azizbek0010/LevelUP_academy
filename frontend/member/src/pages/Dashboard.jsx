@@ -235,7 +235,7 @@ export default function Dashboard() {
                 {['present', 'absent', 'late', 'excused'].map((s) => {
                   const count = att[s] || 0;
                   const pct = Math.round((count / attTotal) * 100);
-                  const st = ATTENDANCE_STATUS[s];
+                  const st = ATTENDANCE_STATUS()[s];
                   return (
                     <div key={s} className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ background: st?.color }} />
@@ -301,7 +301,7 @@ export default function Dashboard() {
               <div className="absolute left-[19px] top-2 bottom-2 w-px bg-base-300" />
               <div className="space-y-1">
                 {d.attendance?.recent?.slice(0, 5).map((r, i) => {
-                  const st = ATTENDANCE_STATUS[r.status];
+                  const st = ATTENDANCE_STATUS()[r.status];
                   return (
                     <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-base-200/50 transition-colors relative">
                       <div className="relative z-10">

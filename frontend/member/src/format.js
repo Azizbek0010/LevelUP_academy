@@ -1,15 +1,20 @@
-export const fmt = (n) => new Intl.NumberFormat('ru-RU').format(Number(n ?? 0));
+import { getLang, t } from './i18n.jsx';
+
+const LOCALES = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+const localeOf = () => LOCALES[getLang()] || 'ru-RU';
+
+export const fmt = (n) => new Intl.NumberFormat(localeOf()).format(Number(n ?? 0));
 
 export const money = (n, cur = 'UZS') => `${fmt(n)} ${cur}`;
 
 export const dateShort = (iso) =>
   iso
-    ? new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(iso))
+    ? new Intl.DateTimeFormat(localeOf(), { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(iso))
     : '—';
 
 export const datetimeShort = (iso) =>
   iso
-    ? new Intl.DateTimeFormat('ru-RU', {
+    ? new Intl.DateTimeFormat(localeOf(), {
         day: '2-digit',
         month: 'short',
         hour: '2-digit',
@@ -21,17 +26,23 @@ export const timeAgo = (iso) => {
   if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'только что';
-  if (mins < 60) return `${mins} мин. назад`;
+  if (mins < 1) return t('common.justNow');
+  if (mins < 60) return t('common.minAgo', { n: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} ч. назад`;
+  if (hrs < 24) return t('common.hrsAgo', { n: hrs });
   const days = Math.floor(hrs / 24);
-  return `${days} дн. назад`;
+  return t('common.daysAgo', { n: days });
 };
 
-export const ATTENDANCE_STATUS = {
-  present: { label: 'Присутствовал', color: '#22c55e', bg: 'rgba(34,197,94,.12)' },
-  absent: { label: 'Отсутствовал', color: '#ef4444', bg: 'rgba(239,68,68,.12)' },
-  late: { label: 'Опоздал', color: '#f59e0b', bg: 'rgba(245,158,11,.12)' },
-  excused: { label: 'По уважит.', color: '#3b82f6', bg: 'rgba(59,130,246,.12)' },
-};
+/** Статусы посещаемости с подписями на текущем языке. */
+export function attendanceStatus() {
+  return {
+    present: { label: t('status.present'), color: '#22c55e', bg: 'rgba(34,197,94,.12)' },
+    absent: { label: t('status.absent'), color: '#ef4444', bg: 'rgba(239,68,68,.12)' },
+    late: { label: t('status.late'), color: '#f59e0b', bg: 'rgba(245,158,11,.12)' },
+    excused: { label: t('status.excused'), color: '#3b82f6', bg: 'rgba(59,130,246,.12)' },
+  };
+}
+
+// Совместимость: некоторые места зовут ATTENDANCE_STATUS[s] — теперь это функция.
+export const ATTENDANCE_STATUS = attendanceStatus;

@@ -25,7 +25,7 @@ const MOCK_OVERVIEW = {
   currentInvoice: { totalAmount: 200000, paidAmount: 50000 },
   rank: { rank: 3, coins: 350 },
   groups: [
-    { id: 'g1', name: 'A1', subject: 'A1', mentorName: 'Акбар Каримов', studentCount: 12 },
+    { id: 'g1', name: 'A1', subject: 'Английский язык', mentorName: 'Акбар Каримов', studentCount: 12 },
   ],
   attendance: {
     windowDays: 30,
