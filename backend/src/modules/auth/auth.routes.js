@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { createRateLimiter } from '../../middlewares/rateLimiter.js';
 import { validate } from '../../middlewares/validate.js';
 import * as ctrl from './auth.controller.js';
-import { loginSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schemas.js';
+import { loginSchema, forgotPasswordSchema, resetPasswordSchema, qrLoginSchema } from './auth.schemas.js';
 
 const router = Router();
 
@@ -132,6 +132,39 @@ router.post('/staff/login', validate({ body: loginSchema }), ctrl.loginStaff);
  *             schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
  */
 router.post('/member/login', validate({ body: loginSchema }), ctrl.loginMember);
+
+/**
+ * @openapi
+ * /api/auth/member/qr-login:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Login as student/parent by redeeming a one-time QR token
+ *     description: >
+ *       Token is issued by admin/branch_manager (POST /api/admin/students/{id}/qr-token)
+ *       and encoded into a QR code; scanning it opens this exchange in the member app.
+ *       Single-use, 5-minute TTL (Redis getdel). Sets the same cookies as /member/login.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token]
+ *             properties: { token: { type: string } }
+ *     responses:
+ *       200:
+ *         description: Authenticated
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthResponse' }
+ *       401:
+ *         description: QR code expired or already used
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ */
+router.post('/member/qr-login', validate({ body: qrLoginSchema }), ctrl.qrLoginMember);
 
 /**
  * @openapi

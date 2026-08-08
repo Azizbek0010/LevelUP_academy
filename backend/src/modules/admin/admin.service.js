@@ -5,7 +5,11 @@ import { parsePagination, buildPageMeta } from '../../utils/pagination.js';
 import { genLoginCode, genNumericPassword } from '../auth/credentials.js';
 import { encryptPassword, decryptPassword } from '../../utils/credentialCrypto.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
+import { redis } from '../../config/redis.js';
+import { QrLoginService } from '../auth/qr-login.service.js';
 import * as repo from './admin.repository.js';
+
+const qrLoginService = new QrLoginService({ redis });
 // Reuse: davomat и ДЗ живут в общих таблицах (attendance / homework), админская
 // GroupDetail работает с тем же data-layer, что и mentor — единая точка правды,
 // новых таблиц под них не заводим (решение команды 2026-07-19).
@@ -472,6 +476,14 @@ export async function createGroup(branchId, body) {
     schedule,
   });
   return mapGroup(row);
+}
+
+/** Токен для QR-входа — только для студента своего филиала (та же проверка,
+ * что и у остальных student-эндпоинтов). */
+export async function createStudentQrToken(branchId, studentId) {
+  const s = await repo.findStudentInBranch(studentId, branchId);
+  if (!s) throw new AppError(404, 'Student not found in your branch');
+  return qrLoginService.createForUser(studentId);
 }
 
 export async function studentTelegramStatus(branchId, studentId) {
