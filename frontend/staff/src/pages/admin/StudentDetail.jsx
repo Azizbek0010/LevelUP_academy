@@ -9,9 +9,13 @@ import {
 } from 'lucide-react';
 
 // Ссылка на member-app для QR-входа студента (сканирует камерой — сразу
-// логинится, см. backend/src/modules/auth/qr-login.service.js). В dev — порт
-// member-приложения (vite.config.js:15); в проде нужен VITE_MEMBER_URL.
-const MEMBER_URL = import.meta.env.VITE_MEMBER_URL || 'http://localhost:5175';
+// логинится, см. backend/src/modules/auth/qr-login.service.js). VITE_MEMBER_URL
+// в frontend/staff/.env (не в репозитории, dev-only) переопределяет на LAN IP,
+// чтобы камера телефона доставала до dev-сервера — см. .env.example.
+// Фолбэк — прод-домен: на Vercel сборке этот VITE_MEMBER_URL сегодня не задан
+// (нет доступа к дашборду Vercel из агента), а localhost в проде был бы 100%
+// нерабочей ссылкой.
+const MEMBER_URL = import.meta.env.VITE_MEMBER_URL || 'https://member.levelup-academy.uz';
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudentDetail, useAdminGroups, useAdminGroupDetail, useAdminInvoices, useAdminStudentAttendance, useAdminStudentTelegram, useAdminStudentCredentials, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
