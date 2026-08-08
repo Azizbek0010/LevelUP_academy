@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 5175,
+      // host: true — слушать LAN, не только localhost: страницу /qr-login
+      // открывает камера телефона по IP компа, а не по localhost телефона.
+      host: true,
       proxy: {
         '/api': {
           target: env.DEV_API_PROXY || 'https://levelup-academy-1.onrender.com',
