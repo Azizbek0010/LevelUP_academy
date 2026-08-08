@@ -14,6 +14,7 @@ const SuperStaffDetail = lazy(() => import('./pages/super/StaffDetail.jsx'));
 const SuperBranchDetail = lazy(() => import('./pages/super/BranchDetail.jsx'));
 const SuperSettings = lazy(() => import('./pages/super/Settings.jsx'));
 const SuperTrainingTypes = lazy(() => import('./pages/super/TrainingTypes.jsx'));
+const SuperShopCatalog = lazy(() => import('./pages/super/ShopCatalog.jsx'));
 const SuperStudents = lazy(() => import('./pages/super/Students.jsx'));
 const SuperGroups = lazy(() => import('./pages/super/Groups.jsx'));
 const SuperStats = lazy(() => import('./pages/super/Stats.jsx'));
@@ -38,6 +39,8 @@ const AdminPayments = lazy(() => import('./pages/admin/Payments.jsx'));
 const AdminExpenses = lazy(() => import('./pages/admin/Expenses.jsx'));
 const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'));
 const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
+const AdminShop = lazy(() => import('./pages/admin/Shop.jsx'));
+const AdminSchedule = lazy(() => import('./pages/admin/Schedule.jsx'));
 const AdminChat = lazy(() => import('./pages/admin/Chat.jsx'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile.jsx'));
 
@@ -146,6 +149,8 @@ export default function App() {
           {/* deep-link на конкретного студента+сумму — Abduloh, автоподстановка суммы из группы */}
           <Route path="/payments/:studentId/:amount?" element={<SW><AdminPayments /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
+          <Route path="/shop" element={<SW><AdminShop /></SW>} />
+          <Route path="/schedule" element={<SW><AdminSchedule /></SW>} />
         </Route>
         {/* Расходы — общий путь для админа и branch manager (RoleView разбирает) */}
         <Route path="/expenses" element={<SW><RoleView views={{ admin: AdminExpenses, branch_manager: BranchManagerExpenses }} /></SW>} />
@@ -167,6 +172,7 @@ export default function App() {
           <Route path="/reminders" element={<SW><SuperReminders /></SW>} />
           <Route path="/audit" element={<SW><SuperAudit /></SW>} />
           <Route path="/methodics" element={<SW><SuperTrainingTypes /></SW>} />
+          <Route path="/shop-catalog" element={<SW><SuperShopCatalog /></SW>} />
         <Route path="/discipline" element={<SW><SuperDiscipline /></SW>} />
         </Route>
 

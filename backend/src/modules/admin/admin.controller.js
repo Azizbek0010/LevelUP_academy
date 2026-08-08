@@ -103,12 +103,20 @@ export const createGroup = asyncHandler(async (req, res) => {
   res.status(201).json({ group: await service.createGroup(branchId(req), req.body) });
 });
 
+export const schedule = asyncHandler(async (req, res) => {
+  res.json(await service.schedule(branchId(req)));
+});
+
 export const listTrainingTypes = asyncHandler(async (req, res) => {
   res.json({ trainingTypes: await service.listTrainingTypes(branchId(req)) });
 });
 
 export const studentAttendance = asyncHandler(async (req, res) => {
   res.json(await service.studentAttendance(branchId(req), req.params.id, req.query));
+});
+
+export const createStudentQrToken = asyncHandler(async (req, res) => {
+  res.json(await service.createStudentQrToken(branchId(req), req.params.id));
 });
 
 export const studentTelegramStatus = asyncHandler(async (req, res) => {

@@ -2457,6 +2457,7 @@ export const api = {
   adminStudentTelegram: (token, id) => request(`/admin/students/${id}/telegram`, { token }),
   adminSendStudentTelegramMessage: (token, id, text, toParent) =>
     request(`/admin/students/${id}/telegram/message`, { method: 'POST', token, body: { text, toParent } }),
+  adminCreateStudentQrToken: (token, id) => request(`/admin/students/${id}/qr-token`, { method: 'POST', token }),
   adminUpdateStudent: (token, id, body) => request(`/admin/students/${id}`, { method: 'PATCH', token, body }),
   adminFreezeStudent: (token, id, frozen, reason) => request(`/admin/students/${id}/freeze`, { method: 'POST', token, body: { frozen, reason } }),
   adminDeleteStudent: (token, id, reason) => request(`/admin/students/${id}`, { method: 'DELETE', token, body: reason ? { reason } : undefined }),
@@ -2466,6 +2467,13 @@ export const api = {
   adminUpdateGroup: (token, id, body) => request(`/admin/groups/${id}`, { method: 'PATCH', token, body }),
   adminArchiveGroup: (token, id, reason) => request(`/admin/groups/${id}/archive`, { method: 'POST', token, body: reason ? { reason } : undefined }),
   adminUnarchiveGroup: (token, id) => request(`/admin/groups/${id}/unarchive`, { method: 'POST', token }),
+
+  // -------- ADMIN/Branch Manager: Расписание (кабинеты + drag-and-drop сетка) --------
+  adminSchedule: (token) => request('/admin/schedule', { token }),
+  adminRooms: (token) => request('/admin/rooms', { token }),
+  adminCreateRoom: (token, body) => request('/admin/rooms', { method: 'POST', token, body }),
+  adminUpdateRoom: (token, id, body) => request(`/admin/rooms/${id}`, { method: 'PATCH', token, body }),
+  adminDeleteRoom: (token, id) => request(`/admin/rooms/${id}`, { method: 'DELETE', token }),
   adminMentors: (token) => request('/admin/mentors', { token }),
   adminCreateMentor: (token, body) => request('/admin/mentors', { method: 'POST', token, body }),
   adminUpdateMentor: (token, id, body) => request(`/admin/mentors/${id}`, { method: 'PATCH', token, body }),
@@ -2473,6 +2481,13 @@ export const api = {
   adminDeleteMentor: (token, id) => request(`/admin/mentors/${id}`, { method: 'DELETE', token }),
   adminRegenStudentPassword: (token, id) => request(`/admin/students/${id}/regenerate-password`, { method: 'POST', token }),
   adminStudentCredentials: (token, id) => request(`/admin/students/${id}/credentials`, { token }),
+
+  // -------- ADMIN/Branch Manager: Shop (остаток + заказы своего филиала; каталог — у SEO) --------
+  adminShopItems: (token) => request('/admin/shop/items', { token }),
+  adminRestockShopItem: (token, id, stock) => request(`/admin/shop/items/${id}/stock`, { method: 'PATCH', token, body: { stock } }),
+  adminShopOrders: (token, qs = '') => request(`/admin/shop/orders${qs}`, { token }),
+  adminFulfillShopOrder: (token, id) => request(`/admin/shop/orders/${id}/fulfill`, { method: 'POST', token }),
+  adminCancelShopOrder: (token, id) => request(`/admin/shop/orders/${id}/cancel`, { method: 'POST', token }),
 
   // -------- ADMIN: Groups — add/remove students --------
   adminAddStudentToGroup: (token, groupId, studentId) =>
@@ -2546,6 +2561,12 @@ export const api = {
     request(`/super/training-types/${id}/price`, { method: 'PATCH', token, body: { price, maxStudents } }),
   superSetTrainingTypeArchived: (token, id, archived) =>
     request(`/super/training-types/${id}/archive`, { method: 'PATCH', token, body: { archived } }),
+  // -------- SEO: Shop-каталог (имя/фото/цена/старт.остаток — филиал дальше только пополняет) --------
+  superShopItems: (token, qs = '') => request(`/super/shop/items${qs}`, { token }),
+  superCreateShopItem: (token, body) => request('/super/shop/items', { method: 'POST', token, body }),
+  superUpdateShopItem: (token, id, body) => request(`/super/shop/items/${id}`, { method: 'PATCH', token, body }),
+  superSetShopItemArchived: (token, id, archived) =>
+    request(`/super/shop/items/${id}/archive`, { method: 'PATCH', token, body: { archived } }),
   superMethodists: (token) => request('/super/methodists', { token }),
   // Только чтение — для выбора цели во «Взыскании». CRUD ментора у Admin филиала.
   superMentors: (token) => request('/super/mentors', { token }),

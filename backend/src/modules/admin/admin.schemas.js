@@ -149,6 +149,7 @@ export const createGroupSchema = z
     days: daysSchema,
     startTime: startTimeSchema,
     room: z.string().trim().max(60).optional(),
+    roomId: z.string().uuid('Invalid roomId').optional(),
   })
   .refine((o) => o.trainingTypeId || (o.subject && o.monthlyPrice !== undefined), {
     message: 'Either trainingTypeId or subject + monthlyPrice is required',
@@ -164,6 +165,7 @@ export const updateGroupSchema = z
     days: daysSchema,
     startTime: startTimeSchema,
     room: z.string().trim().max(60),
+    roomId: z.string().uuid('Invalid roomId').nullable(),
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' })

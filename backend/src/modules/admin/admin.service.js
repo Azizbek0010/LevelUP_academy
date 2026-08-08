@@ -5,7 +5,12 @@ import { parsePagination, buildPageMeta } from '../../utils/pagination.js';
 import { genLoginCode, genNumericPassword } from '../auth/credentials.js';
 import { encryptPassword, decryptPassword } from '../../utils/credentialCrypto.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
+import { redis } from '../../config/redis.js';
+import { QrLoginService } from '../auth/qr-login.service.js';
 import * as repo from './admin.repository.js';
+import * as roomsRepo from './rooms/rooms.repository.js';
+
+const qrLoginService = new QrLoginService({ redis });
 // Reuse: davomat и ДЗ живут в общих таблицах (attendance / homework), админская
 // GroupDetail работает с тем же data-layer, что и mentor — единая точка правды,
 // новых таблиц под них не заводим (решение команды 2026-07-19).
@@ -460,18 +465,52 @@ export async function createGroup(branchId, body) {
     monthlyPrice = Number(tt.price);
   }
 
+  if (body.roomId) {
+    const room = await roomsRepo.findRoomInBranch(body.roomId, branchId);
+    if (!room) throw new AppError(404, 'Room not found in your branch');
+  }
+
   const schedule = await buildSchedule(branchId, body.days, body.startTime);
   const row = await repo.insertGroup({
     branchId,
     mentorId: body.mentorId,
     name: body.name,
     room: body.room,
+    roomId: body.roomId,
     trainingTypeId: body.trainingTypeId,
     subject,
     monthlyPrice,
     schedule,
   });
   return mapGroup(row);
+}
+
+/** Кабинеты + активные группы с расписанием — сетка "Расписание" (rooms × дни/время). */
+export async function schedule(branchId) {
+  const [rooms, groups] = await Promise.all([
+    roomsRepo.listRoomsByBranch(branchId),
+    repo.listGroupsForSchedule(branchId),
+  ]);
+  return {
+    rooms: rooms.map((r) => ({ id: r.id, name: r.name, capacity: r.capacity })),
+    groups: groups.map((g) => ({
+      id: g.id,
+      name: g.name,
+      subject: g.subject,
+      schedule: g.schedule ?? [],
+      roomId: g.room_id,
+      roomName: g.room_name,
+      mentor: { id: g.mentor_id, name: `${g.mentor_first} ${g.mentor_last}` },
+    })),
+  };
+}
+
+/** Токен для QR-входа — только для студента своего филиала (та же проверка,
+ * что и у остальных student-эндпоинтов). */
+export async function createStudentQrToken(branchId, studentId) {
+  const s = await repo.findStudentInBranch(studentId, branchId);
+  if (!s) throw new AppError(404, 'Student not found in your branch');
+  return qrLoginService.createForUser(studentId);
 }
 
 export async function studentTelegramStatus(branchId, studentId) {
@@ -539,6 +578,8 @@ export async function listGroups(branchId, query) {
       trainingTypeId: g.training_type_id,
       monthlyPrice: Number(g.monthly_price),
       room: g.room,
+      roomId: g.room_id,
+      roomName: g.room_name,
       isArchived: g.is_archived,
       students: Number(g.students),
       mentor: { id: g.mentor_id, name: `${g.mentor_first} ${g.mentor_last}` },
@@ -581,6 +622,10 @@ export async function updateGroup(branchId, id, body) {
     if (!tt) throw new AppError(404, 'Training type not found or not priced yet');
     patch.subject = tt.name;
     patch.monthlyPrice = Number(tt.price);
+  }
+  if (patch.roomId) {
+    const room = await roomsRepo.findRoomInBranch(patch.roomId, branchId);
+    if (!room) throw new AppError(404, 'Room not found in your branch');
   }
   if (days !== undefined && startTime !== undefined) {
     patch.schedule = await buildSchedule(branchId, days, startTime);
@@ -626,6 +671,8 @@ function mapGroup(g) {
     startTime: schedule[0]?.start ?? null,
     endTime: schedule[0]?.end ?? null,
     room: g.room,
+    roomId: g.room_id,
+    roomName: g.room_name,
     isArchived: g.is_archived,
     createdAt: g.created_at,
   };

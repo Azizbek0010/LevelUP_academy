@@ -466,6 +466,7 @@ async function request(path, opts = {}) {
 export const api = {
   loginMember: (login, password) =>
     request('/auth/member/login', { method: 'POST', body: { login, password } }),
+  qrLogin: (token) => request('/auth/member/qr-login', { method: 'POST', body: { token } }),
   refresh: () => request('/auth/member/refresh', { method: 'POST' }),
   logout: () => request('/auth/member/logout', { method: 'POST' }),
 

@@ -32,6 +32,8 @@ import * as discipline from '../discipline/discipline.controller.js';
 import { issuePenaltySchema, listPenaltiesQuery } from '../discipline/discipline.schemas.js';
 import paymentsRoutes from './payments/payments.routes.js';
 import reportsRoutes from './reports/reports.routes.js';
+import shopAdminRoutes from './shop/shop-admin.routes.js';
+import roomsRoutes from './rooms/rooms.routes.js';
 
 /**
  * K-ADMIN — панель филиала. Только Admin; scope жёстко = свой branch_id.
@@ -47,6 +49,23 @@ router.use(authenticate, authorize('admin', 'branch_manager'));
 
 router.use('/payments', paymentsRoutes);
 router.use('/reports', reportsRoutes);
+router.use('/shop', shopAdminRoutes);
+router.use('/rooms', roomsRoutes);
+
+/**
+ * @openapi
+ * /api/admin/schedule:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Rooms + active groups with schedule, for the drag-and-drop Расписание grid
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Rooms and groups of the branch
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.get('/schedule', ctrl.schedule);
 
 /**
  * @openapi
@@ -386,6 +405,7 @@ router.get('/students/:id', validate({ params: idParam }), ctrl.studentDetail);
 router.get('/students/:id/attendance', validate({ params: idParam, query: studentAttendanceQuery }), ctrl.studentAttendance);
 router.get('/students/:id/telegram', validate({ params: idParam }), ctrl.studentTelegramStatus);
 router.post('/students/:id/telegram/message', validate({ params: idParam, body: sendStudentTelegramMessageSchema }), ctrl.sendStudentTelegramMessage);
+router.post('/students/:id/qr-token', validate({ params: idParam }), ctrl.createStudentQrToken);
 router.patch('/students/:id', validate({ params: idParam, body: updateStudentSchema }), ctrl.updateStudent);
 
 /**

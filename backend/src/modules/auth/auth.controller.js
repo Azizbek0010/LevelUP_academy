@@ -1,6 +1,11 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { env } from '../../config/env.js';
+import { redis } from '../../config/redis.js';
 import * as service from './auth.service.js';
+import { QrLoginService } from './qr-login.service.js';
+import { AppError } from '../../utils/AppError.js';
+
+const qrLoginService = new QrLoginService({ redis });
 
 const REFRESH_COOKIE = 'refresh_token';
 const REFRESH_COOKIE_PATH = '/api/auth';
@@ -59,6 +64,20 @@ function makeLogin(allowedRoles, group) {
 export const loginMain = makeLogin(ROLE_GROUPS.main, 'main');
 export const loginStaff = makeLogin(ROLE_GROUPS.staff, 'staff');
 export const loginMember = makeLogin(ROLE_GROUPS.member, 'member');
+
+/**
+ * Вход студента по QR — токен одноразовый (Redis getdel), выдаёт admin через
+ * POST /admin/students/:id/qr-token. Погашение через loginByUserId — тот же
+ * путь, что и у входа через Telegram (identity уже доказана не паролем).
+ */
+export const qrLoginMember = asyncHandler(async (req, res) => {
+  const userId = await qrLoginService.consume(req.body.token);
+  if (!userId) throw new AppError(401, 'QR code expired or already used');
+  const { user, accessToken, refreshToken } = await service.loginByUserId(userId, ROLE_GROUPS.member);
+  res.cookie(REFRESH_COOKIE, refreshToken, refreshCookieOptions());
+  res.cookie(cookieNameFor('member'), refreshToken, refreshCookieOptions());
+  res.json({ user, accessToken });
+});
 
 // вход через Google (Firebase) — по группам ролей, как обычный логин.
 // доступен main_admin И staff (admin/seo/mentor). Один Firebase-проект на всех.

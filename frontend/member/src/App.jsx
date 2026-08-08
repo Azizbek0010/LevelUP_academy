@@ -5,6 +5,7 @@ import Splash from './components/Splash.jsx';
 import Layout from './components/Layout.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import Login from './pages/Login.jsx';
+import QrLogin from './pages/QrLogin.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Attendance from './pages/Attendance.jsx';
 import Grades from './pages/Grades.jsx';
@@ -62,6 +63,8 @@ export default function App() {
     <ErrorBoundary>
       <Routes>
         <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
+        {/* Публичный — сам логинит по одноразовому токену, авторизация не нужна */}
+        <Route path="/qr-login" element={<QrLogin />} />
 
         <Route
           path="/"

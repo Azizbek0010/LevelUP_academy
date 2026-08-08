@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import QRCode from 'qrcode';
 import {
   ArrowLeft, Edit3, Save, Loader2, Coins, CalendarDays,
   KeyRound, Phone, Snowflake, Sun, Archive, Copy, Check, CreditCard,
   AlertCircle, User, GraduationCap, QrCode, Send, MessageSquare, Gift,
   UserX, Plus, Wallet, Users,
 } from 'lucide-react';
+
+// Ссылка на member-app для QR-входа студента (сканирует камерой — сразу
+// логинится, см. backend/src/modules/auth/qr-login.service.js). VITE_MEMBER_URL
+// в frontend/staff/.env (не в репозитории, dev-only) переопределяет на LAN IP,
+// чтобы камера телефона доставала до dev-сервера — см. .env.example.
+// Фолбэк — прод-домен: на Vercel сборке этот VITE_MEMBER_URL сегодня не задан
+// (нет доступа к дашборду Vercel из агента), а localhost в проде был бы 100%
+// нерабочей ссылкой.
+const MEMBER_URL = import.meta.env.VITE_MEMBER_URL || 'https://member.levelup-academy.uz';
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudentDetail, useAdminGroups, useAdminGroupDetail, useAdminInvoices, useAdminStudentAttendance, useAdminStudentTelegram, useAdminStudentCredentials, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
@@ -87,6 +97,24 @@ export default function AdminStudentDetail() {
   const [showTgMessage, setShowTgMessage] = useState(false);
   const { data: credsRaw, isLoading: credsLoading } = useAdminStudentCredentials(id, showCreds);
   const realCreds = credsRaw?.data || credsRaw;
+  const [qrImage, setQrImage] = useState(null);
+  const [qrError, setQrError] = useState(false);
+
+  // Токен одноразовый и живёт 5 минут — берём свежий каждый раз, когда модалка
+  // открывается, а не при монтировании страницы (см. auth/qr-login.service.js).
+  useEffect(() => {
+    if (!showCreds) { setQrImage(null); setQrError(false); return; }
+    let cancelled = false;
+    api.adminCreateStudentQrToken(token, id)
+      .then((res) => {
+        const r = res?.data || res;
+        const url = `${MEMBER_URL}/qr-login?token=${encodeURIComponent(r.token)}`;
+        return QRCode.toDataURL(url, { width: 220, margin: 1, color: { dark: '#1D2417', light: '#ffffff' } });
+      })
+      .then((dataUrl) => { if (!cancelled) setQrImage(dataUrl); })
+      .catch(() => { if (!cancelled) setQrError(true); });
+    return () => { cancelled = true; };
+  }, [showCreds, id, token]);
   const invalidate = useInvalidate();
   const invoices = (invoicesRaw?.data?.invoices || invoicesRaw?.invoices || []).slice().sort(
     (a, b) => new Date(b.periodMonth || b.createdAt) - new Date(a.periodMonth || a.createdAt)
@@ -489,6 +517,22 @@ export default function AdminStudentDetail() {
                 {copied === 'pw' ? <Check size={14} /> : <Copy size={14} />}
               </button>
             )}
+          </div>
+
+          <div className="flex flex-col items-center gap-2 pt-1">
+            {qrImage ? (
+              <img src={qrImage} alt="QR для входа" width={180} height={180} className="rounded-[10px] border border-base-300" />
+            ) : qrError ? (
+              <p className="text-[11px] text-error text-center">Не удалось сгенерировать QR — попробуйте открыть модалку заново</p>
+            ) : (
+              <div className="w-[180px] h-[180px] rounded-[10px] border border-base-300 grid place-items-center bg-base-200/60">
+                <span className="loading loading-spinner loading-sm text-primary" />
+              </div>
+            )}
+            <p className="text-[11px] text-base-content/45 text-center">
+              Студент сканирует камерой телефона — входит в кабинет сразу, без набора логина и пароля.
+              Код одноразовый, действует 5 минут.
+            </p>
           </div>
         </div>
       </Modal>

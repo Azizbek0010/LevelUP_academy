@@ -184,3 +184,30 @@ export const reassignBranchManagersSchema = z.object({
       message: 'Duplicate target branchId in assignments',
     }),
 });
+
+// ---------- shop-каталог (SEO заводит товары/цену/фото — филиал только пополняет остаток) ----------
+export const createShopItemSchema = z.object({
+  branchId: z.string().uuid('Invalid branchId'),
+  name: z.string().trim().min(1).max(160),
+  imageKey: z.string().trim().max(512).optional(),
+  coinPrice: z.coerce.number().int().positive(),
+  stock: z.coerce.number().int().min(0).optional(),
+});
+
+export const updateShopItemSchema = z
+  .object({
+    name: z.string().trim().min(1).max(160),
+    imageKey: z.string().trim().max(512),
+    coinPrice: z.coerce.number().int().positive(),
+    stock: z.coerce.number().int().min(0),
+  })
+  .partial()
+  .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
+
+export const setShopItemArchivedSchema = z.object({
+  archived: z.boolean(),
+});
+
+export const listShopItemsQuery = z.object({
+  branchId: z.string().uuid('Invalid branchId').optional(),
+});
