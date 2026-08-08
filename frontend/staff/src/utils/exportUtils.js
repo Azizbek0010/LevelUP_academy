@@ -359,50 +359,51 @@ export async function exportGroupCredentialsPDF({ groupName, mentorName, student
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const orgName = getOrgName();
 
-  let fontName = 'helvetica';
-  try {
-    const [nr, br] = await Promise.all([
-      fetch('/fonts/DejaVuSans.ttf'),
-      fetch('/fonts/DejaVuSans-Bold.ttf'),
-    ]);
-    if (nr.ok && br.ok) {
-      const toB64 = async (r) => {
-        const buf = await r.arrayBuffer();
-        const arr = new Uint8Array(buf);
-        let s = '';
-        for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]);
-        return btoa(s);
-      };
-      const [nb, bb] = await Promise.all([toB64(nr), toB64(br)]);
-      doc.addFileToVFS('DejaVuSans.ttf', nb);
-      doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
-      doc.addFileToVFS('DejaVuSans-Bold.ttf', bb);
-      doc.addFont('DejaVuSans-Bold.ttf', 'DejaVuSans', 'bold');
-      fontName = 'DejaVuSans';
-    }
-  } catch { /* падает на helvetica — латиница/цифры всё равно читаемы */ }
+  // Встроенный helvetica, без загрузки DejaVuSans: на этой карточке (см. образец
+  // 299.pdf) всё содержимое латиницей — orgName/ID/password/лейблы, а сам
+  // DejaVuSans.ttf у jsPDF валится "No unicode cmap for font" именно в этом
+  // сценарии (addFont вне autoTable) и молча срывает всю генерацию PDF —
+  // проверено live, файл не создавался вообще. Кириллица здесь не нужна.
+  const fontName = 'helvetica';
+
+  // Брендовые цвета — те же, что в exportToPDF (headStyles.fillColor) и Excel
+  // (HEADER_FILL '40833B') — раздатка выглядит частью той же системы, не самопалом.
+  const BRAND = [64, 131, 59];       // #40833B
+  const BRAND_DARK = [31, 41, 26];
+  const BRAND_TINT = [235, 244, 232]; // светлая заливка label-ячеек
+  const GRAY = [110, 116, 108];
+  const BORDER = [222, 227, 219];
 
   const MARGIN = 15;
   const COLS = 3;
   const ROWS = 3;
-  const GAP = 7;
+  const GAP = 6;
   const CARD_W = (210 - MARGIN * 2 - GAP * (COLS - 1)) / COLS;
-  const CARD_H = 72;
-  const QR_SIZE = 40;
+  const CARD_H = 74;
+  const QR_SIZE = 38;
   const TITLE_H = 38;
+  const HEADER_H = 8;
+  const RADIUS = 2.5;
 
   doc.setFont(fontName, 'bold');
-  doc.setFontSize(18);
-  doc.setTextColor(20, 20, 20);
-  doc.text(groupName || '—', 105, 22, { align: 'center' });
+  doc.setFontSize(19);
+  doc.setTextColor(...BRAND_DARK);
+  doc.text(groupName || '—', 105, 20, { align: 'center' });
+
+  // короткий акцентный штрих под заголовком вместо казённой линейки во всю ширину
+  doc.setFillColor(...BRAND);
+  doc.roundedRect(95, 24, 20, 1.2, 0.6, 0.6, 'F');
+
   doc.setFont(fontName, 'normal');
-  doc.setFontSize(12);
-  doc.setTextColor(60, 60, 60);
-  doc.text(`Ментор: ${mentorName || '—'}`, 105, 30, { align: 'center' });
+  doc.setFontSize(11);
+  doc.setTextColor(...GRAY);
+  doc.text(`Teacher: ${mentorName || '-'}`, 105, 31, { align: 'center' });
+  doc.setFontSize(8.5);
+  doc.text(`${orgName}  ·  ${new Date().toLocaleDateString('en-CA')}`, 105, 36, { align: 'center' });
 
   const qrDataUrls = await Promise.all(students.map((s) => {
     const url = `${MEMBER_URL}/qr-login?token=${encodeURIComponent(s.qrToken)}`;
-    return QRCode.toDataURL(url, { width: 220, margin: 1, color: { dark: '#000000', light: '#ffffff' } });
+    return QRCode.toDataURL(url, { width: 240, margin: 0, color: { dark: '#1a2e17', light: '#ffffff' } });
   }));
 
   const perPage = COLS * ROWS;
@@ -417,41 +418,71 @@ export async function exportGroupCredentialsPDF({ groupName, mentorName, student
     const x = MARGIN + col * (CARD_W + GAP);
     const y = gridTop + row * (CARD_H + GAP);
 
-    doc.setFillColor(20, 20, 20);
-    doc.rect(x, y, CARD_W, 7, 'F');
-    doc.setFont(fontName, 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255);
-    doc.text(orgName, x + CARD_W / 2, y + 4.8, { align: 'center' });
+    // card — тонкая рамка с закруглением на всю карточку...
+    doc.setDrawColor(...BORDER);
+    doc.setLineWidth(0.25);
+    doc.roundedRect(x, y, CARD_W, CARD_H, RADIUS, RADIUS, 'S');
+    // ...брендовая шапка поверх (закруглённые только у неё будут видны сверху)
+    doc.setFillColor(...BRAND);
+    doc.roundedRect(x, y, CARD_W, HEADER_H, RADIUS, RADIUS, 'F');
+    doc.rect(x, y + RADIUS, CARD_W, HEADER_H - RADIUS, 'F'); // добиваем низ шапки прямыми углами
 
-    doc.setFont(fontName, 'normal');
-    doc.setFontSize(9.5);
-    doc.setTextColor(20, 20, 20);
-    const fullName = `${s.lastName || ''} ${s.firstName || ''}`.trim() || '—';
-    doc.text(fullName, x + CARD_W / 2, y + 12.5, { align: 'center', maxWidth: CARD_W - 2 });
+    doc.setFont(fontName, 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text(orgName.toUpperCase(), x + CARD_W / 2, y + HEADER_H / 2 + 1.2, { align: 'center' });
+
+    doc.setFont(fontName, 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...BRAND_DARK);
+    // `maxWidth` в doc.text() гоняет jsPDF через splitTextToSize — на кастомных
+    // TTF это падало с "Cannot read properties of undefined (reading 'widths')";
+    // здесь шрифт стандартный, но обрезаем сами всё равно — надёжнее и предсказуемее.
+    let fullName = `${s.lastName || ''} ${s.firstName || ''}`.trim() || '—';
+    if (fullName.length > 22) fullName = `${fullName.slice(0, 21)}…`;
+    doc.text(fullName, x + CARD_W / 2, y + HEADER_H + 7, { align: 'center' });
 
     const qrX = x + (CARD_W - QR_SIZE) / 2;
-    const qrY = y + 15.5;
-    doc.setDrawColor(180, 180, 180);
-    doc.rect(qrX, qrY, QR_SIZE, QR_SIZE);
-    doc.addImage(qrDataUrls[i], 'PNG', qrX + 0.5, qrY + 0.5, QR_SIZE - 1, QR_SIZE - 1);
+    const qrY = y + HEADER_H + 10;
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...BORDER);
+    doc.roundedRect(qrX - 1.5, qrY - 1.5, QR_SIZE + 3, QR_SIZE + 3, 1.5, 1.5, 'FD');
+    doc.addImage(qrDataUrls[i], 'PNG', qrX, qrY, QR_SIZE, QR_SIZE);
 
-    const tableY = qrY + QR_SIZE + 2;
-    const rowH = 6;
-    const labelW = CARD_W * 0.42;
-    doc.setDrawColor(150, 150, 150);
-    doc.setFontSize(8);
-    [['ID:', s.loginCode || '—'], ['password:', s.password || '—']].forEach(([label, value], r) => {
+    const tableY = qrY + QR_SIZE + 4;
+    const rowH = 6.5;
+    const labelW = CARD_W * 0.4;
+    const tableH = rowH * 2;
+    doc.setDrawColor(...BORDER);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(x + 2, tableY, CARD_W - 4, tableH, 1.2, 1.2, 'S');
+    doc.line(x + 2, tableY + rowH, x + CARD_W - 2, tableY + rowH);
+    doc.line(x + labelW, tableY, x + labelW, tableY + tableH);
+
+    doc.setFontSize(7.5);
+    [['ID', s.loginCode || '—'], ['pass', s.password || '—']].forEach(([label, value], r) => {
       const ry = tableY + r * rowH;
-      doc.rect(x, ry, labelW, rowH);
-      doc.rect(x + labelW, ry, CARD_W - labelW, rowH);
+      doc.setFillColor(...BRAND_TINT);
+      // заливка только под лейбл-ячейкой — значение остаётся белым/прозрачным
+      if (r === 0) doc.rect(x + 2.1, ry + 0.1, labelW - 2, rowH - 0.2, 'F');
+      else doc.rect(x + 2.1, ry, labelW - 2, rowH - 0.1, 'F');
+      doc.setFont(fontName, 'bold');
+      doc.setTextColor(...GRAY);
+      doc.text(label, x + 4, ry + rowH / 2 + 1.1);
       doc.setFont(fontName, 'normal');
-      doc.setTextColor(60, 60, 60);
-      doc.text(label, x + 1.5, ry + rowH / 2 + 1.2);
-      doc.setTextColor(20, 20, 20);
-      doc.text(String(value), x + labelW + 1.5, ry + rowH / 2 + 1.2);
+      doc.setTextColor(...BRAND_DARK);
+      doc.text(String(value), x + labelW + 2, ry + rowH / 2 + 1.1);
     });
   });
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pageCount; p += 1) {
+    doc.setPage(p);
+    doc.setFont(fontName, 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(...GRAY);
+    doc.text(`${orgName}  |  ${p}/${pageCount}`, 105, 293, { align: 'center' });
+  }
 
   const slug = (groupName || 'gruppa').replace(/[^a-zA-Zа-яА-ЯёЁ0-9]+/g, '-');
   doc.save(`login-parollar_${slug}_${today()}.pdf`);
