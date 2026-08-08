@@ -1135,10 +1135,14 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       const students = JSON.parse(localStorage.getItem('mock_admin_students') || '[]');
       const student = students.find(s => s.id === id);
       if (!student) { const err = new Error('Талаба не найден'); err.status = 404; throw err; }
+      // Narxni mock groups ro'yxatidan olamiz (real backendda adminStudentDetail
+      // groups[].monthlyPrice qaytaradi — Payments modal shunga tayanadi).
+      const groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
+      const mockPrice = groups.find((g) => g.name === student.groupName)?.monthlyPrice || 850000;
       return {
         student: {
           ...student,
-          groups: [{ id: 'g1', name: student.groupName, subject: 'Frontend' }],
+          groups: [{ id: 'g1', name: student.groupName, subject: 'Frontend', monthlyPrice: mockPrice }],
           payments: [
             { id: 'p1', amount: 850000, date: '2026-06-01T10:00:00Z', type: 'cash', status: 'paid' },
             { id: 'p2', amount: 500000, date: '2026-05-01T10:00:00Z', type: 'card', status: 'paid' },

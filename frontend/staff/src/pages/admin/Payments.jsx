@@ -138,14 +138,18 @@ export default function AdminPayments() {
 
   // Ad-hoc modal - pre-fill from URL params if provided
   const [showAdHoc, setShowAdHoc] = useState(false);
-  const [adhocForm, setAdhocForm] = useState({ 
-    studentName: '', 
-    studentId: params.studentId || '', 
-    totalAmount: params.amount || '', 
-    comment: '' 
+  const [adhocForm, setAdhocForm] = useState({
+    studentName: '',
+    studentId: params.studentId || '',
+    totalAmount: params.amount || '',
   });
   const [adhocParts, setAdhocParts] = useState([{ method: 'cash', amount: '' }]);
   const [studentSearch, setStudentSearch] = useState('');
+  const [adhocLoading, setAdhocLoading] = useState(false);
+
+  // Stale-fetch guard: student tez-tez almashtirilsa, eski adminStudentDetail
+  // natijasi yangi tanlangan student ustiga yozilmasligi uchun.
+  const adhocSelectRef = useRef(null);
 
   // Clear params after using them
   useEffect(() => {
@@ -153,6 +157,18 @@ export default function AdminPayments() {
       // Params will be used on first render
     }
   }, []);
+
+  // Backend requires parts sum == totalAmount exactly (validation would fail
+  // otherwise). With a single part we mirror the invoice amount automatically.
+  useEffect(() => {
+    if (adhocParts.length === 1 && adhocForm.totalAmount) {
+      const v = String(Number(adhocForm.totalAmount) || '');
+      if (adhocParts[0].amount !== v) {
+        setAdhocParts([{ method: adhocParts[0].method, amount: v }]);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adhocForm.totalAmount]);
 
   // Invoice detail modal
   const [detail, setDetail] = useState(null);
@@ -252,18 +268,24 @@ export default function AdminPayments() {
   /* ─── Ad-hoc Payment ─── */
   const adhocTotal = adhocParts.reduce((s, p) => s + Number(p.amount || 0), 0);
   const submitAdHoc = async () => {
+    const total = Number(adhocForm.totalAmount) || 0;
+    // Backend createAdHocPaymentSchema parts yig'indisi aynan totalAmount ga
+    // teng bo'lishini talab qiladi — oldindan tekshirib friendly xato beramiz.
+    if (Math.abs(adhocTotal - total) > 0.005) {
+      setErr(`Сумма частей (${money(adhocTotal)}) не совпадает с суммой счёта (${money(total)})`);
+      return;
+    }
     setBusy(true); setErr('');
     try {
       const body = {
         studentId: adhocForm.studentId,
-        totalAmount: Number(adhocForm.totalAmount),
+        totalAmount: total,
         parts: adhocParts.map((p) => ({ method: p.method, amount: Number(p.amount) })),
-        comment: adhocForm.comment || undefined,
       };
       const res = await api.adminAdHocPayment(token, body);
       if (res.transactions) storeTx(res.invoice?.id || 'adhoc', res.transactions);
       setShowAdHoc(false);
-      setAdhocForm({ studentName: '', studentId: '', totalAmount: '', comment: '' });
+      setAdhocForm({ studentName: '', studentId: '', totalAmount: '' });
       setAdhocParts([{ method: 'cash', amount: '' }]);
       setStudentSearch('');
       refetch();
@@ -274,13 +296,36 @@ export default function AdminPayments() {
     }
   };
 
-  const selectStudent = (s) => {
+  const selectStudent = async (s) => {
+    const id = s.id;
+    adhocSelectRef.current = id; // eng oxirgi tanlovni belgilaymiz
+    setAdhocLoading(true); setErr('');
     setAdhocForm((f) => ({
       ...f,
-      studentId: s.id,
+      studentId: id,
       studentName: [s.firstName || '', s.lastName || ''].filter(Boolean).join(' '),
     }));
     setStudentSearch('');
+    try {
+      // Guruh narxini student detail dan olamiz va summani avtomatik to'ldiramiz
+      const detail = await api.adminStudentDetail(token, id);
+      // Stale guard: shu orada boshqa student tanlangan bo'lsa, eski natijani qo'llamaymiz
+      if (adhocSelectRef.current !== id) return;
+      const st = detail?.student || detail || {};
+      const stGroups = Array.isArray(st.groups) ? st.groups : [];
+      const price = stGroups.map((g) => Number(g.monthlyPrice) || 0).find((v) => v > 0) || 0;
+      if (price > 0) {
+        const v = String(price);
+        setAdhocForm((f) => ({ ...f, totalAmount: v }));
+        setAdhocParts((parts) =>
+          parts.length === 1 ? [{ method: parts[0].method, amount: v }] : parts
+        );
+      }
+    } catch (e) {
+      setErr(e.message || 'Не удалось получить данные студента');
+    } finally {
+      setAdhocLoading(false);
+    }
   };
 
   /* ─── Invoice Detail ─── */
@@ -490,7 +535,7 @@ export default function AdminPayments() {
           <div className="modal-action">
             <button className="btn btn-ghost" onClick={() => { setShowAdHoc(false); setErr(''); setStudentSearch(''); }} disabled={busy}>Отмена</button>
             <button className="btn btn-primary" onClick={submitAdHoc}
-              disabled={busy || !adhocForm.studentId || !adhocForm.totalAmount || Number(adhocForm.totalAmount) <= 0 || adhocTotal <= 0 || adhocTotal > Number(adhocForm.totalAmount)}>
+              disabled={busy || adhocLoading || !adhocForm.studentId || !adhocForm.totalAmount || Number(adhocForm.totalAmount) <= 0 || adhocTotal <= 0 || Math.abs(adhocTotal - Number(adhocForm.totalAmount)) > 0.005}>
               {busy && <span className="loading loading-spinner loading-xs" />} Создать
             </button>
           </div>
@@ -532,7 +577,7 @@ export default function AdminPayments() {
                             <Avatar name={[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')} size="sm" />
                             <div className="flex-1 min-w-0">
                               <div className="text-[12px] font-bold text-base-content truncate">{[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')}</div>
-                              <div className="text-[10px] text-base-content/45">{s.groupName || '—'} · {s.createdAt ? dateShort(s.createdAt) : ''}</div>
+                              <div className="text-[10px] text-base-content/45">{Array.isArray(s.groups) && s.groups.length ? s.groups.map((g) => g.name || g.groupName).filter(Boolean).join(', ') : (s.groupName || '—')} · {s.createdAt ? dateShort(s.createdAt) : ''}</div>
                             </div>
                           </button>
                         ))}
@@ -547,7 +592,7 @@ export default function AdminPayments() {
 
               {/* Total amount */}
               <div>
-                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Сумма счета</label>
+                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Сумма счета {adhocLoading && <span className="loading loading-spinner loading-xs text-secondary ml-1 align-middle" />}</label>
                 <input className="input input-bordered w-full h-10 text-[13px]" type="number" placeholder="Сумма"
                   value={adhocForm.totalAmount}
                   onChange={(e) => setAdhocForm((f) => ({ ...f, totalAmount: e.target.value }))} />
@@ -577,13 +622,8 @@ export default function AdminPayments() {
                 </p>
               )}
 
-              {/* Comment */}
-              <div>
-                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Комментарий</label>
-                <input className="input input-bordered w-full h-10 text-[13px]" type="text" placeholder="Опционально"
-                  value={adhocForm.comment}
-                  onChange={(e) => setAdhocForm((f) => ({ ...f, comment: e.target.value }))} />
-              </div>
+              {/* Comment field removed: backend createAdHocPaymentSchema doesn't accept it */}
+
             </div>
       </Modal>
 
