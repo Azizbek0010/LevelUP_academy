@@ -12,12 +12,12 @@ import { SkeletonList } from '../components/Skeleton.jsx';
 // ---- Constants ----
 
 const TARGET_LABELS = {
-  'all-partners':    'Все партнёры',
-  'all-superadmins': 'Все Super Admin',
+  'all-partners': 'Все партнёры',
+  'all-seo':      'Все SEO',
 };
 
 const ROLE_LABEL = {
-  superadmin: 'Super Admin',
+  seo: 'SEO',
   admin:      'Администратор',
   mentor:     'Ментор',
   methodist:  'Методист',
@@ -41,7 +41,7 @@ function timeAgo(iso) {
 }
 
 function targetIcon(targetType) {
-  if (targetType === 'all-superadmins') return <Shield size={14} className="text-purple-600" />;
+  if (targetType === 'all-seo') return <Shield size={14} className="text-purple-600" />;
   if (targetType === 'all-partners') return <Building2 size={14} className="text-lime-600" />;
   return <Users size={14} className="text-primary" />;
 }
@@ -293,7 +293,7 @@ export default function Announcements() {
                   onChange={(e) => setForm((f) => ({ ...f, targetType: e.target.value }))}
                 >
                   <option value="all-partners">Все партнёры</option>
-                  <option value="all-superadmins">Все Super Admin</option>
+                  <option value="all-seo">Все SEO</option>
                 </select>
               </div>
 

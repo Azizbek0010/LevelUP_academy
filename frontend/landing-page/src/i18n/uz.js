@@ -118,7 +118,7 @@ export default {
     rolesLead:
       "Kirgandan so'ng tizim tokendagi rolga qarab kerakli kabinetni o'zi ochadi. Ortiqcha ma'lumotni hech kim ko'rmaydi — ruxsatni serverdagi RBAC hal qiladi.",
     roles: [
-      { tag: 'SA', title: 'SuperAdmin', text: "Butun filiallar tarmog'i va filtrsiz umumiy hisobotlar." },
+      { tag: 'SA', title: 'SEO', text: "Butun filiallar tarmog'i va filtrsiz umumiy hisobotlar." },
       { tag: 'A', title: 'Admin', text: "O'z filialining to'lovlari, guruhlari, o'quvchilari va hisobotlari." },
       { tag: 'M', title: 'Mentor', text: "Davomat, uy vazifasini tekshirish, koinlar, imtihonlar va o'z maoshi." },
       { tag: 'ME', title: 'Metodist', text: "Ta'lim dasturi, mavzu va darslar video bilan, testlar uchun savollar banki." },
@@ -180,7 +180,7 @@ export default {
       },
       {
         q: 'Tizimda qanday rollar bor?',
-        a: "Main Admin (platforma egasi), Super Admin (tashkilot), Admin (filial), Mentor (o'qituvchi), Student, Parent va Methodist — har bir rolning o'z kabineti va huquqlari bor.",
+        a: "Main Admin (platforma egasi), SEO (tashkilot), Admin (filial), Mentor (o'qituvchi), Student, Parent va Methodist — har bir rolning o'z kabineti va huquqlari bor.",
       },
       {
         q: 'Qanday imkoniyatlar bor?',
@@ -261,7 +261,7 @@ export default {
       {
         icon: 'building',
         title: "Ko'p filiallilik",
-        text: "Har bir filial izolyatsiya qilingan: admin faqat o'zinikini ko'radi. SuperAdmin esa butun tarmoqni ko'radi — filiallarni solishtiradi va o'sish nuqtalarini topadi.",
+        text: "Har bir filial izolyatsiya qilingan: admin faqat o'zinikini ko'radi. SEO esa butun tarmoqni ko'radi — filiallarni solishtiradi va o'sish nuqtalarini topadi.",
         tags: ["Ma'lumot izolyatsiyasi", 'Filiallar tarmog\'i'],
       },
     ],
@@ -289,7 +289,7 @@ export default {
       },
       {
         q: 'Nechta filialni ulash mumkin?',
-        a: "Cheklov yo'q. Ko'p filiallilik birinchi kundan qo'yilgan: har bir filial izolyatsiya qilingan, SuperAdmin esa butun tarmoqni ko'radi.",
+        a: "Cheklov yo'q. Ko'p filiallilik birinchi kundan qo'yilgan: har bir filial izolyatsiya qilingan, SEO esa butun tarmoqni ko'radi.",
       },
       {
         q: "Ota-onalarga ilova o'rnatish kerakmi?",
@@ -311,7 +311,7 @@ export default {
     items: [
       {
         tag: 'SA',
-        title: "SuperAdmin — butun tarmoq kaft ustida",
+        title: "SEO — butun tarmoq kaft ustida",
         text: "Har bir filialni va butun tarmoqni birdan ko'radi: umumiy tushum, qarzlar, onlayn hisoblagich. Filiallar, adminlar va umumiy chatni boshqaradi.",
         list: [
           'Barcha filiallar bo\'yicha filtrsiz umumiy hisobotlar',
@@ -1557,7 +1557,7 @@ export default {
     roles: {
       title: 'Rollar va ruxsatlar — 6 kabinet | LevelUp Academy',
       description:
-        "SuperAdmin, Admin, Mentor, Metodist, Ota-ona va O'quvchi — har bir rolning o'z kabineti. Ruxsatni serverdagi RBAC hal qiladi: ortiqchasini hech kim ko'rmaydi.",
+        "SEO, Admin, Mentor, Metodist, Ota-ona va O'quvchi — har bir rolning o'z kabineti. Ruxsatni serverdagi RBAC hal qiladi: ortiqchasini hech kim ko'rmaydi.",
     },
     finance: {
       title: "O'quvchilar to'lovi va qarzlar hisobi | LevelUp Academy",

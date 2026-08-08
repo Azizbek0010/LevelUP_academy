@@ -1,7 +1,7 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './super.service.js';
 
-// req.scope.organizationId проставляет authorize('superadmin') — своя организация
+// req.scope.organizationId проставляет authorize('seo') — своя организация
 const orgId = (req) => req.scope.organizationId;
 
 /**
@@ -296,15 +296,80 @@ export const listBranchManagers = asyncHandler(async (req, res) => {
   res.json({ managers: await service.listBranchManagers(orgId(req)) });
 });
 
+export const resetBranchManagerPassword = asyncHandler(async (req, res) => {
+  const manager = await service.resetBranchManagerPassword(orgId(req), req.params.id);
+  await audit(req, {
+    action: 'branch_manager.reset_password',
+    entityType: 'branch_manager',
+    entityId: manager.id,
+    entityLabel: `${manager.firstName} ${manager.lastName}`,
+  });
+  res.json({ manager });
+});
+
+export const updateBranchManager = asyncHandler(async (req, res) => {
+  const manager = await service.updateBranchManager(orgId(req), req.params.id, req.body);
+  await audit(req, {
+    action: 'branch_manager.update',
+    entityType: 'branch_manager',
+    entityId: manager.id,
+    entityLabel: `${manager.firstName} ${manager.lastName}`,
+    meta: { fields: Object.keys(req.body) },
+  });
+  res.json({ manager });
+});
+
+export const reassignBranchManagers = asyncHandler(async (req, res) => {
+  const managers = await service.reassignBranchManagers(orgId(req), req.body.assignments);
+  await audit(req, {
+    action: 'branch_manager.reassign',
+    entityType: 'branch_manager',
+    meta: { assignments: req.body.assignments },
+  });
+  res.json({ managers });
+});
+
+export const freezeBranchManager = asyncHandler(async (req, res) => {
+  const manager = await service.setBranchManagerFrozen(orgId(req), req.params.id, req.body.frozen);
+  await audit(req, {
+    action: req.body.frozen ? 'branch_manager.freeze' : 'branch_manager.unfreeze',
+    entityType: 'branch_manager',
+    entityId: manager.id,
+    entityLabel: `${manager.firstName} ${manager.lastName}`,
+  });
+  res.json({ manager });
+});
+
+export const deleteBranchManager = asyncHandler(async (req, res) => {
+  const result = await service.deleteBranchManager(orgId(req), req.params.id);
+  await audit(req, {
+    action: 'branch_manager.delete',
+    entityType: 'branch_manager',
+    entityId: result.id,
+  });
+  res.json(result);
+});
+
 // --- методики / цена абонемента ---
 export const listTrainingTypes = asyncHandler(async (req, res) => {
   res.json({ trainingTypes: await service.listTrainingTypes(orgId(req)) });
 });
 
 export const setTrainingTypePrice = asyncHandler(async (req, res) => {
-  const trainingType = await service.setTrainingTypePrice(orgId(req), req.params.id, req.body.price);
+  const trainingType = await service.setTrainingTypePrice(orgId(req), req.params.id, req.body.price, req.body.maxStudents);
   await audit(req, {
     action: 'training_type.set_price',
+    entityType: 'training_type',
+    entityId: trainingType.id,
+    entityLabel: trainingType.name,
+  });
+  res.json({ trainingType });
+});
+
+export const setTrainingTypeArchived = asyncHandler(async (req, res) => {
+  const trainingType = await service.setTrainingTypeArchived(orgId(req), req.params.id, req.body.archived);
+  await audit(req, {
+    action: req.body.archived ? 'training_type.archive' : 'training_type.unarchive',
     entityType: 'training_type',
     entityId: trainingType.id,
     entityLabel: trainingType.name,

@@ -11,6 +11,7 @@ import {
   HiOutlineChartBar, HiOutlineCog,
   HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
+  HiOutlineCreditCard,
 } from 'react-icons/hi2';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
@@ -36,7 +37,7 @@ function useMediaQuery(query) {
 
 /* ──────────────────── NAV CONFIG ──────────────────── */
 /**
- * Меню Super Admin: тринадцать пунктов свёрнуты в семь.
+ * Меню SEO: тринадцать пунктов свёрнуты в семь.
  *
  * Две проблемы были одновременно. Первая — длина: одиннадцать ссылок подряд,
  * где ежедневный дашборд стоял наравне с аудитом, который открывают раз в
@@ -80,6 +81,7 @@ const superNav = [
       { to: '/announcements', label: 'Объявления' },
       { to: '/reminders',     label: 'Напоминания' },
       { to: '/audit',         label: 'Аудит' },
+      { to: '/methodics',     label: 'Методики' },
       { to: '/settings',      label: 'Настройки' },
     ],
   },
@@ -98,13 +100,18 @@ const adminNav = [
 ];
 
 /**
- * Меню Branch Manager — филиал целиком: расположение, доход, расходы,
- * отчёты. Давомат и менторы сюда НЕ входят: они на совести админа и менторов.
- * Это статический демо-раздел (backend-роль ещё не заведена).
+ * Меню Branch Manager — 07.08.2026 роль поднята с read-only до полных прав
+ * admin в своём филиале (решение Karis): те же Студенты/Группы/Менторы/
+ * Платежи, что у admin (те же страницы, req.scope уже ограничивает своим
+ * филиалом), плюс собственный обзорный блок (Filial/Daromad/Hisobotlar).
  */
 const branchManagerNav = [
   { to: '/',          label: 'Boshqaruv', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/students',  label: 'Studentlar', Icon: HiOutlineAcademicCap },
+  { to: '/groups',    label: 'Guruhlar',  Icon: HiOutlineUsers },
+  { to: '/mentors',   label: 'Mentorlar', Icon: HiOutlineUserCircle },
   { to: '/branch',    label: 'Filial',    Icon: HiOutlineBuildingOffice2 },
+  { to: '/payments',  label: 'To\'lovlar', Icon: HiOutlineCreditCard },
   { to: '/income',    label: 'Daromad',   Icon: HiOutlineWallet },
   { to: '/expenses',  label: 'Xarajatlar', Icon: HiOutlineReceiptPercent },
   { to: '/reports',   label: 'Hisobotlar', Icon: HiOutlineChartBar },
@@ -133,7 +140,7 @@ const methodistNav = [
 ];
 
 const ROLE_NAV = {
-  superadmin: superNav,
+  seo: superNav,
   admin: adminNav,
   branch_manager: branchManagerNav,
   mentor: mentorNav,
@@ -141,7 +148,7 @@ const ROLE_NAV = {
 };
 
 const ROLE_TITLE = {
-  superadmin: 'Super Admin',
+  seo: 'SEO',
   admin: 'Администратор',
   branch_manager: 'Branch Manager',
   mentor: 'Ментор',
@@ -149,7 +156,7 @@ const ROLE_TITLE = {
 };
 
 const ROLE_COLORS = {
-  superadmin: '#8b5cf6',
+  seo: '#8b5cf6',
   admin: '#3b82f6',
   branch_manager: '#0ea5e9',
   mentor: '#3b82f6',
@@ -241,9 +248,9 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
   );
 }
 
-/* ──────────────────── SUPER ADMIN: список филиалов ────────────────────
+/* ──────────────────── SEO: список филиалов ────────────────────
    То же решение, что у ментора с группами: филиал — главная сущность
-   Super Admin, и выбирать его логично один раз в меню, а не заходить сначала
+   SEO, и выбирать его логично один раз в меню, а не заходить сначала
    в список, потом в карточку. Хук вызывается только под этой ролью —
    у остальных /super/branches вернул бы 403. */
 function SuperBranchesNav({ collapsed, onExpandSidebar }) {
@@ -807,7 +814,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
   const role = user?.role;
   // Профиль есть не у всех ролей: у branch_manager отдельной страницы пока нет,
   // и пункт «Профиль» в меню аккаунта был бы кнопкой, которая ведёт на «/».
-  const hasProfilePage = ['admin', 'superadmin', 'mentor', 'methodist'].includes(role);
+  const hasProfilePage = ['admin', 'seo', 'mentor', 'methodist'].includes(role);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 

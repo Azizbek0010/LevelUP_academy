@@ -36,11 +36,11 @@ const readRefreshCookie = (req) => readCookie(req, REFRESH_COOKIE);
 
 // три раздельных входа — каждый пускает только свою группу ролей (безопасность):
 //   main   → main_admin (владелец платформы)
-//   staff  → admin, superadmin, mentor (сотрудники, вход по email)
+//   staff  → admin, seo, mentor (сотрудники, вход по email)
 //   member → student, parent (вход по логин-коду)
 const ROLE_GROUPS = {
   main: ['main_admin'],
-  staff: ['admin', 'superadmin', 'mentor', 'methodist', 'branch_manager'],
+  staff: ['admin', 'seo', 'mentor', 'methodist', 'branch_manager'],
   member: ['student', 'parent'],
 };
 
@@ -61,7 +61,7 @@ export const loginStaff = makeLogin(ROLE_GROUPS.staff, 'staff');
 export const loginMember = makeLogin(ROLE_GROUPS.member, 'member');
 
 // вход через Google (Firebase) — по группам ролей, как обычный логин.
-// доступен main_admin И staff (admin/superadmin/mentor). Один Firebase-проект на всех.
+// доступен main_admin И staff (admin/seo/mentor). Один Firebase-проект на всех.
 // member (student/parent) — без Google (нет email, вход по логин-коду).
 function makeGoogleLogin(allowedRoles, group) {
   return asyncHandler(async (req, res) => {

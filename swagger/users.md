@@ -5,7 +5,7 @@ Cross-role profile endpoints (own profile, scoped user lookups)
 [← back to index](./README.md)
 
 ### GET `/api/users`
-List users of the caller's own branch (admin/superadmin only)
+List users of the caller's own branch (admin/seo only)
 
 Requires `req.user.branchId` to be set — returns 400 if the caller has no branch scope.
 
@@ -87,7 +87,7 @@ Requires `req.user.branchId` to be set — returns 400 if the caller has no bran
 ### GET `/api/users/{id}`
 Get a user's profile card, scoped to the caller
 
-Staff-only (main_admin, superadmin, admin, mentor) — student/parent must use `GET /api/users/me` for their own data. Scope: main_admin sees the whole platform; superadmin only users in their own organization; admin/ mentor only users in their own branch. A user outside scope returns 404 (existence not disclosed).
+Staff-only (main_admin, seo, admin, mentor) — student/parent must use `GET /api/users/me` for their own data. Scope: main_admin sees the whole platform; seo only users in their own organization; admin/ mentor only users in their own branch. A user outside scope returns 404 (existence not disclosed).
 
 
 **Auth:** Bearer JWT required

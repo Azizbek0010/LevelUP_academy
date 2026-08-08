@@ -59,9 +59,9 @@ router.post('/main/login', validate({ body: loginSchema }), ctrl.loginMain);
  * /api/auth/staff/login:
  *   post:
  *     tags: [Auth]
- *     summary: Login as staff (admin, superadmin, mentor, methodist) via email + password
+ *     summary: Login as staff (admin, seo, mentor, methodist) via email + password
  *     description: >
- *       Only accounts with role `admin`, `superadmin`, `mentor` or `methodist` may
+ *       Only accounts with role `admin`, `seo`, `mentor` or `methodist` may
  *       authenticate here. Sets the `refresh_token` httpOnly cookie on success.
  *     security: []
  *     requestBody:
@@ -184,7 +184,7 @@ router.post('/main/google', ctrl.loginMainGoogle);   // main_admin
  * /api/auth/staff/google:
  *   post:
  *     tags: [Auth]
- *     summary: Login as staff (admin, superadmin, mentor, methodist) via Google/Firebase id-token
+ *     summary: Login as staff (admin, seo, mentor, methodist) via Google/Firebase id-token
  *     description: Same flow as /api/auth/main/google, restricted to staff roles.
  *     security: []
  *     requestBody:
@@ -219,7 +219,7 @@ router.post('/main/google', ctrl.loginMainGoogle);   // main_admin
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
-router.post('/staff/google', ctrl.loginStaffGoogle); // admin / superadmin / mentor
+router.post('/staff/google', ctrl.loginStaffGoogle); // admin / seo / mentor
 
 /**
  * @openapi

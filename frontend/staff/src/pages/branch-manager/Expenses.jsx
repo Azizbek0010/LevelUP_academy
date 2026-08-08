@@ -3,11 +3,6 @@ import { Receipt, Tag, TrendingUp, Layers } from 'lucide-react';
 import { money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Panel, Kpi } from '../mentor/_ui.jsx';
-import { useState } from 'react';
-import { TrendingUp, Tag, Layers, Receipt } from 'lucide-react';
-import { money } from '../../format.js';
-import PageHeader from '../../components/PageHeader.jsx';
-import { Panel, Kpi } from '../mentor/_ui.jsx';
 import { useBranchManagerExpenses } from '../../queries.js';
 
 export default function BranchManagerExpenses() {
@@ -121,7 +116,7 @@ export default function BranchManagerExpenses() {
                 {rows.map((e) => (
                   <tr key={e.id} className="hover:bg-base-200/50 transition-colors">
                     <td className="pl-5 text-[13px] text-base-content/60 tabular-nums whitespace-nowrap">
-                      {new Date(e.date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                      {new Date(e.spentAt).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
                     </td>
                     <td>
                       <span className="badge badge-sm badge-ghost border border-base-200 text-base-content/70">

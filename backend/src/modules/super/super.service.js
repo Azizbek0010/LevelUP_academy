@@ -4,6 +4,7 @@ import { planLimits } from '../../config/plans.js';
 import { logger } from '../../config/logger.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
 import { genTempPassword } from '../auth/credentials.js';
+import { withTransaction } from '../../config/db.js';
 import * as repo from './super.repository.js';
 
 // ---------- филиалы ----------
@@ -156,7 +157,7 @@ export async function createAdmin(orgId, { firstName, lastName, email, branchId,
   if (!branch) throw new AppError(404, 'Branch not found in your organization');
 
   // пароль всегда генерится сервером и показывается один раз — так же, как
-  // Main Admin заводит Super Admin. Ручной ввод убрали: опечатка/автозаполнение
+  // Main Admin заводит SEO. Ручной ввод убрали: опечатка/автозаполнение
   // браузера в форме создания приводили к аккаунту с паролем, который никто
   // не мог вспомнить, а сбросить его было нечем.
   const tempPassword = genTempPassword();
@@ -184,7 +185,7 @@ export async function createAdmin(orgId, { firstName, lastName, email, branchId,
     lastName: admin.last_name,
     email: admin.email,
     branchId: admin.branch_id,
-    // показать один раз — Super Admin передаёт сотруднику
+    // показать один раз — SEO передаёт сотруднику
     tempPassword,
   };
 }
@@ -748,18 +749,43 @@ export async function listTrainingTypes(orgId) {
     name: tt.name,
     icon: tt.icon,
     price: tt.price === null ? null : Number(tt.price),
+    maxStudents: tt.max_students,
     isArchived: tt.is_archived,
     groupsCount: Number(tt.groups_count),
   }));
 }
 
-export async function setTrainingTypePrice(orgId, id, price) {
-  const row = await repo.setTrainingTypePrice(id, orgId, price);
+export async function setTrainingTypePrice(orgId, id, price, maxStudents) {
+  const row = await repo.setTrainingTypePrice(id, orgId, price, maxStudents);
   if (!row) throw new AppError(404, 'Training type not found in your organization');
-  return { id: row.id, name: row.name, icon: row.icon, price: Number(row.price) };
+  return { id: row.id, name: row.name, icon: row.icon, price: Number(row.price), maxStudents: row.max_students };
+}
+
+export async function setTrainingTypeArchived(orgId, id, archived) {
+  const row = await repo.setTrainingTypeArchived(id, orgId, archived);
+  if (!row) throw new AppError(404, 'Training type not found in your organization');
+  return {
+    id: row.id, name: row.name, icon: row.icon,
+    price: row.price === null ? null : Number(row.price),
+    maxStudents: row.max_students, isArchived: row.is_archived,
+  };
 }
 
 // ---------- branch managers ----------
+
+/**
+ * 23505 из insertBranchManager/updateBranchManager может прийти либо от старого
+ * partial-индекса (err.constraint содержит имя), либо от constraint-триггера
+ * (1784310000000_deferred-branch-manager-constraint.js) — тот не индекс, поэтому
+ * err.constraint пустой, а маркер только в тексте RAISE EXCEPTION.
+ */
+function isBranchManagerDuplicate(err) {
+  return (
+    err.constraint === 'uq_one_branch_manager_per_branch' ||
+    err.constraint?.includes('branch_manager_per_branch') ||
+    err.message?.includes('branch_manager_duplicate')
+  );
+}
 
 export async function createBranchManager(orgId, { firstName, lastName, email, branchId, phone }) {
   const branch = await repo.findBranchInOrg(branchId, orgId);
@@ -780,7 +806,12 @@ export async function createBranchManager(orgId, { firstName, lastName, email, b
       passwordHash,
     });
   } catch (err) {
-    if (err.code === '23505') throw new AppError(409, 'Email already in use');
+    if (err.code === '23505') {
+      if (isBranchManagerDuplicate(err)) {
+        throw new AppError(409, 'Branch manager already exists in this branch');
+      }
+      throw new AppError(409, 'Email already in use');
+    }
     throw err;
   }
 
@@ -807,4 +838,114 @@ export async function listBranchManagers(orgId) {
     phone: u.phone,
     createdAt: u.created_at,
   }));
+}
+
+export async function updateBranchManager(orgId, id, fields) {
+  const existing = await repo.findBranchManagerInOrg(id, orgId);
+  if (!existing) throw new AppError(404, 'Branch manager not found in your organization');
+
+  if (fields.branchId !== undefined) {
+    const branch = await repo.findBranchInOrg(fields.branchId, orgId);
+    if (!branch) throw new AppError(404, 'Branch not found in your organization');
+  }
+
+  let manager;
+  try {
+    manager = await repo.updateBranchManager(id, orgId, fields);
+  } catch (err) {
+    if (err.code === '23505') {
+      if (isBranchManagerDuplicate(err)) {
+        throw new AppError(409, 'Branch manager already exists in this branch');
+      }
+      throw new AppError(409, 'Email already in use');
+    }
+    throw err;
+  }
+  if (!manager) throw new AppError(404, 'Branch manager not found in your organization');
+  return mapBranchManager(manager);
+}
+
+/** Новый случайный пароль для Branch Manager — когда старый забыт/введён неверно при создании. */
+export async function resetBranchManagerPassword(orgId, id) {
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
+  const manager = await repo.setBranchManagerPasswordHash(id, orgId, passwordHash);
+  if (!manager) throw new AppError(404, 'Branch manager not found in your organization');
+  return { ...mapBranchManager(manager), tempPassword };
+}
+
+/**
+ * Переставить нескольких Branch Manager'ов между филиалами одной транзакцией —
+ * нужно, когда КАЖДЫЙ участвующий филиал уже занят, и обычный `updateBranchManager`
+ * по одному упирается в constraint (целевой филиал занят тем, кого мы как раз
+ * пытаемся передвинуть дальше по цепочке).
+ *
+ * Работает благодаря 1784310000000_deferred-branch-manager-constraint.js:
+ * проверка «1 менеджер на филиал» там DEFERRABLE INITIALLY DEFERRED — то есть
+ * считается один раз в конце транзакции (на COMMIT), а не после каждого UPDATE.
+ * Поэтому промежуточное состояние внутри транзакции (пока по цепочке кто-то
+ * временно оказался «дублем» или филиал временно пуст) не мешает — важен
+ * только финальный результат: у каждого филиала из assignments ровно один
+ * менеджер после того, как выполнятся ВСЕ перестановки.
+ *
+ * assignments — полный список новых назначений, например для кольцевого
+ * свопа A→филиал2, B→филиал3, C→филиал1:
+ *   [{id: A, branchId: филиал2}, {id: B, branchId: филиал3}, {id: C, branchId: филиал1}]
+ */
+export async function reassignBranchManagers(orgId, assignments) {
+  for (const { id, branchId } of assignments) {
+    if (!(await repo.findBranchManagerInOrg(id, orgId))) {
+      throw new AppError(404, `Branch manager ${id} not found in your organization`);
+    }
+    if (!(await repo.findBranchInOrg(branchId, orgId))) {
+      throw new AppError(404, `Branch ${branchId} not found in your organization`);
+    }
+  }
+
+  let managers;
+  try {
+    managers = await withTransaction(async (client) => {
+      const results = [];
+      for (const { id, branchId } of assignments) {
+        const manager = await repo.updateBranchManager(id, orgId, { branchId }, client);
+        if (!manager) throw new AppError(404, `Branch manager ${id} not found in your organization`);
+        results.push(manager);
+      }
+      return results;
+    });
+  } catch (err) {
+    if (err.code === '23505') {
+      if (isBranchManagerDuplicate(err)) {
+        throw new AppError(409, 'Reassignment leaves a branch with more than one manager');
+      }
+      throw new AppError(409, 'Email already in use');
+    }
+    throw err;
+  }
+  return managers.map(mapBranchManager);
+}
+
+function mapBranchManager(manager) {
+  return {
+    id: manager.id,
+    firstName: manager.first_name,
+    lastName: manager.last_name,
+    email: manager.email,
+    status: manager.status,
+    branchId: manager.branch_id,
+    phone: manager.phone,
+    createdAt: manager.created_at,
+  };
+}
+
+export async function setBranchManagerFrozen(orgId, id, frozen) {
+  const manager = await repo.setBranchManagerStatus(id, orgId, frozen ? 'frozen' : 'active');
+  if (!manager) throw new AppError(404, 'Branch manager not found in your organization');
+  return mapBranchManager(manager);
+}
+
+export async function deleteBranchManager(orgId, id) {
+  const row = await repo.deleteBranchManager(id, orgId);
+  if (!row) throw new AppError(404, 'Branch manager not found in your organization');
+  return { id: row.id };
 }

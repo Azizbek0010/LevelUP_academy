@@ -67,4 +67,4 @@ export const updateProfile = asyncHandler(async (req, res) => {
   res.json({ profile: await service.updateProfile(req.user.id, req.body) });
 });
 
-// дисциплина сотрудников — зона Super Admin (/api/super/penalties), не платформы
+// дисциплина сотрудников — зона SEO (/api/super/penalties), не платформы

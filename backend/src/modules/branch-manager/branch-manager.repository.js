@@ -1,5 +1,16 @@
 import { pool } from '../../config/db.js';
 
+/** Сам филиал (имя/адрес/телефон/главный ли) — отдельно от branchStats, там только числа. */
+export function branchInfo(branchId, client = pool) {
+  return client
+    .query(
+      `SELECT id, name, address, phone, is_main FROM branches
+        WHERE id = $1 AND deleted_at IS NULL`,
+      [branchId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
 export function branchStats(branchId, client = pool) {
   return client
     .query(
@@ -23,6 +34,31 @@ export function branchStats(branchId, client = pool) {
       [branchId],
     )
     .then((r) => r.rows[0] ?? null);
+}
+
+/** Реальные расходы филиала за период — для отчётов (income() перепутал это с долгом). */
+export function monthExpenses(branchId, { from, to }, client = pool) {
+  return client
+    .query(
+      `SELECT COALESCE(SUM(e.amount), 0) AS expenses
+         FROM expenses e
+        WHERE e.branch_id = $1 AND e.deleted_at IS NULL
+          AND e.spent_at >= $2 AND e.spent_at <= $3`,
+      [branchId, from, to],
+    )
+    .then((r) => Number(r.rows[0]?.expenses ?? 0));
+}
+
+/** Сколько платежей прошло за период — для строки «N ta to'lov» в отчётах. */
+export function monthPaymentsCount(branchId, { from, to }, client = pool) {
+  return client
+    .query(
+      `SELECT count(*)::int AS n FROM transactions t
+        WHERE t.branch_id = $1 AND t.status = 'completed'
+          AND t.created_at >= $2 AND t.created_at < $3::date + INTERVAL '1 day'`,
+      [branchId, from, to],
+    )
+    .then((r) => r.rows[0]?.n ?? 0);
 }
 
 export function listBranchPayments(branchId, { from, to }, client = pool) {

@@ -38,7 +38,7 @@ async function canWatchGroup(user, groupId) {
 
   if (user.role === 'mentor') return group.mentor_id === user.id;
   if (user.role === 'admin') return group.branch_id === user.branchId;
-  if (user.role === 'superadmin') return group.organization_id === user.organizationId;
+  if (user.role === 'seo') return group.organization_id === user.organizationId;
   return false;
 }
 

@@ -68,7 +68,7 @@ const schema = z.object({
   SEED_MAIN_ADMIN_PHONE: z.string().default('+998900000000'),
   SEED_MAIN_ADMIN_EMAIL: z.string().email().default('hp8187081014laptop@gmail.com'),
   SEED_MAIN_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),
-  SEED_SUPERADMIN_EMAIL: z.string().email().default('azizbekamangeldiev.2010@gmail.com'),
+  SEED_SEO_EMAIL: z.string().email().default('azizbekamangeldiev.2010@gmail.com'),
 }).superRefine((cfg, ctx) => {
   if (cfg.NODE_ENV !== 'production') return;
 

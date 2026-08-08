@@ -152,7 +152,7 @@ export function createApp() {
   app.use('/api/chat', chatRoutes);
   app.use('/api/leads', leadsRoutes); // ПУБЛИЧНЫЙ приём заявок с лендинга (без токена)
   app.use('/api/main', mainRoutes);   // Main Admin: онбординг партнёров, дашборд платформы
-  app.use('/api/super', superRoutes); // Super Admin: филиалы + админы своей организации
+  app.use('/api/super', superRoutes); // SEO: филиалы + админы своей организации
 app.use('/api/admin', adminRoutes); // K-ADMIN: филиал — дашборд, расходы, студенты, группы
 app.use('/api/branch-manager', branchManagerRoutes); // BRANCH MANAGER: дашборд/доход/расход/отчёты/карточка своего филиала
 app.use('/api/methodist', methodistRoutes); // METHODIST: тесты, ДЗ, аналитика

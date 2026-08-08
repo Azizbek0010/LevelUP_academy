@@ -4,42 +4,6 @@
 
 [← back to index](./README.md)
 
-### GET `/api/admin/charter`
-View organization charter (read-only for Admin)
-
-**Auth:** Bearer JWT required
-**Role(s):** authenticated
-
-**Responses:**
-
-- **200** — Charter
-  - `success`: boolean (optional) _e.g. true_
-  - `data` (optional):
-    - **Charter**:
-      - `organization_id`: string (uuid) (optional)
-      - `title`: string (optional)
-      - `content`: string (optional)
-      - `updated_by`: string (uuid) (optional)
-      - `updated_at`: string (date-time) (optional)
-
-- **401** — Missing/invalid/expired bearer token
-  - **ErrorResponse**:
-    - `success`: boolean **(required)** _e.g. false_
-    - `message`: string **(required)**
-    - `details` (optional):
-      - _(free-form object)_
-    - `stack`: string (optional) — Only present when NODE_ENV=development
-
-- **403** — Authenticated but role not allowed on this endpoint
-  - **ErrorResponse**:
-    - `success`: boolean **(required)** _e.g. false_
-    - `message`: string **(required)**
-    - `details` (optional):
-      - _(free-form object)_
-    - `stack`: string (optional) — Only present when NODE_ENV=development
-
----
-
 ### GET `/api/admin/penalties`
 List penalties issued by this admin
 
@@ -58,15 +22,15 @@ List penalties issued by this admin
     - _array of:_
       - **Penalty**:
         - `id`: string (uuid) (optional)
-        - `type`: enum: `shtraf` | `qora` (optional)
-        - `amount`: number (optional) — null для qora
+        - `type`: enum: `sariq` | `qizil` | `qora` (optional)
+        - `amount`: number (optional) — необязательна для любого типа
         - `reason`: string (optional)
         - `created_at`: string (date-time) (optional)
         - `target_user_id`: string (uuid) (optional)
         - `target_role`: enum: `admin` | `mentor` | `methodist` (optional)
         - `target_name`: string (optional)
         - `issued_by`: string (uuid) (optional)
-        - `issuer_role`: enum: `superadmin` | `admin` (optional)
+        - `issuer_role`: enum: `seo` | `admin` (optional)
         - `issued_by_name`: string (optional)
 
 - **401** — Missing/invalid/expired bearer token
@@ -98,8 +62,8 @@ Issue penalty — Admin → mentor/methodist (shtraf), mentor (qora)
 **Request body:**
 - **IssuePenaltyRequest**:
   - `targetUserId`: string (uuid) **(required)** — Сотрудник: admin / mentor / methodist
-  - `type`: enum: `shtraf` | `qora` **(required)** — shtraf = штраф; qora = увольнение
-  - `amount`: number (optional) — Сумма в сумах — обязательна для shtraf, не задаётся для qora (без автосписания)
+  - `type`: enum: `sariq` | `qizil` | `qora` **(required)** — sariq = жёлтое, qizil = красное предупреждение, qora = увольнение
+  - `amount`: number (optional) — Сумма в сумах — необязательный довесок к любому уровню, без автосписания
   - `reason`: string **(required)**
 
 **Responses:**
@@ -111,15 +75,15 @@ Issue penalty — Admin → mentor/methodist (shtraf), mentor (qora)
       - `penalty` (optional):
         - **Penalty**:
           - `id`: string (uuid) (optional)
-          - `type`: enum: `shtraf` | `qora` (optional)
-          - `amount`: number (optional) — null для qora
+          - `type`: enum: `sariq` | `qizil` | `qora` (optional)
+          - `amount`: number (optional) — необязательна для любого типа
           - `reason`: string (optional)
           - `created_at`: string (date-time) (optional)
           - `target_user_id`: string (uuid) (optional)
           - `target_role`: enum: `admin` | `mentor` | `methodist` (optional)
           - `target_name`: string (optional)
           - `issued_by`: string (uuid) (optional)
-          - `issuer_role`: enum: `superadmin` | `admin` (optional)
+          - `issuer_role`: enum: `seo` | `admin` (optional)
           - `issued_by_name`: string (optional)
       - `fired`: boolean (optional) — true если это qora (сотрудник уволен, status=fired)
 
@@ -169,25 +133,15 @@ Issue penalty — Admin → mentor/methodist (shtraf), mentor (qora)
 
 ---
 
-### GET `/api/super/charter`
-Get organization charter (устав)
-
-Если устав ещё не создан — возвращается пустой шаблон.
+### GET `/api/super/discipline-rules`
+List organization discipline rules (qoyda catalog)
 
 **Auth:** Bearer JWT required
 **Role(s):** authenticated
 
 **Responses:**
 
-- **200** — Charter
-  - `success`: boolean (optional) _e.g. true_
-  - `data` (optional):
-    - **Charter**:
-      - `organization_id`: string (uuid) (optional)
-      - `title`: string (optional)
-      - `content`: string (optional)
-      - `updated_by`: string (uuid) (optional)
-      - `updated_at`: string (date-time) (optional)
+- **200** — Rules
 
 - **401** — Missing/invalid/expired bearer token
   - **ErrorResponse**:
@@ -207,28 +161,20 @@ Get organization charter (устав)
 
 ---
 
-### PUT `/api/super/charter`
-Create/update organization charter (Super Admin only)
+### POST `/api/super/discipline-rules`
+Create a discipline rule (violation -> sariq/qizil/qora)
 
 **Auth:** Bearer JWT required
 **Role(s):** authenticated
 
 **Request body:**
-- **UpsertCharterRequest**:
-  - `title`: string (optional)
-  - `content`: string **(required)**
+- `type`: enum: `sariq` | `qizil` | `qora` (optional)
+- `amount`: number (optional) — Необязательный довесок к любому уровню
+- `description`: string (optional)
 
 **Responses:**
 
-- **200** — Saved charter
-  - `success`: boolean (optional) _e.g. true_
-  - `data` (optional):
-    - **Charter**:
-      - `organization_id`: string (uuid) (optional)
-      - `title`: string (optional)
-      - `content`: string (optional)
-      - `updated_by`: string (uuid) (optional)
-      - `updated_at`: string (date-time) (optional)
+- **201** — Created
 
 - **401** — Missing/invalid/expired bearer token
   - **ErrorResponse**:
@@ -246,17 +192,44 @@ Create/update organization charter (Super Admin only)
       - _(free-form object)_
     - `stack`: string (optional) — Only present when NODE_ENV=development
 
-- **422** — zod validation failed (body/params/query)
-  - **ValidationErrorResponse**:
-    - **ErrorResponse**:
-      - `success`: boolean **(required)** _e.g. false_
-      - `message`: string **(required)**
-      - `details` (optional):
-        - _(free-form object)_
-      - `stack`: string (optional) — Only present when NODE_ENV=development
-    - `message`: string (optional) _e.g. "Validation failed"_
+---
+
+### DELETE `/api/super/discipline-rules/{id}`
+Delete a discipline rule
+
+**Auth:** Bearer JWT required
+**Role(s):** authenticated
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — Deleted
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
     - `details` (optional):
       - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
 
 ---
 
@@ -278,15 +251,15 @@ List penalties in the organization
     - _array of:_
       - **Penalty**:
         - `id`: string (uuid) (optional)
-        - `type`: enum: `shtraf` | `qora` (optional)
-        - `amount`: number (optional) — null для qora
+        - `type`: enum: `sariq` | `qizil` | `qora` (optional)
+        - `amount`: number (optional) — необязательна для любого типа
         - `reason`: string (optional)
         - `created_at`: string (date-time) (optional)
         - `target_user_id`: string (uuid) (optional)
         - `target_role`: enum: `admin` | `mentor` | `methodist` (optional)
         - `target_name`: string (optional)
         - `issued_by`: string (uuid) (optional)
-        - `issuer_role`: enum: `superadmin` | `admin` (optional)
+        - `issuer_role`: enum: `seo` | `admin` (optional)
         - `issued_by_name`: string (optional)
 
 - **401** — Missing/invalid/expired bearer token
@@ -308,9 +281,9 @@ List penalties in the organization
 ---
 
 ### POST `/api/super/penalties`
-Issue a penalty (shtraf) or fire (qora) a staff member
+Issue a warning (sariq/qizil) or fire (qora) a staff member
 
-Super Admin → admin / mentor / methodist (и shtraf, и qora). qora ставит целевому status=fired (атомарно).
+SEO → admin / mentor / methodist. amount — необязательный довесок к любому из трёх уровней, не отдельная категория. qora ставит целевому status=fired (атомарно).
 
 
 **Auth:** Bearer JWT required
@@ -319,8 +292,8 @@ Super Admin → admin / mentor / methodist (и shtraf, и qora). qora стави
 **Request body:**
 - **IssuePenaltyRequest**:
   - `targetUserId`: string (uuid) **(required)** — Сотрудник: admin / mentor / methodist
-  - `type`: enum: `shtraf` | `qora` **(required)** — shtraf = штраф; qora = увольнение
-  - `amount`: number (optional) — Сумма в сумах — обязательна для shtraf, не задаётся для qora (без автосписания)
+  - `type`: enum: `sariq` | `qizil` | `qora` **(required)** — sariq = жёлтое, qizil = красное предупреждение, qora = увольнение
+  - `amount`: number (optional) — Сумма в сумах — необязательный довесок к любому уровню, без автосписания
   - `reason`: string **(required)**
 
 **Responses:**
@@ -332,15 +305,15 @@ Super Admin → admin / mentor / methodist (и shtraf, и qora). qora стави
       - `penalty` (optional):
         - **Penalty**:
           - `id`: string (uuid) (optional)
-          - `type`: enum: `shtraf` | `qora` (optional)
-          - `amount`: number (optional) — null для qora
+          - `type`: enum: `sariq` | `qizil` | `qora` (optional)
+          - `amount`: number (optional) — необязательна для любого типа
           - `reason`: string (optional)
           - `created_at`: string (date-time) (optional)
           - `target_user_id`: string (uuid) (optional)
           - `target_role`: enum: `admin` | `mentor` | `methodist` (optional)
           - `target_name`: string (optional)
           - `issued_by`: string (uuid) (optional)
-          - `issuer_role`: enum: `superadmin` | `admin` (optional)
+          - `issuer_role`: enum: `seo` | `admin` (optional)
           - `issued_by_name`: string (optional)
       - `fired`: boolean (optional) — true если это qora (сотрудник уволен, status=fired)
 
@@ -441,23 +414,15 @@ Reactivate a fired staff member (qora → active)
 
 ---
 
-### GET `/api/users/me/charter`
-Own organization charter (staff self-view)
+### GET `/api/users/me/discipline-rules`
+Organization discipline rules catalog (staff self-view, read-only)
 
 **Auth:** Bearer JWT required
 **Role(s):** authenticated
 
 **Responses:**
 
-- **200** — Charter
-  - `success`: boolean (optional) _e.g. true_
-  - `data` (optional):
-    - **Charter**:
-      - `organization_id`: string (uuid) (optional)
-      - `title`: string (optional)
-      - `content`: string (optional)
-      - `updated_by`: string (uuid) (optional)
-      - `updated_at`: string (date-time) (optional)
+- **200** — Rules
 
 - **401** — Missing/invalid/expired bearer token
   - **ErrorResponse**:
@@ -490,7 +455,7 @@ Own penalties (admin / mentor / methodist self-view)
   - `data` (optional):
     - _array of:_
       - `id`: string (uuid) (optional)
-      - `type`: enum: `shtraf` | `qora` (optional)
+      - `type`: enum: `sariq` | `qizil` | `shtraf` | `qora` (optional)
       - `amount`: number (optional)
       - `reason`: string (optional)
       - `issuer_role`: string (optional)

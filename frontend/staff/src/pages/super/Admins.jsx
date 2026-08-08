@@ -8,7 +8,7 @@ import {
   MoreVertical, ChevronDown,
 } from 'lucide-react';
 import { dateShort } from '../../format.js';
-import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches, useInvalidate } from '../../queries.js';
+import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches, useSuperBranchManagers, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
@@ -20,7 +20,7 @@ import { Card, SearchInput, StatusBadge, Modal, Dropdown, DropdownItem, Avatar }
  * «Сотрудники» — раньше две отдельные вкладки (Администраторы / Методисты),
  * каждая со своим поиском. Karis: поиск сверху должен видеть ВСЕХ сотрудников
  * разом (включая менторов — read-only, заводит их Admin филиала, но видеть
- * и находить их Super Admin должен), а у каждой строки должно быть видно,
+ * и находить их SEO должен), а у каждой строки должно быть видно,
  * кто это — админ/ментор/методист. Поэтому одна таблица на всех троих.
  *
  * Действия (редактировать/сбросить пароль/заморозить) раньше сидели прямо в
@@ -70,9 +70,12 @@ const methodistEditSchema = z.object({
   monthlySalary: monthlySalaryField,
 });
 
+// admin и branch_manager заводятся/правятся одинаково (firstName/lastName/email/branchId/phone) —
+// у обоих ровно один филиал, в отличие от methodist (вся организация, без филиала).
+const needsBranch = (role) => role === 'admin' || role === 'branch_manager';
+
 function schemaFor(role, mode) {
-  if (role === 'admin') return mode === 'create' ? adminCreateSchema : adminEditSchema;
-  if (role === 'branch_manager') return mode === 'create' ? adminCreateSchema : adminEditSchema;
+  if (needsBranch(role)) return mode === 'create' ? adminCreateSchema : adminEditSchema;
   return mode === 'create' ? methodistCreateSchema : methodistEditSchema;
 }
 
@@ -90,6 +93,13 @@ const ROLE_META = {
   mentor:           { label: 'Ментор',        tone: 'info' },
   methodist:        { label: 'Методист',      tone: 'neutral' },
   branch_manager:   { label: 'Филиал менежери', tone: 'info' },
+};
+
+// винительный падеж для «Создать/Редактировать ...» — ROLE_META.label в именительном
+const ROLE_ACCUSATIVE = {
+  admin: 'администратора',
+  methodist: 'методиста',
+  branch_manager: 'branch-менеджера',
 };
 
 function RoleBadge({ role }) {
@@ -144,7 +154,7 @@ function TempPasswordModal({ email, password, onClose }) {
 }
 
 // ─── Действия над строкой сотрудника ──────────────────────────
-// Ментор — read-only для Super Admin (заводит и правит его Admin филиала),
+// Ментор — read-only для SEO (заводит и правит его Admin филиала),
 // поэтому у него в меню нечего показывать.
 function StaffActionsMenu({ row, resetBusy, onEdit, onResetPassword, onToggleFreeze }) {
   if (row.role === 'mentor') {
@@ -192,7 +202,7 @@ function StaffActionsMenu({ row, resetBusy, onEdit, onResetPassword, onToggleFre
   );
 }
 
-// ─── Кнопка «Добавить» — выбор роли (ментора Super Admin не заводит) ────
+// ─── Кнопка «Добавить» — выбор роли (ментора SEO не заводит) ────
 function AddStaffButton({ onPick, disabled }) {
   return (
     <Dropdown
@@ -225,6 +235,7 @@ export default function SuperAdmins() {
   const admins = useSuperAdmins();
   const mentors = useSuperMentors();
   const methodists = useSuperMethodists();
+  const branchManagers = useSuperBranchManagers();
   const branchesQ = useSuperBranches();
 
   const [q, setQ] = useState('');
@@ -244,7 +255,8 @@ export default function SuperAdmins() {
     ...(admins.data?.admins ?? []).map((u) => ({ ...u, role: 'admin' })),
     ...(mentors.data?.mentors ?? []).map((u) => ({ ...u, role: 'mentor' })),
     ...(methodists.data?.methodists ?? []).map((u) => ({ ...u, role: 'methodist' })),
-  ], [admins.data, mentors.data, methodists.data]);
+    ...(branchManagers.data?.managers ?? []).map((u) => ({ ...u, role: 'branch_manager' })),
+  ], [admins.data, mentors.data, methodists.data, branchManagers.data]);
 
   const rows = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -257,20 +269,20 @@ export default function SuperAdmins() {
     return [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }, [allRows, q]);
 
-  const loading = admins.isLoading || mentors.isLoading || methodists.isLoading;
-  const loadError = [admins.error, mentors.error, methodists.error].find((e) => e && e.status !== 401);
+  const loading = admins.isLoading || mentors.isLoading || methodists.isLoading || branchManagers.isLoading;
+  const loadError = [admins.error, mentors.error, methodists.error, branchManagers.error].find((e) => e && e.status !== 401);
   const showErr = err || loadError?.message || '';
 
   const openCreate = (role) => {
     setErr('');
-    if (role === 'admin') reset({ firstName: '', lastName: '', email: '', branchId: activeBranches?.[0]?.id || '', phone: '' });
+    if (needsBranch(role)) reset({ firstName: '', lastName: '', email: '', branchId: activeBranches?.[0]?.id || '', phone: '' });
     else reset({ firstName: '', lastName: '', email: '', phone: '' });
     setFormModal({ role, mode: 'create', id: null });
   };
 
   const openEdit = (row) => {
     setErr('');
-    if (row.role === 'admin') {
+    if (needsBranch(row.role)) {
       reset({
         firstName: row.firstName || '',
         lastName: row.lastName || '',
@@ -313,6 +325,25 @@ export default function SuperAdmins() {
           });
         }
         invalidate('super-admins', 'super-dashboard');
+      } else if (formModal.role === 'branch_manager') {
+        if (formModal.mode === 'create') {
+          const { manager } = await api.superCreateBranchManager(token, {
+            firstName: formData.firstName.trim(),
+            lastName:  formData.lastName.trim(),
+            email:     formData.email.trim(),
+            branchId:  formData.branchId,
+            phone:     formData.phone.trim() || undefined,
+          });
+          setTempPassword({ email: manager.email, password: manager.tempPassword });
+        } else {
+          await api.superUpdateBranchManager(token, formModal.id, {
+            firstName: formData.firstName.trim(),
+            lastName:  formData.lastName.trim(),
+            branchId:  formData.branchId,
+            phone:     formData.phone.trim() || undefined,
+          });
+        }
+        invalidate('super-branch-managers');
       } else {
         if (formModal.mode === 'create') {
           const { methodist } = await api.superCreateMethodist(token, {
@@ -347,6 +378,10 @@ export default function SuperAdmins() {
         if (row.status === 'frozen') await api.superUnfreezeAdmin(token, row.id);
         else await api.superFreezeAdmin(token, row.id);
         invalidate('super-admins', 'super-dashboard');
+      } else if (row.role === 'branch_manager') {
+        if (row.status === 'frozen') await api.superUnfreezeBranchManager(token, row.id);
+        else await api.superFreezeBranchManager(token, row.id);
+        invalidate('super-branch-managers');
       } else {
         if (row.status === 'frozen') await api.superUnfreezeMethodist(token, row.id);
         else await api.superFreezeMethodist(token, row.id);
@@ -364,6 +399,9 @@ export default function SuperAdmins() {
       if (row.role === 'admin') {
         const { admin } = await api.superResetAdminPassword(token, row.id);
         setTempPassword({ email: row.email, password: admin.tempPassword });
+      } else if (row.role === 'branch_manager') {
+        const { manager } = await api.superResetBranchManagerPassword(token, row.id);
+        setTempPassword({ email: row.email, password: manager.tempPassword });
       } else {
         const { methodist } = await api.superResetMethodistPassword(token, row.id);
         setTempPassword({ email: row.email, password: methodist.tempPassword });
@@ -466,8 +504,8 @@ export default function SuperAdmins() {
         onClose={() => setFormModal(null)}
         title={formModal ? (
           formModal.mode === 'create'
-            ? `Создать ${formModal.role === 'admin' ? 'администратора' : 'методиста'}`
-            : `Редактировать ${formModal.role === 'admin' ? 'администратора' : 'методиста'}`
+            ? `Создать ${ROLE_ACCUSATIVE[formModal.role] ?? formModal.role}`
+            : `Редактировать ${ROLE_ACCUSATIVE[formModal.role] ?? formModal.role}`
         ) : ''}
       >
         {formModal && (
@@ -493,7 +531,7 @@ export default function SuperAdmins() {
                   {errors.email && <span className="text-xs text-error mt-1">{errors.email.message}</span>}
                   <span className="text-xs text-base-content/45 mt-1">Пароль сгенерируется автоматически и покажется после создания</span>
                 </label>
-              ) : formModal.role === 'admin' ? (
+              ) : needsBranch(formModal.role) ? (
                 <label className="form-control w-full">
                   <span className="label-text mb-1">Email (Логин)</span>
                   <input type="email" disabled value={formModal.email || ''} className="input input-bordered w-full bg-base-200 cursor-not-allowed opacity-70" />
@@ -503,7 +541,7 @@ export default function SuperAdmins() {
                   Email нельзя изменить после создания
                 </div>
               )}
-              {formModal.role === 'admin' && (
+              {needsBranch(formModal.role) && (
                 <label className="form-control w-full">
                   <span className="label-text mb-1">Назначить в филиал *</span>
                   <select {...register('branchId')} className={`select select-bordered w-full ${errors.branchId ? 'select-error' : ''}`}>
@@ -529,7 +567,7 @@ export default function SuperAdmins() {
                 />
                 {errors.phone && <span className="text-xs text-error mt-1">{errors.phone.message}</span>}
               </label>
-              {formModal.mode === 'edit' && (
+              {formModal.mode === 'edit' && formModal.role !== 'branch_manager' && (
                 <label className="form-control w-full">
                   <span className="label-text mb-1">Оклад, UZS</span>
                   <input

@@ -76,10 +76,11 @@ body {
   --shadow: 0 4px 12px rgba(29, 36, 23, 0.08);
   --shadow-lg: 0 8px 24px rgba(29, 36, 23, 0.12);
 
-  /* Border radius */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  /* Border radius — уменьшено 08.08.2026 (Karis): было 8/12/16, слишком
+     "мультяшно" рядом с более сдержанным референсом (marsit.uz) */
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
 
   /* Sidebar */
   --sidebar-hover: rgba(64, 131, 59, 0.08);
@@ -125,10 +126,15 @@ body {
    DAISYUI COMPONENT OVERRIDES — force theme-aware backgrounds
    ═══════════════════════════════════════════════════════════════ */
 
-/* Modal — ensure full-viewport overlay regardless of parent stacking context */
+/* Modal — ensure full-viewport overlay regardless of parent stacking context.
+   dialog по UA/DaisyUI-стилю получает margin: 24px 0 0 0 (центрирование для
+   нативного showModal()) — мы его не вызываем, поэтому margin остаётся мёртвым
+   грузом и сдвигает весь оверлей вниз, оставляя сверху непокрытую полосу с
+   видимой недожатой шапкой сайта. */
 .modal {
   position: fixed !important;
   inset: 0 !important;
+  margin: 0 !important;
   z-index: 999 !important;
 }
 
@@ -379,6 +385,13 @@ body {
   background: var(--scrollbar-thumb-hover);
 }
 html {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-width: thin;
+}
+/* scrollbar-width/-color не наследуются — без этого правила вложенные
+   overflow-контейнеры (модалки и т.п.) показывают системный толстый скроллбар,
+   даже если ::-webkit-scrollbar задан выше (эта сборка Chrome его игнорирует) */
+* {
   scrollbar-color: var(--scrollbar-thumb) transparent;
   scrollbar-width: thin;
 }

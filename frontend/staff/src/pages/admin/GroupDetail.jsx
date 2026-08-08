@@ -613,7 +613,10 @@ function AttendanceTab({ groupId, token }) {
 }
 
 /* ═══════════════ HomeworkTab ═══════════════ */
-function HomeworkTab({ groupId, token }) {
+// canManage=false — branch_manager: ДЗ ведёт ментор (см. роли в CLAUDE.md),
+// менеджеру филиала оставлен только просмотр — видно, задано ДЗ или нет,
+// без права создать/отредактировать (Karis, 08.08.2026).
+function HomeworkTab({ groupId, token, canManage = true }) {
   const { data: hwData, refetch } = useAdminGroupHomework(groupId);
   const hw = hwData?.data || hwData || [];
   const [showAdd, setShowAdd] = useState(false);
@@ -664,9 +667,11 @@ function HomeworkTab({ groupId, token }) {
             className="input input-bordered input-xs w-32 sm:w-40 rounded-lg text-[12px]"
           />
         </div>
-        <button className="btn btn-primary btn-sm gap-1 shrink-0" onClick={() => setShowAdd(true)}>
-          <Plus size={14} /> Добавить
-        </button>
+        {canManage && (
+          <button className="btn btn-primary btn-sm gap-1 shrink-0" onClick={() => setShowAdd(true)}>
+            <Plus size={14} /> Добавить
+          </button>
+        )}
       </div>
 
       {/* Status filter pills */}
@@ -760,7 +765,9 @@ function HomeworkTab({ groupId, token }) {
 }
 
 /* ═══════════════ FeedbackTab ═══════════════ */
-function FeedbackTab({ groupId, token }) {
+// canManage=false — branch_manager: отзыв пишет сам ученик/ментор, а не
+// сотрудник филиала за них (та же логика, что и у HomeworkTab выше, Karis 08.08.2026).
+function FeedbackTab({ groupId, token, canManage = true }) {
   const { data: fbData, refetch } = useAdminGroupFeedback(groupId);
   const fb = fbData?.data || fbData || [];
   const [filter, setFilter] = useState('all');
@@ -816,9 +823,11 @@ function FeedbackTab({ groupId, token }) {
             </button>
           ))}
         </div>
-        <button className="btn btn-primary btn-sm gap-1" onClick={() => setShowAdd(true)}>
-          <Plus size={14} /> Добавить
-        </button>
+        {canManage && (
+          <button className="btn btn-primary btn-sm gap-1" onClick={() => setShowAdd(true)}>
+            <Plus size={14} /> Добавить
+          </button>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -921,7 +930,7 @@ const TABS = [
 
 export default function AdminGroupDetail() {
   const { id } = useParams();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { data, isLoading, error, refetch } = useAdminGroupDetail(id);
   const { data: studentsData } = useAdminStudents();
   const [activeTab, setActiveTab] = useState('attendance');
@@ -1012,8 +1021,8 @@ export default function AdminGroupDetail() {
       {/* Tab Content */}
       <div className="card bg-base-100 p-5 animate-fade-in stagger-3">
         {activeTab === 'attendance' && <AttendanceTab groupId={id} token={token} />}
-        {activeTab === 'homework' && <HomeworkTab groupId={id} token={token} />}
-        {activeTab === 'feedback' && <FeedbackTab groupId={id} token={token} />}
+        {activeTab === 'homework' && <HomeworkTab groupId={id} token={token} canManage={user?.role !== 'branch_manager'} />}
+        {activeTab === 'feedback' && <FeedbackTab groupId={id} token={token} canManage={user?.role !== 'branch_manager'} />}
       </div>
 
       {/* Add Student Modal */}

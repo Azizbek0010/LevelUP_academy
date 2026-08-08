@@ -9,7 +9,7 @@ import {
 
 const ROLE_LABELS = {
   admin: 'Администратор',
-  superadmin: 'Super Admin',
+  seo: 'SEO',
   mentor: 'Ментор',
   methodist: 'Методист',
 };
@@ -221,7 +221,7 @@ export default function Profile() {
                 className="w-full h-10 pl-9 pr-3 rounded-[10px] border border-base-300 bg-base-200 text-base-content/50 text-[13px] outline-none cursor-not-allowed"
               />
             </div>
-            <span className="text-[10px] text-base-content/40 mt-1">Email меняется через Super Admin</span>
+            <span className="text-[10px] text-base-content/40 mt-1">Email меняется через SEO</span>
           </div>
         </div>
 

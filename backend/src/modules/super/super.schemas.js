@@ -8,6 +8,12 @@ export const idParam = z.object({ id: z.string().uuid('Invalid id') });
 // цена абонемента методики — та же граница, что и у monthlyPrice группы в admin.schemas.js
 export const setTrainingTypePriceSchema = z.object({
   price: z.coerce.number().nonnegative().max(9_999_999_999),
+  // лимит группы для этой методики — решает только SEO (не admin/branch_manager при создании группы)
+  maxStudents: z.coerce.number().int().positive().max(500).optional(),
+});
+
+export const setTrainingTypeArchivedSchema = z.object({
+  archived: z.boolean(),
 });
 
 // редактирование организации (Settings) — частичное; domain может быть пустым => null
@@ -77,7 +83,7 @@ export const updateAdminSchema = z
 // заморозка / разморозка админа
 export const freezeSchema = z.object({ frozen: z.boolean() });
 
-// Super Admin создаёт филиал в своей организации
+// SEO создаёт филиал в своей организации
 export const createBranchSchema = z.object({
   name: z.string().trim().min(2, 'Too short').max(120),
   address: z.string().trim().max(500).optional(),
@@ -89,9 +95,9 @@ export const createBranchSchema = z.object({
   path: ['lat'],
 });
 
-// Super Admin создаёт админа и назначает в свой филиал.
-// Логин (email) задаёт Super Admin; пароль генерируется автоматически и
-// показывается один раз — так же, как Main Admin заводит Super Admin.
+// SEO создаёт админа и назначает в свой филиал.
+// Логин (email) задаёт SEO; пароль генерируется автоматически и
+// показывается один раз — так же, как Main Admin заводит SEO.
 export const createAdminSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
@@ -142,4 +148,39 @@ export const createBranchManagerSchema = z.object({
   email,
   branchId: z.string().uuid('Invalid branchId'),
   phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').or(z.literal('')).optional(),
+});
+
+// редактирование Branch Manager — частичное (хотя бы одно поле)
+// branchId позволяет переместить в другой филиал (должен быть из своей орг)
+export const updateBranchManagerSchema = z
+  .object({
+    firstName: z.string().trim().min(1).max(80),
+    lastName: z.string().trim().min(1).max(80),
+    branchId: z.string().uuid('Invalid branchId'),
+    phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').or(z.literal('')).optional(),
+  })
+  .partial()
+  .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
+
+// заморозка / разморозка Branch Manager
+export const freezeBranchManagerSchema = z.object({ frozen: z.boolean() });
+
+// перестановка нескольких Branch Manager'ов между филиалами одной атомарной
+// операцией — на случай, когда все участвующие филиалы уже заняты и обычный
+// updateBranchManagerSchema (перенос по одному) упрётся в занятый филиал
+export const reassignBranchManagersSchema = z.object({
+  assignments: z
+    .array(
+      z.object({
+        id: z.string().uuid('Invalid id'),
+        branchId: z.string().uuid('Invalid branchId'),
+      }),
+    )
+    .min(2, 'Need at least 2 assignments to reassign')
+    .refine((arr) => new Set(arr.map((a) => a.id)).size === arr.length, {
+      message: 'Duplicate branch manager id in assignments',
+    })
+    .refine((arr) => new Set(arr.map((a) => a.branchId)).size === arr.length, {
+      message: 'Duplicate target branchId in assignments',
+    }),
 });

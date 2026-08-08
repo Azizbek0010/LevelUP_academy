@@ -18,7 +18,7 @@ export const updatePricingSchema = z
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
 
-// Main Admin заводит партнёра: организация + её Super Admin + домен (+ опц. из заявки)
+// Main Admin заводит партнёра: организация + её SEO + домен (+ опц. из заявки)
 export const onboardPartnerSchema = z.object({
   organizationName: z.string().trim().min(2, 'Too short').max(160),
   domain: domain.optional(),
@@ -72,7 +72,7 @@ export const partnerStatusSchema = z.object({
 export const createAnnouncementSchema = z.object({
   title: z.string().trim().min(1, 'Title is required').max(200),
   body: z.string().trim().min(1, 'Body is required'),
-  targetType: z.enum(['all-partners', 'all-superadmins']),
+  targetType: z.enum(['all-partners', 'all-seo']),
 });
 
 // ---- профиль main_admin ----

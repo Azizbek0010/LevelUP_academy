@@ -14,7 +14,7 @@ const router = Router();
  *     description: >
  *       Room access rules (`requireRoomAccess`): `global` — everyone except
  *       students; `parent:<uuid>` — that parent themself or any staff role;
- *       `group:<uuid>` — main_admin/superadmin/admin unconditionally, or the
+ *       `group:<uuid>` — main_admin/seo/admin unconditionally, or the
  *       group's own mentor/enrolled students. `limit` is clamped server-side to
  *       [1, 100] (non-numeric defaults to 50); `cursor` must be a valid ISO
  *       timestamp (checked before hitting the DB — otherwise Postgres would 500
@@ -77,7 +77,7 @@ router.get('/:roomKey/messages', authenticate, requireRoomAccess, ctrl.getMessag
  *       Contact list for private `dm:<staffId>:<parentId>` conversations, with
  *       the last message and unread count per room. Scope mirrors the send-time
  *       check exactly: a mentor sees parents whose child is in one of their own
- *       groups, an admin — parents of their branch, a superadmin — parents of
+ *       groups, an admin — parents of their branch, a seo — parents of
  *       their organization. Other roles get an empty list. Staff never see each
  *       other's conversations, so this list is per-user by construction.
  *     security: [{ bearerAuth: [] }]
@@ -133,7 +133,7 @@ router.get('/my-threads', authenticate, ctrl.getMyThreads);
  *     summary: Send a direct message over HTTP
  *     description: >
  *       Sends a private message without a websocket. Direction follows the
- *       caller's role, never a request field: staff (mentor/admin/superadmin)
+ *       caller's role, never a request field: staff (mentor/admin/seo)
  *       message a parent or a student, while a parent or student may only reply
  *       to a staff member who is already allowed to talk to them — neither can
  *       open a conversation. Permission checks and persistence are shared with

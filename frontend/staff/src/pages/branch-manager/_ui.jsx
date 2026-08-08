@@ -4,7 +4,7 @@
    qilinadi — dizayn tizimi bitta. Bu yerda faqat branch-manager'ga xos
    komponentlar: moliyaviy ustun-chart va status badge.
    ────────────────────────────────────────────────────────────────────────── */
-import { money } from '../../../format.js';
+import { money } from '../../format.js';
 import { PAYMENT_STATUS } from './_data.js';
 
 /* ── Daromad vs Xarajat ustun-charti ────────────────────────────────────────

@@ -17,7 +17,7 @@ export const updateMe = asyncHandler(async (req, res) => {
 
 /**
  * GET /api/users/:id — карточка пользователя строго в своём скоупе:
- * main_admin — вся платформа; superadmin — своя организация;
+ * main_admin — вся платформа; seo — своя организация;
  * остальные — свой филиал. Чужой скоуп неотличим от несуществующего (404).
  */
 export const getUser = asyncHandler(async (req, res) => {
@@ -25,7 +25,7 @@ export const getUser = asyncHandler(async (req, res) => {
 
   const requester = req.user;
   if (requester.role !== 'main_admin') {
-    const inScope = requester.role === 'superadmin'
+    const inScope = requester.role === 'seo'
       ? user.organization_id === requester.organizationId
       : user.branch_id === requester.branchId;
     if (!inScope) throw new AppError(404, 'User not found');

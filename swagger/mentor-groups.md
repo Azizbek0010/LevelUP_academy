@@ -40,6 +40,26 @@ List the mentor's own groups (dashboard + selectors for attendance/homework/test
 
 ---
 
+### GET `/api/mentor/groups/{groupId}/stats`
+Group statistics with per-student comparison
+
+One call instead of a submissions/results request per assignment per student. Returns the group averages, the spread of students across performance bands, and a per-student row ranked by an overall score (the mean of whichever of attendance / homework / tests that student actually has — a newcomer with no tests yet is not penalised for it). Scoped to the requesting mentor's own group; anything else answers 404.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** mentor (own groups only)
+
+**Params:**
+- `groupId` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — Group statistics
+
+- **404** — Group not found or belongs to another mentor
+
+---
+
 ### GET `/api/mentor/groups/{groupId}/students`
 Roster of a group's students (own group only)
 

@@ -4,12 +4,6 @@ import { money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Panel, Kpi } from '../mentor/_ui.jsx';
 import { PaymentStatusBadge } from './_ui.jsx';
-import { useState } from 'react';
-import { TrendingUp, Wallet, CheckCircle2, CalendarDays, CreditCard } from 'lucide-react';
-import { money } from '../../format.js';
-import PageHeader from '../../components/PageHeader.jsx';
-import { Panel, Kpi } from '../mentor/_ui.jsx';
-import { PaymentStatusBadge } from './_ui.jsx';
 import { useBranchManagerIncome } from '../../queries.js';
 
 export default function BranchManagerIncome() {
@@ -20,7 +14,7 @@ export default function BranchManagerIncome() {
   if (error) return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
 
   const rows = data?.payments || [];
-  const total = data?.totalAmount || 0;
+  const total = data?.total || 0;
   const paid = data?.paidCount || 0;
   const overdue = data?.overdueCount || 0;
   const debt = data?.debt || 0;

@@ -526,7 +526,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
 
       // Мок-креды по ролям (совпадают с backend seed env-переменными)
       const MOCK_ACCOUNTS = [
-        { email: 'azizbekamangeldiev.2010@gmail.com', password: 'ChangeMe123!', role: 'superadmin', firstName: 'Demo', lastName: 'Superadmin' },
+        { email: 'azizbekamangeldiev.2010@gmail.com', password: 'ChangeMe123!', role: 'seo', firstName: 'Demo', lastName: 'SEO' },
         { email: 'hp8187081014laptop@gmail.com', password: 'ChangeMe123!', role: 'admin', firstName: 'Demo', lastName: 'Admin' },
         { email: 'mentor.demo@levelup.local', password: 'ChangeMe123!', role: 'mentor', firstName: 'Demo', lastName: 'Mentor' },
         { email: 'methodist@levelup.local', password: 'ChangeMe123!', role: 'methodist', firstName: 'Мадина', lastName: 'Рахимова' },
@@ -559,17 +559,17 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     }
 
     if (path === '/auth/staff/google') {
-      // В мок-режиме Google-вход имитирует superadmin
+      // В мок-режиме Google-вход имитирует seo
       const user = {
-        id: 'mock-superadmin-google-id-001',
+        id: 'mock-seo-google-id-001',
         firstName: 'Demo',
-        lastName: 'Superadmin',
-        role: 'superadmin',
+        lastName: 'SEO',
+        role: 'seo',
         email: 'azizbekamangeldiev.2010@gmail.com',
       };
-      localStorage.setItem('mock_token', 'mock-jwt-superadmin-xyz');
+      localStorage.setItem('mock_token', 'mock-jwt-seo-xyz');
       localStorage.setItem('mock_user', JSON.stringify(user));
-      return { user, accessToken: 'mock-jwt-superadmin-xyz' };
+      return { user, accessToken: 'mock-jwt-seo-xyz' };
     }
 
     if (path === '/auth/staff/refresh') {
@@ -2032,11 +2032,11 @@ if (path === '/branch-manager/reports') {
       });
       const students = [...seenStudents.values()];
 
-      /* Менторы — только для роля admin/superadmin. Ментор не должен видеть
+      /* Менторы — только для роля admin/seo. Ментор не должен видеть
          других менторов в списке контактов (он пишет родителям/ученикам). */
       const me = JSON.parse(localStorage.getItem('mock_user') || localStorage.getItem('mock_me') || 'null');
       const myRole = me?.role ?? 'mentor';
-      const mentors = (myRole === 'admin' || myRole === 'superadmin')
+      const mentors = (myRole === 'admin' || myRole === 'seo')
         ? (() => {
             let list = JSON.parse(localStorage.getItem('mock_admin_mentors') || '[]');
             if (list.length === 0) {
@@ -2355,7 +2355,7 @@ export const api = {
   chatMarkRead: (token, roomKey) =>
     request(`/chat/${encodeURIComponent(roomKey)}/read`, { method: 'POST', token }),
 
-  // -------- AUTH (staff — admin/superadmin/mentor/methodist) --------
+  // -------- AUTH (staff — admin/seo/mentor/methodist) --------
   loginStaff: (login, password) =>
     request('/auth/staff/login', { method: 'POST', body: { login, password } }),
   refresh: () => request('/auth/staff/refresh', { method: 'POST' }),
@@ -2377,6 +2377,10 @@ export const api = {
   adminStudents: (token, qs = '') => request(`/admin/students${qs}`, { token }),
   adminCreateStudent: (token, body) => request('/admin/students', { method: 'POST', token, body }),
   adminStudentDetail: (token, id) => request(`/admin/students/${id}`, { token }),
+  adminStudentAttendance: (token, id, qs = '') => request(`/admin/students/${id}/attendance${qs}`, { token }),
+  adminStudentTelegram: (token, id) => request(`/admin/students/${id}/telegram`, { token }),
+  adminSendStudentTelegramMessage: (token, id, text, toParent) =>
+    request(`/admin/students/${id}/telegram/message`, { method: 'POST', token, body: { text, toParent } }),
   adminUpdateStudent: (token, id, body) => request(`/admin/students/${id}`, { method: 'PATCH', token, body }),
   adminFreezeStudent: (token, id, frozen, reason) => request(`/admin/students/${id}/freeze`, { method: 'POST', token, body: { frozen, reason } }),
   adminDeleteStudent: (token, id, reason) => request(`/admin/students/${id}`, { method: 'DELETE', token, body: reason ? { reason } : undefined }),
@@ -2392,6 +2396,7 @@ export const api = {
   adminFreezeMentor: (token, id, frozen) => request(`/admin/mentors/${id}/freeze`, { method: 'POST', token, body: { frozen } }),
   adminDeleteMentor: (token, id) => request(`/admin/mentors/${id}`, { method: 'DELETE', token }),
   adminRegenStudentPassword: (token, id) => request(`/admin/students/${id}/regenerate-password`, { method: 'POST', token }),
+  adminStudentCredentials: (token, id) => request(`/admin/students/${id}/credentials`, { token }),
 
   // -------- ADMIN: Groups — add/remove students --------
   adminAddStudentToGroup: (token, groupId, studentId) =>
@@ -2461,8 +2466,10 @@ export const api = {
   superGetOrganization: (token) => request('/super/organization', { token }),
   superUpdateOrganization: (token, body) => request('/super/organization', { method: 'PATCH', token, body }),
   superTrainingTypes: (token) => request('/super/training-types', { token }),
-  superSetTrainingTypePrice: (token, id, price) =>
-    request(`/super/training-types/${id}/price`, { method: 'PATCH', token, body: { price } }),
+  superSetTrainingTypePrice: (token, id, price, maxStudents) =>
+    request(`/super/training-types/${id}/price`, { method: 'PATCH', token, body: { price, maxStudents } }),
+  superSetTrainingTypeArchived: (token, id, archived) =>
+    request(`/super/training-types/${id}/archive`, { method: 'PATCH', token, body: { archived } }),
   superMethodists: (token) => request('/super/methodists', { token }),
   // Только чтение — для выбора цели во «Взыскании». CRUD ментора у Admin филиала.
   superMentors: (token) => request('/super/mentors', { token }),
@@ -2472,10 +2479,14 @@ export const api = {
   superUnfreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
    superResetMethodistPassword: (token, id) => request(`/super/methodists/${id}/reset-password`, { method: 'POST', token }),
 
-   // -------- SUPER ADMIN: Branch Managers --------
-   superBranchManagers: (token) => request('/super/branch-managers', { token }),
-   superCreateBranchManager: (token, body) => request('/super/branch-managers', { method: 'POST', token, body }),
-   superUpdateBranchManager: (token, id, body) => request(`/super/branch-managers/${id}`, { method: 'PATCH', token, body }),
+// -------- SUPER ADMIN: Branch Managers --------
+  superBranchManagers: (token) => request('/super/branch-managers', { token }),
+  superCreateBranchManager: (token, body) => request('/super/branch-managers', { method: 'POST', token, body }),
+  superUpdateBranchManager: (token, id, body) => request(`/super/branch-managers/${id}`, { method: 'PATCH', token, body }),
+  superFreezeBranchManager: (token, id) => request(`/super/branch-managers/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
+  superUnfreezeBranchManager: (token, id) => request(`/super/branch-managers/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
+  superResetBranchManagerPassword: (token, id) => request(`/super/branch-managers/${id}/reset-password`, { method: 'POST', token }),
+  superDeleteBranchManager: (token, id) => request(`/super/branch-managers/${id}`, { method: 'DELETE', token }),
 
    // -------- BRANCH MANAGER --------
    branchManagerDashboard: (token) => request('/branch-manager/dashboard', { token }),

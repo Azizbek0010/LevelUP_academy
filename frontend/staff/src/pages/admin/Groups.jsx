@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Archive, ArchiveRestore, ChevronRight, Users, User, FolderOpen, LayoutGrid, List, Download, CalendarDays, Clock } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
-import { useAdminGroups, useAdminMentors, useAdminSettings } from '../../queries.js';
+import { useAdminGroups, useAdminMentors, useAdminSettings, useAdminTrainingTypes } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
@@ -10,6 +10,12 @@ import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip, Modal } from '.
 
 const isArchived = (g) => g.isArchived ?? g.is_archived ?? false;
 const MAX_STUDENTS = 15;
+// backend отдаёт students числом (COUNT(...) в SQL) — не массивом. Раньше тут
+// был только g.students?.length, который на числе даёт undefined -> 0: список
+// групп всегда показывал 0 студентов, независимо от реального числа (баг
+// Karis, 08.08.2026 — нашёл по скриншоту "0 / 15" при 2 реальных студентах).
+const getStudentsCount = (g) =>
+  g.studentsCount ?? g.students_count ?? (Array.isArray(g.students) ? g.students.length : Number(g.students) || 0);
 
 /* Дни недели в порядке календаря + короткие ярлыки (та же конвенция, что в GroupDetail). */
 const WEEK_DAYS = [
@@ -27,7 +33,11 @@ const DAY_PRESETS = [
 ];
 const DAY_LABEL = Object.fromEntries(WEEK_DAYS.map((d) => [d.key, d.label]));
 
-const emptyForm = { name: '', subject: '', mentorId: '', monthlyPrice: '', maxStudents: MAX_STUDENTS, days: [], startTime: '' };
+// subject/monthlyPrice/maxStudents больше не вводятся руками — приходят из
+// методики (training_type), которую SEO уже оценил (Karis, 08.08.2026):
+// методист заводит методику -> SEO ставит цену и лимит -> только тогда она
+// доступна здесь как «Направление». trainingTypeId — единственное, что выбирает admin/branch_manager.
+const emptyForm = { name: '', trainingTypeId: '', mentorId: '', days: [], startTime: '' };
 
 /* Конец урока НЕ вводится — это превью для UX: startTime + lessonDurationMin
    из GET /api/admin/settings. Реальный конец считает бэкенд. */
@@ -49,7 +59,7 @@ function addMinutes(time, mins) {
    карточке — не видно самого трека); фон дорожки исправлен на bg-base-200. */
 function GroupCard({ g }) {
   const archived = isArchived(g);
-  const studentsCount = g.studentsCount ?? g.students_count ?? (g.students?.length ?? 0);
+  const studentsCount = getStudentsCount(g);
   const mentorName = g.mentor?.name || g.mentorName || null;
   const full = studentsCount >= MAX_STUDENTS;
 
@@ -111,17 +121,21 @@ export default function AdminGroups() {
   const { data, isLoading, error, refetch } = useAdminGroups();
   const { data: mentorsData } = useAdminMentors();
   const { data: settingsData } = useAdminSettings();
+  const { data: trainingTypesData } = useAdminTrainingTypes();
   const [form, setForm] = useState(null);
   const [errors, setErrors] = useState({});
   const [showCustomDays, setShowCustomDays] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState('card');
+  const [viewMode, setViewMode] = useState('table'); // по умолчанию таблица (Karis, 08.08.2026 — как и на Students.jsx)
   const [showExport, setShowExport] = useState(false);
 
   const raw = data?.data || data || {};
   const rows = raw.groups || (Array.isArray(raw) ? raw : []);
+  const ttRaw = trainingTypesData?.data || trainingTypesData || {};
+  const trainingTypes = ttRaw.trainingTypes || (Array.isArray(ttRaw) ? ttRaw : []);
+  const selectedTrainingType = trainingTypes.find((t) => t.id === form?.trainingTypeId);
   const mraw = mentorsData?.data || mentorsData || {};
   const mentors = mraw.mentors || (Array.isArray(mraw) ? mraw : []);
 
@@ -136,7 +150,7 @@ export default function AdminGroups() {
 
   const activeGroups = rows.filter((g) => !isArchived(g)).length;
   const archivedGroups = rows.filter((g) => isArchived(g)).length;
-  const totalStudents = rows.reduce((s, g) => s + Number(g.studentsCount ?? g.students_count ?? g.students?.length ?? 0), 0);
+  const totalStudents = rows.reduce((s, g) => s + getStudentsCount(g), 0);
   const filteredRows = search
     ? rows.filter(g => g.name?.toLowerCase().includes(search.toLowerCase()) || g.mentor?.name?.toLowerCase().includes(search.toLowerCase()))
     : rows;
@@ -152,18 +166,10 @@ export default function AdminGroups() {
     const e = {};
     if (!f.name.trim()) e.name = 'Введите название группы';
     else if (f.name.trim().length < 2) e.name = 'Название — минимум 2 символа';
-    if (!f.subject.trim()) e.subject = 'Введите направление';
+    if (!f.trainingTypeId) e.trainingTypeId = 'Выберите направление';
     if (!f.mentorId) e.mentorId = 'Выберите ментора';
     if (!f.days || f.days.length === 0) e.days = 'Выберите хотя бы один день';
     if (!f.startTime) e.startTime = 'Укажите время начала';
-    const price = Number(f.monthlyPrice);
-    if (f.monthlyPrice === '' || f.monthlyPrice == null || !Number.isFinite(price)) {
-      e.monthlyPrice = 'Укажите оплату за месяц';
-    } else if (price < 0) {
-      e.monthlyPrice = 'Сумма не может быть отрицательной';
-    } else if (price > 9999999999) {
-      e.monthlyPrice = 'Слишком большая сумма';
-    }
     return e;
   };
 
@@ -175,9 +181,8 @@ export default function AdminGroups() {
     try {
       await api.adminCreateGroup(token, {
         name: form.name.trim(),
-        subject: form.subject.trim(),
+        trainingTypeId: form.trainingTypeId,
         mentorId: form.mentorId,
-        monthlyPrice: Number(form.monthlyPrice),
         days: form.days,
         startTime: form.startTime,
       });
@@ -292,7 +297,7 @@ export default function AdminGroups() {
               <tbody>
                 {filteredRows.map((g) => {
                   const archived = isArchived(g);
-                  const count = g.studentsCount ?? g.students_count ?? (g.students?.length ?? 0);
+                  const count = getStudentsCount(g);
                   return (
                     <tr key={g.id} className="hover:bg-base-200 cursor-pointer" onClick={() => navigate(`/groups/${g.id}`)}>
                       <td>
@@ -340,7 +345,11 @@ export default function AdminGroups() {
       >
         {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
         {form && (
-          <div className="space-y-4">
+          <div className="space-y-5">
+            <div>
+              <span className="text-[12px] font-bold text-base-content">Основное</span>
+              <div className="h-[3px] rounded-full bg-primary mt-1.5" />
+            </div>
             {/* Название */}
             <div>
               <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
@@ -356,19 +365,25 @@ export default function AdminGroups() {
               {errors.name && <p className="text-xs text-error mt-1">{errors.name}</p>}
             </div>
 
-            {/* Направление — обязателен (бэкенд: subject) */}
+            {/* Направление — методика с ценой от SEO (методист создаёт -> SEO оценивает -> здесь появляется) */}
             <div>
               <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
                 Направление <span className="text-error">*</span>
               </label>
-              <input
-                className={`input input-bordered w-full ${errors.subject ? 'input-error' : ''}`}
-                placeholder="Например: English, IELTS, Dasturlash"
-                maxLength={120}
-                value={form.subject}
-                onChange={(e) => { setForm((f) => ({ ...f, subject: e.target.value })); setErrors((p) => ({ ...p, subject: undefined })); }}
-              />
-              {errors.subject && <p className="text-xs text-error mt-1">{errors.subject}</p>}
+              <select
+                className={`select select-bordered w-full ${errors.trainingTypeId ? 'select-error' : ''}`}
+                value={form.trainingTypeId}
+                onChange={(e) => { setForm((f) => ({ ...f, trainingTypeId: e.target.value })); setErrors((p) => ({ ...p, trainingTypeId: undefined })); }}
+              >
+                <option value="">Выберите направление</option>
+                {trainingTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+              {errors.trainingTypeId && <p className="text-xs text-error mt-1">{errors.trainingTypeId}</p>}
+              {trainingTypes.length === 0 && (
+                <p className="text-[11px] text-base-content/45 mt-1">
+                  Пока нет ни одного оценённого направления — методист создаёт методику, SEO ставит ей цену.
+                </p>
+              )}
             </div>
 
             {/* Ментор — обязателен */}
@@ -387,6 +402,10 @@ export default function AdminGroups() {
               {errors.mentorId && <p className="text-xs text-error mt-1">{errors.mentorId}</p>}
             </div>
 
+            <div>
+              <span className="text-[12px] font-bold text-base-content">Расписание</span>
+              <div className="h-[3px] rounded-full bg-primary/30 mt-1.5" />
+            </div>
             {/* Дни занятий: пресеты 1-3-5 / 2-4-6 + произвольный набор */}
             <div>
               <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-2 block flex items-center gap-1.5">
@@ -477,37 +496,21 @@ export default function AdminGroups() {
               </div>
             </div>
 
-            {/* Оплата в месяц — обязательна (бэкенд: monthlyPrice) */}
+            <div>
+              <span className="text-[12px] font-bold text-base-content">Оплата</span>
+              <div className="h-[3px] rounded-full bg-primary/30 mt-1.5" />
+            </div>
+            {/* Оплата в месяц — приходит из направления, цену ставит только SEO */}
             <div>
               <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
-                Оплата в месяц, сум <span className="text-error">*</span>
+                Оплата в месяц, сум
               </label>
-              <input
-                className={`input input-bordered w-full ${errors.monthlyPrice ? 'input-error' : ''}`}
-                type="number"
-                min="0"
-                max="9999999999"
-                step="1000"
-                placeholder="800000"
-                value={form.monthlyPrice}
-                onChange={(e) => { setForm((f) => ({ ...f, monthlyPrice: e.target.value })); setErrors((p) => ({ ...p, monthlyPrice: undefined })); }}
-              />
-              {errors.monthlyPrice && <p className="text-xs text-error mt-1">{errors.monthlyPrice}</p>}
+              <div className="input input-bordered w-full flex items-center text-base-content/70">
+                {selectedTrainingType ? `${Number(selectedTrainingType.price).toLocaleString('ru-RU')} сум` : 'Выберите направление'}
+              </div>
+              <p className="text-[11px] text-base-content/45 mt-1">Цену ставит SEO для всей методики — здесь не редактируется.</p>
             </div>
-
-            {/* Макс. студентов */}
-            <div>
-              <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Макс. студентов</label>
-              <input
-                className="input input-bordered w-full"
-                type="number" min="1" max="30"
-                value={form.maxStudents}
-                onChange={(e) => setForm((f) => ({ ...f, maxStudents: Number(e.target.value) }))}
-              />
-              {form.maxStudents > MAX_STUDENTS && (
-                <p className="text-[11px] text-warning mt-1">Стандарт — {MAX_STUDENTS} студентов</p>
-              )}
-            </div>
+            {/* Макс. студентов — тоже решение SEO (по методике), не вводится тут; см. задачу «SEO: методики» */}
           </div>
         )}
       </Modal>

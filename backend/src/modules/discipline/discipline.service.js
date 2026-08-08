@@ -6,13 +6,13 @@ import * as repo from './discipline.repository.js';
  * Матрица прав выдачи (кто → кому, по типу). sariq/qizil (предупреждения) —
  * некритичные записи без последствий для входа, в отличие от qora, которую
  * admin может выдать только ментору.
- *   super_admin → admin, mentor, methodist   (sariq, qizil, qora)
+ *   seo         → admin, mentor, methodist   (sariq, qizil, qora)
  *   admin       → mentor, methodist          (sariq, qizil)
  *   admin       → mentor                       (qora — только ментор)
  *   main_admin  → НИЧЕГО
  */
 const CAN_ISSUE = {
-  superadmin: {
+  seo: {
     sariq: ['admin', 'mentor', 'methodist'],
     qizil: ['admin', 'mentor', 'methodist'],
     qora: ['admin', 'mentor', 'methodist'],
@@ -89,7 +89,7 @@ export function myPenalties(userId) {
   return repo.listPenaltiesForUser(userId);
 }
 
-/** Вернуть уволенного (снять fired → active). Только Super Admin (guard в роуте). */
+/** Вернуть уволенного (снять fired → active). Только SEO (guard в роуте). */
 export async function reactivateStaff(orgId, targetUserId) {
   const target = await repo.findStaffInOrg(targetUserId, orgId);
   if (!target) throw new AppError(404, 'Сотрудник не найден в вашей организации');

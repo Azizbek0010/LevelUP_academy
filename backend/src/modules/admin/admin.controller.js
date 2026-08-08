@@ -64,6 +64,10 @@ export const regenerateStudentPassword = asyncHandler(async (req, res) => {
   res.json(await service.regenerateStudentPassword(branchId(req), req.params.id));
 });
 
+export const getStudentCredentials = asyncHandler(async (req, res) => {
+  res.json(await service.getStudentCredentials(branchId(req), req.params.id));
+});
+
 export const deleteStudent = asyncHandler(async (req, res) => {
   await service.deleteStudent(branchId(req), req.params.id);
   res.status(204).end();
@@ -97,6 +101,23 @@ export const deleteMentor = asyncHandler(async (req, res) => {
 // ---------- группы ----------
 export const createGroup = asyncHandler(async (req, res) => {
   res.status(201).json({ group: await service.createGroup(branchId(req), req.body) });
+});
+
+export const listTrainingTypes = asyncHandler(async (req, res) => {
+  res.json({ trainingTypes: await service.listTrainingTypes(branchId(req)) });
+});
+
+export const studentAttendance = asyncHandler(async (req, res) => {
+  res.json(await service.studentAttendance(branchId(req), req.params.id, req.query));
+});
+
+export const studentTelegramStatus = asyncHandler(async (req, res) => {
+  res.json(await service.studentTelegramStatus(branchId(req), req.params.id));
+});
+
+export const sendStudentTelegramMessage = asyncHandler(async (req, res) => {
+  await service.sendStudentTelegramMessage(branchId(req), req.params.id, req.body);
+  res.json({ success: true });
 });
 
 export const listGroups = asyncHandler(async (req, res) => {
