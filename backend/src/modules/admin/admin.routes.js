@@ -906,6 +906,7 @@ router.post('/groups/:id/unarchive', validate({ params: idParam }), ctrl.unarchi
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.post('/groups/:id/students', validate({ params: idParam, body: addGroupStudentSchema }), ctrl.addGroupStudent);
+router.get('/groups/:id/credentials', validate({ params: idParam }), ctrl.groupCredentials);
 
 /**
  * @openapi

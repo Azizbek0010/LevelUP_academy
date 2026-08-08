@@ -318,6 +318,36 @@ export async function getStudentCredentials(branchId, id) {
   return { loginCode: row.login_code, password };
 }
 
+/** Логин-код/пароль/QR всех активных студентов группы — раздаточный PDF для admin/branch_manager. */
+export async function groupCredentials(branchId, groupId) {
+  const group = await repo.findGroupInBranch(groupId, branchId);
+  if (!group) throw new AppError(404, 'Group not found in your branch');
+
+  const rows = await repo.groupStudentCredentials(groupId, branchId);
+  const students = await Promise.all(rows.map(async (r) => {
+    let password = null;
+    if (r.password_encrypted) {
+      try { password = decryptPassword(r.password_encrypted); }
+      catch { password = null; }
+    }
+    const qrToken = r.qr_token || await getOrCreateQrToken(r.id);
+    return {
+      id: r.id,
+      firstName: r.first_name,
+      lastName: r.last_name,
+      loginCode: r.login_code,
+      password,
+      qrToken,
+    };
+  }));
+
+  return {
+    group: { id: group.id, name: group.name },
+    mentor: { name: `${group.mentor_first} ${group.mentor_last}` },
+    students,
+  };
+}
+
 /** Мягкое удаление ученика + выход из всех групп. */
 export async function deleteStudent(branchId, id) {
   return withTransaction(async (client) => {

@@ -5,7 +5,7 @@ import {
   ArrowLeft, Edit3, Save, Loader2, Coins, CalendarDays,
   KeyRound, Phone, Snowflake, Sun, Archive, Copy, Check, CreditCard,
   AlertCircle, User, GraduationCap, QrCode, Send, MessageSquare, Gift,
-  UserX, Plus, Wallet, Users, RefreshCw,
+  UserX, Plus, Wallet, Users,
 } from 'lucide-react';
 
 // Ссылка на member-app для QR-входа студента (сканирует камерой — сразу
@@ -99,33 +99,22 @@ export default function AdminStudentDetail() {
   const realCreds = credsRaw?.data || credsRaw;
   const [qrImage, setQrImage] = useState(null);
   const [qrError, setQrError] = useState(false);
-  const [qrBusy, setQrBusy] = useState(false);
 
-  // Токен постоянный (users.qr_token) — тот же QR при каждом открытии модалки,
-  // пока admin не перевыпустит его явно (см. auth/qr-login.service.js).
-  const buildQrImage = (r) => {
-    const url = `${MEMBER_URL}/qr-login?token=${encodeURIComponent(r.token)}`;
-    return QRCode.toDataURL(url, { width: 220, margin: 1, color: { dark: '#1D2417', light: '#ffffff' } });
-  };
-
+  // Токен постоянный (users.qr_token) — тот же QR при каждом открытии модалки
+  // (см. auth/qr-login.service.js).
   useEffect(() => {
     if (!showCreds) { setQrImage(null); setQrError(false); return; }
     let cancelled = false;
     api.adminCreateStudentQrToken(token, id)
-      .then((res) => buildQrImage(res?.data || res))
+      .then((res) => {
+        const r = res?.data || res;
+        const url = `${MEMBER_URL}/qr-login?token=${encodeURIComponent(r.token)}`;
+        return QRCode.toDataURL(url, { width: 220, margin: 1, color: { dark: '#1D2417', light: '#ffffff' } });
+      })
       .then((dataUrl) => { if (!cancelled) setQrImage(dataUrl); })
       .catch(() => { if (!cancelled) setQrError(true); });
     return () => { cancelled = true; };
   }, [showCreds, id, token]);
-
-  const regenerateQr = async () => {
-    setQrBusy(true); setQrError(false);
-    try {
-      const res = await api.adminRegenerateStudentQrToken(token, id);
-      setQrImage(await buildQrImage(res?.data || res));
-    } catch { setQrError(true); }
-    finally { setQrBusy(false); }
-  };
   const invalidate = useInvalidate();
   const invoices = (invoicesRaw?.data?.invoices || invoicesRaw?.invoices || []).slice().sort(
     (a, b) => new Date(b.periodMonth || b.createdAt) - new Date(a.periodMonth || a.createdAt)
@@ -544,14 +533,6 @@ export default function AdminStudentDetail() {
               Студент сканирует камерой телефона — входит в кабинет сразу, без набора логина и пароля.
               Код постоянный, работает при каждом сканировании — как студенческий бейдж.
             </p>
-            <button
-              className="btn btn-ghost btn-xs gap-1 text-base-content/45"
-              onClick={regenerateQr}
-              disabled={qrBusy}
-            >
-              {qrBusy ? <span className="loading loading-spinner loading-xs" /> : <RefreshCw size={11} />}
-              Перевыпустить QR
-            </button>
           </div>
         </div>
       </Modal>
