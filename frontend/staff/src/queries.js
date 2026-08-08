@@ -146,6 +146,23 @@ export function useAdminStudentDetail(id) {
   return useAuthedQuery(['admin-student', id], () => api.adminStudentDetail(token, id), { enabled: !!id });
 }
 
+export function useAdminStudentAttendance(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-student-attendance', id], () => api.adminStudentAttendance(token, id), { enabled: !!id });
+}
+
+export function useAdminStudentTelegram(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-student-telegram', id], () => api.adminStudentTelegram(token, id), { enabled: !!id });
+}
+
+// enabled отдельно от !!id — пароль расшифровываем на сервере только когда
+// модалка реально открыта, не на каждый рендер StudentDetail.
+export function useAdminStudentCredentials(id, enabled) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-student-credentials', id], () => api.adminStudentCredentials(token, id), { enabled: !!id && enabled });
+}
+
 export function useAdminGroups(qs = '') {
   const { token } = useAuth();
   return useAuthedQuery(['admin-groups', qs], () => api.adminGroups(token, qs));

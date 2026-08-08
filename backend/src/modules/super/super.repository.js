@@ -377,7 +377,7 @@ export function insertMethodist(
 // ---------- менторы (для выбора в «Взыскании» — сами менторов не заводят) ----------
 
 /** Все менторы организации (по всем филиалам) — только чтение, для выбора
-    цели взыскания у Super Admin. Заводит/редактирует ментора Admin филиала. */
+    цели взыскания у SEO. Заводит/редактирует ментора Admin филиала. */
 export function listMentors(orgId, client = pool) {
   return client
     .query(
@@ -427,14 +427,92 @@ export function listBranchManagers(orgId, client = pool) {
   return client
     .query(
       `SELECT u.id, u.first_name, u.last_name, u.email, u.status, u.created_at,
-               u.branch_id, b.name AS branch_name, u.phone
-         FROM users u
-         JOIN branches b ON b.id = u.branch_id
-        WHERE u.organization_id = $1 AND u.role = 'branch_manager' AND u.deleted_at IS NULL
-        ORDER BY u.created_at DESC`,
+                u.branch_id, b.name AS branch_name, u.phone
+          FROM users u
+          JOIN branches b ON b.id = u.branch_id
+         WHERE u.organization_id = $1 AND u.role = 'branch_manager' AND u.deleted_at IS NULL
+         ORDER BY u.created_at DESC`,
       [orgId],
     )
     .then((r) => r.rows);
+}
+
+/** Branch Manager по id ТОЛЬКО в пределах организации. */
+export function findBranchManagerInOrg(id, orgId, client = pool) {
+  return client
+    .query(
+      `SELECT id FROM users
+        WHERE id = $1 AND organization_id = $2 AND role = 'branch_manager' AND deleted_at IS NULL`,
+      [id, orgId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+const BRANCH_MANAGER_RETURN =
+  'id, first_name, last_name, email, status, branch_id, phone, created_at';
+
+/** Новый пароль для Branch Manager — тот же сценарий, что у admin/methodist. */
+export function setBranchManagerPasswordHash(id, orgId, passwordHash, client = pool) {
+  return client
+    .query(
+      `UPDATE users SET password_hash = $3, updated_at = now()
+        WHERE id = $1 AND organization_id = $2 AND role = 'branch_manager' AND deleted_at IS NULL
+        RETURNING ${BRANCH_MANAGER_RETURN}`,
+      [id, orgId, passwordHash],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/** Частичное обновление Branch Manager (в т.ч. перенос в другой филиал). */
+export function updateBranchManager(id, orgId, fields, client = pool) {
+  const cols = [];
+  const vals = [];
+  let i = 1;
+  for (const [key, col] of [
+    ['firstName', 'first_name'],
+    ['lastName', 'last_name'],
+    ['branchId', 'branch_id'],
+    ['phone', 'phone'],
+  ]) {
+    if (fields[key] !== undefined) {
+      cols.push(`${col} = $${i++}`);
+      vals.push(fields[key]);
+    }
+  }
+  if (cols.length === 0) return findBranchManagerInOrg(id, orgId, client);
+  vals.push(id, orgId);
+  return client
+    .query(
+      `UPDATE users SET ${cols.join(', ')}, updated_at = now()
+        WHERE id = $${i++} AND organization_id = $${i} AND role = 'branch_manager' AND deleted_at IS NULL
+        RETURNING ${BRANCH_MANAGER_RETURN}`,
+      vals,
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/** Заморозка / разморозка Branch Manager. */
+export function setBranchManagerStatus(id, orgId, status, client = pool) {
+  return client
+    .query(
+      `UPDATE users SET status = $3, updated_at = now()
+        WHERE id = $1 AND organization_id = $2 AND role = 'branch_manager' AND deleted_at IS NULL
+        RETURNING ${BRANCH_MANAGER_RETURN}`,
+      [id, orgId, status],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/** Soft-delete Branch Manager. */
+export function deleteBranchManager(id, orgId, client = pool) {
+  return client
+    .query(
+      `UPDATE users SET deleted_at = now(), updated_at = now()
+        WHERE id = $1 AND organization_id = $2 AND role = 'branch_manager' AND deleted_at IS NULL
+        RETURNING id`,
+      [id, orgId],
+    )
+    .then((r) => r.rows[0] ?? null);
 }
 
 export function findMethodistInOrg(id, orgId, client = pool) {
@@ -928,11 +1006,11 @@ export function orgAttendance(orgId, { groupId, date }, client = pool) {
 // ---------- методики / цены абонемента (Super Settings — цена ставится один раз на методику) ----------
 
 /** Методики организации с ценой и числом групп, которые её уже используют —
- * чтобы Super Admin видел, скольких абонемент затронет при смене цены. */
+ * чтобы SEO видел, скольких абонемент затронет при смене цены. */
 export function listTrainingTypesWithPrice(orgId, client = pool) {
   return client
     .query(
-      `SELECT tt.id, tt.name, tt.icon, tt.price, tt.is_archived,
+      `SELECT tt.id, tt.name, tt.icon, tt.price, tt.max_students, tt.is_archived,
               (SELECT count(*)::int FROM groups g
                  WHERE g.training_type_id = tt.id AND g.deleted_at IS NULL) AS groups_count
          FROM training_types tt
@@ -943,13 +1021,30 @@ export function listTrainingTypesWithPrice(orgId, client = pool) {
     .then((r) => r.rows);
 }
 
-export function setTrainingTypePrice(id, orgId, price, client = pool) {
+/** maxStudents === undefined -> не трогаем текущее значение (частичное обновление). */
+/** SEO может вернуть методику из архива — иначе назначенная цена молча
+ * ничего не даёт: у admin/branch_manager архивные методики не выбираемы
+ * (listPricedTrainingTypes фильтрует is_archived=false), а на странице SEO
+ * это никак не было видно, что и привело к путанице. */
+export function setTrainingTypeArchived(id, orgId, archived, client = pool) {
   return client
     .query(
-      `UPDATE training_types SET price = $3, updated_at = now()
+      `UPDATE training_types SET is_archived = $3, updated_at = now()
         WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL
-        RETURNING id, name, icon, price`,
-      [id, orgId, price],
+        RETURNING id, name, icon, price, max_students, is_archived`,
+      [id, orgId, archived],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function setTrainingTypePrice(id, orgId, price, maxStudents, client = pool) {
+  return client
+    .query(
+      `UPDATE training_types
+          SET price = $3, max_students = COALESCE($4, max_students), updated_at = now()
+        WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL
+        RETURNING id, name, icon, price, max_students`,
+      [id, orgId, price, maxStudents ?? null],
     )
     .then((r) => r.rows[0] ?? null);
 }

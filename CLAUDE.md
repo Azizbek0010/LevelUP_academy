@@ -105,23 +105,25 @@
 | Роль | Кто это | Права | Область видимости |
 |------|---------|-------|-------------------|
 | **Main Admin** | МЫ (владельцы платформы) | Всё: заявки, партнёры, биллинг, наш доход | Вся платформа |
-| **Super Admin** | Партнёр = учебный центр | Организация: филиалы, админы, свой доход | Своя организация |
+| **SEO** (бывш. Super Admin) | Партнёр = учебный центр | Организация: филиалы, админы, свой доход | Своя организация |
 | **Admin** | Сотрудник филиала | Филиал: доход + расход, студенты, группы, платежи | Свой филиал |
 | **Mentor** | Преподаватель | Свои группы: ДЗ, тесты, коины, посещаемость | Свои группы |
 | **Student** | Ученик | Личный кабинет: тесты, ДЗ, видео, магазин, лидерборд | Себя |
 | **Parent** | Родитель ученика | Обзор ребёнка: оценки, посещаемость, долг, коины | Свои дети |
 | **Methodist** | Методист | Контент: тесты, ДЗ, учебные материалы, аналитика | Свои предметы |
 
-> **Всего 7 ролей.** Все панели (Admin, Super Admin, Mentor, Methodist) — в общем `staff/`.
+> **Всего 7 ролей.** Все панели (Admin, SEO, Mentor, Methodist) — в общем `staff/`.
+> ⚠️ Роль **SEO** здесь — это бывший Super Admin (переименован 07.08.2026), не путать
+> с `abdulazizSEO`-режимом ниже (это доступ к meta/sitemap/robots, а не роль в БД).
 
 ### Поток онбординга
 
 ```
 Центр оставляет заявку на лендинге
         ↓
-Main Admin видит заявку → создаёт Super Admin (организацию)
+Main Admin видит заявку → создаёт SEO (организацию)
         ↓
-Super Admin добавляет филиалы → приглашает Admin'ов
+SEO добавляет филиалы → приглашает Admin'ов
         ↓
 Admin добавляет студентов/родителей
         ↓
@@ -132,7 +134,7 @@ Mentor работает со своими группами
 
 | Роль | Способ входа |
 |------|-------------|
-| Main Admin / Super Admin / Admin / Mentor | Email + пароль |
+| Main Admin / SEO / Admin / Mentor | Email + пароль |
 | Student / Parent | Логин-код (8 символов) + пароль (6 цифр) |
 
 ### API endpoints по ролям
@@ -178,7 +180,7 @@ LevelUp-Academy/
 │   │   ├── modules/         # Модули по ролям
 │   │   │   ├── auth/        # Вход, JWT, OTP, Google OAuth
 │   │   │   ├── main/        # Main Admin: онбординг, биллинг, лиды
-│   │   │   ├── super/       # Super Admin: филиалы, админы
+│   │   │   ├── super/       # SEO: филиалы, админы
 │   │   │   ├── admin/       # Admin: дашборд, расходы, студенты, группы, менторы
 │   │   │   │   ├── payments/   # K-PAY: инвойсы, оплата (full/split), refund/void, чек в S3
 │   │   │   │   └── reports/    # K-PAY: выручка + долги филиала по группам
@@ -202,8 +204,8 @@ LevelUp-Academy/
 ├── frontend/                 # React SPA — 4 независимых Vite-приложения (не монолит)
 │   ├── landing-page/        # Лендинг (React + Vite), форма заявки → POST /api/leads
 │   ├── main-admin/          # Панель Main Admin (DaisyUI лайм), свой логин
-│   ├── staff/               # ОДНО приложение, ОДИН логин: Admin + Mentor + Methodist + Super Admin
-│   │   └── src/pages/super/ # Super Admin-секция (роуты /super/*, TS/TSX) — свой Layout,
+│   ├── staff/               # ОДНО приложение, ОДИН логин: Admin + Mentor + Methodist + SEO
+│   │   └── src/pages/super/ # SEO-секция (роуты /super/*, TS/TSX) — свой Layout,
 │   │                        # свой auth-store (zustand), синхронизируется с общим
 │   │                        # useAuth() через AuthSync.jsx (см. docs/FRONTEND-ARCHITECTURE.md §2)
 │   ├── member/               # Логин + кабинеты Student и Parent (вход по логин-коду), Elyor
@@ -231,14 +233,14 @@ LevelUp-Academy/
 
 | Участник | Зона ответственности | Права доступа |
 |----------|---------------------|---------------|
-| **Karis** (@Azizbek2603) — **Team Lead**, владелец репо | Backend: Auth, Main Admin, Super Admin, Admin, Billing, платежи | **ВСЁ**: видит и правит любые файлы (frontend + backend), коммитит прямо в `main` |
-| **Abdulaziz** (@YakubovAbdulaziz) | Backend: Mentor, Student, Parent, Инфраструктура + **SEO (полный)** | Своя backend-зона; **как `abdulazizSEO`** — SEO-правки в любых файлах обеих зон. (Super Admin backend-интеграция возвращена Karis'у.) |
+| **Karis** (@Azizbek2603) — **Team Lead**, владелец репо | Backend: Auth, Main Admin, роль SEO (бывш. Super Admin), Admin, Billing, платежи | **ВСЁ**: видит и правит любые файлы (frontend + backend), коммитит прямо в `main` |
+| **Abdulaziz** (@YakubovAbdulaziz) | Backend: Mentor, Student, Parent, Инфраструктура + **SEO-режим (полный)** | Своя backend-зона; **как `abdulazizSEO`** — SEO-правки (meta/sitemap/robots) в любых файлах обеих зон. (Интеграция роли SEO, бывш. Super Admin, на бэкенде возвращена Karis'у — не путать с SEO-режимом выше, это разные вещи с одинаковым именем.) |
 | **Bilol** | Telegram-бот | только `backend/src/modules/telegram/` + воркеры уведомлений |
 | **Kama** (TG @Azizovcf, git: iface9808-sketch) | Parent фронт (переведён из Methodist) | только `frontend/member` (parent) |
 | **Elyor** (@Elyor2011) | Auth фронт, каркас SPA | только auth-часть фронта |
-| **Shohjahon** | Main Admin фронт (завершил Super Admin → переведён на Main Admin) | только `frontend/main-admin` |
-| **Said Islom** | Methodist фронт (переведён из Super Admin — панель завершена) | только `frontend/staff` (methodist) |
-| **Aziz** | Methodist фронт (переведён из Super Admin — панель завершена) | только `frontend/staff` (methodist) |
+| **Shohjahon** | Main Admin фронт (завершил SEO → переведён на Main Admin) | только `frontend/main-admin` |
+| **Said Islom** | Methodist фронт (переведён из SEO — панель завершена) | только `frontend/staff` (methodist) |
+| **Aziz** | Methodist фронт (переведён из SEO — панель завершена) | только `frontend/staff` (methodist) |
 | **Abduloh** (@Corvin_0, git: yunusovabdullox36-hash) | Admin фронт + **весь фронтенд (полный доступ)** | **ВЕСЬ `frontend/`**: любая панель, любое из 4 Vite-приложений (`staff`, `main-admin`, `member`, `landing-page`). ❌ `backend/` по-прежнему НЕЛЬЗЯ |
 | **Odil** | Admin фронт | только `frontend/staff` (admin) |
 | **Hamidula** | Admin фронт | только `frontend/staff` (admin) |
@@ -301,7 +303,7 @@ cd frontend/landing-page && npm run dev
 # Main Admin
 cd frontend/main-admin && npm run dev
 
-# Staff (один логин: Admin + Super Admin + Mentor + Methodist)
+# Staff (один логин: Admin + SEO + Mentor + Methodist)
 cd frontend/staff && npm run dev
 
 # Member — логин + оба кабинета: Student и Parent
@@ -398,7 +400,7 @@ python scripts/rollback.py v0.1.1   # вернуть main к состоянию 
 | **Landing Page** | Лендинг с формой заявки (POST /api/leads) | ✅ Готово |
 | **Auth** | Логин по ролям (email/код + пароль), JWT, Google OAuth | ✅ Готово |
 | **Main Admin** | Дашборд, заявки, онбординг партнёров, управление | ✅ Готово |
-| **Super Admin** | Организация: филиалы, админы, дашборд | ✅ Готово |
+| **SEO** | Организация: филиалы, админы, дашборд | ✅ Готово |
 | **Admin** | Филиал: дашборд, расходы, студенты, группы | ✅ Готово |
 | **Mentor** | Группы: ДЗ, тесты, коины, посещаемость, зарплата | ✅ Готово |
 | **Student** | Home: тесты, ДЗ, видео, магазин, лидерборд | ✅ Готово |
@@ -451,7 +453,7 @@ python scripts/rollback.py v0.1.1   # вернуть main к состоянию 
 | Landing | ✅ Готов | + SEO, A/B тесты | + Мультиязычность |
 | Auth | ✅ Готов | + Register, Forgot | + Face ID, 2FA |
 | Main Admin | ✅ Готов | + Billing детали | + Аналитика платформы |
-| Super Admin | ✅ Готов | + Revenue дашборд | + Сравнение филиалов |
+| SEO | ✅ Готов | + Revenue дашборд | + Сравнение филиалов |
 | Admin | ✅ Готов | + Расширенные отчёты | + Экспорт, прогнозирование |
 | Mentor | ✅ Готов | + Тутор модуль | + ИИ-проверка ДЗ |
 | Student | ✅ Готов | + Продвинутый магазин | + Турниры, ИИ-рекомендации |

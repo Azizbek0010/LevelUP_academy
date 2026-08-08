@@ -38,7 +38,7 @@ levelup-academy.uz.
 Seven roles, each with its own workspace and permissions:
 
 - **Main Admin** — platform owner: requests, partners, billing.
-- **Super Admin** — the learning center: branches, admins, organization revenue.
+- **SEO** — the learning center: branches, admins, organization revenue.
 - **Admin** — a branch: students, groups, payments, expenses.
 - **Mentor** — a teacher: their groups, homework, tests, coins, attendance.
 - **Methodist** — tests, homework, learning materials, analytics.

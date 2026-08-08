@@ -24,6 +24,8 @@ import {
   markGroupAttendanceSchema,
   createGroupHomeworkSchema,
   createGroupFeedbackSchema,
+  studentAttendanceQuery,
+  sendStudentTelegramMessageSchema,
 } from './admin.schemas.js';
 import * as ctrl from './admin.controller.js';
 import * as discipline from '../discipline/discipline.controller.js';
@@ -38,7 +40,10 @@ import reportsRoutes from './reports/reports.routes.js';
  */
 const router = Router();
 
-router.use(authenticate, authorize('admin'));
+// branch_manager получил те же права, что admin, в своём филиале (07.08.2026,
+// решение Karis) — req.scope у обеих ролей уже совпадает (authorize.js:32),
+// так что второй набор эндпоинтов не нужен, достаточно пустить сюда роль.
+router.use(authenticate, authorize('admin', 'branch_manager'));
 
 router.use('/payments', paymentsRoutes);
 router.use('/reports', reportsRoutes);
@@ -87,7 +92,7 @@ router.get('/dashboard', ctrl.dashboard);
  *     summary: Branch-visible org settings (lesson duration)
  *     description: >
  *       Read-only for admins — the value is owned by the organization and is edited by the
- *       Super Admin (PATCH /api/super/organization). The group form uses it to compute the
+ *       SEO (PATCH /api/super/organization). The group form uses it to compute the
  *       lesson end time from the chosen start time.
  *     security: [{ bearerAuth: [] }]
  *     responses:
@@ -378,6 +383,9 @@ router.get('/students', validate({ query: listStudentsQuery }), ctrl.listStudent
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.get('/students/:id', validate({ params: idParam }), ctrl.studentDetail);
+router.get('/students/:id/attendance', validate({ params: idParam, query: studentAttendanceQuery }), ctrl.studentAttendance);
+router.get('/students/:id/telegram', validate({ params: idParam }), ctrl.studentTelegramStatus);
+router.post('/students/:id/telegram/message', validate({ params: idParam, body: sendStudentTelegramMessageSchema }), ctrl.sendStudentTelegramMessage);
 router.patch('/students/:id', validate({ params: idParam, body: updateStudentSchema }), ctrl.updateStudent);
 
 /**
@@ -452,6 +460,7 @@ router.post('/students/:id/freeze', validate({ params: idParam, body: freezeStud
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.post('/students/:id/regenerate-password', validate({ params: idParam }), ctrl.regenerateStudentPassword);
+router.get('/students/:id/credentials', validate({ params: idParam }), ctrl.getStudentCredentials);
 
 /**
  * @openapi
@@ -696,6 +705,8 @@ router.delete('/mentors/:id', validate({ params: idParam }), ctrl.deleteMentor);
  */
 router.post('/groups', validate({ body: createGroupSchema }), ctrl.createGroup);
 router.get('/groups', validate({ query: listGroupsQuery }), ctrl.listGroups);
+// методики с уже назначенной SEO ценой — источник «Направление» при создании группы
+router.get('/training-types', ctrl.listTrainingTypes);
 
 /**
  * @openapi

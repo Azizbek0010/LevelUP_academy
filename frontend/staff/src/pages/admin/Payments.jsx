@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Wallet, CreditCard, Banknote, Clock, CheckCircle2, AlertTriangle,
@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { money, dateShort } from '../../format.js';
 import { useAuth } from '../../auth.jsx';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAdminInvoices, useAdminStudents } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
@@ -16,7 +16,7 @@ import { Avatar, Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
 
 const STATUS = {
   paid: { label: 'Оплачен', bg: '#2ECC7115', text: '#2ECC71', icon: CheckCircle2 },
-  partially_paid: { label: 'Частично', bg: '#F59E0B15', text: '#F59E0B', icon: Clock },
+  partially_paid: { label: 'Частично', bg: '#10B98115', text: '#10B981', icon: Clock },
   pending: { label: 'Ожидает', bg: '#6B728015', text: '#6B7280', icon: AlertCircle },
   overdue: { label: 'Просрочен', bg: '#E8543E15', text: '#E8543E', icon: AlertTriangle },
   cancelled: { label: 'Отменён', bg: '#6B728008', text: '#6B7280', icon: AlertCircle },
@@ -99,7 +99,7 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
         </div>
       </div>
       <div className="w-full h-1.5 rounded-full bg-base-100 mb-3 overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500 bg-warning" style={{ width: `${paidPercent}%` }} />
+        <div className="h-full rounded-full transition-all duration-500 bg-success" style={{ width: `${paidPercent}%` }} />
       </div>
       <div className="flex items-center justify-between">
         <button className="flex items-center gap-1 text-[11px] text-base-content/45 hover:text-secondary transition-colors"
@@ -125,6 +125,7 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
 export default function AdminPayments() {
   const { token } = useAuth();
   const navigate = useNavigate();
+  const params = useParams();
 
   // Filter & pagination
   const [statusFilter, setStatusFilter] = useState('all');
@@ -138,11 +139,39 @@ export default function AdminPayments() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  // Ad-hoc modal
+  // Ad-hoc modal - pre-fill from URL params if provided
   const [showAdHoc, setShowAdHoc] = useState(false);
-  const [adhocForm, setAdhocForm] = useState({ studentName: '', studentId: '', totalAmount: '', comment: '' });
+  const [adhocForm, setAdhocForm] = useState({
+    studentName: '',
+    studentId: params.studentId || '',
+    totalAmount: params.amount || '',
+  });
   const [adhocParts, setAdhocParts] = useState([{ method: 'cash', amount: '' }]);
   const [studentSearch, setStudentSearch] = useState('');
+  const [adhocLoading, setAdhocLoading] = useState(false);
+
+  // Stale-fetch guard: student tez-tez almashtirilsa, eski adminStudentDetail
+  // natijasi yangi tanlangan student ustiga yozilmasligi uchun.
+  const adhocSelectRef = useRef(null);
+
+  // Clear params after using them
+  useEffect(() => {
+    if (params.studentId || params.amount) {
+      // Params will be used on first render
+    }
+  }, []);
+
+  // Backend requires parts sum == totalAmount exactly (validation would fail
+  // otherwise). With a single part we mirror the invoice amount automatically.
+  useEffect(() => {
+    if (adhocParts.length === 1 && adhocForm.totalAmount) {
+      const v = String(Number(adhocForm.totalAmount) || '');
+      if (adhocParts[0].amount !== v) {
+        setAdhocParts([{ method: adhocParts[0].method, amount: v }]);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adhocForm.totalAmount]);
 
   // Invoice detail modal
   const [detail, setDetail] = useState(null);
@@ -243,18 +272,24 @@ export default function AdminPayments() {
   /* ─── Ad-hoc Payment ─── */
   const adhocTotal = adhocParts.reduce((s, p) => s + Number(p.amount || 0), 0);
   const submitAdHoc = async () => {
+    const total = Number(adhocForm.totalAmount) || 0;
+    // Backend createAdHocPaymentSchema parts yig'indisi aynan totalAmount ga
+    // teng bo'lishini talab qiladi — oldindan tekshirib friendly xato beramiz.
+    if (Math.abs(adhocTotal - total) > 0.005) {
+      setErr(`Сумма частей (${money(adhocTotal)}) не совпадает с суммой счёта (${money(total)})`);
+      return;
+    }
     setBusy(true); setErr('');
     try {
       const body = {
         studentId: adhocForm.studentId,
-        totalAmount: Number(adhocForm.totalAmount),
+        totalAmount: total,
         parts: adhocParts.map((p) => ({ method: p.method, amount: Number(p.amount) })),
-        comment: adhocForm.comment || undefined,
       };
       const res = await api.adminAdHocPayment(token, body);
       if (res.transactions) storeTx(res.invoice?.id || 'adhoc', res.transactions);
       setShowAdHoc(false);
-      setAdhocForm({ studentName: '', studentId: '', totalAmount: '', comment: '' });
+      setAdhocForm({ studentName: '', studentId: '', totalAmount: '' });
       setAdhocParts([{ method: 'cash', amount: '' }]);
       setStudentSearch('');
       refetch();
@@ -265,13 +300,36 @@ export default function AdminPayments() {
     }
   };
 
-  const selectStudent = (s) => {
+  const selectStudent = async (s) => {
+    const id = s.id;
+    adhocSelectRef.current = id; // eng oxirgi tanlovni belgilaymiz
+    setAdhocLoading(true); setErr('');
     setAdhocForm((f) => ({
       ...f,
-      studentId: s.id,
+      studentId: id,
       studentName: [s.firstName || '', s.lastName || ''].filter(Boolean).join(' '),
     }));
     setStudentSearch('');
+    try {
+      // Guruh narxini student detail dan olamiz va summani avtomatik to'ldiramiz
+      const detail = await api.adminStudentDetail(token, id);
+      // Stale guard: shu orada boshqa student tanlangan bo'lsa, eski natijani qo'llamaymiz
+      if (adhocSelectRef.current !== id) return;
+      const st = detail?.student || detail || {};
+      const stGroups = Array.isArray(st.groups) ? st.groups : [];
+      const price = stGroups.map((g) => Number(g.monthlyPrice) || 0).find((v) => v > 0) || 0;
+      if (price > 0) {
+        const v = String(price);
+        setAdhocForm((f) => ({ ...f, totalAmount: v }));
+        setAdhocParts((parts) =>
+          parts.length === 1 ? [{ method: parts[0].method, amount: v }] : parts
+        );
+      }
+    } catch (e) {
+      setErr(e.message || 'Не удалось получить данные студента');
+    } finally {
+      setAdhocLoading(false);
+    }
   };
 
   /* ─── Invoice Detail ─── */
@@ -513,7 +571,7 @@ export default function AdminPayments() {
                             <Avatar name={[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')} size="sm" />
                             <div className="flex-1 min-w-0">
                               <div className="text-[12px] font-bold text-base-content truncate">{[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')}</div>
-                              <div className="text-[10px] text-base-content/45">{s.groupName || '—'} · {s.createdAt ? dateShort(s.createdAt) : ''}</div>
+                              <div className="text-[10px] text-base-content/45">{Array.isArray(s.groups) && s.groups.length ? s.groups.map((g) => g.name || g.groupName).filter(Boolean).join(', ') : (s.groupName || '—')} · {s.createdAt ? dateShort(s.createdAt) : ''}</div>
                             </div>
                           </button>
                         ))}
@@ -528,7 +586,7 @@ export default function AdminPayments() {
 
               {/* Total amount */}
               <div>
-                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Сумма счета</label>
+                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Сумма счета {adhocLoading && <span className="loading loading-spinner loading-xs text-secondary ml-1 align-middle" />}</label>
                 <input className="input input-bordered w-full h-10 text-[13px]" type="number" placeholder="Сумма"
                   value={adhocForm.totalAmount}
                   onChange={(e) => setAdhocForm((f) => ({ ...f, totalAmount: e.target.value }))} />
@@ -553,18 +611,13 @@ export default function AdminPayments() {
                     <span className="ml-1">· Превышает сумму счёта!</span>
                   )}
                   {adhocTotal < Number(adhocForm.totalAmount) && (
-                    <span className="ml-1 text-warning">· Остаток: {money(Number(adhocForm.totalAmount) - adhocTotal)}</span>
+                    <span className="ml-1 text-success">· Остаток: {money(Number(adhocForm.totalAmount) - adhocTotal)}</span>
                   )}
                 </p>
               )}
 
-              {/* Comment */}
-              <div>
-                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Комментарий</label>
-                <input className="input input-bordered w-full h-10 text-[13px]" type="text" placeholder="Опционально"
-                  value={adhocForm.comment}
-                  onChange={(e) => setAdhocForm((f) => ({ ...f, comment: e.target.value }))} />
-              </div>
+              {/* Comment field removed: backend createAdHocPaymentSchema doesn't accept it */}
+
             </div>
 
             <div className="modal-action">

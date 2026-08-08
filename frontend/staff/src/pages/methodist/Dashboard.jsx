@@ -1,65 +1,65 @@
-import { BookOpen, Layers, FileQuestion, TrendingUp, ArrowRight, Sparkles } from 'lucide-react';
+import { BookOpen, Layers, FileQuestion, TrendingUp, ArrowRight, Sparkles, PenTool, BarChart3, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTrainingTypes, useMethodistAnalytics } from '../../queries.js';
-import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
+import { LangProvider, useLang } from './i18n.js';
+import LangSwitcher from './LangSwitcher.jsx';
 
 const KPIS = [
-  { key: 'types', Icon: BookOpen, title: 'Типы обучения', tint: { bg: 'rgba(34,197,94,0.10)', fg: '#16a34a', glow: 'rgba(34,197,94,0.18)' } },
-  { key: 'topics', Icon: Layers, title: 'Всего тем', tint: { bg: 'rgba(59,130,246,0.10)', fg: '#2563eb', glow: 'rgba(59,130,246,0.18)' } },
-  { key: 'tests', Icon: FileQuestion, title: 'Тестов', tint: { bg: 'rgba(245,158,11,0.10)', fg: '#d97706', glow: 'rgba(245,158,11,0.18)' } },
-  { key: 'hw', Icon: TrendingUp, title: 'Домашние задания', tint: { bg: 'rgba(168,85,247,0.10)', fg: '#9333ea', glow: 'rgba(168,85,247,0.18)' } },
+  { key: 'types', Icon: BookOpen, labelKey: 'kpi.types', color: '#40833B' },
+  { key: 'topics', Icon: Layers, labelKey: 'kpi.topics', color: '#2563EB' },
+  { key: 'tests', Icon: FileQuestion, labelKey: 'kpi.tests', color: '#D97706' },
+  { key: 'hw', Icon: TrendingUp, labelKey: 'kpi.hw', color: '#059669' },
 ];
 
-function KpiCard({ Icon, tint, title, value, unit, index }) {
+function KpiStrip({ Icon, label, value, color }) {
   return (
-    <div className={`glass-strong rounded-[20px] p-5 card-hover-premium group animate-slide-up stagger-${index + 1}`}>
-      <div className="flex items-center justify-between mb-4">
-        <span
-          className="w-11 h-11 rounded-[12px] grid place-items-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg"
-          style={{ background: tint.bg, color: tint.fg, boxShadow: `0 0 0 0 ${tint.glow}` }}
-        >
-          <Icon size={20} strokeWidth={2.2} />
-        </span>
-        <div className="w-16 h-8 opacity-30">
-          <svg viewBox="0 0 64 32" fill="none" className="w-full h-full">
-            <path d="M0 28 Q16 20 32 24 T64 8" stroke={tint.fg} strokeWidth="2.5" strokeLinecap="round" opacity="0.5" />
-            <path d="M0 30 Q16 22 32 26 T64 10" stroke={tint.fg} strokeWidth="1.5" strokeLinecap="round" opacity="0.25" />
-          </svg>
+    <div className="mt-card-flat mt-animate-in flex items-center gap-4 p-5">
+      <div
+        className="w-12 h-12 rounded-2xl grid place-items-center shrink-0 transition-transform duration-300 hover:scale-110"
+        style={{ background: `${color}12`, color }}
+      >
+        <Icon size={22} strokeWidth={2} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mt-text-muted)] mb-1">
+          {label}
+        </div>
+        <div className="text-[28px] font-extrabold leading-none tracking-tight text-[var(--mt-text)] tabular-nums">
+          {value}
         </div>
       </div>
-      <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--text-secondary)] mb-1.5">
-        {title}
-      </div>
-      <div className="text-[28px] font-extrabold leading-none tracking-[-0.02em] tabular-nums text-[var(--text)]">
-        {value}
-      </div>
-      {unit && <div className="text-[11px] text-[var(--text-muted)] mt-1.5">{unit}</div>}
     </div>
   );
 }
 
-function QuickLink({ to, icon, label, count }) {
+function ContentLink({ to, icon, label, count, color, t }) {
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 p-3.5 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] hover:border-[rgba(59,130,246,0.3)] transition-all duration-200 group"
+      className="mt-notebook-item group"
     >
-      <span className="w-10 h-10 rounded-[10px] bg-[rgba(59,130,246,0.1)] grid place-items-center text-lg group-hover:scale-110 transition-transform">
+      <span
+        className="w-10 h-10 rounded-xl grid place-items-center text-lg shrink-0 transition-transform duration-300 group-hover:scale-110"
+        style={{ background: `${color}12` }}
+      >
         {icon}
       </span>
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-semibold text-[var(--text)] truncate">{label}</div>
-        <div className="text-[11px] text-[var(--text-muted)]">{count} тем</div>
+        <div className="text-[13px] font-semibold text-[var(--mt-text)] group-hover:text-[var(--mt-accent)] transition-colors truncate">
+          {label}
+        </div>
+        <div className="text-[11px] text-[var(--mt-text-muted)]">{t('dashboard.topics_count', { count })}</div>
       </div>
-      <ArrowRight size={16} className="text-[var(--text-muted)] group-hover:text-[var(--primary)] group-hover:translate-x-0.5 transition-all" />
+      <ArrowRight size={15} className="text-[var(--mt-text-muted)] group-hover:text-[var(--mt-accent)] group-hover:translate-x-0.5 transition-all shrink-0" />
     </Link>
   );
 }
 
-export default function MethodistDashboard() {
-  const { data: types, isLoading: typesLoading } = useTrainingTypes();
-  const { data: analytics, isLoading: analyticsLoading } = useMethodistAnalytics();
+function DashboardView() {
+  const { t } = useLang();
+  const { data: types, isLoading: typesLoading, error: typesError } = useTrainingTypes();
+  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useMethodistAnalytics();
 
   const ttList = types?.data || [];
   const tests = analytics?.data?.tests || [];
@@ -72,11 +72,68 @@ export default function MethodistDashboard() {
     ? Math.round(tests.reduce((s, t) => s + Number(t.avg_score || 0), 0) / tests.length)
     : 0;
 
+  const kpis = KPIS.map((k) => ({ ...k, label: t(k.labelKey) }));
+
+  const header = (
+    <div className="mt-fade-in">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-[var(--mt-accent-light)] grid place-items-center">
+            <PenTool size={20} className="text-[var(--mt-accent)]" />
+          </div>
+          <div>
+            <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('app.name')}</h1>
+            <p className="text-[13px] text-[var(--mt-text-muted)]">{t('dashboard.subtitle')}</p>
+          </div>
+        </div>
+        <LangSwitcher />
+      </div>
+    </div>
+  );
+
+  const loadingHeader = (
+    <div className="mt-fade-in">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <PenTool size={24} className="text-[var(--mt-accent)]" />
+          <h1 className="text-[22px] font-extrabold text-[var(--mt-text)]">{t('app.name')}</h1>
+        </div>
+        <LangSwitcher />
+      </div>
+      <p className="text-[13px] text-[var(--mt-text-muted)] ml-[36px]">{t('dashboard.subtitle')}</p>
+    </div>
+  );
+
   if (typesLoading || analyticsLoading) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Дашборд методиста" subtitle="Управление учебными материалами и методиками" />
+      <div className="mt-page-bg space-y-6 p-6">
+        {loadingHeader}
         <SkeletonKpis count={4} />
+      </div>
+    );
+  }
+
+  if (typesError || analyticsError) {
+    return (
+      <div className="mt-page-bg space-y-6 p-6">
+        {loadingHeader}
+        <div className="mt-card-flat p-6 mt-animate-in">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl grid place-items-center shrink-0" style={{ background: 'rgba(220,38,38,0.08)' }}>
+              <AlertTriangle size={22} className="text-[var(--mt-danger)]" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[14px] font-bold text-[var(--mt-text)] mb-0.5">{t('common.loading_error')}</p>
+              <p className="text-[12px] text-[var(--mt-text-muted)]">{(typesError || analyticsError)?.message || t('common.loading_failed')}</p>
+            </div>
+            <button
+              className="mt-btn-ghost"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw size={14} /> {t('common.retry')}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -84,36 +141,41 @@ export default function MethodistDashboard() {
   const values = { types: ttList.length, topics: totalTopics, tests: totalTests, hw: totalHw };
 
   return (
-    <div className="space-y-6">
-      <div className="animate-fade-in">
-        <PageHeader title="Дашборд методиста" subtitle="Управление учебными материалами и методиками" />
-      </div>
+    <div className="mt-page-bg space-y-6 p-6">
+      {header}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {KPIS.map(({ key, ...kpi }, i) => (
-          <KpiCard key={key} {...kpi} value={values[key]} index={i} />
+      {/* KPI Horizontal strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {kpis.map(({ key, ...kpi }) => (
+          <KpiStrip key={key} {...kpi} value={values[key]} />
         ))}
       </div>
 
-      {/* Average Score Banner */}
+      {/* Average Score — lime gradient banner */}
       {tests.length > 0 && (
-        <div className="glass-strong rounded-[20px] p-5 animate-slide-up stagger-5">
+        <div
+          className="mt-animate-in mt-stagger-5 rounded-[16px] p-5 border border-[var(--mt-border)]"
+          style={{ background: 'linear-gradient(135deg, #F6FBEA 0%, #EFF8DD 40%, #F6FBEA 100%)' }}
+        >
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-[14px] bg-[rgba(59,130,246,0.1)] grid place-items-center shrink-0">
-              <Sparkles size={24} className="text-[var(--primary)]" />
+            <div className="w-14 h-14 rounded-2xl bg-[var(--mt-accent-light)] grid place-items-center shrink-0">
+              <Sparkles size={24} className="text-[var(--mt-accent)]" />
             </div>
             <div className="flex-1">
-              <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--text-secondary)] mb-1">Средний балл по тестам</div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mt-text-muted)] mb-1">
+                {t('dashboard.avg_score')}
+              </div>
               <div className="flex items-end gap-3">
-                <span className="text-[32px] font-extrabold leading-none tracking-[-0.02em] tabular-nums">{avgScore}%</span>
-                <span className={`text-[12px] font-semibold mb-1 ${avgScore >= 70 ? 'text-success' : avgScore >= 50 ? 'text-warning' : 'text-error'}`}>
-                  {avgScore >= 70 ? 'Отлично' : avgScore >= 50 ? 'Хорошо' : 'Нужна работа'}
+                <span className="text-[32px] font-extrabold leading-none tracking-tight text-[var(--mt-text)] tabular-nums">
+                  {avgScore}%
+                </span>
+                <span className={`text-[12px] font-semibold mb-1 ${avgScore >= 70 ? 'text-[var(--mt-success)]' : avgScore >= 50 ? 'text-[var(--mt-warning)]' : 'text-[var(--mt-danger)]'}`}>
+                  {avgScore >= 70 ? t('dashboard.great') : avgScore >= 50 ? t('dashboard.good') : t('dashboard.need_work')}
                 </span>
               </div>
-              <div className="mt-2 h-2 bg-base-200 rounded-full overflow-hidden">
+              <div className="mt-2.5 mt-progress">
                 <div
-                  className={`h-full rounded-full transition-all duration-700 ${avgScore >= 70 ? 'bg-success' : avgScore >= 50 ? 'bg-warning' : 'bg-error'}`}
+                  className="mt-progress-fill"
                   style={{ width: `${Math.max(4, avgScore)}%` }}
                 />
               </div>
@@ -122,45 +184,56 @@ export default function MethodistDashboard() {
         </div>
       )}
 
-      {/* Training Types Quick Access */}
-      <div className="glass-strong rounded-[20px] p-6 animate-slide-up stagger-6">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[15px] font-bold text-[var(--text)]">Типы обучения</h2>
+      {/* Training Types Quick Access — notebook list */}
+      <div className="mt-card-flat mt-animate-in mt-stagger-6">
+        <div className="mt-section-header">
+          <BarChart3 size={18} className="text-[var(--mt-accent)]" />
+          <h2 className="text-[15px] font-bold text-[var(--mt-text)] flex-1">{t('dashboard.types_section')}</h2>
           <Link
             to="/methodist/types"
-            className="text-[12px] font-semibold text-[var(--primary)] hover:opacity-80 transition-colors flex items-center gap-1"
+            className="text-[12px] font-semibold text-[var(--mt-accent)] hover:text-[#2f6129] transition-colors flex items-center gap-1"
           >
-            Все типы <ArrowRight size={14} />
+            {t('dashboard.all_types')} <ArrowRight size={14} />
           </Link>
         </div>
         {ttList.length === 0 ? (
-          <div className="text-center py-10">
-            <div className="w-16 h-16 rounded-[16px] bg-[rgba(59,130,246,0.1)] grid place-items-center mx-auto mb-4">
-              <BookOpen size={28} className="text-[var(--text-muted)]" />
+          <div className="mt-empty">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--mt-accent-light)] grid place-items-center mb-4">
+              <BookOpen size={28} className="text-[var(--mt-accent)]" />
             </div>
-            <p className="text-[14px] font-semibold text-[var(--text)] mb-1">Нет типов обучения</p>
-            <p className="text-[12px] text-[var(--text-muted)] mb-4">Создайте первый тип, чтобы начать</p>
+            <p className="text-[15px] font-bold text-[var(--mt-text)] mb-1">{t('dashboard.no_types')}</p>
+            <p className="text-[13px] text-[var(--mt-text-muted)] mb-5">{t('dashboard.no_types_hint')}</p>
             <Link
               to="/methodist/types"
-              className="btn btn-primary btn-sm gap-2"
+              className="mt-btn-primary"
             >
-              <BookOpen size={16} /> Создать тип
+              <BookOpen size={16} /> {t('dashboard.create_type')}
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {ttList.slice(0, 4).map((tt, i) => (
-              <QuickLink
+          <div className="space-y-2">
+            {ttList.slice(0, 5).map((tt, i) => (
+              <ContentLink
                 key={tt.id}
                 to={`/methodist/types/${tt.id}/topics`}
                 icon={tt.icon || '📚'}
                 label={tt.name}
                 count={tt.topics_count || 0}
+                color={kpis[i % kpis.length].color}
+                t={t}
               />
             ))}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+export default function MethodistDashboard() {
+  return (
+    <LangProvider>
+      <DashboardView />
+    </LangProvider>
   );
 }

@@ -6,7 +6,7 @@ import {
   ShieldAlert, Ban, TriangleAlert, ScrollText,
 } from 'lucide-react';
 import { fmt, dateShort, money, ADMIN_STATUS, ROLE_LABELS } from '../../format.js';
-import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches } from '../../queries.js';
+import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches, useSuperBranchManagers } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { SkeletonKpis, SkeletonTable, SkeletonList } from '../../components/Skeleton.jsx';
@@ -24,7 +24,7 @@ const STATUS_CLS_TONE = { 'badge-success': 'success', 'badge-error': 'danger' };
  * Вёрстка сознательно повторяет язык SuperBranchDetail.jsx (хлебные крошки →
  * заголовок → KPI-плитки → панель с иконка+текст строками вместо кучи мелких
  * рамочных карточек) — это уже устоявшийся «серьёзный» стиль остальной
- * Super Admin панели, а не новый визуальный диалект для одной страницы.
+ * SEO панели, а не новый визуальный диалект для одной страницы.
  *
  * Данные не тянут новый endpoint — берутся из уже загруженных списков
  * /super/admins, /super/methodists, /super/branches (react-query отдаёт их
@@ -56,16 +56,21 @@ export default function StaffDetail() {
   const admins = useSuperAdmins();
   const mentors = useSuperMentors();
   const methodists = useSuperMethodists();
+  const branchManagers = useSuperBranchManagers();
   const branches = useSuperBranches();
 
-  const loading = role === 'admin' ? admins.isLoading : role === 'mentor' ? mentors.isLoading : methodists.isLoading;
+  const loading = role === 'admin' ? admins.isLoading
+    : role === 'mentor' ? mentors.isLoading
+    : role === 'branch_manager' ? branchManagers.isLoading
+    : methodists.isLoading;
 
   const person = useMemo(() => {
     if (role === 'admin') return (admins.data?.admins ?? []).find((a) => a.id === id) ?? null;
     if (role === 'mentor') return (mentors.data?.mentors ?? []).find((m) => m.id === id) ?? null;
     if (role === 'methodist') return (methodists.data?.methodists ?? []).find((m) => m.id === id) ?? null;
+    if (role === 'branch_manager') return (branchManagers.data?.managers ?? []).find((m) => m.id === id) ?? null;
     return null;
-  }, [role, id, admins.data, mentors.data, methodists.data]);
+  }, [role, id, admins.data, mentors.data, methodists.data, branchManagers.data]);
 
   const branch = useMemo(
     () => (branches.data?.branches ?? []).find((b) => b.id === person?.branchId) ?? null,

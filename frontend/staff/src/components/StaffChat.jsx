@@ -338,6 +338,8 @@ export default function StaffChat({ variant = 'mentor' }) {
   };
 
   const filtered = contacts.filter((c) => {
+    if (variant === 'admin' && c.peer_type === 'student') return false;
+    if (variant === 'admin' && c.peer_type === 'parent') return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return fullName(c).toLowerCase().includes(q)

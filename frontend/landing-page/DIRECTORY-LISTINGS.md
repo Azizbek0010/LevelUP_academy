@@ -27,7 +27,7 @@
 | Одна строка (RU) | CRM для учебного центра: учёт учеников, оплаты и долги, посещаемость, тесты, мотивация и Telegram-уведомления в одной системе |
 | Одна строка (EN) | All-in-one CRM for education centers: student records, payments & debts, attendance, tests, gamification and Telegram notifications |
 | Ключевые модули | Платежи и сплит-инвойсы, davomat (посещаемость), тесты с серверным таймером, домашние задания, коины/геймификация, realtime-чаты, видеоуроки, отчёты, Telegram-бот, мультифилиальность |
-| Роли/кабинеты | SuperAdmin, Admin, Ментор, Методист, Родитель, Ученик — 6 кабинетов, RBAC на сервере |
+| Роли/кабинеты | SEO-роль (бывш. Super Admin), Admin, Ментор, Методист, Родитель, Ученик — 6 кабинетов, RBAC на сервере |
 | Цена | До 30 учеников — бесплатно; далее от 199 000 сум/мес, фикс по числу учеников, филиалы безлимитно |
 | Триал | Первая неделя бесплатно |
 | Ниши посадочных страниц | `/landing/for-language-school`, `/landing/for-courses`, `/landing/crm-vs-excel` |
@@ -65,7 +65,7 @@
   - Gamification: coins, shop, leaderboards
   - Real-time chat and presence
   - Telegram bot notifications
-  - Multi-branch support with role-based access (SuperAdmin/Admin/Mentor/Methodist/Parent/Student)
+  - Multi-branch support with role-based access (SEO-role/Admin/Mentor/Methodist/Parent/Student)
 - **Pricing model:** Freemium — free up to 30 students, then tiered pricing from 199,000 UZS/month
 
 ### SaaSHub
@@ -130,7 +130,7 @@
 - Realtime chat plus a direct parent-to-administrator channel
 - Telegram bot: absences, payments, grades and debts, no app to install
 - Multi-branch by design — branches are isolated, the owner sees the whole network
-- Seven roles with server-side RBAC: Main Admin, Super Admin, Admin, Mentor, Methodist, Student, Parent
+- Seven roles with server-side RBAC: Main Admin, SEO-role, Admin, Mentor, Methodist, Student, Parent
 
 ### 3. Q&A — вставить как есть
 

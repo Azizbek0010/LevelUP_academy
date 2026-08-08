@@ -3,7 +3,7 @@ import { useAuth } from '../auth.jsx';
 
 /**
  * RoleGuard — проверяет, что у текущего пользователя роль из списка `allow`.
- * Используется как layout-route: <Route element={<RoleGuard allow={['superadmin']} />}>...</Route>
+ * Используется как layout-route: <Route element={<RoleGuard allow={['seo']} />}>...</Route>
  */
 export default function RoleGuard({ allow = [], redirectTo = '/' }) {
   const { user } = useAuth();

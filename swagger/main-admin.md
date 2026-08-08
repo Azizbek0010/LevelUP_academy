@@ -4,6 +4,146 @@ Platform owner: partner onboarding, pricing, leads, platform dashboard
 
 [← back to index](./README.md)
 
+### GET `/api/main/announcements`
+Объявления платформы
+
+Анонсы, которые владелец платформы рассылает партнёрам. Отличаются от объявлений организации (`/api/super/announcements`): здесь аудитория — сами партнёры, а не сотрудники одного центра.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** main_admin
+
+**Responses:**
+
+- **200** — Список объявлений
+  - `items` (optional):
+    - _array of:_
+      - **PlatformAnnouncement**:
+        - `id`: string (uuid) (optional)
+        - `title`: string (optional)
+        - `body`: string (optional)
+        - `targetType`: enum: `all-partners` | `all-seo` (optional)
+        - `recipientCount`: integer (optional) — Counted at send time and frozen — the audience changes later.
+        - `readCount`: integer (optional) — Always 0 — read receipts do not exist in the system yet.
+        - `senderName`: string (optional)
+        - `createdAt`: string (date-time) (optional)
+  - `total`: integer (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### POST `/api/main/announcements`
+Создать объявление платформы
+
+В очередь уведомлений НЕ кладётся: адресаты — сотрудники, а привязка к Telegram-боту есть только у student/parent. Объявление показывается в панели.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** main_admin
+
+**Request body:**
+- `title`: string **(required)**
+- `body`: string **(required)**
+- `targetType`: enum: `all-partners` | `all-seo` **(required)**
+
+**Responses:**
+
+- **201** — Создано
+  - **PlatformAnnouncement**:
+    - `id`: string (uuid) (optional)
+    - `title`: string (optional)
+    - `body`: string (optional)
+    - `targetType`: enum: `all-partners` | `all-seo` (optional)
+    - `recipientCount`: integer (optional) — Counted at send time and frozen — the audience changes later.
+    - `readCount`: integer (optional) — Always 0 — read receipts do not exist in the system yet.
+    - `senderName`: string (optional)
+    - `createdAt`: string (date-time) (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### DELETE `/api/main/announcements/{id}`
+Удалить объявление платформы (soft-delete)
+
+**Auth:** Bearer JWT required
+**Role(s):** main_admin
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — Удалено
+  - `id`: string (uuid) (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Объявление не найдено
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
 ### GET `/api/main/dashboard`
 Platform-wide dashboard (aggregated totals across all partners)
 
@@ -187,9 +327,9 @@ Update a lead's status and/or notes (partial — at least one field)
 ---
 
 ### POST `/api/main/partners`
-Onboard a new partner (organization + its Super Admin)
+Onboard a new partner (organization + its SEO)
 
-Creates the organization and its Super Admin user in one transaction, sets the org owner, and (if `leadId` given) marks that lead as onboarded and links it to the new organization. Returns a one-time temp password for the new Super Admin (must be relayed to the partner out-of-band; they reset it via forgot-password afterwards).
+Creates the organization and its SEO user in one transaction, sets the org owner, and (if `leadId` given) marks that lead as onboarded and links it to the new organization. Returns a one-time temp password for the new SEO (must be relayed to the partner out-of-band; they reset it via forgot-password afterwards).
 
 
 **Auth:** Bearer JWT required
@@ -216,7 +356,7 @@ Creates the organization and its Super Admin user in one transaction, sets the o
     - `domain`: string (optional)
     - `status`: string (optional)
     - `created_at`: string (date-time) (optional)
-  - `superadmin` (optional):
+  - `seo` (optional):
     - `id`: string (uuid) (optional)
     - `firstName`: string (optional)
     - `lastName`: string (optional)
@@ -451,5 +591,157 @@ Update platform pricing (partial — at least one field required)
     - `message`: string (optional) _e.g. "Validation failed"_
     - `details` (optional):
       - _(free-form object)_
+
+---
+
+### GET `/api/main/profile`
+Профиль владельца платформы
+
+**Auth:** Bearer JWT required
+**Role(s):** main_admin
+
+**Responses:**
+
+- **200** — Профиль
+  - `profile` (optional):
+    - **MainProfile**:
+      - `id`: string (uuid) (optional)
+      - `firstName`: string (optional)
+      - `lastName`: string (optional)
+      - `email`: string (email) (optional)
+      - `phone`: string (optional)
+      - `role`: string (optional) _e.g. "main_admin"_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### PATCH `/api/main/profile`
+Изменить профиль владельца платформы
+
+Частичное обновление. Email и телефон уникальны среди пользователей — при конфликте возвращается 409, а не сырая ошибка БД.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** main_admin
+
+**Request body:**
+- `firstName`: string (optional)
+- `lastName`: string (optional)
+- `email`: string (email) (optional)
+- `phone`: string (optional) _e.g. "+998901234567"_
+
+**Responses:**
+
+- **200** — Обновлено
+  - `profile` (optional):
+    - **MainProfile**:
+      - `id`: string (uuid) (optional)
+      - `firstName`: string (optional)
+      - `lastName`: string (optional)
+      - `email`: string (email) (optional)
+      - `phone`: string (optional)
+      - `role`: string (optional) _e.g. "main_admin"_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **409** — Email или телефон уже заняты
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### GET `/api/main/revenue`
+Platform revenue detail — our income (sum of partner bills) + per-partner billing
+
+Our monthly income = sum of each partner's computed bill (by student count). Read-only over money tables — writes nothing.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** main_admin
+
+**Responses:**
+
+- **200** — Revenue detail
+  - `totals` (optional):
+    - `partners`: integer (optional)
+    - `activePartners`: integer (optional)
+    - `students`: integer (optional)
+    - `branches`: integer (optional)
+    - `ourMonthlyIncome`: number (optional)
+    - `currency`: string (optional) _e.g. "UZS"_
+  - `partners` (optional):
+    - _array of:_
+      - _(free-form object)_
+  - `pricing` (optional):
+    - **PlatformPricing**:
+      - `tiers` (optional):
+        - _array of:_
+          - `id`: string (optional) _e.g. "standard"_
+          - `label`: string (optional) _e.g. "Standard"_
+          - `minStudents`: integer (optional) _e.g. 101_
+          - `maxStudents`: integer (optional) — null = no upper bound (Network tier) _e.g. 300_
+          - `price`: integer (optional) — UZS/month. null = negotiated individually (Network tier) _e.g. 349000_
+      - `currency`: string (optional) _e.g. "UZS"_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
 
 ---

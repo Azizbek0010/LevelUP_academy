@@ -14,7 +14,7 @@ export default function BranchManagerDashboard() {
   const incomeQ = useBranchManagerIncome('2026-08');
   const reportsQ = useBranchManagerReports(6);
 
-  const dash = dashQ.data?.dashboard;
+  const dash = dashQ.data;
   const income = incomeQ.data;
   const reports = reportsQ.data;
 

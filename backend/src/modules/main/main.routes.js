@@ -24,12 +24,12 @@ router.use(authenticate, authorize('main_admin'));
  * /api/main/partners:
  *   post:
  *     tags: [Main Admin]
- *     summary: Onboard a new partner (organization + its Super Admin)
+ *     summary: Onboard a new partner (organization + its SEO)
  *     description: >
- *       Creates the organization and its Super Admin user in one transaction, sets
+ *       Creates the organization and its SEO user in one transaction, sets
  *       the org owner, and (if `leadId` given) marks that lead as onboarded and links
  *       it to the new organization. Returns a one-time temp password for the new
- *       Super Admin (must be relayed to the partner out-of-band; they reset it via
+ *       SEO (must be relayed to the partner out-of-band; they reset it via
  *       forgot-password afterwards).
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
@@ -54,7 +54,7 @@ router.use(authenticate, authorize('main_admin'));
  *                     domain: { type: string, nullable: true }
  *                     status: { type: string }
  *                     created_at: { type: string, format: date-time }
- *                 superadmin:
+ *                 seo:
  *                   type: object
  *                   properties:
  *                     id: { type: string, format: uuid }
@@ -372,7 +372,7 @@ router.patch('/leads/:id', validate({ params: idParam, body: leadUpdateSchema })
  *               body: { type: string }
  *               targetType:
  *                 type: string
- *                 enum: [all-partners, all-superadmins]
+ *                 enum: [all-partners, all-seo]
  *     responses:
  *       201:
  *         description: Создано

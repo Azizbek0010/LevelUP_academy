@@ -121,7 +121,7 @@ export default {
     rolesLead:
       'After login, the role in the token opens the right workspace by itself. Nobody sees more than they should — the server decides access.',
     roles: [
-      { tag: 'SA', title: 'SuperAdmin', text: 'The whole branch network and global reports with no branch filter.' },
+      { tag: 'SA', title: 'SEO', text: 'The whole branch network and global reports with no branch filter.' },
       { tag: 'A', title: 'Admin', text: 'Payments, groups, students and reports for their own branch.' },
       { tag: 'M', title: 'Mentor', text: 'Attendance, homework review, coins, exams and their own payroll.' },
       { tag: 'ME', title: 'Methodist', text: 'Curriculum, topics and lessons with video, question bank for tests.' },
@@ -183,7 +183,7 @@ export default {
       },
       {
         q: 'What roles does the system have?',
-        a: 'Main Admin (platform owner), Super Admin (organization), Admin (branch), Mentor (teacher), Student, Parent and Methodist — each role has its own workspace and permissions.',
+        a: 'Main Admin (platform owner), SEO (organization), Admin (branch), Mentor (teacher), Student, Parent and Methodist — each role has its own workspace and permissions.',
       },
       {
         q: 'What can it do?',
@@ -264,7 +264,7 @@ export default {
       {
         icon: 'building',
         title: 'Multi-branch',
-        text: 'Every branch is isolated: an admin sees only their own. The SuperAdmin looks at the whole network — compares branches and finds room to grow.',
+        text: 'Every branch is isolated: an admin sees only their own. The SEO looks at the whole network — compares branches and finds room to grow.',
         tags: ['Data isolation', 'Branch network'],
       },
     ],
@@ -292,7 +292,7 @@ export default {
       },
       {
         q: 'How many branches can we connect?',
-        a: 'There is no limit. Multi-branch support is built in from day one: each branch is isolated, while the SuperAdmin sees the entire network.',
+        a: 'There is no limit. Multi-branch support is built in from day one: each branch is isolated, while the SEO sees the entire network.',
       },
       {
         q: 'Do parents need to install an app?',
@@ -314,7 +314,7 @@ export default {
     items: [
       {
         tag: 'SA',
-        title: 'SuperAdmin — the whole network at a glance',
+        title: 'SEO — the whole network at a glance',
         text: 'Sees every branch and the entire network at once: total revenue, debts, a live online counter. Manages branches, admins and the global chat.',
         list: [
           'Consolidated reports across all branches, no filter',
@@ -1555,7 +1555,7 @@ export default {
     roles: {
       title: 'Roles and permissions — 6 workspaces | LevelUp Academy',
       description:
-        'SuperAdmin, Admin, Mentor, Methodist, Parent and Student — each role has its own workspace. Access is decided by server-side RBAC: nobody sees more than they should.',
+        'SEO, Admin, Mentor, Methodist, Parent and Student — each role has its own workspace. Access is decided by server-side RBAC: nobody sees more than they should.',
     },
     finance: {
       title: 'Student payment and debt tracking | LevelUp Academy',

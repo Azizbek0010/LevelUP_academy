@@ -168,12 +168,14 @@ Get a lesson with its full question list
         - _array of:_
           - **Question**:
             - `id`: string (uuid) (optional)
+            - `questionType`: enum: `choice` | `riddle` | `open` (optional)
             - `questionText`: string (optional)
             - `optionA`: string (optional)
             - `optionB`: string (optional)
             - `optionC`: string (optional)
             - `optionD`: string (optional)
             - `correctAnswer`: enum: `A` | `B` | `C` | `D` (optional)
+            - `correctTextAnswer`: string (optional)
             - `sortOrder`: integer (optional)
 
 - **401** — Missing/invalid/expired bearer token
@@ -360,12 +362,14 @@ New lesson's title is suffixed with " (копия)". Target topic must belong to
         - _array of:_
           - **Question**:
             - `id`: string (uuid) (optional)
+            - `questionType`: enum: `choice` | `riddle` | `open` (optional)
             - `questionText`: string (optional)
             - `optionA`: string (optional)
             - `optionB`: string (optional)
             - `optionC`: string (optional)
             - `optionD`: string (optional)
             - `correctAnswer`: enum: `A` | `B` | `C` | `D` (optional)
+            - `correctTextAnswer`: string (optional)
             - `sortOrder`: integer (optional)
 
 - **401** — Missing/invalid/expired bearer token
@@ -484,12 +488,14 @@ List questions of a lesson
     - _array of:_
       - **Question**:
         - `id`: string (uuid) (optional)
+        - `questionType`: enum: `choice` | `riddle` | `open` (optional)
         - `questionText`: string (optional)
         - `optionA`: string (optional)
         - `optionB`: string (optional)
         - `optionC`: string (optional)
         - `optionD`: string (optional)
         - `correctAnswer`: enum: `A` | `B` | `C` | `D` (optional)
+        - `correctTextAnswer`: string (optional)
         - `sortOrder`: integer (optional)
 
 - **401** — Missing/invalid/expired bearer token
@@ -523,23 +529,14 @@ List questions of a lesson
 ---
 
 ### POST `/api/methodist/questions`
-Create a single A/B/C/D question for a lesson
-
-Note: unlike most other content-mutation endpoints in this module, this one does not verify the lesson belongs to the caller's organization before inserting (no findLessonInOrg check in the service).
-
+Create a question for a lesson (choice / riddle / open — see CreateQuestionRequest)
 
 **Auth:** Bearer JWT required
 **Role(s):** methodist (org-wide content)
 
 **Request body:**
 - **CreateQuestionRequest**:
-  - `lessonId`: string (uuid) **(required)**
-  - `questionText`: string **(required)**
-  - `optionA`: string **(required)**
-  - `optionB`: string **(required)**
-  - `optionC`: string **(required)**
-  - `optionD`: string **(required)**
-  - `correctAnswer`: enum: `A` | `B` | `C` | `D` **(required)**
+  - _any_
 
 **Responses:**
 
@@ -548,12 +545,14 @@ Note: unlike most other content-mutation endpoints in this module, this one does
   - `data` (optional):
     - **Question**:
       - `id`: string (uuid) (optional)
+      - `questionType`: enum: `choice` | `riddle` | `open` (optional)
       - `questionText`: string (optional)
       - `optionA`: string (optional)
       - `optionB`: string (optional)
       - `optionC`: string (optional)
       - `optionD`: string (optional)
       - `correctAnswer`: enum: `A` | `B` | `C` | `D` (optional)
+      - `correctTextAnswer`: string (optional)
       - `sortOrder`: integer (optional)
 
 - **401** — Missing/invalid/expired bearer token
@@ -597,12 +596,7 @@ Update a question (partial)
 
 **Request body:**
 - **UpdateQuestionRequest**:
-  - `questionText`: string (optional)
-  - `optionA`: string (optional)
-  - `optionB`: string (optional)
-  - `optionC`: string (optional)
-  - `optionD`: string (optional)
-  - `correctAnswer`: enum: `A` | `B` | `C` | `D` (optional)
+  - _any_ — Full replacement, same shape as CreateQuestionRequest minus lessonId — changing questionType is allowed.
 
 **Responses:**
 
@@ -611,12 +605,14 @@ Update a question (partial)
   - `data` (optional):
     - **Question**:
       - `id`: string (uuid) (optional)
+      - `questionType`: enum: `choice` | `riddle` | `open` (optional)
       - `questionText`: string (optional)
       - `optionA`: string (optional)
       - `optionB`: string (optional)
       - `optionC`: string (optional)
       - `optionD`: string (optional)
       - `correctAnswer`: enum: `A` | `B` | `C` | `D` (optional)
+      - `correctTextAnswer`: string (optional)
       - `sortOrder`: integer (optional)
 
 - **401** — Missing/invalid/expired bearer token
@@ -710,13 +706,7 @@ Create multiple A/B/C/D questions for one or more lessons in a single insert
 - `questions` **(required)**:
   - _array of:_
     - **CreateQuestionRequest**:
-      - `lessonId`: string (uuid) **(required)**
-      - `questionText`: string **(required)**
-      - `optionA`: string **(required)**
-      - `optionB`: string **(required)**
-      - `optionC`: string **(required)**
-      - `optionD`: string **(required)**
-      - `correctAnswer`: enum: `A` | `B` | `C` | `D` **(required)**
+      - _any_
 
 **Responses:**
 
@@ -726,12 +716,14 @@ Create multiple A/B/C/D questions for one or more lessons in a single insert
     - _array of:_
       - **Question**:
         - `id`: string (uuid) (optional)
+        - `questionType`: enum: `choice` | `riddle` | `open` (optional)
         - `questionText`: string (optional)
         - `optionA`: string (optional)
         - `optionB`: string (optional)
         - `optionC`: string (optional)
         - `optionD`: string (optional)
         - `correctAnswer`: enum: `A` | `B` | `C` | `D` (optional)
+        - `correctTextAnswer`: string (optional)
         - `sortOrder`: integer (optional)
 
 - **401** — Missing/invalid/expired bearer token
@@ -973,13 +965,11 @@ Archive a topic
 ### GET `/api/methodist/topics/{id}/lessons`
 List lessons of a topic (with question counts)
 
-Path parameter is named `id` in the route but read as `topicId` by the controller.
-
 **Auth:** Bearer JWT required
 **Role(s):** methodist (org-wide content)
 
 **Params:**
-- `id` (path, string) **(required)**
+- `topicId` (path, string) **(required)**
 
 **Responses:**
 
@@ -1243,13 +1233,11 @@ Archive a training type
 ### GET `/api/methodist/training-types/{id}/topics`
 List topics of a training type (with lesson counts)
 
-Path parameter is named `id` in the route but read as `trainingTypeId` by the controller.
-
 **Auth:** Bearer JWT required
 **Role(s):** methodist (org-wide content)
 
 **Params:**
-- `id` (path, string) **(required)**
+- `trainingTypeId` (path, string) **(required)**
 
 **Responses:**
 
@@ -1283,6 +1271,156 @@ Path parameter is named `id` in the route but read as `trainingTypeId` by the co
     - `stack`: string (optional) — Only present when NODE_ENV=development
 
 - **404** — Training type not found
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### POST `/api/methodist/videos/groups/{groupId}`
+Register an uploaded video for a group
+
+Call this AFTER successfully PUTting the file to the presigned uploadUrl.
+
+**Auth:** Bearer JWT required
+**Role(s):** methodist (org-wide content)
+
+**Params:**
+- `groupId` (path, string) **(required)**
+
+**Request body:**
+- `title`: string **(required)**
+- `videoKey`: string **(required)** — The videoKey returned by the upload-url call
+- `durationSec`: integer (optional)
+
+**Responses:**
+
+- **201** — Video registered
+  - `success`: boolean (optional) _e.g. true_
+  - `data` (optional):
+    - `id`: string (uuid) (optional)
+    - `group_id`: string (uuid) (optional)
+    - `title`: string (optional)
+    - `duration_sec`: integer (optional)
+    - `is_archived`: boolean (optional)
+    - `created_at`: string (date-time) (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Group not found (outside methodist's organization)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### GET `/api/methodist/videos/groups/{groupId}`
+List videos of a group (includes archived)
+
+**Auth:** Bearer JWT required
+**Role(s):** methodist (org-wide content)
+
+**Params:**
+- `groupId` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — List of videos
+  - `success`: boolean (optional) _e.g. true_
+  - `data` (optional):
+    - _array of:_
+      - `id`: string (uuid) (optional)
+      - `group_id`: string (uuid) (optional)
+      - `title`: string (optional)
+      - `duration_sec`: integer (optional)
+      - `is_archived`: boolean (optional)
+      - `created_at`: string (date-time) (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Group not found (outside methodist's organization)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### GET `/api/methodist/videos/groups/{groupId}/upload-url`
+Presigned S3 upload url for a group video
+
+Возвращает presigned PUT url + videoKey. Клиент грузит файл на uploadUrl, затем регистрирует его через POST /videos/groups/{groupId} { videoKey }. Методист не привязан к конкретной группе как ментор — доступна любая группа своей организации.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** methodist (org-wide content)
+
+**Params:**
+- `groupId` (path, string) **(required)**
+- `filename` (query, string) **(required)**
+- `contentType` (query, string) (optional)
+
+**Responses:**
+
+- **200** — Presigned upload URL + the key to reference in the create call
+  - `success`: boolean (optional) _e.g. true_
+  - `data` (optional):
+    - `uploadUrl`: string (uri) (optional)
+    - `videoKey`: string (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Group not found (outside methodist's organization)
   - **ErrorResponse**:
     - `success`: boolean **(required)** _e.g. false_
     - `message`: string **(required)**

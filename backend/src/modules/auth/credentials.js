@@ -23,7 +23,7 @@ export function genNumericPassword(len = 6) {
   return out;
 }
 
-// временный пароль для email-ролей (superadmin/admin/mentor) при заведении — показывается один раз
+// временный пароль для email-ролей (seo/admin/mentor) при заведении — показывается один раз
 const PASS_ALPHABET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
 export function genTempPassword(len = 10) {
   let out = '';

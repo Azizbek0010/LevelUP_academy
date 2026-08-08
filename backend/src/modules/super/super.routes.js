@@ -15,6 +15,12 @@ import {
   updateOrganizationSchema,
   createAnnouncementSchema,
   statsQuery,
+  createBranchManagerSchema,
+  updateBranchManagerSchema,
+  freezeBranchManagerSchema,
+  reassignBranchManagersSchema,
+  setTrainingTypePriceSchema,
+  setTrainingTypeArchivedSchema,
 } from './super.schemas.js';
 import * as ctrl from './super.controller.js';
 import * as discipline from '../discipline/discipline.controller.js';
@@ -27,14 +33,14 @@ import {
 
 const router = Router();
 
-// вся панель — только Super Admin (владелец организации-партнёра); scope = своя org
-router.use(authenticate, authorize('superadmin'));
+// вся панель — только SEO (владелец организации-партнёра); scope = своя org
+router.use(authenticate, authorize('seo'));
 
 /**
  * @openapi
  * /api/super/dashboard:
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Organization dashboard (revenue, debt, students, per-branch breakdown)
  *     security: [{ bearerAuth: [] }]
  *     responses:
@@ -76,7 +82,7 @@ router.get('/dashboard', ctrl.dashboard);
  * @openapi
  * /api/super/organization:
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Organization profile (Settings page)
  *     description: >
  *       Returns the partner organization profile. `plan` is derived from the
@@ -92,7 +98,7 @@ router.get('/dashboard', ctrl.dashboard);
  *       403: { $ref: '#/components/responses/Forbidden' }
  *       404: { $ref: '#/components/responses/NotFound' }
  *   patch:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Update organization profile (name / domain / lesson duration)
  *     description: >
  *       Partial update — at least one field is required. `lessonDurationMin`
@@ -123,7 +129,7 @@ router.patch('/organization', validate({ body: updateOrganizationSchema }), ctrl
  * @openapi
  * /api/super/students:
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: List students across the whole organization (paginated)
  *     description: >
  *       Search matches first name, last name or phone (ILIKE). Scope is the
@@ -177,7 +183,7 @@ router.get('/students', ctrl.listStudents);
  * @openapi
  * /api/super/students/{id}:
  *   delete:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Soft-delete a student of the organization
  *     description: Sets `deleted_at`; the row is kept for finance history.
  *     security: [{ bearerAuth: [] }]
@@ -204,7 +210,7 @@ router.delete('/students/:id', validate({ params: idParam }), ctrl.deleteStudent
  * @openapi
  * /api/super/groups:
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: List groups across the whole organization
  *     security: [{ bearerAuth: [] }]
  *     responses:
@@ -241,7 +247,7 @@ router.get('/groups', ctrl.listGroups);
  * @openapi
  * /api/super/groups/{id}/archive:
  *   post:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Archive a group (read-only, mutations return 403 afterwards)
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -272,7 +278,7 @@ router.post('/groups/:id/archive', validate({ params: idParam }), ctrl.archiveGr
  * @openapi
  * /api/super/groups/{id}/unarchive:
  *   post:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Unarchive a group
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -303,7 +309,7 @@ router.post('/groups/:id/unarchive', validate({ params: idParam }), ctrl.unarchi
  * @openapi
  * /api/super/groups/{id}:
  *   delete:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Soft-delete a group of the organization
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -329,7 +335,7 @@ router.delete('/groups/:id', validate({ params: idParam }), ctrl.deleteGroup);
  * @openapi
  * /api/super/attendance:
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Attendance across the organization (optional group/date filter)
  *     description: >
  *       `records` and `lessons` are the same array (`lessons` is a front-end
@@ -384,7 +390,7 @@ router.get('/attendance', ctrl.attendance);
  * @openapi
  * /api/super/announcements:
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: List organization announcements (migration 1783870000000_super-announcements)
  *     security: [{ bearerAuth: [] }]
  *     responses:
@@ -401,7 +407,7 @@ router.get('/attendance', ctrl.attendance);
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  *   post:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Create an announcement — queues Telegram delivery for parent/student audiences
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
@@ -429,7 +435,7 @@ router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl
  * @openapi
  * /api/super/announcements/{id}:
  *   delete:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Soft-delete an announcement
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -454,7 +460,7 @@ router.delete('/announcements/:id', validate({ params: idParam }), ctrl.deleteAn
  * @openapi
  * /api/super/reminders:
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: History of automated payment reminders (payment.due / payment.due_soon / debt.overdue)
  *     description: >
  *       Not written by an HTTP handler — a BullMQ QueueEvents listener
@@ -493,7 +499,7 @@ router.get('/reminders', reminders.list);
  * @openapi
  * /api/super/reminders/{id}/resend:
  *   post:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Re-queue the same reminder job (same payload) — history is not overwritten, a new entry appears once it settles
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -519,7 +525,7 @@ router.post('/reminders/:id/resend', validate({ params: idParam }), reminders.re
  * @openapi
  * /api/super/reminders/{id}:
  *   delete:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Delete a reminder history entry
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -545,7 +551,7 @@ router.delete('/reminders/:id', validate({ params: idParam }), reminders.remove)
  * @openapi
  * /api/super/audit:
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Organization audit log (migration 1783880000000_audit-log)
  *     security: [{ bearerAuth: [] }]
  *     responses:
@@ -567,7 +573,7 @@ router.get('/audit', ctrl.listAudit);
  * @openapi
  * /api/super/stats:
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Organization statistics — KPIs, revenue series, per-branch and per-method breakdown
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -617,7 +623,7 @@ router.get('/stats', validate({ query: statsQuery }), ctrl.stats);
  * @openapi
  * /api/super/branches:
  *   post:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Create a branch in the organization
  *     description: The organization's first branch is automatically flagged `isMain`.
  *     security: [{ bearerAuth: [] }]
@@ -638,7 +644,7 @@ router.get('/stats', validate({ query: statsQuery }), ctrl.stats);
  *       403: { $ref: '#/components/responses/Forbidden' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: List branches of the organization (with admin/student counts)
  *     security: [{ bearerAuth: [] }]
  *     responses:
@@ -668,7 +674,7 @@ router.get('/branches', ctrl.listBranches);
  * @openapi
  * /api/super/branches/{id}:
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Branch detail — branch info + its admins + its groups
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -714,7 +720,7 @@ router.get('/branches', ctrl.listBranches);
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  *   patch:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Update branch fields (partial — at least one field required)
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -748,7 +754,7 @@ router.patch('/branches/:id', validate({ params: idParam, body: updateBranchSche
  * @openapi
  * /api/super/branches/{id}/archive:
  *   post:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Archive a branch (read-only afterwards)
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -775,7 +781,7 @@ router.post('/branches/:id/archive', validate({ params: idParam }), ctrl.archive
  * @openapi
  * /api/super/branches/{id}/unarchive:
  *   post:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Unarchive a branch
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -802,9 +808,9 @@ router.post('/branches/:id/unarchive', validate({ params: idParam }), ctrl.unarc
  * @openapi
  * /api/super/admins:
  *   post:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Create an admin assigned to one of the organization's branches
- *     description: Login (email) is set by the Super Admin; password is auto-generated and returned once (tempPassword).
+ *     description: Login (email) is set by SEO; password is auto-generated and returned once (tempPassword).
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
@@ -833,7 +839,7 @@ router.post('/branches/:id/unarchive', validate({ params: idParam }), ctrl.unarc
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: List admins of the organization
  *     security: [{ bearerAuth: [] }]
  *     responses:
@@ -863,7 +869,7 @@ router.get('/admins', ctrl.listAdmins);
  * @openapi
  * /api/super/admins/{id}:
  *   patch:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Update an admin (partial — at least one field; can reassign branch)
  *     description: If `branchId` is changed, the new branch must belong to the same organization.
  *     security: [{ bearerAuth: [] }]
@@ -897,7 +903,7 @@ router.patch('/admins/:id', validate({ params: idParam, body: updateAdminSchema 
  * @openapi
  * /api/super/admins/{id}/freeze:
  *   patch:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Freeze or unfreeze an admin account
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -934,7 +940,7 @@ router.post('/admins/:id/reset-password', validate({ params: idParam }), ctrl.re
  * @openapi
  * /api/super/methodists:
  *   post:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Create a methodist (organization-level, not tied to a branch)
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
@@ -959,7 +965,7 @@ router.post('/admins/:id/reset-password', validate({ params: idParam }), ctrl.re
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: List methodists of the organization
  *     security: [{ bearerAuth: [] }]
  *     responses:
@@ -983,13 +989,18 @@ router.post('/admins/:id/reset-password', validate({ params: idParam }), ctrl.re
 router.post('/methodists', validate({ body: createMethodistSchema }), ctrl.createMethodist);
 router.get('/methodists', ctrl.listMethodists);
 
+// методики (training_types) — цена и лимит группы ставит только SEO, один раз на методику
+router.get('/training-types', ctrl.listTrainingTypes);
+router.patch('/training-types/:id/price', validate({ params: idParam, body: setTrainingTypePriceSchema }), ctrl.setTrainingTypePrice);
+router.patch('/training-types/:id/archive', validate({ params: idParam, body: setTrainingTypeArchivedSchema }), ctrl.setTrainingTypeArchived);
+
 // --- branch managers ---
 
 /**
  * @openapi
  * /api/super/branch-managers:
  *   post:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Create a branch manager assigned to one of the organization's branches
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
@@ -1019,7 +1030,7 @@ router.get('/methodists', ctrl.listMethodists);
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: List branch managers of the organization
  *     security: [{ bearerAuth: [] }]
  *     responses:
@@ -1045,13 +1056,21 @@ router.get('/methodists', ctrl.listMethodists);
 router.post('/branch-managers', validate({ body: createBranchManagerSchema }), ctrl.createBranchManager);
 router.get('/branch-managers', ctrl.listBranchManagers);
 
+// --- branch managers CRUD ---
+// /reassign ДО /:id — иначе Express примет 'reassign' за параметр :id
+router.patch('/branch-managers/reassign', validate({ body: reassignBranchManagersSchema }), ctrl.reassignBranchManagers);
+router.patch('/branch-managers/:id', validate({ params: idParam, body: updateBranchManagerSchema }), ctrl.updateBranchManager);
+router.patch('/branch-managers/:id/freeze', validate({ params: idParam, body: freezeBranchManagerSchema }), ctrl.freezeBranchManager);
+router.post('/branch-managers/:id/reset-password', validate({ params: idParam }), ctrl.resetBranchManagerPassword);
+router.delete('/branch-managers/:id', validate({ params: idParam }), ctrl.deleteBranchManager);
+
 // --- методики / цена абонемента ---
 
 /**
  * @openapi
  * /api/super/mentors:
  *   get:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: List mentors of the organization (read-only — Admin of the branch manages them)
  *     description: Нужен только для выбора цели в «Взыскании» — CRUD ментора остаётся у Admin филиала.
  *     security: [{ bearerAuth: [] }]
@@ -1067,7 +1086,7 @@ router.get('/mentors', ctrl.listMentors);
  * @openapi
  * /api/super/methodists/{id}:
  *   patch:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Update a methodist (partial — at least one field)
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -1100,7 +1119,7 @@ router.patch('/methodists/:id', validate({ params: idParam, body: updateMethodis
  * @openapi
  * /api/super/methodists/{id}/freeze:
  *   patch:
- *     tags: [Super Admin]
+ *     tags: [SEO]
  *     summary: Freeze or unfreeze a methodist account
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -1165,7 +1184,7 @@ router.post('/methodists/:id/reset-password', validate({ params: idParam }), ctr
  *     tags: [Discipline]
  *     summary: Issue a warning (sariq/qizil) or fire (qora) a staff member
  *     description: >
- *       Super Admin → admin / mentor / methodist. amount — необязательный
+ *       SEO → admin / mentor / methodist. amount — необязательный
  *       довесок к любому из трёх уровней, не отдельная категория.
  *       qora ставит целевому status=fired (атомарно).
  *     security: [{ bearerAuth: [] }]

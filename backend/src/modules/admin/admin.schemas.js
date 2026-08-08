@@ -42,6 +42,17 @@ export const listExpensesQuery = z.object({
 // ---------- студенты ----------
 // Admin заводит ученика: логин-код + пароль генерятся на бэке.
 // Родитель опционален — если заведён, получает свой логин-код+пароль и привязывается.
+const gender = z.enum(['male', 'female']);
+// профиль-поля виджета «Профиль заполнен» — все опциональны и на create, и на update
+const profileFields = {
+  gender: gender.optional(),
+  address: z.string().trim().max(255).optional(),
+  school: z.string().trim().max(120).optional(),
+  leadSource: z.string().trim().max(60).optional(),
+  hasLaptop: z.boolean().optional(),
+  offerSigned: z.boolean().optional(),
+};
+
 export const createStudentSchema = z.object({
   firstName: name(),
   lastName: name(),
@@ -55,6 +66,7 @@ export const createStudentSchema = z.object({
       phone,
     })
     .optional(),
+  ...profileFields,
 });
 
 export const updateStudentSchema = z
@@ -63,6 +75,7 @@ export const updateStudentSchema = z
     lastName: name(),
     phone,
     birthDate: z.coerce.date(),
+    ...profileFields,
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
@@ -82,11 +95,16 @@ export const listStudentsQuery = z.object({
 // ---------- менторы (Admin заводит в своём филиале, вход по email) ----------
 const email = z.string().trim().toLowerCase().email('Invalid email');
 
+// password опционален: форма создания (Mentors.jsx) его не собирает — как и
+// у студента/родителя, бэкенд сам генерирует и возвращает пароль (08.08.2026,
+// баг Karis: раньше форма молчаливо не слала password вовсе, а он был
+// обязателен → 400 без объяснения). Явный password оставлен ради обратной
+// совместимости, если кто-то когда-то отправит его сам.
 export const createMentorSchema = z.object({
   firstName: name(),
   lastName: name(),
   email,
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128).optional(),
   phone: phone.optional(),
 });
 
@@ -108,7 +126,7 @@ export const updateMentorSchema = z
 
 // ---------- группы ----------
 // Admin выбирает дни недели + время начала; конец урока считает бэкенд
-// из длительности урока организации (Super Admin). См. admin.service.buildSchedule.
+// из длительности урока организации (SEO). См. admin.service.buildSchedule.
 const dayEnum = z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
 const daysSchema = z
   .array(dayEnum)
@@ -117,19 +135,29 @@ const daysSchema = z
   .refine((a) => new Set(a).size === a.length, 'Duplicate days');
 const startTimeSchema = z.string().regex(/^\d{2}:\d{2}$/, 'HH:MM');
 
-export const createGroupSchema = z.object({
-  name: name(2, 120),
-  subject: name(1, 120),
-  mentorId: z.string().uuid('Invalid mentorId'),
-  monthlyPrice: moneyNonNeg,
-  days: daysSchema,
-  startTime: startTimeSchema,
-  room: z.string().trim().max(60).optional(),
-});
+// trainingTypeId — методика с ценой от SEO; когда указана, backend сам берёт
+// subject/monthlyPrice из неё (см. admin.service.createGroup), а не доверяет
+// клиенту. subject/monthlyPrice остаются опциональными только ради старых
+// групп без методики (см. 1783980000000_training-type-price.js).
+export const createGroupSchema = z
+  .object({
+    name: name(2, 120),
+    trainingTypeId: z.string().uuid('Invalid trainingTypeId').optional(),
+    subject: name(1, 120).optional(),
+    mentorId: z.string().uuid('Invalid mentorId'),
+    monthlyPrice: moneyNonNeg.optional(),
+    days: daysSchema,
+    startTime: startTimeSchema,
+    room: z.string().trim().max(60).optional(),
+  })
+  .refine((o) => o.trainingTypeId || (o.subject && o.monthlyPrice !== undefined), {
+    message: 'Either trainingTypeId or subject + monthlyPrice is required',
+  });
 
 export const updateGroupSchema = z
   .object({
     name: name(2, 120),
+    trainingTypeId: z.string().uuid('Invalid trainingTypeId'),
     subject: name(1, 120),
     mentorId: z.string().uuid('Invalid mentorId'),
     monthlyPrice: moneyNonNeg,
@@ -158,6 +186,16 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');
 
 // davomat: чтение по дате урока
 export const groupAttendanceQuery = z.object({ date: isoDate });
+
+export const sendStudentTelegramMessageSchema = z.object({
+  text: z.string().trim().min(1).max(2000),
+  toParent: z.boolean().optional(),
+});
+
+export const studentAttendanceQuery = z.object({
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+});
 
 // davomat: массовая отметка. status = null → снять отметку (ученик «не отмечен»).
 // studentName фронт присылает для оптимистичного UI — на бэке имя берём из users,

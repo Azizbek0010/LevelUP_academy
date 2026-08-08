@@ -493,8 +493,30 @@ function getMethodistMocks() {
     localStorage.setItem('mock_questions', JSON.stringify(questions));
   }
 
-  return { tt, topics, lessons, questions };
+  // Практические задания: обязательные требования (shart) с баллами.
+  // TODO(Karis): real backend — GET/POST /methodist/lessons/:id/requirements,
+  // PATCH/DELETE /methodist/requirements/:id.
+  let requirements = JSON.parse(localStorage.getItem('mock_requirements') || '[]');
+  if (requirements.length === 0) {
+    requirements = [
+      { id: 'req-1', lesson_id: 'ls-2', text: 'i18n — 3 til (uz/ru/en)', points: 20, sort_order: 0 },
+      { id: 'req-2', lesson_id: 'ls-2', text: 'Dizayn DaisyUI', points: 5, sort_order: 1 },
+      { id: 'req-3', lesson_id: 'ls-2', text: 'Responsive (1280 / 768 / 375)', points: 10, sort_order: 2 },
+    ];
+    localStorage.setItem('mock_requirements', JSON.stringify(requirements));
+  }
+
+  return { tt, topics, lessons, questions, requirements };
 }
+
+const syncRequirementsCount = (mocks, lessonId) => {
+  const count = mocks.requirements.filter((r) => r.lesson_id === lessonId).length;
+  const lesson = mocks.lessons.find((l) => l.id === lessonId);
+  if (lesson) {
+    lesson.requirements_count = count;
+    localStorage.setItem('mock_lessons', JSON.stringify(mocks.lessons));
+  }
+};
 
 async function rawRequest(path, { method = 'GET', body, token } = {}) {
   if (USE_MOCKS) {
@@ -509,8 +531,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     // -------- LESSON FILE UPLOAD MOCK --------
     const uploadUrlMatch = path.match(/^\/methodist\/lessons\/([^/]+)\/upload-url/);
     if (uploadUrlMatch) {
-      const url = new URL(path, 'http://localhost');
-      const filename = url.searchParams.get('filename') || 'file.pdf';
+      const filename = queryParams.filename || 'file.pdf';
       return {
         success: true,
         data: {
@@ -526,7 +547,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
 
       // Мок-креды по ролям (совпадают с backend seed env-переменными)
       const MOCK_ACCOUNTS = [
-        { email: 'azizbekamangeldiev.2010@gmail.com', password: 'ChangeMe123!', role: 'superadmin', firstName: 'Demo', lastName: 'Superadmin' },
+        { email: 'azizbekamangeldiev.2010@gmail.com', password: 'ChangeMe123!', role: 'seo', firstName: 'Demo', lastName: 'SEO' },
         { email: 'hp8187081014laptop@gmail.com', password: 'ChangeMe123!', role: 'admin', firstName: 'Demo', lastName: 'Admin' },
         { email: 'mentor.demo@levelup.local', password: 'ChangeMe123!', role: 'mentor', firstName: 'Demo', lastName: 'Mentor' },
         { email: 'methodist@levelup.local', password: 'ChangeMe123!', role: 'methodist', firstName: 'Мадина', lastName: 'Рахимова' },
@@ -559,17 +580,17 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     }
 
     if (path === '/auth/staff/google') {
-      // В мок-режиме Google-вход имитирует superadmin
+      // В мок-режиме Google-вход имитирует seo
       const user = {
-        id: 'mock-superadmin-google-id-001',
+        id: 'mock-seo-google-id-001',
         firstName: 'Demo',
-        lastName: 'Superadmin',
-        role: 'superadmin',
+        lastName: 'SEO',
+        role: 'seo',
         email: 'azizbekamangeldiev.2010@gmail.com',
       };
-      localStorage.setItem('mock_token', 'mock-jwt-superadmin-xyz');
+      localStorage.setItem('mock_token', 'mock-jwt-seo-xyz');
       localStorage.setItem('mock_user', JSON.stringify(user));
-      return { user, accessToken: 'mock-jwt-superadmin-xyz' };
+      return { user, accessToken: 'mock-jwt-seo-xyz' };
     }
 
     if (path === '/auth/staff/refresh') {
@@ -1032,6 +1053,7 @@ if (path === '/branch-manager/reports') {
           sort_order: mocks.lessons.length,
           created_at: new Date().toISOString(),
           questions_count: 0,
+          requirements_count: 0,
         };
         mocks.lessons.push(newItem);
         localStorage.setItem('mock_lessons', JSON.stringify(mocks.lessons));
@@ -1044,7 +1066,8 @@ if (path === '/branch-manager/reports') {
       if (method === 'GET') {
         const lesson = mocks.lessons.find((l) => l.id === id);
         const qs = mocks.questions.filter((q) => q.lesson_id === id);
-        return { success: true, data: { ...lesson, questions: qs } };
+        const reqs = mocks.requirements.filter((r) => r.lesson_id === id);
+        return { success: true, data: { ...lesson, questions: qs, requirements: reqs } };
       }
       if (method === 'PATCH') {
         const idx = mocks.lessons.findIndex((l) => l.id === id);
@@ -1076,6 +1099,7 @@ if (path === '/branch-manager/reports') {
           title: `${original.title} (копия)`,
           created_at: new Date().toISOString(),
           questions_count: original.questions_count,
+          requirements_count: original.requirements_count,
         };
         mocks.lessons.push(newLesson);
         localStorage.setItem('mock_lessons', JSON.stringify(mocks.lessons));
@@ -1084,6 +1108,11 @@ if (path === '/branch-manager/reports') {
         const newQs = qs.map((q) => ({ ...q, id: `q-${Date.now()}-${Math.random()}`, lesson_id: newLesson.id }));
         mocks.questions.push(...newQs);
         localStorage.setItem('mock_questions', JSON.stringify(mocks.questions));
+        // copy requirements
+        const reqs = mocks.requirements.filter((r) => r.lesson_id === lessonId);
+        const newReqs = reqs.map((r) => ({ ...r, id: `req-${Date.now()}-${Math.random()}`, lesson_id: newLesson.id }));
+        mocks.requirements.push(...newReqs);
+        localStorage.setItem('mock_requirements', JSON.stringify(mocks.requirements));
         return { success: true, data: newLesson };
       }
     }
@@ -1147,6 +1176,49 @@ if (path === '/branch-manager/reports') {
       if (method === 'DELETE') {
         mocks.questions = mocks.questions.filter((q) => q.id !== id);
         localStorage.setItem('mock_questions', JSON.stringify(mocks.questions));
+        return { success: true };
+      }
+    }
+
+    // -------- REQUIREMENTS (практические задания) --------
+    const reqMatch = path.match(/^\/methodist\/lessons\/([^/]+)\/requirements$/);
+    if (reqMatch) {
+      const lessonId = reqMatch[1];
+      const filtered = mocks.requirements.filter((r) => r.lesson_id === lessonId);
+      return { success: true, data: filtered };
+    }
+
+    if (path === '/methodist/requirements') {
+      if (method === 'POST') {
+        const newItem = {
+          id: `req-${Date.now()}`,
+          lesson_id: body.lessonId,
+          text: body.text,
+          points: body.points || 0,
+          sort_order: mocks.requirements.length,
+        };
+        mocks.requirements.push(newItem);
+        localStorage.setItem('mock_requirements', JSON.stringify(mocks.requirements));
+        syncRequirementsCount(mocks, body.lessonId);
+        return { success: true, data: newItem };
+      }
+    }
+
+    if (path.match(/^\/methodist\/requirements\/([^/]+)$/)) {
+      const id = path.split('/')[3];
+      if (method === 'PATCH') {
+        const idx = mocks.requirements.findIndex((r) => r.id === id);
+        if (idx >= 0) {
+          Object.assign(mocks.requirements[idx], body);
+          localStorage.setItem('mock_requirements', JSON.stringify(mocks.requirements));
+          return { success: true, data: mocks.requirements[idx] };
+        }
+      }
+      if (method === 'DELETE') {
+        const removed = mocks.requirements.find((r) => r.id === id);
+        mocks.requirements = mocks.requirements.filter((r) => r.id !== id);
+        localStorage.setItem('mock_requirements', JSON.stringify(mocks.requirements));
+        if (removed) syncRequirementsCount(mocks, removed.lesson_id);
         return { success: true };
       }
     }
@@ -1274,10 +1346,14 @@ if (path === '/branch-manager/reports') {
       const students = JSON.parse(localStorage.getItem('mock_admin_students') || '[]');
       const student = students.find(s => s.id === id);
       if (!student) { const err = new Error('Талаба не найден'); err.status = 404; throw err; }
+      // Narxni mock groups ro'yxatidan olamiz (real backendda adminStudentDetail
+      // groups[].monthlyPrice qaytaradi — Payments modal shunga tayanadi).
+      const groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
+      const mockPrice = groups.find((g) => g.name === student.groupName)?.monthlyPrice || 850000;
       return {
         student: {
           ...student,
-          groups: [{ id: 'g1', name: student.groupName, subject: 'Frontend' }],
+          groups: [{ id: 'g1', name: student.groupName, subject: 'Frontend', monthlyPrice: mockPrice }],
           payments: [
             { id: 'p1', amount: 850000, date: '2026-06-01T10:00:00Z', type: 'cash', status: 'paid' },
             { id: 'p2', amount: 500000, date: '2026-05-01T10:00:00Z', type: 'card', status: 'paid' },
@@ -1365,15 +1441,15 @@ if (path === '/branch-manager/reports') {
       const groups = JSON.parse(localStorage.getItem('mock_admin_groups') || '[]');
       const group = groups.find(g => g.id === id);
       if (!group) { const err = new Error('Группа не найдена'); err.status = 404; throw err; }
+      // Форма — как у реального бэкенда: students на верхнем уровне, а не
+      // под ключом `group` (GroupDetail читает оба варианта: raw.group || raw).
       return {
-        group: {
-          ...group,
-          students: [
-            { id: 'st-1', firstName: 'Sardor', lastName: 'O\'zbekov', phone: '+998901112233' },
-            { id: 'st-3', firstName: 'Botir', lastName: 'Hasanov', phone: '+998903334455' },
-            { id: 'st-6', firstName: 'Dilshod', lastName: 'Tursunov', phone: '+998906667788' },
-          ],
-        },
+        ...group,
+        students: [
+          { id: 'st-1', firstName: 'Sardor', lastName: 'O\'zbekov', phone: '+998901112233' },
+          { id: 'st-3', firstName: 'Botir', lastName: 'Hasanov', phone: '+998903334455' },
+          { id: 'st-6', firstName: 'Dilshod', lastName: 'Tursunov', phone: '+998906667788' },
+        ],
       };
     }
 
@@ -2032,11 +2108,11 @@ if (path === '/branch-manager/reports') {
       });
       const students = [...seenStudents.values()];
 
-      /* Менторы — только для роля admin/superadmin. Ментор не должен видеть
+      /* Менторы — только для роля admin/seo. Ментор не должен видеть
          других менторов в списке контактов (он пишет родителям/ученикам). */
       const me = JSON.parse(localStorage.getItem('mock_user') || localStorage.getItem('mock_me') || 'null');
       const myRole = me?.role ?? 'mentor';
-      const mentors = (myRole === 'admin' || myRole === 'superadmin')
+      const mentors = (myRole === 'admin' || myRole === 'seo')
         ? (() => {
             let list = JSON.parse(localStorage.getItem('mock_admin_mentors') || '[]');
             if (list.length === 0) {
@@ -2355,7 +2431,7 @@ export const api = {
   chatMarkRead: (token, roomKey) =>
     request(`/chat/${encodeURIComponent(roomKey)}/read`, { method: 'POST', token }),
 
-  // -------- AUTH (staff — admin/superadmin/mentor/methodist) --------
+  // -------- AUTH (staff — admin/seo/mentor/methodist) --------
   loginStaff: (login, password) =>
     request('/auth/staff/login', { method: 'POST', body: { login, password } }),
   refresh: () => request('/auth/staff/refresh', { method: 'POST' }),
@@ -2377,6 +2453,10 @@ export const api = {
   adminStudents: (token, qs = '') => request(`/admin/students${qs}`, { token }),
   adminCreateStudent: (token, body) => request('/admin/students', { method: 'POST', token, body }),
   adminStudentDetail: (token, id) => request(`/admin/students/${id}`, { token }),
+  adminStudentAttendance: (token, id, qs = '') => request(`/admin/students/${id}/attendance${qs}`, { token }),
+  adminStudentTelegram: (token, id) => request(`/admin/students/${id}/telegram`, { token }),
+  adminSendStudentTelegramMessage: (token, id, text, toParent) =>
+    request(`/admin/students/${id}/telegram/message`, { method: 'POST', token, body: { text, toParent } }),
   adminUpdateStudent: (token, id, body) => request(`/admin/students/${id}`, { method: 'PATCH', token, body }),
   adminFreezeStudent: (token, id, frozen, reason) => request(`/admin/students/${id}/freeze`, { method: 'POST', token, body: { frozen, reason } }),
   adminDeleteStudent: (token, id, reason) => request(`/admin/students/${id}`, { method: 'DELETE', token, body: reason ? { reason } : undefined }),
@@ -2384,7 +2464,7 @@ export const api = {
   adminCreateGroup: (token, body) => request('/admin/groups', { method: 'POST', token, body }),
   adminGroupDetail: (token, id) => request(`/admin/groups/${id}`, { token }),
   adminUpdateGroup: (token, id, body) => request(`/admin/groups/${id}`, { method: 'PATCH', token, body }),
-  adminArchiveGroup: (token, id) => request(`/admin/groups/${id}/archive`, { method: 'POST', token }),
+  adminArchiveGroup: (token, id, reason) => request(`/admin/groups/${id}/archive`, { method: 'POST', token, body: reason ? { reason } : undefined }),
   adminUnarchiveGroup: (token, id) => request(`/admin/groups/${id}/unarchive`, { method: 'POST', token }),
   adminMentors: (token) => request('/admin/mentors', { token }),
   adminCreateMentor: (token, body) => request('/admin/mentors', { method: 'POST', token, body }),
@@ -2392,6 +2472,7 @@ export const api = {
   adminFreezeMentor: (token, id, frozen) => request(`/admin/mentors/${id}/freeze`, { method: 'POST', token, body: { frozen } }),
   adminDeleteMentor: (token, id) => request(`/admin/mentors/${id}`, { method: 'DELETE', token }),
   adminRegenStudentPassword: (token, id) => request(`/admin/students/${id}/regenerate-password`, { method: 'POST', token }),
+  adminStudentCredentials: (token, id) => request(`/admin/students/${id}/credentials`, { token }),
 
   // -------- ADMIN: Groups — add/remove students --------
   adminAddStudentToGroup: (token, groupId, studentId) =>
@@ -2461,8 +2542,10 @@ export const api = {
   superGetOrganization: (token) => request('/super/organization', { token }),
   superUpdateOrganization: (token, body) => request('/super/organization', { method: 'PATCH', token, body }),
   superTrainingTypes: (token) => request('/super/training-types', { token }),
-  superSetTrainingTypePrice: (token, id, price) =>
-    request(`/super/training-types/${id}/price`, { method: 'PATCH', token, body: { price } }),
+  superSetTrainingTypePrice: (token, id, price, maxStudents) =>
+    request(`/super/training-types/${id}/price`, { method: 'PATCH', token, body: { price, maxStudents } }),
+  superSetTrainingTypeArchived: (token, id, archived) =>
+    request(`/super/training-types/${id}/archive`, { method: 'PATCH', token, body: { archived } }),
   superMethodists: (token) => request('/super/methodists', { token }),
   // Только чтение — для выбора цели во «Взыскании». CRUD ментора у Admin филиала.
   superMentors: (token) => request('/super/mentors', { token }),
@@ -2472,10 +2555,14 @@ export const api = {
   superUnfreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
    superResetMethodistPassword: (token, id) => request(`/super/methodists/${id}/reset-password`, { method: 'POST', token }),
 
-   // -------- SUPER ADMIN: Branch Managers --------
-   superBranchManagers: (token) => request('/super/branch-managers', { token }),
-   superCreateBranchManager: (token, body) => request('/super/branch-managers', { method: 'POST', token, body }),
-   superUpdateBranchManager: (token, id, body) => request(`/super/branch-managers/${id}`, { method: 'PATCH', token, body }),
+// -------- SUPER ADMIN: Branch Managers --------
+  superBranchManagers: (token) => request('/super/branch-managers', { token }),
+  superCreateBranchManager: (token, body) => request('/super/branch-managers', { method: 'POST', token, body }),
+  superUpdateBranchManager: (token, id, body) => request(`/super/branch-managers/${id}`, { method: 'PATCH', token, body }),
+  superFreezeBranchManager: (token, id) => request(`/super/branch-managers/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
+  superUnfreezeBranchManager: (token, id) => request(`/super/branch-managers/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
+  superResetBranchManagerPassword: (token, id) => request(`/super/branch-managers/${id}/reset-password`, { method: 'POST', token }),
+  superDeleteBranchManager: (token, id) => request(`/super/branch-managers/${id}`, { method: 'DELETE', token }),
 
    // -------- BRANCH MANAGER --------
    branchManagerDashboard: (token) => request('/branch-manager/dashboard', { token }),
@@ -2549,13 +2636,18 @@ export const api = {
   methodistArchiveLesson: (token, id) => request(`/methodist/lessons/${id}/archive`, { method: 'POST', token }),
   methodistCopyLesson: (token, id, targetTopicId) => request(`/methodist/lessons/${id}/copy`, { method: 'POST', token, body: { targetTopicId } }),
   methodistLessonUploadUrl: (token, id, filename, contentType) =>
-    request(`/methodist/lessons/${id}/upload-url?filename=${filename}&contentType=${contentType}`, { token }),
+    request(`/methodist/lessons/${id}/upload-url?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(contentType)}`, { token }),
 
   methodistQuestions: (token, lessonId) => request(`/methodist/lessons/${lessonId}/questions`, { token }),
   methodistCreateQuestion: (token, body) => request('/methodist/questions', { method: 'POST', token, body }),
   methodistCreateQuestionsBatch: (token, questions) => request('/methodist/questions/batch', { method: 'POST', token, body: { questions } }),
   methodistUpdateQuestion: (token, id, body) => request(`/methodist/questions/${id}`, { method: 'PATCH', token, body }),
   methodistDeleteQuestion: (token, id) => request(`/methodist/questions/${id}`, { method: 'DELETE', token }),
+
+  methodistRequirements: (token, lessonId) => request(`/methodist/lessons/${lessonId}/requirements`, { token }),
+  methodistCreateRequirement: (token, body) => request('/methodist/requirements', { method: 'POST', token, body }),
+  methodistUpdateRequirement: (token, id, body) => request(`/methodist/requirements/${id}`, { method: 'PATCH', token, body }),
+  methodistDeleteRequirement: (token, id) => request(`/methodist/requirements/${id}`, { method: 'DELETE', token }),
 
   // -------- METHODIST ANALYTICS --------
   methodistDifficulty: (token) => request('/methodist/difficulty', { token }),

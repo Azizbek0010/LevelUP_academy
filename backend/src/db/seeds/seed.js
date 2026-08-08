@@ -1,7 +1,7 @@
 /**
  * Dev seed (идемпотентный):
  *   1. main_admin — владелец платформы
- *   2. demo org + main branch + superadmin + mentor (вход по email)
+ *   2. demo org + main branch + seo + mentor (вход по email)
  *   3. demo студенты + parent (вход по логин-коду + пароль) + группа + членство —
  *      минимальный набор для прогона auth/mentor/student/parent-флоу.
  *
@@ -13,7 +13,7 @@ import { env } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
 
 const DEMO_ORG_NAME = 'Demo Learning Center';
-const DEMO_SUPERADMIN_PHONE = '+998901111111';
+const DEMO_SEO_PHONE = '+998901111111';
 const DEMO_MENTOR_EMAIL = 'mentor.demo@levelup.local';
 const DEMO_ADMIN_EMAIL = 'admin.demo@levelup.local';
 const DEMO_ADMIN_PHONE = '+998902222222';
@@ -129,17 +129,17 @@ async function seed() {
         [orgId],
       );
 
-      // superadmin (email)
-      const { rows: [superadmin] } = await client.query(
+      // seo (email)
+      const { rows: [seo] } = await client.query(
         `INSERT INTO users (organization_id, role, first_name, last_name, phone, email, password_hash)
-         VALUES ($1, 'superadmin', 'Demo', 'Superadmin', $2, $3, $4)
+         VALUES ($1, 'seo', 'Demo', 'SEO', $2, $3, $4)
          ON CONFLICT (phone) DO UPDATE SET email = EXCLUDED.email, updated_at = now()
          RETURNING id`,
-        [orgId, DEMO_SUPERADMIN_PHONE, env.SEED_SUPERADMIN_EMAIL, adminHash],
+        [orgId, DEMO_SEO_PHONE, env.SEED_SEO_EMAIL, adminHash],
       );
       await client.query(
         `UPDATE organizations SET owner_user_id = $1, updated_at = now() WHERE id = $2`,
-        [superadmin.id, orgId],
+        [seo.id, orgId],
       );
 
       // mentor (email)

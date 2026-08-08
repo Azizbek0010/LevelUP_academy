@@ -2,12 +2,12 @@ import { AppError } from '../utils/AppError.js';
 
 /**
  * RBAC + двухуровневый скоуп (organization → branch).
- *   router.post('/branches', authenticate, authorize('superadmin'), ...)
+ *   router.post('/branches', authenticate, authorize('seo'), ...)
  *
  * req.scope ПРИНУДИТЕЛЬНО подставляется по роли (клиентские org/branch ниже
  * своего уровня игнорируются):
  *   - main_admin → { organizationId: null, branchId: null } — вся платформа;
- *   - superadmin → своя организация, branchId можно сузить через ?branchId=;
+ *   - seo → своя организация, branchId можно сузить через ?branchId=;
  *   - остальные  → жёстко свой organizationId + branchId из токена.
  *
  * Вызов без ролей (`authorize()`) — только аутентификация + скоуп, без RBAC.
@@ -23,7 +23,7 @@ export function authorize(...allowedRoles) {
 
     if (user.role === 'main_admin') {
       req.scope = { organizationId: null, branchId: null };
-    } else if (user.role === 'superadmin') {
+    } else if (user.role === 'seo') {
       req.scope = { organizationId: user.organizationId, branchId: req.query.branchId ?? null };
     } else if (user.role === 'methodist') {
       // Методист видит ВСЕ филиалы своей организации, но не имеет доступа к финансам

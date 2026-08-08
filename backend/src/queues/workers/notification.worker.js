@@ -38,6 +38,11 @@ const HANDLERS = {
     const chatIds = await resolveChatIdsForMany(studentIds, ['student', 'parent']);
     await sendToAll(chatIds, `📢 ${title}\n\n${message}`);
   },
+  // admin/branch_manager пишет одному студенту (или его родителю) напрямую со StudentDetail
+  'admin.message': async ({ studentId, text, toParent }) => {
+    const chatIds = await resolveChatIds(studentId, [toParent ? 'parent' : 'student']);
+    await sendToAll(chatIds, text);
+  },
 };
 
 export const notificationWorker = new Worker(

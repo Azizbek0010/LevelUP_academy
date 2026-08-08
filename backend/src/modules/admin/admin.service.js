@@ -3,6 +3,7 @@ import { withTransaction } from '../../config/db.js';
 import { AppError } from '../../utils/AppError.js';
 import { parsePagination, buildPageMeta } from '../../utils/pagination.js';
 import { genLoginCode, genNumericPassword } from '../auth/credentials.js';
+import { encryptPassword, decryptPassword } from '../../utils/credentialCrypto.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
 import * as repo from './admin.repository.js';
 // Reuse: davomat и ДЗ живут в общих таблицах (attendance / homework), админская
@@ -164,7 +165,12 @@ export async function createStudent(scope, body) {
     });
 
     await repo.insertStudentProfile(
-      { userId: studentUser.id, branchId, parentId, birthDate: body.birthDate },
+      {
+        userId: studentUser.id, branchId, parentId, birthDate: body.birthDate,
+        gender: body.gender, address: body.address, school: body.school,
+        leadSource: body.leadSource, hasLaptop: body.hasLaptop, offerSigned: body.offerSigned,
+        passwordEncrypted: encryptPassword(studentPassword),
+      },
       client,
     );
 
@@ -229,6 +235,13 @@ export async function studentDetail(branchId, id) {
     frozenAt: s.frozen_at,
     frozenReason: s.frozen_reason,
     hasParent: Boolean(s.parent_id),
+    parent: s.parent_id ? { firstName: s.parent_first, lastName: s.parent_last, phone: s.parent_phone } : null,
+    gender: s.gender,
+    address: s.address,
+    school: s.school,
+    leadSource: s.lead_source,
+    hasLaptop: s.has_laptop,
+    offerSigned: s.offer_signed,
     createdAt: s.created_at,
     groups: groups.map((g) => ({
       id: g.id,
@@ -260,9 +273,10 @@ export async function updateStudent(branchId, id, body) {
         throw err;
       }
     }
-    if (body.birthDate !== undefined) {
-      await repo.updateStudentBirthDate(id, body.birthDate, client);
-    }
+    await repo.updateStudentProfile(id, {
+      birthDate: body.birthDate, gender: body.gender, address: body.address, school: body.school,
+      leadSource: body.leadSource, hasLaptop: body.hasLaptop, offerSigned: body.offerSigned,
+    }, client);
     return {
       id: updated.id,
       firstName: updated.first_name,
@@ -284,7 +298,21 @@ export async function regenerateStudentPassword(branchId, id) {
   const password = genNumericPassword(6);
   const row = await repo.setStudentPassword(id, branchId, await hash(password));
   if (!row) throw new AppError(404, 'Student not found in your branch');
+  await repo.setStudentPasswordEncrypted(id, encryptPassword(password));
   return { id, password };
+}
+
+/** Логин+пароль студента для QR-модалки — расшифровываем на сервере, наружу
+ * никогда не отдаём password_encrypted как есть. */
+export async function getStudentCredentials(branchId, id) {
+  const row = await repo.findStudentCredentials(id, branchId);
+  if (!row) throw new AppError(404, 'Student not found in your branch');
+  let password = null;
+  if (row.password_encrypted) {
+    try { password = decryptPassword(row.password_encrypted); }
+    catch { password = null; } // JWT_ACCESS_SECRET сменился — старые записи не расшифровать, не 500
+  }
+  return { loginCode: row.login_code, password };
 }
 
 /** Мягкое удаление ученика + выход из всех групп. */
@@ -299,6 +327,9 @@ export async function deleteStudent(branchId, id) {
 // ==================== МЕНТОРЫ ====================
 
 export async function createMentor(scope, body) {
+  // password не пришёл от клиента — как у студента/родителя, генерируем сами
+  // и возвращаем один раз, чтобы admin мог передать его ментору.
+  const password = body.password || genNumericPassword(8);
   let row;
   try {
     row = await repo.insertMentor({
@@ -308,7 +339,7 @@ export async function createMentor(scope, body) {
       lastName: body.lastName,
       email: body.email,
       phone: body.phone,
-      passwordHash: await hash(body.password),
+      passwordHash: await hash(password),
     });
   } catch (err) {
     if (err.code === '23505' && err.constraint === 'uq_users_email') {
@@ -319,7 +350,7 @@ export async function createMentor(scope, body) {
     }
     throw err;
   }
-  return mapMentor(row);
+  return { ...mapMentor(row), password: body.password ? undefined : password };
 }
 
 export async function listMentors(branchId) {
@@ -408,7 +439,7 @@ function addMinutes(hhmm, minutes) {
 }
 
 // Вариант B: admin даёт дни + время начала, конец считает бэкенд из
-// длительности урока организации (её задаёт Super Admin).
+// длительности урока организации (её задаёт SEO).
 async function buildSchedule(branchId, days, startTime) {
   const durationMin = await repo.getOrgLessonDuration(branchId);
   const end = addMinutes(startTime, durationMin);
@@ -418,10 +449,76 @@ async function buildSchedule(branchId, days, startTime) {
 export async function createGroup(branchId, body) {
   const mentor = await repo.findMentorInBranch(body.mentorId, branchId);
   if (!mentor) throw new AppError(404, 'Mentor not found in your branch');
+
+  let { subject, monthlyPrice } = body;
+  if (body.trainingTypeId) {
+    // Цену и название направления назначает только SEO (см. super.setTrainingTypePrice) —
+    // клиенту не доверяем, даже если он прислал свои subject/monthlyPrice.
+    const tt = await repo.findPricedTrainingType(body.trainingTypeId, branchId);
+    if (!tt) throw new AppError(404, 'Training type not found or not priced yet');
+    subject = tt.name;
+    monthlyPrice = Number(tt.price);
+  }
+
   const schedule = await buildSchedule(branchId, body.days, body.startTime);
-  const { days, startTime, ...rest } = body;
-  const row = await repo.insertGroup({ branchId, ...rest, schedule });
+  const row = await repo.insertGroup({
+    branchId,
+    mentorId: body.mentorId,
+    name: body.name,
+    room: body.room,
+    trainingTypeId: body.trainingTypeId,
+    subject,
+    monthlyPrice,
+    schedule,
+  });
   return mapGroup(row);
+}
+
+export async function studentTelegramStatus(branchId, studentId) {
+  const row = await repo.studentTelegramBindings(studentId, branchId);
+  if (!row) throw new AppError(404, 'Student not found in your branch');
+  return {
+    student: { linked: row.student_linked, username: row.student_tg_username, firstName: row.student_tg_first_name },
+    parent: row.parent_id
+      ? { linked: row.parent_linked, username: row.parent_tg_username, firstName: row.parent_tg_first_name }
+      : null,
+  };
+}
+
+/** Синхронно проверяем привязку до постановки в очередь — иначе admin не узнает,
+ * что сообщение уйти некому (BullMQ-джоба асинхронна и результат не возвращает). */
+export async function sendStudentTelegramMessage(branchId, studentId, { text, toParent }) {
+  const status = await studentTelegramStatus(branchId, studentId);
+  const target = toParent ? status.parent : status.student;
+  if (!target?.linked) {
+    throw new AppError(409, toParent ? 'Родитель не привязан к Telegram' : 'Студент не привязан к Telegram');
+  }
+  await notificationQueue.add('admin.message', { studentId, text, toParent: Boolean(toParent) });
+}
+
+export async function studentAttendance(branchId, studentId, query) {
+  const to = query.to ?? new Date();
+  const from = query.from ?? new Date(new Date(to).setDate(new Date(to).getDate() - 30));
+  const rows = await repo.studentAttendance(studentId, branchId, from, to);
+  return {
+    days: rows.map((r) => ({
+      date: r.lesson_date,
+      status: r.status,
+      groupId: r.group_id,
+      groupName: r.group_name,
+    })),
+  };
+}
+
+export async function listTrainingTypes(branchId) {
+  const rows = await repo.listPricedTrainingTypes(branchId);
+  return rows.map((tt) => ({
+    id: tt.id,
+    name: tt.name,
+    icon: tt.icon,
+    price: Number(tt.price),
+    maxStudents: tt.max_students,
+  }));
 }
 
 export async function getSettings(branchId) {
@@ -439,6 +536,7 @@ export async function listGroups(branchId, query) {
       id: g.id,
       name: g.name,
       subject: g.subject,
+      trainingTypeId: g.training_type_id,
       monthlyPrice: Number(g.monthly_price),
       room: g.room,
       isArchived: g.is_archived,
@@ -478,6 +576,12 @@ export async function updateGroup(branchId, id, body) {
     if (!mentor) throw new AppError(404, 'Mentor not found in your branch');
   }
   const { days, startTime, ...patch } = body;
+  if (patch.trainingTypeId !== undefined) {
+    const tt = await repo.findPricedTrainingType(patch.trainingTypeId, branchId);
+    if (!tt) throw new AppError(404, 'Training type not found or not priced yet');
+    patch.subject = tt.name;
+    patch.monthlyPrice = Number(tt.price);
+  }
   if (days !== undefined && startTime !== undefined) {
     patch.schedule = await buildSchedule(branchId, days, startTime);
   }
@@ -514,6 +618,7 @@ function mapGroup(g) {
     id: g.id,
     name: g.name,
     subject: g.subject,
+    trainingTypeId: g.training_type_id,
     monthlyPrice: Number(g.monthly_price),
     schedule,
     // производные поля для фронта: дни группы + единое время начала/конца
@@ -551,7 +656,7 @@ async function requireGroup(branchId, groupId) {
 // Роли, чья отметка считается «исправлением администратора»: всё, что выше
 // ментора. Клетка с такой отметкой сохраняет цвет статуса, но помечается как
 // поправленная админом — это видят и ментор, и админ.
-const ADMIN_MARK_ROLES = new Set(['admin', 'superadmin', 'main_admin']);
+const ADMIN_MARK_ROLES = new Set(['admin', 'seo', 'main_admin']);
 
 export async function getGroupAttendance(branchId, groupId, date) {
   await requireGroup(branchId, groupId);

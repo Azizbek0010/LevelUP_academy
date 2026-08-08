@@ -413,7 +413,7 @@ export default function Settings() {
           а редкие экраны собраны здесь. Шесть разных пастельных заливок убраны:
           цвет не нёс смысла — «Доход» был зелёным, а «Анонсы» бирюзовыми просто
           по очереди в списке. Ссылка на «Штрафы» удалена вместе со страницей:
-          дисциплина сотрудников — зона Super Admin. */}
+          дисциплина сотрудников — зона SEO. */}
       <div className="card bg-base-100 border border-base-200/60 shadow-sm">
         <div className="card-body">
           <h2 className="card-title text-base mb-4">Ещё разделы</h2>

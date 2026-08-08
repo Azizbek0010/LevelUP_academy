@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Users, UserCheck, UserX, Mail, Phone, Award, MessageCircle, Download } from 'lucide-react';
+import { Plus, Pencil, Users, UserCheck, UserX, Mail, Phone, Award, MessageCircle, Download, Copy, Check, KeyRound } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
@@ -132,6 +132,11 @@ export default function AdminMentors() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [showExport, setShowExport] = useState(false);
+  const [creds, setCreds] = useState(null);
+  const [copied, setCopied] = useState('');
+  const copyToClipboard = (text, field) => {
+    navigator.clipboard.writeText(text).then(() => { setCopied(field); setTimeout(() => setCopied(''), 2000); });
+  };
 
   const raw = data?.data || data || {};
   const rows = raw.mentors || (Array.isArray(raw) ? raw : []);
@@ -145,10 +150,16 @@ export default function AdminMentors() {
       const body = { firstName: form.firstName, lastName: form.lastName, phone: form.phone || undefined };
       if (form.id) {
         await api.adminUpdateMentor(token, form.id, body);
+        setForm(null);
       } else {
-        await api.adminCreateMentor(token, { ...body, email: form.email });
+        const res = await api.adminCreateMentor(token, { ...body, email: form.email });
+        const r = res?.data || res;
+        setForm(null);
+        if (r.mentor?.password) {
+          setCreds({ email: form.email, password: r.mentor.password });
+        }
       }
-      setForm(null); refetch();
+      refetch();
     } catch (e) { setErr(e.message || 'Ошибка'); }
     finally { setBusy(false); }
   };
@@ -236,6 +247,37 @@ export default function AdminMentors() {
             </div>
           </div>
           <div className="modal-backdrop" onClick={() => setForm(null)} />
+        </dialog>
+      )}
+
+      {/* ═══ Модалка с паролем нового ментора — показывается один раз ═══ */}
+      {creds && (
+        <dialog className="modal modal-open">
+          <div className="modal-box card bg-base-100 border border-base-300 max-w-sm">
+            <h3 className="font-bold text-lg mb-1 flex items-center gap-2"><KeyRound size={18} className="text-primary" /> Ментор создан</h3>
+            <p className="text-[12px] text-base-content/45 mb-4">Пароль показывается один раз — передайте его ментору сейчас.</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-200/60">
+                <div>
+                  <div className="text-[10px] font-bold text-base-content/45 uppercase">Email</div>
+                  <div className="text-[13px] font-semibold text-base-content">{creds.email}</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-200/60">
+                <div>
+                  <div className="text-[10px] font-bold text-base-content/45 uppercase">Пароль</div>
+                  <div className="text-[15px] font-mono font-extrabold text-base-content">{creds.password}</div>
+                </div>
+                <button onClick={() => copyToClipboard(creds.password, 'pw')} className="btn btn-ghost btn-sm">
+                  {copied === 'pw' ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+            </div>
+            <div className="modal-action">
+              <button className="btn btn-primary" onClick={() => setCreds(null)}>Готово</button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => setCreds(null)} />
         </dialog>
       )}
     </div>

@@ -1,18 +1,13 @@
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { Search, Inbox, ArrowRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Search, Inbox, ArrowRight, ArrowUpRight, ArrowDownRight, X, Check } from 'lucide-react';
 
 /**
  * Общие кирпичики панели Main Admin.
  *
- * Форма и правила взяты из `staff/src/pages/mentor/_ui.jsx` — панель ментора
- * уже прошла эту чистку, и повторять её путь заново незачем.
- *
- * Главное отличие от того, что было здесь раньше: цвет задаётся СМЫСЛОМ, а не
- * пикселем. В страницах панели лежало больше тридцати мест с `bg-lime-400`,
- * `text-lime-700`, `bg-red-50`, `border-lime-100` — при смене темы половина из
- * них осталась бы светлой, а «тревожный» и «обычный» отличались только тем,
- * какой оттенок кому-то понравился. Здесь `tone` → токен темы, и лаймовый
- * акцент бренда живёт в одном месте (`primary`), а не в каждом файле.
+ * Цвет задаётся СМЫСЛОМ (tone), а не пикселем. Лаймовый акцент бренда живёт
+ * в токене темы `primary`, а не в каждом файле. Все `lime-*` классы убраны.
  */
 
 const TONES = {
@@ -21,6 +16,22 @@ const TONES = {
   warning: 'bg-warning/10 text-warning',
   danger: 'bg-error/10 text-error',
 };
+
+const BADGE_TONES = {
+  neutral: 'badge-ghost',
+  primary: 'badge-primary',
+  info: 'badge-info',
+  success: 'badge-success',
+  warning: 'badge-warning',
+  danger: 'badge-error',
+};
+
+const AVATAR_PALETTE = [
+  ['#DCFCE7', '#166534'], ['#E0F2FE', '#075985'], ['#FEF9C3', '#854D0E'],
+  ['#FCE7F3', '#9D174D'], ['#EDE9FE', '#5B21B6'], ['#FFEDD5', '#9A3412'],
+  ['#E6F4D7', '#3F6212'], ['#E0E7FF', '#3730A3'],
+];
+const AVATAR_SIZES = { sm: 28, md: 32, lg: 44 };
 
 /** KPI-плитка: иконка-чип, крупное число, подпись. Кликабельна, если задан `to`. */
 export function Kpi({ Icon, title, value, unit, tone = 'neutral', trend, trendLabel, to, onClick }) {
@@ -114,3 +125,180 @@ export function SearchInput({ value, onChange, placeholder = 'Поиск...', cl
     </div>
   );
 }
+
+/** Аватар с хеш-палитрой (как в super/_ui.jsx). */
+export function Avatar({ name = '?', size = 'md' }) {
+  const letter = (name.trim()[0] || '?').toUpperCase();
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) % AVATAR_PALETTE.length;
+  const [bg, fg] = AVATAR_PALETTE[h];
+  const px = AVATAR_SIZES[size] ?? AVATAR_SIZES.md;
+  return (
+    <span
+      style={{ width: px, height: px, background: bg, color: fg }}
+      className="inline-flex items-center justify-center rounded-full font-bold shrink-0"
+    >
+      <span style={{ fontSize: px * 0.42 }}>{letter}</span>
+    </span>
+  );
+}
+
+/** Статус-бейдж по tone. */
+export function StatusBadge({ tone = 'neutral', outline = false, children }) {
+  const base = BADGE_TONES[tone] ?? BADGE_TONES.neutral;
+  return (
+    <span className={`badge badge-sm font-semibold ${outline ? 'badge-outline ' : ''}${base}`}>
+      {children}
+    </span>
+  );
+}
+
+/** Фильтр-пилюли (как в super/_ui.jsx). */
+export function FilterPills({ options, value, onChange }) {
+  return (
+    <div className="join">
+      {options.map((opt) => (
+        <button
+          key={opt.key}
+          type="button"
+          className={`join-item btn btn-sm ${value === opt.key ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => onChange(opt.key)}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Скелет строки таблицы. */
+export function RowSkeleton({ count = 3, height = 'h-14' }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className={`skeleton ${height} w-full rounded-xl`} />
+      ))}
+    </div>
+  );
+}
+
+/** Modal через портал в body (исправляет z-index проблемы с transform). */
+export function Modal({ isOpen, onClose, title, children, actions, className = 'border border-base-200', size = 'md' }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (isOpen) el.showModal?.(); else el.close?.();
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+  const w = size === 'lg' ? 'max-w-2xl' : size === 'xl' ? 'max-w-3xl' : size === 'sm' ? 'max-w-md' : 'max-w-xl';
+  return createPortal(
+    <dialog ref={ref} className="modal modal-open" onClose={onClose}>
+      <div className={`modal-box ${w} ${className}`}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-lg">{title}</h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg grid place-items-center text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors"
+            aria-label="Закрыть"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        {children}
+        {actions && <div className="modal-action">{actions}</div>}
+      </div>
+      <div className="modal-backdrop" onClick={onClose} />
+    </dialog>,
+    document.body,
+  );
+}
+
+/** Диалог подтверждения (удалить/архивировать/разморозить). */
+export function ConfirmDialog({ open, onClose, title, text, confirmLabel = 'Удалить', onConfirm, pending, error }) {
+  return (
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title={title}
+      className="max-w-sm border border-base-200"
+      actions={
+        <>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={pending}>Отмена</button>
+          <button className="btn btn-error btn-sm" onClick={onConfirm} disabled={pending}>
+            {pending ? <span className="loading loading-spinner loading-xs" /> : confirmLabel}
+          </button>
+        </>
+      }
+    >
+      <p className="text-sm text-base-content/70">{text}</p>
+      {error && (
+        <div className="alert alert-error text-xs mt-3">
+          <span>{error.message}</span>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+/** Дропдаун (клик вне закрывает). */
+export function Dropdown({ trigger, children, align = 'right' }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+      {trigger(() => setOpen((v) => !v))}
+      {open && (
+        <div
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1 z-50 min-w-[190px] rounded-[12px] border border-base-300 bg-base-100 shadow-lg py-1.5 animate-scale-in origin-top-right`}
+        >
+          {typeof children === 'function' ? children(() => setOpen(false)) : children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function DropdownItem({ icon: Icon, danger, disabled, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+        danger ? 'text-error hover:bg-error/10' : 'text-base-content/70 hover:text-base-content hover:bg-base-200'
+      }`}
+    >
+      <span className="w-5 h-5 flex items-center justify-center shrink-0">{Icon && <Icon size={15} />}</span>
+      {children}
+    </button>
+  );
+}
+
+/** Тултип. */
+export function Tip({ text, position = 'top', children, className = '' }) {
+  if (!text) return children;
+  return (
+    <div className={`tooltip tooltip-${position} ${className}`} data-tip={text}>
+      {children}
+    </div>
+  );
+}
+
+export const CHART_PRIMARY = 'var(--chart-primary, #40833B)';
+export const CHART_SERIES = [
+  'var(--chart-primary, #40833B)',
+  'var(--chart-2, #7BB661)',
+  'var(--chart-3, #B7D9A0)',
+  'var(--chart-4, #35702f)',
+  'var(--chart-5, #A3C48B)',
+  'var(--chart-6, #5C8F4E)',
+];

@@ -59,14 +59,14 @@ export function insertOrganization({ name, domain, plan = null }, client = pool)
     .then((r) => r.rows[0]);
 }
 
-export function insertSuperadmin(
+export function insertSeo(
   { orgId, firstName, lastName, email, phone, passwordHash },
   client = pool,
 ) {
   return client
     .query(
       `INSERT INTO users (organization_id, role, first_name, last_name, email, phone, password_hash)
-       VALUES ($1, 'superadmin', $2, $3, $4, $5, $6)
+       VALUES ($1, 'seo', $2, $3, $4, $5, $6)
        RETURNING id, role, organization_id, first_name, last_name, email`,
       [orgId, firstName, lastName, email, phone ?? null, passwordHash],
     )
@@ -194,16 +194,16 @@ export function markLeadOnboarded(id, orgId, client = pool) {
 /**
  * Сколько адресатов у объявления на момент отправки.
  * `all-partners` — активные организации (адресат = центр как таковой),
- * `all-superadmins` — активные владельцы организаций (адресат = человек).
+ * `all-seo` — активные владельцы организаций (адресат = человек).
  * Считаем в момент создания и сохраняем: список меняется, а «кому отправили»
  * должно остаться историческим фактом.
  */
 export function countAnnouncementRecipients(targetType, client = pool) {
-  if (targetType === 'all-superadmins') {
+  if (targetType === 'all-seo') {
     return client
       .query(
         `SELECT count(*)::int AS n FROM users
-          WHERE role = 'superadmin' AND status = 'active' AND deleted_at IS NULL`,
+          WHERE role = 'seo' AND status = 'active' AND deleted_at IS NULL`,
       )
       .then((r) => r.rows[0].n);
   }
@@ -313,4 +313,4 @@ export function updateProfile(id, fields, client = pool) {
 
 /* Запросы по staff_penalties отсюда убраны: платформа не читает дисциплину
  * сотрудников партнёров. Эти данные принадлежат организации и доступны её
- * Super Admin через /api/super/penalties. */
+ * SEO через /api/super/penalties. */

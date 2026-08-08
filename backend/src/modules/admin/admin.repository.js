@@ -144,13 +144,21 @@ export function insertCodeUser(
     .then((r) => r.rows[0]);
 }
 
-export function insertStudentProfile({ userId, branchId, parentId, birthDate }, client = pool) {
+export function insertStudentProfile(
+  { userId, branchId, parentId, birthDate, gender, address, school, leadSource, hasLaptop, offerSigned, passwordEncrypted },
+  client = pool,
+) {
   return client
     .query(
-      `INSERT INTO student_profiles (user_id, branch_id, parent_id, birth_date)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO student_profiles
+         (user_id, branch_id, parent_id, birth_date, gender, address, school, lead_source, has_laptop, offer_signed, password_encrypted)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, false), $11)
        RETURNING id, coin_balance, total_debt`,
-      [userId, branchId, parentId ?? null, birthDate ?? null],
+      [
+        userId, branchId, parentId ?? null, birthDate ?? null,
+        gender ?? null, address ?? null, school ?? null, leadSource ?? null,
+        hasLaptop ?? null, offerSigned ?? null, passwordEncrypted ?? null,
+      ],
     )
     .then((r) => r.rows[0]);
 }
@@ -176,9 +184,13 @@ export function listStudents({ branchId, search, groupId, limit, offset }, clien
                  WHERE i.student_id = u.id AND i.status = 'overdue' AND i.deleted_at IS NULL
               ) AS has_overdue_invoice,
               COALESCE(
-                (SELECT json_agg(json_build_object('id', g.id, 'name', g.name))
+                (SELECT json_agg(json_build_object(
+                          'id', g.id, 'name', g.name, 'subject', g.subject,
+                          'mentor', m.first_name || ' ' || m.last_name
+                        ))
                    FROM group_students gs
                    JOIN groups g ON g.id = gs.group_id
+                   JOIN users m ON m.id = g.mentor_id
                   WHERE gs.student_id = u.id AND gs.left_at IS NULL AND g.deleted_at IS NULL),
                 '[]'
               ) AS groups
@@ -222,12 +234,15 @@ export function findStudentInBranch(id, branchId, client = pool) {
       `SELECT u.id, u.first_name, u.last_name, u.phone, u.status, u.login_code, u.created_at,
               sp.coin_balance, sp.total_debt, sp.parent_id, sp.birth_date,
               sp.frozen_at, sp.frozen_reason,
+              sp.gender, sp.address, sp.school, sp.lead_source, sp.has_laptop, sp.offer_signed,
+              p.first_name AS parent_first, p.last_name AS parent_last, p.phone AS parent_phone,
               EXISTS (
                 SELECT 1 FROM invoices i
                  WHERE i.student_id = u.id AND i.status = 'overdue' AND i.deleted_at IS NULL
               ) AS has_overdue_invoice
          FROM users u
          JOIN student_profiles sp ON sp.user_id = u.id
+         LEFT JOIN users p ON p.id = sp.parent_id
         WHERE u.id = $1 AND u.branch_id = $2 AND u.role = 'student' AND u.deleted_at IS NULL`,
       [id, branchId],
     )
@@ -277,12 +292,29 @@ export function updateStudent(id, branchId, fields, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
-export function updateStudentBirthDate(userId, birthDate, client = pool) {
+/** birthDate + профиль-поля виджета «Профиль заполнен» — один общий partial-update. */
+export function updateStudentProfile(userId, fields, client = pool) {
+  const cols = [];
+  const vals = [];
+  let i = 1;
+  for (const [key, col] of [
+    ['birthDate', 'birth_date'],
+    ['gender', 'gender'],
+    ['address', 'address'],
+    ['school', 'school'],
+    ['leadSource', 'lead_source'],
+    ['hasLaptop', 'has_laptop'],
+    ['offerSigned', 'offer_signed'],
+  ]) {
+    if (fields[key] !== undefined) {
+      cols.push(`${col} = $${i++}`);
+      vals.push(fields[key]);
+    }
+  }
+  if (cols.length === 0) return Promise.resolve();
+  vals.push(userId);
   return client
-    .query(
-      `UPDATE student_profiles SET birth_date = $2, updated_at = now() WHERE user_id = $1`,
-      [userId, birthDate],
-    )
+    .query(`UPDATE student_profiles SET ${cols.join(', ')}, updated_at = now() WHERE user_id = $${i}`, vals)
     .then(() => undefined);
 }
 
@@ -316,6 +348,26 @@ export function setStudentPassword(id, branchId, passwordHash, client = pool) {
         WHERE id = $1 AND branch_id = $2 AND role = 'student' AND deleted_at IS NULL
         RETURNING id`,
       [id, branchId, passwordHash],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/** Обратимо-зашифрованная копия пароля — только для admin-просмотра (см. utils/credentialCrypto.js). */
+export function setStudentPasswordEncrypted(userId, passwordEncrypted, client = pool) {
+  return client
+    .query(`UPDATE student_profiles SET password_encrypted = $2, updated_at = now() WHERE user_id = $1`, [userId, passwordEncrypted])
+    .then(() => undefined);
+}
+
+/** Текущий зашифрованный пароль студента + логин-код — для QR-модалки. */
+export function findStudentCredentials(id, branchId, client = pool) {
+  return client
+    .query(
+      `SELECT u.login_code, sp.password_encrypted
+         FROM users u
+         JOIN student_profiles sp ON sp.user_id = u.id
+        WHERE u.id = $1 AND u.branch_id = $2 AND u.role = 'student' AND u.deleted_at IS NULL`,
+      [id, branchId],
     )
     .then((r) => r.rows[0] ?? null);
 }
@@ -484,7 +536,7 @@ export function findMentorInBranch(mentorId, branchId, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
-// длительность урока организации (её задаёт Super Admin) — по филиалу
+// длительность урока организации (её задаёт SEO) — по филиалу
 export function getOrgLessonDuration(branchId, client = pool) {
   return client
     .query(
@@ -497,16 +549,79 @@ export function getOrgLessonDuration(branchId, client = pool) {
     .then((r) => r.rows[0]?.lesson_duration_min ?? 60);
 }
 
+/** Telegram-привязка студента и его родителя — своей записи в telegram_accounts
+ * может не быть ни у кого из них (LEFT JOIN). branchId проверяется через users,
+ * чтобы админ не мог заглянуть в чужой филиал по чужому studentId. */
+export function studentTelegramBindings(studentId, branchId, client = pool) {
+  return client
+    .query(
+      `SELECT
+         ts.tg_username AS student_tg_username, ts.tg_first_name AS student_tg_first_name,
+         ts.tg_chat_id IS NOT NULL AS student_linked,
+         sp.parent_id,
+         tp.tg_username AS parent_tg_username, tp.tg_first_name AS parent_tg_first_name,
+         tp.tg_chat_id IS NOT NULL AS parent_linked
+        FROM users u
+        JOIN student_profiles sp ON sp.user_id = u.id
+        LEFT JOIN telegram_accounts ts ON ts.user_id = u.id
+        LEFT JOIN telegram_accounts tp ON tp.user_id = sp.parent_id
+       WHERE u.id = $1 AND u.branch_id = $2`,
+      [studentId, branchId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/** Посещаемость одного студента за диапазон дат — для DAVOMAT-полоски на StudentDetail. */
+export function studentAttendance(studentId, branchId, from, to, client = pool) {
+  return client
+    .query(
+      `SELECT a.lesson_date, a.status, a.group_id, g.name AS group_name
+         FROM attendance a
+         JOIN groups g ON g.id = a.group_id
+        WHERE a.student_id = $1 AND a.branch_id = $2 AND a.lesson_date BETWEEN $3 AND $4
+        ORDER BY a.lesson_date ASC`,
+      [studentId, branchId, from, to],
+    )
+    .then((r) => r.rows);
+}
+
+/** Методики, которым SEO уже назначил цену — только они выбираемы при создании группы. */
+export function listPricedTrainingTypes(branchId, client = pool) {
+  return client
+    .query(
+      `SELECT tt.id, tt.name, tt.icon, tt.price, tt.max_students
+         FROM branches b
+         JOIN training_types tt ON tt.organization_id = b.organization_id
+        WHERE b.id = $1 AND tt.price IS NOT NULL AND tt.is_archived = false AND tt.deleted_at IS NULL
+        ORDER BY tt.sort_order ASC, tt.name ASC`,
+      [branchId],
+    )
+    .then((r) => r.rows);
+}
+
+/** Одна методика — используется, чтобы backend сам подставил subject/monthlyPrice/maxStudents при создании группы. */
+export function findPricedTrainingType(id, branchId, client = pool) {
+  return client
+    .query(
+      `SELECT tt.id, tt.name, tt.price, tt.max_students
+         FROM branches b
+         JOIN training_types tt ON tt.organization_id = b.organization_id
+        WHERE b.id = $2 AND tt.id = $1 AND tt.price IS NOT NULL AND tt.is_archived = false AND tt.deleted_at IS NULL`,
+      [id, branchId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
 export function insertGroup(
-  { branchId, mentorId, name, subject, monthlyPrice, schedule, room },
+  { branchId, mentorId, name, subject, monthlyPrice, schedule, room, trainingTypeId },
   client = pool,
 ) {
   return client
     .query(
-      `INSERT INTO groups (branch_id, mentor_id, name, subject, monthly_price, schedule, room)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
-       RETURNING id, name, subject, monthly_price, schedule, room, is_archived, created_at`,
-      [branchId, mentorId, name, subject, monthlyPrice, JSON.stringify(schedule ?? []), room ?? null],
+      `INSERT INTO groups (branch_id, mentor_id, name, subject, monthly_price, schedule, room, training_type_id)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)
+       RETURNING id, name, subject, monthly_price, schedule, room, is_archived, created_at, training_type_id`,
+      [branchId, mentorId, name, subject, monthlyPrice, JSON.stringify(schedule ?? []), room ?? null, trainingTypeId ?? null],
     )
     .then((r) => r.rows[0]);
 }
@@ -515,7 +630,7 @@ export function listGroups({ branchId, limit, offset }, client = pool) {
   return client
     .query(
       `SELECT g.id, g.name, g.subject, g.monthly_price, g.room, g.is_archived, g.created_at,
-              g.mentor_id, m.first_name AS mentor_first, m.last_name AS mentor_last,
+              g.mentor_id, g.training_type_id, m.first_name AS mentor_first, m.last_name AS mentor_last,
               (SELECT count(*) FROM group_students gs
                  WHERE gs.group_id = g.id AND gs.left_at IS NULL) AS students
          FROM groups g
@@ -542,7 +657,7 @@ export function findGroupInBranch(id, branchId, client = pool) {
   return client
     .query(
       `SELECT g.id, g.name, g.subject, g.monthly_price, g.schedule, g.room,
-              g.is_archived, g.created_at, g.mentor_id,
+              g.is_archived, g.created_at, g.mentor_id, g.training_type_id,
               m.first_name AS mentor_first, m.last_name AS mentor_last
          FROM groups g
          JOIN users m ON m.id = g.mentor_id
@@ -580,6 +695,7 @@ export function updateGroup(id, branchId, fields, client = pool) {
     ['mentorId', 'mentor_id'],
     ['monthlyPrice', 'monthly_price'],
     ['room', 'room'],
+    ['trainingTypeId', 'training_type_id'],
   ]) {
     if (fields[key] !== undefined) {
       cols.push(`${col} = $${i++}`);

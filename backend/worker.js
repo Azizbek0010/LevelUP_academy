@@ -14,7 +14,7 @@ import { startReminderLogging, stopReminderLogging } from './src/modules/super/r
 await scheduleOverdueCron();
 await scheduleBillingCron();
 await scheduleDueSoonCron();
-startReminderLogging(); // AB-SUPER-REM: логирует payment.due/due_soon/debt.overdue в reminders (Super Admin)
+startReminderLogging(); // AB-SUPER-REM: логирует payment.due/due_soon/debt.overdue в reminders (SEO)
 logger.info(
   'Worker started: notifications + overdue cron (09:00 daily) + billing cron (charge 1st 00:05, overdue 09:30 daily) + due-soon cron (08:00 daily) + reminder logging',
 );

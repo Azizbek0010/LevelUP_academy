@@ -159,9 +159,14 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>
+        {/* ── Actions ────────────────────────────────────── */}
+        <div className="px-5 py-4 mt-1 border-t flex justify-end items-center gap-2" style={{ borderColor: 'var(--border)', background: 'transparent' }}>
+          <button
+            className="px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-colors duration-200 cursor-pointer"
+            style={{ background: 'var(--surface-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+            onClick={onClose}
+            disabled={busy}
+          >
             Отмена
           </button>
           <button

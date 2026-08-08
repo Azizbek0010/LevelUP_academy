@@ -37,7 +37,7 @@ egalari uchun mo'ljallangan dasturiy mahsulot (CRM tizimi). Dunyodagi boshqa
 Yettita rol, har birining o'z kabineti va ruxsatlari bor:
 
 - **Main Admin** — platforma egasi: arizalar, hamkorlar, billing.
-- **Super Admin** — o'quv markazi: filiallar, adminlar, tashkilot tushumi.
+- **SEO** — o'quv markazi: filiallar, adminlar, tashkilot tushumi.
 - **Admin** — filial: o'quvchilar, guruhlar, to'lovlar, xarajatlar.
 - **Mentor** — o'qituvchi: o'z guruhlari, uy vazifalari, testlar, koinlar, davomat.
 - **Metodist** — testlar, uy vazifalari, o'quv materiallari, analitika.

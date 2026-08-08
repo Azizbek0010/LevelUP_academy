@@ -46,7 +46,7 @@
 - [x] K-MAIN: Partner freeze/activate (PATCH /partners/:id/status)
 - [x] K-MAIN: YANGI narx modeli (2026-07-16) — o'quvchi bucket tariflari (Free/Start/Standard/Pro/Business/Network), filiallar bepul; config/plans.js TIERS + computeBill({students}); eski filial+o'quvchi formula bekor; GET /api/main/pricing endi { tiers, currency }
 
-## Backend — Super Admin (Karis)
+## Backend — SEO (Karis)
 
 - [x] K-SUPER: Organization dashboard (GET /api/super/dashboard: totals + branch breakdown)
 - [x] K-SUPER: CRUD branches (+ archive/unarchive) va CRUD admins (+ freeze)
@@ -71,7 +71,7 @@
 > 1783820000000 (staff_penalties), 1783830000000 (org_charters).
 
 - [x] K-DISC: shtraf (summa + sabab, avto-yechish YO'Q) + qora (ishdan bo'shatish, status='fired', withTransaction)
-- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): superadmin→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
+- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): seo→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
 - [x] K-DISC: Ustav (org_charters, erkin matn, upsert, barcha xodimlarga ko'rinadi)
 - [x] K-DISC: Endpointlar — super PUT/GET /charter, POST/GET /penalties, POST /staff/:id/reactivate; admin GET /charter, POST/GET /penalties; shared GET /users/me/penalties, /users/me/charter
 - [x] K-DISC: Swagger — Discipline tegi, 10 endpoint, swagger/*.md qayta generatsiya (139 endpoint)
@@ -278,9 +278,9 @@
 - [x] AB-V1: Partner profit main dashboardda (income - expenses; pul jadvallariga faqat SELECT)
 - [x] AB-V1: Integration testlar: payments full/split + auth flow (login -> refresh -> reuse-detect -> OTP)
 
-## Backend — Super Admin Integratsiya (Karis) 🔥 hozirgi fokus
+## Backend — SEO Integratsiya (Karis) 🔥 hozirgi fokus
 
-> Super Admin FRONT = to'liq Shohjahon versiyasi (14 sahifa), lekin uning yangi sahifalari
+> SEO FRONT = to'liq Shohjahon versiyasi (14 sahifa), lekin uning yangi sahifalari
 > backend endpoint'larini chaqiradi — ular YO'Q edi. **Karis quradi** (avval Abdulaziz'ga berilgandi →
 > Team Lead o'ziga qaytarib oldi). Zona: `modules/super`.
 
@@ -300,7 +300,7 @@
 - [x] K-SUPER-INT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Dashboard, Филиалы, Студенты, Группы,
       Отчёты, Статистика (7/30/90 kunlik almashtirish), Дисциплина (взыскание/устав),
       Объявления (real create+delete+audit), Напоминания, Настройки (lessonDurationMin
-      saqlash) — barchasi real superadmin login bilan tekshirildi, hech qanday xato topilmadi
+      saqlash) — barchasi real seo login bilan tekshirildi, hech qanday xato topilmadi
 
 ## Backend — YANGI TOPSHIRIQ (Abdulaziz) 🔥 2026-07-19, Karis bergan
 
@@ -444,7 +444,7 @@
 > 4 ta vazifa allaqachon bajarilgan, 1 tasi kerak emas. Faqat BITTA haqiqiy tirqish topildi (pastda).
 
 - [x] AUTH: Login sahifalar (3 endpoint: main / staff / member) — `staff/pages/Login.jsx`, `member/pages/Login.jsx`, `main-admin/pages/Login.jsx`, uchalasi `/auth/{staff,member,main}/login` ga ulangan. `origin/elyor` da save-zone dan ortiqcha commit YO'Q — merge qilinadigan narsa qolmagan
-- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+superadmin route'larida ishlatiladi
+- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+seo route'larida ishlatiladi
 - [x] AUTH: Router setup by roles — staff/App.jsx da rolli route'lar
 - [x] AUTH: Redux authSlice — KERAK EMAS (useAuth() context yetarli, qaror 2026-07-15)
 - [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617). Auditda tasdiqlandi: `refreshPromise` 4 ta app da ham bor
@@ -464,7 +464,7 @@
       3) Google COOP — FE-COOP bilan yopildi. 4) React Router future-flag — FE-ROUTER-FLAG
       bilan yopildi
 
-## Frontend — Super Admin ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
+## Frontend — SEO ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 
 > ❌ Bu bo'lim ilgari "✅ TUGADI" deb turgan edi — bu NOTO'G'RI bo'lgan.
 > Sahifalar chizilgan, lekin 3 tasi bo'sh qaytadi va 1 tasi O'YLAB TOPILGAN raqam ko'rsatadi.
@@ -514,7 +514,7 @@
       (`Announcements.jsx`, `Reminders.jsx`, `Audit.jsx`) allaqachon o'z real endpointlariga
       ulangan (`api.superAnnouncements/superReminders/superAudit` va CRUD mutatsiyalar),
       `useSuperDashboard` ga tayanib qolgan joy yo'q. Kim tomonidan yopilgani noaniq —
-      TASK.md eskirgan edi. Qolgan ish: jonli superadmin login bilan E2E (AB-VERIFY/
+      TASK.md eskirgan edi. Qolgan ish: jonli seo login bilan E2E (AB-VERIFY/
       K-SUPER-INT blokiga qara), kod tomoni yopiq
 
 ## Main Admin (Karis) 🔥 to'liq egasi — 2026-07-26 dan, front + backend
@@ -555,7 +555,7 @@
       Ilgari front mavjud bo'lmagan 4 ta yo'lga urilardi. Endi ular bor:
       • `GET/POST/DELETE /api/main/announcements` — platforma e'lonlari.
         Yangi migratsiya `1783900000000_platform-announcements` (`platform_announcements`
-        jadvali + `platform_announcement_target` enum: `all-partners` / `all-superadmins`).
+        jadvali + `platform_announcement_target` enum: `all-partners` / `all-seos`).
         Super'nikidan alohida: u yerda auditoriya bitta tashkilot ichida, bu yerda —
         hamkorlarning o'zi, qiymatlar kesishmaydi.
         ⚠️ Navbatga (`notificationQueue`) ATAYIN qo'yilmaydi: qabul qiluvchilar xodimlar,
@@ -573,7 +573,7 @@
       `initialMock` (6 ta o'ylab topilgan hamkor va jarima) butunlay olib tashlandi.
       **Qaror: shtraf yozish formasi olib tashlandi, sahifa faqat ko'rish uchun.**
       Sabab kod bilan tasdiqlangan: `discipline` modulidagi CAN_ISSUE matritsasida
-      `main_admin` HECH KIMGA jazo bera olmaydi — jazoni Super Admin va Admin o'z
+      `main_admin` HECH KIMGA jazo bera olmaydi — jazoni SEO va Admin o'z
       tashkiloti ichida beradi. Ya'ni "jarima yozish" tugmasi tamoyil bo'yicha ishlay
       olmasdi, uni backendga ulash mumkin emas edi.
       O'rniga: `GET /api/main/penalties` — barcha hamkorlar bo'yicha intizom sharhi
@@ -767,13 +767,13 @@
 - [x] LANDING: Home, Features, Roles, Finance, Gamification, Contacts
 - [x] LANDING: Header, Footer, CTA
 
-## Frontend — Methodist (Said Islom, Aziz — Super Admin'dan o'tkazildi) ✅ karkas
+## Frontend — Methodist (Said Islom, Aziz — SEO'dan o'tkazildi) ✅ karkas
 
 > Panel karkasi tayyor (Karis). Said Islom + Aziz endi Methodist jamoasida — qo'shimcha ish + MVP2 kontent-menejer + support/maintenance.
 > ⚠️ **2026-07-26:** bu bo'limda ochiq vazifa YO'Q, lekin ikkalasining REAL ochiq ishi bor —
-> `Frontend — Super Admin` bo'limidagi FE-SUPER-STATS / FE-SUPER-REPORTS / FE-SUPER-WIRE.
-> Git-hisobotda ular shu sababli endi "Super Admin" panelida ko'rinadi (ilgari "Methodist · 0 vazifa"
-> deb turardi, Super Admin esa egasiz ko'rinardi — ikkalasi ham noto'g'ri manzara berardi).
+> `Frontend — SEO` bo'limidagi FE-SUPER-STATS / FE-SUPER-REPORTS / FE-SUPER-WIRE.
+> Git-hisobotda ular shu sababli endi "SEO" panelida ko'rinadi (ilgari "Methodist · 0 vazifa"
+> deb turardi, SEO esa egasiz ko'rinardi — ikkalasi ham noto'g'ri manzara berardi).
 > Methodist ishi qaytadan boshlansa (MVP2 kontent-menejer) — hisobotdagi panel qaytariladi.
 
 - [x] METHODIST: Training Types (CRUD)
@@ -825,7 +825,7 @@
 ## 🆕 YANGI ROLLAR — Branch Manager + Finance Manager (2026-08-04, Karis og'zaki berdi)
 
 > ⚠️ Hozircha faqat REJALASHTIRISH — kod yozilmagan. Ikkalasi ham hozirgi 7 ta rolga
-> (main_admin/super_admin/admin/mentor/student/parent/methodist) qo'shiladigan YANGI rol.
+> (main_admin/seo/admin/mentor/student/parent/methodist) qo'shiladigan YANGI rol.
 > **Karis o'zi 2026-08-04 aytdi: backend integratsiyani (DB migratsiya, `authorize`
 > middleware, RBAC) O'ZI qiladi — jamoadan FAQAT frontend (UI, mock-rejim bilan) kerak.**
 > Backend tomon `backend/src/middlewares/authorize.js`da: rol nomi `req.user.role` bilan
@@ -851,18 +851,19 @@
       papkasida Branch Manager variantini qurish, farqlarni taklif sifatida yozib qo'yish.
       Mock-rejimda ishlang — backend Karis'da.
 
-- [ ] ROLE-RENAME-SUPERADMIN 🔄 EGASI: tasdiqlanmagan. "Super Admin" nomini
-      **CEO**ga o'zgartirish (taxmin — Karis og'zaki xabarida "SEO" deb yozilgan/eshitilgan,
-      lekin SEO — qidiruv-optimallashtirish, bu yerga umuman mos emas; "CEO" mantiqan to'g'ri
-      keladi, chunki Super Admin = hamkor tashkilot egasi). **Karis tasdiqlashi kerak: CEO
-      to'g'rimi, yoki chindan boshqa nom nazarda tutilgan edi?**
-      Faqat KO'RINADIGAN nom (UI matni) o'zgaradi — huquqlar (Full) va kod darajasidagi
-      `role: 'super_admin'` qiymati o'zgarmaydi (backward-compat uchun xavfli/keraksiz).
+- [x] ROLE-RENAME-SUPERADMIN ✅ **YOPILDI 07.08.2026.** Karis SEO/CEO savoliga ikki marta
+      aniq javob berdi: SEO, CEO emas. To'liq texnik o'zgartirish qilindi (faqat UI matni
+      emas) — Postgres enum (`user_role` va `platform_announcement_target`), JWT/RBAC
+      (`authorize.js` va h.k.), barcha rol-tekshiruvlari backend+frontend, hujjatlar.
+      Migratsiya `1784320000000_rename-superadmin-to-seo.js` — `ALTER TYPE ... RENAME VALUE`,
+      Docker'da tekshirilgan, hali hech qanday bazaga qo'llanmagan (prod ham, local ham).
+      Qo'llashda: barcha joriy SEO/Super Admin foydalanuvchilari qayta login qilishi kerak
+      (JWT'dagi eski role qiymati bilan `authorize('seo')` endi mos kelmaydi).
 
 - [ ] ROLE-FINANCE 🔄 EGASI (frontend, jamoa): **Shohjahon, Aziz, Alish** (Karis
       tayinladi, 2026-08-04). Yangi rol — **Finance Manager** (Finans menejeri). Karis
       ta'rifi: daromad, rashod, xodimlar oyligi va boshqa BARCHA xarajatlarni kuzatadi.
-      Scope hali aniqlanmagan (butun tashkilotmi — super_admin darajasida, yoki filial —
+      Scope hali aniqlanmagan (butun tashkilotmi — seo darajasida, yoki filial —
       admin darajasida?) — bu ham jamoa taklifi bilan Karis'ga qaytishi kerak.
       Boshlanish nuqtasi: mavjud moliyaviy sahifalarni ko'rib chiqish —
       `admin/Expenses.jsx`, `admin/Reports.jsx`, `super/Reports.jsx`, `main/Revenue.jsx`,

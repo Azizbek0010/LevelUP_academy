@@ -358,6 +358,231 @@ Backed by a Redis ZSET incremented on positive coin changes (`coins.service.emit
 
 ---
 
+### GET `/api/student/lessons`
+Topics + lessons of the student's courses (via group.training_type_id), with progress
+
+Real methodology content (training_types → topics → methodology_lessons → methodology_questions), replacing what used to be a frontend mock. A student sees the union of every training_type their active groups are linked to. Progress fields (score/submissionStatus) are only populated when a real attempt/submission exists — never fabricated.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** student (own data only)
+
+**Responses:**
+
+- **200** — List of topics, each with its lessons
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **402** — Payment overdue — access is blocked until paid
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### GET `/api/student/lessons/{lessonId}`
+Lesson detail (test-type includes attempt status, practical-type includes submission status)
+
+**Auth:** Bearer JWT required
+**Role(s):** student (own data only)
+
+**Params:**
+- `lessonId` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — Lesson detail
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Lesson not found (outside student's courses)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### POST `/api/student/lessons/{lessonId}/homework`
+Submit a practical-lesson homework (file and/or text answer)
+
+No grading endpoint exists yet for this — submission is recorded as 'submitted', mentor/methodist grading is a follow-up piece of work.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** student (own data only)
+
+**Params:**
+- `lessonId` (path, string) **(required)**
+
+**Request body:**
+- `fileKey`: string (optional)
+- `textAnswer`: string (optional)
+
+**Responses:**
+
+- **200** — Submission recorded
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Lesson not found
+
+- **409** — Not a practical lesson, or already graded
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### GET `/api/student/lessons/{lessonId}/homework/upload-url`
+Presigned S3 upload url for a practical-lesson submission file
+
+**Auth:** Bearer JWT required
+**Role(s):** student (own data only)
+
+**Params:**
+- `lessonId` (path, string) **(required)**
+- `filename` (query, string) **(required)**
+- `contentType` (query, string) (optional)
+
+**Responses:**
+
+- **200** — Presigned upload URL + fileKey
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Lesson not found
+
+- **409** — Not a practical lesson
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### POST `/api/student/lessons/{lessonId}/start`
+Start (or resume) a lesson test attempt
+
+Idempotent while the attempt is unfinished — reloading the page just returns the same questions again, so an unlimited-time test survives a refresh. Only errors once the attempt is already submitted.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** student (own data only)
+
+**Params:**
+- `lessonId` (path, string) **(required)**
+
+**Responses:**
+
+- **201** — Attempt started or resumed — questions without correct answers
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Lesson not found
+
+- **409** — Not a test lesson, or already submitted
+
+---
+
+### POST `/api/student/lessons/{lessonId}/submit`
+Submit answers for a lesson test and get scored
+
+Score >= 50 and a nonzero coin_reward grants coins immediately via the same changeCoins() path as group tests. answers is keyed by questionId.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** student (own data only)
+
+**Params:**
+- `lessonId` (path, string) **(required)**
+
+**Request body:**
+- `answers` **(required)**:
+  - _(free-form object)_
+
+**Responses:**
+
+- **200** — Score
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Lesson not found
+
+- **409** — Not a test lesson, attempt not started, or already submitted
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
 ### GET `/api/student/tests`
 List tests across the student's own groups (correct-answer indices stripped)
 

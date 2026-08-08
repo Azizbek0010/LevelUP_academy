@@ -6,8 +6,8 @@ import { genTempPassword } from '../auth/credentials.js';
 import * as repo from './main.repository.js';
 
 /**
- * Онбординг партнёра: создаём организацию + её Super Admin одной транзакцией.
- * Super Admin получает временный пароль (показывается Main Admin'у один раз;
+ * Онбординг партнёра: создаём организацию + её SEO (бывш. Super Admin) одной транзакцией.
+ * SEO получает временный пароль (показывается Main Admin'у один раз;
  * дальше партнёр меняет через forgot-password по email).
  */
 export async function onboardPartner({ organizationName, domain, admin, leadId }) {
@@ -25,9 +25,9 @@ export async function onboardPartner({ organizationName, domain, admin, leadId }
     const tempPassword = genTempPassword();
     const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
 
-    let superadmin;
+    let seo;
     try {
-      superadmin = await repo.insertSuperadmin(
+      seo = await repo.insertSeo(
         { orgId: org.id, ...admin, passwordHash },
         client,
       );
@@ -36,18 +36,18 @@ export async function onboardPartner({ organizationName, domain, admin, leadId }
       throw err;
     }
 
-    await repo.setOrgOwner(org.id, superadmin.id, client);
+    await repo.setOrgOwner(org.id, seo.id, client);
 
     // если онбордим из заявки — помечаем её onboarded и связываем с орг
     if (leadId) await repo.markLeadOnboarded(leadId, org.id, client);
 
     return {
       organization: org,
-      superadmin: {
-        id: superadmin.id,
-        firstName: superadmin.first_name,
-        lastName: superadmin.last_name,
-        email: superadmin.email,
+      seo: {
+        id: seo.id,
+        firstName: seo.first_name,
+        lastName: seo.last_name,
+        email: seo.email,
       },
       // показать один раз — Main Admin передаёт партнёру
       tempPassword,
@@ -282,5 +282,5 @@ export async function updateProfile(userId, fields) {
  * и кто выписал — то есть внутреннюю кадровую историю чужой организации.
  * Платформе это не нужно: по матрице CAN_ISSUE (discipline.service.js)
  * main_admin не выписывает штрафы никому, а дисциплина сотрудников — дело
- * Super Admin филиала. Соответствующий экран живёт в панели Super Admin,
+ * SEO филиала. Соответствующий экран живёт в панели SEO,
  * где есть и просмотр, и выписывание: GET/POST /api/super/penalties. */
