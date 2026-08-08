@@ -13,6 +13,7 @@ import { useSuperStats } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
 import { fmt, money } from '../../format.js';
+import { getOrgName, orgSlug } from '../../utils/exportUtils.js';
 import { Card, Metric, FilterPills, CHART_PRIMARY, CHART_SERIES } from './_ui.jsx';
 
 /**
@@ -115,7 +116,7 @@ export default function SuperStats() {
 
   const handleExportCSV = () => {
     let csv = '﻿';
-    csv += `"Статистика LevelUp Academy","${new Date().toLocaleDateString('ru-RU')}","Период: ${periodLabel}"\n\n`;
+    csv += `"Статистика ${getOrgName()}","${new Date().toLocaleDateString('ru-RU')}","Период: ${periodLabel}"\n\n`;
     csv += `"Выручка за период","Выручка за всё время","Долг","Ученики","Доля долга"\n`;
     csv += `${t.periodRevenue ?? 0},${t.revenue},${t.outstandingDebt ?? 0},${t.activeStudents},${debtRatio}%\n\n`;
     csv += `"Филиал","Выручка","Долг","Доля"\n`;
@@ -130,7 +131,7 @@ export default function SuperStats() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `levelup_stats_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `${orgSlug()}_stats_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
 

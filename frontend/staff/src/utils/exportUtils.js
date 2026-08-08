@@ -33,6 +33,25 @@ function today() {
   return new Date().toISOString().split('T')[0];
 }
 
+/**
+ * Organization name for exported documents (PDF footer, CSV headers).
+ * In mock mode the org lives in localStorage.mock_organization and is updated
+ * by Super Admin Settings (PATCH /super/organization). With a live backend the
+ * org name is not part of publicUser() yet, so we keep the brand fallback.
+ */
+export function getOrgName() {
+  try {
+    const org = JSON.parse(localStorage.getItem('mock_organization'));
+    if (org?.name) return org.name;
+  } catch { /* corrupted/absent value — fall through */ }
+  return 'LevelUp Academy';
+}
+
+/** Filename-safe slug from the org name, e.g. "LevelUp Academy" → "levelup-academy" */
+export function orgSlug() {
+  return getOrgName().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'export';
+}
+
 // ═══════════════ Excel (.xlsx) ═══════════════
 
 export async function exportToExcel(data, columns, filename = `export_${today()}`) {
@@ -214,7 +233,7 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
     didDrawPage: () => {
       const pageH = doc.internal.pageSize.getHeight();
       const pageNum = doc.internal.getCurrentPageInfo().pageNumber;
-      const footerText = `LevelUp Academy  |  ${pageNum}-bet`;
+      const footerText = `${getOrgName()}  |  ${pageNum}-bet`;
       const approxW = footerText.length * 7 * 0.6 / 2.834;
       doc.setFont(fontName, 'normal');
       doc.setFontSize(7);
