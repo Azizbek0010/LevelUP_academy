@@ -1,28 +1,40 @@
 import { useState } from 'react';
 import { TrendingUp, Receipt, Sparkles, CalendarDays, Wallet } from 'lucide-react';
-import { fmt, money } from '../../../format.js';
-import PageHeader from '../../../components/PageHeader.jsx';
-import { Panel, Kpi } from '../../mentor/_ui.jsx';
+import { fmt, money } from '../../format.js';
+import PageHeader from '../../components/PageHeader.jsx';
+import { Panel, Kpi } from '../mentor/_ui.jsx';
 import { FinanceBars } from './_ui.jsx';
-import { MONTHS, MONTHLY_SUMMARY, BRANCH } from './_data.js';
+import { useState } from 'react';
+import { TrendingUp, Receipt, Sparkles, CalendarDays, Wallet } from 'lucide-react';
+import { fmt, money } from '../../format.js';
+import PageHeader from '../../components/PageHeader.jsx';
+import { Panel, Kpi } from '../mentor/_ui.jsx';
+import { FinanceBars } from './_ui.jsx';
+import { useBranchManagerReports } from '../../queries.js';
 
 export default function BranchManagerReports() {
   const [monthsCount, setMonthsCount] = useState(6);
-  const summary = MONTHLY_SUMMARY.slice(-monthsCount);
+  const { data, isLoading, error } = useBranchManagerReports(monthsCount);
 
-  const totalIncome = summary.reduce((s, m) => s + m.income, 0);
-  const totalExpenses = summary.reduce((s, m) => s + m.expenses, 0);
-  const totalProfit = summary.reduce((s, m) => s + m.profit, 0);
-  const totalPayments = summary.reduce((s, m) => s + m.payments, 0);
+  if (isLoading) return <div className="p-8 text-center text-base-content/45">Yuklanmoqda...</div>;
+  if (error) return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
+
+  const summary = data?.monthlySeries || [];
+  const totals = data?.totals || {};
+
+  const totalIncome = totals.totalIncome || 0;
+  const totalExpenses = totals.totalExpenses || 0;
+  const totalProfit = totals.totalProfit || 0;
+  const totalPayments = totals.totalPayments || 0;
 
   const maxMonth = [...summary].sort((a, b) => b.income - a.income)[0];
-  const avgProfit = Math.round(totalProfit / summary.length);
+  const avgProfit = summary.length ? Math.round(totalProfit / summary.length) : 0;
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader
         title="Hisobotlar"
-        subtitle={`${BRANCH.name} · moliyaviy hisobot`}
+        subtitle={`Filial · moliyaviy hisobot`}
       >
         <div className="join">
           {[3, 6].map((n) => (
@@ -42,7 +54,7 @@ export default function BranchManagerReports() {
         <Kpi Icon={TrendingUp} title="Jami daromad" value={money(totalIncome)} unit={`${monthsCount} oy ichida`} tone="success" />
         <Kpi Icon={Receipt} title="Jami xarajat" value={money(totalExpenses)} unit={`${monthsCount} oy ichida`} tone="warning" />
         <Kpi Icon={Sparkles} title="Jami foyda" value={money(totalProfit)} unit={`o'rtacha ${money(avgProfit)}/oy`} tone="neutral" />
-        <Kpi Icon={Wallet} title="Qarzdorlik" value={money(BRANCH.stats.debt)} unit="filial bo'yicha" tone="danger" />
+        <Kpi Icon={Wallet} title="Qarzdorlik" value={money(totalIncome - totalExpenses)} unit="filial bo'yicha" tone="danger" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">

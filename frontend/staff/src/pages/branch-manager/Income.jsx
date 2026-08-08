@@ -1,26 +1,45 @@
 import { useState } from 'react';
 import { TrendingUp, Wallet, CheckCircle2, CalendarDays, CreditCard } from 'lucide-react';
-import { money } from '../../../format.js';
-import PageHeader from '../../../components/PageHeader.jsx';
-import { Panel, Kpi } from '../../mentor/_ui.jsx';
+import { money } from '../../format.js';
+import PageHeader from '../../components/PageHeader.jsx';
+import { Panel, Kpi } from '../mentor/_ui.jsx';
 import { PaymentStatusBadge } from './_ui.jsx';
-import { PAYMENTS, MONTHS, CURRENT_MONTH, BRANCH } from './_data.js';
+import { useState } from 'react';
+import { TrendingUp, Wallet, CheckCircle2, CalendarDays, CreditCard } from 'lucide-react';
+import { money } from '../../format.js';
+import PageHeader from '../../components/PageHeader.jsx';
+import { Panel, Kpi } from '../mentor/_ui.jsx';
+import { PaymentStatusBadge } from './_ui.jsx';
+import { useBranchManagerIncome } from '../../queries.js';
 
 export default function BranchManagerIncome() {
-  const [monthKey, setMonthKey] = useState(CURRENT_MONTH);
+  const [monthKey, setMonthKey] = useState('2026-08');
+  const { data, isLoading, error } = useBranchManagerIncome(monthKey);
 
+  if (isLoading) return <div className="p-8 text-center text-base-content/45">Yuklanmoqda...</div>;
+  if (error) return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
+
+  const rows = data?.payments || [];
+  const total = data?.totalAmount || 0;
+  const paid = data?.paidCount || 0;
+  const overdue = data?.overdueCount || 0;
+  const debt = data?.debt || 0;
+
+  const MONTHS = [
+    { key: '2026-03', label: 'Mart' },
+    { key: '2026-04', label: 'Aprel' },
+    { key: '2026-05', label: 'May' },
+    { key: '2026-06', label: 'Iyun' },
+    { key: '2026-07', label: 'Iyul' },
+    { key: '2026-08', label: 'Avgust' },
+  ];
   const month = MONTHS.find((m) => m.key === monthKey) ?? MONTHS[MONTHS.length - 1];
-  const rows = PAYMENTS.filter((p) => p.monthKey === monthKey);
-
-  const total = rows.reduce((s, p) => s + p.amount, 0);
-  const paid = rows.filter((p) => p.status === 'paid').length;
-  const overdue = rows.filter((p) => p.status === 'overdue').length;
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader
         title="Daromad"
-        subtitle={`${BRANCH.name} · to'lovlar va qarzdorlik`}
+        subtitle={`Filial · to'lovlar va qarzdorlik`}
       />
 
       {/* ── Oy tanlash ── */}
@@ -45,7 +64,7 @@ export default function BranchManagerIncome() {
         <Kpi Icon={TrendingUp} title="Oy daromadi" value={money(total)} unit={`${month.label} oyi`} tone="success" />
         <Kpi Icon={CheckCircle2} title="To'langan" value={paid} unit={`${rows.length} ta to'lovdan`} tone="neutral" />
         <Kpi Icon={Wallet} title="Muddati o'tgan" value={overdue} unit="qarzdor to'lovlar" tone="danger" />
-        <Kpi Icon={CalendarDays} title="Umumiy qarzdorlik" value={money(BRANCH.stats.debt)} unit="filial bo'yicha" tone="warning" />
+        <Kpi Icon={CalendarDays} title="Umumiy qarzdorlik" value={money(debt)} unit="filial bo'yicha" tone="warning" />
       </div>
 
       {/* ── To'lovlar jadvali ── */}

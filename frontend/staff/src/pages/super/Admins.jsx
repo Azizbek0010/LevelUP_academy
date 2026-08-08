@@ -72,6 +72,7 @@ const methodistEditSchema = z.object({
 
 function schemaFor(role, mode) {
   if (role === 'admin') return mode === 'create' ? adminCreateSchema : adminEditSchema;
+  if (role === 'branch_manager') return mode === 'create' ? adminCreateSchema : adminEditSchema;
   return mode === 'create' ? methodistCreateSchema : methodistEditSchema;
 }
 
@@ -85,9 +86,10 @@ const STATUS_META = {
 // дисциплины, брать их для роли было бы путаницей («красный» ментор ≠
 // проблема). primary/info/neutral свободны на этой странице.
 const ROLE_META = {
-  admin:     { label: 'Администратор', tone: 'primary' },
-  mentor:    { label: 'Ментор',        tone: 'info' },
-  methodist: { label: 'Методист',      tone: 'neutral' },
+  admin:            { label: 'Администратор', tone: 'primary' },
+  mentor:           { label: 'Ментор',        tone: 'info' },
+  methodist:        { label: 'Методист',      tone: 'neutral' },
+  branch_manager:   { label: 'Филиал менежери', tone: 'info' },
 };
 
 function RoleBadge({ role }) {
@@ -208,6 +210,7 @@ function AddStaffButton({ onPick, disabled }) {
         <>
           <DropdownItem onClick={() => { onPick('admin'); close(); }}>Администратора</DropdownItem>
           <DropdownItem onClick={() => { onPick('methodist'); close(); }}>Методиста</DropdownItem>
+          <DropdownItem onClick={() => { onPick('branch_manager'); close(); }}>Branch-менеджера</DropdownItem>
         </>
       )}
     </Dropdown>
@@ -374,7 +377,16 @@ export default function SuperAdmins() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Сотрудники" subtitle="Администраторы, менторы и методисты организации" />
+      <div className="flex items-center justify-between">
+        <PageHeader title="Сотрудники" subtitle="Администраторы, менторы и методисты организации" />
+        <button
+          className="btn btn-ghost btn-sm text-warning"
+          onClick={() => alert('Финанс-менеджер: скоро')
+          }
+        >
+          Финанс-менеджер
+        </button>
+      </div>
 
       <Card className="p-5 md:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Edit3, Save, X, Loader2, Coins, Wallet, Users, CalendarDays,
-  KeyRound, Phone, Mail, Snowflake, Sun, Trash2, Copy, Check, CreditCard,
+  KeyRound, Phone, Mail, Snowflake, Sun, Archive, Copy, Check, CreditCard,
   Clock, AlertCircle, User, GraduationCap, Shield, Hash,
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
@@ -44,6 +44,8 @@ export default function AdminStudentDetail() {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState('');
   const [busy, setBusy] = useState(false);
+  const [actionModal, setActionModal] = useState(null); // null | 'freeze' | 'archive'
+  const [actionReason, setActionReason] = useState('');
 
   const raw = data?.data || data || {};
   const student = raw.student || raw;
@@ -65,6 +67,7 @@ export default function AdminStudentDetail() {
       parentPhone: student.parentPhone || '',
       age: student.age || '',
       gender: student.gender || 'male',
+      birthDate: student.birthDate || '',
     });
     setEditing(true);
   };
@@ -79,6 +82,7 @@ export default function AdminStudentDetail() {
         parentPhone: form.parentPhone || undefined,
         age: form.age ? Number(form.age) : undefined,
         gender: form.gender || undefined,
+        birthDate: form.birthDate || undefined,
       });
       setEditing(false);
       refetch();
@@ -89,11 +93,20 @@ export default function AdminStudentDetail() {
     }
   };
 
-  const toggleFreeze = async () => {
-    const frozen = student.status === 'frozen';
+  const toggleFreeze = () => {
+    // Морозим только через модалку с причиной; разморозка — сразу.
+    if (isActive) {
+      setActionReason('');
+      setActionModal('freeze');
+    } else {
+      doFreeze(false, '');
+    }
+  };
+
+  const doFreeze = async (frozen, reason) => {
     setBusy(true);
     try {
-      await api.adminFreezeStudent(token, id, !frozen, '');
+      await api.adminFreezeStudent(token, id, frozen, reason || '');
       refetch();
     } catch (e) {
       alert(e.message || 'Ошибка');
@@ -102,16 +115,21 @@ export default function AdminStudentDetail() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm(`Вы уверены, что хотите удалить: ${fullName(student)}?`)) return;
+  const handleDelete = () => {
+    setActionReason('');
+    setActionModal('archive');
+  };
+
+  const confirmArchive = async () => {
     setBusy(true);
     try {
-      await api.adminDeleteStudent(token, id);
+      await api.adminDeleteStudent(token, id, actionReason || '');
       navigate('/students');
     } catch (e) {
       alert(e.message || 'Ошибка');
     } finally {
       setBusy(false);
+      setActionModal(null);
     }
   };
 
@@ -208,8 +226,10 @@ export default function AdminStudentDetail() {
             className="btn btn-ghost btn-sm gap-1 text-red-500 hover:bg-red-50"
             onClick={handleDelete}
             disabled={busy}
+            title="Архивировать"
+            aria-label="Архивировать студента"
           >
-            <Trash2 size={14} />
+            <Archive size={14} />
           </button>
         </div>
       </PageHeader>
@@ -525,11 +545,11 @@ export default function AdminStudentDetail() {
             disabled={busy}
           >
             <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-red-50 text-red-500 group-hover:scale-105 transition-transform">
-              <Trash2 size={16} />
+              <Archive size={16} />
             </div>
             <div>
-              <div className="text-[12px] font-bold text-base-content">Удалить</div>
-              <div className="text-[10px] text-base-content/45">Удалить навсегда</div>
+              <div className="text-[12px] font-bold text-base-content">Архивировать</div>
+              <div className="text-[10px] text-base-content/45">Скрыть из списка (данные сохранятся)</div>
             </div>
           </button>
         </div>
@@ -603,6 +623,26 @@ export default function AdminStudentDetail() {
                 </div>
               </div>
             </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Телефон</label>
+                  <PhoneInput
+                    className="input input-bordered w-full"
+                    value={form.phone}
+                    onChange={(v) => setForm({ ...form, phone: v })}
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Дата рождения</label>
+                  <input
+                    className="input input-bordered w-full"
+                    type="date"
+                    value={form.birthDate || ''}
+                    onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
             <div className="modal-action">
               <button className="btn btn-ghost" onClick={() => setEditing(false)} disabled={saving}>Отмена</button>
               <button
@@ -614,10 +654,90 @@ export default function AdminStudentDetail() {
                 Сохранить
               </button>
             </div>
+            <div className="modal-backdrop" onClick={() => setEditing(false)} />
           </div>
-          <div className="modal-backdrop" onClick={() => setEditing(false)} />
         </dialog>
       )}
+
+      {/* ═══ Freeze Modal (причина обязательна) ═══ */}
+      <Modal
+        isOpen={actionModal === 'freeze'}
+        onClose={() => setActionModal(null)}
+        title="Заморозить студента"
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setActionModal(null)}
+              disabled={busy}
+            >
+              Отмена
+            </button>
+            <button
+              className="btn btn-warning btn-sm gap-1"
+              onClick={() => { const r = actionReason.trim(); setActionModal(null); doFreeze(true, r); }}
+              disabled={busy}
+            >
+              {busy ? <Loader2 size={14} className="animate-spin" /> : <Snowflake size={14} />}
+              Заморозить
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm text-base-content/70 mb-1">
+          Почему вы замораживаете <b>{fullName(student)}</b>?
+        </p>
+        <p className="text-xs text-base-content/45 mb-3">Укажите причину — она будет видна другим сотрудникам.</p>
+        <textarea
+          className="textarea textarea-bordered w-full"
+          rows={3}
+          placeholder="Причина заморозки…"
+          value={actionReason}
+          onChange={(e) => setActionReason(e.target.value)}
+          autoFocus
+        />
+      </Modal>
+
+      {/* ═══ Archive Modal (причина обязательна) ═══ */}
+      <Modal
+        isOpen={actionModal === 'archive'}
+        onClose={() => setActionModal(null)}
+        title="Архивировать студента"
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setActionModal(null)}
+              disabled={busy}
+            >
+              Отмена
+            </button>
+            <button
+              className="btn btn-error btn-sm gap-1"
+              onClick={confirmArchive}
+              disabled={busy}
+            >
+              {busy ? <Loader2 size={14} className="animate-spin" /> : <Archive size={14} />}
+              Архивировать
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm text-base-content/70 mb-1">
+          Вы уверены, что хотите архивировать <b>{fullName(student)}</b>?
+        </p>
+        <p className="text-xs text-base-content/45 mb-3">
+          Студент будет скрыт из активного списка, данные сохранятся. Укажите причину.
+        </p>
+        <textarea
+          className="textarea textarea-bordered w-full"
+          rows={3}
+          placeholder="Причина архивации…"
+          value={actionReason}
+          onChange={(e) => setActionReason(e.target.value)}
+          autoFocus
+        />
+      </Modal>
     </div>
   );
 }

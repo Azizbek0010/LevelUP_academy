@@ -5,6 +5,11 @@ const email = z.string().trim().toLowerCase().email('Invalid email');
 // :id в пути
 export const idParam = z.object({ id: z.string().uuid('Invalid id') });
 
+// цена абонемента методики — та же граница, что и у monthlyPrice группы в admin.schemas.js
+export const setTrainingTypePriceSchema = z.object({
+  price: z.coerce.number().nonnegative().max(9_999_999_999),
+});
+
 // редактирование организации (Settings) — частичное; domain может быть пустым => null
 const orgDomainRegex = /^[a-z0-9.-]+\.[a-z]{2,}$/;
 export const updateOrganizationSchema = z
@@ -127,5 +132,14 @@ export const createAnnouncementSchema = z.object({
 // ---------- статистика: период ----------
 
 export const statsQuery = z.object({
-  period: z.enum(['7d', '30d', '90d']).optional(),
+  period: z.enum(['7d', '30d', '90d', '12m']).optional(),
+  branchId: z.string().uuid().optional(),
+});
+
+export const createBranchManagerSchema = z.object({
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  email,
+  branchId: z.string().uuid('Invalid branchId'),
+  phone: z.string().trim().regex(/^\+?\d{7,20}$/, 'Invalid phone').or(z.literal('')).optional(),
 });

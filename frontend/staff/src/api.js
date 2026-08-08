@@ -531,7 +531,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
         { email: 'mentor.demo@levelup.local', password: 'ChangeMe123!', role: 'mentor', firstName: 'Demo', lastName: 'Mentor' },
         { email: 'methodist@levelup.local', password: 'ChangeMe123!', role: 'methodist', firstName: 'Мадина', lastName: 'Рахимова' },
         // Branch Manager — только mock-режим: backend-роли пока нет, страницы
-        // полностью статичные (pages/admin/branch-manager/). С VITE_USE_MOCKS=true
+        // полностью статичные (pages/branch-manager/). С VITE_USE_MOCKS=true
         // вход этим аккаунтом в боевой бэкенд упадёт — это ожидаемо.
         { email: 'kozim.manager@gmail.com', password: 'ChangeMe123!', role: 'branch_manager', firstName: 'Baxtiyor', lastName: 'Umarov' },
         // Finance Manager — только mock-режим (pages/finance/), как и branch_manager.
@@ -790,7 +790,142 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
       return { organization: org };
     }
 
-    // -------- TRAINING TYPES --------
+    // Branch Manager mock helpers
+function getBranchManagerMocks() {
+  let managers = JSON.parse(localStorage.getItem('mock_branch_managers') || '[]');
+  if (managers.length === 0) {
+    managers = [
+      { id: 'bm-uuid-1111', firstName: 'Baxtiyor', lastName: 'Umarov', email: 'kozim.manager@gmail.com', phone: '+998907654321', role: 'branch_manager', branchId: 'downtown-branch-uuid-1111', branchName: 'Downtown Academy', status: 'active', createdAt: '2026-02-01T10:00:00.000Z' },
+    ];
+    localStorage.setItem('mock_branch_managers', JSON.stringify(managers));
+  }
+  return managers;
+}
+
+// -------- SUPER ADMIN: Branch Managers --------
+if (path === '/super/branch-managers') {
+  const managers = getBranchManagerMocks();
+  if (method === 'POST') {
+    if (managers.some((m) => m.email.toLowerCase() === body.email.toLowerCase())) { const err = new Error('Email already in use'); err.status = 409; throw err; }
+    const b = getMockData().branches.find((x) => x.id === body.branchId);
+    const newManager = {
+      id: `bm-uuid-${Math.random().toString(36).substr(2, 9)}`,
+      firstName: body.firstName, lastName: body.lastName, email: body.email,
+      phone: body.phone || '', role: 'branch_manager',
+      branchId: body.branchId, branchName: b ? b.name : '—',
+      status: 'active', createdAt: new Date().toISOString(),
+    };
+    managers.push(newManager);
+    localStorage.setItem('mock_branch_managers', JSON.stringify(managers));
+    return { manager: newManager };
+  }
+  return { managers, branches: getMockData().branches };
+}
+
+if (path.startsWith('/super/branch-managers/')) {
+  const managers = getBranchManagerMocks();
+  const parts = path.split('/');
+  const id = parts[3];
+  const idx = managers.findIndex((m) => m.id === id);
+  if (idx === -1) { const err = new Error('Branch manager not found'); err.status = 404; throw err; }
+  if (method === 'PATCH') {
+    managers[idx].firstName = body.firstName !== undefined ? body.firstName : managers[idx].firstName;
+    managers[idx].lastName = body.lastName !== undefined ? body.lastName : managers[idx].lastName;
+    managers[idx].phone = body.phone !== undefined ? body.phone : managers[idx].phone;
+    managers[idx].status = body.status !== undefined ? body.status : managers[idx].status;
+    localStorage.setItem('mock_branch_managers', JSON.stringify(managers));
+    return { manager: managers[idx] };
+  }
+}
+
+// -------- BRANCH MANAGER: Dashboard --------
+if (path === '/branch-manager/dashboard') {
+  const { branches, admins } = getMockData();
+  const branchId = 'downtown-branch-uuid-1111';
+  const branch = branches.find((b) => b.id === branchId) || branches[0];
+  const branchAdmins = admins.filter((a) => a.branchId === branchId);
+  const totalStudents = branch ? branch.students : 0;
+  const totalRevenue = branch ? branch.revenue : 0;
+  const totalExpenses = 8200000;
+  const outstandingDebt = branch ? branch.debt : 0;
+  return {
+    dashboard: {
+      totalStudents, activeStudents: Math.round(totalStudents * 0.85),
+      totalGroups: 12, totalMentors: branchAdmins.length,
+      totalRevenue, totalExpenses, outstandingDebt,
+      debts: outstandingDebt, overdueInvoices: 5, currency: 'UZS',
+    },
+  };
+}
+
+// -------- BRANCH MANAGER: Branch info --------
+if (path === '/branch-manager/branch') {
+  const { branches } = getMockData();
+  const branch = branches.find((b) => b.id === 'downtown-branch-uuid-1111') || branches[0];
+  return {
+    branch: {
+      id: branch.id, name: branch.name, address: branch.address,
+      phone: branch.phone, email: 'downtown@levelup.uz', telegram: '@downtown_levelup',
+      workHours: 'Dush–Shan · 9:00–21:00', founded: 'Yanvar 2026',
+      coords: '41.3111° N, 69.2797° E', mapUrl: 'https://yandex.uz/maps/?text=41.3111,69.2797',
+      manager: { firstName: 'Baxtiyor', lastName: 'Umarov', phone: '+998907654321' },
+      stats: { students: branch.students, groups: 12, staff: 9, debt: branch.debt },
+    },
+  };
+}
+
+// -------- BRANCH MANAGER: Income --------
+if (path === '/branch-manager/income') {
+  const qs = new URL(path, 'http://localhost').searchParams;
+  const month = qs.get('month') || '2026-08';
+  const payments = [
+    { id: 'p1', date: '2026-08-03', student: "O'zbekov Sardor", group: 'Frontend React', amount: 850000, method: 'Karta', status: 'paid' },
+    { id: 'p2', date: '2026-08-03', student: 'Karimova Nilufar', group: 'Python Bootcamp', amount: 900000, method: 'Naqd', status: 'paid' },
+    { id: 'p3', date: '2026-08-02', student: 'Hasanov Botir', group: 'Frontend React', amount: 850000, method: 'Karta', status: 'pending' },
+    { id: 'p4', date: '2026-08-02', student: 'Rahimova Gulnora', group: 'Python Bootcamp', amount: 450000, method: 'Naqd', status: 'paid' },
+    { id: 'p5', date: '2026-08-01', student: 'Abdullayev Javlon', group: 'UI/UX Design', amount: 800000, method: 'Karta', status: 'paid' },
+    { id: 'p6', date: '2026-08-01', student: 'Tursunov Dilshod', group: 'Frontend React', amount: 850000, method: 'Naqd', status: 'overdue' },
+  ].filter((p) => p.date.startsWith(month));
+  const totalAmount = payments.reduce((s, p) => s + p.amount, 0);
+  return {
+    payments, totalAmount, paidCount: payments.filter((p) => p.status === 'paid').length,
+    pendingCount: payments.filter((p) => p.status === 'pending').length,
+    overdueCount: payments.filter((p) => p.status === 'overdue').length, debt: 3400000,
+  };
+}
+
+// -------- BRANCH MANAGER: Expenses --------
+if (path === '/branch-manager/expenses') {
+  const qs = new URL(path, 'http://localhost').searchParams;
+  const month = qs.get('month') || '2026-08';
+  const expenses = [
+    { id: 'e1', date: '2026-08-04', category: 'Jihozlar', amount: 250000, note: "3 ta klaviatura + sichqoncha" },
+    { id: 'e2', date: '2026-08-01', category: 'Oylik', amount: 800000, note: "Tozalash xodimi avans" },
+    { id: 'e3', date: '2026-07-30', category: 'Kommunal', amount: 450000, note: "Elektr + suv, iyul" },
+  ].filter((e) => e.date.startsWith(month));
+  const totalAmount = expenses.reduce((s, e) => s + e.amount, 0);
+  const categories = [...new Set(expenses.map((e) => e.category))];
+  return { expenses, totalAmount, categories };
+}
+
+// -------- BRANCH MANAGER: Reports --------
+if (path === '/branch-manager/reports') {
+  const qs = new URL(path, 'http://localhost').searchParams;
+  const months = parseInt(qs.get('months') || '6', 10);
+  const monthlySeries = [
+    { month: '2026-03', label: 'Mart', income: 4200000, expenses: 1100000, profit: 3100000, payments: 4 },
+    { month: '2026-04', label: 'Aprel', income: 5100000, expenses: 1400000, profit: 3700000, payments: 5 },
+    { month: '2026-05', label: 'May', income: 4800000, expenses: 1300000, profit: 3500000, payments: 6 },
+    { month: '2026-06', label: 'Iyun', income: 6000000, expenses: 1600000, profit: 4400000, payments: 7 },
+    { month: '2026-07', label: 'Iyul', income: 5600000, expenses: 1500000, profit: 4100000, payments: 7 },
+    { month: '2026-08', label: 'Avgust', income: 6800000, expenses: 1500000, profit: 5300000, payments: 8 },
+  ].slice(-months);
+  const totalIncome = monthlySeries.reduce((s, m) => s + m.income, 0);
+  const totalExpenses = monthlySeries.reduce((s, m) => s + m.expenses, 0);
+  const totalProfit = monthlySeries.reduce((s, m) => s + m.profit, 0);
+  const totalPayments = monthlySeries.reduce((s, m) => s + m.payments, 0);
+  return { monthlySeries, totals: { totalIncome, totalExpenses, totalProfit, totalPayments } };
+}
     if (path === '/methodist/training-types') {
       if (method === 'POST') {
         const newItem = {
@@ -2235,6 +2370,7 @@ export const api = {
   adminDashboard: (token) => request('/admin/dashboard', { token }),
   adminCreatePayment: (token, body) => request('/admin/payments', { method: 'POST', token, body }),
   adminSettings: (token) => request('/admin/settings', { token }),
+  adminTrainingTypes: (token) => request('/admin/training-types', { token }),
   adminUpdateSettings: (token, body) => request('/admin/settings', { method: 'PATCH', token, body }),
   adminExpenses: (token, qs = '') => request(`/admin/expenses${qs}`, { token }),
   adminCreateExpense: (token, body) => request('/admin/expenses', { method: 'POST', token, body }),
@@ -2244,8 +2380,8 @@ export const api = {
   adminCreateStudent: (token, body) => request('/admin/students', { method: 'POST', token, body }),
   adminStudentDetail: (token, id) => request(`/admin/students/${id}`, { token }),
   adminUpdateStudent: (token, id, body) => request(`/admin/students/${id}`, { method: 'PATCH', token, body }),
-  adminFreezeStudent: (token, id, frozen) => request(`/admin/students/${id}/freeze`, { method: 'POST', token, body: { frozen } }),
-  adminDeleteStudent: (token, id) => request(`/admin/students/${id}`, { method: 'DELETE', token }),
+  adminFreezeStudent: (token, id, frozen, reason) => request(`/admin/students/${id}/freeze`, { method: 'POST', token, body: { frozen, reason } }),
+  adminDeleteStudent: (token, id, reason) => request(`/admin/students/${id}`, { method: 'DELETE', token, body: reason ? { reason } : undefined }),
   adminGroups: (token, qs = '') => request(`/admin/groups${qs}`, { token }),
   adminCreateGroup: (token, body) => request('/admin/groups', { method: 'POST', token, body }),
   adminGroupDetail: (token, id) => request(`/admin/groups/${id}`, { token }),
@@ -2310,7 +2446,8 @@ export const api = {
   // «Отчёты» слиты в «Статистику» 2026-07-28 — это был один и тот же набор
   // данных (итоги + разбивка по филиалам) на двух страницах; /super/reports
   // больше не существует, доля филиала (share) теперь тоже приходит отсюда.
-  superStats: (token, period = '30d') => request(`/super/stats?period=${period}`, { token }),
+  superStats: (token, period = '30d', branchId = '') =>
+    request(`/super/stats?period=${period}${branchId ? `&branchId=${branchId}` : ''}`, { token }),
   superBranches: (token) => request('/super/branches', { token }),
   superBranchDetail: (token, id) => request(`/super/branches/${id}`, { token }),
   superCreateBranch: (token, body) => request('/super/branches', { method: 'POST', token, body }),
@@ -2325,6 +2462,9 @@ export const api = {
   superResetAdminPassword: (token, id) => request(`/super/admins/${id}/reset-password`, { method: 'POST', token }),
   superGetOrganization: (token) => request('/super/organization', { token }),
   superUpdateOrganization: (token, body) => request('/super/organization', { method: 'PATCH', token, body }),
+  superTrainingTypes: (token) => request('/super/training-types', { token }),
+  superSetTrainingTypePrice: (token, id, price) =>
+    request(`/super/training-types/${id}/price`, { method: 'PATCH', token, body: { price } }),
   superMethodists: (token) => request('/super/methodists', { token }),
   // Только чтение — для выбора цели во «Взыскании». CRUD ментора у Admin филиала.
   superMentors: (token) => request('/super/mentors', { token }),
@@ -2332,14 +2472,30 @@ export const api = {
   superUpdateMethodist: (token, id, body) => request(`/super/methodists/${id}`, { method: 'PATCH', token, body }),
   superFreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
   superUnfreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: false } }),
-  superResetMethodistPassword: (token, id) => request(`/super/methodists/${id}/reset-password`, { method: 'POST', token }),
+   superResetMethodistPassword: (token, id) => request(`/super/methodists/${id}/reset-password`, { method: 'POST', token }),
+
+   // -------- SUPER ADMIN: Branch Managers --------
+   superBranchManagers: (token) => request('/super/branch-managers', { token }),
+   superCreateBranchManager: (token, body) => request('/super/branch-managers', { method: 'POST', token, body }),
+   superUpdateBranchManager: (token, id, body) => request(`/super/branch-managers/${id}`, { method: 'PATCH', token, body }),
+
+   // -------- BRANCH MANAGER --------
+   branchManagerDashboard: (token) => request('/branch-manager/dashboard', { token }),
+   branchManagerInfo: (token) => request('/branch-manager/branch', { token }),
+   branchManagerIncome: (token, month) => request(`/branch-manager/income?month=${month}`, { token }),
+   branchManagerExpenses: (token, month) => request(`/branch-manager/expenses?month=${month}`, { token }),
+   branchManagerReports: (token, months = 6) => request(`/branch-manager/reports?months=${months}`, { token }),
 
   // -------- SUPER ADMIN: Students --------
   superStudents: (token, qs = '') => request(`/super/students${qs}`, { token }),
+  superStudentsStats: (token, period = '30d', branchId = '') =>
+    request(`/super/students/stats?period=${period}${branchId ? `&branchId=${branchId}` : ''}`, { token }),
+  superStudentDetail: (token, id) => request(`/super/students/${id}`, { token }),
   superDeleteStudent: (token, id) => request(`/super/students/${id}`, { method: 'DELETE', token }),
 
   // -------- SUPER ADMIN: Groups --------
   superGroups: (token) => request('/super/groups', { token }),
+  superGroupDetail: (token, id) => request(`/super/groups/${id}`, { token }),
   superArchiveGroup: (token, id) => request(`/super/groups/${id}/archive`, { method: 'POST', token }),
   superUnarchiveGroup: (token, id) => request(`/super/groups/${id}/unarchive`, { method: 'POST', token }),
   superDeleteGroup: (token, id) => request(`/super/groups/${id}`, { method: 'DELETE', token }),
