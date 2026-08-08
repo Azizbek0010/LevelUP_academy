@@ -406,6 +406,7 @@ router.get('/students/:id/attendance', validate({ params: idParam, query: studen
 router.get('/students/:id/telegram', validate({ params: idParam }), ctrl.studentTelegramStatus);
 router.post('/students/:id/telegram/message', validate({ params: idParam, body: sendStudentTelegramMessageSchema }), ctrl.sendStudentTelegramMessage);
 router.post('/students/:id/qr-token', validate({ params: idParam }), ctrl.createStudentQrToken);
+router.post('/students/:id/qr-token/regenerate', validate({ params: idParam }), ctrl.regenerateStudentQrToken);
 router.patch('/students/:id', validate({ params: idParam, body: updateStudentSchema }), ctrl.updateStudent);
 
 /**
