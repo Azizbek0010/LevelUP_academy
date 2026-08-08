@@ -40,6 +40,7 @@ const AdminExpenses = lazy(() => import('./pages/admin/Expenses.jsx'));
 const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'));
 const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
 const AdminShop = lazy(() => import('./pages/admin/Shop.jsx'));
+const AdminSchedule = lazy(() => import('./pages/admin/Schedule.jsx'));
 const AdminChat = lazy(() => import('./pages/admin/Chat.jsx'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile.jsx'));
 
@@ -149,6 +150,7 @@ export default function App() {
           <Route path="/payments/:studentId/:amount?" element={<SW><AdminPayments /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
           <Route path="/shop" element={<SW><AdminShop /></SW>} />
+          <Route path="/schedule" element={<SW><AdminSchedule /></SW>} />
         </Route>
         {/* Расходы — общий путь для админа и branch manager (RoleView разбирает) */}
         <Route path="/expenses" element={<SW><RoleView views={{ admin: AdminExpenses, branch_manager: BranchManagerExpenses }} /></SW>} />

@@ -103,6 +103,10 @@ export const createGroup = asyncHandler(async (req, res) => {
   res.status(201).json({ group: await service.createGroup(branchId(req), req.body) });
 });
 
+export const schedule = asyncHandler(async (req, res) => {
+  res.json(await service.schedule(branchId(req)));
+});
+
 export const listTrainingTypes = asyncHandler(async (req, res) => {
   res.json({ trainingTypes: await service.listTrainingTypes(branchId(req)) });
 });

@@ -33,6 +33,7 @@ import { issuePenaltySchema, listPenaltiesQuery } from '../discipline/discipline
 import paymentsRoutes from './payments/payments.routes.js';
 import reportsRoutes from './reports/reports.routes.js';
 import shopAdminRoutes from './shop/shop-admin.routes.js';
+import roomsRoutes from './rooms/rooms.routes.js';
 
 /**
  * K-ADMIN — панель филиала. Только Admin; scope жёстко = свой branch_id.
@@ -49,6 +50,22 @@ router.use(authenticate, authorize('admin', 'branch_manager'));
 router.use('/payments', paymentsRoutes);
 router.use('/reports', reportsRoutes);
 router.use('/shop', shopAdminRoutes);
+router.use('/rooms', roomsRoutes);
+
+/**
+ * @openapi
+ * /api/admin/schedule:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Rooms + active groups with schedule, for the drag-and-drop Расписание grid
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Rooms and groups of the branch
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.get('/schedule', ctrl.schedule);
 
 /**
  * @openapi

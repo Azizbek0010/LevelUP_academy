@@ -613,15 +613,16 @@ export function findPricedTrainingType(id, branchId, client = pool) {
 }
 
 export function insertGroup(
-  { branchId, mentorId, name, subject, monthlyPrice, schedule, room, trainingTypeId },
+  { branchId, mentorId, name, subject, monthlyPrice, schedule, room, roomId, trainingTypeId },
   client = pool,
 ) {
   return client
     .query(
-      `INSERT INTO groups (branch_id, mentor_id, name, subject, monthly_price, schedule, room, training_type_id)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)
-       RETURNING id, name, subject, monthly_price, schedule, room, is_archived, created_at, training_type_id`,
-      [branchId, mentorId, name, subject, monthlyPrice, JSON.stringify(schedule ?? []), room ?? null, trainingTypeId ?? null],
+      `INSERT INTO groups (branch_id, mentor_id, name, subject, monthly_price, schedule, room, room_id, training_type_id)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9)
+       RETURNING id, name, subject, monthly_price, schedule, room, room_id, is_archived, created_at, training_type_id,
+         (SELECT r.name FROM rooms r WHERE r.id = groups.room_id) AS room_name`,
+      [branchId, mentorId, name, subject, monthlyPrice, JSON.stringify(schedule ?? []), room ?? null, roomId ?? null, trainingTypeId ?? null],
     )
     .then((r) => r.rows[0]);
 }
@@ -629,16 +630,34 @@ export function insertGroup(
 export function listGroups({ branchId, limit, offset }, client = pool) {
   return client
     .query(
-      `SELECT g.id, g.name, g.subject, g.monthly_price, g.room, g.is_archived, g.created_at,
+      `SELECT g.id, g.name, g.subject, g.monthly_price, g.room, g.room_id, g.is_archived, g.created_at,
               g.mentor_id, g.training_type_id, m.first_name AS mentor_first, m.last_name AS mentor_last,
+              r.name AS room_name,
               (SELECT count(*) FROM group_students gs
                  WHERE gs.group_id = g.id AND gs.left_at IS NULL) AS students
          FROM groups g
          JOIN users m ON m.id = g.mentor_id
+         LEFT JOIN rooms r ON r.id = g.room_id
         WHERE g.branch_id = $1 AND g.deleted_at IS NULL
         ORDER BY g.is_archived, g.created_at DESC
         LIMIT $2 OFFSET $3`,
       [branchId, limit, offset],
+    )
+    .then((r) => r.rows);
+}
+
+/** Все активные группы филиала с расписанием — для сетки /admin/schedule (без пагинации, набор небольшой). */
+export function listGroupsForSchedule(branchId, client = pool) {
+  return client
+    .query(
+      `SELECT g.id, g.name, g.subject, g.schedule, g.room_id, r.name AS room_name,
+              g.mentor_id, m.first_name AS mentor_first, m.last_name AS mentor_last
+         FROM groups g
+         JOIN users m ON m.id = g.mentor_id
+         LEFT JOIN rooms r ON r.id = g.room_id
+        WHERE g.branch_id = $1 AND g.deleted_at IS NULL AND g.is_archived = false
+        ORDER BY g.created_at`,
+      [branchId],
     )
     .then((r) => r.rows);
 }
@@ -656,11 +675,12 @@ export function countGroups({ branchId }, client = pool) {
 export function findGroupInBranch(id, branchId, client = pool) {
   return client
     .query(
-      `SELECT g.id, g.name, g.subject, g.monthly_price, g.schedule, g.room,
+      `SELECT g.id, g.name, g.subject, g.monthly_price, g.schedule, g.room, g.room_id,
               g.is_archived, g.created_at, g.mentor_id, g.training_type_id,
-              m.first_name AS mentor_first, m.last_name AS mentor_last
+              m.first_name AS mentor_first, m.last_name AS mentor_last, r.name AS room_name
          FROM groups g
          JOIN users m ON m.id = g.mentor_id
+         LEFT JOIN rooms r ON r.id = g.room_id
         WHERE g.id = $1 AND g.branch_id = $2 AND g.deleted_at IS NULL`,
       [id, branchId],
     )
@@ -683,7 +703,8 @@ export function groupStudents(groupId, client = pool) {
 }
 
 const GROUP_RETURN =
-  'id, name, subject, monthly_price, schedule, room, is_archived, created_at, mentor_id';
+  `id, name, subject, monthly_price, schedule, room, room_id, is_archived, created_at, mentor_id,
+   (SELECT r.name FROM rooms r WHERE r.id = groups.room_id) AS room_name`;
 
 export function updateGroup(id, branchId, fields, client = pool) {
   const cols = [];
@@ -695,6 +716,7 @@ export function updateGroup(id, branchId, fields, client = pool) {
     ['mentorId', 'mentor_id'],
     ['monthlyPrice', 'monthly_price'],
     ['room', 'room'],
+    ['roomId', 'room_id'],
     ['trainingTypeId', 'training_type_id'],
   ]) {
     if (fields[key] !== undefined) {

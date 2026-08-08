@@ -203,6 +203,16 @@ export function useSuperShopItems(qs = '') {
   return useAuthedQuery(['super-shop-items', qs], () => api.superShopItems(token, qs));
 }
 
+export function useAdminSchedule() {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-schedule'], () => api.adminSchedule(token));
+}
+
+export function useAdminRooms() {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-rooms'], () => api.adminRooms(token));
+}
+
 export function useAdminReports(qs = '') {
   const { token } = useAuth();
   return useAuthedQuery(['admin-reports', qs], () => api.adminReports(token, qs));

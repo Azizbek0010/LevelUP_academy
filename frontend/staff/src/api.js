@@ -2467,6 +2467,13 @@ export const api = {
   adminUpdateGroup: (token, id, body) => request(`/admin/groups/${id}`, { method: 'PATCH', token, body }),
   adminArchiveGroup: (token, id, reason) => request(`/admin/groups/${id}/archive`, { method: 'POST', token, body: reason ? { reason } : undefined }),
   adminUnarchiveGroup: (token, id) => request(`/admin/groups/${id}/unarchive`, { method: 'POST', token }),
+
+  // -------- ADMIN/Branch Manager: Расписание (кабинеты + drag-and-drop сетка) --------
+  adminSchedule: (token) => request('/admin/schedule', { token }),
+  adminRooms: (token) => request('/admin/rooms', { token }),
+  adminCreateRoom: (token, body) => request('/admin/rooms', { method: 'POST', token, body }),
+  adminUpdateRoom: (token, id, body) => request(`/admin/rooms/${id}`, { method: 'PATCH', token, body }),
+  adminDeleteRoom: (token, id) => request(`/admin/rooms/${id}`, { method: 'DELETE', token }),
   adminMentors: (token) => request('/admin/mentors', { token }),
   adminCreateMentor: (token, body) => request('/admin/mentors', { method: 'POST', token, body }),
   adminUpdateMentor: (token, id, body) => request(`/admin/mentors/${id}`, { method: 'PATCH', token, body }),
