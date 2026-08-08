@@ -119,6 +119,10 @@ export const createStudentQrToken = asyncHandler(async (req, res) => {
   res.json(await service.createStudentQrToken(branchId(req), req.params.id));
 });
 
+export const regenerateStudentQrToken = asyncHandler(async (req, res) => {
+  res.json(await service.regenerateStudentQrToken(branchId(req), req.params.id));
+});
+
 export const studentTelegramStatus = asyncHandler(async (req, res) => {
   res.json(await service.studentTelegramStatus(branchId(req), req.params.id));
 });

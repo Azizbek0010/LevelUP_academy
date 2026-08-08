@@ -6,9 +6,10 @@ import { api } from '../api.js';
 /**
  * Вход по QR: admin показывает код в StudentDetail (staff-панель), студент
  * сканирует камерой телефона — камера сама открывает эту ссылку с ?token=,
- * дальше уже никакого участия студента не требуется. Токен одноразовый и
- * живёт 5 минут (backend: auth/qr-login.service.js), поэтому страница либо
- * сразу логинит, либо сразу показывает «ссылка устарела» — без формы ввода.
+ * дальше уже никакого участия студента не требуется. Токен постоянный
+ * (backend: auth/qr-login.service.js, users.qr_token) — работает при каждом
+ * сканировании, пока admin явно не перевыпустит его. Ошибка здесь означает
+ * «QR перевыпущен/студент удалён», а не «истёк по времени».
  */
 export default function QrLogin() {
   const [params] = useSearchParams();
@@ -42,7 +43,7 @@ export default function QrLogin() {
         ) : (
           <>
             <div role="alert" className="alert alert-error text-sm mb-4">
-              <span>QR-kod eskirgan yoki allaqachon ishlatilgan</span>
+              <span>QR-kod noto'g'ri yoki qayta chiqarilgan</span>
             </div>
             <Link to="/login" className="btn btn-primary btn-sm w-full">Login va parol bilan kirish</Link>
           </>
