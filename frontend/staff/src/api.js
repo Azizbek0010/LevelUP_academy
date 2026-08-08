@@ -2459,6 +2459,7 @@ export const api = {
     request(`/admin/students/${id}/telegram/message`, { method: 'POST', token, body: { text, toParent } }),
   adminCreateStudentQrToken: (token, id) => request(`/admin/students/${id}/qr-token`, { method: 'POST', token }),
   adminRegenerateStudentQrToken: (token, id) => request(`/admin/students/${id}/qr-token/regenerate`, { method: 'POST', token }),
+  adminGroupCredentials: (token, id) => request(`/admin/groups/${id}/credentials`, { token }),
   adminUpdateStudent: (token, id, body) => request(`/admin/students/${id}`, { method: 'PATCH', token, body }),
   adminFreezeStudent: (token, id, frozen, reason) => request(`/admin/students/${id}/freeze`, { method: 'POST', token, body: { frozen, reason } }),
   adminDeleteStudent: (token, id, reason) => request(`/admin/students/${id}`, { method: 'DELETE', token, body: reason ? { reason } : undefined }),

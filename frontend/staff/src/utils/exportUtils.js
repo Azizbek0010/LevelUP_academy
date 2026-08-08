@@ -342,6 +342,121 @@ export const MENTOR_COLUMNS = [
   { key: 'status', label: 'Статус', format: (v) => v === 'frozen' ? 'Заморожен' : 'Активен' },
 ];
 
+// ═══════════════ Раздатка логинов/паролей группы (PDF с QR) ═══════════════
+
+const MEMBER_URL = import.meta.env.VITE_MEMBER_URL || 'https://member.levelup-academy.uz';
+
+/**
+ * PDF-раздатка на группу: карточка на студента — QR (сканирует камерой,
+ * входит сразу, см. auth/qr-login.service.js) + логин-код + пароль. Сетка
+ * 3×3 на лист, чтобы разрезать и раздать — формат по образцу карточек
+ * школьных пропусков (запрос Karis, 08.08.2026).
+ */
+export async function exportGroupCredentialsPDF({ groupName, mentorName, students }) {
+  const [{ jsPDF }, QRCodeMod] = await Promise.all([import('jspdf'), import('qrcode')]);
+  const QRCode = QRCodeMod.default ?? QRCodeMod;
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const orgName = getOrgName();
+
+  let fontName = 'helvetica';
+  try {
+    const [nr, br] = await Promise.all([
+      fetch('/fonts/DejaVuSans.ttf'),
+      fetch('/fonts/DejaVuSans-Bold.ttf'),
+    ]);
+    if (nr.ok && br.ok) {
+      const toB64 = async (r) => {
+        const buf = await r.arrayBuffer();
+        const arr = new Uint8Array(buf);
+        let s = '';
+        for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]);
+        return btoa(s);
+      };
+      const [nb, bb] = await Promise.all([toB64(nr), toB64(br)]);
+      doc.addFileToVFS('DejaVuSans.ttf', nb);
+      doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+      doc.addFileToVFS('DejaVuSans-Bold.ttf', bb);
+      doc.addFont('DejaVuSans-Bold.ttf', 'DejaVuSans', 'bold');
+      fontName = 'DejaVuSans';
+    }
+  } catch { /* падает на helvetica — латиница/цифры всё равно читаемы */ }
+
+  const MARGIN = 15;
+  const COLS = 3;
+  const ROWS = 3;
+  const GAP = 7;
+  const CARD_W = (210 - MARGIN * 2 - GAP * (COLS - 1)) / COLS;
+  const CARD_H = 72;
+  const QR_SIZE = 40;
+  const TITLE_H = 38;
+
+  doc.setFont(fontName, 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(20, 20, 20);
+  doc.text(groupName || '—', 105, 22, { align: 'center' });
+  doc.setFont(fontName, 'normal');
+  doc.setFontSize(12);
+  doc.setTextColor(60, 60, 60);
+  doc.text(`Ментор: ${mentorName || '—'}`, 105, 30, { align: 'center' });
+
+  const qrDataUrls = await Promise.all(students.map((s) => {
+    const url = `${MEMBER_URL}/qr-login?token=${encodeURIComponent(s.qrToken)}`;
+    return QRCode.toDataURL(url, { width: 220, margin: 1, color: { dark: '#000000', light: '#ffffff' } });
+  }));
+
+  const perPage = COLS * ROWS;
+  students.forEach((s, i) => {
+    const pageIndex = Math.floor(i / perPage);
+    const posInPage = i % perPage;
+    if (pageIndex > 0 && posInPage === 0) doc.addPage();
+
+    const col = posInPage % COLS;
+    const row = Math.floor(posInPage / COLS);
+    const gridTop = pageIndex === 0 ? MARGIN + TITLE_H : MARGIN;
+    const x = MARGIN + col * (CARD_W + GAP);
+    const y = gridTop + row * (CARD_H + GAP);
+
+    doc.setFillColor(20, 20, 20);
+    doc.rect(x, y, CARD_W, 7, 'F');
+    doc.setFont(fontName, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text(orgName, x + CARD_W / 2, y + 4.8, { align: 'center' });
+
+    doc.setFont(fontName, 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(20, 20, 20);
+    const fullName = `${s.lastName || ''} ${s.firstName || ''}`.trim() || '—';
+    doc.text(fullName, x + CARD_W / 2, y + 12.5, { align: 'center', maxWidth: CARD_W - 2 });
+
+    const qrX = x + (CARD_W - QR_SIZE) / 2;
+    const qrY = y + 15.5;
+    doc.setDrawColor(180, 180, 180);
+    doc.rect(qrX, qrY, QR_SIZE, QR_SIZE);
+    doc.addImage(qrDataUrls[i], 'PNG', qrX + 0.5, qrY + 0.5, QR_SIZE - 1, QR_SIZE - 1);
+
+    const tableY = qrY + QR_SIZE + 2;
+    const rowH = 6;
+    const labelW = CARD_W * 0.42;
+    doc.setDrawColor(150, 150, 150);
+    doc.setFontSize(8);
+    [['ID:', s.loginCode || '—'], ['password:', s.password || '—']].forEach(([label, value], r) => {
+      const ry = tableY + r * rowH;
+      doc.rect(x, ry, labelW, rowH);
+      doc.rect(x + labelW, ry, CARD_W - labelW, rowH);
+      doc.setFont(fontName, 'normal');
+      doc.setTextColor(60, 60, 60);
+      doc.text(label, x + 1.5, ry + rowH / 2 + 1.2);
+      doc.setTextColor(20, 20, 20);
+      doc.text(String(value), x + labelW + 1.5, ry + rowH / 2 + 1.2);
+    });
+  });
+
+  const slug = (groupName || 'gruppa').replace(/[^a-zA-Zа-яА-ЯёЁ0-9]+/g, '-');
+  doc.save(`login-parollar_${slug}_${today()}.pdf`);
+}
+
 /** Page config registry — maps route → { columns, title, filenamePrefix } */
 export const PAGE_EXPORT_CONFIG = {
   students: { columns: STUDENT_COLUMNS, title: 'Список студентов', filenamePrefix: 'студенты' },

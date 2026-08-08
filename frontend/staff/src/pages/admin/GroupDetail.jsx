@@ -4,7 +4,7 @@ import {
   ArrowLeft, UserPlus, X, Users, KeyRound, Phone,
   CalendarDays, Check, Minus, Clock, CreditCard,
   BookOpen, Plus, Star, MessageSquare, Send, Loader2,
-  ChevronLeft, ChevronRight, Pencil, Archive, ArchiveRestore,
+  ChevronLeft, ChevronRight, Pencil, Archive, ArchiveRestore, Download,
 } from 'lucide-react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth.jsx';
@@ -1029,6 +1029,22 @@ export default function AdminGroupDetail() {
     }
   };
 
+  const [credsBusy, setCredsBusy] = useState(false);
+  const downloadCredentials = async () => {
+    setCredsBusy(true);
+    try {
+      const res = await api.adminGroupCredentials(token, group.id);
+      const r = res?.data || res;
+      const { exportGroupCredentialsPDF } = await import('../../utils/exportUtils.js');
+      await exportGroupCredentialsPDF({
+        groupName: r.group?.name || group.name,
+        mentorName: r.mentor?.name,
+        students: r.students || [],
+      });
+    } catch (e) { alert(e.message || 'Не удалось собрать PDF'); }
+    finally { setCredsBusy(false); }
+  };
+
   if (isLoading) {
     return (
       <div>
@@ -1080,6 +1096,15 @@ export default function AdminGroupDetail() {
         </button>
         <button className="btn btn-primary btn-sm gap-1" onClick={() => setAdding(true)}>
           <UserPlus size={16} /> Добавить
+        </button>
+        <button
+          className="btn btn-ghost btn-sm gap-1.5"
+          onClick={downloadCredentials}
+          disabled={credsBusy || students.length === 0}
+          title="PDF с QR-кодом, логином и паролем каждого ученика группы"
+        >
+          {credsBusy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+          Пароли группы
         </button>
       </PageHeader>
 

@@ -140,6 +140,10 @@ export const groupDetail = asyncHandler(async (req, res) => {
   res.json({ group: await service.groupDetail(branchId(req), req.params.id) });
 });
 
+export const groupCredentials = asyncHandler(async (req, res) => {
+  res.json(await service.groupCredentials(branchId(req), req.params.id));
+});
+
 export const updateGroup = asyncHandler(async (req, res) => {
   res.json({ group: await service.updateGroup(branchId(req), req.params.id, req.body) });
 });

@@ -702,6 +702,22 @@ export function groupStudents(groupId, client = pool) {
     .then((r) => r.rows);
 }
 
+/** Логин-код/шифр.пароль/QR-токен всех активных студентов группы — для PDF-раздатки. */
+export function groupStudentCredentials(groupId, branchId, client = pool) {
+  return client
+    .query(
+      `SELECT u.id, u.first_name, u.last_name, u.login_code, u.qr_token, sp.password_encrypted
+         FROM group_students gs
+         JOIN users u ON u.id = gs.student_id
+         JOIN student_profiles sp ON sp.user_id = u.id
+        WHERE gs.group_id = $1 AND gs.left_at IS NULL
+          AND u.branch_id = $2 AND u.deleted_at IS NULL
+        ORDER BY u.first_name`,
+      [groupId, branchId],
+    )
+    .then((r) => r.rows);
+}
+
 const GROUP_RETURN =
   `id, name, subject, monthly_price, schedule, room, room_id, is_archived, created_at, mentor_id,
    (SELECT r.name FROM rooms r WHERE r.id = groups.room_id) AS room_name`;
