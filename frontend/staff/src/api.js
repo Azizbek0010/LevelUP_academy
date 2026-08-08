@@ -1495,6 +1495,9 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
         note: body.note || '',
         status: 'pending',
         paymentMethod: body.paymentMethod || 'Naqt',
+        isRecurring: body.isRecurring || false,
+        recurringPeriod: body.recurringPeriod || null,
+        nextPaymentAt: body.nextPaymentAt || null,
         createdBy: 'Demo Admin',
       };
       expenses.push(newExpense);

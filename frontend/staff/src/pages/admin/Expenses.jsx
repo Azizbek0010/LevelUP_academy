@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   Search, Plus, Trash2, CalendarDays, RefreshCw, MoreVertical, Eye, Pencil,
-  X, Banknote, ChevronDown, AlertTriangle, Download,
+  X, Banknote, CreditCard, ChevronDown, AlertTriangle, Download,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../../api.js';
@@ -172,7 +172,7 @@ export default function Expenses() {
   const [editingId, setEditingId] = useState(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState(null);
-  const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', title: '', paymentMethod: 'Наличные' });
+  const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', title: '', paymentMethod: 'Наличные', isRecurring: false, recurringPeriod: 'monthly', nextPaymentAt: '' });
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showExport, setShowExport] = useState(false);
@@ -238,7 +238,7 @@ export default function Expenses() {
   // ─── Modal handlers ───
   const openModal = () => {
     const today = new Date().toISOString().split('T')[0];
-    setFormData({ category: 'Other', amount: '', spentAt: today, note: '', title: '', paymentMethod: 'Наличные' });
+    setFormData({ category: 'Other', amount: '', spentAt: today, note: '', title: '', paymentMethod: 'Наличные', isRecurring: false, recurringPeriod: 'monthly', nextPaymentAt: '' });
     setEditingId(null);
     setActionError(null);
     setModalOpen(true);
@@ -257,6 +257,9 @@ export default function Expenses() {
       note: expense.note || '',
       title: expense.category === 'Other' ? (expense.note || '') : '',
       paymentMethod: getPaymentMethod(expense) !== '—' ? getPaymentMethod(expense) : 'Наличные',
+      isRecurring: expense.isRecurring || false,
+      recurringPeriod: expense.recurringPeriod || 'monthly',
+      nextPaymentAt: expense.nextPaymentAt ? expense.nextPaymentAt.split('T')[0] : '',
     });
     setEditingId(expense.id);
     setActionError(null);
@@ -276,6 +279,10 @@ export default function Expenses() {
         amount: Number(formData.amount),
         spentAt: formData.spentAt || undefined,
         note: note || undefined,
+        paymentMethod: formData.paymentMethod,
+        isRecurring: formData.isRecurring,
+        recurringPeriod: formData.isRecurring ? formData.recurringPeriod : undefined,
+        nextPaymentAt: formData.isRecurring ? formData.nextPaymentAt : undefined,
       };
 
       if (editingId) {
@@ -528,6 +535,7 @@ export default function Expenses() {
                       <th className="px-5 py-4 text-right">Сумма</th>
                       <th className="px-5 py-4">Способ оплаты</th>
                       <th className="px-5 py-4">Дата</th>
+                      <th className="px-5 py-4">Takrorlanish</th>
                       <th className="px-5 py-4">Статус</th>
                       <th className="px-5 py-4 hidden md:table-cell">Создал</th>
                       <th className="px-5 py-4 w-10"></th>
@@ -552,15 +560,34 @@ export default function Expenses() {
                           {formatCurrency(e.amount)}
                         </td>
                         <td className="px-5 py-4">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-[11px] font-medium text-base-content/70 bg-base-100 border border-base-300">
-                            {getPaymentMethod(e)}
-                          </span>
+                          {(() => {
+                            const pm = getPaymentMethod(e);
+                            if (pm === '—') return <span className="text-base-content/45 text-[11px]">—</span>;
+                            const Icon = pm === 'Наличные' || pm === 'Naqt' ? Banknote : CreditCard;
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-[11px] font-medium text-base-content/70 bg-base-100 border border-base-300">
+                                <Icon className="w-3.5 h-3.5 shrink-0" />
+                                {pm}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-5 py-4 text-base-content/70 tabular-nums whitespace-nowrap text-[12px]">
                           <span className="flex items-center gap-1.5">
                             <CalendarDays className="w-3 h-3 text-base-content/45" />
                             {formatDate(e.spentAt)}
                           </span>
+                        </td>
+                        <td className="px-5 py-4 text-base-content/70 text-[11px]">
+                          {e.isRecurring ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-[6px] bg-[rgba(139,92,246,0.12)] text-[10px] font-medium" style={{ color: '#8B5CF6' }}>
+                              <RefreshCw className="w-3 h-3" />
+                              {e.recurringPeriod === 'monthly' ? 'Har oy' : e.recurringPeriod === 'quarterly' ? 'Har chorak' : 'Har yil'}
+                              {e.nextPaymentAt && ` → ${formatDate(e.nextPaymentAt)}`}
+                            </span>
+                          ) : (
+                            <span className="text-base-content/45">—</span>
+                          )}
                         </td>
                         <td className="px-5 py-4">
                           <StatusBadge status={getStatusFromExpense(e)} />
@@ -583,7 +610,7 @@ export default function Expenses() {
               </div>
 
               {/* Table footer */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-t border-base-300 bg-base-100">
+              <div className="flex flex-wrap items-center justify-between px-5 py-3.5 border-t border-base-300 bg-base-100 gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-base-content/45">
                     {filtered.length} расходов
@@ -700,6 +727,15 @@ export default function Expenses() {
                     <span className="text-[13px] font-semibold text-base-content">{getPaymentMethod(viewTarget)}</span>
                   </div>
                 )}
+                {viewTarget.isRecurring && (
+                  <div className="flex justify-between items-center py-3 border-b border-base-300">
+                    <span className="text-[12px] text-base-content/70 font-medium">Takrorlanuvchi</span>
+                    <span className="text-[13px] font-semibold text-base-content">
+                      {viewTarget.recurringPeriod === 'monthly' ? 'Har oy' : viewTarget.recurringPeriod === 'quarterly' ? 'Har chorak yil' : 'Har yil'}
+                      {viewTarget.nextPaymentAt && ` — keyingi: ${formatDate(viewTarget.nextPaymentAt)}`}
+                    </span>
+                  </div>
+                )}
                 {getCreatedBy(viewTarget) !== '—' && (
                   <div className="flex justify-between items-center py-3 border-b border-base-300">
                     <span className="text-[12px] text-base-content/70 font-medium">Создал</span>
@@ -796,22 +832,67 @@ export default function Expenses() {
             <div>
               <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Способ оплаты</label>
               <div className="grid grid-cols-2 gap-2">
-                {PAYMENT_METHODS.map((method) => (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, paymentMethod: method })}
-                    className="px-4 py-2.5 rounded-[12px] text-[12px] font-semibold border transition-all duration-200"
-                    style={{
-                      background: formData.paymentMethod === method ? 'var(--primary)' : 'var(--surface)',
-                      color: formData.paymentMethod === method ? '#fff' : 'var(--text-secondary)',
-                      borderColor: formData.paymentMethod === method ? 'var(--primary)' : 'var(--border)',
-                    }}
-                  >
-                    {method}
-                  </button>
-                ))}
+                {PAYMENT_METHODS.map((method) => {
+                  const Icon = method === 'Наличные' ? Banknote : CreditCard;
+                  return (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, paymentMethod: method })}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-[12px] text-[12px] font-semibold border transition-all duration-200"
+                      style={{
+                        background: formData.paymentMethod === method ? 'var(--primary)' : 'var(--surface)',
+                        color: formData.paymentMethod === method ? '#fff' : 'var(--text-secondary)',
+                        borderColor: formData.paymentMethod === method ? 'var(--primary)' : 'var(--border)',
+                      }}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {method}
+                    </button>
+                  );
+                })}
               </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Takrorlanuvchi xarajat</label>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isRecurring}
+                    onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                    className="checkbox checkbox-primary w-4 h-4"
+                  />
+                  <span className="text-[12px] text-base-content/70">Har oy avtomatik qo'shilsin</span>
+                </label>
+              </div>
+              {formData.isRecurring && (
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Takrorlanish davri</label>
+                    <select
+                      value={formData.recurringPeriod}
+                      onChange={(e) => setFormData({ ...formData, recurringPeriod: e.target.value })}
+                      className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
+                    >
+                      <option value="monthly">Har oy</option>
+                      <option value="quarterly">Har chorak yil</option>
+                      <option value="yearly">Har yil</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Keyingi to'lov sanasi *</label>
+                    <input
+                      type="date"
+                      value={formData.nextPaymentAt}
+                      onChange={(e) => setFormData({ ...formData, nextPaymentAt: e.target.value })}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {formData.category !== 'Other' && (
