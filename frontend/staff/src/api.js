@@ -493,8 +493,30 @@ function getMethodistMocks() {
     localStorage.setItem('mock_questions', JSON.stringify(questions));
   }
 
-  return { tt, topics, lessons, questions };
+  // Практические задания: обязательные требования (shart) с баллами.
+  // TODO(Karis): real backend — GET/POST /methodist/lessons/:id/requirements,
+  // PATCH/DELETE /methodist/requirements/:id.
+  let requirements = JSON.parse(localStorage.getItem('mock_requirements') || '[]');
+  if (requirements.length === 0) {
+    requirements = [
+      { id: 'req-1', lesson_id: 'ls-2', text: 'i18n — 3 til (uz/ru/en)', points: 20, sort_order: 0 },
+      { id: 'req-2', lesson_id: 'ls-2', text: 'Dizayn DaisyUI', points: 5, sort_order: 1 },
+      { id: 'req-3', lesson_id: 'ls-2', text: 'Responsive (1280 / 768 / 375)', points: 10, sort_order: 2 },
+    ];
+    localStorage.setItem('mock_requirements', JSON.stringify(requirements));
+  }
+
+  return { tt, topics, lessons, questions, requirements };
 }
+
+const syncRequirementsCount = (mocks, lessonId) => {
+  const count = mocks.requirements.filter((r) => r.lesson_id === lessonId).length;
+  const lesson = mocks.lessons.find((l) => l.id === lessonId);
+  if (lesson) {
+    lesson.requirements_count = count;
+    localStorage.setItem('mock_lessons', JSON.stringify(mocks.lessons));
+  }
+};
 
 async function rawRequest(path, { method = 'GET', body, token } = {}) {
   if (USE_MOCKS) {
@@ -509,8 +531,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     // -------- LESSON FILE UPLOAD MOCK --------
     const uploadUrlMatch = path.match(/^\/methodist\/lessons\/([^/]+)\/upload-url/);
     if (uploadUrlMatch) {
-      const url = new URL(path, 'http://localhost');
-      const filename = url.searchParams.get('filename') || 'file.pdf';
+      const filename = queryParams.filename || 'file.pdf';
       return {
         success: true,
         data: {
@@ -1032,6 +1053,7 @@ if (path === '/branch-manager/reports') {
           sort_order: mocks.lessons.length,
           created_at: new Date().toISOString(),
           questions_count: 0,
+          requirements_count: 0,
         };
         mocks.lessons.push(newItem);
         localStorage.setItem('mock_lessons', JSON.stringify(mocks.lessons));
@@ -1044,7 +1066,8 @@ if (path === '/branch-manager/reports') {
       if (method === 'GET') {
         const lesson = mocks.lessons.find((l) => l.id === id);
         const qs = mocks.questions.filter((q) => q.lesson_id === id);
-        return { success: true, data: { ...lesson, questions: qs } };
+        const reqs = mocks.requirements.filter((r) => r.lesson_id === id);
+        return { success: true, data: { ...lesson, questions: qs, requirements: reqs } };
       }
       if (method === 'PATCH') {
         const idx = mocks.lessons.findIndex((l) => l.id === id);
@@ -1076,6 +1099,7 @@ if (path === '/branch-manager/reports') {
           title: `${original.title} (копия)`,
           created_at: new Date().toISOString(),
           questions_count: original.questions_count,
+          requirements_count: original.requirements_count,
         };
         mocks.lessons.push(newLesson);
         localStorage.setItem('mock_lessons', JSON.stringify(mocks.lessons));
@@ -1084,6 +1108,11 @@ if (path === '/branch-manager/reports') {
         const newQs = qs.map((q) => ({ ...q, id: `q-${Date.now()}-${Math.random()}`, lesson_id: newLesson.id }));
         mocks.questions.push(...newQs);
         localStorage.setItem('mock_questions', JSON.stringify(mocks.questions));
+        // copy requirements
+        const reqs = mocks.requirements.filter((r) => r.lesson_id === lessonId);
+        const newReqs = reqs.map((r) => ({ ...r, id: `req-${Date.now()}-${Math.random()}`, lesson_id: newLesson.id }));
+        mocks.requirements.push(...newReqs);
+        localStorage.setItem('mock_requirements', JSON.stringify(mocks.requirements));
         return { success: true, data: newLesson };
       }
     }
@@ -1147,6 +1176,49 @@ if (path === '/branch-manager/reports') {
       if (method === 'DELETE') {
         mocks.questions = mocks.questions.filter((q) => q.id !== id);
         localStorage.setItem('mock_questions', JSON.stringify(mocks.questions));
+        return { success: true };
+      }
+    }
+
+    // -------- REQUIREMENTS (практические задания) --------
+    const reqMatch = path.match(/^\/methodist\/lessons\/([^/]+)\/requirements$/);
+    if (reqMatch) {
+      const lessonId = reqMatch[1];
+      const filtered = mocks.requirements.filter((r) => r.lesson_id === lessonId);
+      return { success: true, data: filtered };
+    }
+
+    if (path === '/methodist/requirements') {
+      if (method === 'POST') {
+        const newItem = {
+          id: `req-${Date.now()}`,
+          lesson_id: body.lessonId,
+          text: body.text,
+          points: body.points || 0,
+          sort_order: mocks.requirements.length,
+        };
+        mocks.requirements.push(newItem);
+        localStorage.setItem('mock_requirements', JSON.stringify(mocks.requirements));
+        syncRequirementsCount(mocks, body.lessonId);
+        return { success: true, data: newItem };
+      }
+    }
+
+    if (path.match(/^\/methodist\/requirements\/([^/]+)$/)) {
+      const id = path.split('/')[3];
+      if (method === 'PATCH') {
+        const idx = mocks.requirements.findIndex((r) => r.id === id);
+        if (idx >= 0) {
+          Object.assign(mocks.requirements[idx], body);
+          localStorage.setItem('mock_requirements', JSON.stringify(mocks.requirements));
+          return { success: true, data: mocks.requirements[idx] };
+        }
+      }
+      if (method === 'DELETE') {
+        const removed = mocks.requirements.find((r) => r.id === id);
+        mocks.requirements = mocks.requirements.filter((r) => r.id !== id);
+        localStorage.setItem('mock_requirements', JSON.stringify(mocks.requirements));
+        if (removed) syncRequirementsCount(mocks, removed.lesson_id);
         return { success: true };
       }
     }
@@ -2564,13 +2636,18 @@ export const api = {
   methodistArchiveLesson: (token, id) => request(`/methodist/lessons/${id}/archive`, { method: 'POST', token }),
   methodistCopyLesson: (token, id, targetTopicId) => request(`/methodist/lessons/${id}/copy`, { method: 'POST', token, body: { targetTopicId } }),
   methodistLessonUploadUrl: (token, id, filename, contentType) =>
-    request(`/methodist/lessons/${id}/upload-url?filename=${filename}&contentType=${contentType}`, { token }),
+    request(`/methodist/lessons/${id}/upload-url?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(contentType)}`, { token }),
 
   methodistQuestions: (token, lessonId) => request(`/methodist/lessons/${lessonId}/questions`, { token }),
   methodistCreateQuestion: (token, body) => request('/methodist/questions', { method: 'POST', token, body }),
   methodistCreateQuestionsBatch: (token, questions) => request('/methodist/questions/batch', { method: 'POST', token, body: { questions } }),
   methodistUpdateQuestion: (token, id, body) => request(`/methodist/questions/${id}`, { method: 'PATCH', token, body }),
   methodistDeleteQuestion: (token, id) => request(`/methodist/questions/${id}`, { method: 'DELETE', token }),
+
+  methodistRequirements: (token, lessonId) => request(`/methodist/lessons/${lessonId}/requirements`, { token }),
+  methodistCreateRequirement: (token, body) => request('/methodist/requirements', { method: 'POST', token, body }),
+  methodistUpdateRequirement: (token, id, body) => request(`/methodist/requirements/${id}`, { method: 'PATCH', token, body }),
+  methodistDeleteRequirement: (token, id) => request(`/methodist/requirements/${id}`, { method: 'DELETE', token }),
 
   // -------- METHODIST ANALYTICS --------
   methodistDifficulty: (token) => request('/methodist/difficulty', { token }),

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Mail, Building2, CalendarDays, ShieldCheck, KeyRound, Check, AlertCircle, LogOut,
+  Mail, Building2, CalendarDays, ShieldCheck, KeyRound, Check, AlertCircle, LogOut, AlertTriangle, RefreshCw,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,8 @@ import MyDiscipline from '../../components/MyDiscipline.jsx';
 import { useMe } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
+import { LangProvider, useLang } from './i18n.js';
+import LangSwitcher from './LangSwitcher.jsx';
 
 /**
  * Профиль методиста. У методиста нет групп/грейда/навыков ментора — карточка
@@ -28,12 +30,13 @@ function InfoRow({ icon: Icon, label, value }) {
   );
 }
 
-export default function MethodistProfile() {
+function MethodistProfileView() {
+  const { t, lang } = useLang();
   const { token, user, logout, patchUser } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
-  const { data, isLoading } = useMe();
+  const { data, isLoading, isError, error: meError } = useMe();
   const me = data?.data ?? null;
 
   const [firstName, setFirstName] = useState('');
@@ -57,9 +60,9 @@ export default function MethodistProfile() {
   );
 
   const validate = () => {
-    if (!firstName.trim()) return 'Введите имя';
-    if (!lastName.trim()) return 'Введите фамилию';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Некорректный email';
+    if (!firstName.trim()) return t('profile.enter_name');
+    if (!lastName.trim()) return t('profile.enter_last');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return t('profile.invalid_email');
     return '';
   };
 
@@ -77,7 +80,7 @@ export default function MethodistProfile() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
-      setError(err.message || 'Не удалось сохранить');
+      setError(err.message || t('profile.save_failed'));
     } finally {
       setSaving(false);
     }
@@ -98,10 +101,38 @@ export default function MethodistProfile() {
 
   const fullName = `${me?.firstName ?? user?.firstName ?? ''} ${me?.lastName ?? user?.lastName ?? ''}`.trim();
   const formatDate = (iso) =>
-    iso ? new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+    iso ? new Date(iso).toLocaleDateString(lang, { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 p-4 sm:p-6 lg:p-8 overflow-y-auto lg:overflow-hidden">
+    <div className="flex-1 min-h-0 flex flex-col gap-5 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+      <div className="flex items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl grid place-items-center" style={{ background: 'var(--mt-accent-light)' }}>
+            <ShieldCheck size={18} className="text-[var(--mt-accent)]" />
+          </div>
+          <div>
+            <h1 className="text-[20px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('profile.personal_data')}</h1>
+            <p className="text-[12px] text-[var(--mt-text-muted)]">{fullName || '—'}</p>
+          </div>
+        </div>
+        <LangSwitcher />
+      </div>
+      {isError && (
+        <div className="alert alert-error w-full shrink-0">
+          <AlertTriangle size={20} className="shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm">{t('profile.load_error')}</p>
+            <p className="text-xs opacity-80">{meError?.message || t('common.loading_failed')}</p>
+          </div>
+          <button
+            className="btn btn-ghost btn-sm gap-1.5 shrink-0"
+            onClick={() => window.location.reload()}
+          >
+            <RefreshCw size={14} /> {t('common.retry')}
+          </button>
+        </div>
+      )}
+      <div className="flex flex-col lg:flex-row gap-5 flex-1 min-h-0 lg:overflow-hidden">
       {/* ═════ Карточка личности ═════ */}
       <aside className="w-full lg:w-[380px] shrink-0 lg:h-full lg:overflow-y-auto">
         <div className="space-y-5">
@@ -118,15 +149,15 @@ export default function MethodistProfile() {
               </h2>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="badge badge-primary badge-sm gap-1">
-                  <ShieldCheck size={11} /> Методист
+                  <ShieldCheck size={11} /> {t('profile.role_methodist')}
                 </span>
               </div>
             </div>
 
             <div className="divide-y divide-base-200 border-t border-base-200">
-              <InfoRow icon={Mail} label="Email" value={me?.email ?? user?.email} />
-              <InfoRow icon={Building2} label="Филиал" value={me?.branchName} />
-              <InfoRow icon={CalendarDays} label="Зарегистрирован" value={formatDate(me?.createdAt)} />
+              <InfoRow icon={Mail} label={t('profile.email')} value={isLoading ? <span className="skeleton inline-block h-4 w-24 align-middle" /> : (me?.email ?? user?.email)} />
+              <InfoRow icon={Building2} label={t('profile.branch')} value={isLoading ? <span className="skeleton inline-block h-4 w-24 align-middle" /> : me?.branchName} />
+              <InfoRow icon={CalendarDays} label={t('profile.registered')} value={isLoading ? <span className="skeleton inline-block h-4 w-24 align-middle" /> : formatDate(me?.createdAt)} />
             </div>
           </section>
         </div>
@@ -137,15 +168,15 @@ export default function MethodistProfile() {
         <div className="space-y-5">
           <section className="card bg-base-100">
             <header className="px-5 py-4 border-b border-base-200">
-              <h2 className="font-bold">Личные данные</h2>
+              <h2 className="font-bold">{t('profile.personal_data')}</h2>
               <p className="text-xs text-base-content/45 mt-0.5">
-                Эти данные видит администратор организации.
+                {t('profile.personal_data_hint')}
               </p>
             </header>
 
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="form-control">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Имя</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('profile.first_name')}</span>
                 <input
                   className="input input-bordered"
                   value={firstName}
@@ -155,7 +186,7 @@ export default function MethodistProfile() {
                 />
               </label>
               <label className="form-control">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Фамилия</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('profile.last_name')}</span>
                 <input
                   className="input input-bordered"
                   value={lastName}
@@ -165,7 +196,7 @@ export default function MethodistProfile() {
                 />
               </label>
               <label className="form-control sm:col-span-2">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Email</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('profile.email')}</span>
                 <input
                   type="email"
                   className="input input-bordered"
@@ -175,7 +206,7 @@ export default function MethodistProfile() {
                   disabled={isLoading}
                 />
                 <span className="text-[11px] text-base-content/45 mt-1.5">
-                  Вы входите в систему с этим email, код восстановления пароля также приходит на этот адрес.
+                  {t('profile.email_hint')}
                 </span>
               </label>
             </div>
@@ -188,17 +219,17 @@ export default function MethodistProfile() {
                   </span>
                 ) : saved ? (
                   <span className="flex items-center gap-1.5 text-success font-semibold">
-                    <Check size={14} /> Сохранено
+                    <Check size={14} /> {t('profile.saved')}
                   </span>
                 ) : dirty ? (
-                  <span className="text-base-content/50">Есть несохранённые изменения</span>
+                  <span className="text-base-content/50">{t('profile.dirty')}</span>
                 ) : null}
               </span>
 
               <span className="flex items-center gap-2 shrink-0">
                 {dirty && (
                   <button className="btn btn-ghost btn-sm" onClick={reset} disabled={saving}>
-                    Отмена
+                    {t('common.cancel')}
                   </button>
                 )}
                 <button
@@ -207,7 +238,7 @@ export default function MethodistProfile() {
                   disabled={saving || !dirty}
                 >
                   {saving ? <span className="loading loading-spinner loading-xs" /> : <Check size={15} />}
-                  Сохранить
+                  {t('common.save')}
                 </button>
               </span>
             </footer>
@@ -215,39 +246,38 @@ export default function MethodistProfile() {
 
           <section className="card bg-base-100">
             <header className="px-5 py-4 border-b border-base-200">
-              <h2 className="font-bold">Безопасность</h2>
+              <h2 className="font-bold">{t('profile.security')}</h2>
             </header>
 
             <div className="divide-y divide-base-200">
               <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
-                    <KeyRound size={15} className="text-base-content/40" /> Пароль
+                    <KeyRound size={15} className="text-base-content/40" /> {t('profile.password')}
                   </div>
                   <p className="text-xs text-base-content/50 mt-1 max-w-md">
-                    В целях безопасности пароль не изменяется здесь — он
-                    восстанавливается через код подтверждения, отправляемый на ваш email.
+                    {t('profile.password_hint')}
                   </p>
                 </div>
                 <button
                   className="btn btn-outline btn-sm shrink-0"
                   onClick={() => navigate('/login?reset=1')}
                 >
-                  Восстановить пароль
+                  {t('profile.reset_password')}
                 </button>
               </div>
 
               <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
-                    <LogOut size={15} className="text-base-content/40" /> Завершить сеанс
+                    <LogOut size={15} className="text-base-content/40" /> {t('profile.end_session')}
                   </div>
                   <p className="text-xs text-base-content/50 mt-1">
-                    Вы выйдете из аккаунта на этом устройстве.
+                    {t('profile.session_hint')}
                   </p>
                 </div>
                 <button className="btn btn-outline btn-error btn-sm shrink-0" onClick={onLogout}>
-                  Выйти
+                  {t('profile.logout')}
                 </button>
               </div>
             </div>
@@ -257,6 +287,15 @@ export default function MethodistProfile() {
           <MyDiscipline />
         </div>
       </div>
+      </div>
     </div>
+  );
+}
+
+export default function MethodistProfile() {
+  return (
+    <LangProvider>
+      <MethodistProfileView />
+    </LangProvider>
   );
 }

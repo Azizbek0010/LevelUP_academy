@@ -507,3 +507,334 @@ html {
   height: 100dvh;
   max-height: 100dvh;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   METHODIST — "Content Studio" Design System
+   Unique identity: lime brand (#C6FF34) + forest-green accent (#40833B),
+   editorial cards, notebook-style lists. Matches staff design tokens
+   (--primary/#40833B, Manrope) with the task palette #1D2417/#C6FF34/#F6FBEA.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --mt-accent: #40833B;
+  --mt-accent-light: rgba(64, 131, 59, 0.08);
+  --mt-accent-hover: rgba(64, 131, 59, 0.12);
+  --mt-accent-border: rgba(64, 131, 59, 0.18);
+  --mt-brand: #C6FF34;
+  --mt-brand-hover: #A3E635;
+  --mt-brand-ink: #16210f;
+  --mt-surface: #f6faef;
+  --mt-surface-warm: #F6FBEA;
+  --mt-border: #e2ead6;
+  --mt-text: #1D2417;
+  --mt-text-muted: #5c6b53;
+  --mt-success: #15803d;
+  --mt-warning: #b45309;
+  --mt-danger: #dc2626;
+}
+
+/* ─── Methodist accent buttons ─── */
+.mt-btn-primary {
+  background: var(--mt-brand);
+  color: var(--mt-brand-ink);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(163, 230, 53, 0.3);
+}
+.mt-btn-primary:hover {
+  background: var(--mt-brand-hover);
+  box-shadow: 0 6px 20px rgba(163, 230, 53, 0.4);
+  transform: translateY(-1px);
+}
+.mt-btn-primary:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.mt-btn-ghost {
+  background: var(--mt-surface-warm);
+  color: var(--mt-text-muted);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--mt-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.mt-btn-ghost:hover {
+  background: var(--mt-accent-light);
+  color: var(--mt-accent);
+  border-color: var(--mt-accent-border);
+}
+
+/* ─── Methodist content cards (left-border accent) ─── */
+.mt-card {
+  background: #fff;
+  border: 1px solid var(--mt-border);
+  border-left: 4px solid var(--mt-brand);
+  border-radius: 14px;
+  padding: 20px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mt-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(64, 131, 59, 0.1), 0 2px 8px rgba(0,0,0,0.04);
+  border-left-color: var(--mt-brand-hover);
+}
+
+.mt-card-flat {
+  background: #fff;
+  border: 1px solid var(--mt-border);
+  border-radius: 14px;
+  padding: 20px;
+  transition: all 0.25s ease;
+}
+.mt-card-flat:hover {
+  border-color: var(--mt-accent-border);
+  box-shadow: 0 4px 16px rgba(64, 131, 59, 0.08);
+}
+
+/* ─── Methodist stat strip (horizontal KPI) ─── */
+.mt-stat-strip {
+  background: linear-gradient(135deg, #F6FBEA 0%, #EFF8DD 50%, #F6FBEA 100%);
+  border: 1px solid var(--mt-border);
+  border-radius: 16px;
+  padding: 20px 24px;
+}
+
+/* ─── Methodist notebook list item ─── */
+.mt-notebook-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--mt-border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.mt-notebook-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  background: var(--mt-accent);
+  border-radius: 0 3px 3px 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.mt-notebook-item:hover {
+  background: var(--mt-surface);
+  border-color: var(--mt-accent-border);
+}
+.mt-notebook-item:hover::before {
+  opacity: 1;
+}
+
+/* ─── Methodist progress bar ─── */
+.mt-progress {
+  height: 8px;
+  background: var(--mt-surface-warm);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.mt-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--mt-brand), var(--mt-brand-hover));
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Methodist section header ─── */
+.mt-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--mt-border);
+  margin-bottom: 20px;
+}
+
+/* ─── Methodist modal ─── */
+.mt-modal {
+  border-radius: 20px;
+  border: 1px solid var(--mt-border);
+  overflow: hidden;
+}
+.mt-modal-header {
+  background: linear-gradient(135deg, #F6FBEA, #EFF8DD);
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--mt-border);
+}
+.mt-modal-body {
+  padding: 24px;
+}
+
+/* ─── Methodist input fields ─── */
+.mt-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid var(--mt-border);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--mt-text);
+  background: #fff;
+  transition: all 0.2s ease;
+  outline: none;
+}
+.mt-input:focus {
+  border-color: var(--mt-accent);
+  box-shadow: 0 0 0 3px rgba(64, 131, 59, 0.12);
+}
+.mt-input::placeholder {
+  color: #9CA3AF;
+}
+
+.mt-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--mt-border);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--mt-text);
+  background: #fff;
+  transition: all 0.2s ease;
+  outline: none;
+  resize: vertical;
+}
+.mt-textarea:focus {
+  border-color: var(--mt-accent);
+  box-shadow: 0 0 0 3px rgba(64, 131, 59, 0.12);
+}
+
+.mt-select {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid var(--mt-border);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--mt-text);
+  background: #fff;
+  transition: all 0.2s ease;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+.mt-select:focus {
+  border-color: var(--mt-accent);
+  box-shadow: 0 0 0 3px rgba(64, 131, 59, 0.12);
+}
+
+/* ─── Methodist badge / chip ─── */
+.mt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.mt-badge-test {
+  background: rgba(245, 158, 11, 0.1);
+  color: #B45309;
+}
+.mt-badge-practical {
+  background: rgba(5, 150, 105, 0.1);
+  color: #047857;
+}
+
+/* ─── Methodist empty state ─── */
+.mt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+}
+
+/* ─── Methodist page bg (subtle gradient) ─── */
+.mt-page-bg {
+  min-height: 100%;
+  background: linear-gradient(180deg, var(--mt-surface) 0%, #fff 120px);
+}
+
+/* ─── Methodist question card (editor) ─── */
+.mt-question-card {
+  background: #fff;
+  border: 1px solid var(--mt-border);
+  border-radius: 14px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+.mt-question-card:hover {
+  border-color: var(--mt-accent-border);
+}
+.mt-question-card.editing {
+  border-color: var(--mt-accent);
+  box-shadow: 0 0 0 3px rgba(64, 131, 59, 0.08);
+}
+
+/* ─── Methodist option pill ─── */
+.mt-option-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.mt-option-correct {
+  background: rgba(5, 150, 105, 0.08);
+  border: 1.5px solid rgba(5, 150, 105, 0.2);
+  color: #065F46;
+}
+
+/* ─── Methodist stagger delays (extended) ─── */
+.mt-stagger-1 { animation-delay: 0.06s; }
+.mt-stagger-2 { animation-delay: 0.12s; }
+.mt-stagger-3 { animation-delay: 0.18s; }
+.mt-stagger-4 { animation-delay: 0.24s; }
+.mt-stagger-5 { animation-delay: 0.30s; }
+.mt-stagger-6 { animation-delay: 0.36s; }
+
+/* ─── Methodist slide-in (gentle) ─── */
+@keyframes mt-slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.mt-animate-in {
+  animation: mt-slide-in 0.4s ease-out both;
+}
+
+/* ─── Methodist fade-in ─── */
+@keyframes mt-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.mt-fade-in {
+  animation: mt-fade 0.3s ease-out both;
+}
