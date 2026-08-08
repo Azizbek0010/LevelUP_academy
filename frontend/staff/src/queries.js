@@ -188,6 +188,21 @@ export function useAdminInvoices(qs = '') {
   return useAuthedQuery(['admin-invoices', qs], () => api.adminInvoices(token, qs));
 }
 
+export function useAdminShopItems() {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-shop-items'], () => api.adminShopItems(token));
+}
+
+export function useAdminShopOrders(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-shop-orders', qs], () => api.adminShopOrders(token, qs));
+}
+
+export function useSuperShopItems(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-shop-items', qs], () => api.superShopItems(token, qs));
+}
+
 export function useAdminReports(qs = '') {
   const { token } = useAuth();
   return useAuthedQuery(['admin-reports', qs], () => api.adminReports(token, qs));

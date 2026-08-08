@@ -1,5 +1,6 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './super.service.js';
+import * as shopService from '../admin/shop/shop-admin.service.js';
 
 // req.scope.organizationId проставляет authorize('seo') — своя организация
 const orgId = (req) => req.scope.organizationId;
@@ -375,4 +376,33 @@ export const setTrainingTypeArchived = asyncHandler(async (req, res) => {
     entityLabel: trainingType.name,
   });
   res.json({ trainingType });
+});
+
+// ---------- shop-каталог: имя/цена/фото заводит SEO, остаток пополняет филиал (см. admin/shop) ----------
+
+export const listShopItems = asyncHandler(async (req, res) => {
+  res.json({ items: await shopService.listItemsForOrg(orgId(req), req.query.branchId) });
+});
+
+export const createShopItem = asyncHandler(async (req, res) => {
+  const item = await shopService.createItemForOrg(orgId(req), req.body);
+  await audit(req, { action: 'shop_item.create', entityType: 'shop_item', entityId: item.id, entityLabel: item.name });
+  res.status(201).json({ item });
+});
+
+export const updateShopItem = asyncHandler(async (req, res) => {
+  const item = await shopService.updateItemForOrg(orgId(req), req.params.id, req.body);
+  await audit(req, { action: 'shop_item.update', entityType: 'shop_item', entityId: item.id, entityLabel: item.name });
+  res.json({ item });
+});
+
+export const setShopItemArchived = asyncHandler(async (req, res) => {
+  const item = await shopService.setItemArchivedForOrg(orgId(req), req.params.id, req.body.archived);
+  await audit(req, {
+    action: req.body.archived ? 'shop_item.archive' : 'shop_item.unarchive',
+    entityType: 'shop_item',
+    entityId: item.id,
+    entityLabel: item.name,
+  });
+  res.json({ item });
 });

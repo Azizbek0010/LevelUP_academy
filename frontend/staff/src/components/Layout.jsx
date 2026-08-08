@@ -11,7 +11,7 @@ import {
   HiOutlineChartBar, HiOutlineCog,
   HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
-  HiOutlineCreditCard,
+  HiOutlineCreditCard, HiOutlineGift,
 } from 'react-icons/hi2';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
@@ -82,6 +82,7 @@ const superNav = [
       { to: '/reminders',     label: 'Напоминания' },
       { to: '/audit',         label: 'Аудит' },
       { to: '/methodics',     label: 'Методики' },
+      { to: '/shop-catalog',  label: 'Магазин' },
       { to: '/settings',      label: 'Настройки' },
     ],
   },
@@ -93,6 +94,7 @@ const adminNav = [
   { to: '/groups',    label: 'Группы',      Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Менторы',     Icon: HiOutlineUserCircle },
   { to: '/chat',      label: 'Чат',         Icon: HiOutlineChatBubbleLeftRight },
+  { to: '/shop',      label: 'Магазин',     Icon: HiOutlineGift },
   { to: '/payments',  label: 'Платежи',     Icon: HiOutlineWallet },
   { to: '/expenses',  label: 'Расходы',     Icon: HiOutlineReceiptPercent },
   { to: '/reports',   label: 'Отчёты',      Icon: HiOutlineChartBar },
@@ -109,6 +111,7 @@ const branchManagerNav = [
   { to: '/students',  label: 'Studentlar', Icon: HiOutlineAcademicCap },
   { to: '/groups',    label: 'Guruhlar',  Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Mentorlar', Icon: HiOutlineUserCircle },
+  { to: '/shop',      label: 'Do\'kon',   Icon: HiOutlineGift },
   { to: '/branch',    label: 'Filial',    Icon: HiOutlineBuildingOffice2 },
   { to: '/payments',  label: 'To\'lovlar', Icon: HiOutlineCreditCard },
   { to: '/income',    label: 'Daromad',   Icon: HiOutlineWallet },

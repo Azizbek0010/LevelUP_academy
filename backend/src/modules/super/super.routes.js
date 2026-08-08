@@ -21,6 +21,10 @@ import {
   reassignBranchManagersSchema,
   setTrainingTypePriceSchema,
   setTrainingTypeArchivedSchema,
+  createShopItemSchema,
+  updateShopItemSchema,
+  setShopItemArchivedSchema,
+  listShopItemsQuery,
 } from './super.schemas.js';
 import * as ctrl from './super.controller.js';
 import * as discipline from '../discipline/discipline.controller.js';
@@ -1272,6 +1276,118 @@ router.post('/staff/:id/reactivate', validate({ params: idParam }), discipline.r
  */
 router.get('/discipline-rules', discipline.listRules);
 router.post('/discipline-rules', validate({ body: createRuleSchema }), discipline.createRule);
+
+// ==================== SHOP-КАТАЛОГ (SEO заводит товары, филиал только пополняет остаток) ====================
+
+/**
+ * @openapi
+ * /api/super/shop/items:
+ *   get:
+ *     tags: [SEO]
+ *     summary: List shop catalog items across the organization (optional ?branchId= to narrow)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: branchId
+ *         in: query
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: Items }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ *   post:
+ *     tags: [SEO]
+ *     summary: Create a shop item in one of the organization's branches
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [branchId, name, coinPrice]
+ *             properties:
+ *               branchId: { type: string, format: uuid }
+ *               name: { type: string, minLength: 1, maxLength: 160 }
+ *               imageKey: { type: string, maxLength: 512 }
+ *               coinPrice: { type: integer, minimum: 1 }
+ *               stock: { type: integer, minimum: 0 }
+ *     responses:
+ *       201: { description: Item created }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Branch not found in your organization
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get('/shop/items', validate({ query: listShopItemsQuery }), ctrl.listShopItems);
+router.post('/shop/items', validate({ body: createShopItemSchema }), ctrl.createShopItem);
+
+/**
+ * @openapi
+ * /api/super/shop/items/{id}:
+ *   patch:
+ *     tags: [SEO]
+ *     summary: Update a shop item's catalog fields (name/image/price/stock)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string, minLength: 1, maxLength: 160 }
+ *               imageKey: { type: string, maxLength: 512 }
+ *               coinPrice: { type: integer, minimum: 1 }
+ *               stock: { type: integer, minimum: 0 }
+ *     responses:
+ *       200: { description: Updated item }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Item not found in your organization
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.patch('/shop/items/:id', validate({ params: idParam, body: updateShopItemSchema }), ctrl.updateShopItem);
+
+/**
+ * @openapi
+ * /api/super/shop/items/{id}/archive:
+ *   patch:
+ *     tags: [SEO]
+ *     summary: Archive or unarchive a shop item (archived items are hidden from students)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [archived]
+ *             properties: { archived: { type: boolean } }
+ *     responses:
+ *       200: { description: Updated item }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404:
+ *         description: Item not found in your organization
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.patch('/shop/items/:id/archive', validate({ params: idParam, body: setShopItemArchivedSchema }), ctrl.setShopItemArchived);
 
 /**
  * @openapi

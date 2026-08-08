@@ -32,6 +32,7 @@ import * as discipline from '../discipline/discipline.controller.js';
 import { issuePenaltySchema, listPenaltiesQuery } from '../discipline/discipline.schemas.js';
 import paymentsRoutes from './payments/payments.routes.js';
 import reportsRoutes from './reports/reports.routes.js';
+import shopAdminRoutes from './shop/shop-admin.routes.js';
 
 /**
  * K-ADMIN — панель филиала. Только Admin; scope жёстко = свой branch_id.
@@ -47,6 +48,7 @@ router.use(authenticate, authorize('admin', 'branch_manager'));
 
 router.use('/payments', paymentsRoutes);
 router.use('/reports', reportsRoutes);
+router.use('/shop', shopAdminRoutes);
 
 /**
  * @openapi
