@@ -536,6 +536,7 @@ export async function listGroups(branchId, query) {
       id: g.id,
       name: g.name,
       subject: g.subject,
+      trainingTypeId: g.training_type_id,
       monthlyPrice: Number(g.monthly_price),
       room: g.room,
       isArchived: g.is_archived,
@@ -617,6 +618,7 @@ function mapGroup(g) {
     id: g.id,
     name: g.name,
     subject: g.subject,
+    trainingTypeId: g.training_type_id,
     monthlyPrice: Number(g.monthly_price),
     schedule,
     // производные поля для фронта: дни группы + единое время начала/конца

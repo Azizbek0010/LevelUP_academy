@@ -39,7 +39,6 @@ const AdminExpenses = lazy(() => import('./pages/admin/Expenses.jsx'));
 const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'));
 const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
 const AdminChat = lazy(() => import('./pages/admin/Chat.jsx'));
-const AdminSettings = lazy(() => import('./pages/admin/Settings.jsx'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile.jsx'));
 
 const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
@@ -122,7 +121,9 @@ export default function App() {
             по филиалу у обеих ролей уже одинаковый (authorize.js). */}
         <Route path="/groups/:id" element={<SW><RoleView views={{ admin: AdminGroupDetail, branch_manager: AdminGroupDetail, mentor: MentorGroupWorkspace }} /></SW>} />
         <Route path="/reports" element={<SW><RoleView views={{ seo: SuperReportsRedirect, admin: AdminReports, branch_manager: BranchManagerReports }} /></SW>} />
-        <Route path="/settings" element={<SW><RoleView views={{ seo: SuperSettings, admin: AdminSettings }} /></SW>} />
+        {/* admin: AdminSettings убран — файл page/admin/Settings.jsx удалён (Abduloh),
+            импорта не было (мёртвая ссылка), в adminNav такого пункта тоже нет. */}
+        <Route path="/settings" element={<SW><RoleView views={{ seo: SuperSettings }} /></SW>} />
         <Route path="/profile" element={<SW><RoleView views={{ admin: AdminProfile, seo: AdminProfile, mentor: MentorProfile, methodist: MethodistProfile }} /></SW>} />
         <Route path="/attendance" element={<SW><RoleView views={{ seo: SuperAttendance, mentor: () => <MentorLegacyRedirect tab="davomat" /> }} /></SW>} />
         <Route path="/tests" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="testlar" /> }} /></SW>} />
@@ -142,6 +143,8 @@ export default function App() {
             бэкенд уже пускает эту роль в свою же branchId (admin.routes.js). */}
         <Route element={<RoleGuard allow={['admin', 'branch_manager']} />}>
           <Route path="/payments" element={<SW><AdminPayments /></SW>} />
+          {/* deep-link на конкретного студента+сумму — Abduloh, автоподстановка суммы из группы */}
+          <Route path="/payments/:studentId/:amount?" element={<SW><AdminPayments /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
         </Route>
         {/* Расходы — общий путь для админа и branch manager (RoleView разбирает) */}

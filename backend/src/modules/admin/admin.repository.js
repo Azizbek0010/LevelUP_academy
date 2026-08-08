@@ -630,7 +630,7 @@ export function listGroups({ branchId, limit, offset }, client = pool) {
   return client
     .query(
       `SELECT g.id, g.name, g.subject, g.monthly_price, g.room, g.is_archived, g.created_at,
-              g.mentor_id, m.first_name AS mentor_first, m.last_name AS mentor_last,
+              g.mentor_id, g.training_type_id, m.first_name AS mentor_first, m.last_name AS mentor_last,
               (SELECT count(*) FROM group_students gs
                  WHERE gs.group_id = g.id AND gs.left_at IS NULL) AS students
          FROM groups g
@@ -657,7 +657,7 @@ export function findGroupInBranch(id, branchId, client = pool) {
   return client
     .query(
       `SELECT g.id, g.name, g.subject, g.monthly_price, g.schedule, g.room,
-              g.is_archived, g.created_at, g.mentor_id,
+              g.is_archived, g.created_at, g.mentor_id, g.training_type_id,
               m.first_name AS mentor_first, m.last_name AS mentor_last
          FROM groups g
          JOIN users m ON m.id = g.mentor_id

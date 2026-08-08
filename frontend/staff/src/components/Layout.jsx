@@ -96,7 +96,6 @@ const adminNav = [
   { to: '/payments',  label: 'Платежи',     Icon: HiOutlineWallet },
   { to: '/expenses',  label: 'Расходы',     Icon: HiOutlineReceiptPercent },
   { to: '/reports',   label: 'Отчёты',      Icon: HiOutlineChartBar },
-  { to: '/settings',  label: 'Настройки',   Icon: HiOutlineCog },
 ];
 
 /**
