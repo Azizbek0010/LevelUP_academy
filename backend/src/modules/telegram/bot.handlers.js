@@ -1,6 +1,7 @@
 import { messages } from './messages.js';
 import { TelegramBindTokenService } from './bind-token.service.js';
 import { TelegramLoginNonceService } from './login-nonce.service.js';
+import { BranchBindTokenService } from './branch-bind-token.service.js';
 import { LOGIN_PAYLOAD_PREFIX } from './constants.js';
 import { resolveUser, coinsCommand, ratingCommand, homeCommand } from './bot.commands.js';
 
@@ -10,6 +11,7 @@ export function registerTelegramBotHandlers({ bot, pool, redis, logger, language
   const t = messages(language);
   const bindTokens = new TelegramBindTokenService({ redis, botUsername: 'unused-for-consume-only' });
   const loginNonces = new TelegramLoginNonceService({ redis, botUsername: 'unused-for-approve-only' });
+  const branchBindTokens = new BranchBindTokenService({ redis });
 
   /**
    * Что именно пришло от Telegram. Без этого молчание бота неотличимо от
@@ -79,6 +81,49 @@ export function registerTelegramBotHandlers({ bot, pool, redis, logger, language
 
   bot.command('help', async (ctx) => {
     await ctx.reply(t.helpText);
+  });
+
+  /**
+   * Привязка группы родителей филиала (Branch Manager). Код выдаётся в
+   * кабинете (POST /api/branch-manager/telegram/bind-token), бот добавляется
+   * в группу ВРУЧНУЮ, а эта команда отправляется прямо в группе. /start с
+   * deep-link здесь не подходит: Telegram открывает по нему приватный чат с
+   * ботом, а не групповой — payload из группового /start не долетает так же.
+   */
+  bot.command('bindbranch', async (ctx) => {
+    const chatType = ctx.chat?.type;
+    if (chatType !== 'group' && chatType !== 'supergroup') {
+      await ctx.reply(t.branchBindNotGroup);
+      return;
+    }
+
+    const token = String(ctx.match || '').trim();
+    const branchId = await branchBindTokens.consume(token);
+    if (!branchId) {
+      await ctx.reply(t.branchBindTokenInvalid);
+      return;
+    }
+
+    const chatId = ctx.chat.id;
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE branches SET parent_tg_chat_id = $1, parent_tg_bound_at = now()
+          WHERE id = $2 AND deleted_at IS NULL`,
+        [chatId, branchId],
+      );
+      if (rowCount === 0) {
+        await ctx.reply(t.branchBindTokenInvalid);
+        return;
+      }
+      await ctx.reply(t.branchBindSuccess);
+    } catch (err) {
+      if (err?.code === '23505') {
+        await ctx.reply(t.branchBindAlreadyLinked);
+        return;
+      }
+      logger?.error({ err, branchId, chatId }, 'Branch Telegram group bind failed');
+      await ctx.reply(t.genericError);
+    }
   });
 
   bot.command('stop', async (ctx) => {

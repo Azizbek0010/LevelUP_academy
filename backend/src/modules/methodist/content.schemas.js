@@ -5,12 +5,16 @@ export const createTrainingTypeSchema = z.object({
   name: z.string().trim().min(1, 'Название обязательно').max(160),
   description: z.string().trim().max(1000).optional(),
   icon: z.string().trim().max(60).optional(),
+  // Aqlli tahlil: включать только там, где практика — реальный читаемый код
+  // (HTML/CSS/JS), не для курсов с большим числом файлов (React и т.п.)
+  aiReviewEnabled: z.coerce.boolean().default(false),
 });
 
 export const updateTrainingTypeSchema = z.object({
   name: z.string().trim().min(1).max(160).optional(),
   description: z.string().trim().max(1000).optional(),
   icon: z.string().trim().max(60).optional(),
+  aiReviewEnabled: z.coerce.boolean().optional(),
 });
 
 // ---------- Темы ----------

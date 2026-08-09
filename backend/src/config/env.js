@@ -65,6 +65,13 @@ const schema = z.object({
   // за сколько дней до due_date слать родителям напоминание payment.due_soon
   DUE_SOON_REMINDER_DAYS: z.coerce.number().int().positive().default(2),
 
+  // Aqlli tahlil (AI-review практических уроков). Пусто → review.service сразу
+  // пишет review_status='failed' и не делает сетевых вызовов — сдача ДЗ
+  // продолжает работать без AI. Groq (не Gemini) — 09.08.2026 переключились:
+  // бесплатный тариф Groq/Cerebras НЕ обучается на входных данных (в отличие
+  // от free tier самого Google), а сюда прилетает код реальных детей.
+  GROQ_API_KEY: z.string().optional().or(z.literal('')),
+
   SEED_MAIN_ADMIN_PHONE: z.string().default('+998900000000'),
   SEED_MAIN_ADMIN_EMAIL: z.string().email().default('hp8187081014laptop@gmail.com'),
   SEED_MAIN_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),

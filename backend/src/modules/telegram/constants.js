@@ -32,3 +32,18 @@ export function loginNonceKey(nonce) {
  * отдаёт один аргумент, поэтому тип операции кодируется в нём же.
  */
 export const LOGIN_PAYLOAD_PREFIX = 'login_';
+
+/**
+ * Привязка группы родителей филиала (Branch Manager). Отдельное пространство
+ * ключей от личной привязки (BIND_TOKEN_REDIS_PREFIX) — код тут не должен
+ * подходить как токен для входа личного аккаунта, и наоборот.
+ * TTL длиннее личной привязки (600с): пока код получен в кабинете, Branch
+ * Manager ещё должен вручную добавить бота в группу — это не мгновенно.
+ */
+export const BRANCH_BIND_TOKEN_TTL_SECONDS = 1800;
+export const BRANCH_BIND_TOKEN_REDIS_PREFIX = 'telegram:branch-bind:';
+export const BRANCH_BIND_TOKEN_BYTES = 6; // короче личного — вводится руками в группе, не по ссылке
+
+export function branchBindTokenKey(token) {
+  return `${BRANCH_BIND_TOKEN_REDIS_PREFIX}${token}`;
+}

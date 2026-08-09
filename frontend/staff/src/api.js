@@ -2593,6 +2593,9 @@ export const api = {
    branchManagerIncome: (token, month) => request(`/branch-manager/income?month=${month}`, { token }),
    branchManagerExpenses: (token, month) => request(`/branch-manager/expenses?month=${month}`, { token }),
    branchManagerReports: (token, months = 6) => request(`/branch-manager/reports?months=${months}`, { token }),
+   branchManagerTelegramStatus: (token) => request('/branch-manager/telegram/status', { token }),
+   branchManagerTelegramBindToken: (token) => request('/branch-manager/telegram/bind-token', { method: 'POST', token }),
+   branchManagerTelegramUnlink: (token) => request('/branch-manager/telegram/unlink', { method: 'DELETE', token }),
 
   // -------- SUPER ADMIN: Students --------
   superStudents: (token, qs = '') => request(`/super/students${qs}`, { token }),

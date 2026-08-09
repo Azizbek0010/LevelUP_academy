@@ -90,3 +90,25 @@ export function countBranchPayments(branchId, { from, to }, client = pool) {
     )
     .then((r) => r.rows[0].n);
 }
+
+// ---------- Telegram-группа родителей филиала ----------
+
+export function getTelegramGroupStatus(branchId, client = pool) {
+  return client
+    .query(
+      `SELECT parent_tg_chat_id, parent_tg_bound_at FROM branches
+        WHERE id = $1 AND deleted_at IS NULL`,
+      [branchId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function unlinkTelegramGroup(branchId, client = pool) {
+  return client
+    .query(
+      `UPDATE branches SET parent_tg_chat_id = NULL, parent_tg_bound_at = NULL
+        WHERE id = $1 AND parent_tg_chat_id IS NOT NULL AND deleted_at IS NULL`,
+      [branchId],
+    )
+    .then((r) => r.rowCount > 0);
+}

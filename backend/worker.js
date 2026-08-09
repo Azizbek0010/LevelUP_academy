@@ -9,14 +9,17 @@ import { notificationWorker } from './src/queues/workers/notification.worker.js'
 import { overdueWorker, scheduleOverdueCron } from './src/queues/workers/overdue.worker.js';
 import { billingWorker, scheduleBillingCron } from './src/queues/workers/billing.worker.js';
 import { dueSoonWorker, scheduleDueSoonCron } from './src/queues/workers/dueSoon.worker.js';
+import { aiReviewWorker } from './src/queues/workers/aiReview.worker.js';
+import { dailyDigestWorker, scheduleDailyDigestCron } from './src/queues/workers/dailyDigest.worker.js';
 import { startReminderLogging, stopReminderLogging } from './src/modules/super/reminders/reminders.listener.js';
 
 await scheduleOverdueCron();
 await scheduleBillingCron();
 await scheduleDueSoonCron();
+await scheduleDailyDigestCron();
 startReminderLogging(); // AB-SUPER-REM: логирует payment.due/due_soon/debt.overdue в reminders (SEO)
 logger.info(
-  'Worker started: notifications + overdue cron (09:00 daily) + billing cron (charge 1st 00:05, overdue 09:30 daily) + due-soon cron (08:00 daily) + reminder logging',
+  'Worker started: notifications + overdue cron (09:00 daily) + billing cron (charge 1st 00:05, overdue 09:30 daily) + due-soon cron (08:00 daily) + ai-review + daily-digest cron (00:00 Tashkent) + reminder logging',
 );
 
 let shuttingDown = false;
@@ -32,6 +35,8 @@ async function shutdown(signal) {
       overdueWorker.close(),
       billingWorker.close(),
       dueSoonWorker.close(),
+      aiReviewWorker.close(),
+      dailyDigestWorker.close(),
       stopReminderLogging(),
     ]);
     await pool.end();

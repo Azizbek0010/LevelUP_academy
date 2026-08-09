@@ -4,6 +4,47 @@
 > Statistika qo'lda YOZILMAYDI — real raqamlar faqat `done.md` da.
 > V1 SCOPE: naqd + karta (full/split). Click/Payme/UzCard/Humo — FAQAT v3. Nasiya/рассрочка — V1 DA YO'Q (qaror 2026-07-05, tasdiqlangan 2026-07-07).
 
+## Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Claude, 09.08.2026) 🆕
+
+> Karis so'ragan: (1) AI kod-review (backend, Groq — Gemini emas, pastga qara),
+> (2) Branch Manager filial uchun ota-onalar Telegram guruhini ulaydi, (3) davomat
+> va (4) test natijasi shu guruhga avto boradi, (5) har kuni 00:00'da kecha
+> topshirilmagan uy vazifalari sodig'i. Hammasi kod darajasida BAJARILDI,
+> save-zone'ga hali PUSH QILINMADI (foydalanuvchi ruxsati kutilmoqda — pastga qara).
+
+- [x] AI-REVIEW: `methodology_submissions` uchun AI kod-tahlili — Groq
+      (`openai/gpt-oss-120b`, bepul tarif, ma'lumotlarda o'qitilmaydi — shuning
+      uchun Gemini emas Groq tanlandi). Migratsiya (review/review_source/
+      review_status/review_attempts/reviewed_at + training_types.ai_review_enabled),
+      extractor (fayl/zip/GitHub/matn), BullMQ queue+worker, `submitHomework`
+      hook, `GET /student/home` ga `topicStats`+`review`, methodist toggle.
+      ⚠️ Ishlashi uchun BullMQ worker kerak — pastga BUG-NO-WORKER'ga qara.
+      Jonli sinovdan o'tkazildi (ru+uz, Groq API orqali, DB'siz) — ishlaydi.
+- [x] TG-BRANCH-BIND: Branch Manager kabinetida (`Branch.jsx`) "Ota-onalar
+      guruhi" kartasi — kod so'raydi, botni guruhga QO'LDA qo'shadi, guruhda
+      `/bindbranch <kod>` yuboradi. Backend: `branches.parent_tg_chat_id`,
+      `/api/branch-manager/telegram/{status,bind-token,unlink}`, bot
+      handler (`bot.handlers.js`). BUG-NO-WORKER'ga BOG'LIQ EMAS — bot
+      webhook orqali web-processda ishlaydi (worker emas).
+- [x] TG-ATTENDANCE: `attendance.service.js` — davomat belgilangach (3 daqiqa
+      debounce, chunki UI har bosishda avtosaqlaydi) kunlik yakuniy davomat
+      guruhga ketadi. BUG-NO-WORKER'ga bog'liq emas (event, web-processdan).
+- [x] TG-TEST-RESULT: `submitTest` — har test topshirilgach natija (mavzu +
+      foiz) guruhga ketadi. BUG-NO-WORKER'ga bog'liq emas.
+- [x] TG-DAILY-DIGEST: har kuni 00:00 (Asia/Tashkent) — kecha muddati o'tib
+      topshirilmagan uy vazifalari ro'yxati guruhga. `dailyDigest.worker.js`.
+      🔴 **BUG-NO-WORKER tufayli PRODDA ISHLAMAYDI** — kod tayyor, lekin
+      Render'da `type: worker` servisi yo'q (TASK.md'dagi eski yozuvga qara),
+      demak worker.js umuman ishga tushmaydi. Boshqa 3 tadan farqli — bu
+      croni, event emas, workersiz imkoni yo'q.
+
+**Ochiq savollar Karis'ga:**
+1. `npm run migrate` boshqa hech qachon lokal gonilmagan — Neon'ga to'g'ridan-
+   to'g'ri qo'lda gonish kerakmi hozir, yoki keyingi deploy'gacha kutamizmi?
+2. `GROQ_API_KEY` faqat lokal `.env`'da — Render'ga qachon qo'shamiz?
+3. BUG-NO-WORKER — pullik Render worker / vaqtinchalik inline-run / tashqi
+   cron — qaysi yo'l bilan yechamiz? Daily-digest shungacha ishlamaydi.
+
 ## ⚠️ Jamoa branch'lari — save-zone'ga hali qo'shilmagan (2026-08-09 tekshiruvi)
 
 > `git fetch --all --prune` qilindi, har bir branch save-zone bilan solishtirildi

@@ -3,6 +3,34 @@ import * as repo from './branch-manager.repository.js';
 import * as reportsRepo from '../admin/reports/reports.repository.js';
 import { parsePagination, buildPageMeta } from '../../utils/pagination.js';
 import { AppError } from '../../utils/AppError.js';
+import { BranchBindTokenService } from '../telegram/branch-bind-token.service.js';
+import { env } from '../../config/env.js';
+import { redis } from '../../config/redis.js';
+
+const branchBindTokens = new BranchBindTokenService({ redis });
+
+export async function telegramGroupStatus(branchId) {
+  const row = await repo.getTelegramGroupStatus(branchId);
+  return {
+    configured: Boolean(env.TELEGRAM_BOT_USERNAME),
+    linked: Boolean(row?.parent_tg_chat_id),
+    boundAt: row?.parent_tg_bound_at ?? null,
+  };
+}
+
+/** Код вводится вручную командой /bindbranch <код> ПРЯМО В ГРУППЕ (не deep-link —
+ * см. bot.handlers.js). botUsername нужен только чтобы подсказать в кабинете,
+ * какого бота искать/добавлять в группу. */
+export async function createTelegramBindToken(branchId) {
+  if (!env.TELEGRAM_BOT_USERNAME) throw new AppError(503, 'Telegram is not configured on this server');
+  const payload = await branchBindTokens.createForBranch(branchId);
+  return { ...payload, botUsername: env.TELEGRAM_BOT_USERNAME };
+}
+
+export async function unlinkTelegramGroup(branchId) {
+  const removed = await repo.unlinkTelegramGroup(branchId);
+  return { unlinked: removed };
+}
 
 /**
  * Раньше просто проксировал adminService.dashboard(branchId), но тот отдаёт

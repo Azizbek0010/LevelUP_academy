@@ -185,4 +185,50 @@ router.get('/expenses', validate({ query: listExpensesQuery }), ctrl.expenses);
  */
 router.get('/reports', validate({ query: listReportsQuery }), ctrl.reports);
 
+/**
+ * @openapi
+ * /api/branch-manager/telegram/status:
+ *   get:
+ *     tags: [Branch Manager]
+ *     summary: Whether this branch's parent Telegram group is linked
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Link state }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.get('/telegram/status', ctrl.telegramStatus);
+
+/**
+ * @openapi
+ * /api/branch-manager/telegram/bind-token:
+ *   post:
+ *     tags: [Branch Manager]
+ *     summary: Issue a one-time code to link this branch's parent group
+ *     description: >
+ *       Bot must be added to the group manually first, then the code is sent as
+ *       /bindbranch <code> inside that group. 503 if Telegram is not configured.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       201: { description: Code issued }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       503: { description: Telegram is not configured on this server }
+ */
+router.post('/telegram/bind-token', ctrl.createTelegramBindToken);
+
+/**
+ * @openapi
+ * /api/branch-manager/telegram/unlink:
+ *   delete:
+ *     tags: [Branch Manager]
+ *     summary: Unlink this branch's parent Telegram group
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Unlinked (or there was nothing to unlink) }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ */
+router.delete('/telegram/unlink', ctrl.unlinkTelegramGroup);
+
 export default router;
