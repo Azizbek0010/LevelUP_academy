@@ -15,6 +15,11 @@ export default {
   },
   plugins: [require('daisyui')],
   daisyui: {
+    // Две темы: светлая `levelup` (по умолчанию) и тёмная `levelup-dark`.
+    // Переключаются через data-theme на <html> (см. ThemeToggle + скрипт в
+    // index.html). Тёмная сделана переменными темы DaisyUI — БЕЗ !important,
+    // как и в панели staff (эталон).
+    darkTheme: 'levelup-dark',
     themes: [
       {
         levelup: {
@@ -34,6 +39,33 @@ export default {
           success: '#15803d',
           warning: '#b45309',
           error: '#dc2626',
+          '--rounded-box': '1rem',
+          '--rounded-btn': '0.6rem',
+        },
+      },
+      {
+        'levelup-dark': {
+          // Палитра «Iliq + Yashil»: тёплые угольные нейтрали (не чистый чёрный)
+          // + фирменный зелёный, подсветлённый до #5CA855 для контраста на
+          // тёмном фоне (текст-primary читается; кнопка primary — тёмный текст).
+          primary: '#5CA855',
+          'primary-content': '#08140A',
+          secondary: '#16210f',
+          'secondary-content': '#e8f0df',
+          accent: '#5CA855',
+          'accent-content': '#08140A',
+          neutral: '#0f1a0a',
+          'neutral-content': '#e8f0df',
+          // base-100 — поверхность карточек (светлее фона, чтобы «всплывали»);
+          // base-200 — фон страницы (самый тёмный); base-300 — границы/hover.
+          'base-100': '#1E1D17',
+          'base-200': '#141410',
+          'base-300': '#2E2B22',
+          'base-content': '#EDEBE2',
+          info: '#5B8DEF',
+          success: '#4ADE80',
+          warning: '#FBBF24',
+          error: '#F87171',
           '--rounded-box': '1rem',
           '--rounded-btn': '0.6rem',
         },

@@ -15,7 +15,7 @@ export default function TrainingTypeIcon({ name = '', icon = '', className = 'w-
   const normIcon = (icon || '').toLowerCase();
 
   let IconComponent = TbBook;
-  let bgClass = 'bg-[#F0F5E9]';
+  let bgClass = 'bg-[#5E6E52]/12';
   let colorClass = 'text-[#5E6E52]';
   let isEmoji = false;
 
@@ -27,7 +27,7 @@ export default function TrainingTypeIcon({ name = '', icon = '', className = 'w-
   // Matching logic
   if (normIcon === 'python' || normName.includes('python') || normName.includes('питон') || icon === '🐍') {
     IconComponent = TbBrandPython;
-    bgClass = 'bg-[#E3F2FD]';
+    bgClass = 'bg-[#1976D2]/15';
     colorClass = 'text-[#1976D2]';
   } else if (
     normIcon === 'web' || 
@@ -40,7 +40,7 @@ export default function TrainingTypeIcon({ name = '', icon = '', className = 'w-
     normName.includes('js')
   ) {
     IconComponent = TbBrandHtml5;
-    bgClass = 'bg-[#EBF2FE]';
+    bgClass = 'bg-[#3B82F6]/15';
     colorClass = 'text-[#3B82F6]';
   } else if (
     normIcon === 'backend' || 
@@ -53,7 +53,7 @@ export default function TrainingTypeIcon({ name = '', icon = '', className = 'w-
     normName.includes('sql')
   ) {
     IconComponent = TbServer;
-    bgClass = 'bg-[#F3E5F5]';
+    bgClass = 'bg-[#9C27B0]/15';
     colorClass = 'text-[#9C27B0]';
   } else if (
     normIcon === 'mobile' || 
@@ -64,7 +64,7 @@ export default function TrainingTypeIcon({ name = '', icon = '', className = 'w-
     normName.includes('flutter')
   ) {
     IconComponent = TbDeviceMobile;
-    bgClass = 'bg-[#EFEBE9]';
+    bgClass = 'bg-[#8D6E63]/18';
     colorClass = 'text-[#5D4037]';
   } else if (
     normIcon === 'design' || 
@@ -74,7 +74,7 @@ export default function TrainingTypeIcon({ name = '', icon = '', className = 'w-
     normName.includes('фигма')
   ) {
     IconComponent = TbPalette;
-    bgClass = 'bg-[#FCE4EC]';
+    bgClass = 'bg-[#E91E63]/15';
     colorClass = 'text-[#E91E63]';
   } else if (
     normIcon === 'qa' || 
@@ -83,13 +83,13 @@ export default function TrainingTypeIcon({ name = '', icon = '', className = 'w-
     normName.includes('testing')
   ) {
     IconComponent = TbTerminal;
-    bgClass = 'bg-[#E0F2F1]';
+    bgClass = 'bg-[#00897B]/15';
     colorClass = 'text-[#00897B]';
   }
 
   if (isEmoji) {
     return (
-      <div className={`flex items-center justify-center rounded-xl shrink-0 bg-[#F6FBEA] border border-[#E6EDD8] font-bold ${className}`}>
+      <div className={`flex items-center justify-center rounded-xl shrink-0 bg-[#5E6E52]/12 border border-base-300 font-bold ${className}`}>
         {icon}
       </div>
     );

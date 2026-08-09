@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import { useDashboard, useLeads } from '../queries.js';
+import ThemeToggle from './ThemeToggle.jsx';
 
 /**
  * Меню намеренно короткое — как у ментора.
@@ -223,6 +224,11 @@ export default function Layout() {
         >
           <Menu size={20} />
         </label>
+
+        {/* Переключатель темы — фиксирован в правом верхнем углу (у панели нет
+            отдельной шапки, где ему место в staff). Плашка base-100 с тенью,
+            симметрично кнопке меню слева. */}
+        <ThemeToggle className="fixed top-3 right-3 z-30 bg-base-100 border border-base-300 shadow" />
 
         <main className="p-4 sm:p-7 max-w-6xl w-full mx-auto pt-16 lg:pt-7">
           <Outlet />

@@ -5,6 +5,7 @@ import { useAuth } from '../../auth.jsx';
 import { Avatar, C, StreakFlame, CountUp, LevelBar, levelFromCoins, EmptyState, Modal } from './ui.jsx';
 import { useDailyStreak } from '../useDailyStreak.js';
 import { api } from '../api.js';
+import ThemeToggle from '../../components/ThemeToggle.jsx';
 
 /**
  * Каркас кабинета ученика (2026-08-01, v2 — без маскота, приглушённая
@@ -193,6 +194,7 @@ export default function Layout() {
           <div className="hidden sm:block">
             <StreakFlame days={streak} />
           </div>
+          <ThemeToggle className="shrink-0 !bg-black/20 !text-white/75 hover:!bg-black/30 hover:!text-white" />
           <Counter icon={Star} fill={C.lime} value={stats ? stats.coins : '···'} title="Монеты" />
           {/* Энергия убрана из отображения: показывать бы пришлось только "—"
              (доп-фича, источника ещё нет) — заглушка выглядела хуже, чем
@@ -290,7 +292,7 @@ export default function Layout() {
                         {tg?.linked && (
                           <span
                             className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded shrink-0"
-                            style={{ background: '#E8F6EC', color: '#1F7A3D' }}
+                            style={{ background: 'color-mix(in srgb, #1F7A3D 16%, var(--k-card))', color: 'color-mix(in srgb, #1F7A3D 82%, var(--k-text))' }}
                           >
                             ULANGAN
                           </span>
@@ -381,7 +383,7 @@ export default function Layout() {
             <div className="flex items-center gap-3">
               <div
                 className="w-11 h-11 rounded-xl grid place-items-center shrink-0"
-                style={{ background: '#E4F1FF', color: '#1668B8' }}
+                style={{ background: 'color-mix(in srgb, #1668B8 16%, var(--k-card))', color: 'color-mix(in srgb, #1668B8 82%, var(--k-text))' }}
               >
                 <Send size={19} strokeWidth={2.6} />
               </div>
@@ -422,7 +424,7 @@ export default function Layout() {
 
           {/* Второй шаг: до него кнопка «Uzish» ничего не отвязывает. */}
           {tgConfirmUnlink ? (
-            <div className="rounded-xl p-4" style={{ background: '#FFF2EF' }}>
+            <div className="rounded-xl p-4" style={{ background: 'color-mix(in srgb, #C0392B 12%, var(--k-card))' }}>
               <div className="text-[13px] font-bold mb-1" style={{ color: '#8E2C1B' }}>
                 Aniq uzmoqchimisiz?
               </div>
@@ -453,7 +455,7 @@ export default function Layout() {
             <button
               onClick={() => setTgConfirmUnlink(true)}
               className="k-press-sm w-full py-2.5 rounded-xl text-[13px] font-extrabold"
-              style={{ background: '#FFE6E2', color: '#C0392B' }}
+              style={{ background: 'color-mix(in srgb, #C0392B 16%, var(--k-card))', color: 'color-mix(in srgb, #C0392B 82%, var(--k-text))' }}
             >
               Ulanishni uzish
             </button>

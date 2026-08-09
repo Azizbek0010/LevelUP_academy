@@ -25,15 +25,19 @@ import { fmtFileSize } from '../format.js';
  * Убран только Mascot (по прямому запросу, использований больше нет).
  */
 
+/* Поверхности и текст — через CSS-переменные (--k-*, объявлены в src/index.css),
+   чтобы кабинет ученика тоже переключался в тёмную тему по data-theme.
+   Акцентные цвета (lime, violet…) остаются literal hex: они уходят в canvas-
+   конфетти и в конкатенацию альфы (`${color}40`), где var() не работает. */
 export const C = {
-  bg: '#F6F8F3',
-  card: '#FFFFFF',
-  text: '#1C231A',
-  muted: '#707F68',
-  line: '#E4EAE0',
+  bg: 'var(--k-bg)',
+  card: 'var(--k-card)',
+  text: 'var(--k-text)',
+  muted: 'var(--k-muted)',
+  line: 'var(--k-line)',
   lime: '#5C9A3B',   // приглушённый средний зелёный — не неон, цвет действия
   limeDk: '#457329', // тёмный вариант для акцентов "потемнее в паре мест"
-  ink: '#12190E',
+  ink: 'var(--k-ink)',
   violet: '#6E62A6',
   blue: '#3E7CAE',
   coral: '#BD5B45',
@@ -174,10 +178,16 @@ export function Pill({ hue = 'muted', children, className = '' }) {
     muted: { bg: '#EEF1EA', fg: C.muted },
   };
   const s = map[hue] ?? map.muted;
+  // Тема-независимо: фон — тонкий подмес акцента в карточку (var(--k-card)),
+  // текст — тот же акцент, подтянутый к цвету текста темы (var(--k-text)),
+  // чтобы читалось и на светлой, и на тёмной карточке без отдельной палитры.
   return (
     <span
       className={`inline-flex items-center gap-1.5 text-[12px] font-bold whitespace-nowrap px-2.5 py-1 rounded-lg ${className}`}
-      style={{ background: s.bg, color: s.fg }}
+      style={{
+        background: `color-mix(in srgb, ${s.fg} 18%, var(--k-card))`,
+        color: `color-mix(in srgb, ${s.fg} 82%, var(--k-text))`,
+      }}
     >
       {children}
     </span>

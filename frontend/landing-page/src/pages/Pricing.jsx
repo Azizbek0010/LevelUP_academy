@@ -194,7 +194,7 @@ export default function Pricing() {
                   borderRadius: 14,
                   padding: '14px 18px',
                   marginBottom: 12,
-                  background: '#fff',
+                  background: 'var(--surface)',
                 }}
               >
                 <summary style={{ cursor: 'pointer', fontWeight: 700, listStyle: 'none' }}>

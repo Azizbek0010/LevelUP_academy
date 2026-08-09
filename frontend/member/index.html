@@ -16,6 +16,24 @@
     />
     <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
     <title>Вход — LevelUp Academy для ученика и родителя</title>
+    <!--
+      Тема применяется ДО отрисовки — иначе при сохранённой тёмной теме страница
+      мигнёт светлой на долю секунды (FOUC). Порядок: сохранённый выбор →
+      системная настройка → светлая по умолчанию.
+    -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('lu-theme');
+          if (t !== 'levelup' && t !== 'levelup-dark') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'levelup-dark'
+              : 'levelup';
+          }
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

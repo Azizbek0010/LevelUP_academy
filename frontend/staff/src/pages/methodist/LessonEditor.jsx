@@ -396,9 +396,9 @@ function LessonEditorView() {
 
       {/* Video lesson details */}
       {(lesson?.video_url || lesson?.videoUrl) && (
-        <div className="card bg-[#F6FBEA] border border-[#E6EDD8] hover:shadow-sm transition-shadow">
+        <div className="card bg-base-200 border border-base-300 hover:shadow-sm transition-shadow">
           <div className="card-body p-4 flex flex-row items-center gap-3">
-            <div className="p-2.5 bg-white rounded-lg text-[#1D2417]">
+            <div className="p-2.5 bg-base-100 rounded-lg text-base-content">
               <Play size={18} />
             </div>
             <div>
@@ -427,7 +427,7 @@ function LessonEditorView() {
       {/* Practical task attachment */}
       {isPractical && (
         <div
-          className={`card bg-white border transition-shadow ${dragOver ? 'border-[#7CB342] border-dashed bg-[#FAFDF3]' : 'border-[#E6EDD8] hover:shadow-sm'}`}
+          className={`card bg-base-100 border transition-shadow ${dragOver ? 'border-[#7CB342] border-dashed bg-base-200' : 'border-base-300 hover:shadow-sm'}`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={(e) => {
@@ -439,7 +439,7 @@ function LessonEditorView() {
         >
           <div className="card-body p-4 flex flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-[#F6FBEA] rounded-lg text-[#1D2417]">
+              <div className="p-2.5 bg-base-200 rounded-lg text-base-content">
                 <FileText size={18} />
               </div>
               <div>
@@ -575,7 +575,7 @@ function LessonEditorView() {
                     type="button"
                     onClick={() => setValue('questionType', value, { shouldValidate: true })}
                     className={`flex items-center gap-1.5 h-9 px-3.5 rounded-[9px] text-[12.5px] font-semibold transition-all ${
-                      active ? 'bg-white shadow-sm text-[var(--primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text)]'
+                      active ? 'bg-base-100 shadow-sm text-[var(--primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text)]'
                     }`}
                   >
                     <Icon size={14} /> {t(labelKey)}
@@ -777,7 +777,7 @@ function LessonEditorView() {
 
       {settingsOpen && (
         <div className="modal modal-open">
-          <div className="modal-box border border-[#E6EDD8] shadow-xl bg-white max-w-lg">
+          <div className="modal-box border border-base-300 shadow-xl bg-base-100 max-w-lg">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-lg">{t('editor.settings_title')}</h3>
               <button onClick={() => setSettingsOpen(false)} className="btn btn-ghost btn-sm btn-circle" disabled={busy}>

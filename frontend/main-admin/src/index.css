@@ -36,6 +36,19 @@ body {
   background: #f6faef;
 }
 
+/* Тёмная тема: шапка и hover таблиц выше заданы светлыми хексами (салатовая
+   плашка #eef7e4 / #f6faef) — на тёмном фоне это светлые полосы поверх тёмных
+   строк. Переопределяем под тёмную палитру. Селектор с [data-theme] специфичнее
+   базового правила и идёт ниже — переопределяет без !important. Светлая тема
+   не затрагивается. */
+[data-theme='levelup-dark'] .table thead th {
+  background: #141410;
+  color: #b8b3a5;
+}
+[data-theme='levelup-dark'] .table tbody tr:hover {
+  background: #26241c;
+}
+
 /* скролл-контейнеры */
 .overflow-x-auto {
   scrollbar-width: thin;

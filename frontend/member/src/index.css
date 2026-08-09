@@ -75,6 +75,67 @@ body {
   --scrollbar-thumb-hover: rgba(64, 131, 59, 0.45);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   ТЁМНАЯ ТЕМА — переопределение тех же токенов (палитра «Iliq + Yashil»).
+   Только переменные, никакого !important — ровно как в панели staff (эталон).
+   DaisyUI-часть (base-100/…, btn-primary, text-base-content) переключается
+   сама через тему `levelup-dark` в tailwind.config.js. Здесь — ручные
+   :root-токены, которыми пользуется вёрстка помимо DaisyUI (--bg, --surface,
+   --text…). Селектор :root[data-theme=…] специфичнее, чем :root, и идёт ниже —
+   поэтому уверенно переопределяет светлые значения.
+   ═══════════════════════════════════════════════════════════════ */
+:root[data-theme='levelup-dark'] {
+  /* Brand — подсветлённый зелёный для тёмного фона */
+  --green: #5CA855;
+  --primary: #5CA855;
+  --green-dark: #4a8a44;
+  --green-bg: rgba(92, 168, 85, 0.14);
+  --green-glow: rgba(92, 168, 85, 0.22);
+
+  /* Surfaces — тёплый уголь: фон темнее, карточки светлее */
+  --surface: #1E1D17;
+  --surface-hover: #26241C;
+  --bg: #141410;
+  --accent: #e8f0df;
+
+  /* Glass — тёмное матовое стекло вместо белого */
+  --glass-bg: rgba(28, 27, 21, 0.72);
+  --glass-border: rgba(120, 130, 105, 0.16);
+  --glass: rgba(28, 27, 21, 0.72);
+
+  /* Borders */
+  --border: #2E2B22;
+
+  /* Text */
+  --text: #EDEBE2;
+  --text-secondary: #B8B3A5;
+  --text-muted: #8B8677;
+
+  /* Status — светлее, чтобы читаться на тёмном */
+  --danger: #F87171;
+  --danger-light: rgba(248, 113, 113, 0.14);
+  --success: #4ADE80;
+  --success-light: rgba(74, 222, 128, 0.12);
+  --warning: #FBBF24;
+  --info: #5B8DEF;
+
+  /* Shadows — глубже, на тёмном фоне мягкая тень не видна */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
+
+  /* Sidebar / scrollbar */
+  --sidebar-hover: rgba(92, 168, 85, 0.12);
+  --scrollbar-thumb: rgba(92, 168, 85, 0.28);
+  --scrollbar-thumb-hover: rgba(92, 168, 85, 0.5);
+}
+
+/* Матовое «сильное» стекло было жёстко-белым (rgba(255,255,255,.88)) —
+   на тёмной теме это светлая плашка поверх тёмного экрана. */
+:root[data-theme='levelup-dark'] .glass-strong {
+  background: rgba(30, 29, 23, 0.9);
+}
+
 /* Card styling — matching Staff */
 .card {
   border: 1px solid theme('colors.base-300');
@@ -560,4 +621,28 @@ main > * {
   height: 8px;
   border-radius: 2px;
   animation: k-confetti-fall 0.9s cubic-bezier(0.4, 0.2, 0.6, 1) forwards;
+}
+
+/* ============================================================
+   Кабинет ученика (.kid) уже объявляет палитру --k-* на самом .kid
+   (блок выше, ~строка 516) — светлыми значениями. Переменные,
+   объявленные на .kid, перебивают любой :root для его потомков,
+   поэтому тёмную тему задаём ТЕМ ЖЕ селектором .kid, но под
+   data-theme='levelup-dark' (специфичнее — выигрывает): внутри кабинета
+   поверхности становятся тёмными. Акценты (--k-lime/violet…) не трогаем —
+   они читаются на обеих темах. C.bg/card/text/muted/line/ink в ui.jsx =
+   var(--k-*), поэтому inline-стили кабинета переключаются сами.
+   ============================================================ */
+:root[data-theme='levelup-dark'] .kid {
+  --k-bg: #141410;
+  --k-card: #1e1d17;
+  --k-text: #edebe2;
+  --k-muted: #9a9488;
+  --k-line: #2e2b22;
+  --k-ink: #edebe2;
+}
+
+/* Матовое «сильное» стекло было жёстко-белым — на тёмной теме светлая плашка. */
+:root[data-theme='levelup-dark'] .glass-strong {
+  background: rgba(30, 29, 23, 0.9);
 }

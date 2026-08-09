@@ -51,7 +51,7 @@ export default function Videos() {
               tabIndex={0}
               onClick={() => play(v)}
               onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && play(v)}
-              className="k-pop-in k-press flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-[#FFF6E9] transition-colors"
+              className="k-pop-in k-press flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-[var(--k-bg)] transition-colors"
               style={{ animationDelay: `${Math.min(i, 9) * 50}ms` }}
             >
               <IconTile icon={PlayCircle} hue="violet" size={42} />

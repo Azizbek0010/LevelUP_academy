@@ -326,7 +326,7 @@ function AttendanceTab({ groupId, token }) {
     if (status === 'present') return 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200';
     if (status === 'late') return 'bg-amber-200 text-amber-800 border-amber-400 hover:bg-amber-300';
     if (status === 'absent') return 'bg-red-500 text-white border-red-500 hover:bg-red-600';
-    return 'border-gray-200 text-gray-300 hover:border-primary/50 hover:bg-primary/[0.05]';
+    return 'border-base-300 text-base-content/30 hover:border-primary/50 hover:bg-primary/[0.05]';
   };
 
   const cellIcon = (status) => {
@@ -399,7 +399,7 @@ function AttendanceTab({ groupId, token }) {
             Не пришёл
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="w-6 h-6 rounded-lg border border-gray-200 grid place-items-center text-gray-300">
+            <span className="w-6 h-6 rounded-lg border border-base-300 grid place-items-center text-base-content/30">
               <Minus size={13} />
             </span>
             Не отмечен
@@ -585,7 +585,7 @@ function AttendanceTab({ groupId, token }) {
         const statusColor = hsStatus === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
         return (
           <div
-            className="fixed z-[9999] w-64 bg-white shadow-xl rounded-2xl border border-base-300 p-4 animate-fade-in pointer-events-auto"
+            className="fixed z-[9999] w-64 bg-base-100 shadow-xl rounded-2xl border border-base-300 p-4 animate-fade-in pointer-events-auto"
             style={{ top: popupPos.top, left: popupPos.left }}
             onMouseEnter={keepPopup}
             onMouseLeave={hidePopup}
@@ -640,7 +640,7 @@ function HomeworkTab({ groupId, token, canManage = true }) {
     if (s === 'active') return 'bg-emerald-100 text-emerald-700';
     if (s === 'completed') return 'bg-blue-100 text-blue-700';
     if (s === 'overdue') return 'bg-red-100 text-red-700';
-    return 'bg-gray-100 text-gray-500';
+    return 'bg-base-300 text-base-content/60';
   };
   const statusLabel = (s) => s === 'active' ? 'Активна' : s === 'completed' ? 'Выполнено' : s === 'overdue' ? 'Просрочено' : s;
 
@@ -725,7 +725,7 @@ function HomeworkTab({ groupId, token, canManage = true }) {
                 <span>{h.submissions || 0} / {h.totalStudents || 0} сдано</span>
               </div>
               {h.totalStudents > 0 && (
-                <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                <div className="w-full h-1.5 rounded-full bg-base-300 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-primary transition-all"
                     style={{ width: `${Math.round(((h.submissions || 0) / h.totalStudents) * 100)}%` }}
@@ -813,7 +813,7 @@ function FeedbackTab({ groupId, token, canManage = true }) {
   const renderStars = (count) => (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => (
-        <Star key={i} size={12} className={i <= count ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
+        <Star key={i} size={12} className={i <= count ? 'text-amber-400 fill-amber-400' : 'text-base-content/30'} />
       ))}
     </div>
   );
@@ -921,7 +921,7 @@ function FeedbackTab({ groupId, token, canManage = true }) {
                   onClick={() => setForm({ ...form, rating: i })}
                   className="p-1"
                 >
-                  <Star size={20} className={i <= form.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
+                  <Star size={20} className={i <= form.rating ? 'text-amber-400 fill-amber-400' : 'text-base-content/30'} />
                 </button>
               ))}
             </div>

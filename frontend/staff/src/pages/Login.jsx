@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { api } from '../api.js';
+import ThemeToggle from '../components/ThemeToggle.jsx';
 
 function GoogleIcon() {
   return (
@@ -281,6 +282,12 @@ export default function Login() {
   const [mode, setMode] = useState('login');
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-base-200">
+      {/* Переключатель темы — поверх всего, в правом верхнем углу: залогиниться
+          в удобной теме можно ещё до входа. */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle className="bg-base-100/70 backdrop-blur border border-base-300" />
+      </div>
+
       {/* Левая панель — бренд */}
       <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-sidebar text-neutral-content p-12">
         <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-limebrand/20 blur-3xl animate-float" />

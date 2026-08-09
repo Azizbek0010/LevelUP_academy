@@ -20,6 +20,8 @@
   --success-bg: rgba(46, 204, 113, 0.14);
   --danger: #e8543e;
   --danger-bg: rgba(232, 84, 62, 0.12);
+  --pos: #1e8a4c;
+  --pos-strong: #9db525;
   --card-shadow:
     0 10px 28px rgba(29, 36, 23, 0.14),
     0 2px 6px rgba(29, 36, 23, 0.08);
@@ -27,6 +29,58 @@
   --font-body: 'Segoe UI', system-ui, -apple-system, sans-serif;
   --radius: 16px;
   --radius-sm: 10px;
+}
+
+/* ============================================================
+   Тёмная тема (палитра «Iliq + Yashil»). Тумблер в шапке ставит
+   data-theme="dark" на <html> (см. ThemeToggle + анти-FOUC скрипт
+   в index.html). Лаймовый бренд-акцент сохраняется; меняются
+   только нейтрали, «тёмные» секции и статус-цвета — всё через
+   переменные, разметку компонентов не трогаем.
+   ============================================================ */
+:root[data-theme='dark'] {
+  --bg: #141410;
+  --surface: #1e1d17;
+  --text: #edebe2;
+  --text-muted: #9a9488;
+  --border: #2e2b22;
+  /* «Тёмные» секции (CTA-полоса, футер, .btn--dark) на тёмной странице
+     делаем чуть светлее фона, чтобы читались как приподнятые, а не сливались. */
+  --dark: #23221a;
+  --dark-2: #16150f;
+  --dark-text: #edebe2;
+  --dark-text-dim: #9a9488;
+  --success: #4ade80;
+  --success-bg: rgba(74, 222, 128, 0.16);
+  --danger: #f0776a;
+  --danger-bg: rgba(240, 119, 106, 0.16);
+  --pos: #4ade80;
+  --pos-strong: #b7e33a;
+  --card-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.5),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Тумблер темы в шапке */
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.theme-toggle:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 * {
@@ -79,7 +133,10 @@ h1, h2, h3, h4, .display {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(246, 251, 234, 0.92);
+  /* Полупрозрачный фон шапки — через токен, а не жёсткий светлый rgba: иначе в
+     тёмной теме подложка оставалась светлой, а текст (var(--text)) становился
+     светлым → надписи в шапке пропадали. */
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 }
@@ -284,7 +341,7 @@ h1, h2, h3, h4, .display {
   display: inline-block;
   vertical-align: -3px;
   margin-right: 7px;
-  color: #1e8a4c;
+  color: var(--pos);
 }
 
 .trial-note--cta {
@@ -335,7 +392,7 @@ h1, h2, h3, h4, .display {
 
 .pill--online {
   background: var(--success-bg);
-  color: #1e8a4c;
+  color: var(--pos);
 }
 
 .pill--online::before {
@@ -377,7 +434,7 @@ h1, h2, h3, h4, .display {
   font-weight: 700;
 }
 
-.delta--up { color: #1e8a4c; }
+.delta--up { color: var(--pos); }
 .delta--down { color: var(--danger); }
 
 .dash__chart {
@@ -728,7 +785,7 @@ h1, h2, h3, h4, .display {
 }
 
 .leader__score span {
-  color: #9db525;
+  color: var(--pos-strong);
 }
 
 /* ---------- Invoice (finance) ---------- */
@@ -760,7 +817,7 @@ h1, h2, h3, h4, .display {
 
 .pill--paid {
   background: var(--success-bg);
-  color: #1e8a4c;
+  color: var(--pos);
 }
 
 .pill--paid::before {
@@ -1129,7 +1186,7 @@ h1, h2, h3, h4, .display {
   background: var(--success-bg);
   border-radius: var(--radius-sm);
   padding: 14px 16px;
-  color: #1e8a4c;
+  color: var(--pos);
   font-weight: 600;
   font-size: 14.5px;
 }
@@ -1176,7 +1233,7 @@ h1, h2, h3, h4, .display {
 }
 
 .compare .yes {
-  color: #1e8a4c;
+  color: var(--pos);
   font-weight: 700;
 }
 
@@ -1240,7 +1297,9 @@ h1, h2, h3, h4, .display {
   right: 0;
   bottom: 0;
   width: min(300px, 84vw);
-  background: rgba(255, 255, 255, 0.86);
+  /* Токен вместо жёсткого белого — иначе мобильное меню в тёмной теме
+     оставалось белым, а его текст (var(--text)) — светлым и невидимым. */
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   z-index: 100;
@@ -1599,7 +1658,7 @@ h1, h2, h3, h4, .display {
   display: inline-block;
   vertical-align: -3px;
   margin-right: 8px;
-  color: #1e8a4c;
+  color: var(--pos);
 }
 
 @media (max-width: 900px) {

@@ -4,6 +4,7 @@ import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icons.jsx';
+import ThemeToggle from './ThemeToggle.jsx';
 
 const NAV = [
   { to: '/dashboard', label: 'Обзор', icon: 'home' },
@@ -38,8 +39,12 @@ export default function Layout() {
 
   const sidebar = (
     <div className="flex flex-col h-full bg-sidebar text-neutral-content">
-      <div className="px-5 pt-6 pb-4">
+      <div className="px-5 pt-6 pb-4 flex items-center justify-between">
         <img src="/logo-white.svg" alt="LevelUp" className="h-7 w-auto" />
+        {/* Сайдбар всегда тёмный, поэтому цвет иконки фиксируем светлым в обеих
+            темах (important-модификатор перекрывает светло-тематические токены
+            дефолтного ThemeToggle — это стиль одной кнопки, а не тема). */}
+        <ThemeToggle className="!text-neutral-content/60 hover:!bg-white/10 hover:!text-neutral-content" />
       </div>
 
       <ChildCard child={selectedChild} />
@@ -120,10 +125,13 @@ export default function Layout() {
             </button>
             <img src="/logo-white.svg" alt="LevelUp" className="h-5 w-auto" />
           </div>
-          <NavLink to="/notifications" className="btn btn-ghost btn-sm btn-circle relative">
-            <Icon name="bell" className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full" />
-          </NavLink>
+          <div className="flex items-center gap-0.5">
+            <ThemeToggle className="!w-9 !h-9 !text-white/80 hover:!bg-white/10" />
+            <NavLink to="/notifications" className="btn btn-ghost btn-sm btn-circle relative">
+              <Icon name="bell" className="w-5 h-5" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full" />
+            </NavLink>
+          </div>
         </div>
 
         <main className="flex-1 p-4 lg:p-6 max-w-6xl mx-auto w-full">

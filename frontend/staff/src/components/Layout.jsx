@@ -16,6 +16,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
 import Avatar from './Avatar.jsx';
+import ThemeToggle from './ThemeToggle.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { disconnectSocket, getSocket } from '../socket.js';
 import { useMentorGroups, useSuperBranches, useChatContacts } from '../queries.js';
@@ -857,6 +858,8 @@ function Header({ sidebarWidth, onMobileToggle }) {
           подсвечивалось при фокусе — то есть обещало функцию, которой нет.
           Счётчик онлайна показывал число, на которое ментор всё равно никак
           не реагирует. */}
+
+      <ThemeToggle />
 
       <Notifications />
 

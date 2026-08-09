@@ -52,13 +52,13 @@ function DescriptionPopover({ description, children, t }) {
           onMouseEnter={() => clearTimeout(timeoutRef.current)}
           onMouseLeave={handleLeave}
         >
-          <div className="rounded-[14px] p-4 max-w-[300px] shadow-[0_16px_48px_rgba(29,36,23,0.12)] border border-[var(--mt-border)] bg-white">
+          <div className="rounded-[14px] p-4 max-w-[300px] shadow-[0_16px_48px_rgba(29,36,23,0.12)] border border-[var(--mt-border)] bg-base-100">
             <div className="flex items-center gap-2 mb-2">
               <Info size={14} className="text-[var(--mt-accent)] shrink-0" />
               <span className="text-[11px] font-bold uppercase tracking-[0.04em] text-[var(--mt-text-muted)]">{t('topics.description')}</span>
             </div>
             <p className="text-[13px] text-[var(--mt-text-muted)] leading-relaxed">{description}</p>
-            <div className="absolute bottom-0 left-6 w-3 h-3 bg-white border-r border-b border-[var(--mt-border)] transform rotate-45 translate-y-1/2" />
+            <div className="absolute bottom-0 left-6 w-3 h-3 bg-base-100 border-r border-b border-[var(--mt-border)] transform rotate-45 translate-y-1/2" />
           </div>
         </div>
       )}

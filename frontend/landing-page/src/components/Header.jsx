@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { LANGS, canonicalPath, dictOf, localizePath, useLang, useLocalizePath, useT } from '../i18n/index.js';
+import ThemeToggle from './ThemeToggle.jsx';
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -67,6 +68,8 @@ export default function Header() {
 
           <LangSwitch />
 
+          <ThemeToggle className="header__theme" />
+
           <Link to={lp('/landing/contacts')} className="btn btn--dark header__cta">
             {t.nav.login}
           </Link>
@@ -114,6 +117,7 @@ export default function Header() {
             {t.nav.contacts}
           </NavLink>
           <LangSwitch className="drawer__lang" />
+          <ThemeToggle className="drawer__theme" />
         </nav>
         <Link
           to={lp('/landing/contacts')}

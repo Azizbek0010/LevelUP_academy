@@ -87,7 +87,7 @@ function TestSection({ phase, questions, answers, setAnswers, score, busy, onSta
                     <label
                       key={oi}
                       className={`k-press flex items-center gap-3 rounded-2xl px-4 py-3 cursor-pointer text-sm transition-colors ${selected ? 'font-extrabold' : 'font-semibold'}`}
-                      style={selected ? { background: '#FFF1CE', color: '#8A5F00' } : { background: C.bg, color: C.text }}
+                      style={selected ? { background: 'color-mix(in srgb, #8A5F00 16%, var(--k-card))', color: 'color-mix(in srgb, #C9A227 88%, var(--k-text))' } : { background: C.bg, color: C.text }}
                     >
                       <input
                         type="radio"

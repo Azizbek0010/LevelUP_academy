@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { api } from '../api.js';
 import PasswordInput from '../components/PasswordInput.jsx';
+import ThemeToggle from '../components/ThemeToggle.jsx';
 
 function GoogleIcon() {
   return (
@@ -214,6 +215,9 @@ export default function Login() {
   const [mode, setMode] = useState('login'); // login | forgot
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-base-200">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle className="bg-base-100/70 backdrop-blur border border-base-300" />
+      </div>
       <div className="hidden lg:flex flex-col justify-between bg-sidebar text-neutral-content p-12">
         <img src="/logo-white.svg" alt="LevelUp Academy" className="h-10 w-auto self-start" />
         <div>

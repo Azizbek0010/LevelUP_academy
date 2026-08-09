@@ -160,7 +160,7 @@ export default function TestTake() {
       <div className="k-card k-pop-in max-w-lg mx-auto mt-8 sm:mt-12 p-7">
         <h2 className="text-xl font-extrabold mb-3" style={{ color: C.text }}>{test?.title ?? 'Тест'}</h2>
         {error ? (
-          <div className="rounded-2xl text-sm font-semibold px-4 py-3 mb-5" style={{ background: '#FFE6E2', color: '#C23018' }}>{error}</div>
+          <div className="rounded-2xl text-sm font-semibold px-4 py-3 mb-5" style={{ background: 'color-mix(in srgb, #C23018 16%, var(--k-card))', color: 'color-mix(in srgb, #C23018 82%, var(--k-text))' }}>{error}</div>
         ) : (
           <p className="text-sm font-semibold mb-6 leading-relaxed" style={{ color: C.muted }}>
             {test.questions.length} вопросов · {test.duration_min} минут
@@ -221,7 +221,7 @@ export default function TestTake() {
                   <label
                     key={oi}
                     className={`k-press flex items-center gap-3 rounded-2xl px-4 py-3 cursor-pointer text-sm transition-colors ${selected ? 'font-extrabold' : 'font-semibold'}`}
-                    style={selected ? { background: '#FFF1CE', color: '#8A5F00' } : { background: C.bg, color: C.text }}
+                    style={selected ? { background: 'color-mix(in srgb, #8A5F00 16%, var(--k-card))', color: 'color-mix(in srgb, #C9A227 88%, var(--k-text))' } : { background: C.bg, color: C.text }}
                   >
                     <input
                       type="radio"

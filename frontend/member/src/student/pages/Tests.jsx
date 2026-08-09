@@ -58,7 +58,7 @@ export default function Tests() {
                 tabIndex={clickable ? 0 : undefined}
                 onClick={clickable ? () => navigate(`/tests/${t.id}`) : undefined}
                 onKeyDown={clickable ? (e) => (e.key === 'Enter' || e.key === ' ') && navigate(`/tests/${t.id}`) : undefined}
-                className={`k-pop-in flex items-center gap-3 px-4 py-3.5 transition-colors ${clickable ? 'k-press cursor-pointer hover:bg-[#FFF6E9]' : ''}`}
+                className={`k-pop-in flex items-center gap-3 px-4 py-3.5 transition-colors ${clickable ? 'k-press cursor-pointer hover:bg-[var(--k-bg)]' : ''}`}
                 style={{ animationDelay: `${Math.min(i, 9) * 50}ms` }}
               >
                 <IconTile icon={ClipboardCheck} hue="blue" size={42} />

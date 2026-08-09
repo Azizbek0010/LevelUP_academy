@@ -599,7 +599,7 @@ export default function Chat() {
           {error && (
             <div
               className="shrink-0 flex items-center gap-2 px-4 py-2 text-[12.5px] font-semibold"
-              style={{ color: '#C0392B', background: '#FFF2EF', borderTop: '1px solid #F0D3CC' }}
+              style={{ color: 'color-mix(in srgb, #C0392B 82%, var(--k-text))', background: 'color-mix(in srgb, #C0392B 12%, var(--k-card))', borderTop: '1px solid var(--k-line)' }}
             >
               <AlertCircle size={14} className="shrink-0" />
               <span>{error}</span>
