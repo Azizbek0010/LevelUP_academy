@@ -4,26 +4,33 @@
 > Statistika qo'lda YOZILMAYDI — real raqamlar faqat `done.md` da.
 > V1 SCOPE: naqd + karta (full/split). Click/Payme/UzCard/Humo — FAQAT v3. Nasiya/рассрочка — V1 DA YO'Q (qaror 2026-07-05, tasdiqlangan 2026-07-07).
 
-## ⚠️ Jamoa branch'lari — save-zone'ga hali qo'shilmagan (2026-07-28 tekshiruvi)
+## ⚠️ Jamoa branch'lari — save-zone'ga hali qo'shilmagan (2026-08-09 tekshiruvi)
 
-> `git fetch --all` + har birini save-zone'ga merge qilishga urinildi. Uchtasi konflikt/muammo
-> tufayli qo'shilmadi — **konfliktni branch egasi hal qilsin, Karis emas** (qoida). Boshqa hamma
-> branch (Abduloh, Bilol, Islom, abdulaziz/student-panel, alisher/mentor-panel, aziz/branches,
-> elyor, methodist, rey, shohjahon, xob) — save-zone bilan bab-baravar, qo'shimcha ish yo'q.
+> `git fetch --all --prune` qilindi, har bir branch save-zone bilan solishtirildi
+> (`git log save-zone..origin/<branch>`). **hamidulla endi save-zone'da** — 07-28'dagi
+> 9 fayldagi konflikt o'shandan beri hal qilingan va merge bo'lgan. Boshqa hamma branch
+> (Bilol, Islom, abdulaziz/student-panel, alisher/mentor-panel, aziz/branches, elyor,
+> hamidulla, kozim, methodist, rey, shohjahon, xob) — save-zone bilan bab-baravar
+> (ancestor), qo'shimcha ish yo'q. FAQAT 4 tasida qo'shimcha commit bor:
 
-- **`hamidulla`** (1 commit, 07-21, admin sahifalar — Expenses/GroupDetail/Groups/Mentors/
-  Payments/Reports/StudentDetail/Students): save-zone o'shandan beri ancha oldinga ketgan,
-  merge 9 ta faylda konflikt beryapti. Hamidula o'zida `git merge save-zone`, konfliktlarni
-  hal qilib qayta pushlasin.
-- **`iface9808` (Kama)** (1 commit, 07-27, member chat redesign): `api.js`/`Chat.jsx`/
-  `Profile.jsx`/`vite.config.js` da konflikt — aynan shu fayllarda 07-28 da AB-VERIFY bag
-  tuzatildi (parent chat `dm:` xona formatiga o'tkazildi + `/socket.io` prokси). Kama
-  save-zone'ni tortib olib, ESKI `parent:<id>` formatga qaytarib yubormasdan o'z dizaynini
-  ustiga qursin — aks holda chat yana ishlamay qoladi.
-- **`alish`** (2 commit, 07-14): repo ILDIZIGA butunlay yangi Vite-ilova qo'yilgan
-  (`package.json`, `src/pages/ChatPage.jsx` va h.k. — `frontend/` ichida emas). Bu allaqachon
-  ma'lum muammo (frontend/TEAM-TASKS.md'da yozilgan). Merge qilinmadi — Alish `frontend/`
-  ichida to'g'ri joyda qayta boshlashi kerak, aks holda repo tuzilishi buziladi.
+- **`Abduloh`** (1 commit, 08-08): `feat(admin/expenses): add payment method icons,
+  recurring expenses, fix paymentMethod bug, add flex-wrap footer` —
+  `frontend/staff/src/api.js` + `pages/admin/Expenses.jsx` (+106/−22). Merge qilinmadi.
+- **`aziz/finance-manager`** (Aziz, 2 commit, 08-07): yangi **Finance Manager** paneli —
+  `frontend/staff/src/pages/finance/{Dashboard,Expenses,Income,Reports,Salaries,_data,
+  _i18n,_ui}.jsx` (13 fayl, +1460/−48), `Layout.jsx`/`App.jsx`/`Login.jsx`/`api.js` ga
+  ulangan, barcha rollar uchun sidebar i18n tarjimasi. TASK.md da bu ishning izi yo'q
+  edi — yangi bo'lim sifatida pastga qo'shildi. Merge qilinmadi, review kerak (yangi
+  panel — boshqa panellar bilan marshrut/kirish nizosi bo'lishi mumkin).
+- **`iface9808` (Kama)** (4 commit, 08-07): parent panelga to'liq i18n (ru/uz/en,
+  `frontend/member/src/i18n/{en,ru,uz}.js` + `i18n.jsx` + `LanguageSwitcher.jsx`),
+  test ball foizi ko'rsatilishi tuzatildi, guruh nomi overflow tuzatildi
+  (initsiallar+truncate), chat backendga ulanishga tayyorlandi (21 fayl, +1287/−320).
+  Eski TASK.md yozuvi (07-27, chat redesign konflikt haqida) ESKIRGAN — o'sha ish
+  allaqachon save-zone'da, bu 08-07'dagi YANGI commitlar. Merge qilinmadi.
+- **`alish`** (2 commit, 07-14, o'zgarishsiz 07-28'dan beri): hali ham repo ILDIZIGA
+  alohida Vite-ilova — muammo hal qilinmagan, Alish `frontend/` ichida qayta boshlashi
+  kerak (pastdagi ALISH bo'limiga qara).
 
 ---
 
@@ -629,6 +636,24 @@
 - [x] ADMIN: Payments UI (full/split modal; K-PAY chiqqach ulanadi) — Payments.jsx (775 qator)
 - [x] ADMIN: Expenses CRUD — Expenses.jsx + PDF eksport (Abduloh, jspdf)
 - [x] ADMIN: Reports — Reports.jsx, GET /api/admin/reports ga ulangan
+- [ ] ADMIN-EXPENSES-V2 🆕 (Abduloh, branch `Abduloh`, 08-08): to'lov usuli ikonkalari,
+      takroriy xarajatlar (recurring), `paymentMethod` bagi tuzatildi, footer flex-wrap.
+      Save-zone'ga hali merge qilinmagan
+
+## Frontend — Finance Manager (Aziz) 🆕 2026-08-09 — branch `aziz/finance-manager`, hali merge qilinmagan
+
+> Yangi panel — TASK.md da ilgari umuman yozilmagan edi, `git fetch` orqali topildi.
+> `frontend/staff/src/pages/finance/*` (13 fayl), `Layout.jsx`/`App.jsx`/`Login.jsx`/`api.js`
+> ga ulangan. Karis ko'rib chiqishi kerak: yangi rol/marshrut boshqa panellar bilan
+> to'qnashmasligini tekshirish, keyin save-zone'ga merge.
+
+- [ ] FIN-DASHBOARD (Aziz): `pages/finance/Dashboard.jsx`
+- [ ] FIN-EXPENSES (Aziz): `pages/finance/Expenses.jsx`
+- [ ] FIN-INCOME (Aziz): `pages/finance/Income.jsx`
+- [ ] FIN-REPORTS (Aziz): `pages/finance/Reports.jsx`
+- [ ] FIN-SALARIES (Aziz): `pages/finance/Salaries.jsx`
+- [ ] FIN-I18N (Aziz): barcha rollar uchun sidebar label tarjimasi (`_i18n.jsx`, 323 qator)
+- [ ] FIN-REVIEW (Karis): merge oldidan ko'rib chiqish — marshrut/kirish nizosi bormi
 
 ## Frontend — YANGI TASKLAR: Kozim / Alish 🆕 2026-07-19 (2026-07-26 da yangilandi)
 
@@ -737,6 +762,11 @@
 - [x] PARENT: Baholar / uy vazifa natijalari — Grades.jsx
 - [x] PARENT: To'lov / qarz — Debt.jsx
 - [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ✅ Socket.io realtime tasdiqlandi (2026-07-21)
+- [ ] PARENT-I18N 🆕 (Kama, branch `iface9808`, 08-07): to'liq i18n ru/uz/en
+      (`frontend/member/src/i18n/{en,ru,uz}.js`, locale-aware formatlar), til
+      almashtirgich UI (`LanguageSwitcher.jsx`), test ball foizi ko'rsatilishi va
+      guruh nomi overflow (initsiallar+truncate) tuzatildi, chat backendga ulanishga
+      tayyorlandi. Save-zone'ga hali merge qilinmagan
 - [x] PARENT: Bildirishnomalar — Notifications.jsx
 - [x] PARENT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Обзор, Посещаемость, Оценки, Оплата,
       Уведомления, Профиль (Telegram tugmasi, preference toggle'lar) — real login bilan

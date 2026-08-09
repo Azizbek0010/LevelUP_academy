@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 28.07.2026 10:49 (UTC+5, Toshkent vaqti)
-> Statistika: 190/207 task tugallangan (91%)
+> Oxirgi yangilanish: 09.08.2026 14:17 (UTC+5, Toshkent vaqti)
+> Statistika: 191/220 task tugallangan (86%)
 
 ---
 
-## Progress: [##################..] 91%
+## Progress: [#################...] 86%
 
 ## Tugallangan vazifalar
 
@@ -263,10 +263,13 @@
 - [x] UI-TABLES ✅ AUDIT + TUZATILDI 2026-07-28 (Karis): 162 ta `tabular-nums` ishlatilishi
 - [x] UI-CACHE ✅ AUDIT 2026-07-28 (Karis): barcha admin/mentor/methodist/super sahifalari
 
+### YANGI ROLLAR — Branch Manager + Finance Manager (2026-08-04, Karis og'zaki berdi)
+- [x] ROLE-RENAME-SUPERADMIN ✅ **YOPILDI 07.08.2026.** Karis SEO/CEO savoliga ikki marta
+
 ---
 
 ## Jamoa boyicha
 
-- Karis (Backend): 115 task
+- Karis (Backend): 116 task
 - Abdulaziz (Backend): 79 task
 - Frontend jamoasi: 68 task
