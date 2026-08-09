@@ -13,6 +13,7 @@ import Chat from './pages/Chat.jsx';
 import Notifications from './pages/Notifications.jsx';
 import Profile from './pages/Profile.jsx';
 import { ToastProvider } from './student/components/toast.jsx';
+import { I18nProvider } from './i18n/index.jsx';
 import StudentArea from './student/StudentArea.jsx';
 import StudentLayout from './student/components/Layout.jsx';
 import StudentHome from './student/pages/Home.jsx';
@@ -22,6 +23,7 @@ import StudentHomework from './student/pages/Homework.jsx';
 import StudentVideos from './student/pages/Videos.jsx';
 import StudentLessons from './student/pages/Lessons.jsx';
 import StudentLessonDetail from './student/pages/LessonDetail.jsx';
+import LessonsHub from './student/pages/LessonsHub.jsx';
 import StudentShop from './student/pages/Shop.jsx';
 import StudentLeaderboard from './student/pages/Leaderboard.jsx';
 
@@ -59,9 +61,10 @@ export default function App() {
   if (loading) return <Splash />;
 
   return (
-    <ErrorBoundary>
-      <Routes>
-        <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
+    <I18nProvider>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
 
         <Route
           path="/"
@@ -105,6 +108,7 @@ export default function App() {
         >
           <Route element={<StudentLayout />}>
             <Route path="/student" element={<StudentHome />} />
+            <Route path="/study" element={<LessonsHub />} />
             <Route path="/lessons" element={<StudentLessons />} />
             <Route path="/lessons/:id" element={<StudentLessonDetail />} />
             <Route path="/tests" element={<StudentTests />} />
@@ -116,8 +120,9 @@ export default function App() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </ErrorBoundary>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
+    </I18nProvider>
   );
 }

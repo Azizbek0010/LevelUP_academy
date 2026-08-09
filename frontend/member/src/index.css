@@ -458,8 +458,10 @@ main > * {
   --k-text: #1C231A;
   --k-muted: #707F68;
   --k-line: #E4EAE0;
-  --k-lime: #5C9A3B;
-  --k-lime-dk: #457329;
+  --k-lime: #5FA33C;
+  --k-lime-dk: #3E6E26;
+  --k-lime-soft: #EDF5E1;
+  --k-lime-line: #D7E7C2;
   --k-ink: #12190E;
 
   --k-violet: #6E62A6;
@@ -473,9 +475,12 @@ main > * {
   color: var(--k-text);
 }
 
-/* Карточка: белая, спокойная тень, умеренное скругление */
+/* Карточка: белая, спокойная тень, умеренное скругление.
+   Тонкая зелёная окантовка — фирменный цвет LevelUp виден и на белых
+   карточках, не только в шапке. */
 .k-card {
   background: var(--k-card);
+  border: 1px solid var(--k-lime-line);
   border-radius: 16px;
   box-shadow: 0 1px 2px rgba(18, 25, 14, 0.04), 0 6px 16px rgba(18, 25, 14, 0.06);
 }
@@ -488,11 +493,14 @@ main > * {
   box-shadow: 0 16px 40px rgba(18, 25, 14, 0.16), 0 4px 12px rgba(18, 25, 14, 0.08);
 }
 
-/* Лёгкий "подъём" для нажимаемых карточек (задания и т.п.) */
-.k-hover { transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease; }
+/* Лёгкий "подъём" для нажимаемых карточек (задания и т.п.).
+   Hover — зелёный: окантовка и тень в фирменный цвет, белая карточка
+   "отвечает" зелёным. */
+.k-hover { transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease, border-color 0.16s ease; }
 .k-hover:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 2px 6px rgba(18, 25, 14, 0.05), 0 10px 20px rgba(18, 25, 14, 0.08);
+  border-color: var(--k-lime);
+  box-shadow: 0 2px 6px rgba(95, 163, 60, 0.14), 0 10px 22px rgba(95, 163, 60, 0.16);
 }
 
 /* Apple-нажатие: scale(0.97) на :active — быстрая, тихая обратная связь
@@ -561,3 +569,17 @@ main > * {
   border-radius: 2px;
   animation: k-confetti-fall 0.9s cubic-bezier(0.4, 0.2, 0.6, 1) forwards;
 }
+
+/* Устолбчатая диаграмма: столбик растёт снизу вверх */
+@keyframes k-chart-grow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+.k-chart-grow {
+  transform-origin: bottom;
+  animation: k-chart-grow 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Курсор «тяни карту» в полноэкранном режиме */
+.k-map-grab { cursor: grab; touch-action: none; }
+.k-map-grab:active { cursor: grabbing; }

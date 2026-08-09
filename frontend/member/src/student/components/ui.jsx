@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Inbox, AlertTriangle, Flame, Sparkles, UploadCloud, Paperclip } from 'lucide-react';
 import { fmtFileSize } from '../format.js';
+import { useI18n } from '../../i18n/index.jsx';
 
 /**
  * UI-кит кабинета ученика (7-15 лет).
@@ -31,8 +33,10 @@ export const C = {
   text: '#1C231A',
   muted: '#707F68',
   line: '#E4EAE0',
-  lime: '#5C9A3B',   // приглушённый средний зелёный — не неон, цвет действия
-  limeDk: '#457329', // тёмный вариант для акцентов "потемнее в паре мест"
+  lime: '#5FA33C',    // средний зелёный — ближе к бренду LevelUp (#C6FF34), не неон
+  limeDk: '#3E6E26',  // тёмный вариант для акцентов
+  limeSoft: '#EDF5E1',// светло-зелёная подложка карточек/активных вкладок
+  limeLine: '#D7E7C2',// зелёная окантовка карточек
   ink: '#12190E',
   violet: '#6E62A6',
   blue: '#3E7CAE',
@@ -40,6 +44,11 @@ export const C = {
   amber: '#B9832E',
   teal: '#2E8F76',
   pink: '#AD5A78',
+
+  // ── Семантическая тройка: цвет = значение с одного взгляда ──
+  action: '#5FA33C', // действие — кнопки, активное меню (= lime)
+  learn: '#6E62A6',  // учёба — уроки, тесты, задания, видео (= violet)
+  warn: '#B9832E',   // внимание — оплата, сроки: мягкий янтарь, без красного (= amber)
 };
 
 /* Цвета категорий — чтобы разделы и типы заданий различались с одного взгляда */
@@ -114,15 +123,22 @@ export function Button({ hue = 'lime', size = 'md', className = '', disabled, ch
   );
 }
 
-/* ── Заголовок страницы ─────────────────────────────────────────────── */
-export function PageHeader({ title, subtitle, actions }) {
+/* ── Заголовок страницы — крупный, с цветной иконкой раздела ──
+   Иконка = ребёнок узнаёт раздел по картинке, не читая название. */
+export function PageHeader({ title, subtitle, actions, icon: Icon, hue = 'violet' }) {
   return (
     <div className="flex items-end justify-between gap-4 flex-wrap mb-5">
-      <div>
-        <h1 className="text-[26px] sm:text-[31px] font-extrabold leading-[1.1] tracking-[-0.02em]" style={{ color: C.text }}>
-          {title}
-        </h1>
-        {subtitle && <p className="text-[14px] mt-1.5 font-semibold" style={{ color: C.muted }}>{subtitle}</p>}
+      <div className="flex items-center gap-3.5 min-w-0">
+        {Icon && <IconTile icon={Icon} hue={hue} size={50} />}
+        <div className="min-w-0">
+          <h1 className="text-[26px] sm:text-[31px] font-extrabold leading-[1.1] tracking-[-0.02em]" style={{ color: C.text }}>
+            {title}
+          </h1>
+          {subtitle && <p className="text-[15px] mt-1 font-semibold" style={{ color: C.muted }}>{subtitle}</p>}
+          {/* Зелёная линия-акцент под заголовком — фирменный цвет LevelUp
+              присутствует на каждой странице, не только в шапке. */}
+          <span className="block w-14 h-[3px] rounded-full mt-2.5" style={{ background: C.lime }} aria-hidden="true" />
+        </div>
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
@@ -176,7 +192,7 @@ export function Pill({ hue = 'muted', children, className = '' }) {
   const s = map[hue] ?? map.muted;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 text-[12px] font-bold whitespace-nowrap px-2.5 py-1 rounded-lg ${className}`}
+      className={`inline-flex items-center gap-1.5 text-[12.5px] font-bold whitespace-nowrap px-2.5 py-1 rounded-lg ${className}`}
       style={{ background: s.bg, color: s.fg }}
     >
       {children}
@@ -196,7 +212,7 @@ export function Tabs({ value, onChange, items }) {
             onClick={() => onChange(it.value)}
             className="k-press-sm px-4 py-2 rounded-lg text-[13.5px] font-bold"
             style={on
-              ? { background: C.card, color: C.text, boxShadow: '0 1px 3px rgba(18,25,14,0.12)' }
+              ? { background: C.limeSoft, color: C.limeDk, boxShadow: `0 1px 3px ${C.lime}40` }
               : { background: 'transparent', color: C.muted }}
           >
             {it.label}
@@ -241,43 +257,67 @@ export function EmptyState({ icon: Icon = Inbox, title, text, action, hue = 'vio
 }
 
 export function ErrorState({ message, onRetry }) {
+  const { t } = useI18n();
   return (
     <EmptyState
       icon={AlertTriangle}
       hue="coral"
-      title="Не получилось загрузить"
+      title={t.ui.loadFailed}
       text={message}
-      action={onRetry ? <Button onClick={onRetry}>Попробовать снова</Button> : null}
+      action={onRetry ? <Button onClick={onRetry}>{t.ui.retry}</Button> : null}
     />
   );
 }
 
-/* ── Модалка ────────────────────────────────────────────────────────── */
+/* ── Модалка ──────────────────────────────────────────────────────────
+   Рендерится через createPortal в document.body, а не на месте вызова:
+   внутри кабинета есть обёртка с CSS transform (sidebar/контент), и при
+   нём position:fixed прилипает к этому контейнеру — фон модалки тогда
+   не накрывает сайдбар. Portal поднимает модалку на весь экран всегда. */
 export function Modal({ title, onClose, children }) {
-  return (
-    <div className="fixed inset-0 z-[60] grid place-items-center p-4" role="dialog" aria-modal="true">
+  const { t } = useI18n();
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+  return createPortal(
+    <div className="fixed inset-0 z-[70] grid place-items-center p-4" role="dialog" aria-modal="true">
       <button
         className="absolute inset-0 cursor-default"
         style={{ background: 'rgba(18,25,14,0.4)', backdropFilter: 'blur(3px)' }}
         onClick={onClose}
-        aria-label="Закрыть"
+        aria-label={t.ui.close}
         tabIndex={-1}
       />
-      <div className="k-card relative w-full max-w-md p-6 k-pop-in">
+      {/* k-card здесь не подходит: его фон/рамка заданы через CSS-переменные
+          .kid (--k-card, --k-lime-line), а portal рендерит модалку вне .kid —
+          фон стал бы прозрачным. Задаём белую карточку + зелёную окантовку
+          напрямую, из палитры C. */}
+      <div
+        className="relative w-full max-w-md p-6 k-pop-in"
+        style={{
+          background: C.card,
+          border: `1px solid ${C.limeLine}`,
+          borderRadius: 16,
+          boxShadow: '0 1px 2px rgba(18,25,14,0.04), 0 6px 16px rgba(18,25,14,0.06)',
+        }}
+      >
         <div className="flex items-start justify-between gap-3 mb-5">
           <h3 className="text-[19px] font-extrabold leading-tight" style={{ color: C.text }}>{title}</h3>
           <button
             onClick={onClose}
             className="k-press-sm w-9 h-9 rounded-xl grid place-items-center shrink-0"
             style={{ background: C.bg, color: C.muted }}
-            aria-label="Закрыть"
+            aria-label={t.ui.close}
           >
             <X size={17} strokeWidth={2.6} />
           </button>
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -286,6 +326,7 @@ export function Modal({ title, onClose, children }) {
    не принимал перетаскивание. Пунктирная лайм-рамка вместо оранжевой —
    в тон остальному кабинету, не копия чужого референса. */
 export function Dropzone({ file, onFileChange, disabled, accept }) {
+  const { t } = useI18n();
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -306,7 +347,7 @@ export function Dropzone({ file, onFileChange, disabled, accept }) {
             onClick={() => onFileChange(null)}
             className="k-press-sm shrink-0 w-8 h-8 rounded-full grid place-items-center"
             style={{ background: C.bg, color: C.muted }}
-            aria-label="Убрать файл"
+            aria-label={t.ui.removeFile}
           >
             <X size={15} strokeWidth={2.8} />
           </button>
@@ -329,7 +370,7 @@ export function Dropzone({ file, onFileChange, disabled, accept }) {
     >
       <IconTile icon={UploadCloud} hue="lime" size={48} />
       <p className="text-[13.5px] font-bold mt-3" style={{ color: C.text }}>
-        Перетащи файл сюда или <span style={{ color: C.limeDk }}>выбери</span>
+        {t.ui.dropTitle} <span style={{ color: C.limeDk }}>{t.ui.dropChoose}</span>
       </p>
       <input
         ref={inputRef}
@@ -353,13 +394,14 @@ export function Dropzone({ file, onFileChange, disabled, accept }) {
    (useDailyStreak), поэтому подпись честно говорит "на этом устройстве" —
    это НЕ синхронизированное с сервером достижение. */
 export function StreakFlame({ days, hue = 'coral' }) {
+  const { t } = useI18n();
   const fill = HUES[hue] ?? C.coral;
   const lit = days > 0;
   return (
     <span
       className="inline-flex items-center gap-2 h-10 pl-1.5 pr-3.5 rounded-full"
       style={{ background: 'rgba(0,0,0,0.2)' }}
-      title={`${days} ${days === 1 ? 'день' : 'дня'} подряд на этом устройстве`}
+      title={t.ui.streakTitle(days)}
     >
       <span className="w-7 h-7 rounded-full grid place-items-center shrink-0" style={{ background: lit ? `${fill}40` : 'transparent' }}>
         <Flame size={14} strokeWidth={2.4} color={lit ? fill : 'rgba(255,255,255,0.5)'} fill={lit ? fill : 'transparent'} />
@@ -475,22 +517,13 @@ export function ConfettiBurst({ fireKey }) {
 
 /* ── SurpriseCard — факт дня: переворот по тапу, меняется раз в день
    (по дню года), не при каждом заходе — даёт причину вернуться завтра,
-   ничего не обещая про награду. Спокойная тонировка вместо яркого градиента. */
-const SURPRISES = [
-  'Осьминоги пробуют еду ногами — у них вкусовые рецепторы на щупальцах!',
-  'Мёд не портится никогда. В древних гробницах находили съедобный мёд возрасту 3000 лет.',
-  'Один день на Венере длиннее, чем один год на Венере.',
-  'У улитки около 14000 зубов.',
-  'Банан — это ягода, а клубника — нет.',
-  'Сердце синего кита размером с малолитражку.',
-  'Облака весят как сто слонов, но всё равно летают.',
-  'В космосе нельзя плакать обычными слезами — они не стекают вниз.',
-  'Акулы старше деревьев — они появились раньше, чем на Земле выросли первые деревья.',
-  'Твой мозг вырабатывает столько энергии, что мог бы зажечь маленькую лампочку.',
-];
+   ничего не обещая про награду. Спокойная тонировка вместо яркого градиента.
+   Факты — из словаря (ui.facts), чтобы меняться вместе с языком. */
 export function SurpriseCard() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const dayIndex = Math.floor(Date.now() / 86400000) % SURPRISES.length;
+  const facts = t.ui.facts ?? [];
+  const dayIndex = facts.length ? Math.floor(Date.now() / 86400000) % facts.length : 0;
   return (
     <button
       type="button"
@@ -501,10 +534,10 @@ export function SurpriseCard() {
       <IconTile icon={Sparkles} hue="violet" size={44} />
       <div className="min-w-0 flex-1">
         <div className="text-[11px] font-extrabold uppercase tracking-[0.08em]" style={{ color: C.muted }}>
-          Факт дня
+          {t.ui.factOfDay}
         </div>
         <div className="text-[14px] font-semibold mt-1 leading-snug" style={{ color: C.text }}>
-          {open ? SURPRISES[dayIndex] : 'Нажми, чтобы узнать'}
+          {open ? facts[dayIndex] : t.ui.tapToKnow}
         </div>
       </div>
     </button>
