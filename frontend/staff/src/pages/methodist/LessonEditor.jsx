@@ -67,9 +67,14 @@ function questionPayload(q) {
   };
 }
 
-const makeLessonSettingsSchema = (t) => z.object({
+// isPractical — Aqlli tahlil (AI-review, Groq) shu description'ga qarab
+// tekshiradi (backend: content.schemas.js, xuddi shu qoida). Bo'sh bo'lsa
+// AI vazifa nima ekanini bilmaydi, faqat kodning umumiy sifatini baholaydi.
+const makeLessonSettingsSchema = (t, isPractical) => z.object({
   title: z.string().trim().min(1, t('editor.title_required')).max(200),
-  description: z.string().trim().max(4000).optional(),
+  description: isPractical
+    ? z.string().trim().min(1, t('editor.description_required_practical')).max(4000)
+    : z.string().trim().max(4000).optional(),
   instruction: z.string().trim().max(2000).optional(),
   coinReward: z.coerce.number().int().min(0).default(0),
   videoUrl: z.string().trim().url(t('editor.invalid_url')).or(z.literal('')).optional(),
@@ -100,6 +105,9 @@ function LessonEditorView() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const { data, isLoading, error } = useLessonDetails(lessonId);
+  const lesson = data?.data;
+  const isTest = lesson?.lesson_type === 'test';
+  const isPractical = lesson?.lesson_type === 'practical';
   const invalidate = useInvalidate();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -123,14 +131,11 @@ function LessonEditorView() {
   const questionType = watch('questionType');
 
   const { register: regSettings, handleSubmit: handleSettingsSubmit, reset: resetSettings, formState: { errors: settingsErrors } } = useForm({
-    resolver: zodResolver(makeLessonSettingsSchema(t)),
+    resolver: zodResolver(makeLessonSettingsSchema(t, isPractical)),
   });
 
-  const lesson = data?.data;
   const questions = lesson?.questions || [];
   const requirements = lesson?.requirements || [];
-  const isTest = lesson?.lesson_type === 'test';
-  const isPractical = lesson?.lesson_type === 'practical';
 
   // Инициализируем требования из сервера после каждой загрузки урока.
   useEffect(() => {
@@ -793,8 +798,9 @@ function LessonEditorView() {
 
               {isPractical && (
                 <label className="form-control w-full">
-                  <span className="label-text mb-1 font-medium">{t('editor.task_desc')}</span>
-                  <textarea {...regSettings('description')} className="textarea textarea-bordered w-full" rows={3} />
+                  <span className="label-text mb-1 font-medium">{t('editor.task_desc')} <span className="text-error">*</span></span>
+                  <textarea {...regSettings('description')} className={`textarea textarea-bordered w-full ${settingsErrors.description ? 'textarea-error' : ''}`} rows={3} />
+                  {settingsErrors.description && <span className="text-xs text-error mt-1">{settingsErrors.description.message}</span>}
                 </label>
               )}
 

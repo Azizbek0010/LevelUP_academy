@@ -11,12 +11,17 @@ import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { LangProvider, useLang } from './i18n.js';
 import LangSwitcher from './LangSwitcher.jsx';
 
+// practical → Aqlli tahlil (AI-review, Groq) shu description'ga qarab
+// tekshiradi (backend: content.schemas.js, xuddi shu qoida).
 const makeSchema = (t) => z.object({
   title: z.string().trim().min(1, t('lessons.title_required')).max(200),
   lessonType: z.enum(['test', 'practical']),
   description: z.string().trim().max(2000).optional(),
   instruction: z.string().trim().max(2000).optional(),
   coinReward: z.coerce.number().int().min(0).default(0),
+}).refine((v) => v.lessonType !== 'practical' || Boolean(v.description?.trim()), {
+  message: t('editor.description_required_practical'),
+  path: ['description'],
 });
 
 function LessonTypeBadge({ type, t }) {
@@ -321,13 +326,16 @@ function LessonsView() {
 
               {lessonType === 'practical' && (
                 <label className="form-control w-full">
-                  <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('lessons.desc_label')}</span>
+                  <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">
+                    {t('lessons.desc_label')} <span className="text-error">*</span>
+                  </span>
                   <textarea
                     {...register('description')}
                     placeholder={t('lessons.desc_placeholder')}
-                    className="mt-textarea"
+                    className={`mt-textarea ${errors.description ? 'textarea-error' : ''}`}
                     rows={3}
                   />
+                  {errors.description && <span className="text-xs text-error mt-1">{errors.description.message}</span>}
                 </label>
               )}
 

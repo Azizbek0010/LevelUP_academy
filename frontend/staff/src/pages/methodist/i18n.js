@@ -194,6 +194,11 @@ const translations = {
   'editor.correct_answer_required': { ru: 'Правильный ответ обязателен', uz: 'To\'g\'ri javob kiritilishi shart', en: 'Correct answer is required' },
   'editor.title_required': { ru: 'Название обязательно', uz: 'Nomi kiritilishi shart', en: 'Name is required' },
   'editor.invalid_url': { ru: 'Некорректная ссылка', uz: 'Noto\'g\'ri havola', en: 'Invalid link' },
+  'editor.description_required_practical': {
+    ru: 'Для практического задания описание обязательно — AI-разбор опирается именно на него',
+    uz: 'Amaliy topshiriq uchun tavsif majburiy — AI-tahlil aynan shunga tayanadi',
+    en: 'Description is required for practical lessons — AI review relies on it',
+  },
   'editor.question_prefix': { ru: 'Вопрос', uz: 'Savol', en: 'Question' },
   'editor.type_choice': { ru: 'Варианты', uz: 'Variantlar', en: 'Options' },
   'editor.type_riddle': { ru: 'Загадка', uz: 'Topishmoq', en: 'Riddle' },

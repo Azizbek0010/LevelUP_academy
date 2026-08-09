@@ -63,7 +63,20 @@ export async function getLesson(lessonId, orgId) {
   return lesson;
 }
 
+/** description опускается в PATCH'e только когда его реально трогают —
+ * lessonType в updateLessonSchema нет (тип урока после создания не меняется),
+ * поэтому чтобы понять "практический ли это урок", нужен отдельный lookup,
+ * но только если description вообще участвует в этом запросе. */
 export async function updateLesson(id, orgId, payload) {
+  if (payload.description !== undefined) {
+    const current = await repo.findLessonInOrg(id, orgId);
+    if (!current) throw new AppError(404, 'Lesson not found');
+    const clearing = !payload.description || !payload.description.trim();
+    if (current.lesson_type === 'practical' && clearing) {
+      throw new AppError(422, "Amaliy (practical) dars uchun tavsif (description) majburiy — AI-tahlil shunga tayanadi");
+    }
+  }
+
   const item = await repo.updateLesson(id, orgId, payload);
   if (!item) throw new AppError(404, 'Lesson not found');
   return item;
