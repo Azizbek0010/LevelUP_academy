@@ -1,13 +1,20 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 09.08.2026 15:06 (UTC+5, Toshkent vaqti)
-> Statistika: 192/220 task tugallangan (87%)
+> Oxirgi yangilanish: 09.08.2026 22:27 (UTC+5, Toshkent vaqti)
+> Statistika: 197/225 task tugallangan (87%)
 
 ---
 
 ## Progress: [#################...] 87%
 
 ## Tugallangan vazifalar
+
+### Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Claude, 09.08.2026) 🆕
+- [x] AI-REVIEW: `methodology_submissions` uchun AI kod-tahlili — Groq
+- [x] TG-BRANCH-BIND: Branch Manager kabinetida (`Branch.jsx`) "Ota-onalar
+- [x] TG-ATTENDANCE: `attendance.service.js` — davomat belgilangach (3 daqiqa
+- [x] TG-TEST-RESULT: `submitTest` — har test topshirilgach natija (mavzu +
+- [x] TG-DAILY-DIGEST: har kuni 00:00 (Asia/Tashkent) — kecha muddati o'tib
 
 ### Backend — Auth (Karis)
 - [x] K-AUTH: login (3 endpoint: main/staff/member), JWT access 15m
