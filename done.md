@@ -1,11 +1,11 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 09.08.2026 14:17 (UTC+5, Toshkent vaqti)
-> Statistika: 191/220 task tugallangan (86%)
+> Oxirgi yangilanish: 09.08.2026 15:06 (UTC+5, Toshkent vaqti)
+> Statistika: 192/220 task tugallangan (87%)
 
 ---
 
-## Progress: [#################...] 86%
+## Progress: [#################...] 87%
 
 ## Tugallangan vazifalar
 
@@ -231,6 +231,7 @@
 - [x] STUDENT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan): login,
 - [x] STUDENT ✅ BAJARILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan) —
 - [x] STUDENT UI-STATES ✅ 2026-07-28 (Karis): audit qilindi — `Home.jsx` va `TestTake.jsx`
+- [x] STUDENT (Sardor): design-system — laym #C6FF34, Manrope, responsive
 
 ### Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
 - [x] PARENT: Child overview — Dashboard.jsx (useParentOverview hook)
@@ -271,5 +272,5 @@
 ## Jamoa boyicha
 
 - Karis (Backend): 116 task
-- Abdulaziz (Backend): 79 task
-- Frontend jamoasi: 68 task
+- Abdulaziz (Backend): 80 task
+- Frontend jamoasi: 69 task

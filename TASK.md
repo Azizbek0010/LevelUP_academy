@@ -10,8 +10,8 @@
 > (`git log save-zone..origin/<branch>`). **hamidulla endi save-zone'da** — 07-28'dagi
 > 9 fayldagi konflikt o'shandan beri hal qilingan va merge bo'lgan. Boshqa hamma branch
 > (Bilol, Islom, abdulaziz/student-panel, alisher/mentor-panel, aziz/branches, elyor,
-> hamidulla, kozim, methodist, rey, shohjahon, xob) — save-zone bilan bab-baravar
-> (ancestor), qo'shimcha ish yo'q. FAQAT 4 tasida qo'shimcha commit bor:
+> hamidulla, kozim, methodist, rey, shohjahon) — save-zone bilan bab-baravar
+> (ancestor), qo'shimcha ish yo'q. FAQAT 3 tasida qo'shimcha commit bor:
 
 - **`Abduloh`** (1 commit, 08-08): `feat(admin/expenses): add payment method icons,
   recurring expenses, fix paymentMethod bug, add flex-wrap footer` —
@@ -28,9 +28,33 @@
   (initsiallar+truncate), chat backendga ulanishga tayyorlandi (21 fayl, +1287/−320).
   Eski TASK.md yozuvi (07-27, chat redesign konflikt haqida) ESKIRGAN — o'sha ish
   allaqachon save-zone'da, bu 08-07'dagi YANGI commitlar. Merge qilinmadi.
+  ⚠️ **KONFLIKT XAVFI:** shu branch ham `frontend/member/src/i18n/{ru,uz}.js` ni
+  MUSTAQIL yaratgan — endi shu fayllar save-zone'da XOB versiyasi bilan allaqachon
+  bor (pastga qara). Merge qilinganda `header`/boshqa umumiy bo'limlarda albatta
+  konflikt chiqadi — Kama o'z `hub`/`parent` bo'limlarini XOB'ning `header`/`home`/
+  `feedback`/`leaderboard` bo'limlari USTIGA qo'shishi kerak, ustidan yozib emas.
 - **`alish`** (2 commit, 07-14, o'zgarishsiz 07-28'dan beri): hali ham repo ILDIZIGA
   alohida Vite-ilova — muammo hal qilinmagan, Alish `frontend/` ichida qayta boshlashi
   kerak (pastdagi ALISH bo'limiga qara).
+
+### ✅ `xob` — save-zone'ga merge qilindi (2026-08-09, Claude, commit `172d250`)
+
+Student paneli qayta ishlandi — responsive, to'liq i18n (ru/uz), yangi `/study`
+sahifasi (LessonsHub), «Aqlli tahlil» AI-review MAKETI (backend hali yo'q, dev/mock
+rejimida ko'rinadi). 21 fayl, +2051/−336.
+
+Merge oldidan kod tekshirildi, **1 ta haqiqiy bag topildi va tuzatildi**:
+`frontend/member/src/i18n/ru.js` dagi `header.tgBind`…`tgUnlinkSuccess` (13 ta kalit)
+o'zbekcha matn bilan qolib ketgan edi (uz.js'dan copy-paste, tarjima qilinmagan).
+Kod hozircha bu kalitlarni hech qayerda ishlatmaydi (o'lik), lekin kimdir ulasa
+rus interfeysida o'zbekcha matn chiqib qolardi — merge commitida to'g'ridan-to'g'ri
+tuzatildi. Boshqa hech narsa buzilmagan: `npm run build` (frontend/member) toza
+o'tdi, 1915 modul, xatosiz.
+
+Merge paytida BITTA konflikt bo'ldi — `App.jsx`: save-zone'da xob ketganidan keyin
+`/qr-login` marshruti qo'shilgan edi (QR-kirish fichasi), xob esa `I18nProvider`
+bilan o'radi. Ikkalasi ham saqlab qolindi (konflikt mazmunan yo'q edi, faqat bir xil
+qatorga tegilgan).
 
 ---
 
@@ -749,7 +773,14 @@
 - [x] STUDENT UI-STATES ✅ 2026-07-28 (Karis): audit qilindi — `Home.jsx` va `TestTake.jsx`
       da allaqachon bor edi, `Homework.jsx` va `Shop.jsx` da yo'q edi (xuddi shu "abadiy
       Skeleton" bagi) — tuzatildi. Endi student panelidagi barcha 7 sahifada 3 holat ham bor
-- [ ] STUDENT (Sardor): design-system — laym #C6FF34, Manrope, responsive 1280/768/375
+- [x] STUDENT (Sardor): design-system — laym #C6FF34, Manrope, responsive
+      ✅ MERGE QILINDI 2026-08-09 (branch `xob`, commit `172d250`): to'liq responsive
+      qayta ishlash, i18n ru/uz, yangi `/study` (LessonsHub) sahifasi, «Aqlli tahlil»
+      AI-review maketi (backend hali yo'q). 21 fayl, +2051/−336. Kod tekshirildi,
+      1 ta bag topilib tuzatildi (yuqorida "✅ xob — save-zone'ga merge qilindi" ga qara).
+      ⚠️ **EGALIK SAVOLI:** bu bo'lim rasman Sardor'niki, lekin ishni XOB qilgan —
+      TEAM-TASKS/CLAUDE.md jamoa jadvalida XOB umuman yo'q. Karis hal qilsin: XOB
+      Sardor bilan birga shu panelda ishlayaptimi, yoki panel egasi almashdimi
 
 ## Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
 
