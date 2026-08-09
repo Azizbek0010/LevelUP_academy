@@ -4,13 +4,17 @@
 > Statistika qo'lda YOZILMAYDI — real raqamlar faqat `done.md` da.
 > V1 SCOPE: naqd + karta (full/split). Click/Payme/UzCard/Humo — FAQAT v3. Nasiya/рассрочка — V1 DA YO'Q (qaror 2026-07-05, tasdiqlangan 2026-07-07).
 
-## Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Claude, 09.08.2026) 🆕
+## Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Karis, 09.08.2026) ✅
 
-> Karis so'ragan: (1) AI kod-review (backend, Groq — Gemini emas, pastga qara),
-> (2) Branch Manager filial uchun ota-onalar Telegram guruhini ulaydi, (3) davomat
-> va (4) test natijasi shu guruhga avto boradi, (5) har kuni 00:00'da kecha
-> topshirilmagan uy vazifalari sodig'i. Hammasi kod darajasida BAJARILDI,
-> save-zone'ga hali PUSH QILINMADI (foydalanuvchi ruxsati kutilmoqda — pastga qara).
+> Backend'ga tegishli bo'lgan hammasi — Karis qildi (Claude bilan birga, shu
+> sessiyada) — odatdagi zona egasi (Abdulaziz: Mentor/Student/Parent) emas,
+> chunki Karis Team Lead sifatida to'g'ridan-to'g'ri o'zi ishladi.
+>
+> (1) AI kod-review (backend, Groq — Gemini emas, pastga qara), (2) Branch
+> Manager filial uchun ota-onalar Telegram guruhini ulaydi, (3) davomat va
+> (4) test natijasi shu guruhga avto boradi, (5) har kuni 00:00'da kecha
+> topshirilmagan uy vazifalari sodig'i. Hammasi save-zone'ga PUSH QILINDI
+> (`d75d8d9`, `11af73c`), migratsiyalar Neon'ga qo'llandi, testlar yashil.
 
 - [x] AI-REVIEW: `methodology_submissions` uchun AI kod-tahlili — Groq
       (`openai/gpt-oss-120b`, bepul tarif, ma'lumotlarda o'qitilmaydi — shuning
@@ -37,6 +41,23 @@
       Render'da `type: worker` servisi yo'q (TASK.md'dagi eski yozuvga qara),
       demak worker.js umuman ishga tushmaydi. Boshqa 3 tadan farqli — bu
       croni, event emas, workersiz imkoni yo'q.
+
+### 🔲 OCHIQ VAZIFA — EGASI: **KARIS** (pul kerak, Claude sotib ololmaydi)
+
+- [ ] RENDER-STARTER: web-servisni (`LevelUP_academy-1`) Free'dan Starter'ga
+      ($7/oy) ko'tarish — 09.08.2026 auditda topilgan sabab: free plan 15
+      daqiqa jimlikdan keyin uxlaydi, uyg'onish 30-60 son, + Neon o'zi ham
+      uxlaydi (+5s) — ikkalasi ustma-ust tushganda birinchi so'rov 500 bilan
+      qaytadi ("guruh bilan kirganda ba'zan ishlamaydi" — Karis 09.08 xabari).
+      Starter uxlamaydi — muammo yo'qoladi.
+- [ ] WORKER-MERGE (Claude qiladi, Starter sotib olingandan keyin): `worker.js`
+      ni `server.js` ichiga qo'shish — o'sha $7/oy servis o'zi AI-review
+      navbatini ham, 00:00 kunlik svodkani ham, billing/overdue/due-soon
+      cronlarini ham ushlaydi. Alohida worker servisi ($7/oy qo'shimcha)
+      SHART EMAS — bitta har doim yonib turgan process yetarli.
+      ⚠️ Kelishilgan trade-off: shu tufayli AI-review'dagi bag butun saytni
+      ham yiqitishi mumkin (bitta process) — kichik markaz uchun qabul
+      qilingan.
 
 **Ochiq savollar Karis'ga:**
 1. `npm run migrate` boshqa hech qachon lokal gonilmagan — Neon'ga to'g'ridan-
@@ -786,13 +807,17 @@ qatorga tegilgan).
 - [x] MENTOR: Coins (assign/deduct)
 - [x] MENTOR: Chat — shaxsiy dm: xonalar, Socket.io + tarix, faqat xodim va ota-ona ko‘radi (2026-07-18)
 
-## Frontend — Student (Sardor) 🔥 to'liq egasi — 2026-07-26 dan
+## Frontend — Student (Odil) 🔥 to'liq egasi — 2026-08-09 dan
 
-> 🔄 **Egasi almashdi (2026-07-26, Karis qarori):** panel Abdulaziz'dan Sardor'ga o'tdi.
+> 🔄 **Egasi almashdi (2026-08-09, Karis qarori):** panel Sardor'dan Odil'ga o'tdi.
+> Pastdagi "EGALIK SAVOLI" (XOB shu panelni 09.08'da qurgan, lekin jamoa jadvalida
+> yo'q edi) shu tarzda yopildi — Karis Odil'ni rasmiy egasi qilib belgiladi.
+>
+> 🔄 **Eski yozuv (2026-07-26, tarix uchun):** panel Abdulaziz'dan Sardor'ga o'tgan edi.
 > Abdulaziz **faqat backend**da qoladi (`Backend — Student`, `Backend — Mentor`,
 > `Backend — Parent`, `Backend — Infrastructure`, SEO) — frontendda uning zonasi yo'q.
 > Sardor'ning eski vazifalari (FE-DEAD-CODE / FE-ROUTER-FLAG / FE-COOP / UI-DS)
-> boshqalarga berildi — u endi FAQAT shu panel bilan shug'ullanadi.
+> boshqalarga berildi.
 
 > ⚠️ Barcha sahifalar QURILGAN va api kontraktiga ulangan, LEKIN mock rejimida ishlaydi
 > (BUG-PROD-MOCKS ga qara). Jonli E2E qilinmagan.
@@ -814,14 +839,15 @@ qatorga tegilgan).
 - [x] STUDENT UI-STATES ✅ 2026-07-28 (Karis): audit qilindi — `Home.jsx` va `TestTake.jsx`
       da allaqachon bor edi, `Homework.jsx` va `Shop.jsx` da yo'q edi (xuddi shu "abadiy
       Skeleton" bagi) — tuzatildi. Endi student panelidagi barcha 7 sahifada 3 holat ham bor
-- [x] STUDENT (Sardor): design-system — laym #C6FF34, Manrope, responsive
+- [x] STUDENT (Odil): design-system — laym #C6FF34, Manrope, responsive
       ✅ MERGE QILINDI 2026-08-09 (branch `xob`, commit `172d250`): to'liq responsive
       qayta ishlash, i18n ru/uz, yangi `/study` (LessonsHub) sahifasi, «Aqlli tahlil»
-      AI-review maketi (backend hali yo'q). 21 fayl, +2051/−336. Kod tekshirildi,
-      1 ta bag topilib tuzatildi (yuqorida "✅ xob — save-zone'ga merge qilindi" ga qara).
-      ⚠️ **EGALIK SAVOLI:** bu bo'lim rasman Sardor'niki, lekin ishni XOB qilgan —
-      TEAM-TASKS/CLAUDE.md jamoa jadvalida XOB umuman yo'q. Karis hal qilsin: XOB
-      Sardor bilan birga shu panelda ishlayaptimi, yoki panel egasi almashdimi
+      AI-review maketi (backend endi TAYYOR — yuqoridagi "AI-REVIEW" bo'limiga qara).
+      21 fayl, +2051/−336. Kod tekshirildi, 1 ta bag topilib tuzatildi (yuqorida
+      "✅ xob — save-zone'ga merge qilindi" ga qara).
+      ✅ **EGALIK SAVOLI YOPILDI (2026-08-09, Karis qarori):** panel rasman
+      Odil'niki qilindi. Amaldagi ish (09.08 redizayn) XOB tomonidan qilingan edi —
+      jamoa jadvalida u umuman yo'q, TASK.md'da tarix uchun shunday qoldirildi.
 
 ## Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
 

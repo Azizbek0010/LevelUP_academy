@@ -1,15 +1,15 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 09.08.2026 22:27 (UTC+5, Toshkent vaqti)
-> Statistika: 197/225 task tugallangan (87%)
+> Oxirgi yangilanish: 09.08.2026 23:34 (UTC+5, Toshkent vaqti)
+> Statistika: 197/227 task tugallangan (86%)
 
 ---
 
-## Progress: [#################...] 87%
+## Progress: [#################...] 86%
 
 ## Tugallangan vazifalar
 
-### Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Claude, 09.08.2026) 🆕
+### Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Karis, 09.08.2026) ✅
 - [x] AI-REVIEW: `methodology_submissions` uchun AI kod-tahlili — Groq
 - [x] TG-BRANCH-BIND: Branch Manager kabinetida (`Branch.jsx`) "Ota-onalar
 - [x] TG-ATTENDANCE: `attendance.service.js` — davomat belgilangach (3 daqiqa
@@ -227,7 +227,7 @@
 - [x] MENTOR: Coins (assign/deduct)
 - [x] MENTOR: Chat — shaxsiy dm: xonalar, Socket.io + tarix, faqat xodim va ota-ona ko‘radi (2026-07-18)
 
-### Frontend — Student (Sardor) 🔥 to'liq egasi — 2026-07-26 dan
+### Frontend — Student (Odil) 🔥 to'liq egasi — 2026-08-09 dan
 - [x] STUDENT: Home (coins, groups, deadlines)
 - [x] STUDENT: Tests — Tests.jsx + TestTake.jsx (timer/scoring)
 - [x] STUDENT: Homework
@@ -238,7 +238,7 @@
 - [x] STUDENT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan): login,
 - [x] STUDENT ✅ BAJARILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan) —
 - [x] STUDENT UI-STATES ✅ 2026-07-28 (Karis): audit qilindi — `Home.jsx` va `TestTake.jsx`
-- [x] STUDENT (Sardor): design-system — laym #C6FF34, Manrope, responsive
+- [x] STUDENT (Odil): design-system — laym #C6FF34, Manrope, responsive
 
 ### Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
 - [x] PARENT: Child overview — Dashboard.jsx (useParentOverview hook)
@@ -278,6 +278,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 116 task
+- Karis (Backend): 121 task
 - Abdulaziz (Backend): 80 task
 - Frontend jamoasi: 69 task
