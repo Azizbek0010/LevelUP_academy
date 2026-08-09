@@ -71,6 +71,12 @@ const schema = z.object({
   // бесплатный тариф Groq/Cerebras НЕ обучается на входных данных (в отличие
   // от free tier самого Google), а сюда прилетает код реальных детей.
   GROQ_API_KEY: z.string().optional().or(z.literal('')),
+  // Запасные ключи (10.08.2026, запрос пользователя): free tier одного ключа
+  // gpt-oss-120b — ~200K токенов/день, это ~100 проверок — школа может
+  // упереться за один день. groq.client.js пробует их по очереди, любой
+  // не заданный просто пропускается.
+  GROQ_API_KEY_2: z.string().optional().or(z.literal('')),
+  GROQ_API_KEY_3: z.string().optional().or(z.literal('')),
 
   SEED_MAIN_ADMIN_PHONE: z.string().default('+998900000000'),
   SEED_MAIN_ADMIN_EMAIL: z.string().email().default('hp8187081014laptop@gmail.com'),
