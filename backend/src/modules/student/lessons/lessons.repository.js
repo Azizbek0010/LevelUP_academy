@@ -134,10 +134,15 @@ export async function getStudentName(studentId, db = pool) {
 
 // ---------- Aqlli tahlil (AI-review): читает/пишет worker'ом, не HTTP-слоем ----------
 
+/** description/instruction — то самое задание методиста ("Описание задачи"), без
+ * которого AI разбирал код "вообще", а не "выполнил ли ученик ИМЕННО ЭТО задание"
+ * (запрос пользователя 10.08.2026). file_key — вложение САМОГО УРОКА (методист мог
+ * приложить, например, макет/спеку), отдельно от file_key ученика в submission. */
 export async function getSubmissionById(id, db = pool) {
   const { rows: [r] } = await db.query(
     `SELECT s.id, s.lesson_id, s.student_id, s.file_key, s.text_answer, s.review_attempts,
-            l.title AS lesson_title
+            l.title AS lesson_title, l.description AS lesson_description,
+            l.instruction AS lesson_instruction, l.file_key AS lesson_file_key
        FROM methodology_submissions s
        JOIN methodology_lessons l ON l.id = s.lesson_id
       WHERE s.id = $1`,

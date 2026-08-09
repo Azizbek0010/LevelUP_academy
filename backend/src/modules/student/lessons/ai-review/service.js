@@ -20,6 +20,23 @@ function deterministicTestsReview(lang) {
   };
 }
 
+/** "Описание задачи" методиста — description/instruction урока (текстовые поля,
+ * всегда читаемые) + вложение УРОКА (lesson_file_key), если оно вообще
+ * читается тем же экстрактором, что и сдача ученика (best-effort: не
+ * получилось — просто нет спеки, отказывать студенту в review из-за
+ * нечитаемого файла методиста нельзя). Без этого AI разбирал код "вообще",
+ * а не "выполнил ли ученик ИМЕННО ЭТО задание" (запрос пользователя 10.08.2026). */
+async function buildTaskDescription(submission) {
+  const parts = [submission.lesson_description, submission.lesson_instruction].filter(Boolean);
+
+  if (submission.lesson_file_key) {
+    const { bundle } = await extractSubmission({ fileKey: submission.lesson_file_key }).catch(() => ({ bundle: null }));
+    if (bundle) parts.push(`--- Metodist ilova qilgan fayl ---\n${bundle}`);
+  }
+
+  return parts.length > 0 ? parts.join('\n\n') : null;
+}
+
 /**
  * submissionId — methodology_submissions.id. Чистая функция побочного
  * эффекта: читает сдачу, извлекает код (extractor), опционально зовёт Groq,
@@ -36,10 +53,10 @@ export async function processSubmission(submissionId) {
   const attempts = (submission.review_attempts ?? 0) + 1;
   await repo.saveReview(submissionId, { review: null, reviewSource: null, reviewStatus: 'processing', reviewAttempts: attempts });
 
-  const { bundle, reviewSource } = await extractSubmission({
-    fileKey: submission.file_key,
-    textAnswer: submission.text_answer,
-  });
+  const [{ bundle, reviewSource }, taskDescription] = await Promise.all([
+    extractSubmission({ fileKey: submission.file_key, textAnswer: submission.text_answer }),
+    buildTaskDescription(submission),
+  ]);
 
   // 'tests'/'unreadable' — Groq НЕ вызывается (спека: не читал код — не
   // выдумывай оценку). Единственная разница между ними: 'unreadable' значит
@@ -55,7 +72,7 @@ export async function processSubmission(submissionId) {
   }
 
   try {
-    const review = await reviewCode(bundle, DEFAULT_LANG);
+    const review = await reviewCode(bundle, DEFAULT_LANG, taskDescription);
     await repo.saveReview(submissionId, { review, reviewSource, reviewStatus: 'done', reviewAttempts: attempts });
   } catch (err) {
     logger.error({ err, submissionId, attempts }, 'ai-review: Groq call failed');
