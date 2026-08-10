@@ -52,7 +52,11 @@ export default function AdminProfile() {
   const qc = useQueryClient();
   const navigate = useNavigate();
 
-  const { data, isLoading } = useMe();
+  // `loadError` отдельно от `error` ниже: тот про сохранение формы, этот про
+  // сам запрос. Раньше ошибку загрузки не забирали вовсе — упавший `/me`
+  // оставлял пустые поля без единого слова о причине, и это выглядело как
+  // «профиль пустой», а не «профиль не загрузился».
+  const { data, isLoading, error: loadError, refetch } = useMe();
   const me = data?.data ?? null;
 
   const [firstName, setFirstName] = useState('');
@@ -126,6 +130,24 @@ export default function AdminProfile() {
     /* /profile у админа — обычная страница с общим скроллом (в Layout
        полноэкранным помечен только профиль ментора), поэтому отступы даёт
        контейнер, а не этот блок: здесь только две колонки. */
+    <>
+      {/* Страницу целиком не подменяем: имя, email и роль есть в сессии через
+          useAuth(), поэтому при упавшем /me профиль остаётся читаемым. Но
+          сказать об этом надо — иначе пустые «Телефон» и «Зарегистрирован»
+          (их в сессии нет) выглядят как «не заполнено», а не «не загрузилось».
+          Фрагмент, а не ещё один flex-контейнер: обёртка сдвинула бы отступ у
+          ~170 строк ниже и утопила бы правку в шуме. */}
+      {loadError && (
+        <div className="alert alert-warning mb-5">
+          <span className="flex-1 text-sm">
+            Не удалось загрузить профиль: {loadError.message}. Показаны данные из сессии.
+          </span>
+          <button className="btn btn-sm" onClick={() => refetch()}>
+            Повторить
+          </button>
+        </div>
+      )}
+
     <div className="flex flex-col lg:flex-row gap-5">
       {/* ═════ Карточка личности ═════ */}
       <aside className="w-full lg:w-[380px] shrink-0">
@@ -280,5 +302,6 @@ export default function AdminProfile() {
         </div>
       </div>
     </div>
+    </>
   );
 }
