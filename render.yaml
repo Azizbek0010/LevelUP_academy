@@ -20,18 +20,15 @@ services:
     runtime: node
     rootDir: backend
     region: ohio          # сверено с дашбордом: сервис создан в ohio, не в frankfurt
-    plan: free
+    plan: starter          # 11.08.2026: апгрейд с free — 0.5 CPU/512MB, не засыпает
     branch: main
     buildCommand: npm install
-    # ⚠️ НЕ РАБОТАЕТ НА FREE-ПЛАНЕ. Дашборд Render 04.08 дословно:
-    # «Pre-Deploy Command is available for paid instances only» — поле
-    # заблокировано, Edit неактивен. Строка оставлена намеренно: при переходе
-    # на платный тариф это правильная настройка, и лучше пусть она уже стоит.
-    #
-    # Пока тариф free, миграции нужно вешать на Start Command:
-    #   npm run migrate && npm start
-    # Приложение тогда стартует только при успешной миграции — то же свойство
-    # «упало = прод остался на прошлой версии», ради которого нужен pre-deploy.
+    # На free-плане это поле было заблокировано («Pre-Deploy Command is
+    # available for paid instances only») — миграции висели на Start Command.
+    # С 11.08.2026 (Starter) можно перенести в preDeployCommand по-нормальному,
+    # но startCommand ниже пока не трогал: `migrate && start` даёт то же
+    # свойство «упало = прод остался на прошлой версии», что и pre-deploy —
+    # оставлено как есть, чтобы не менять два места сразу без причины.
     preDeployCommand: npm run migrate
     startCommand: npm start
     healthCheckPath: /health

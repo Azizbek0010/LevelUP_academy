@@ -52,13 +52,15 @@
       (Claude buni o'zi qila olmaydi — to'lov ma'lumotlari). Kalitlarni
       o'zgartirish shart emas, joriy `S3_ACCESS_KEY` ishlaydi, faqat limit
       to'lansa yetadi.
-- [ ] RENDER-STARTER: web-servisni (`LevelUP_academy-1`) Free'dan Starter'ga
+- [x] RENDER-STARTER: web-servisni (`LevelUP_academy-1`) Free'dan Starter'ga
       ($7/oy) ko'tarish — 09.08.2026 auditda topilgan sabab: free plan 15
       daqiqa jimlikdan keyin uxlaydi, uyg'onish 30-60 son, + Neon o'zi ham
       uxlaydi (+5s) — ikkalasi ustma-ust tushganda birinchi so'rov 500 bilan
       qaytadi ("guruh bilan kirganda ba'zan ishlamaydi" — Karis 09.08 xabari).
-      Starter uxlamaydi — muammo yo'qoladi.
-- [ ] WORKER-MERGE (Claude qiladi, Starter sotib olingandan keyin): `worker.js`
+      Starter uxlamaydi — muammo yo'qoladi. ✅ 11.08.2026 1:28 — to'landi,
+      dashboard'da tasdiqlandi (0.5 CPU/512MB, "Instance type changed from
+      Free to Starter"), qayta deploy Live.
+- [ ] WORKER-MERGE (Claude qiladi — endi navbatda, Starter allaqachon olingan): `worker.js`
       ni `server.js` ichiga qo'shish — o'sha $7/oy servis o'zi AI-review
       navbatini ham, 00:00 kunlik svodkani ham, billing/overdue/due-soon
       cronlarini ham ushlaydi. Alohida worker servisi ($7/oy qo'shimcha)
@@ -67,7 +69,7 @@
       ham yiqitishi mumkin (bitta process) — kichik markaz uchun qabul
       qilingan.
 
-**Jami, agar ikkalasi ham olinsa: ~$12/oy** (Storj $5 + Render $7).
+**Jami hozircha: $7/oy** (Render Starter, to'langan) **+ Storj $5/oy dan qolgan ochiq vazifa** = jami ~$12/oy, ikkalasi olinsa.
 
 **Yopilgan savollar** (edi, endi hal): `npm run migrate` Neon'ga to'g'ridan-
 to'g'ri gonildi (17/17 test o'tdi) · `GROQ_API_KEY`/`_2`/`_3` Render

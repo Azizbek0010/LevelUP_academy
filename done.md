@@ -1,7 +1,7 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 11.08.2026 00:31 (UTC+5, Toshkent vaqti)
-> Statistika: 197/228 task tugallangan (86%)
+> Oxirgi yangilanish: 11.08.2026 01:32 (UTC+5, Toshkent vaqti)
+> Statistika: 198/228 task tugallangan (86%)
 
 ---
 
@@ -15,6 +15,7 @@
 - [x] TG-ATTENDANCE: `attendance.service.js` — davomat belgilangach (3 daqiqa
 - [x] TG-TEST-RESULT: `submitTest` — har test topshirilgach natija (mavzu +
 - [x] TG-DAILY-DIGEST: har kuni 00:00 (Asia/Tashkent) — kecha muddati o'tib
+- [x] RENDER-STARTER: web-servisni (`LevelUP_academy-1`) Free'dan Starter'ga
 
 ### Backend — Auth (Karis)
 - [x] K-AUTH: login (3 endpoint: main/staff/member), JWT access 15m
@@ -278,6 +279,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 121 task
+- Karis (Backend): 122 task
 - Abdulaziz (Backend): 80 task
 - Frontend jamoasi: 69 task
