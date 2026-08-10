@@ -471,11 +471,12 @@ function AttendanceTab({ groupId, token }) {
                   return (
                     <th
                       key={d}
-                      className="sticky top-0 z-10 w-[68px] min-w-[68px] px-1.5 py-2.5 text-center border-l border-base-300"
-                      style={{
-                        background: isToday ? 'var(--green-bg)' : 'var(--surface)',
-                        color: isToday ? 'var(--green)' : 'var(--text-muted)',
-                      }}
+                      /* Токены темы, а не inline var(): --green/--surface/--text-muted
+                         дублировали primary/base-100/base-content своими же
+                         значениями (см. UI-DS в TASK.md). */
+                      className={`sticky top-0 z-10 w-[68px] min-w-[68px] px-1.5 py-2.5 text-center border-l border-base-300 ${
+                        isToday ? 'bg-primary/10 text-primary' : 'bg-base-100 text-base-content/60'
+                      }`}
                     >
                       <div className="text-[11px] font-bold tabular-nums leading-tight">
                         {pad(d)}.{pad(month + 1)}
