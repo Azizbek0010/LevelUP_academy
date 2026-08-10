@@ -1,7 +1,10 @@
 /**
  * Admin Panel Export Utilities
  * Supports: Excel (.xlsx), PDF
- * Uses: xlsx (SheetJS), jspdf + jspdf-autotable
+ * Uses: xlsx-js-style, jspdf + jspdf-autotable
+ *
+ * Money and counts go to Excel as real Numbers (so SUM/sort work) and to PDF as
+ * formatted strings — see buildRows({ raw }).
  */
 
 import { fmt, money, dateShort } from '../format.js';
@@ -10,23 +13,57 @@ import { fmt, money, dateShort } from '../format.js';
 
 /**
  * Build a flat 2D array from data + column definitions.
- * Each column: { key: string, label: string, format?: (value, row) => string }
+ *
+ * Each column: {
+ *   key: string,
+ *   label: string,
+ *   format?: (value, row, index) => string,   // display text (PDF, and Excel text cells)
+ *   type?: 'number',                          // Excel writes a real number, not text
+ *   value?: (row) => number,                  // how to read that number off the row
+ * }
+ *
+ * @param {object} [opts]
+ * @param {boolean} [opts.raw]  true → numeric columns return real Numbers (Excel).
+ *                              false → everything is display text (PDF).
+ *
+ * Why the split: Excel must receive `1500000`, not the string "1 500 000".
+ * A formatted string lands in the sheet as text, so СУММ returns 0 and sorting
+ * goes alphabetical. PDF has no such notion — it only ever draws text.
  */
-export function buildRows(data, columns) {
+export function buildRows(data, columns, { raw = false } = {}) {
   const activeCols = columns.filter((c) => !c.hidden);
   const header = activeCols.map((c) => c.label);
   const rows = data.map((row, i) =>
     activeCols.map((c) => {
-      const raw = getNestedValue(row, c.key);
-      return c.format ? c.format(raw, row, i) : (raw ?? '—');
+      if (raw && c.type === 'number') {
+        const n = c.value ? c.value(row) : toNumber(getNestedValue(row, c.key));
+        return Number.isFinite(n) ? n : null;
+      }
+      const value = getNestedValue(row, c.key);
+      return c.format ? c.format(value, row, i) : (value ?? '—');
     })
   );
-  return { header, rows };
+  return { header, rows, activeCols };
 }
 
 /** Dot-notation access: "mentor.name" → row.mentor?.name */
 function getNestedValue(obj, path) {
   return path.split('.').reduce((cur, seg) => cur?.[seg], obj);
+}
+
+/**
+ * Coerce a cell value to a number. Handles already-formatted strings
+ * ("1 500 000" with NBSP separators) as a fallback, so a column that gains a
+ * `type: 'number'` without a `value()` still exports as a number.
+ */
+function toNumber(v) {
+  if (typeof v === 'number') return v;
+  if (v == null || v === '' || v === '—') return null;
+  // \s covers the NBSP (U+00A0) that Intl.NumberFormat('ru-RU') uses as its
+  // thousands separator, plus thin/narrow spaces — verified, not assumed.
+  const cleaned = String(v).replace(/\s/g, '').replace(',', '.');
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
 }
 
 function today() {
@@ -56,7 +93,8 @@ export function orgSlug() {
 
 export async function exportToExcel(data, columns, filename = `export_${today()}`) {
   const XLSX = await import('xlsx-js-style');
-  const { header, rows } = buildRows(data, columns);
+  // raw: numeric columns come back as real Numbers so Excel can sum/sort them
+  const { header, rows, activeCols } = buildRows(data, columns, { raw: true });
 
   const wsData = [header, ...rows];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -68,6 +106,7 @@ export async function exportToExcel(data, columns, filename = `export_${today()}
   // instead of hardcoding white/light backgrounds.
   const HEADER_FILL = '40833B';      // app --primary (LevelUp brand green)
   const HEADER_FONT = { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 };
+  const NUM_FMT = '#,##0';           // 1500000 → 1 500 000, still a number
   const BORDER = {
     top:  { style: 'thin', color: { rgb: 'D1D5DB' } },
     bottom: { style: 'thin', color: { rgb: 'D1D5DB' } },
@@ -90,23 +129,36 @@ export async function exportToExcel(data, columns, filename = `export_${today()}
     row.forEach((_, cIdx) => {
       const cell = ws[XLSX.utils.encode_cell({ r: rIdx + 1, c: cIdx })];
       if (!cell) return;
+      const isNumber = activeCols[cIdx]?.type === 'number' && cell.t === 'n';
       // No fill on data cells → transparent/colorless, matches app theme
       cell.s = {
         font: { color: { rgb: '1F2937' }, sz: 10 },
-        alignment: { vertical: 'middle' },
+        alignment: { vertical: 'middle', horizontal: isNumber ? 'right' : 'left' },
         border: BORDER,
+        ...(isNumber ? { numFmt: NUM_FMT } : {}),
       };
+      if (isNumber) cell.z = NUM_FMT;
     });
   });
 
-  // Freeze header row
-  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+  // Sort/filter dropdowns on the header row.
+  // NOTE: a frozen header row is NOT possible here — xlsx-js-style@1.2.0 writes
+  // <sheetView> self-closing and never emits a <pane> element, so the usual
+  // ws['!freeze'] = { ySplit: 1 } is silently ignored. Autofilter gives the user
+  // the practical part (sorting and filtering) without swapping the library.
+  if (header.length) {
+    ws['!autofilter'] = { ref: `A1:${XLSX.utils.encode_col(header.length - 1)}1` };
+  }
 
   // Auto-size columns
   const colWidths = header.map((h, colIdx) => {
     const maxLen = Math.max(
       h.length,
-      ...rows.map((r) => String(r[colIdx] ?? '').length)
+      ...rows.map((r) => {
+        const v = r[colIdx];
+        if (typeof v === 'number') return new Intl.NumberFormat('ru-RU').format(v).length;
+        return String(v ?? '').length;
+      })
     );
     return { wch: Math.min(maxLen + 2, 40) };
   });
@@ -119,42 +171,72 @@ export async function exportToExcel(data, columns, filename = `export_${today()}
 
 // ═══════════════ PDF ═══════════════
 
-/** Load DejaVuSans TTF from public/fonts and register with jsPDF for Cyrillic support */
+/**
+ * Leading bytes that mark a real font file.
+ *
+ * This check exists because it already went wrong: until 2026-08-10 both
+ * public/fonts/DejaVuSans*.ttf were GitHub 404 HTML pages (they started with
+ * CRLF and `<!DOCTYPE html>`) committed as if they were fonts. fetch() returned
+ * 200 for them, so `res.ok` was true, the code registered the garbage and set
+ * the font name — then jsPDF quietly kept helvetica and every Cyrillic glyph in
+ * every exported PDF came out broken, for weeks, with nothing in the logs.
+ * Validating the magic bytes turns that silent failure into a visible one.
+ */
+const FONT_MAGIC = [
+  [0x00, 0x01, 0x00, 0x00], // TrueType outlines
+  [0x74, 0x72, 0x75, 0x65], // 'true'
+  [0x74, 0x74, 0x63, 0x66], // 'ttcf' — font collection
+  [0x4f, 0x54, 0x54, 0x4f], // 'OTTO' — CFF outlines
+];
+
+function isFontBinary(bytes) {
+  return bytes.length >= 4 && FONT_MAGIC.some((sig) => sig.every((b, i) => bytes[i] === b));
+}
+
+/** btoa needs a string; chunk it — one fromCharCode per byte crawls on a 750 KB font. */
+function bytesToBase64(bytes) {
+  const CHUNK = 8192;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+
+/**
+ * Register DejaVuSans with jsPDF so Cyrillic renders.
+ * Returns the font family the caller should use: 'DejaVuSans' when the real
+ * font loaded, 'helvetica' otherwise. Callers must surface the fallback —
+ * a PDF with unreadable Cyrillic that reports success is worse than an error.
+ */
 async function loadCyrillicFont(doc) {
   try {
     const [normalRes, boldRes] = await Promise.all([
       fetch('/fonts/DejaVuSans.ttf'),
       fetch('/fonts/DejaVuSans-Bold.ttf'),
     ]);
-
     if (!normalRes.ok || !boldRes.ok) {
-      console.warn('DejaVuSans font files not found, falling back to Helvetica (Cyrillic may not render)');
-      return;
+      console.warn('PDF: /fonts/DejaVuSans*.ttf not reachable — falling back to helvetica');
+      return 'helvetica';
     }
 
-    const [normalBuf, boldBuf] = await Promise.all([
-      normalRes.arrayBuffer(),
-      boldRes.arrayBuffer(),
-    ]);
+    const [normalBuf, boldBuf] = await Promise.all([normalRes.arrayBuffer(), boldRes.arrayBuffer()]);
+    const normal = new Uint8Array(normalBuf);
+    const bold = new Uint8Array(boldBuf);
 
-    const normalArr = new Uint8Array(normalBuf);
-    const boldArr = new Uint8Array(boldBuf);
+    if (!isFontBinary(normal) || !isFontBinary(bold)) {
+      console.warn('PDF: /fonts/DejaVuSans*.ttf is not a TrueType file (an HTML error page?) — falling back to helvetica');
+      return 'helvetica';
+    }
 
-    // Convert to base64
-    const toBase64 = (arr) => {
-      let binary = '';
-      for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i]);
-      return btoa(binary);
-    };
-
-    doc.addFileToVFS('DejaVuSans.ttf', toBase64(normalArr));
+    doc.addFileToVFS('DejaVuSans.ttf', bytesToBase64(normal));
     doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
-    doc.addFileToVFS('DejaVuSans-Bold.ttf', toBase64(boldArr));
+    doc.addFileToVFS('DejaVuSans-Bold.ttf', bytesToBase64(bold));
     doc.addFont('DejaVuSans-Bold.ttf', 'DejaVuSans', 'bold');
-
-    doc.setFont('DejaVuSans');
+    return 'DejaVuSans';
   } catch (err) {
-    console.warn('Failed to load Cyrillic font:', err);
+    console.warn('PDF: Cyrillic font load failed, using helvetica', err);
+    return 'helvetica';
   }
 }
 
@@ -170,34 +252,16 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
 
   const doc = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
   const dateStr = new Date().toLocaleDateString('ru-RU');
-  const { header, rows } = buildRows(data, columns);
 
-  // Load Cyrillic font — best-effort, falls back to helvetica
-  let fontName = 'helvetica';
-  try {
-    const [nr, br] = await Promise.all([
-      fetch('/fonts/DejaVuSans.ttf'),
-      fetch('/fonts/DejaVuSans-Bold.ttf'),
-    ]);
-    if (nr.ok && br.ok) {
-      const toB64 = async (r) => {
-        const buf = await r.arrayBuffer();
-        const arr = new Uint8Array(buf);
-        let s = '';
-        for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]);
-        return btoa(s);
-      };
-      const [nb, bb] = await Promise.all([toB64(nr), toB64(br)]);
-      doc.addFileToVFS('DejaVuSans.ttf', nb);
-      doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
-      doc.addFileToVFS('DejaVuSans-Bold.ttf', bb);
-      doc.addFont('DejaVuSans-Bold.ttf', 'DejaVuSans', 'bold');
-      fontName = 'DejaVuSans';
-    }
-  } catch (e) {
-    console.warn('PDF: Cyrillic font load failed, using helvetica', e);
-  }
+  // PDF draws text only — format() output, no raw numbers
+  const { header, rows, activeCols } = buildRows(data, columns);
+
+  // Best-effort Cyrillic support; a fallback to helvetica is a VISIBLE state,
+  // not a silent one — the caller (ExportDialog) shows the warning.
+  const fontName = await loadCyrillicFont(doc);
+  const hasCyrillic = fontName === 'DejaVuSans';
 
   doc.setFont(fontName);
   doc.setFontSize(16);
@@ -207,10 +271,25 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
   doc.setTextColor(120, 120, 120);
   doc.text(`Дата: ${dateStr}  |  Записей: ${data.length}`, 14, 25);
 
+  // Numeric columns align right — matches Excel and keeps figures readable.
+  // They also get a minimum width: autoTable distributes space by content, and
+  // a wide free-text column (an expense note) otherwise squeezes "1 500 000"
+  // into a two-line "1 500 / 000" and a date into four lines.
+  const columnStyles = {};
+  activeCols.forEach((c, i) => {
+    if (c.type === 'number') columnStyles[i] = { halign: 'right', cellWidth: 24 };
+    else if (/дата|срок/i.test(c.label)) columnStyles[i] = { cellWidth: 26 };
+  });
+
   const tableOpts = {
     startY: 30,
     head: [header],
     body: rows,
+    columnStyles,
+    // Keep a record on one page. Without this a row that lands on the page
+    // boundary is sliced mid-cell: "1 500" prints at the bottom of one page and
+    // "000" at the top of the next, which reads as two different amounts.
+    rowPageBreak: 'avoid',
     styles: {
       fontSize: 9,
       cellPadding: 4,
@@ -231,14 +310,16 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
     // report adapts to the viewer's theme instead of hardcoding white/gray
     margin: { left: 14, right: 14 },
     didDrawPage: () => {
-      const pageH = doc.internal.pageSize.getHeight();
       const pageNum = doc.internal.getCurrentPageInfo().pageNumber;
+      // Uzbek UI elsewhere; keep the page label consistent with it.
+      // (Used to be "1-bet" while the rest of the report was Russian.)
       const footerText = `${getOrgName()}  |  ${pageNum}-bet`;
-      const approxW = footerText.length * 7 * 0.6 / 2.834;
       doc.setFont(fontName, 'normal');
       doc.setFontSize(7);
       doc.setTextColor(120, 120, 120);
-      doc.text(footerText, pageW / 2 - approxW / 2, pageH - 8);
+      // doc.getTextWidth() — jsPDF's own measurement, not a guessed char count
+      const w = doc.getTextWidth(footerText);
+      doc.text(footerText, (pageW - w) / 2, pageH - 8);
     },
   };
 
@@ -252,6 +333,7 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
   }
 
   doc.save(`${filename}.pdf`);
+  return { fontName, hasCyrillic };
 }
 
 
@@ -270,38 +352,69 @@ export async function exportData(format, data, columns, filename, title) {
 
 // ═══════════════ Page-Specific Column Definitions ═══════════════
 
-/** Format currency for export */
+/**
+ * Format currency for display (PDF, and Excel text cells).
+ * Columns marked `type: 'number'` bypass this in Excel and get the real number
+ * instead, so the sheet can actually sum and sort them.
+ */
 const fmtMoney = (v) => v != null ? Number(v).toLocaleString('ru-RU') : '—';
 const fmtDate = (v) => v ? dateShort(v) : '—';
 const fmtFull = (s) => s?.fullName || [s?.firstName || s?.first_name, s?.lastName || s?.last_name].filter(Boolean).join(' ') || '—';
+
+/** Read the first defined value among several possible field spellings. */
+const pick = (row, ...keys) => {
+  for (const k of keys) if (row?.[k] != null) return Number(row[k]);
+  return null;
+};
 
 export const STUDENT_COLUMNS = [
   { key: 'fullName', label: 'Имя', format: (v, row) => fmtFull(row) },
   { key: 'login_code', label: 'Код', format: (v, row) => row.login_code || row.loginCode || '—' },
   { key: 'phone', label: 'Телефон' },
   { key: 'parentPhone', label: 'Тел. родителя', format: (v, row) => row.parentPhone || row.parent_phone || '—' },
-  { key: 'groups', label: 'Группы', format: (v) => (v || []).map((g) => g.name).filter(Boolean).join(', ') || '—' },
-  { key: 'coins', label: 'Коины', format: (v) => v != null ? v : '—' },
-  { key: 'status', label: 'Статус', format: (v) => v === 'frozen' ? 'Заморожен' : 'Активен' },
-  { key: 'age', label: 'Возраст' },
-  { key: 'gender', label: 'Пол', format: (v) => v === 'female' ? 'Женский' : v === 'male' ? 'Мужской' : '—' },
+  { key: 'groups', label: 'Группы', format: (v, row) => {
+    const gs = row.groups || (row.groupName ? [{ name: row.groupName }] : []);
+    return gs.map((g) => g.name).filter(Boolean).join(', ') || '—';
+  } },
+  { key: 'coins', label: 'Коины', type: 'number',
+    value: (row) => pick(row, 'coins', 'coin_balance'),
+    format: (v, row) => (row.coins ?? row.coin_balance) ?? '—' },
+  { key: 'balance', label: 'Долг', type: 'number',
+    value: (row) => pick(row, 'balance', 'total_debt') ?? 0,
+    format: (v, row) => fmtMoney(row.balance ?? row.total_debt ?? 0) },
+  { key: 'status', label: 'Статус', format: (v) => v === 'frozen' ? 'Заморожен' : v === 'archived' ? 'Архив' : 'Активен' },
 ];
 
 export const GROUP_COLUMNS = [
   { key: 'name', label: 'Название' },
-  { key: 'mentor.name', label: 'Ментор', format: (v, row) => row.mentor?.name || row.mentorName || '—' },
-  { key: 'studentsCount', label: 'Студенты', format: (v, row) => String(row.studentsCount ?? row.students_count ?? row.students?.length ?? 0) },
-  { key: 'maxStudents', label: 'Макс.', format: (v, row) => String(row.maxStudents || 15) },
-  { key: 'isArchived', label: 'Статус', format: (v, row) => (row.isArchived ?? row.is_archived) ? 'Архив' : 'Активна' },
+  { key: 'mentor.name', label: 'Ментор', format: (v, row) =>
+    row.mentor?.name || row.mentorName || [row.mentor_first, row.mentor_last].filter(Boolean).join(' ') || '—' },
+  { key: 'studentsCount', label: 'Студенты', type: 'number',
+    value: (row) => pick(row, 'studentCount', 'studentsCount', 'students_count') ?? row.students?.length ?? 0,
+    format: (v, row) =>
+      String(row.studentCount ?? row.studentsCount ?? row.students_count ?? row.students?.length ?? 0) },
+  { key: 'monthlyPrice', label: 'Цена', type: 'number',
+    value: (row) => pick(row, 'monthlyPrice', 'monthly_price', 'price'),
+    format: (v, row) => fmtMoney(row.monthlyPrice ?? row.monthly_price ?? row.price) },
+  { key: 'maxStudents', label: 'Макс.', type: 'number',
+    value: (row) => Number(row.maxStudents || 15),
+    format: (v, row) => String(row.maxStudents || 15) },
+  { key: 'isArchived', label: 'Статус', format: (v, row) =>
+    (row.isArchived ?? row.is_archived ?? row.status === 'archived') ? 'Архив'
+      : (row.status === 'frozen' ? 'Заморожена' : 'Активна') },
 ];
 
 export const PAYMENT_COLUMNS = [
   { key: 'student', label: 'Студент', format: (v, row) => row.student || row.studentName || '—' },
   { key: 'group', label: 'Группа', format: (v, row) => row.group || row.groupName || '—' },
-  { key: 'totalAmount', label: 'Сумма', format: (v, row) => fmtMoney(row.totalAmount || row.amount) },
-  { key: 'paidAmount', label: 'Оплачено', format: (v, row) => fmtMoney(row.paidAmount || row.paid_amount) },
+  { key: 'totalAmount', label: 'Сумма', type: 'number',
+    value: (row) => pick(row, 'totalAmount', 'amount'),
+    format: (v, row) => fmtMoney(row.totalAmount || row.amount) },
+  { key: 'paidAmount', label: 'Оплачено', type: 'number',
+    value: (row) => pick(row, 'paidAmount', 'paid_amount'),
+    format: (v, row) => fmtMoney(row.paidAmount || row.paid_amount) },
   { key: 'status', label: 'Статус', format: (v) => {
-    const m = { paid: 'Оплачен', pending: 'Ожидает', partially_paid: 'Частично', overdue: 'Просрочен', cancelled: 'Отменён' };
+    const m = { paid: 'Оплачен', pending: 'Ожидает', partially_paid: 'Частично', overdue: 'Просрочен', cancelled: 'Отменён', void: 'Аннулирован' };
     return m[v] || v || '—';
   }},
   { key: 'dueDate', label: 'Срок', format: (v, row) => fmtDate(row.dueDate || row.due_date) },
@@ -309,15 +422,23 @@ export const PAYMENT_COLUMNS = [
 
 export const REPORT_COLUMNS = [
   { key: 'name', label: 'Группа', format: (v, row) => row.name || row.groupName || '—' },
-  { key: 'students', label: 'Ученики', format: (v, row) => String(row.students ?? row.studentsCount ?? 0) },
-  { key: 'revenue', label: 'Доход', format: (v) => fmtMoney(v) },
-  { key: 'debt', label: 'Долг', format: (v, row) => fmtMoney(row.debt || row.outstandingDebt) },
+  { key: 'students', label: 'Ученики', type: 'number',
+    value: (row) => pick(row, 'students', 'studentsCount') ?? 0,
+    format: (v, row) => String(row.students ?? row.studentsCount ?? 0) },
+  { key: 'revenue', label: 'Доход', type: 'number',
+    value: (row) => pick(row, 'revenue'),
+    format: (v) => fmtMoney(v) },
+  { key: 'debt', label: 'Долг', type: 'number',
+    value: (row) => pick(row, 'debt', 'outstandingDebt'),
+    format: (v, row) => fmtMoney(row.debt || row.outstandingDebt) },
 ];
 
 export const EXPENSE_COLUMNS = [
   { key: 'category', label: 'Категория' },
-  { key: 'amount', label: 'Сумма', format: (v) => fmtMoney(v) },
-  { key: 'spentAt', label: 'Дата', format: (v) => fmtDate(v) },
+  { key: 'amount', label: 'Сумма', type: 'number',
+    value: (row) => pick(row, 'amount'),
+    format: (v) => fmtMoney(v) },
+  { key: 'spentAt', label: 'Дата', format: (v, row) => fmtDate(row.spentAt ?? row.spent_at) },
   { key: 'note', label: 'Примечание' },
   { key: 'status', label: 'Статус', format: (v, row) => {
     const status = row.status || (row.paid ? 'paid' : row.approved ? 'approved' : 'pending');
@@ -339,7 +460,7 @@ export const MENTOR_COLUMNS = [
     if (!v) return '—';
     return v.charAt(0).toUpperCase() + v.slice(1);
   }},
-  { key: 'status', label: 'Статус', format: (v) => v === 'frozen' ? 'Заморожен' : 'Активен' },
+  { key: 'status', label: 'Статус', format: (v) => v === 'frozen' ? 'Заморожен' : v === 'archived' ? 'Архив' : 'Активен' },
 ];
 
 /** Page config registry — maps route → { columns, title, filenamePrefix } */

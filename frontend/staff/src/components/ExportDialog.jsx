@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Download, FileSpreadsheet, FileDown, Check, Table2 } from 'lucide-react';
+import { Download, FileSpreadsheet, FileDown, Check, Table2, AlertTriangle } from 'lucide-react';
 import { exportData, PAGE_EXPORT_CONFIG } from '../utils/exportUtils.js';
 import { Modal } from '../pages/mentor/_ui.jsx';
 
@@ -40,20 +40,33 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
   const [title, setTitle] = useState(config.title || 'Экспорт');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
+  const [warning, setWarning] = useState('');
 
   const handleExport = useCallback(async () => {
     if (!data.length || busy) return;
     setBusy(true);
+    setError('');
+    setWarning('');
     try {
       const fn = filename || config.filenamePrefix || 'export';
-      await exportData(format, data, config.columns || [], fn, title);
+      const result = await exportData(format, data, config.columns || [], fn, title);
       setDone(true);
+      // PDF reports which font it ended up with. A helvetica fallback means
+      // Cyrillic will not render — say so instead of handing over a broken file
+      // that looks like a success. The file downloaded either way, so this is a
+      // warning, not an error; keep the dialog open so it can actually be read.
+      if (format === 'pdf' && result && result.hasCyrillic === false) {
+        setWarning('Файл скачан, но шрифт кириллицы не загрузился — русский текст в PDF может отображаться неверно.');
+        return;
+      }
       setTimeout(() => {
         setDone(false);
         onClose();
       }, 1200);
     } catch (err) {
       console.error('Export error:', err);
+      setError(err?.message || 'Не удалось создать файл. Попробуйте ещё раз.');
     } finally {
       setBusy(false);
     }
@@ -172,6 +185,24 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
             </div>
           </div>
         </div>
+
+        {/* ── Error / warning ────────────────────────────── */}
+        {(error || warning) && (
+          <div className="px-5 pt-3">
+            <div
+              className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl"
+              style={{
+                background: error ? 'rgba(220,38,38,0.08)' : 'rgba(180,83,9,0.08)',
+                border: `1px solid ${error ? 'rgba(220,38,38,0.35)' : 'rgba(180,83,9,0.35)'}`,
+              }}
+            >
+              <AlertTriangle size={14} className="shrink-0 mt-0.5" style={{ color: error ? '#dc2626' : '#b45309' }} />
+              <div className="text-[11px] leading-snug" style={{ color: error ? '#dc2626' : '#b45309' }}>
+                {error || warning}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Actions ────────────────────────────────────── */}
         <div className="px-5 py-4 mt-1 border-t flex justify-end items-center gap-2" style={{ borderColor: 'var(--border)', background: 'transparent' }}>
