@@ -44,30 +44,37 @@
 
 ### 🔲 OCHIQ VAZIFA — EGASI: **KARIS** (pul kerak, Claude sotib ololmaydi/kirita olmaydi)
 
-- [ ] STORJ-UPGRADE ($5/oy dan, hisob bo'yicha minimum): 10.08.2026 aniqlandi —
+- [x] STORJ-UPGRADE ($5/oy dan, hisob bo'yicha minimum): 10.08.2026 aniqlandi —
       bepul trial 4 kun oldin tugagan, Storage/Download limiti 0'ga tushgan,
       shuning uchun barcha fayl yuklash (ДЗ, video, chek, AI-review) 403
-      AccessDenied bilan qaytadi (o'qish/list ham keyinroq to'xtashi mumkin).
-      Yechim: Storj dashboard → Upgrade → **Pay as you go** → karta kiritish
-      (Claude buni o'zi qila olmaydi — to'lov ma'lumotlari). Kalitlarni
-      o'zgartirish shart emas, joriy `S3_ACCESS_KEY` ishlaydi, faqat limit
-      to'lansa yetadi.
-- [ ] RENDER-STARTER: web-servisni (`LevelUP_academy-1`) Free'dan Starter'ga
+      AccessDenied bilan qaytadi edi. ✅ 11.08.2026 — asosiy loyiha
+      (wEc4jgBwQxy) Pay as you go'ga o'tkazildi, karta bog'landi, PUT+GET
+      jonli tekshirildi (eski bucket'dagi ma'lumotlar saqlanib qolgan).
+      ⚠️ Yo'lda vaqtinchalik ikkinchi (yangi triyal) Storj akkaunt yaratilgan
+      va bir necha soat `.env`/Render'da turgan edi — endi to'liq olib
+      tashlandi, asosiy akkaunt kalitlari qaytarildi (`.env` va Render
+      Environment, ikkalasi ham), jonli tekshirildi.
+- [x] RENDER-STARTER: web-servisni (`LevelUP_academy-1`) Free'dan Starter'ga
       ($7/oy) ko'tarish — 09.08.2026 auditda topilgan sabab: free plan 15
       daqiqa jimlikdan keyin uxlaydi, uyg'onish 30-60 son, + Neon o'zi ham
       uxlaydi (+5s) — ikkalasi ustma-ust tushganda birinchi so'rov 500 bilan
       qaytadi ("guruh bilan kirganda ba'zan ishlamaydi" — Karis 09.08 xabari).
-      Starter uxlamaydi — muammo yo'qoladi.
-- [ ] WORKER-MERGE (Claude qiladi, Starter sotib olingandan keyin): `worker.js`
-      ni `server.js` ichiga qo'shish — o'sha $7/oy servis o'zi AI-review
-      navbatini ham, 00:00 kunlik svodkani ham, billing/overdue/due-soon
-      cronlarini ham ushlaydi. Alohida worker servisi ($7/oy qo'shimcha)
-      SHART EMAS — bitta har doim yonib turgan process yetarli.
-      ⚠️ Kelishilgan trade-off: shu tufayli AI-review'dagi bag butun saytni
-      ham yiqitishi mumkin (bitta process) — kichik markaz uchun qabul
-      qilingan.
+      Starter uxlamaydi — muammo yo'qoladi. ✅ 11.08.2026 1:28 — to'landi,
+      dashboard'da tasdiqlandi (0.5 CPU/512MB, "Instance type changed from
+      Free to Starter"), qayta deploy Live.
+- [x] WORKER-MERGE: `worker.js` `server.js` ichiga qo'shildi — o'sha $7/oy
+      servis o'zi AI-review navbatini ham, 00:00 kunlik svodkani ham,
+      billing/overdue/due-soon cronlarini ham ushlaydi. Alohida worker
+      servisi ($7/oy qo'shimcha) SHART EMAS edi — bitta har doim yonib
+      turgan process yetarli. ✅ 11.08.2026 — `worker.js` o'chirildi,
+      `npm run worker`/`worker:dev` olib tashlandi, `render.yaml`dagi
+      ishlatilmagan worker-shablon o'chirildi, testlar yashil (mentor/
+      student/payments/auth PASS, `parent` — eski, bog'liq emas), `save-zone`
+      ga push qilindi (`e72e314`). ⚠️ Kelishilgan trade-off: shu tufayli
+      AI-review'dagi bag butun saytni ham yiqitishi mumkin (bitta process) —
+      kichik markaz uchun qabul qilingan. Hali `main` ga merj qilinmagan.
 
-**Jami, agar ikkalasi ham olinsa: ~$12/oy** (Storj $5 + Render $7).
+**Jami: ~$12/oy** (Render Starter $7 + Storj Pay as you go $5 dan, ikkalasi ham to'langan, 11.08.2026).
 
 **Yopilgan savollar** (edi, endi hal): `npm run migrate` Neon'ga to'g'ridan-
 to'g'ri gonildi (17/17 test o'tdi) · `GROQ_API_KEY`/`_2`/`_3` Render

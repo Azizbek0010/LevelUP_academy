@@ -56,7 +56,7 @@ async function logReminder(jobId, status, error) {
 
 let queueEvents = null;
 
-/** Вызывается один раз при старте воркер-процесса (worker.js). */
+/** Вызывается один раз при старте процесса (src/server.js — см. WORKER-MERGE). */
 export function startReminderLogging() {
   if (queueEvents) return queueEvents;
 

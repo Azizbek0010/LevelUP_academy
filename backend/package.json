@@ -10,8 +10,6 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "worker": "node worker.js",
-    "worker:dev": "node --watch worker.js",
     "migrate": "node-pg-migrate -j js -m src/db/migrations up",
     "migrate:down": "node-pg-migrate -j js -m src/db/migrations down",
     "migrate:create": "node-pg-migrate -j js -m src/db/migrations create",
