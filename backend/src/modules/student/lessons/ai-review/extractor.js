@@ -1,4 +1,6 @@
 import AdmZip from 'adm-zip';
+import { PDFParse } from 'pdf-parse';
+import * as XLSX from 'xlsx';
 import { getObjectBuffer } from '../../../../config/s3.js';
 import { logger } from '../../../../config/logger.js';
 
@@ -16,6 +18,11 @@ const SKIP_EXT = new Set(['.lock', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ic
 const CODE_EXT = new Set(['.html', '.htm', '.css', '.js', '.jsx', '.ts', '.tsx', '.json', '.md', '.txt']);
 
 const GITHUB_URL_RE = /github\.com\/([\w.-]+)\/([\w.-]+)/i;
+const GOOGLE_DOC_RE = /docs\.google\.com\/document\/d\/([\w-]+)/i;
+const GOOGLE_SHEET_RE = /docs\.google\.com\/spreadsheets\/d\/([\w-]+)/i;
+
+const PDF_EXT = new Set(['.pdf']);
+const SPREADSHEET_EXT = new Set(['.xlsx', '.xls', '.csv']);
 
 function shouldSkip(path) {
   const lower = path.toLowerCase();
@@ -92,6 +99,49 @@ async function fetchGithubTree(owner, repo) {
   return buildBundle(files);
 }
 
+/** PDF → oddiy matn. Parolli/buzilgan fayl — null (unreadable, taxmin qilinmaydi). */
+async function extractPdfText(buffer) {
+  const parser = new PDFParse({ data: buffer });
+  try {
+    const { text } = await parser.getText();
+    return text?.trim() || null;
+  } catch (err) {
+    logger.warn({ err }, 'ai-review: pdf-parse failed');
+    return null;
+  } finally {
+    await parser.destroy().catch(() => {});
+  }
+}
+
+/** Excel/CSV → har bir varaq alohida "fayl" sifatida CSV matniga aylantiriladi
+ * (buildBundle o'zi === nomi === bilan bo'ladi va limit/kesishni boshqaradi). */
+function extractSpreadsheetFiles(buffer, fileKey) {
+  let workbook;
+  try {
+    workbook = XLSX.read(buffer, { type: 'buffer' });
+  } catch (err) {
+    logger.warn({ err, fileKey }, 'ai-review: xlsx parse failed');
+    return [];
+  }
+  return workbook.SheetNames.map((name) => ({
+    path: `${fileKey}#${name}`,
+    content: XLSX.utils.sheet_to_csv(workbook.Sheets[name]),
+  })).filter((f) => f.content.trim().length > 0);
+}
+
+/** Google Docs/Sheets — faqat "anyone with the link" ochiq bo'lsa ishlaydi:
+ * yopiq hujjat /export login-sahifasiga (text/html) qaytaradi, shuni content-type
+ * bo'yicha ajratamiz. Sheets uchun faqat birinchi (active) varaq — gid bo'lmasa
+ * boshqa varaqlarga kirish yo'q, spekaga yetadi. */
+async function fetchGoogleExport(url, expectedContentType) {
+  const res = await fetch(url).catch(() => null);
+  if (!res?.ok) return null;
+  const contentType = res.headers.get('content-type') ?? '';
+  if (!contentType.startsWith(expectedContentType)) return null; // login-sahifa yoki xato
+  const text = await res.text();
+  return text.trim() || null;
+}
+
 /**
  * submission — { fileKey, textAnswer } (methodology_submissions bo'yicha).
  * Qaytaradi: { bundle: string|null, reviewSource: 'code'|'text'|'tests'|'unreadable' }.
@@ -116,7 +166,19 @@ export async function extractSubmission({ fileKey, textAnswer }) {
       const bundle = buildBundle([{ path: fileKey, content: buffer.toString('utf8') }]);
       return bundle ? { bundle, reviewSource: 'code' } : { bundle: null, reviewSource: 'unreadable' };
     }
-    // Rasm/PDF/boshqa binar — o'qib bo'lmaydi, taxmin qilinmaydi (spek, p.6)
+    if (PDF_EXT.has(extOf(fileKey))) {
+      const text = await extractPdfText(buffer);
+      const bundle = text ? buildBundle([{ path: fileKey, content: text }]) : null;
+      return bundle ? { bundle, reviewSource: 'text' } : { bundle: null, reviewSource: 'unreadable' };
+    }
+    if (SPREADSHEET_EXT.has(extOf(fileKey))) {
+      const files = extOf(fileKey) === '.csv'
+        ? [{ path: fileKey, content: buffer.toString('utf8') }]
+        : extractSpreadsheetFiles(buffer, fileKey);
+      const bundle = buildBundle(files);
+      return bundle ? { bundle, reviewSource: 'text' } : { bundle: null, reviewSource: 'unreadable' };
+    }
+    // Rasm/boshqa binar — o'qib bo'lmaydi, taxmin qilinmaydi (spek, p.6)
     return { bundle: null, reviewSource: 'unreadable' };
   }
 
@@ -126,6 +188,18 @@ export async function extractSubmission({ fileKey, textAnswer }) {
       const [, owner, repo] = githubMatch;
       const bundle = await fetchGithubTree(owner, repo.replace(/\.git$/, ''));
       return bundle ? { bundle, reviewSource: 'code' } : { bundle: null, reviewSource: 'unreadable' };
+    }
+    const gdocMatch = textAnswer.match(GOOGLE_DOC_RE);
+    if (gdocMatch) {
+      const text = await fetchGoogleExport(`https://docs.google.com/document/d/${gdocMatch[1]}/export?format=txt`, 'text/plain');
+      const bundle = text ? buildBundle([{ path: 'google-doc.txt', content: text }]) : null;
+      return bundle ? { bundle, reviewSource: 'text' } : { bundle: null, reviewSource: 'unreadable' };
+    }
+    const gsheetMatch = textAnswer.match(GOOGLE_SHEET_RE);
+    if (gsheetMatch) {
+      const text = await fetchGoogleExport(`https://docs.google.com/spreadsheets/d/${gsheetMatch[1]}/export?format=csv`, 'text/csv');
+      const bundle = text ? buildBundle([{ path: 'google-sheet.csv', content: text }]) : null;
+      return bundle ? { bundle, reviewSource: 'text' } : { bundle: null, reviewSource: 'unreadable' };
     }
     return { bundle: textAnswer, reviewSource: 'text' };
   }
