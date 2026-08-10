@@ -477,6 +477,26 @@ export const MENTOR_COLUMNS = [
   { key: 'status', label: 'Статус', format: (v) => v === 'frozen' ? 'Заморожен' : v === 'archived' ? 'Архив' : 'Активен' },
 ];
 
+/**
+ * Students as seen from inside a group (GroupDetail), not the branch-wide list.
+ * Narrower than STUDENT_COLUMNS on purpose: the group is already known, so its
+ * name adds nothing, while joinedAt and coinBalance — which the API already
+ * returns for group members and the page never showed — do.
+ */
+export const GROUP_STUDENT_COLUMNS = [
+  { key: 'fullName', label: 'Ученик', format: (v, row) => fmtFull(row) },
+  { key: 'login_code', label: 'Код', format: (v, row) => row.login_code || row.loginCode || '—' },
+  { key: 'phone', label: 'Телефон', format: (v, row) => row.phone || row.phoneNumber || '—' },
+  { key: 'coinBalance', label: 'Коины', type: 'number',
+    value: (row) => pick(row, 'coinBalance', 'coin_balance', 'coins'),
+    format: (v, row) => (row.coinBalance ?? row.coin_balance ?? row.coins) ?? '—' },
+  { key: 'totalDebt', label: 'Долг', type: 'number',
+    value: (row) => pick(row, 'totalDebt', 'total_debt', 'debt') ?? 0,
+    format: (v, row) => fmtMoney(row.totalDebt ?? row.total_debt ?? row.debt ?? 0) },
+  { key: 'joinedAt', label: 'В группе с', format: (v, row) => fmtDate(row.joinedAt ?? row.joined_at) },
+  { key: 'status', label: 'Статус', format: (v) => v === 'frozen' ? 'Заморожен' : v === 'archived' ? 'Архив' : 'Активен' },
+];
+
 /** Page config registry — maps route → { columns, title, filenamePrefix } */
 export const PAGE_EXPORT_CONFIG = {
   students: { columns: STUDENT_COLUMNS, title: 'Список студентов', filenamePrefix: 'студенты' },
@@ -485,4 +505,66 @@ export const PAGE_EXPORT_CONFIG = {
   reports: { columns: REPORT_COLUMNS, title: 'Отчёт — Доходы и долги', filenamePrefix: 'отчёт' },
   expenses: { columns: EXPENSE_COLUMNS, title: 'Отчёт по расходам', filenamePrefix: 'расходы' },
   mentors: { columns: MENTOR_COLUMNS, title: 'Список менторов', filenamePrefix: 'менторы' },
+  groupStudents: { columns: GROUP_STUDENT_COLUMNS, title: 'Ученики группы', filenamePrefix: 'ученики-группы' },
 };
+
+// ═══════════════ Attendance (dynamic month grid) ═══════════════
+
+/** Single-letter marks — a month grid has no room for "Пришёл"/"Опоздал". */
+export const ATTENDANCE_MARK = {
+  present: '+',
+  late: 'О',      // Опоздал
+  absent: '-',
+  null: '·',      // lesson day, not marked
+};
+
+/**
+ * Build rows + columns for an attendance export.
+ *
+ * Attendance is a matrix whose width depends on the month and the group's
+ * schedule, so it cannot live in PAGE_EXPORT_CONFIG (those are fixed column
+ * lists). Callers pass the days they are showing and get back a {data, columns}
+ * pair ready for exportData().
+ *
+ * @param {object[]} students   group members, in display order
+ * @param {number[]} days       days of month actually holding a lesson, e.g. [2,4,6]
+ * @param {object}   marks      flat map: `${studentId}_${YYYY-MM-DD}` → status
+ * @param {number}   year
+ * @param {number}   month      0-based, as JS Date uses
+ */
+export function buildAttendanceExport(students, days, marks, year, month) {
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const dateKey = (day) => `${year}-${pad2(month + 1)}-${pad2(day)}`;
+
+  const columns = [
+    { key: 'student', label: 'Ученик' },
+    ...days.map((d) => ({
+      key: `d${d}`,
+      // Weekday under the date helps the reader see which column is which
+      // lesson without counting — the on-screen grid shows the same.
+      label: `${pad2(d)}.${pad2(month + 1)}`,
+    })),
+    // Attended counts late as present: the student was in the room.
+    { key: 'attended', label: 'Посетил', type: 'number', value: (row) => row.attended },
+    { key: 'total', label: 'Всего', type: 'number', value: (row) => row.total },
+  ];
+
+  const data = students.map((s) => {
+    const sid = s.id || s.studentId || s.student_id;
+    const row = {
+      student: s.fullName
+        || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ')
+        || '—',
+      attended: 0,
+      total: days.length,
+    };
+    days.forEach((d) => {
+      const status = marks[`${sid}_${dateKey(d)}`] ?? null;
+      row[`d${d}`] = ATTENDANCE_MARK[status] ?? ATTENDANCE_MARK.null;
+      if (status === 'present' || status === 'late') row.attended++;
+    });
+    return row;
+  });
+
+  return { data, columns };
+}

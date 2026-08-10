@@ -33,11 +33,16 @@ const FORMAT_OPTIONS = [
  *   pageKey    — key into PAGE_EXPORT_CONFIG (e.g. 'students', 'groups', etc.)
  *   data       — array of current filtered rows to export
  *   filename   — optional override for filename (without extension)
+ *   columns    — optional column defs, overriding the pageKey lookup. Needed by
+ *                attendance, whose columns depend on the month and the group's
+ *                schedule and so cannot be a fixed entry in the registry.
+ *   title      — optional starting title, overriding the registry's
  */
-export default function ExportDialog({ open, onClose, pageKey, data = [], filename }) {
+export default function ExportDialog({ open, onClose, pageKey, data = [], filename, columns, title: titleProp }) {
   const config = PAGE_EXPORT_CONFIG[pageKey] || {};
+  const cols = columns ?? config.columns ?? [];
   const [format, setFormat] = useState('excel');
-  const [title, setTitle] = useState(config.title || 'Экспорт');
+  const [title, setTitle] = useState(titleProp || config.title || 'Экспорт');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
@@ -50,7 +55,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
     setWarning('');
     try {
       const fn = filename || config.filenamePrefix || 'export';
-      const result = await exportData(format, data, config.columns || [], fn, title);
+      const result = await exportData(format, data, cols, fn, title);
       setDone(true);
       // PDF reports which font it ended up with. A helvetica fallback means
       // Cyrillic will not render — say so instead of handing over a broken file

@@ -4,7 +4,7 @@ import {
   ArrowLeft, UserPlus, X, Users, KeyRound, Phone,
   CalendarDays, Check, Minus, Clock, CreditCard,
   BookOpen, Plus, Star, MessageSquare, Send, Loader2,
-  ChevronLeft, ChevronRight, Pencil, Archive, ArchiveRestore,
+  ChevronLeft, ChevronRight, Pencil, Archive, ArchiveRestore, Download,
 } from 'lucide-react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth.jsx';
@@ -19,6 +19,8 @@ import { money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Avatar, RowSkeleton, EmptyState, Modal } from '../mentor/_ui.jsx';
 import { GroupFormModal } from './Groups.jsx';
+import ExportDialog from '../../components/ExportDialog.jsx';
+import { buildAttendanceExport } from '../../utils/exportUtils.js';
 
 /* ─── helpers ─── */
 const fullName = (s) => s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
@@ -106,6 +108,7 @@ function AttendanceTab({ groupId, token }) {
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
   const hoverTimerRef = useRef(null);
   const [slideDir, setSlideDir] = useState(null); // 'left' | 'right' for nav transition
+  const [showExport, setShowExport] = useState(false);
 
   const showPopup = useCallback((s, e) => {
     clearTimeout(hoverTimerRef.current);
@@ -160,6 +163,16 @@ function AttendanceTab({ groupId, token }) {
     if (!lessonWeekdays) return all;
     return all.filter((d) => lessonWeekdays.has(new Date(year, month, d).getDay()));
   }, [daysInMonth, lessonWeekdays, year, month]);
+
+  // Export data for the attendance calendar (Excel via ExportDialog)
+  const exportData = useMemo(
+    () => buildAttendanceExport(students, DAYS, attendanceMap, year, month),
+    [students, DAYS, attendanceMap, year, month]
+  );
+  const exportFileName = useMemo(() => {
+    const base = String(group?.name || 'group').replace(/[^\w\u0400-\u04FF-]+/g, '_').slice(0, 40);
+    return `attendance_${base}_${year}-${String(month + 1).padStart(2, '0')}`;
+  }, [group?.name, year, month]);
 
   // Paginate into chunks of 15
   const CHUNK_SIZE = 15;
@@ -412,15 +425,26 @@ function AttendanceTab({ groupId, token }) {
             Исправлено админом
           </li>
         </ul>
-        <span className="flex items-center gap-1.5 text-xs text-base-content/45">
-          {saveState === 'saving' && <><Loader2 size={13} className="animate-spin" /> Сохранение...</>}
-          {saveState === 'saved' && <>Сохранено</>}
-          {saveState === 'error' && (
-            <button onClick={flush} className="text-red-500 hover:underline">
-              Не сохранено — повторить
-            </button>
-          )}
-        </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 text-xs text-base-content/45">
+            {saveState === 'saving' && <><Loader2 size={13} className="animate-spin" /> Сохранение...</>}
+            {saveState === 'saved' && <>Сохранено</>}
+            {saveState === 'error' && (
+              <button onClick={flush} className="text-red-500 hover:underline">
+                Не сохранено — повторить
+              </button>
+            )}
+          </span>
+          <button
+            onClick={() => setShowExport(true)}
+            disabled={students.length === 0}
+            className="btn btn-sm btn-ghost gap-1.5 text-xs text-base-content/60 hover:text-base-content disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            title="Экспорт посещаемости (Excel)"
+          >
+            <Download size={14} />
+            Экспорт
+          </button>
+        </div>
       </div>
 
       {/* ── Page navigation (15 days per page) with smooth slide ── */}
@@ -630,6 +654,16 @@ function AttendanceTab({ groupId, token }) {
           </div>
         );
       })()}
+
+      {/* ── Export attendance modal ── */}
+      <ExportDialog
+        open={showExport}
+        onClose={() => setShowExport(false)}
+        data={exportData.data}
+        columns={exportData.columns}
+        filename={exportFileName}
+        title="Экспорт посещаемости"
+      />
     </div>
   );
 }
