@@ -54,8 +54,7 @@ docker compose up -d        # Postgres 16, Redis 7, MinIO, Mailpit
 npm install
 npm run migrate             # apply schema
 npm run seed                # main_admin + demo org/branch/seo — LOCAL DB ONLY
-npm run dev                 # API on :4000
-npm run worker:dev          # background worker (separate terminal)
+npm run dev                 # API + queues/crons on :4000, one process
 ```
 
 - MinIO console: http://localhost:9001 (minioadmin/minioadmin) — create bucket `levelup`
@@ -66,8 +65,7 @@ npm run worker:dev          # background worker (separate terminal)
 
 | Process | Entry | Purpose |
 |---|---|---|
-| API | `src/server.js` | REST + Socket.io |
-| Worker | `worker.js` | Telegram notifications, overdue cron (09:00) |
+| API | `src/server.js` | REST + Socket.io + Telegram (webhook) + BullMQ очереди/краны — единственный процесс (WORKER-MERGE, 11.08.2026) |
 
 ## Conventions
 

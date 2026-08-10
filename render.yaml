@@ -1,7 +1,6 @@
-# Render Blueprint — LevelUp Academy backend (API + Worker, free-план).
-# ⚠️ Free-веб засыпает через ~15 мин простоя (холодный старт ~30-50с).
-#    Free-worker ТАКЖЕ засыпает через ~15 мин простоя.
-#    BullMQ очереди (notifications, overdue, billing, due-soon) + Telegram bot = worker.
+# Render Blueprint — LevelUp Academy backend, один Starter web-сервис.
+# HTTP API + Telegram bot (webhook) + BullMQ очереди/краны — всё в одном
+# процессе (`src/server.js`), см. WORKER-MERGE (11.08.2026) ниже.
 # БД/Redis/S3 — внешние (Neon/Upstash/Storj), подключаются через env ниже.
 services:
   # ─── API (HTTP) ───
@@ -87,67 +86,11 @@ services:
       - key: TELEGRAM_WEBHOOK_SECRET
         generateValue: true
 
-  # ─── Worker (BullMQ + Telegram bot + Cron) ───
-  # ⚠️ Worker uchun TELEGRAM_BOT_TOKEN va TELEGRAM_CHAT_ID kerak.
-  #    Render free plannerда worker ham ~15 min o'tgandan keyin uxlaydi.
-  #    Shuning uchun real-time Telegram uchun paid plan kerak bo'lishi mumkin.
-  - type: worker
-    # ⚠️ ЭТОГО СЕРВИСА НЕ СУЩЕСТВУЕТ. В дашборде Render 04.08 всего четыре сервиса
-    # (LevelUP_academy-1, GreenHouseBackend, LevelUP_academy, ATTO-frontend) —
-    # ни одного worker'а. Значит очереди BullMQ (notifications, overdue, billing,
-    # due-soon) на проде не крутятся вообще: счета не выставляются автоматически,
-    # напоминания не уходят.
-    #
-    # Telegram-бота это больше НЕ касается — он переехал в web-сервис на webhook
-    # (см. modules/telegram/bot.js). Worker нужен только ради очередей и крона.
-    # Блок оставлен как готовая заготовка: создать сервис — и он поднимется.
-    name: levelup-worker
-    runtime: node
-    rootDir: backend
-    region: ohio          # тот же регион, что у web — сервис ещё не создан
-    plan: free
-    branch: main
-    buildCommand: npm install
-    startCommand: npm run worker
-    autoDeploy: true
-    envVars:
-      # --- API bilan bir xil env vars ---
-      - key: NODE_ENV
-        value: production
-      - key: DB_SSL
-        value: "true"
-      - key: S3_REGION
-        value: us-east-1
-      - key: S3_BUCKET
-        value: levelup
-      - key: JWT_ACCESS_SECRET
-        generateValue: true
-      - key: DATABASE_URL
-        sync: false
-      - key: REDIS_URL
-        sync: false
-      - key: S3_ENDPOINT
-        sync: false
-      - key: S3_ACCESS_KEY
-        sync: false
-      - key: S3_SECRET_KEY
-        sync: false
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false
-      - key: SMTP_FROM
-        sync: false
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: CLIENT_URL
-        sync: false
-      # --- Telegram bot (worker uchun qo'shimcha) ---
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: TELEGRAM_CHAT_ID
-        sync: false
+  # ─── Worker — НЕТ, и не будет ───
+  # WORKER-MERGE (11.08.2026): раньше здесь был шаблон отдельного `type: worker`
+  # сервиса под BullMQ+cron (levelup-worker, никогда не создавался — прод работал
+  # без очередей вообще). Решили не платить за второй Starter ($7/мес) ради этого:
+  # очереди/краны/AI-review теперь стартуют прямо в web-сервисе выше (`src/server.js`,
+  # см. коммит WORKER-MERGE) — того же самого уже оплаченного процесса достаточно.
+  # Trade-off сознательный: баг в обработчике очереди теперь может уронить весь
+  # процесс, а не только фоновую доставку — для одного учебного центра это принято.
