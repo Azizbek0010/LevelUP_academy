@@ -1,6 +1,9 @@
 import { AppError } from '../../../utils/AppError.js';
 import { buildObjectKey, getUploadUrl as getS3UploadUrl } from '../../../config/s3.js';
 import { changeCoins } from '../../coins/coins.service.js';
+import { aiReviewQueue } from '../../../queues/aiReview.queue.js';
+import { sendToBranchGroup } from '../../telegram/branchNotify.js';
+import { logger } from '../../../config/logger.js';
 import * as repo from './lessons.repository.js';
 
 // Тот же порог, что у group-тестов (student/tests/tests.service.js) — для единообразия.
@@ -130,8 +133,9 @@ export async function startTest(studentId, lessonId) {
   };
 }
 
-/** answers — { [questionId]: 'A'|'B'|'C'|'D' }. */
-export async function submitTest(studentId, lessonId, answers) {
+/** answers — { [questionId]: 'A'|'B'|'C'|'D' }. branchId — из JWT (req.user.branchId),
+ * не запрашивается заново: нужен только для уведомления родителям. */
+export async function submitTest(studentId, lessonId, answers, branchId) {
   const lesson = await assertAccess(studentId, lessonId);
   if (lesson.lesson_type !== 'test') throw new AppError(409, 'This lesson is not a test');
 
@@ -158,7 +162,25 @@ export async function submitTest(studentId, lessonId, answers) {
     });
   }
 
+  // Родителям — конкретный результат по теме (не общая топ-статистика, та
+  // считается на лету в student/home и никуда не пушится сама). Один тест —
+  // одно сообщение, без дебаунса: в отличие от davomat здесь нет автосейва
+  // по клику, submit — уже финальное разовое действие.
+  notifyTestResult({ branchId, studentId, topicName: lesson.topic_name, lessonTitle: lesson.title, score }).catch(
+    (err) => logger.error({ err, lessonId, studentId }, 'submitTest: parent group notify failed'),
+  );
+
   return { score };
+}
+
+async function notifyTestResult({ branchId, studentId, topicName, lessonTitle, score }) {
+  if (!branchId) return;
+  const name = await repo.getStudentName(studentId);
+  if (!name) return;
+
+  const mark = score >= PASS_SCORE_THRESHOLD ? '✅' : '⚠️';
+  const text = `<b>📝 Test natijasi</b>\n${name} — «${topicName}» (${lessonTitle})\n${mark} ${score}%`;
+  await sendToBranchGroup(branchId, text);
 }
 
 /** Presigned PUT для сдачи практического урока — тот же приём, что у ДЗ/видео. */
@@ -171,12 +193,25 @@ export async function getHomeworkUploadUrl(studentId, lessonId, { filename, cont
   return { uploadUrl, fileKey };
 }
 
-/** Только приём сдачи — оценки/грейдинга для practical-уроков пока нет (см. чат с Karis). */
+/** Приём сдачи + (если у training_type включена Aqlli tahlil) постановка
+ * AI-review в очередь. Сам ручной grading ментора — отдельная, не связанная
+ * с этим история (см. чат с Karis) — review здесь не заменяет его, а
+ * дополняет: "что показал код", а не финальная оценка ментора. */
 export async function submitHomework(studentId, lessonId, { fileKey, textAnswer }) {
   const lesson = await assertAccess(studentId, lessonId);
   if (lesson.lesson_type !== 'practical') throw new AppError(409, 'This lesson has no homework');
 
   const submission = await repo.upsertSubmission({ lessonId, studentId, fileKey, textAnswer });
   if (!submission) throw new AppError(409, 'Already graded, cannot resubmit');
+
+  if (lesson.ai_review_enabled) {
+    // Сбой постановки в очередь не должен ронять сдачу ДЗ — ученик своё дело
+    // сделал, review просто останется 'pending' и подхватится веб-панелью
+    // как "ещё считается" (или потребует ручной разбор, если Redis правда лёг).
+    aiReviewQueue.add('review', { submissionId: submission.id }).catch((err) => {
+      logger.error({ err, submissionId: submission.id }, 'ai-review: failed to enqueue');
+    });
+  }
+
   return { status: submission.status, submittedAt: submission.submitted_at };
 }

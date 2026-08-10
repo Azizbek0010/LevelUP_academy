@@ -8,6 +8,7 @@ import { useToast } from '../components/toast.jsx';
 import {
   IconTile, Ring, Pill, Button, Skeleton, EmptyState, ErrorState, CountUp, Dropzone, C,
 } from '../components/ui.jsx';
+import { fmt, useI18n } from '../../i18n/index.jsx';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -16,6 +17,7 @@ const LETTERS = ['A', 'B', 'C', 'D'];
    всю жизнь (уникальный индекс в базе), поэтому вместо обратного отсчёта —
    честное предупреждение. */
 function TestSection({ phase, questions, answers, setAnswers, score, busy, onStart, onSubmit, coinReward }) {
+  const { t } = useI18n();
   if (phase === 'done') {
     return (
       <div className="k-card k-pop-in p-8 text-center">
@@ -27,14 +29,14 @@ function TestSection({ phase, questions, answers, setAnswers, score, busy, onSta
           </Ring>
         </div>
         <h2 className="text-xl font-extrabold mb-2" style={{ color: C.text }}>
-          {score >= 50 ? 'Тест сдан!' : 'Тест не сдан'}
+          {score >= 50 ? t.lessonDetail.testPassed : t.lessonDetail.testFailed}
         </h2>
         <p className="text-sm font-semibold" style={{ color: C.muted }}>
           {score >= 50
             ? coinReward > 0
-              ? `Коины за тест уже начислены (+${coinReward}).`
-              : 'Отличная работа!'
-            : 'Порог сдачи — 50%. Пересдача недоступна — спроси наставника.'}
+              ? fmt(t.lessonDetail.coinsEarned, { n: coinReward })
+              : t.lessonDetail.greatJob
+            : t.lessonDetail.retakeClosed}
         </p>
       </div>
     );
@@ -44,11 +46,10 @@ function TestSection({ phase, questions, answers, setAnswers, score, busy, onSta
     return (
       <div className="k-card k-pop-in p-7 text-center">
         <p className="text-sm font-semibold mb-5" style={{ color: C.muted }}>
-          Попытка одна — отвечай внимательно. Можно выйти и вернуться, ответы не потеряются,
-          пока не нажмёшь «Завершить тест».
+          {t.lessonDetail.oneAttempt}
         </p>
         <Button onClick={onStart} disabled={busy}>
-          {busy ? <span className="loading loading-spinner loading-sm" /> : 'Начать тест'}
+          {busy ? <span className="loading loading-spinner loading-sm" /> : t.lessonDetail.startTest}
         </Button>
       </div>
     );
@@ -71,7 +72,7 @@ function TestSection({ phase, questions, answers, setAnswers, score, busy, onSta
               <div className="min-w-0 flex-1">
                 {q.type !== 'choice' && (
                   <Pill hue={q.type === 'riddle' ? 'violet' : 'blue'}>
-                    {q.type === 'riddle' ? 'Загадка' : 'Вопрос и ответ'}
+                    {q.type === 'riddle' ? t.lessonDetail.riddle : t.lessonDetail.qa}
                   </Pill>
                 )}
                 <p className="font-bold text-[15px] leading-snug pt-0.5 mt-1">{q.question}</p>
@@ -107,7 +108,7 @@ function TestSection({ phase, questions, answers, setAnswers, score, busy, onSta
                 type="text"
                 value={answers[q.id] ?? ''}
                 onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                placeholder="Твой ответ…"
+                placeholder={t.lessonDetail.yourAnswer}
                 maxLength={500}
                 className="input w-full text-base sm:text-sm rounded-2xl border-2 focus:outline-none px-4 py-3 h-auto"
                 style={{ borderColor: C.line, background: C.bg, color: C.text }}
@@ -121,10 +122,10 @@ function TestSection({ phase, questions, answers, setAnswers, score, busy, onSta
 
       <div className="k-card mt-4 p-4 flex items-center justify-between gap-4 sticky bottom-4 sm:static">
         <span className="text-sm font-bold" style={{ color: C.muted }}>
-          Отвечено: <b className="k-num" style={{ color: C.text }}><CountUp value={answeredCount} />/{questions.length}</b>
+          {t.lessonDetail.answered}: <b className="k-num" style={{ color: C.text }}><CountUp value={answeredCount} />/{questions.length}</b>
         </span>
         <Button onClick={onSubmit} disabled={busy}>
-          {busy ? <span className="loading loading-spinner loading-sm" /> : 'Завершить тест'}
+          {busy ? <span className="loading loading-spinner loading-sm" /> : t.lessonDetail.finishTest}
         </Button>
       </div>
     </div>
@@ -132,6 +133,7 @@ function TestSection({ phase, questions, answers, setAnswers, score, busy, onSta
 }
 
 function HomeworkSection({ submission, file, setFile, link, setLink, comment, setComment, busy, onSubmit }) {
+  const { t } = useI18n();
   const graded = submission?.status === 'graded';
 
   return (
@@ -140,32 +142,32 @@ function HomeworkSection({ submission, file, setFile, link, setLink, comment, se
         <div className="mb-5 flex items-center gap-2 flex-wrap">
           {graded ? (
             <Pill hue="teal">
-              <Check size={11} strokeWidth={3.5} /> Оценено{submission.score != null ? `: ${submission.score}` : ''}
+              <Check size={11} strokeWidth={3.5} /> {submission.score != null ? fmt(t.lessonDetail.gradedScore, { score: submission.score }) : t.lessonDetail.graded}
             </Pill>
           ) : (
-            <Pill hue="amber"><Clock size={11} strokeWidth={3} /> На проверке</Pill>
+            <Pill hue="amber"><Clock size={11} strokeWidth={3} /> {t.lessonDetail.checking}</Pill>
           )}
         </div>
       )}
 
       {graded ? (
-        <p className="text-sm font-semibold" style={{ color: C.muted }}>Задание проверено, пересдача закрыта.</p>
+        <p className="text-sm font-semibold" style={{ color: C.muted }}>{t.lessonDetail.gradedClosed}</p>
       ) : (
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label className="block text-[13px] font-bold mb-1.5" style={{ color: C.text }}>Файл решения</label>
+            <label className="block text-[13px] font-bold mb-1.5" style={{ color: C.text }}>{t.lessonDetail.fileLabel}</label>
             <Dropzone file={file} onFileChange={setFile} disabled={busy} />
           </div>
 
           <div className="flex items-center gap-3">
             <span className="flex-1 h-px" style={{ background: C.line }} />
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.08em]" style={{ color: C.muted }}>или</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.08em]" style={{ color: C.muted }}>{t.lessonDetail.or}</span>
             <span className="flex-1 h-px" style={{ background: C.line }} />
           </div>
 
           <div>
             <label htmlFor="lsn-hw-link" className="flex items-center gap-1.5 text-[13px] font-bold mb-1.5" style={{ color: C.text }}>
-              <Link2 size={13} /> Ссылка на решение
+              <Link2 size={13} /> {t.lessonDetail.linkLabel}
             </label>
             <input
               id="lsn-hw-link"
@@ -183,13 +185,13 @@ function HomeworkSection({ submission, file, setFile, link, setLink, comment, se
 
           <div>
             <label htmlFor="lsn-hw-comment" className="block text-[13px] font-bold mb-1.5" style={{ color: C.text }}>
-              Комментарий (необязательно)
+              {t.lessonDetail.commentLabel}
             </label>
             <textarea
               id="lsn-hw-comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Что-то важное про решение…"
+              placeholder={t.lessonDetail.commentPlaceholder}
               maxLength={5000}
               rows={3}
               className="textarea w-full text-base sm:text-sm resize-y rounded-2xl border-2 focus:outline-none"
@@ -201,7 +203,7 @@ function HomeworkSection({ submission, file, setFile, link, setLink, comment, se
 
           <div className="flex justify-end">
             <Button disabled={busy}>
-              {busy ? <span className="loading loading-spinner loading-sm" /> : submission ? 'Отправить снова' : 'Отправить'}
+              {busy ? <span className="loading loading-spinner loading-sm" /> : submission ? t.lessonDetail.resubmit : t.lessonDetail.submit}
             </Button>
           </div>
         </form>
@@ -214,6 +216,7 @@ export default function LessonDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { t } = useI18n();
 
   const [lesson, setLesson] = useState(null);
   const [error, setError] = useState(null);
@@ -271,7 +274,7 @@ export default function LessonDetail() {
       const d = await api.submitLessonTest(id, answers);
       setScore(d.data.score);
       setPhase('done');
-      toast(d.data.score >= 50 ? 'Тест сдан!' : 'Тест не сдан', d.data.score >= 50 ? 'success' : 'error');
+      toast(d.data.score >= 50 ? t.lessonDetail.testPassed : t.lessonDetail.testFailed, d.data.score >= 50 ? 'success' : 'error');
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -282,7 +285,7 @@ export default function LessonDetail() {
   const submitHomework = async (e) => {
     e.preventDefault();
     if (!file && !link.trim() && !comment.trim()) {
-      toast('Прикрепи файл, ссылку или комментарий', 'error');
+      toast(t.lessonDetail.attachRequired, 'error');
       return;
     }
     setBusy(true);
@@ -300,7 +303,7 @@ export default function LessonDetail() {
         ...(fileKey ? { fileKey } : {}),
         ...(textAnswer ? { textAnswer } : {}),
       });
-      toast('Задание отправлено на проверку', 'success');
+      toast(t.lessonDetail.sent, 'success');
       setFile(null);
       setLink('');
       setComment('');
@@ -319,7 +322,7 @@ export default function LessonDetail() {
       className="inline-flex items-center gap-1.5 text-[13.5px] font-extrabold mb-4 transition-colors"
       style={{ color: C.muted }}
     >
-      <ArrowLeft size={16} strokeWidth={3} /> Мои уроки
+      <ArrowLeft size={16} strokeWidth={3} /> {t.lessonDetail.back}
     </button>
   );
 
@@ -329,7 +332,7 @@ export default function LessonDetail() {
         {backButton}
         <div className="k-card">
           {error.status === 404 ? (
-            <EmptyState icon={ClipboardCheck} hue="coral" title="Урок не найден" text="Вернись к списку и выбери урок заново." />
+            <EmptyState icon={ClipboardCheck} hue="coral" title={t.lessonDetail.notFound} text={t.lessonDetail.notFoundText} />
           ) : (
             <ErrorState message={error.message} onRetry={load} />
           )}
@@ -346,12 +349,12 @@ export default function LessonDetail() {
     <>
       {backButton}
 
-      <div className="k-card p-5 sm:p-6 mb-4">
+      <div className="k-card p-5 sm:p-6 mb-4" style={{ borderColor: C.limeLine }}>
         <div className="flex items-center gap-5 flex-wrap sm:flex-nowrap">
           <IconTile icon={isTest ? ClipboardCheck : BookOpen} hue={isTest ? 'blue' : 'coral'} size={62} />
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] font-extrabold uppercase tracking-[0.09em]" style={{ color: C.muted }}>
-              {isTest ? 'Тест' : 'Домашнее задание'}
+            <div className="text-[11px] font-extrabold uppercase tracking-[0.09em]" style={{ color: C.limeDk }}>
+              {isTest ? t.lessonDetail.test : t.lessonDetail.homework}
             </div>
             <h1 className="text-[24px] sm:text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] mt-0.5" style={{ color: C.text }}>
               {lesson.title}
@@ -361,7 +364,7 @@ export default function LessonDetail() {
             )}
           </div>
           {lesson.coinReward > 0 && (
-            <Pill hue="amber"><Star size={11} strokeWidth={3} fill="currentColor" /> +{lesson.coinReward} монет</Pill>
+            <Pill hue="amber"><Star size={11} strokeWidth={3} fill="currentColor" /> {fmt(t.lessonDetail.coins, { n: lesson.coinReward })}</Pill>
           )}
         </div>
       </div>

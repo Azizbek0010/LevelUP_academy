@@ -22,3 +22,15 @@ export const expenses = asyncHandler(async (req, res) => {
 export const reports = asyncHandler(async (req, res) => {
   res.json(await service.reports(branchId(req), req.query));
 });
+
+export const telegramStatus = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await service.telegramGroupStatus(branchId(req)) });
+});
+
+export const createTelegramBindToken = asyncHandler(async (req, res) => {
+  res.status(201).json({ success: true, data: await service.createTelegramBindToken(branchId(req)) });
+});
+
+export const unlinkTelegramGroup = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await service.unlinkTelegramGroup(branchId(req)) });
+});

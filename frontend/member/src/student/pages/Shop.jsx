@@ -4,9 +4,11 @@ import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
 import { PageHeader, Skeleton, EmptyState, ErrorState, Modal, Pill, Tabs, Button, CountUp, ConfettiBurst, IconTile, C } from '../components/ui.jsx';
 import { fmtNum, fmtDateTime } from '../format.js';
+import { fmt, useI18n } from '../../i18n/index.jsx';
 
 export default function Shop() {
   const toast = useToast();
+  const { lang, t } = useI18n();
   const [items, setItems] = useState(null);
   const [orders, setOrders] = useState(null);
   const [balance, setBalance] = useState(null);
@@ -32,12 +34,12 @@ export default function Shop() {
     setBusy(true);
     try {
       await api.purchase(confirm.id);
-      toast(`«${confirm.name}» — покупка оформлена! Забери у администратора.`, 'success');
+      toast(fmt(t.shop.purchased, { name: confirm.name }), 'success');
       setConfirm(null);
       setCelebrate((k) => k + 1);
       load();
     } catch (err) {
-      toast(err.status === 422 ? 'Не хватает коинов' : err.message, 'error');
+      toast(err.status === 422 ? t.shop.notEnough : err.message, 'error');
     } finally {
       setBusy(false);
     }
@@ -48,12 +50,14 @@ export default function Shop() {
       {/* Залп конфетти после удачной покупки — виден поверх всей страницы */}
       <ConfettiBurst fireKey={celebrate} />
       <PageHeader
-        title="Магазин"
-        subtitle="Обменяй заработанные коины на призы"
+        title={t.shop.title}
+        subtitle={t.shop.subtitle}
+        icon={ShoppingBag}
+        hue="lime"
         actions={
           balance !== null && (
             <Pill hue="lime" className="text-sm px-3.5 py-2">
-              <Coins size={15} /> <CountUp value={balance} /> коинов
+              <Coins size={15} /> <CountUp value={balance} /> {t.shop.coinsWord}
             </Pill>
           )
         }
@@ -63,7 +67,7 @@ export default function Shop() {
         <Tabs
           value={tab}
           onChange={setTab}
-          items={[{ value: 'items', label: 'Витрина' }, { value: 'orders', label: 'Мои покупки' }]}
+          items={[{ value: 'items', label: t.shop.showcase }, { value: 'orders', label: t.shop.myOrders }]}
         />
       </div>
 
@@ -74,7 +78,7 @@ export default function Shop() {
           <Skeleton h={180} count={2} />
         ) : items.length === 0 ? (
           <div className="k-card">
-            <EmptyState icon={ShoppingBag} title="Витрина пуста" text="Товары скоро появятся — копи коины!" />
+            <EmptyState icon={ShoppingBag} title={t.shop.empty} text={t.shop.emptyText} />
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -97,7 +101,7 @@ export default function Shop() {
                       <Coins size={13} /> {fmtNum(item.coin_price)}
                     </Pill>
                     <span className="text-xs font-bold tabular-nums" style={{ color: C.muted }}>
-                      осталось <CountUp value={item.stock} />
+                      {fmt(t.shop.left, { n: item.stock })}
                     </span>
                   </div>
                   <Button
@@ -107,7 +111,7 @@ export default function Shop() {
                     disabled={!affordable}
                     onClick={() => setConfirm(item)}
                   >
-                    {affordable ? 'Купить' : 'Не хватает коинов'}
+                    {affordable ? t.shop.buy : t.shop.notEnough}
                   </Button>
                 </div>
               );
@@ -118,10 +122,10 @@ export default function Shop() {
         <Skeleton h={64} count={3} />
       ) : orders.length === 0 ? (
         <div className="k-card">
-          <EmptyState icon={History} title="Покупок пока нет" text="Всё заработанное — впереди." />
+          <EmptyState icon={History} title={t.shop.noOrders} text={t.shop.noOrdersText} />
         </div>
       ) : (
-        <div className="k-card divide-y" style={{ borderColor: C.line }}>
+        <div className="k-card divide-y" style={{ borderColor: C.limeLine }}>
           {orders.map((o, i) => (
             <div
               key={o.id}
@@ -131,10 +135,10 @@ export default function Shop() {
               <IconTile icon={Gift} hue="pink" size={42} />
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-extrabold truncate" style={{ color: C.text }}>{o.item_name}</div>
-                <div className="text-xs font-bold mt-0.5" style={{ color: C.muted }}>{fmtDateTime(o.created_at)}</div>
+                <div className="text-xs font-bold mt-0.5" style={{ color: C.muted }}>{fmtDateTime(o.created_at, lang)}</div>
               </div>
               <span className="text-sm k-num whitespace-nowrap" style={{ color: C.text }}>
-                −{fmtNum(o.coin_price)} <span style={{ color: C.limeDk }}>коинов</span>
+                −{fmtNum(o.coin_price)} <span style={{ color: C.limeDk }}>{t.shop.coinsWord}</span>
               </span>
             </div>
           ))}
@@ -142,13 +146,12 @@ export default function Shop() {
       )}
 
       {confirm && (
-        <Modal title="Подтверди покупку" onClose={() => !busy && setConfirm(null)}>
+        <Modal title={t.shop.confirmTitle} onClose={() => !busy && setConfirm(null)}>
           <p className="text-sm font-semibold mb-1.5" style={{ color: C.muted }}>
-            Купить <b style={{ color: C.text }}>«{confirm.name}»</b> за{' '}
-            <b style={{ color: C.text }}>{fmtNum(confirm.coin_price)} коинов</b>?
+            {fmt(t.shop.confirmText, { name: confirm.name, price: fmtNum(confirm.coin_price) })}
           </p>
           <p className="text-xs font-semibold" style={{ color: C.muted }}>
-            Коины спишутся сразу, приз выдаст администратор филиала.
+            {t.shop.confirmHint}
           </p>
           <div className="flex justify-end gap-2.5 mt-6">
             <button
@@ -157,10 +160,10 @@ export default function Shop() {
               onClick={() => setConfirm(null)}
               disabled={busy}
             >
-              Отмена
+              {t.shop.cancel}
             </button>
             <Button hue="lime" onClick={buy} disabled={busy}>
-              {busy ? <span className="loading loading-spinner loading-sm" /> : 'Купить'}
+              {busy ? <span className="loading loading-spinner loading-sm" /> : t.shop.buy}
             </Button>
           </div>
         </Modal>

@@ -41,6 +41,20 @@ export async function getDownloadUrl(key, expiresIn = DEFAULT_EXPIRES_SEC) {
   return getSignedUrl(s3, command, { expiresIn });
 }
 
+/**
+ * Читает объект целиком в память сервера — единственный потребитель это
+ * AI-review (extractor.js): нужно скормить байты Groq/adm-zip, presigned
+ * URL тут не годится. Больше нигде в проекте не используется — остальные
+ * модули (homework/video/lesson-media) всегда отдают presigned-ссылку клиенту,
+ * а не читают файл в Node-процессе.
+ */
+export async function getObjectBuffer(key) {
+  const { Body } = await s3.send(new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key }));
+  const chunks = [];
+  for await (const chunk of Body) chunks.push(chunk);
+  return Buffer.concat(chunks);
+}
+
 export async function deleteObject(key) {
   await s3.send(new DeleteObjectCommand({ Bucket: env.S3_BUCKET, Key: key }));
 }

@@ -1,13 +1,13 @@
 import { pool } from '../../config/db.js';
 
 // ==================== ТИПЫ ОБУЧЕНИЯ ====================
-export function insertTrainingType({ orgId, createdBy, name, description, icon }, db = pool) {
+export function insertTrainingType({ orgId, createdBy, name, description, icon, aiReviewEnabled }, db = pool) {
   return db
     .query(
-      `INSERT INTO training_types (organization_id, created_by, name, description, icon)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, name, description, icon, sort_order, created_at`,
-      [orgId, createdBy, name, description ?? null, icon ?? null],
+      `INSERT INTO training_types (organization_id, created_by, name, description, icon, ai_review_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, name, description, icon, sort_order, ai_review_enabled, created_at`,
+      [orgId, createdBy, name, description ?? null, icon ?? null, aiReviewEnabled ?? false],
     )
     .then((r) => r.rows[0]);
 }
@@ -15,7 +15,7 @@ export function insertTrainingType({ orgId, createdBy, name, description, icon }
 export function listTrainingTypes(orgId, db = pool) {
   return db
     .query(
-      `SELECT tt.id, tt.name, tt.description, tt.icon, tt.sort_order, tt.created_at,
+      `SELECT tt.id, tt.name, tt.description, tt.icon, tt.sort_order, tt.ai_review_enabled, tt.created_at,
               (SELECT count(*)::int FROM topics t WHERE t.training_type_id = tt.id AND t.deleted_at IS NULL) AS topics_count
          FROM training_types tt
         WHERE tt.organization_id = $1 AND tt.deleted_at IS NULL
@@ -43,6 +43,7 @@ export function updateTrainingType(id, orgId, fields, db = pool) {
     ['name', 'name'],
     ['description', 'description'],
     ['icon', 'icon'],
+    ['aiReviewEnabled', 'ai_review_enabled'],
   ]) {
     if (fields[key] !== undefined) {
       cols.push(`${col} = $${i++}`);
@@ -55,7 +56,7 @@ export function updateTrainingType(id, orgId, fields, db = pool) {
     .query(
       `UPDATE training_types SET ${cols.join(', ')}, updated_at = now()
         WHERE id = $${i++} AND organization_id = $${i} AND deleted_at IS NULL
-        RETURNING id, name, description, icon, sort_order`,
+        RETURNING id, name, description, icon, sort_order, ai_review_enabled`,
       vals,
     )
     .then((r) => r.rows[0] ?? null);

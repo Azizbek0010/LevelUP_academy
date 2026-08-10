@@ -26,6 +26,10 @@ const RU = {
   // уже доказал, что знает логин и пароль.
   loginNotLinked:
     'Этот Telegram не привязан ни к одному аккаунту. Войдите на сайте по логину и паролю, затем нажмите «Telegram» в кабинете.',
+  branchBindNotGroup: 'Эту команду нужно отправить в самой группе родителей, а не в личном чате с ботом.',
+  branchBindTokenInvalid: 'Код недействителен или истёк. Получите новый код в кабинете Branch Manager.',
+  branchBindSuccess: 'Группа привязана к филиалу. Сюда будут приходить уведомления о посещаемости и успеваемости.',
+  branchBindAlreadyLinked: 'Эта группа уже привязана к другому филиалу.',
 };
 
 const UZ = {
@@ -45,6 +49,10 @@ const UZ = {
   onlyForStudents:
     'Bu buyruq faqat o‘quvchilar uchun. Farzandingiz haqidagi ma’lumotlar kabinetda.',
   dataError: 'Ma’lumotni olib bo‘lmadi. Birozdan so‘ng qayta urinib ko‘ring.',
+  branchBindNotGroup: 'Bu buyruqni botga shaxsiy emas, aynan ota-onalar guruhiga yuborish kerak.',
+  branchBindTokenInvalid: 'Kod yaroqsiz yoki muddati tugagan. Branch Manager kabinetidan yangi kod oling.',
+  branchBindSuccess: 'Guruh filialga ulandi. Bu yerga davomat va o‘zlashtirish haqida xabarlar keladi.',
+  branchBindAlreadyLinked: 'Bu guruh allaqachon boshqa filialga ulangan.',
   helpText: [
     'Nima qila olaman:',
     '',

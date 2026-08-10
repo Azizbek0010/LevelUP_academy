@@ -118,6 +118,11 @@ export function useBranchManagerReports(months = 6) {
   );
 }
 
+export function useBranchManagerTelegramStatus() {
+  const { token } = useAuth();
+  return useAuthedQuery(['branch-manager-telegram-status'], () => api.branchManagerTelegramStatus(token));
+}
+
 // -------- ADMIN --------
 /** Менторы организации — только чтение (заводит/редактирует их Admin филиала). */
 export function useSuperMentors() {

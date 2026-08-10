@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import {
-  MapPin, Phone, Building2, Landmark,
+  MapPin, Phone, Building2, Landmark, Send, Check, Copy,
 } from 'lucide-react';
 import { fmt, money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Panel } from '../mentor/_ui.jsx';
-import { useBranchManagerInfo } from '../../queries.js';
+import { useAuth } from '../../auth.jsx';
+import { api } from '../../api.js';
+import { useBranchManagerInfo, useBranchManagerTelegramStatus } from '../../queries.js';
 
 function InfoRow({ Icon, label, value, href }) {
   const inner = (
@@ -29,6 +32,95 @@ function InfoRow({ Icon, label, value, href }) {
     </a>
   ) : (
     <div className={cls}>{inner}</div>
+  );
+}
+
+/** Ota-onalar guruhini Telegram-botga ulash. Bot guruhga QO'LDA qo'shiladi
+ * (Branch Manager o'zi qiladi — botni tashqaridan avtomatik qo'shib bo'lmaydi),
+ * so'ng kod guruhning o'ziga /bindbranch <kod> buyrug'i sifatida yuboriladi. */
+function TelegramGroupCard() {
+  const { token } = useAuth();
+  const { data: status, isLoading, refetch } = useBranchManagerTelegramStatus();
+  const [issuing, setIssuing] = useState(false);
+  const [code, setCode] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function issueCode() {
+    setIssuing(true);
+    setError(null);
+    try {
+      const res = await api.branchManagerTelegramBindToken(token);
+      setCode(res.data);
+    } catch (err) {
+      setError(err.message || 'Xatolik yuz berdi');
+    } finally {
+      setIssuing(false);
+    }
+  }
+
+  async function unlink() {
+    if (!window.confirm("Guruh bilan ulanishni uzmoqchimisiz?")) return;
+    await api.branchManagerTelegramUnlink(token);
+    setCode(null);
+    refetch();
+  }
+
+  function copyCommand() {
+    if (!code) return;
+    navigator.clipboard.writeText(`/bindbranch ${code.token}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  if (isLoading) return null;
+
+  if (status?.linked) {
+    return (
+      <Panel title="Ota-onalar guruhi (Telegram)" icon={Send} bodyClass="p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 text-success font-semibold">
+            <Check size={18} /> Guruh ulangan
+          </div>
+          <button type="button" className="btn btn-sm btn-ghost text-error" onClick={unlink}>
+            Uzish
+          </button>
+        </div>
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel title="Ota-onalar guruhi (Telegram)" icon={Send} bodyClass="p-5">
+      {!code ? (
+        <>
+          <p className="text-sm text-base-content/60 mb-3">
+            Davomat va o'zlashtirish haqida xabarlar shu guruhga avtomatik ketadi.
+            Avval botni guruhga qo'shing, keyin ulash kodini oling.
+          </p>
+          <button type="button" className="btn btn-primary btn-sm" onClick={issueCode} disabled={issuing}>
+            {issuing ? 'Yuklanmoqda...' : 'Ulash kodini olish'}
+          </button>
+          {error && <p className="text-error text-sm mt-2">{error}</p>}
+        </>
+      ) : (
+        <div className="space-y-3">
+          <ol className="text-sm text-base-content/70 list-decimal list-inside space-y-1">
+            <li>
+              Guruhga botni qo'shing: <b>@{code.botUsername}</b>
+            </li>
+            <li>Guruhning o'ziga quyidagi buyruqni yuboring:</li>
+          </ol>
+          <div className="flex items-center gap-2 bg-base-200 rounded-lg px-3 py-2 font-mono text-sm">
+            <span className="flex-1 select-all">/bindbranch {code.token}</span>
+            <button type="button" className="btn btn-xs btn-ghost" onClick={copyCommand}>
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+            </button>
+          </div>
+          <p className="text-xs text-base-content/45">Kod {Math.round(code.expiresIn / 60)} daqiqa amal qiladi.</p>
+        </div>
+      )}
+    </Panel>
   );
 }
 
@@ -78,6 +170,9 @@ export default function BranchManagerBranch() {
           </div>
         </dl>
       </Panel>
+
+      {/* ── Telegram: ota-onalar guruhi ── */}
+      <TelegramGroupCard />
 
       {/* ── Kontaktlar ── */}
       <Panel title="Kontaktlar" icon={MapPin} bodyClass="p-5">
