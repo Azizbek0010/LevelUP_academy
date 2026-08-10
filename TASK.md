@@ -44,14 +44,16 @@
 
 ### 🔲 OCHIQ VAZIFA — EGASI: **KARIS** (pul kerak, Claude sotib ololmaydi/kirita olmaydi)
 
-- [ ] STORJ-UPGRADE ($5/oy dan, hisob bo'yicha minimum): 10.08.2026 aniqlandi —
+- [x] STORJ-UPGRADE ($5/oy dan, hisob bo'yicha minimum): 10.08.2026 aniqlandi —
       bepul trial 4 kun oldin tugagan, Storage/Download limiti 0'ga tushgan,
       shuning uchun barcha fayl yuklash (ДЗ, video, chek, AI-review) 403
-      AccessDenied bilan qaytadi (o'qish/list ham keyinroq to'xtashi mumkin).
-      Yechim: Storj dashboard → Upgrade → **Pay as you go** → karta kiritish
-      (Claude buni o'zi qila olmaydi — to'lov ma'lumotlari). Kalitlarni
-      o'zgartirish shart emas, joriy `S3_ACCESS_KEY` ishlaydi, faqat limit
-      to'lansa yetadi.
+      AccessDenied bilan qaytadi edi. ✅ 11.08.2026 — asosiy loyiha
+      (wEc4jgBwQxy) Pay as you go'ga o'tkazildi, karta bog'landi, PUT+GET
+      jonli tekshirildi (eski bucket'dagi ma'lumotlar saqlanib qolgan).
+      ⚠️ Yo'lda vaqtinchalik ikkinchi (yangi triyal) Storj akkaunt yaratilgan
+      va bir necha soat `.env`/Render'da turgan edi — endi to'liq olib
+      tashlandi, asosiy akkaunt kalitlari qaytarildi (`.env` va Render
+      Environment, ikkalasi ham), jonli tekshirildi.
 - [x] RENDER-STARTER: web-servisni (`LevelUP_academy-1`) Free'dan Starter'ga
       ($7/oy) ko'tarish — 09.08.2026 auditda topilgan sabab: free plan 15
       daqiqa jimlikdan keyin uxlaydi, uyg'onish 30-60 son, + Neon o'zi ham
@@ -69,7 +71,7 @@
       ham yiqitishi mumkin (bitta process) — kichik markaz uchun qabul
       qilingan.
 
-**Jami hozircha: $7/oy** (Render Starter, to'langan) **+ Storj $5/oy dan qolgan ochiq vazifa** = jami ~$12/oy, ikkalasi olinsa.
+**Jami: ~$12/oy** (Render Starter $7 + Storj Pay as you go $5 dan, ikkalasi ham to'langan, 11.08.2026).
 
 **Yopilgan savollar** (edi, endi hal): `npm run migrate` Neon'ga to'g'ridan-
 to'g'ri gonildi (17/17 test o'tdi) · `GROQ_API_KEY`/`_2`/`_3` Render
