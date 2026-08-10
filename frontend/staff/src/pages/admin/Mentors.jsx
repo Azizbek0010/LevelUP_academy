@@ -21,21 +21,24 @@ const STATUS_COLORS = {
 };
 
 /* ═══════════════ Grade Picker ═══════════════ */
+/* Классы темы вместо цвета строкой: `var(--text-muted)` и хардкод-хексы рядом
+   с ним (#2563eb / #b45309 / #15803d) — это ровно info / warning / success из
+   tailwind.config.js, продублированные значениями. Перекрасить бренд означало
+   бы править и тему, и этот массив. */
 const GRADES = [
-  { value: '', label: 'Не задан', color: 'var(--text-muted)' },
-  { value: 'junior', label: 'Junior', color: '#2563eb' },
-  { value: 'middle', label: 'Middle', color: '#b45309' },
-  { value: 'senior', label: 'Senior', color: '#15803d' },
+  { value: '', label: 'Не задан', className: 'text-base-content/60' },
+  { value: 'junior', label: 'Junior', className: 'text-info' },
+  { value: 'middle', label: 'Middle', className: 'text-warning' },
+  { value: 'senior', label: 'Senior', className: 'text-success' },
 ];
 
 function GradePicker({ value, onChange, busy }) {
   const current = GRADES.find((g) => g.value === (value || '')) || GRADES[0];
   return (
     <label className="flex items-center gap-1.5" title="Уровень ментора">
-      <Award size={11} style={{ color: current.color }} />
+      <Award size={11} className={current.className} />
       <select
-        className="h-7 pl-1.5 pr-6 rounded-[8px] text-[11px] font-bold bg-base-100 border border-base-300 outline-none cursor-pointer disabled:opacity-50"
-        style={{ color: current.color }}
+        className={`h-7 pl-1.5 pr-6 rounded-[8px] text-[11px] font-bold bg-base-100 border border-base-300 outline-none cursor-pointer disabled:opacity-50 ${current.className}`}
         value={value || ''}
         disabled={busy}
         onChange={(e) => onChange(e.target.value || null)}
