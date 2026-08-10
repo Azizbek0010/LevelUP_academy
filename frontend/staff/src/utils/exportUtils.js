@@ -99,19 +99,33 @@ export async function exportToExcel(data, columns, filename = `export_${today()}
   const wsData = [header, ...rows];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-  // ── Styling: brand header (green), transparent data cells ──
-  // Cell fills follow the app theme: header = app --primary (#40833B).
-  // Data rows get NO fill at all (transparent/colorless) — no white, no zebra —
-  // so the exported sheet adapts to the viewer's Excel theme (light or dark)
-  // instead of hardcoding white/light backgrounds.
+  // ── Styling: brand header (green), theme-aware data cells ──
+  //
+  // Data cells must follow the VIEWER's Excel theme (light or dark), not ours.
+  // Leaving the fill off was already right, but the text colour was pinned to
+  // rgb 1F2937 — Excel renders an explicit rgb literally, so on a dark sheet
+  // that was near-black text on a near-black background: unreadable.
+  //
+  // theme 1 is Excel's "Text 1" slot, the colour Excel itself flips between
+  // black and white with the workbook theme. Verified against the written
+  // styles.xml: the library emits <color theme="1"/> rather than baking an rgb.
+  //
+  // Borders can't use the same trick: theme index 0 ("Background 1") is falsy,
+  // so xlsx-js-style drops the colour entirely and the border loses its style.
+  // A neutral mid-grey is the honest choice — it reads as a quiet gridline on a
+  // white sheet and on a dark one, without depending on theme resolution.
   const HEADER_FILL = '40833B';      // app --primary (LevelUp brand green)
+  // The header keeps explicit white text: it sits on the fixed green brand
+  // fill, so it must not flip to black when the viewer is in dark mode.
   const HEADER_FONT = { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 };
+  const BODY_FONT = { color: { theme: 1 }, sz: 10 };
   const NUM_FMT = '#,##0';           // 1500000 → 1 500 000, still a number
+  const BORDER_COLOR = { rgb: '9CA3AF' };  // neutral grey, visible either way
   const BORDER = {
-    top:  { style: 'thin', color: { rgb: 'D1D5DB' } },
-    bottom: { style: 'thin', color: { rgb: 'D1D5DB' } },
-    left: { style: 'thin', color: { rgb: 'D1D5DB' } },
-    right: { style: 'thin', color: { rgb: 'D1D5DB' } },
+    top:  { style: 'thin', color: BORDER_COLOR },
+    bottom: { style: 'thin', color: BORDER_COLOR },
+    left: { style: 'thin', color: BORDER_COLOR },
+    right: { style: 'thin', color: BORDER_COLOR },
   };
 
   header.forEach((_, cIdx) => {
@@ -130,9 +144,9 @@ export async function exportToExcel(data, columns, filename = `export_${today()}
       const cell = ws[XLSX.utils.encode_cell({ r: rIdx + 1, c: cIdx })];
       if (!cell) return;
       const isNumber = activeCols[cIdx]?.type === 'number' && cell.t === 'n';
-      // No fill on data cells → transparent/colorless, matches app theme
+      // No fill at all → the sheet keeps the viewer's background, light or dark
       cell.s = {
-        font: { color: { rgb: '1F2937' }, sz: 10 },
+        font: BODY_FONT,
         alignment: { vertical: 'middle', horizontal: isNumber ? 'right' : 'left' },
         border: BORDER,
         ...(isNumber ? { numFmt: NUM_FMT } : {}),
