@@ -62,14 +62,17 @@
       Starter uxlamaydi — muammo yo'qoladi. ✅ 11.08.2026 1:28 — to'landi,
       dashboard'da tasdiqlandi (0.5 CPU/512MB, "Instance type changed from
       Free to Starter"), qayta deploy Live.
-- [ ] WORKER-MERGE (Claude qiladi — endi navbatda, Starter allaqachon olingan): `worker.js`
-      ni `server.js` ichiga qo'shish — o'sha $7/oy servis o'zi AI-review
-      navbatini ham, 00:00 kunlik svodkani ham, billing/overdue/due-soon
-      cronlarini ham ushlaydi. Alohida worker servisi ($7/oy qo'shimcha)
-      SHART EMAS — bitta har doim yonib turgan process yetarli.
-      ⚠️ Kelishilgan trade-off: shu tufayli AI-review'dagi bag butun saytni
-      ham yiqitishi mumkin (bitta process) — kichik markaz uchun qabul
-      qilingan.
+- [x] WORKER-MERGE: `worker.js` `server.js` ichiga qo'shildi — o'sha $7/oy
+      servis o'zi AI-review navbatini ham, 00:00 kunlik svodkani ham,
+      billing/overdue/due-soon cronlarini ham ushlaydi. Alohida worker
+      servisi ($7/oy qo'shimcha) SHART EMAS edi — bitta har doim yonib
+      turgan process yetarli. ✅ 11.08.2026 — `worker.js` o'chirildi,
+      `npm run worker`/`worker:dev` olib tashlandi, `render.yaml`dagi
+      ishlatilmagan worker-shablon o'chirildi, testlar yashil (mentor/
+      student/payments/auth PASS, `parent` — eski, bog'liq emas), `save-zone`
+      ga push qilindi (`e72e314`). ⚠️ Kelishilgan trade-off: shu tufayli
+      AI-review'dagi bag butun saytni ham yiqitishi mumkin (bitta process) —
+      kichik markaz uchun qabul qilingan. Hali `main` ga merj qilinmagan.
 
 **Jami: ~$12/oy** (Render Starter $7 + Storj Pay as you go $5 dan, ikkalasi ham to'langan, 11.08.2026).
 
