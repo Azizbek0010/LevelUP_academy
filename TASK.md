@@ -42,8 +42,16 @@
       demak worker.js umuman ishga tushmaydi. Boshqa 3 tadan farqli — bu
       croni, event emas, workersiz imkoni yo'q.
 
-### 🔲 OCHIQ VAZIFA — EGASI: **KARIS** (pul kerak, Claude sotib ololmaydi)
+### 🔲 OCHIQ VAZIFA — EGASI: **KARIS** (pul kerak, Claude sotib ololmaydi/kirita olmaydi)
 
+- [ ] STORJ-UPGRADE ($5/oy dan, hisob bo'yicha minimum): 10.08.2026 aniqlandi —
+      bepul trial 4 kun oldin tugagan, Storage/Download limiti 0'ga tushgan,
+      shuning uchun barcha fayl yuklash (ДЗ, video, chek, AI-review) 403
+      AccessDenied bilan qaytadi (o'qish/list ham keyinroq to'xtashi mumkin).
+      Yechim: Storj dashboard → Upgrade → **Pay as you go** → karta kiritish
+      (Claude buni o'zi qila olmaydi — to'lov ma'lumotlari). Kalitlarni
+      o'zgartirish shart emas, joriy `S3_ACCESS_KEY` ishlaydi, faqat limit
+      to'lansa yetadi.
 - [ ] RENDER-STARTER: web-servisni (`LevelUP_academy-1`) Free'dan Starter'ga
       ($7/oy) ko'tarish — 09.08.2026 auditda topilgan sabab: free plan 15
       daqiqa jimlikdan keyin uxlaydi, uyg'onish 30-60 son, + Neon o'zi ham
@@ -59,12 +67,11 @@
       ham yiqitishi mumkin (bitta process) — kichik markaz uchun qabul
       qilingan.
 
-**Ochiq savollar Karis'ga:**
-1. `npm run migrate` boshqa hech qachon lokal gonilmagan — Neon'ga to'g'ridan-
-   to'g'ri qo'lda gonish kerakmi hozir, yoki keyingi deploy'gacha kutamizmi?
-2. `GROQ_API_KEY` faqat lokal `.env`'da — Render'ga qachon qo'shamiz?
-3. BUG-NO-WORKER — pullik Render worker / vaqtinchalik inline-run / tashqi
-   cron — qaysi yo'l bilan yechamiz? Daily-digest shungacha ishlamaydi.
+**Jami, agar ikkalasi ham olinsa: ~$12/oy** (Storj $5 + Render $7).
+
+**Yopilgan savollar** (edi, endi hal): `npm run migrate` Neon'ga to'g'ridan-
+to'g'ri gonildi (17/17 test o'tdi) · `GROQ_API_KEY`/`_2`/`_3` Render
+Environment'ga qo'shildi va deploy qilindi (10.08.2026).
 
 ## ⚠️ Jamoa branch'lari — save-zone'ga hali qo'shilmagan (2026-08-09 tekshiruvi)
 
