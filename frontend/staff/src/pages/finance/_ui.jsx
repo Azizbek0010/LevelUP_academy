@@ -63,9 +63,9 @@ export function Metric({ Icon, label, value, sub, tone = 'neutral', trend, trend
 }
 
 /* ── Карточка с заголовком ── */
-export function Card({ title, subtitle, action, children, bodyClass = 'p-4' }) {
+export function Card({ title, subtitle, action, children, bodyClass = 'p-4', className = '' }) {
   return (
-    <section className="rounded-2xl border border-base-300 bg-base-100 shadow-[0_1px_2px_rgba(29,36,23,0.04)]">
+    <section className={`rounded-2xl border border-base-300 bg-base-100 shadow-[0_1px_2px_rgba(29,36,23,0.04)] ${className}`}>
       {(title || action) && (
         <header className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 pb-2">
           <div>

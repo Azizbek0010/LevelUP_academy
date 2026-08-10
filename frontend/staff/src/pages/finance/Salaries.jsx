@@ -59,7 +59,8 @@ export default function FinanceSalaries() {
               <MonthSelect value={monthKey} onChange={setMonthKey} months={MONTHS} />
             </div>
           }
-          bodyClass="p-0 xl:col-span-2"
+          className="xl:col-span-2"
+          bodyClass="p-0"
         >
           <div className="overflow-x-auto">
             <table className="table table-sm">

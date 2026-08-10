@@ -3,11 +3,6 @@ import { Receipt, Tag, TrendingUp, Layers } from 'lucide-react';
 import { money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Panel, Kpi } from '../mentor/_ui.jsx';
-import { useState } from 'react';
-import { TrendingUp, Tag, Layers, Receipt } from 'lucide-react';
-import { money } from '../../format.js';
-import PageHeader from '../../components/PageHeader.jsx';
-import { Panel, Kpi } from '../mentor/_ui.jsx';
 import { useBranchManagerExpenses } from '../../queries.js';
 
 export default function BranchManagerExpenses() {

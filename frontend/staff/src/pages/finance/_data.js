@@ -13,6 +13,13 @@ export const ORG = {
   city: 'Toshkent',
 };
 
+/* ── Налоговые ставки (Узбекистан) ── */
+export const TAX = {
+  ndss: 0.20,       // НДС
+  soc_nalog: 0.10,  // Соцналог
+  otzyvnoy_nalog: 0.015, // Оборотный налог
+};
+
 /* ── Профиль Finance Manager (демо-данные, редактируется локально) ── */
 export const PROFILE = {
   firstName: 'Jamshid',
@@ -74,6 +81,25 @@ export const branchSeries = (id) => SERIES[id] ?? [];
 
 export const monthRow = (id, monthKey) =>
   branchSeries(id).find((r) => r.monthKey === monthKey);
+
+/* ── Расчёт налогов по данным филиала ──
+   return { ndss, soc_nalog, otzyvnoy_nalog, total } */
+export function taxCalc(row, branch) {
+  const income  = row.income;
+  const expenses = row.expenses;
+  const salaries = row.salaries;
+  const profit  = income - expenses - salaries;
+  const net     = income - expenses - salaries; // чистая прибыль (до налогов)
+  return {
+    ndss:          income * TAX.ndss,
+    soc_nalog:     (income - expenses) * TAX.soc_nalog,
+    otzyvnoy_nalog: Math.max(0, net) * TAX.otzyvnoy_nalog,
+    total:         income * TAX.ndss + (income - expenses) * TAX.soc_nalog + Math.max(0, net) * TAX.otzyvnoy_nalog,
+    profit,
+    net,
+    branch,
+  };
+}
 
 /* ── Статусы платежей ── */
 export const PAYMENT_STATUS = {

@@ -883,8 +883,6 @@ function Header({ sidebarWidth, onMobileToggle }) {
           Счётчик онлайна показывал число, на которое ментор всё равно никак
           не реагирует. */}
 
-      <LangSwitch />
-
       <Notifications />
 
       {/* Разделительная палка убрана: колокольчик и профиль теперь один ряд
@@ -942,6 +940,8 @@ function Header({ sidebarWidth, onMobileToggle }) {
             </div>
 
             <div className="p-1.5">
+              <LangSwitch />
+              <div className="border-t border-[var(--border)] my-1.5" />
               {hasProfilePage && (
                 <button
                   role="menuitem"

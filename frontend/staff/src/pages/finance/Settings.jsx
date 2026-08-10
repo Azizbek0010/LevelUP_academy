@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { User, Mail, Phone, MapPin, Save, BadgeCheck, Globe, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
+import { useAuth } from '../../auth.jsx';
 import { Card, LangSwitch } from './_ui.jsx';
 import { useT } from './_i18n.jsx';
 import { PROFILE } from './_data.js';
@@ -37,12 +38,22 @@ function Field({ label, icon: Icon, value, onChange, readOnly }) {
 
 export default function FinanceSettings() {
   const { t } = useT();
+  const { user } = useAuth();
   const [form, setForm] = useState(() => {
+    /* Имя/фамилия/email — из авторизации (как в шапке), остальное из PROFILE+localStorage */
+    let stored = {};
     try {
-      return { ...PROFILE, ...JSON.parse(localStorage.getItem(STORAGE_KEY)) };
+      stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
     } catch {
-      return PROFILE;
+      stored = {};
     }
+    return {
+      ...PROFILE,
+      ...stored,
+      firstName: user?.firstName ?? stored.firstName ?? PROFILE.firstName,
+      lastName: user?.lastName ?? stored.lastName ?? PROFILE.lastName,
+      email: user?.email ?? stored.email ?? PROFILE.email,
+    };
   });
   const [saved, setSaved] = useState(false);
 

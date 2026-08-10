@@ -37,17 +37,9 @@ export default function FinanceDashboard() {
     value: monthRow(b.id, CURRENT_MONTH)?.income ?? 0,
   })).filter((b) => b.value > 0);
 
-  const profitTable = MONTHS.map((m) => {
-    const income = BRANCHES.reduce((a, b) => a + (monthRow(b.id, m.key)?.income ?? 0), 0);
-    const exp = BRANCHES.reduce((a, b) => a + (monthRow(b.id, m.key)?.expenses ?? 0), 0);
-    const sal = BRANCHES.reduce((a, b) => a + (monthRow(b.id, m.key)?.salaries ?? 0), 0);
-    return { key: m.key, label: m.label, income, exp, sal, net: income - exp - sal };
-  });
-
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title={t('dash.title')} subtitle={t('dash.subtitle')}>
-      </PageHeader>
+      <PageHeader title={t('dash.title')} subtitle={t('dash.subtitle')} />
 
       {/* ── KPI организации за текущий месяц ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -87,7 +79,7 @@ export default function FinanceDashboard() {
 
       {/* ── Тренд по месяцам + доля филиалов ── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Card title={t('dash.trendChart')} subtitle={t('dash.monthlyProfit')} bodyClass="p-4 h-[340px] xl:col-span-2">
+        <Card title={t('dash.trendChart')} subtitle={t('dash.monthlyProfit')} className="xl:col-span-2" bodyClass="p-4 h-[340px]">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-base-300)" vertical={false} />
@@ -123,35 +115,12 @@ export default function FinanceDashboard() {
         </Card>
       </div>
 
-      {/* ── Чистая прибыль по месяцам ── */}
-      <Card title={t('common.period')} bodyClass="p-0">
-        <div className="overflow-x-auto">
-          <table className="table table-sm">
-            <thead>
-              <tr className="text-[12px] uppercase tracking-wider text-base-content/50">
-                <th>{t('common.month')}</th>
-                <th className="text-right">{t('nav.income')}</th>
-                <th className="text-right">{t('nav.expenses')}</th>
-                <th className="text-right">{t('nav.salaries')}</th>
-                <th className="text-right">{t('reports.net')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {profitTable.map((m) => (
-                <tr key={m.key} className="text-sm">
-                  <td className="font-semibold">{m.label}</td>
-                  <td className="text-right tabular-nums">{money(m.income)}</td>
-                  <td className="text-right tabular-nums text-warning">{money(m.exp)}</td>
-                  <td className="text-right tabular-nums text-info">{money(m.sal)}</td>
-                  <td className={`text-right font-bold tabular-nums ${m.net >= 0 ? 'text-success' : 'text-error'}`}>
-                    {money(m.net)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      {/* ── Быстрые действия ── */}
+      <div className="flex gap-3">
+        <a href="/finance/reports" className="btn btn-primary gap-2">
+          <TrendingUp size={16} /> {t('dash.viewReports')}
+        </a>
+      </div>
     </div>
   );
 }

@@ -23,11 +23,11 @@ const SuperAudit = lazy(() => import('./pages/super/Audit.jsx'));
 const SuperDiscipline = lazy(() => import('./pages/super/Discipline.jsx'));
 const SuperAttendance = lazy(() => import('./pages/super/Attendance.jsx'));
 
-const BranchManagerDashboard = lazy(() => import('./pages/admin/branch-manager/Dashboard.jsx'));
-const BranchManagerIncome = lazy(() => import('./pages/admin/branch-manager/Income.jsx'));
-const BranchManagerExpenses = lazy(() => import('./pages/admin/branch-manager/Expenses.jsx'));
-const BranchManagerReports = lazy(() => import('./pages/admin/branch-manager/Reports.jsx'));
-const BranchManagerBranch = lazy(() => import('./pages/admin/branch-manager/Branch.jsx'));
+const BranchManagerDashboard = lazy(() => import('./pages/branch-manager/Dashboard.jsx'));
+const BranchManagerIncome = lazy(() => import('./pages/branch-manager/Income.jsx'));
+const BranchManagerExpenses = lazy(() => import('./pages/branch-manager/Expenses.jsx'));
+const BranchManagerReports = lazy(() => import('./pages/branch-manager/Reports.jsx'));
+const BranchManagerBranch = lazy(() => import('./pages/branch-manager/Branch.jsx'));
 
 const FinanceDashboard = lazy(() => import('./pages/finance/Dashboard.jsx'));
 const FinanceIncome = lazy(() => import('./pages/finance/Income.jsx'));

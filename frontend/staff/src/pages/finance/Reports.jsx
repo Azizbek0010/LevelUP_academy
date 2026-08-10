@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Wallet, Receipt, BadgeDollarSign, TrendingUp } from 'lucide-react';
+import { Wallet, Receipt, BadgeDollarSign, TrendingUp, Download } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
@@ -12,22 +12,40 @@ const prevMonthKey = (monthKey) => {
   return i > 0 ? MONTHS[i - 1].key : null;
 };
 
+const rowFor = (b, mk) => {
+  const r = monthRow(b.id, mk);
+  if (!r) return null;
+  const op = r.income - r.expenses;
+  return { ...r, op, net: op - r.salaries };
+};
+
+const generateCSV = (monthKey, rows, totals, prevMonth) => {
+  const header = ['Филиал', 'Студенты', 'Доход', 'Расход', 'Зарплаты', 'Опер. прибыль', 'Чистая прибыль', 'Тренд vs пред. мес.'];
+  const data = rows.map(({ branch, r, p }) => [
+    branch.name,
+    branch.students,
+    r?.income ?? 0,
+    r?.expenses ?? 0,
+    r?.salaries ?? 0,
+    r?.op ?? 0,
+    r?.net ?? 0,
+    p ? `${r && r.net >= 0 ? '▲' : '▼'} ${Math.abs(p)}%` : '—',
+  ]);
+  const totalRow = ['ОРГАНИЗАЦИЯ', BRANCHES.reduce((a, b) => a + b.students, 0), totals.income, totals.expenses, totals.salaries, totals.income - totals.expenses, totals.net, ''];
+  const csv = [header, ...data, totalRow].map(row => row.map(v => `"${v}"`).join(',')).join('\n');
+  return '\uFEFF' + csv; // BOM for Excel
+};
+
 export default function FinanceReports() {
   const { t } = useT();
   const [monthKey, setMonthKey] = useState(CURRENT_MONTH);
   const prev = prevMonthKey(monthKey);
 
-  const rowFor = (b, mk) => {
-    const r = monthRow(b.id, mk);
-    if (!r) return null;
-    const op = r.income - r.expenses;
-    return { ...r, op, net: op - r.salaries };
-  };
-
   const rows = BRANCHES.map((b) => {
     const r = rowFor(b, monthKey);
-    const p = prev ? rowFor(b, prev) : null;
-    return { branch: b, r, p };
+    const p = prev ? rowFor(b, prev)?.net : null;
+    const trend = prev && r && p ? Math.round(((r.net - p) / (p || 1)) * 100) : null;
+    return { branch: b, r, trend };
   });
 
   const totals = rows.reduce(
@@ -35,7 +53,7 @@ export default function FinanceReports() {
       income: acc.income + r.income,
       expenses: acc.expenses + r.expenses,
       salaries: acc.salaries + r.salaries,
-      net: acc.net + (r.income - r.expenses - r.salaries),
+      net: acc.net + r.net,
     } : acc,
     { income: 0, expenses: 0, salaries: 0, net: 0 },
   );
@@ -44,24 +62,32 @@ export default function FinanceReports() {
     name: branch.name.replace(' Campus', '').replace(' Academy', ''),
     income: r?.income ?? 0,
     expenses: r?.expenses ?? 0,
-    profit: r ? r.income - r.expenses - r.salaries : 0,
+    profit: r?.net ?? 0,
   }));
 
-  const trendFor = (b) => {
-    if (!prev) return null;
-    const cur = monthRow(b.id, monthKey)?.income ?? 0;
-    const prv = monthRow(b.id, prev)?.income ?? 0;
-    return prv ? Math.round(((cur - prv) / prv) * 100) : null;
+  const handleExport = () => {
+    const csv = generateCSV(monthKey, rows, totals, prev);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `finance-report-${MONTH_LABEL[monthKey].replace(/\s+/g, '-')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader title={t('reports.title')} subtitle={t('reports.subtitle')}>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <MonthSelect value={monthKey} onChange={setMonthKey} months={MONTHS} />
+          <button onClick={handleExport} className="btn btn-outline gap-2">
+            <Download size={16} /> {t('reports.export')}
+          </button>
         </div>
       </PageHeader>
 
+      {/* ── KPI организации за выбранный месяц ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Metric Icon={Wallet} label={t('kpi.orgIncome')} value={money(totals.income)} sub={MONTH_LABEL[monthKey]} tone="success" />
         <Metric Icon={Receipt} label={t('kpi.orgExpenses')} value={money(totals.expenses)} tone="warning" />
@@ -69,6 +95,7 @@ export default function FinanceReports() {
         <Metric Icon={TrendingUp} label={t('kpi.orgProfit')} value={money(totals.net)} sub="income − expenses − salaries" tone="neutral" />
       </div>
 
+      {/* ── Cash Flow по филиалам ── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <Card title={t('reports.cashFlow')} subtitle={MONTH_LABEL[monthKey]} bodyClass="p-4 h-[320px] xl:col-span-2">
           <ResponsiveContainer width="100%" height="100%">
@@ -91,7 +118,8 @@ export default function FinanceReports() {
           </ResponsiveContainer>
         </Card>
 
-        <Card title={t('reports.branchTable')} bodyClass="p-0">
+        {/* ── Нетто по филиалам + тренд ── */}
+        <Card title={t('reports.branchNet')} bodyClass="p-0">
           <div className="overflow-x-auto">
             <table className="table table-sm">
               <thead>
@@ -102,24 +130,23 @@ export default function FinanceReports() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map(({ branch, r }) => {
-                  const tr = trendFor(branch);
-                  return (
-                    <tr key={branch.id} className="text-sm">
-                      <td className="font-medium">{branch.name}</td>
-                      <td className={`text-right tabular-nums font-bold ${r && r.net >= 0 ? 'text-success' : 'text-error'}`}>
-                        {r ? money(r.net) : '—'}
-                      </td>
-                      <td className="text-right tabular-nums">
-                        {tr === null ? <span className="text-base-content/30">—</span> : (
-                          <span className={`font-semibold ${tr >= 0 ? 'text-success' : 'text-error'}`}>
-                            {tr >= 0 ? '▲' : '▼'} {Math.abs(tr)}%
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {rows.map(({ branch, r, trend }) => (
+                  <tr key={branch.id} className="text-sm">
+                    <td className="font-medium">{branch.name}</td>
+                    <td className={`text-right tabular-nums font-bold ${r && r.net >= 0 ? 'text-success' : 'text-error'}`}>
+                      {r ? money(r.net) : '—'}
+                    </td>
+                    <td className="text-right tabular-nums">
+                      {trend === null ? (
+                        <span className="text-base-content/30">—</span>
+                      ) : (
+                        <span className={`font-semibold ${trend >= 0 ? 'text-success' : 'text-error'}`}>
+                          {trend >= 0 ? '▲' : '▼'} {Math.abs(trend)}%
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
                 <tr className="border-t border-base-300 bg-base-200/50 font-bold text-sm">
                   <td>{t('common.total')}</td>
                   <td className={`text-right tabular-nums ${totals.net >= 0 ? 'text-success' : 'text-error'}`}>{money(totals.net)}</td>
@@ -131,7 +158,8 @@ export default function FinanceReports() {
         </Card>
       </div>
 
-      <Card title={`${t('reports.branchTable')} · ${MONTH_LABEL[monthKey]}`} bodyClass="p-0">
+      {/* ── Детальная разбивка по филиалам ── */}
+      <Card title={`${t('reports.branchDetail')} · ${MONTH_LABEL[monthKey]}`} bodyClass="p-0">
         <div className="overflow-x-auto">
           <table className="table table-sm">
             <thead>
