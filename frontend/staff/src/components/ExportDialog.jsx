@@ -72,7 +72,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
     setWarning('');
     try {
       const fn = filename || config.filenamePrefix || 'export';
-      const result = await exportData(format, data, cols, fn, title);
+      const result = await exportData(format, data, cols, fn, title, pageKey);
       setDone(true);
       // PDF reports which font it ended up with. A helvetica fallback means
       // Cyrillic will not render — say so instead of handing over a broken file
@@ -94,69 +94,89 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
     }
   }, [format, data, config, title, filename, busy, onClose]);
 
+  const getThemeByPage = (key) => {
+    switch (key) {
+      case 'payments':
+      case 'expenses':
+        return { iconBg: 'bg-emerald-500', iconColor: 'text-white', btnColor: 'bg-emerald-500 hover:bg-emerald-600 text-white border-none', borderColor: '#10b981' };
+      case 'reports':
+        return { iconBg: 'bg-purple-500', iconColor: 'text-white', btnColor: 'bg-purple-500 hover:bg-purple-600 text-white border-none', borderColor: '#a855f7' };
+      case 'groups':
+      case 'groupStudents':
+        return { iconBg: 'bg-amber-500', iconColor: 'text-white', btnColor: 'bg-amber-500 hover:bg-amber-600 text-white border-none', borderColor: '#f59e0b' };
+      case 'students':
+      case 'studentDetail':
+        return { iconBg: 'bg-blue-500', iconColor: 'text-white', btnColor: 'bg-blue-500 hover:bg-blue-600 text-white border-none', borderColor: '#3b82f6' };
+      default:
+        return { iconBg: 'bg-primary', iconColor: 'text-primary-content', btnColor: 'btn-primary', borderColor: 'var(--primary)' };
+    }
+  };
+  const theme = getThemeByPage(pageKey);
+
   if (!open) return null;
 
   return (
     <dialog className="modal modal-open">
-      <div className="modal-box card bg-base-100 border border-base-300 max-w-md">
+      <div className="modal-box card bg-base-100 border border-base-300 max-w-md shadow-2xl p-0 overflow-hidden" style={{ borderTop: `4px solid ${theme.borderColor}` }}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-primary/10">
-              <Download size={16} className="text-primary" />
+        <div className="flex items-center justify-between p-5 border-b border-base-200" style={{ background: `linear-gradient(to right, ${theme.borderColor}10, transparent)` }}>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center shadow-sm ${theme.iconBg}`}>
+              <Download size={20} className={theme.iconColor} />
             </div>
             <div>
-              <h3 className="font-bold text-[15px] text-base-content">Экспорт данных</h3>
-              <p className="text-[11px] text-base-content/45">{data.length} записей</p>
+              <h3 className="font-extrabold text-[16px] text-base-content">Экспорт данных</h3>
+              <p className="text-[12px] font-semibold text-base-content/60 mt-0.5">{data.length} записей</p>
             </div>
           </div>
-          <button className="btn btn-ghost btn-xs btn-circle" onClick={onClose}>
-            <X size={16} />
+          <button className="btn btn-ghost btn-sm btn-circle hover:bg-base-200" onClick={onClose}>
+            <X size={18} />
           </button>
         </div>
 
-        {/* Format selector */}
-        <div className="grid grid-cols-4 gap-2 mb-5">
-          {FORMAT_OPTIONS.map((f) => {
-            const active = format === f.key;
-            const Icon = f.icon;
-            return (
-              <button
-                key={f.key}
-                onClick={() => setFormat(f.key)}
-                className="relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 hover:shadow-sm cursor-pointer"
-                style={{
-                  borderColor: active ? f.color : 'var(--border)',
-                  background: active ? f.bg : 'var(--surface)',
-                }}
-              >
-                {active && (
-                  <div
-                    className="absolute top-2 right-2 w-4.5 h-4.5 rounded-full flex items-center justify-center"
-                    style={{ background: f.color }}
-                  >
-                    <Check size={10} className="text-white" strokeWidth={3} />
-                  </div>
-                )}
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center"
-                  style={{ background: active ? f.color : 'var(--border)' }}
+        <div className="p-5">
+          {/* Format selector */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            {FORMAT_OPTIONS.map((f) => {
+              const active = format === f.key;
+              const Icon = f.icon;
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => setFormat(f.key)}
+                  className="relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all duration-300 hover:shadow-md cursor-pointer overflow-hidden group"
+                  style={{
+                    borderColor: active ? f.color : 'var(--border)',
+                    background: active ? f.bg : 'var(--surface)',
+                  }}
                 >
-                  <Icon size={18} style={{ color: active ? '#fff' : 'var(--text-secondary)' }} />
-                </div>
-                <div className="text-center">
-                  <div className="text-[12px] font-bold" style={{ color: active ? f.color : 'var(--text)' }}>
-                    {f.label}
+                  {active && (
+                    <div
+                      className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center shadow-sm"
+                      style={{ background: f.color }}
+                    >
+                      <Check size={12} className="text-white" strokeWidth={3} />
+                    </div>
+                  )}
+                  <div
+                    className="w-10 h-10 rounded-[12px] flex items-center justify-center transition-transform group-hover:scale-110"
+                    style={{ background: active ? f.color : 'var(--border)' }}
+                  >
+                    <Icon size={20} style={{ color: active ? '#fff' : 'var(--text-secondary)' }} />
                   </div>
-                  <div className="text-[9px] text-base-content/45 mt-0.5">{f.ext}</div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  <div className="text-center w-full mt-1">
+                    <div className="text-[13px] font-extrabold truncate" style={{ color: active ? f.color : 'var(--text)' }}>
+                      {f.label}
+                    </div>
+                    <div className="text-[10px] font-semibold text-base-content/50 mt-0.5">{f.ext}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Title input */}
-        <div className="mb-5">
+          {/* Title input */}
+          <div className="mb-5">
           <label className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider mb-1.5 block">
             Заголовок документа
           </label>
@@ -179,7 +199,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
 
         {/* ── Error / warning ────────────────────────────── */}
         {(error || warning) && (
-          <div className="px-5 pt-3">
+          <div className="px-5 pb-3">
             <div
               className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl"
               style={{
@@ -195,18 +215,19 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
           </div>
         )}
 
+        </div> {/* Close the .p-5 div */}
+
         {/* ── Actions ────────────────────────────────────── */}
-        <div className="px-5 py-4 mt-1 border-t flex justify-end items-center gap-2" style={{ borderColor: 'var(--border)', background: 'transparent' }}>
+        <div className="px-5 py-4 border-t flex justify-end items-center gap-2" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
           <button
-            className="px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-colors duration-200 cursor-pointer"
-            style={{ background: 'var(--surface-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+            className="btn btn-ghost btn-sm"
             onClick={onClose}
-            disabled={busy}
+            disabled={busy || done}
           >
             Отмена
           </button>
           <button
-            className="btn btn-primary gap-1.5"
+            className={`btn btn-sm ${theme.btnColor} gap-1.5`}
             onClick={handleExport}
             disabled={busy || !data.length || done}
           >

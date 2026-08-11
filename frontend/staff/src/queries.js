@@ -183,6 +183,15 @@ export function useAdminMentors() {
   return useAuthedQuery(['admin-mentors'], () => api.adminMentors(token));
 }
 
+export function useAdminMentorDetail(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-mentor', id], () => api.adminMentors(token).then(res => {
+    const raw = res?.data || res || {};
+    const mentors = raw.mentors || (Array.isArray(raw) ? raw : []);
+    return { mentor: mentors.find(m => m.id === id) || null };
+  }), { enabled: !!id });
+}
+
 export function useAdminTrainingTypes() {
   const { token } = useAuth();
   return useAuthedQuery(['admin-training-types'], () => api.adminTrainingTypes(token));

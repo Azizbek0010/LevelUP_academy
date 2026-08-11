@@ -36,11 +36,9 @@ const AdminGroups = lazy(() => import('./pages/admin/Groups.jsx'));
 const AdminGroupDetail = lazy(() => import('./pages/admin/GroupDetail.jsx'));
 const AdminStudentDetail = lazy(() => import('./pages/admin/StudentDetail.jsx'));
 const AdminPayments = lazy(() => import('./pages/admin/Payments.jsx'));
-const AdminExpenses = lazy(() => import('./pages/admin/Expenses.jsx'));
 const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'));
 const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
-const AdminShop = lazy(() => import('./pages/admin/Shop.jsx'));
-const AdminSchedule = lazy(() => import('./pages/admin/Schedule.jsx'));
+const AdminMentorDetail = lazy(() => import('./pages/admin/MentorDetail.jsx'));
 const AdminChat = lazy(() => import('./pages/admin/Chat.jsx'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile.jsx'));
 
@@ -115,7 +113,7 @@ export default function App() {
         <Route path="/" element={<SW><DashboardRedirect /></SW>} />
 
         {/* Shared paths dispatched by role */}
-        <Route path="/chat" element={<SW><RoleView views={{ mentor: MentorChat, admin: AdminChat }} /></SW>} />
+        <Route path="/chat" element={<SW><RoleView views={{ mentor: MentorChat, admin: AdminChat, branch_manager: AdminChat }} /></SW>} />
         <Route path="/groups" element={<SW><RoleView views={{ seo: SuperGroups, admin: AdminGroups, branch_manager: AdminGroups, mentor: MentorGroups }} /></SW>} />
         {/* Карточка группы. У админа она была под RoleGuard(['admin']); теперь
             тот же путь обслуживает и ментора — RoleView так же не пускает
@@ -149,11 +147,15 @@ export default function App() {
           {/* deep-link на конкретного студента+сумму — Abduloh, автоподстановка суммы из группы */}
           <Route path="/payments/:studentId/:amount?" element={<SW><AdminPayments /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
-          <Route path="/shop" element={<SW><AdminShop /></SW>} />
-          <Route path="/schedule" element={<SW><AdminSchedule /></SW>} />
+          <Route path="/mentors/:id" element={<SW><AdminMentorDetail /></SW>} />
+          {/* Магазин и Расписание убраны из UI 11.08.2026 (Karis): пункты меню
+              удалены, маршруты закомментированы до востребования. */}
+          {/* <Route path="/shop" element={<SW><AdminShop /></SW>} /> */}
+          {/* <Route path="/schedule" element={<SW><AdminSchedule /></SW>} /> */}
         </Route>
-        {/* Расходы — общий путь для админа и branch manager (RoleView разбирает) */}
-        <Route path="/expenses" element={<SW><RoleView views={{ admin: AdminExpenses, branch_manager: BranchManagerExpenses }} /></SW>} />
+        {/* Расходы — с 11.08.2026 только у branch manager (Karis); у админа
+            раздел убран из UI, страница осталась для менеджера. */}
+        <Route path="/expenses" element={<SW><RoleView views={{ branch_manager: BranchManagerExpenses }} /></SW>} />
 
         {/* Branch Manager: свой обзорный дашборд + разделы, специфичные для роли */}
         <Route element={<RoleGuard allow={['branch_manager']} />}>

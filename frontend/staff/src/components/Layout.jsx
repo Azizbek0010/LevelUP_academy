@@ -94,10 +94,7 @@ const adminNav = [
   { to: '/groups',    label: 'Группы',      Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Менторы',     Icon: HiOutlineUserCircle },
   { to: '/chat',      label: 'Чат',         Icon: HiOutlineChatBubbleLeftRight },
-  { to: '/shop',      label: 'Магазин',     Icon: HiOutlineGift },
-  { to: '/schedule',  label: 'Расписание',  Icon: HiOutlineCalendarDays },
   { to: '/payments',  label: 'Платежи',     Icon: HiOutlineWallet },
-  { to: '/expenses',  label: 'Расходы',     Icon: HiOutlineReceiptPercent },
   { to: '/reports',   label: 'Отчёты',      Icon: HiOutlineChartBar },
 ];
 
@@ -112,8 +109,7 @@ const branchManagerNav = [
   { to: '/students',  label: 'Studentlar', Icon: HiOutlineAcademicCap },
   { to: '/groups',    label: 'Guruhlar',  Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Mentorlar', Icon: HiOutlineUserCircle },
-  { to: '/shop',      label: 'Do\'kon',   Icon: HiOutlineGift },
-  { to: '/schedule',  label: 'Jadval',    Icon: HiOutlineCalendarDays },
+  { to: '/chat',      label: 'Chat',      Icon: HiOutlineChatBubbleLeftRight },
   { to: '/branch',    label: 'Filial',    Icon: HiOutlineBuildingOffice2 },
   { to: '/payments',  label: 'To\'lovlar', Icon: HiOutlineCreditCard },
   { to: '/income',    label: 'Daromad',   Icon: HiOutlineWallet },
@@ -632,8 +628,9 @@ function Notifications() {
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const ref = useRef(null);
 
-  // Чат есть только у ментора и админа; у остальных ролей эндпоинт ответит 403.
-  const hasChat = user?.role === 'mentor' || user?.role === 'admin';
+  // Чат есть у ментора, админа и branch manager; у остальных ролей эндпоинт ответит 403.
+  const hasChat =
+    user?.role === 'mentor' || user?.role === 'admin' || user?.role === 'branch_manager';
   const { data } = useChatContacts({ enabled: hasChat });
   const contacts = data?.data ?? [];
 

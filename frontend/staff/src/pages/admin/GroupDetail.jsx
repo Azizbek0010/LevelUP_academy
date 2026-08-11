@@ -967,11 +967,83 @@ function FeedbackTab({ groupId, token, canManage = true }) {
   );
 }
 
+/* ═══════════════ Schedule Tab ═══════════════ */
+/* Read-only недельное расписание группы (Karis, 11.08.2026). Раньше расписание
+   было отдельной страницей /schedule в сайдбаре — теперь это таб внутри
+   карточки группы. Редактирование остаётся в модалке «Изменить группу»
+   (GroupFormModal), здесь только просмотр. */
+const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+function ScheduleTab({ group }) {
+  let sched = group?.schedule;
+  if (typeof sched === 'string') { try { sched = JSON.parse(sched); } catch { sched = []; } }
+  if (!Array.isArray(sched)) sched = [];
+  const byDay = {};
+  sched.forEach((s) => { byDay[String(s.day).toLowerCase()] = s; });
+
+  const active = DAY_ORDER.filter((d) => byDay[d]);
+  const fallbackStart = group.startTime || sched[0]?.start;
+  const fallbackEnd = group.endTime || sched[0]?.end;
+
+  if (active.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Clock size={26} className="text-base-content/25 mb-2" />
+        <div className="text-[13px] font-semibold text-base-content/60">Расписание не задано</div>
+        <div className="text-[12px] text-base-content/40 mt-1">Дни и время задаются в «Изменить группу»</div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="text-[13px] font-bold text-base-content">Недельное расписание</div>
+        {fallbackStart && (
+          <div className="text-[12px] font-semibold text-base-content/45">
+            Основное время: {fallbackStart}{fallbackEnd ? `–${fallbackEnd}` : ''}
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+        {DAY_ORDER.map((d) => {
+          const s = byDay[d];
+          const dayStart = s?.start || fallbackStart;
+          const dayEnd = s?.end || fallbackEnd;
+          return (
+            <div
+              key={d}
+              className={`rounded-[12px] border p-3 flex flex-col items-center gap-1 transition-all ${
+                s ? 'bg-primary/5 border-primary/25' : 'bg-base-200/40 border-base-300/50'
+              }`}
+            >
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${s ? 'text-primary' : 'text-base-content/35'}`}>
+                {DAY_LABEL[d]}
+              </span>
+              {s ? (
+                <span className="text-[12px] font-extrabold text-base-content tabular-nums">
+                  {dayStart}{dayEnd && dayEnd !== dayStart ? `–${dayEnd}` : ''}
+                </span>
+              ) : (
+                <span className="text-[12px] text-base-content/30">—</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-4 text-[11px] text-base-content/40">
+        Изменить расписание можно в модалке «Изменить группу» (шапка страницы).
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════ Main GroupDetail ═══════════════ */
 const TABS = [
   { key: 'attendance', label: 'Посещаемость', icon: CalendarDays },
   { key: 'homework', label: 'Домашние задания', icon: BookOpen },
   { key: 'feedback', label: 'Отзывы', icon: MessageSquare },
+  { key: 'schedule', label: 'Расписание', icon: Clock },
 ];
 
 export default function AdminGroupDetail() {
@@ -983,6 +1055,7 @@ export default function AdminGroupDetail() {
   const [adding, setAdding] = useState(false);
   const [pick, setPick] = useState('');
   const [editForm, setEditForm] = useState(null);
+  const [showGroupExport, setShowGroupExport] = useState(false);
 
   // Данные для модалки «Изменить группу» (переиспользуем GroupFormModal из Groups.jsx)
   const { data: mentorsData } = useAdminMentors();
@@ -1141,6 +1214,14 @@ export default function AdminGroupDetail() {
           {credsBusy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
           Пароли группы
         </button>
+        <button
+          className="btn btn-ghost btn-sm gap-1.5"
+          onClick={() => setShowGroupExport(true)}
+          disabled={students.length === 0}
+          title="Экспорт учеников группы"
+        >
+          <Download size={14} /> Экспорт учеников
+        </button>
       </PageHeader>
 
       {/* Мета-строка группы. Раньше здесь была почти пустая карточка с двумя
@@ -1181,6 +1262,7 @@ export default function AdminGroupDetail() {
         {activeTab === 'attendance' && <AttendanceTab groupId={id} token={token} />}
         {activeTab === 'homework' && <HomeworkTab groupId={id} token={token} canManage={user?.role !== 'branch_manager'} />}
         {activeTab === 'feedback' && <FeedbackTab groupId={id} token={token} canManage={user?.role !== 'branch_manager'} />}
+        {activeTab === 'schedule' && <ScheduleTab group={group} />}
       </div>
 
       {/* Add Student Modal */}
@@ -1210,6 +1292,14 @@ export default function AdminGroupDetail() {
         token={token}
         groups={allGroups}
         subjectOptions={subjectOptions}
+      />
+
+      {/* ── Export students modal ── */}
+      <ExportDialog
+        open={showGroupExport}
+        onClose={() => setShowGroupExport(false)}
+        pageKey="groupStudents"
+        data={students}
       />
     </div>
   );

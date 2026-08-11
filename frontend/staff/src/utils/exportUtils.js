@@ -353,11 +353,84 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
 
 // ═══════════════ Main Dispatcher ═══════════════
 
-export async function exportData(format, data, columns, filename, title) {
+export async function exportProfilePDF(person, columns, filename, title, pageKey) {
+  const jspdfModule = await import('jspdf');
+  const JsPDF = jspdfModule.jsPDF ?? jspdfModule.default?.jsPDF ?? jspdfModule.default;
+  if (!JsPDF) throw new Error('jsPDF not found in module');
+
+  const doc = new JsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const fontName = await loadCyrillicFont(doc);
+  const hasCyrillic = fontName === 'DejaVuSans';
+  
+  doc.setFont(fontName);
+  
+  // Header / Title
+  doc.setFillColor(64, 131, 59); // Brand primary
+  doc.rect(0, 0, 210, 40, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont(fontName, 'bold');
+  const fullName = person.fullName || person.name || `${person.firstName || person.first_name || ''} ${person.lastName || person.last_name || ''}`.trim() || 'Без имени';
+  doc.text(fullName, 20, 25);
+  
+  doc.setFontSize(12);
+  doc.setFont(fontName, 'normal');
+  doc.text(title, 20, 32);
+
+  // Avatar placeholder
+  doc.setFillColor(235, 244, 232);
+  doc.roundedRect(150, 10, 40, 40, 3, 3, 'F');
+  doc.setTextColor(64, 131, 59);
+  doc.setFontSize(14);
+  doc.text(fullName.charAt(0).toUpperCase(), 170, 33, { align: 'center' });
+
+  // Draw details from columns
+  let y = 65;
+  doc.setTextColor(30, 30, 30);
+  
+  columns.forEach((c) => {
+    if (c.hidden) return;
+    const value = getNestedValue(person, c.key);
+    const displayValue = String(c.format ? c.format(value, person, 0) : (value ?? '—'));
+    
+    doc.setFontSize(10);
+    doc.setFont(fontName, 'bold');
+    doc.setTextColor(100, 100, 100);
+    doc.text(c.label.toUpperCase(), 20, y);
+    
+    doc.setFontSize(12);
+    doc.setFont(fontName, 'normal');
+    doc.setTextColor(30, 30, 30);
+    doc.text(displayValue, 20, y + 6);
+    
+    y += 16;
+    
+    // Add page if needed
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
+  });
+
+  // Footer
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  const dateStr = new Date().toLocaleDateString('ru-RU');
+  doc.text(`${getOrgName()}  |  Сгенерировано: ${dateStr}`, 105, 290, { align: 'center' });
+
+  doc.save(`${filename}.pdf`);
+  return { fontName, hasCyrillic };
+}
+
+export async function exportData(format, data, columns, filename, title, pageKey) {
   switch (format) {
     case 'excel':
       return exportToExcel(data, columns, filename);
     case 'pdf':
+      if ((pageKey === 'studentDetail' || pageKey === 'mentorDetail') && data.length === 1) {
+        return exportProfilePDF(data[0], columns, filename, title, pageKey);
+      }
       return exportToPDF(data, columns, filename, title);
     default:
       throw new Error(`Unknown format: ${format}`);
@@ -651,7 +724,9 @@ export const PAGE_EXPORT_CONFIG = {
   reports: { columns: REPORT_COLUMNS, title: 'Отчёт — Доходы и долги', filenamePrefix: 'отчёт' },
   expenses: { columns: EXPENSE_COLUMNS, title: 'Отчёт по расходам', filenamePrefix: 'расходы' },
   mentors: { columns: MENTOR_COLUMNS, title: 'Список менторов', filenamePrefix: 'менторы' },
+  mentorDetail: { columns: MENTOR_COLUMNS, title: 'Профиль ментора', filenamePrefix: 'ментор' },
   groupStudents: { columns: GROUP_STUDENT_COLUMNS, title: 'Ученики группы', filenamePrefix: 'ученики-группы' },
+  studentDetail: { columns: STUDENT_COLUMNS, title: 'Профиль ученика', filenamePrefix: 'ученик' },
 };
 
 // ═══════════════ Attendance (dynamic month grid) ═══════════════

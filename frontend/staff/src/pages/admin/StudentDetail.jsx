@@ -5,7 +5,7 @@ import {
   ArrowLeft, Edit3, Save, Loader2, Coins, CalendarDays,
   KeyRound, Phone, Snowflake, Sun, Archive, Copy, Check, CreditCard,
   AlertCircle, User, GraduationCap, QrCode, Send, MessageSquare, Gift,
-  UserX, Plus, Wallet, Users,
+  UserX, Plus, Wallet, Users, Download,
 } from 'lucide-react';
 
 // Ссылка на member-app для QR-входа студента (сканирует камерой — сразу
@@ -60,7 +60,7 @@ const monthInputValue = (d) => {
   const dt = d ? new Date(d) : new Date();
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
 };
-const soon = () => alert('Эта функция ещё в разработке');
+import ExportDialog from '../../components/ExportDialog.jsx';
 
 /* ═══════════════ Main StudentDetail ═══════════════ */
 export default function AdminStudentDetail() {
@@ -79,6 +79,7 @@ export default function AdminStudentDetail() {
   const [showCreds, setShowCreds] = useState(false);
   const [showTopUp, setShowTopUp] = useState(false);
   const [showAddGroup, setShowAddGroup] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   const raw = data?.data || data || {};
   const student = raw.student || raw;
@@ -225,16 +226,21 @@ export default function AdminStudentDetail() {
 
   return (
     <div className="space-y-4 pb-8">
-      <Link to="/students" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-base-content/45 hover:text-primary transition-colors">
-        <ArrowLeft size={16} /> К ученикам
-      </Link>
+      <div className="flex justify-between items-center">
+        <Link to="/students" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-base-content/45 hover:text-primary transition-colors">
+          <ArrowLeft size={16} /> К ученикам
+        </Link>
+        <button onClick={() => setShowExport(true)} className="btn btn-sm btn-ghost gap-1.5 text-[12px]">
+          <Download size={14} /> Экспорт
+        </button>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ══════════════ КОЛОНКА 1 — карточка студента ══════════════ */}
         <div className="space-y-4 w-full shrink-0" style={{ maxWidth: 380 }}>
           <div className="card bg-base-100 p-5">
             <div className="flex items-start justify-between gap-2">
-              <h1 className="text-[19px] font-extrabold text-base-content leading-tight">{fullName(student)}</h1>
+              <h1 className="text-[19px] font-extrabold text-base-content leading-tight truncate flex-1 min-w-0" title={fullName(student)}>{fullName(student)}</h1>
               <button
                 className="w-8 h-8 rounded-[8px] border border-base-300 flex items-center justify-center hover:border-primary hover:text-primary transition-colors shrink-0"
                 onClick={() => setShowCreds(true)}
@@ -270,14 +276,20 @@ export default function AdminStudentDetail() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-200/60">
-                <span className="text-[11px] font-semibold text-base-content/50 uppercase">Родитель</span>
+              <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-200/60 gap-3 overflow-hidden">
+                <span className="text-[11px] font-semibold text-base-content/50 uppercase shrink-0">Родитель</span>
                 {student.parent ? (
-                  <span className="text-[13px] font-bold text-base-content">
-                    {[student.parent.firstName, student.parent.lastName].filter(Boolean).join(' ')} · {formatPhone(student.parent.phone)}
-                  </span>
+                  <div className="flex flex-col items-end min-w-0">
+                    <span 
+                      className="text-[13px] font-bold text-base-content truncate max-w-[180px] block"
+                      title={[student.parent.firstName, student.parent.lastName].filter(Boolean).join(' ')}
+                    >
+                      {[student.parent.firstName, student.parent.lastName].filter(Boolean).join(' ')}
+                    </span>
+                    <span className="text-[11px] font-semibold text-base-content/60 mt-0.5">{formatPhone(student.parent.phone)}</span>
+                  </div>
                 ) : (
-                  <span className="text-[12px] text-base-content/40 italic">Не указан</span>
+                  <span className="text-[12px] text-base-content/40 italic shrink-0">Не указан</span>
                 )}
               </div>
 
@@ -298,10 +310,10 @@ export default function AdminStudentDetail() {
               <button onClick={toggleFreeze} disabled={busy} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
                 {isActive ? <Snowflake size={13} /> : <Sun size={13} />} {isActive ? 'Заморозить' : 'Разморозить'}
               </button>
-              <button onClick={soon} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
+              <button onClick={() => { setActionReason(''); setActionModal('graduate'); }} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
                 <GraduationCap size={13} /> Выпускник
               </button>
-              <button onClick={soon} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
+              <button onClick={handleDelete} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
                 <UserX size={13} /> Отчислить
               </button>
               <button onClick={handleRegen} disabled={busy} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
@@ -310,10 +322,10 @@ export default function AdminStudentDetail() {
               <button onClick={startEdit} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
                 <Edit3 size={13} /> Изменить
               </button>
-              <button onClick={soon} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
+              <button onClick={() => telegram?.student?.linked ? setShowTgMessage(true) : alert('Telegram не подключён')} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
                 <MessageSquare size={13} /> SMS
               </button>
-              <button onClick={soon} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px] col-span-2">
+              <button onClick={() => alert(`Реферальный код: ${student.referralCode || student.loginCode || '—'}`)} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px] col-span-2">
                 <Gift size={13} /> Реферал
               </button>
             </div>
@@ -639,6 +651,37 @@ export default function AdminStudentDetail() {
         <p className="text-xs text-base-content/45 mb-3">Студент будет скрыт из активного списка, данные сохранятся. Укажите причину.</p>
         <textarea className="textarea textarea-bordered w-full" rows={3} placeholder="Причина архивации…" value={actionReason} onChange={(e) => setActionReason(e.target.value)} autoFocus />
       </Modal>
+
+      {/* ═══ Graduate Modal ═══ */}
+      <Modal
+        isOpen={actionModal === 'graduate'}
+        onClose={() => setActionModal(null)}
+        title="Выпустить студента"
+        actions={
+          <div className="flex items-center gap-2">
+            <button className="btn btn-ghost btn-sm" onClick={() => setActionModal(null)} disabled={busy}>Отмена</button>
+            <button className="btn btn-success btn-sm gap-1" onClick={async () => {
+              setBusy(true);
+              try { await api.adminDeleteStudent(token, id, actionReason || 'Выпускник'); navigate('/students'); }
+              catch (e) { alert(e.message || 'Ошибка'); }
+              finally { setBusy(false); setActionModal(null); }
+            }} disabled={busy}>
+              {busy ? <Loader2 size={14} className="animate-spin" /> : <GraduationCap size={14} />} Выпустить
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm text-base-content/70 mb-1">Оформить выпуск <b>{fullName(student)}</b>?</p>
+        <p className="text-xs text-base-content/45 mb-3">Студент будет перемещен в архив с пометкой выпускника.</p>
+        <textarea className="textarea textarea-bordered w-full" rows={3} placeholder="Дополнительный комментарий…" value={actionReason} onChange={(e) => setActionReason(e.target.value)} autoFocus />
+      </Modal>
+
+      <ExportDialog
+        open={showExport}
+        onClose={() => setShowExport(false)}
+        pageKey="studentDetail"
+        data={[student]}
+      />
     </div>
   );
 }

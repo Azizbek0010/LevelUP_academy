@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Users, UserCheck, UserX, Mail, Phone, Award, MessageCircle, Download, Copy, Check, KeyRound } from 'lucide-react';
+import { Plus, Pencil, Users, UserCheck, UserX, Mail, Phone, Award, MessageCircle, Download, Copy, Check, KeyRound, Snowflake, Archive, LayoutGrid, List } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminMentors } from '../../queries.js';
 import { api } from '../../api.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
-import { Avatar, EmptyState, Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
+import { Avatar, EmptyState, Kpi, RowSkeleton, Tip, SearchInput } from '../mentor/_ui.jsx';
 
 const fullName = (m) =>
   [m.firstName || m.first_name, m.lastName || m.last_name].filter(Boolean).join(' ') || '—';
@@ -19,15 +19,10 @@ const STATUS_COLORS = {
   frozen: { bg: '#E8543E15', text: '#E8543E', label: 'Заморожен' },
 };
 
-/* ═══════════════ Grade Picker ═══════════════ */
-/* Классы темы вместо цвета строкой: `var(--text-muted)` и хардкод-хексы рядом
-   с ним (#2563eb / #b45309 / #15803d) — это ровно info / warning / success из
-   tailwind.config.js, продублированные значениями. Перекрасить бренд означало
-   бы править и тему, и этот массив. */
-
-/* ═══════════════ Stat Card ═══════════════ */
-/* Грейд ментора. Меняется только отсюда: сам ментор в своём профиле видит его
-   как read-only — PATCH /api/users/me это поле не принимает. */
+/* ═══════════════ Grade ═══════════════ */
+/* Грейд ментора — read-only везде (Karis, 11.08.2026): выбор уровня убран из
+   админки, в карточке ментора показывается статичный бейдж. PATCH /api/users/me
+   это поле не принимает, так что ментор тоже видит его только для чтения. */
 const GRADES = [
   { value: '', label: 'Не задан', className: 'text-base-content/60' },
   { value: 'junior', label: 'Junior', className: 'text-info' },
@@ -35,32 +30,15 @@ const GRADES = [
   { value: 'senior', label: 'Senior', className: 'text-success' },
 ];
 
-function GradePicker({ value, onChange, busy }) {
-  const current = GRADES.find((g) => g.value === (value || '')) || GRADES[0];
-  return (
-    <label className="flex items-center gap-1.5" title="Уровень ментора">
-      <Award size={11} className={current.className} />
-      <select
-        className={`h-7 pl-1.5 pr-6 rounded-[8px] text-[11px] font-bold bg-base-100 border border-base-300 outline-none cursor-pointer disabled:opacity-50 ${current.className}`}
-        value={value || ''}
-        disabled={busy}
-        onChange={(e) => onChange(e.target.value || null)}
-      >
-        {GRADES.map((g) => (
-          <option key={g.value} value={g.value}>{g.label}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 /* ═══════════════ Mentor Card ═══════════════ */
-function MentorCard({ m, onEdit, onGrade, gradeBusy }) {
+function MentorCard({ m, onEdit, onFreeze, onDelete }) {
   const navigate = useNavigate();
   const status = STATUS_COLORS[m.status] || STATUS_COLORS.active;
+  const grade = GRADES.find((g) => g.value === (m.grade || '')) || GRADES[0];
+  const isFrozen = m.status === 'frozen';
 
   return (
-    <div className="card bg-base-100 p-5 card-hover-premium group">
+    <div className="card bg-base-100 p-5 card-hover-premium group cursor-pointer" onClick={() => navigate(`/mentors/${m.id}`)}>
       <div className="flex items-start gap-4">
         {/* Avatar */}
         <div className="transition-transform duration-300 group-hover:scale-105">
@@ -90,37 +68,35 @@ function MentorCard({ m, onEdit, onGrade, gradeBusy }) {
             )}
           </div>
 
-          {/* Навыки — короткой строкой */}
-          {m.skills?.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {m.skills.slice(0, 3).map((s) => (
-                <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-base-200 text-base-content/70">
-                  {s}
-                </span>
-              ))}
-              {m.skills.length > 3 && (
-                <span className="text-[10px] px-1 text-base-content/45">+{m.skills.length - 3}</span>
-              )}
-            </div>
-          )}
-
           {/* Action buttons */}
           <div className="flex items-center gap-1 mt-3 flex-wrap">
-            <GradePicker
-              value={m.grade}
-              busy={gradeBusy === m.id}
-              onChange={(grade) => onGrade(m, grade)}
-            />
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold" title="Уровень ментора">
+              <Award size={11} className={grade.className} /> {grade.label}
+            </span>
             <button className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold text-base-content/70 bg-base-100 border border-base-300 hover:border-primary/40 hover:bg-primary/10 transition-all"
-              onClick={() => onEdit(m)}>
+              onClick={(e) => { e.stopPropagation(); onEdit(m); }}>
               <Pencil size={11} /> Изменить
             </button>
             <button
               className="h-7 w-7 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-primary/10 hover:text-primary transition-all"
               title="Написать в чат"
-              onClick={() => navigate('/chat')}
+              onClick={(e) => { e.stopPropagation(); navigate('/chat'); }}
             >
               <MessageCircle size={13} />
+            </button>
+            <button
+              className={`h-7 w-7 rounded-[8px] flex items-center justify-center transition-all ${isFrozen ? 'bg-primary/10 text-primary' : 'text-base-content/45 hover:bg-primary/10 hover:text-primary'}`}
+              title={isFrozen ? 'Разморозить' : 'Заморозить'}
+              onClick={(e) => { e.stopPropagation(); onFreeze(m); }}
+            >
+              <Snowflake size={13} />
+            </button>
+            <button
+              className="h-7 w-7 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-error/10 hover:text-error transition-all"
+              title="Удалить"
+              onClick={(e) => { e.stopPropagation(); onDelete(m); }}
+            >
+              <Archive size={13} />
             </button>
           </div>
         </div>
@@ -132,13 +108,18 @@ function MentorCard({ m, onEdit, onGrade, gradeBusy }) {
 /* ═══════════════ Main Mentors ═══════════════ */
 export default function AdminMentors() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useAdminMentors();
+  const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState('card');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [showExport, setShowExport] = useState(false);
   const [creds, setCreds] = useState(null);
   const [copied, setCopied] = useState('');
+
   const copyToClipboard = (text, field) => {
     navigator.clipboard.writeText(text).then(() => { setCopied(field); setTimeout(() => setCopied(''), 2000); });
   };
@@ -148,6 +129,35 @@ export default function AdminMentors() {
 
   const activeCount = rows.filter((m) => m.status !== 'frozen').length;
   const frozenCount = rows.filter((m) => m.status === 'frozen').length;
+
+  const filteredRows = useMemo(() => {
+    return rows.filter(m => {
+      if (statusFilter === 'active' && m.status === 'frozen') return false;
+      if (statusFilter === 'frozen' && m.status !== 'frozen') return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const n = fullName(m).toLowerCase();
+        return n.includes(q) || m.phone?.includes(q) || m.email?.includes(q);
+      }
+      return true;
+    });
+  }, [rows, search, statusFilter]);
+
+  const toggleFreeze = async (m) => {
+    const frozen = m.status === 'frozen';
+    try { 
+      await api.adminFreezeMentor(token, m.id, !frozen); 
+      refetch(); 
+    } catch (e) { alert(e.message || 'Ошибка'); }
+  };
+  
+  const archiveMentor = async (m) => {
+    if (!confirm(`Удалить ментора ${fullName(m)}?`)) return;
+    try { 
+      await api.adminDeleteMentor(token, m.id); 
+      refetch(); 
+    } catch (e) { alert(e.message || 'Ошибка'); }
+  };
 
   const save = async () => {
     setBusy(true); setErr('');
@@ -169,26 +179,12 @@ export default function AdminMentors() {
     finally { setBusy(false); }
   };
 
-  const [gradeBusy, setGradeBusy] = useState(null);
-
-  const setGrade = async (m, grade) => {
-    setGradeBusy(m.id);
-    try {
-      await api.adminUpdateMentor(token, m.id, { grade });
-      refetch();
-    } catch (e) {
-      alert(e.message || 'Не удалось изменить уровень');
-    } finally {
-      setGradeBusy(null);
-    }
-  };
-
   const edit = (m) => setForm({ id: m.id, firstName: m.firstName || m.first_name || '', lastName: m.lastName || m.last_name || '', phone: m.phone || '', email: m.email || '' });
 
   return (
     <div className="space-y-6 pb-8">
       <PageHeader title="Менторы" subtitle="Преподаватели филиала">
-        <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={rows.length === 0}>
+        <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={filteredRows.length === 0}>
           <Download size={14} /> Экспорт
         </button>
         <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
@@ -203,32 +199,136 @@ export default function AdminMentors() {
         <Kpi Icon={UserX} title="Заморожены" value={frozenCount}  tone="danger" />
       </div>
 
-      {/* ═══ Mentor Cards ═══ */}
+      {/* ═══ Search + View Toggle ═══ */}
+      <div className="flex items-center gap-3 animate-fade-in stagger-3 mb-6 mt-6">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Поиск по имени, email или телефону…"
+          className="flex-1"
+        />
+        {/* Status filter tabs */}
+        <div className="hidden sm:flex items-center gap-1 p-1 rounded-[12px] bg-base-100 border border-base-300">
+          {[
+            { key: 'all', label: 'Все', count: rows.length },
+            { key: 'active', label: 'Активные', count: activeCount },
+            { key: 'frozen', label: 'Заморожены', count: frozenCount },
+          ].map(f => (
+            <button
+              key={f.key}
+              onClick={() => setStatusFilter(f.key)}
+              className={`px-3 py-1.5 rounded-[12px] text-[11px] font-bold transition-all duration-200 ${
+                statusFilter === f.key
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-base-content/50 hover:text-base-content'
+              }`}
+            >
+              {f.label} ({f.count})
+            </button>
+          ))}
+        </div>
+        {/* View toggle */}
+        <div className="flex items-center gap-1 p-1 rounded-[12px] bg-base-100 border border-base-300">
+          <button
+            onClick={() => setViewMode('card')}
+            className={`w-8 h-8 rounded-[12px] flex items-center justify-center transition-all ${
+              viewMode === 'card'
+                ? 'bg-primary/10 text-primary'
+                : 'text-base-content/50 hover:text-base-content'
+            }`}
+          >
+            <LayoutGrid size={14} />
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`w-8 h-8 rounded-[12px] flex items-center justify-center transition-all ${
+              viewMode === 'table'
+                ? 'bg-primary/10 text-primary'
+                : 'text-base-content/50 hover:text-base-content'
+            }`}
+          >
+            <List size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* ═══ Mentor List ═══ */}
       {isLoading ? (
         <RowSkeleton count={4} />
       ) : error ? (
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
-      ) : rows.length === 0 ? (
+      ) : filteredRows.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="Нет менторов"
-          hint="Добавьте первого преподавателя"
+          title={search ? 'Попробуйте изменить запрос' : 'Нет менторов'}
+          hint={search ? undefined : 'Добавьте первого преподавателя'}
+          action={!search ? (
+            <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
+              <Plus size={14} /> Добавить
+            </button>
+          ) : undefined}
         />
-      ) : (
+      ) : viewMode === 'card' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {rows.map((m) => (
+          {filteredRows.map((m) => (
             <MentorCard
               key={m.id}
               m={m}
               onEdit={edit}
-              onGrade={setGrade}
-              gradeBusy={gradeBusy}
+              onFreeze={toggleFreeze}
+              onDelete={archiveMentor}
             />
           ))}
         </div>
+      ) : (
+        <div className="card bg-base-100 overflow-hidden animate-fade-in">
+          <div className="overflow-x-auto">
+            <table className="table w-full text-[13px]">
+              <thead>
+                <tr>
+                  <th>№</th>
+                  <th>Имя</th>
+                  <th>Email</th>
+                  <th>Телефон</th>
+                  <th>Грейд</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.map((m, i) => {
+                  const status = STATUS_COLORS[m.status] || STATUS_COLORS.active;
+                  const grade = GRADES.find((g) => g.value === (m.grade || '')) || GRADES[0];
+                  return (
+                    <tr key={m.id} className="hover:bg-base-200 cursor-pointer" onClick={() => navigate(`/mentors/${m.id}`)}>
+                      <td>
+                        <div className="flex items-center gap-2">
+                           <span className="text-base-content/40 font-mono text-[11px] tabular-nums">{i + 1}.</span>
+                           <span className="font-semibold text-base-content">{fullName(m)}</span>
+                        </div>
+                      </td>
+                      <td className="text-base-content/70">{m.email || '—'}</td>
+                      <td className="text-primary font-medium">{m.phone || '—'}</td>
+                      <td>
+                         <span className={`inline-flex items-center gap-1 text-[11px] font-bold ${grade.className}`}>
+                           <Award size={11} /> {grade.label}
+                         </span>
+                      </td>
+                      <td>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                          style={{ background: status.bg, color: status.text }}>
+                          {status.label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
-      <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="mentors" data={rows} />
+      <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="mentors" data={filteredRows} />
 
       {/* ═══ Create/Edit Modal ═══ */}
       {form && (

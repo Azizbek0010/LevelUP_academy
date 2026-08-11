@@ -1009,15 +1009,35 @@ export default function AdminGroups() {
                         </span>
                       </td>
                       <td onClick={(e) => e.stopPropagation()}>
-                        {!archived && (
-                          <button
-                            className="btn btn-xs btn-ghost hover:text-primary hover:bg-primary/10"
-                            onClick={(e) => { e.stopPropagation(); openEdit(g); }}
-                            title="Изменить группу"
-                          >
-                            <Pencil size={12} />
-                          </button>
-                        )}
+                        <div className="flex items-center gap-1 justify-end">
+                          {!archived && (
+                            <button
+                              className="btn btn-xs btn-ghost hover:text-primary hover:bg-primary/10"
+                              onClick={(e) => { e.stopPropagation(); openEdit(g); }}
+                              title="Изменить группу"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          )}
+                          {!archived && (
+                            <button
+                              className="btn btn-xs btn-ghost hover:text-warning hover:bg-warning/10"
+                              onClick={(e) => { e.stopPropagation(); handleArchiveClick(g); }}
+                              title="Архивировать"
+                            >
+                              <Archive size={14} />
+                            </button>
+                          )}
+                          {archived && (
+                            <button
+                              className="btn btn-xs btn-ghost hover:text-success hover:bg-success/10"
+                              onClick={(e) => { e.stopPropagation(); handleArchiveClick(g); }}
+                              title="Восстановить из архива"
+                            >
+                              <ArchiveRestore size={14} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
