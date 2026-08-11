@@ -8,8 +8,18 @@ function createClient(name, options = {}) {
   return client;
 }
 
-/** Main client: cache, presence, leaderboards (ZSET). */
-export const redis = createClient('main');
+/**
+ * Main client: cache (orgAccessGate), rate limiter, presence, leaderboards.
+ * `commandTimeout` — без него один запрос к деградировавшему Redis (Upstash,
+ * квота исчерпана — 11.08.2026) реально висит ~2с (замерено), потому что
+ * ioredis успевает переподключиться и повторить команду, прежде чем она
+ * дойдёт до вызывающего кода. Весь этот путь и так уже обёрнут в try/catch
+ * с фолбэком на Postgres — таймаут просто заставляет фолбэк срабатывать
+ * быстро, а не после долгого ожидания. Только на `main`: у BullMQ-соединения
+ * и pub/sub-пары свои долгоживущие блокирующие команды, которым короткий
+ * таймаут сломает работу.
+ */
+export const redis = createClient('main', { commandTimeout: 400 });
 
 /** Dedicated pub/sub pair for @socket.io/redis-adapter. */
 export const redisPub = createClient('pub');

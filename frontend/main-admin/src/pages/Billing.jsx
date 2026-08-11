@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { useDashboard, usePricing } from '../queries.js';
 import { fmt } from '../format.js';
-import { tierForStudents, tierRange, tierPriceLabel } from '../lib/pricing.js';
+import { tierForUsers, tierRange, tierPriceLabel } from '../lib/pricing.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../components/Skeleton.jsx';
 
@@ -45,10 +45,10 @@ function Kpi({ Icon, tint, title, value, unit, accent }) {
 }
 
 function exportCsv(partners, tiers, cur) {
-  const header = ['Партнёр', 'Филиалы', 'Ученики', 'Тариф', 'Итого/мес', 'Валюта'];
+  const header = ['Партнёр', 'Филиалы', 'Пользователи', 'Тариф', 'Итого/мес', 'Валюта'];
   const rows = partners.map((p) => {
-    const t = tierForStudents(tiers, p.students);
-    return [p.name, p.branches, p.students, t?.label ?? '—', p.monthlyBill ?? 0, cur];
+    const t = tierForUsers(tiers, p.totalUsers);
+    return [p.name, p.branches, p.totalUsers, t?.label ?? '—', p.monthlyBill ?? 0, cur];
   });
   const csv = [header, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -68,8 +68,8 @@ export default function Billing() {
   const partners = dash?.partners ?? [];
   const cur = pricing?.currency || dash?.totals?.currency || 'UZS';
 
-  const [previewStudents, setPreviewStudents] = useState(120);
-  const previewTier = tiers.length ? tierForStudents(tiers, previewStudents) : null;
+  const [previewUsers, setPreviewUsers] = useState(120);
+  const previewTier = tiers.length ? tierForUsers(tiers, previewUsers) : null;
 
   const totalIncome = dash?.totals?.ourMonthlyIncome
     ?? partners.reduce((s, p) => s + (p.monthlyBill || 0), 0);
@@ -82,7 +82,7 @@ export default function Billing() {
     <div className="space-y-5">
       <PageHeader
         title="Тарифы и биллинг"
-        subtitle={`Цена зависит от числа активных учеников, филиалы включены безлимитом (в ${cur})`}
+        subtitle={`Цена зависит от общего числа пользователей (ученики+родители+сотрудники), филиалы включены безлимитом (в ${cur})`}
       >
         {partners.length > 0 && tiers.length > 0 && (
           <button className="btn btn-outline btn-sm gap-2" onClick={() => exportCsv(partners, tiers, cur)}>
@@ -132,7 +132,7 @@ export default function Billing() {
               <div className="min-w-0">
                 <h2 className="font-extrabold text-lg leading-tight">Тарифная сетка</h2>
                 <p className="text-xs text-base-content/60 mt-0.5">
-                  Партнёр попадает в тариф по числу активных учеников
+                  Партнёр попадает в тариф по общему числу пользователей (ученики+родители+сотрудники)
                 </p>
               </div>
               <span className="ml-auto badge badge-ghost gap-1.5 shrink-0">
@@ -151,7 +151,7 @@ export default function Billing() {
                     <thead>
                       <tr>
                         <th>Тариф</th>
-                        <th>Учеников</th>
+                        <th>Пользователей</th>
                         <th className="text-right">Цена / мес</th>
                       </tr>
                     </thead>
@@ -197,19 +197,19 @@ export default function Billing() {
             <div className="card-body">
               <h2 className="card-title text-base mb-1">Калькулятор счёта</h2>
               <p className="text-xs text-base-content/55 mb-4">
-                Сколько заплатит центр с таким числом учеников
+                Сколько заплатит центр с таким числом пользователей (ученики+родители+сотрудники)
               </p>
 
               <label className="form-control w-full max-w-xs">
                 <span className="label-text text-xs mb-1 flex items-center gap-1.5">
-                  <GraduationCap size={13} /> Активных учеников
+                  <GraduationCap size={13} /> Всего пользователей
                 </span>
                 <input
                   type="number"
                   min={0}
                   className="input input-bordered input-sm tabular-nums"
-                  value={previewStudents}
-                  onChange={(e) => setPreviewStudents(Math.max(0, Number(e.target.value) || 0))}
+                  value={previewUsers}
+                  onChange={(e) => setPreviewUsers(Math.max(0, Number(e.target.value) || 0))}
                 />
               </label>
 
@@ -218,7 +218,7 @@ export default function Billing() {
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-sm text-base-content/60">Тариф</span>
                     <span className="font-semibold">
-                      {previewTier.label} · {tierRange(previewTier)} учеников
+                      {previewTier.label} · {tierRange(previewTier)} пользователей
                     </span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
@@ -258,19 +258,19 @@ export default function Billing() {
                       <tr>
                         <th>Партнёр</th>
                         <th className="text-right">Филиалы</th>
-                        <th className="text-right">Ученики</th>
+                        <th className="text-right">Пользователи</th>
                         <th>Тариф</th>
                         <th className="text-right">Итого / мес</th>
                       </tr>
                     </thead>
                     <tbody>
                       {partners.map((p) => {
-                        const t = tiers.length ? tierForStudents(tiers, p.students) : null;
+                        const t = tiers.length ? tierForUsers(tiers, p.totalUsers) : null;
                         return (
                           <tr key={p.id}>
                             <td className="font-medium">{p.name}</td>
                             <td className="text-right tabular-nums">{fmt(p.branches ?? 0)}</td>
-                            <td className="text-right tabular-nums">{fmt(p.students ?? 0)}</td>
+                            <td className="text-right tabular-nums">{fmt(p.totalUsers ?? 0)}</td>
                             <td>{t?.label ?? '—'}</td>
                             <td className="text-right tabular-nums font-semibold">
                               {fmt(p.monthlyBill ?? 0)}

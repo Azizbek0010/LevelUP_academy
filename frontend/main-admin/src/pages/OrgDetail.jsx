@@ -3,16 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Building2, GraduationCap, Wallet, Calendar,
   Globe, GitBranch, Landmark, UserPlus, RefreshCw,
-  TrendingUp, Shield, Clock, ChevronRight, Hash,
+  TrendingUp, Shield, Clock, ChevronRight, Hash, Users,
   LayoutDashboard, CreditCard, Info, KeyRound, Gift, Receipt,
 } from 'lucide-react';
 import { useDashboard, usePricing, useInvalidate, usePartnerFeatures, useOrgLedger } from '../queries.js';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { fmt, money, dateShort, ORG_STATUS } from '../format.js';
-import { tierForStudents, tierRange, tierPriceLabel } from '../lib/pricing.js';
+import { tierForUsers, tierRange, tierPriceLabel } from '../lib/pricing.js';
 import Avatar from '../components/Avatar.jsx';
 import OnboardModal from '../components/OnboardModal.jsx';
+import { Modal } from '../components/_ui.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
 
 const PAYMENT_METHODS = [
@@ -58,17 +59,25 @@ function AccessTab({ partner, token, invalidate }) {
   const [period, setPeriod] = useState(currentPeriod());
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [confirmPayment, setConfirmPayment] = useState(false);
+  const [confirmBonus, setConfirmBonus] = useState(null); // число месяцев или null
 
   const status = accessStatus(partner.accessUntil);
 
-  const submitPayment = async (e) => {
+  const askPayment = (e) => {
     e.preventDefault();
     if (!amount || Number(amount) <= 0) return;
+    setErr('');
+    setConfirmPayment(true);
+  };
+
+  const submitPayment = async () => {
     setBusy(true);
     setErr('');
     try {
       await api.recordPayment(token, partner.id, { amount: Number(amount), method, periodCovered: period });
       setAmount('');
+      setConfirmPayment(false);
       invalidate('dashboard', 'orgLedger');
     } catch (e2) {
       setErr(e2.message);
@@ -77,11 +86,13 @@ function AccessTab({ partner, token, invalidate }) {
     }
   };
 
-  const grantBonus = async (months) => {
+  const grantBonus = async () => {
+    const months = confirmBonus;
     setBusy(true);
     setErr('');
     try {
       await api.grantBonus(token, partner.id, months);
+      setConfirmBonus(null);
       invalidate('dashboard', 'orgLedger');
     } catch (e2) {
       setErr(e2.message);
@@ -89,6 +100,8 @@ function AccessTab({ partner, token, invalidate }) {
       setBusy(false);
     }
   };
+
+  const methodLabel = PAYMENT_METHODS.find((m) => m.value === method)?.label ?? method;
 
   return (
     <div className="space-y-5">
@@ -100,7 +113,7 @@ function AccessTab({ partner, token, invalidate }) {
       {err && <div className="alert alert-error text-sm"><span>{err}</span></div>}
 
       <div className="grid md:grid-cols-2 gap-5">
-        <form onSubmit={submitPayment} className="p-4 border border-base-200 rounded-2xl space-y-3">
+        <form onSubmit={askPayment} className="p-4 border border-base-200 rounded-2xl space-y-3">
           <h3 className="font-bold text-sm flex items-center gap-2"><Receipt size={15} className="text-lime-600" /> Записать оплату</h3>
           <input
             type="number" min="0" placeholder="Сумма, UZS" required
@@ -116,7 +129,7 @@ function AccessTab({ partner, token, invalidate }) {
             value={period} onChange={(e) => setPeriod(e.target.value)}
           />
           <button type="submit" className="btn btn-sm bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 w-full" disabled={busy}>
-            {busy ? <span className="loading loading-spinner loading-xs" /> : 'Записать'}
+            Записать
           </button>
         </form>
 
@@ -125,12 +138,50 @@ function AccessTab({ partner, token, invalidate }) {
           <p className="text-xs text-base-content/50">Продлевает доступ поверх текущего срока. Не считается выручкой.</p>
           <div className="flex gap-2">
             {[1, 2, 3].map((m) => (
-              <button key={m} type="button" className="btn btn-sm btn-outline flex-1" onClick={() => grantBonus(m)} disabled={busy}>
+              <button key={m} type="button" className="btn btn-sm btn-outline flex-1" onClick={() => setConfirmBonus(m)} disabled={busy}>
                 +{m} мес
               </button>
             ))}
           </div>
         </div>
+
+        <Modal
+          isOpen={confirmPayment}
+          onClose={() => !busy && setConfirmPayment(false)}
+          title="Подтвердите оплату"
+          size="sm"
+          actions={
+            <>
+              <button className="btn btn-ghost btn-sm" onClick={() => setConfirmPayment(false)} disabled={busy}>Отмена</button>
+              <button className="btn btn-sm bg-lime-400 hover:bg-lime-500 border-0 text-lime-950" onClick={submitPayment} disabled={busy}>
+                {busy ? <span className="loading loading-spinner loading-xs" /> : 'Подтвердить'}
+              </button>
+            </>
+          }
+        >
+          <p className="text-sm text-base-content/70">
+            Записать оплату <span className="font-bold">{money(Number(amount) || 0)}</span> ({methodLabel}) за период <span className="font-semibold">{period}</span> для «{partner.name}»?
+          </p>
+        </Modal>
+
+        <Modal
+          isOpen={confirmBonus != null}
+          onClose={() => !busy && setConfirmBonus(null)}
+          title="Подтвердите бонус"
+          size="sm"
+          actions={
+            <>
+              <button className="btn btn-ghost btn-sm" onClick={() => setConfirmBonus(null)} disabled={busy}>Отмена</button>
+              <button className="btn btn-sm bg-lime-400 hover:bg-lime-500 border-0 text-lime-950" onClick={grantBonus} disabled={busy}>
+                {busy ? <span className="loading loading-spinner loading-xs" /> : 'Подтвердить'}
+              </button>
+            </>
+          }
+        >
+          <p className="text-sm text-base-content/70">
+            Продлить доступ «{partner.name}» на <span className="font-bold">{confirmBonus} мес</span> бесплатно? Не считается выручкой.
+          </p>
+        </Modal>
       </div>
 
       <div>
@@ -249,13 +300,34 @@ function Kpi({ Icon, label, value, sub, tint, accent }) {
   );
 }
 
+function BillingRow({ Icon, tint, label, sub, value }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+      <span className="flex items-center gap-3 min-w-0">
+        <span
+          className="w-9 h-9 rounded-xl grid place-items-center shrink-0"
+          style={{ background: tint.bg, color: tint.fg }}
+        >
+          <Icon size={16} strokeWidth={2.2} />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-base-content/85 truncate">{label}</span>
+          {sub && <span className="block text-xs text-base-content/45 mt-0.5">{sub}</span>}
+        </span>
+      </span>
+      <span className="font-semibold tabular-nums text-sm shrink-0">{value}</span>
+    </div>
+  );
+}
+
 function BillingBreakdown({ partner, pricing, cur }) {
   if (!pricing) return <div className="flex justify-center py-8"><span className="loading loading-spinner opacity-40" /></div>;
 
-  // Цена зависит только от числа активных учеников, филиалы входят безлимитом.
-  // Прежняя разбивка (база + доп. филиалы + за ученика) считала по полям,
-  // которых в ответе бэкенда нет, и печатала нули.
-  const tier = tierForStudents(pricing.tiers, partner.students);
+  // Цена зависит от общего числа пользователей (ученики+родители+сотрудники),
+  // филиалы входят безлимитом. Пересчитано с "только ученики" 11.08.2026 —
+  // партнёр с 31 учеником, но 50 пользователями всего, тарифицируется по 50.
+  const totalUsers = partner.totalUsers ?? (partner.students + partner.parents + partner.staff);
+  const tier = tierForUsers(pricing.tiers, totalUsers);
   const calc = Number(tier?.price) || 0;
   const actual = partner.monthlyBill || 0;
   // договорной тариф не с чем сверять — расхождение показываем только по цене
@@ -263,37 +335,39 @@ function BillingBreakdown({ partner, pricing, cur }) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-base-200/40 rounded-2xl p-5 space-y-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-2 text-base-content/60">
-            <div className="w-7 h-7 rounded-lg bg-blue-50 grid place-items-center shrink-0">
-              <Landmark size={12} className="text-blue-600" />
+      <div className="rounded-2xl border border-base-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-lime-100 via-lime-50 to-transparent px-4 py-3.5 border-b border-base-200">
+          <div className="flex items-center gap-2.5">
+            <span className="w-9 h-9 rounded-xl bg-lime-400 text-lime-950 grid place-items-center shrink-0">
+              <Landmark size={16} strokeWidth={2.4} />
+            </span>
+            <div className="min-w-0">
+              <div className="font-extrabold text-sm leading-tight">{tier?.label ?? '—'}</div>
+              <div className="text-xs text-base-content/55 mt-0.5">бакет {tierRange(tier)} пользователей</div>
             </div>
-            Тариф
-          </span>
-          <span className="font-semibold">{tier?.label ?? '—'}</span>
+          </div>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-2 text-base-content/60">
-            <div className="w-7 h-7 rounded-lg bg-green-50 grid place-items-center shrink-0">
-              <GraduationCap size={12} className="text-green-600" />
-            </div>
-            Ученики: {fmt(partner.students)} (бакет {tierRange(tier)})
-          </span>
-          <span className="font-semibold tabular-nums">{tierPriceLabel(tier, cur)}</span>
+
+        <div className="divide-y divide-base-200">
+          <BillingRow
+            Icon={Users}
+            tint={{ bg: '#EDE9FE', fg: '#5B21B6' }}
+            label={`Пользователей: ${fmt(totalUsers)}`}
+            sub={`${fmt(partner.students)} учеников · ${fmt(partner.parents)} родителей · ${fmt(partner.staff)} сотрудников`}
+            value={tierPriceLabel(tier, cur)}
+          />
+          <BillingRow
+            Icon={GitBranch}
+            tint={{ bg: '#F3E8FF', fg: '#7E22CE' }}
+            label={`Филиалы: ${fmt(partner.branches)}`}
+            sub="входят в тариф безлимитом"
+            value={`0 ${cur}`}
+          />
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-2 text-base-content/60">
-            <div className="w-7 h-7 rounded-lg bg-purple-50 grid place-items-center shrink-0">
-              <GitBranch size={12} className="text-purple-600" />
-            </div>
-            Филиалы: {fmt(partner.branches)} (входят в тариф)
-          </span>
-          <span className="font-semibold tabular-nums">0 {cur}</span>
-        </div>
-        <div className="border-t border-base-300 pt-3 flex items-center justify-between">
-          <span className="font-bold">По тарифу / мес</span>
-          <span className="text-xl font-extrabold text-lime-600 tabular-nums">{tierPriceLabel(tier, cur)}</span>
+
+        <div className="bg-lime-50/70 border-t border-lime-200 px-4 py-4 flex items-center justify-between">
+          <span className="font-bold text-sm text-lime-950">По тарифу / мес</span>
+          <span className="text-2xl font-extrabold text-lime-700 tabular-nums">{tierPriceLabel(tier, cur)}</span>
         </div>
       </div>
       {diff && (
@@ -467,7 +541,7 @@ export default function OrgDetail() {
               accent
             />
             <Kpi Icon={Building2} label="Филиалы" value={fmt(partner.branches)} sub="активных" tint={{ bg: '#E0F2FE', fg: '#075985' }} />
-            <Kpi Icon={GraduationCap} label="Ученики" value={fmt(partner.students)} sub="в системе" tint={{ bg: '#EDE9FE', fg: '#5B21B6' }} />
+            <Kpi Icon={Users} label="Пользователи" value={fmt(partner.totalUsers ?? (partner.students + partner.parents + partner.staff))} sub={`${fmt(partner.students)} учеников`} tint={{ bg: '#EDE9FE', fg: '#5B21B6' }} />
             <Kpi Icon={Clock} label="Дней на платформе" value={String(daysSince)} sub={`с ${dateShort(partner.createdAt)}`} tint={{ bg: '#FFEDD5', fg: '#9A3412' }} />
           </div>
 
