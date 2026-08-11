@@ -14,6 +14,17 @@ import { aiReviewWorker } from './queues/workers/aiReview.worker.js';
 import { dailyDigestWorker, scheduleDailyDigestCron } from './queues/workers/dailyDigest.worker.js';
 import { startReminderLogging, stopReminderLogging } from './modules/super/reminders/reminders.listener.js';
 
+// ioredis шлёт AUTH сам, внутри своей connect-логики — если Redis отвечает
+// ReplyError'ом (не сетевым обрывом, а протокольным отказом — 11.08.2026 это
+// исчерпанная квота Upstash), reject этой внутренней команды не проходит
+// через client.on('error') (см. config/redis.js) и остаётся необработанным.
+// Дефолт Node — уронить процесс целиком, включая уже слушающий HTTP-порт.
+// Здесь именно это и был источник 502 на проде: недоступность Redis не
+// должна валить API, который на Redis не завязан (Postgres — отдельно).
+process.on('unhandledRejection', (err) => {
+  logger.error({ err }, 'Unhandled rejection — process kept alive');
+});
+
 const app = createApp();
 const httpServer = createServer(app);
 const io = initSockets(httpServer);
@@ -32,12 +43,25 @@ httpServer.listen(env.PORT, () => {
 // Starter-инстанс тянет оба: BullMQ-воркеры стартуют сайд-эффектом импорта
 // выше, здесь только регистрируются крон-джобы (то же самое, что раньше
 // делал worker.js на старте, до всех остальных импортов).
-// ⚠️ Trade-off: баг в обработчике очереди теперь может уронить весь процесс,
-// а не только доставку уведомлений — для одного учебного центра это принято.
-await scheduleOverdueCron();
-await scheduleBillingCron();
-await scheduleDueSoonCron();
-await scheduleDailyDigestCron();
+//
+// Каждый вызов — в своём try/catch: upsertJobScheduler бьёт в Redis, и когда
+// Redis недоступен (11.08.2026 — исчерпана квота Upstash), необработанный
+// reject top-level await ронял ВЕСЬ процесс, включая HTTP-сервер, который
+// секундой раньше уже начал слушать порт — API из-за кроны становился
+// недоступен целиком. Теперь недоступность одной крон-очереди не должна
+// валить остальные и тем более сам API.
+for (const [label, schedule] of [
+  ['overdue', scheduleOverdueCron],
+  ['billing', scheduleBillingCron],
+  ['due-soon', scheduleDueSoonCron],
+  ['daily-digest', scheduleDailyDigestCron],
+]) {
+  try {
+    await schedule();
+  } catch (err) {
+    logger.error({ err }, `Failed to schedule ${label} cron — continuing without it`);
+  }
+}
 startReminderLogging(); // AB-SUPER-REM: логирует payment.due/due_soon/debt.overdue в reminders (SEO)
 logger.info(
   'Queues+crons running in web process: notifications + overdue cron (09:00) + billing cron (1st 00:05, overdue 09:30) + due-soon cron (08:00) + ai-review + daily-digest cron (00:00 Tashkent) + reminder logging',
