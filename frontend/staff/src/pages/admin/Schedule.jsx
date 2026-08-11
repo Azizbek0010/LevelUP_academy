@@ -91,7 +91,10 @@ function EditTimeModal({ group, onClose, onSaved }) {
   return (
     <dialog className="modal modal-open">
       <div className="modal-box card bg-base-100 border border-base-300 max-w-sm">
-        <h3 className="font-bold text-lg mb-1">{group.name}</h3>
+        <div className="flex justify-between items-start mb-1">
+          <h3 className="font-bold text-lg">{group.name}</h3>
+          <button className="btn btn-ghost btn-sm btn-square -mt-1 -mr-1" onClick={onClose}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+        </div>
         <p className="text-[12px] text-base-content/45 mb-4">Дни и время начала занятий</p>
         {err && <div className="alert alert-error py-2 text-sm mb-3">{err}</div>}
         <div className="flex flex-wrap gap-1.5 mb-3">
@@ -246,7 +249,10 @@ export default function AdminSchedule() {
       {newRoomOpen && (
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300 max-w-sm">
-            <h3 className="font-bold text-lg mb-4">Новый кабинет</h3>
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="font-bold text-lg">Новый кабинет</h3>
+              <button className="btn btn-ghost btn-sm btn-square -mt-1 -mr-1" onClick={() => setNewRoomOpen(false)}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
             <div className="space-y-3">
               <input className="input input-bordered w-full" placeholder="Название (напр. 204)" value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} />
               <input type="number" min="1" className="input input-bordered w-full" placeholder="Вместимость (необязательно)" value={newRoomCapacity} onChange={(e) => setNewRoomCapacity(e.target.value)} />

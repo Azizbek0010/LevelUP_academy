@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } fr
 import {
   Send, ChevronLeft, MessageSquare, Lock, WifiOff, ArrowDown, AlertCircle, Check,
 } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
 import { api, USING_MOCKS } from '../api.js';
 import { getSocket } from '../socket.js';
@@ -199,9 +199,35 @@ export default function StaffChat({ variant = 'mentor' }) {
   }, []);
 
   const { data: contactsData, isLoading: contactsLoading } = useChatContacts();
-  // Ссылка обязана быть стабильной: массив стоит в зависимостях эффекта
-  // авто-выбора ниже, а `?? []` создавал бы новый массив на каждый рендер.
-  const contacts = useMemo(() => contactsData?.data ?? [], [contactsData]);
+  
+  // Admin rejimida barcha mentorlarni API orqali yuklab olamiz, toki hali xabar yozishilmagan mentorlar ham ro'yxatda tursin.
+  const { data: mentorsData, isLoading: mentorsLoading } = useQuery({
+    queryKey: ['admin-chat-mentors'],
+    queryFn: () => api.adminMentors(token),
+    enabled: !!token && variant === 'admin',
+  });
+
+  const contacts = useMemo(() => {
+    let list = contactsData?.data ?? [];
+    if (variant === 'admin' && mentorsData) {
+      const raw = mentorsData?.data || mentorsData || {};
+      const allMentors = raw.mentors || (Array.isArray(raw) ? raw : []);
+      const existingIds = new Set(list.map(c => c.id));
+      const additional = allMentors.filter(m => !existingIds.has(m.id)).map(m => ({
+        id: m.id,
+        first_name: m.firstName || m.first_name,
+        last_name: m.lastName || m.last_name,
+        peer_type: 'mentor',
+        unread_count: 0,
+        last_message: null,
+        last_message_at: null,
+      }));
+      list = [...list, ...additional];
+    }
+    return list;
+  }, [contactsData, mentorsData, variant]);
+
+  const isLoadingAll = contactsLoading || (variant === 'admin' && mentorsLoading);
 
   const activeContact = contacts.find((c) => c.id === activeId) ?? null;
   const roomKey = activeContact?.room_key ?? null;
@@ -470,7 +496,7 @@ export default function StaffChat({ variant = 'mentor' }) {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {contactsLoading ? (
+            {isLoadingAll ? (
               <div className="p-3 space-y-3">
                 {[0, 1, 2].map((i) => (
                   <div key={i} className="flex items-center gap-3">

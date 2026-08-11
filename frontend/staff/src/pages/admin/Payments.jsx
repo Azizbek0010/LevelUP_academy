@@ -15,11 +15,11 @@ import ExportDialog from '../../components/ExportDialog.jsx';
 import { Avatar, Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
 
 const STATUS = {
-  paid: { label: 'Оплачен', bg: '#2ECC7115', text: '#2ECC71', icon: CheckCircle2 },
-  partially_paid: { label: 'Частично', bg: '#10B98115', text: '#10B981', icon: Clock },
-  pending: { label: 'Ожидает', bg: '#6B728015', text: '#6B7280', icon: AlertCircle },
-  overdue: { label: 'Просрочен', bg: '#E8543E15', text: '#E8543E', icon: AlertTriangle },
-  cancelled: { label: 'Отменён', bg: '#6B728008', text: '#6B7280', icon: AlertCircle },
+  paid: { label: 'Оплачен', className: 'bg-success/10 text-success', icon: CheckCircle2 },
+  partially_paid: { label: 'Частично', className: 'bg-success/10 text-success', icon: Clock },
+  pending: { label: 'Ожидает', className: 'bg-base-200 text-base-content/70', icon: AlertCircle },
+  overdue: { label: 'Просрочен', className: 'bg-error/10 text-error', icon: AlertTriangle },
+  cancelled: { label: 'Отменён', className: 'bg-base-200 text-base-content/70', icon: AlertCircle },
 };
 
 const STATUS_LIST = ['all', 'pending', 'partially_paid', 'paid', 'overdue', 'cancelled'];
@@ -83,8 +83,7 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
           </h3>
           <p className="text-[11px] text-base-content/45 mt-0.5 truncate">{inv.group || inv.groupName || '—'}</p>
         </div>
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 ml-2"
-          style={{ background: st.bg, color: st.text }}>
+        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 ml-2 ${st.className}`}>
           <StIcon size={12} /> {st.label}
         </span>
       </div>
@@ -500,7 +499,10 @@ export default function AdminPayments() {
       {pay && createPortal(
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-1">Приём оплаты</h3>
+            <div className="flex justify-between items-start mb-1">
+              <h3 className="font-bold text-lg">Приём оплаты</h3>
+              <button className="btn btn-ghost btn-sm btn-square -mt-1 -mr-1" onClick={() => setPay(null)}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
             <p className="text-sm text-base-content/45 mb-4">{pay.student} · {pay.group || '—'}</p>
             <p className="text-xs text-base-content/45 mb-3">
               Счёт: {dateShort(pay.dueDate || pay.due_date)} · Остаток: {money(Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0))}
@@ -534,7 +536,10 @@ export default function AdminPayments() {
       {showAdHoc && createPortal(
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300 max-w-lg">
-            <h3 className="font-bold text-lg mb-1">Разовый платёж</h3>
+            <div className="flex justify-between items-start mb-1">
+              <h3 className="font-bold text-lg">Разовый платёж</h3>
+              <button className="btn btn-ghost btn-sm btn-square -mt-1 -mr-1" onClick={() => { setShowAdHoc(false); setErr(''); setStudentSearch(''); }}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
             <p className="text-sm text-base-content/45 mb-4">Создать счёт и принять оплату вне графика начислений</p>
             {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
 
@@ -641,13 +646,15 @@ export default function AdminPayments() {
                 <h3 className="font-bold text-lg">{detail.student || '—'}</h3>
                 <p className="text-sm text-base-content/45">{detail.group || '—'}</p>
               </div>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                style={{ background: (STATUS[detail.status] || STATUS.pending).bg, color: (STATUS[detail.status] || STATUS.pending).text }}>
-                {(STATUS[detail.status] || STATUS.pending).icon && (
-                  <StatusIcon s={detail.status} />
-                )}
-                {(STATUS[detail.status] || STATUS.pending).label}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${(STATUS[detail.status] || STATUS.pending).className}`}>
+                  {(STATUS[detail.status] || STATUS.pending).icon && (
+                    <StatusIcon s={detail.status} />
+                  )}
+                  {(STATUS[detail.status] || STATUS.pending).label}
+                </span>
+                <button className="btn btn-ghost btn-sm btn-square -mt-1 -mr-1" onClick={() => { setDetail(null); setErr(''); }}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+              </div>
             </div>
 
             {/* Summary */}

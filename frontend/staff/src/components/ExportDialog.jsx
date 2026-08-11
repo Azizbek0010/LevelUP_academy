@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Download, FileSpreadsheet, FileText, FileDown, FileCode2, X, Check, AlertTriangle } from 'lucide-react';
 import { exportData, PAGE_EXPORT_CONFIG } from '../utils/exportUtils.js';
 
@@ -20,24 +21,6 @@ const FORMAT_OPTIONS = [
     color: '#E8543E',
     bg: 'rgba(232,84,62,0.10)',
     desc: 'Документ с заголовком',
-  },
-  {
-    key: 'markdown',
-    label: 'Markdown',
-    ext: '.md',
-    icon: FileCode2,
-    color: '#7C3AED',
-    bg: 'rgba(124,58,237,0.10)',
-    desc: 'Текстовый файл (.md)',
-  },
-  {
-    key: 'csv',
-    label: 'CSV',
-    ext: '.csv',
-    icon: FileText,
-    color: '#3B82F6',
-    bg: 'rgba(59,130,246,0.10)',
-    desc: 'Текстовый файл (Cyrillic)',
   },
 ];
 
@@ -115,7 +98,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <dialog className="modal modal-open">
       <div className="modal-box card bg-base-100 border border-base-300 max-w-md shadow-2xl p-0 overflow-hidden" style={{ borderTop: `4px solid ${theme.borderColor}` }}>
         {/* Header */}
@@ -243,6 +226,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
         </div>
       </div>
       <div className="modal-backdrop" onClick={onClose} />
-    </dialog>
+    </dialog>,
+    document.body
   );
 }

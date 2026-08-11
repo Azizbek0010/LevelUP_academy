@@ -44,21 +44,7 @@ function Kpi({ Icon, tint, title, value, unit, accent }) {
   );
 }
 
-function exportCsv(partners, tiers, cur) {
-  const header = ['Партнёр', 'Филиалы', 'Ученики', 'Тариф', 'Итого/мес', 'Валюта'];
-  const rows = partners.map((p) => {
-    const t = tierForStudents(tiers, p.students);
-    return [p.name, p.branches, p.students, t?.label ?? '—', p.monthlyBill ?? 0, cur];
-  });
-  const csv = [header, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `billing-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+
 
 export default function Billing() {
   const { data: pricing, isLoading: pLoading, error: pError } = usePricing();
@@ -84,11 +70,6 @@ export default function Billing() {
         title="Тарифы и биллинг"
         subtitle={`Цена зависит от числа активных учеников, филиалы включены безлимитом (в ${cur})`}
       >
-        {partners.length > 0 && tiers.length > 0 && (
-          <button className="btn btn-outline btn-sm gap-2" onClick={() => exportCsv(partners, tiers, cur)}>
-            <Download size={15} /> Экспорт CSV
-          </button>
-        )}
       </PageHeader>
 
       {pLoading ? (

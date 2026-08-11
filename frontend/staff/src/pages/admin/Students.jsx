@@ -45,15 +45,15 @@ function Lbl({ children }) {
   return <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">{children}</label>;
 }
 
-const STATUS_COLORS = {
-  active: { bg: '#2ECC7115', text: '#2ECC71', label: 'Активен' },
-  frozen: { bg: '#E8543E15', text: '#E8543E', label: 'Заморожен' },
+const STATUS_CLASSES = {
+  active: { className: 'bg-success/10 text-success', label: 'Активен' },
+  frozen: { className: 'bg-error/10 text-error', label: 'Заморожен' },
 };
 
 /* ═══════════════ Stat Card ═══════════════ */
 /* ═══════════════ Student Card ═══════════════ */
 function StudentCard({ s, onNavigate }) {
-  const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
+  const status = STATUS_CLASSES[s.status] || STATUS_CLASSES.active;
   const groupNames = (s.groups || []).map((g) => g.name).filter(Boolean);
 
   return (
@@ -68,8 +68,7 @@ function StudentCard({ s, onNavigate }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-bold text-base-content truncate">{fullName(s)}</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-              style={{ background: status.bg, color: status.text }}>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${status.className}`}>
               {status.label}
             </span>
           </div>
@@ -302,15 +301,14 @@ export default function AdminStudents() {
               <tbody>
                 {filteredRows.map((s, i) => {
                   const g0 = (s.groups || [])[0];
-                  const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
+                  const status = STATUS_CLASSES[s.status] || STATUS_CLASSES.active;
                   return (
                     <tr key={s.id} className="hover:bg-base-200 cursor-pointer" onClick={() => navigate(`/students/${s.id}`)}>
                       <td>
                         <div className="flex items-center gap-2">
                           <span className="text-base-content/40 font-mono text-[11px] tabular-nums">{i + 1}.</span>
                           <span className="font-semibold text-base-content">{fullName(s)}</span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
-                            style={{ background: status.bg, color: status.text }}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${status.className}`}>
                             {status.label}
                           </span>
                         </div>
@@ -338,9 +336,12 @@ export default function AdminStudents() {
       {form && (
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300 max-w-6xl p-0 max-h-[85vh] flex flex-col">
-            <div className="px-8 pt-7 pb-5 border-b border-base-200 shrink-0">
-              <h3 className="font-extrabold text-2xl text-base-content">Новый студент</h3>
-              <p className="text-[13px] text-base-content/50 mt-1">Заполните данные — логин и пароль сгенерируются автоматически</p>
+            <div className="flex justify-between items-start px-8 pt-7 pb-5 border-b border-base-200 shrink-0">
+              <div>
+                <h3 className="font-extrabold text-2xl text-base-content">Новый студент</h3>
+                <p className="text-[13px] text-base-content/50 mt-1">Заполните данные — логин и пароль сгенерируются автоматически</p>
+              </div>
+              <button className="btn btn-ghost btn-sm btn-square" onClick={() => setForm(null)}><Check size={18} className="hidden" /><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
             </div>
 
             <div className="px-8 pt-5 pb-6 overflow-y-auto">
@@ -506,7 +507,10 @@ export default function AdminStudents() {
       {creds && (
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-2">Данные для входа</h3>
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="font-bold text-lg">Данные для входа</h3>
+              <button className="btn btn-ghost btn-sm btn-square" onClick={() => setCreds(null)}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
             <p className="text-sm text-base-content/45 mb-4">Передайте студенту. Пароль показывается один раз.</p>
             <div className="space-y-2">
               <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">

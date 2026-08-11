@@ -23,11 +23,11 @@ const CATEGORY_COLORS_LIGHT = {
   Utility: 'rgba(232,84,62,0.12)', Other: 'rgba(46,204,113,0.12)',
 };
 
-const STATUS_MAP = {
-  paid: { bg: 'rgba(46,204,113,0.14)', color: '#2ECC71', label: 'Оплачен', dot: '#2ECC71' },
-  pending: { bg: 'rgba(245,158,11,0.14)', color: '#F59E0B', label: 'Ожидает', dot: '#F59E0B' },
-  rejected: { bg: 'rgba(232,84,62,0.14)', color: '#E8543E', label: 'Отклонён', dot: '#E8543E' },
-  cancelled: { bg: 'rgba(46,204,113,0.14)', color: '#2ECC71', label: 'Отменён', dot: '#2ECC71' },
+const STATUS_CLASSES = {
+  paid: { className: 'bg-success/10 text-success', label: 'Оплачен', dot: 'bg-success' },
+  pending: { className: 'bg-warning/10 text-warning', label: 'Ожидает', dot: 'bg-warning' },
+  rejected: { className: 'bg-error/10 text-error', label: 'Отклонён', dot: 'bg-error' },
+  cancelled: { className: 'bg-base-200 text-base-content/70', label: 'Отменён', dot: 'bg-base-content/40' },
 };
 
 const PAYMENT_METHODS = ['Наличные', 'Карта'];
@@ -135,13 +135,12 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
 
 // ─── Status Badge ───
 function StatusBadge({ status }) {
-  const config = STATUS_MAP[status] || STATUS_MAP.paid;
+  const config = STATUS_CLASSES[status] || STATUS_CLASSES.paid;
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap"
-      style={{ background: config.bg, color: config.color }}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${config.className}`}
     >
-      <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: config.dot }} />
+      <span className={`w-1.5 h-1.5 rounded-full animate-pulse-dot ${config.dot}`} />
       {config.label}
     </span>
   );

@@ -114,35 +114,13 @@ export default function SuperStats() {
     color: CHART_SERIES[i % CHART_SERIES.length],
   }));
 
-  const handleExportCSV = () => {
-    let csv = '﻿';
-    csv += `"Статистика ${getOrgName()}","${new Date().toLocaleDateString('ru-RU')}","Период: ${periodLabel}"\n\n`;
-    csv += `"Выручка за период","Выручка за всё время","Долг","Ученики","Доля долга"\n`;
-    csv += `${t.periodRevenue ?? 0},${t.revenue},${t.outstandingDebt ?? 0},${t.activeStudents},${debtRatio}%\n\n`;
-    csv += `"Филиал","Выручка","Долг","Доля"\n`;
-    branches.forEach((b) => {
-      csv += `"${b.name}",${b.revenue ?? 0},${b.debt ?? 0},${(b.share ?? 0).toFixed(1)}%\n`;
-    });
-    if (methodData.length) {
-      csv += `\n"Способ оплаты","Сумма"\n`;
-      methodData.forEach((m) => { csv += `"${m.name}",${m.value}\n`; });
-    }
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${orgSlug()}_stats_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-  };
+
 
   return (
     <div className="space-y-6">
       <PageHeader title="Статистика" subtitle="Финансовые показатели организации">
         <div className="flex items-center gap-3">
           <FilterPills options={PERIODS.map((p) => ({ key: p.key, label: p.label }))} value={period} onChange={setPeriod} />
-          <button className="btn btn-primary btn-sm gap-1.5" onClick={handleExportCSV}>
-            <Download size={16} /> Экспорт CSV
-          </button>
         </div>
       </PageHeader>
 

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
   Wallet, TriangleAlert, Receipt, TrendingUp, Users, GraduationCap, Clock,
-  Building2, CalendarDays, Sparkles, ChevronRight, CreditCard, Coins, BellRing, HandMetal,
+  Building2, CalendarDays, Sparkles, ChevronRight, CreditCard, Coins, BellRing,
 } from 'lucide-react';
 import { fmt, money } from '../../format.js';
 import { useAdminDashboard, useAdminInvoices } from '../../queries.js';
@@ -85,15 +85,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/70 p-6 md:p-8 text-white shadow-lg">
-          <h1 className="text-2xl md:text-3xl font-extrabold mb-2 tracking-tight"><HandMetal size={24} className="inline-block mr-2" /> Добро пожаловать, {adminName}!</h1>
-          <p className="text-white/80 text-sm md:text-base max-w-xl">
-            Сегодня {today}. Ознакомьтесь с последними показателями, оплатами и активностью академии.
-          </p>
-        <Sparkles className="absolute -right-4 -top-4 w-32 h-32 text-white opacity-10 rotate-12" />
-        <div className="absolute right-20 -bottom-10 w-40 h-40 bg-white rounded-full opacity-5 blur-2xl"></div>
-      </div>
+
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         <div className="xl:col-span-2 space-y-5">
