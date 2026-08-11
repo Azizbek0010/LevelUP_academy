@@ -4,6 +4,30 @@
 > Statistika qo'lda YOZILMAYDI — real raqamlar faqat `done.md` da.
 > V1 SCOPE: naqd + karta (full/split). Click/Payme/UzCard/Humo — FAQAT v3. Nasiya/рассрочка — V1 DA YO'Q (qaror 2026-07-05, tasdiqlangan 2026-07-07).
 
+## 🔴 SHOSHILINCH — Upstash Redis limit tugagan (11.08.2026 topildi)
+
+`npm test` orqali aniqlandi: `ERR max requests limit exceeded. Limit: 500000, Usage: 500001`
+— Upstash free-tier oyliq so'rov limiti tugagan. Ta'sir qiladi: leaderboard
+(Redis ZSET — rank butun kodda `null`/`undefined` bo'lib qoladi), OTP
+(forgotPassword/resetPassword ishlamaydi), ehtimol BullMQ navbatlar ham.
+**Bu proddagi PLATFORMA UCHUN HAM haqiqiy** — faqat local test emas, chunki
+`.env` bir xil Upstash'ga qaraydi (Path A, boshqa fayllarda yozilganidek).
+Yechim: Upstash dashboard → planni ko'tarish yoki keyingi oyni kutish (qachon
+reset bo'lishini Upstash'dan tekshirish kerak). Claude o'zi to'lov qila
+olmaydi — Karis'ning ishi.
+
+## Backend — Main Admin: tarif/fича-flag/to'lov/xarajat/anons (Karis, 11.08.2026)
+
+> Katta blok — to'liq reja `C:\Users\user\.claude\plans\playful-moseying-conway.md`.
+> 6 ta yangi migratsiya (M1-M6) + backfill (kritik xato topildi va tuzatildi —
+> `access_until IS NULL` yangi ustunni backfill qilmasdan barcha mavjud
+> organizatsiyalarni login'da bloklab qo'ygan edi, testlar orqali deploy'dan
+> OLDIN topildi). Backend to'liq: fича-katalog CRUD, org-level access gate
+> (login + har bir so'rov, 10 ta router'ga ulandi), AI-review gate, to'lov/
+> bonus/про-рейт, platform_expenses + balans, SEO fича so'rovlari, anons bagi
+> tuzatildi + nishonlash. **Frontend hali yo'q** (Main Admin va staff/super
+> ilovalarida) — keyingi qadam.
+
 ## Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Karis, 09.08.2026) ✅
 
 > Backend'ga tegishli bo'lgan hammasi — Karis qildi (Claude bilan birga, shu

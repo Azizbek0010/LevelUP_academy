@@ -406,3 +406,21 @@ export const setShopItemArchived = asyncHandler(async (req, res) => {
   });
   res.json({ item });
 });
+
+// --- анонсы от Main Admin (только чтение — раньше их не было видно вообще) ---
+export const listPlatformAnnouncements = asyncHandler(async (req, res) => {
+  res.json({ announcements: await service.listPlatformAnnouncements(orgId(req)) });
+});
+
+// --- каталог платных фич + свои заявки (SEO не переключает сам, только просит) ---
+export const getFeatureCatalog = asyncHandler(async (req, res) => {
+  res.json({ catalog: await service.getFeatureCatalog(orgId(req)) });
+});
+
+export const createFeatureRequest = asyncHandler(async (req, res) => {
+  res.status(201).json({ request: await service.createFeatureRequest(orgId(req), req.body, req.user.id) });
+});
+
+export const listOwnFeatureRequests = asyncHandler(async (req, res) => {
+  res.json({ requests: await service.listOwnFeatureRequests(orgId(req)) });
+});

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
+import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
 import attendanceRoutes from './attendance/attendance.routes.js';
 import homeworkRoutes from './homework/homework.routes.js';
 import testsRoutes from './tests/tests.routes.js';
@@ -18,7 +19,7 @@ import studentsRoutes from './students/students.routes.js';
  */
 const router = Router();
 
-router.use(authenticate, authorize('mentor', 'admin'));
+router.use(authenticate, orgAccessGate, authorize('mentor', 'admin'));
 
 router.use('/attendance', attendanceRoutes);
 router.use('/homework', homeworkRoutes);

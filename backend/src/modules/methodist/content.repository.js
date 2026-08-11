@@ -1,5 +1,15 @@
 import { pool } from '../../config/db.js';
 
+/** Включён ли партнёру платный AI-review (Main Admin решает — org_feature_flags). */
+export function isAiReviewEnabledForOrg(orgId, db = pool) {
+  return db
+    .query(
+      `SELECT enabled FROM org_feature_flags WHERE organization_id = $1 AND feature_key = 'ai_review'`,
+      [orgId],
+    )
+    .then((r) => r.rows[0]?.enabled ?? false);
+}
+
 // ==================== ТИПЫ ОБУЧЕНИЯ ====================
 export function insertTrainingType({ orgId, createdBy, name, description, icon, aiReviewEnabled }, db = pool) {
   return db

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
+import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
 import * as ctrl from './coins.controller.js';
 import { historyQuerySchema } from './coins.schemas.js';
 
@@ -50,6 +51,7 @@ const router = Router();
 router.get(
   '/me',
   authenticate,
+  orgAccessGate,
   authorize('student'),
   validate({ query: historyQuerySchema }),
   ctrl.getMyCoins,

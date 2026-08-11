@@ -1048,3 +1048,75 @@ export function setTrainingTypePrice(id, orgId, price, maxStudents, client = poo
     )
     .then((r) => r.rows[0] ?? null);
 }
+
+// ---------- анонсы платформы (Main Admin → нам) — read-only для SEO ----------
+
+/** Раньше Main Admin писал в platform_announcements, а SEO их вообще не мог
+ * прочитать — не было ни роута, ни фронт-страницы (баг, найден 11.08.2026).
+ * `all-partners`/`all-seo` — видно всем; `specific` — только если наша
+ * organization_id есть в platform_announcement_recipients. */
+// ---------- каталог платных фич + свои заявки (SEO не переключает сам) ----------
+
+export function listActiveAddonCatalog(client = pool) {
+  return client
+    .query(`SELECT feature_key, label, price FROM platform_addon_prices WHERE is_active = true ORDER BY created_at ASC`)
+    .then((r) => r.rows);
+}
+
+export function getOwnFeatureFlags(orgId, client = pool) {
+  return client
+    .query(`SELECT feature_key, enabled FROM org_feature_flags WHERE organization_id = $1`, [orgId])
+    .then((r) => r.rows);
+}
+
+export function findPendingFeatureRequest(orgId, featureKey, type, client = pool) {
+  return client
+    .query(
+      `SELECT id FROM platform_feature_requests
+        WHERE organization_id = $1 AND feature_key = $2 AND type = $3 AND status = 'pending'`,
+      [orgId, featureKey, type],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function insertFeatureRequest({ orgId, featureKey, type, note, requestedBy }, client = pool) {
+  return client
+    .query(
+      `INSERT INTO platform_feature_requests (organization_id, feature_key, type, note, requested_by)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [orgId, featureKey, type, note ?? null, requestedBy],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function listOwnFeatureRequests(orgId, client = pool) {
+  return client
+    .query(
+      `SELECT fr.*, ap.label AS feature_label
+         FROM platform_feature_requests fr
+         LEFT JOIN platform_addon_prices ap ON ap.feature_key = fr.feature_key
+        WHERE fr.organization_id = $1
+        ORDER BY fr.created_at DESC`,
+      [orgId],
+    )
+    .then((r) => r.rows);
+}
+
+export function listPlatformAnnouncementsForOrg(orgId, client = pool) {
+  return client
+    .query(
+      `SELECT a.id, a.title, a.body, a.target_type, a.created_at
+         FROM platform_announcements a
+        WHERE a.deleted_at IS NULL
+          AND (
+            a.target_type IN ('all-partners', 'all-seo')
+            OR (a.target_type = 'specific' AND EXISTS (
+                  SELECT 1 FROM platform_announcement_recipients r
+                   WHERE r.announcement_id = a.id AND r.organization_id = $1
+                ))
+          )
+        ORDER BY a.created_at DESC`,
+      [orgId],
+    )
+    .then((r) => r.rows);
+}

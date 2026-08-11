@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
+import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
 import {
   createBranchSchema,
   createAdminSchema,
@@ -25,6 +26,7 @@ import {
   updateShopItemSchema,
   setShopItemArchivedSchema,
   listShopItemsQuery,
+  createFeatureRequestSchema,
 } from './super.schemas.js';
 import * as ctrl from './super.controller.js';
 import * as discipline from '../discipline/discipline.controller.js';
@@ -38,7 +40,7 @@ import {
 const router = Router();
 
 // вся панель — только SEO (владелец организации-партнёра); scope = своя org
-router.use(authenticate, authorize('seo'));
+router.use(authenticate, orgAccessGate, authorize('seo'));
 
 /**
  * @openapi
@@ -1406,5 +1408,13 @@ router.patch('/shop/items/:id/archive', validate({ params: idParam, body: setSho
  *       404: { $ref: '#/components/responses/NotFound' }
  */
 router.delete('/discipline-rules/:id', validate({ params: idParam }), discipline.deleteRule);
+
+// --- анонсы от Main Admin (баг 10.08.2026: писались, но были нечитаемы отсюда) ---
+router.get('/platform-announcements', ctrl.listPlatformAnnouncements);
+
+// --- каталог платных фич + свои заявки (переключает только Main Admin) ---
+router.get('/features/catalog', ctrl.getFeatureCatalog);
+router.post('/features/requests', validate({ body: createFeatureRequestSchema }), ctrl.createFeatureRequest);
+router.get('/features/requests', ctrl.listOwnFeatureRequests);
 
 export default router;

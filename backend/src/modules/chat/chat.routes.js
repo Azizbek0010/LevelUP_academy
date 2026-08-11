@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { requireRoomAccess } from '../../middlewares/roomAccess.js';
+import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
 import * as ctrl from './chat.controller.js';
 
 const router = Router();
@@ -65,7 +66,7 @@ const router = Router();
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
-router.get('/:roomKey/messages', authenticate, requireRoomAccess, ctrl.getMessages);
+router.get('/:roomKey/messages', authenticate, orgAccessGate, requireRoomAccess, ctrl.getMessages);
 
 /**
  * @openapi
@@ -95,7 +96,7 @@ router.get('/:roomKey/messages', authenticate, requireRoomAccess, ctrl.getMessag
  *                   items: { $ref: '#/components/schemas/ChatContact' }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  */
-router.get('/contacts', authenticate, ctrl.getContacts);
+router.get('/contacts', authenticate, orgAccessGate, ctrl.getContacts);
 
 /**
  * @openapi
@@ -123,7 +124,7 @@ router.get('/contacts', authenticate, ctrl.getContacts);
  *                   items: { $ref: '#/components/schemas/ChatContact' }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  */
-router.get('/my-threads', authenticate, ctrl.getMyThreads);
+router.get('/my-threads', authenticate, orgAccessGate, ctrl.getMyThreads);
 
 /**
  * @openapi
@@ -172,7 +173,7 @@ router.get('/my-threads', authenticate, ctrl.getMyThreads);
  *       422:
  *         description: Empty or too long body
  */
-router.post('/dm', authenticate, ctrl.sendDm);
+router.post('/dm', authenticate, orgAccessGate, ctrl.sendDm);
 
 /**
  * @openapi
@@ -209,6 +210,6 @@ router.post('/dm', authenticate, ctrl.sendDm);
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
-router.post('/:roomKey/read', authenticate, requireRoomAccess, ctrl.markRead);
+router.post('/:roomKey/read', authenticate, orgAccessGate, requireRoomAccess, ctrl.markRead);
 
 export default router;

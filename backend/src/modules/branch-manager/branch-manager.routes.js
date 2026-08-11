@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
+import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
 import {
   listExpensesQuery,
   listIncomeQuery,
@@ -15,7 +16,7 @@ import * as ctrl from './branch-manager.controller.js';
  */
 const router = Router();
 
-router.use(authenticate, authorize('branch_manager'));
+router.use(authenticate, orgAccessGate, authorize('branch_manager'));
 
 /**
  * @openapi

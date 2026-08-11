@@ -48,12 +48,17 @@ export function findOrgByDomain(domain, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
+/** access_until сразу на месяц вперёд — партнёр может пользоваться с онбординга,
+ * не блокируется до того, как Main Admin отдельным шагом зафиксирует первую
+ * (обычно про-рейтед) оплату. Та же логика, что и бэкофилл для старых
+ * организаций (см. миграцию 1784520000000) — без неё любая свежая org
+ * блокировалась бы сразу же (access_until IS NULL = "ни разу не платил"). */
 export function insertOrganization({ name, domain, plan = null }, client = pool) {
   return client
     .query(
-      `INSERT INTO organizations (name, plan, domain, status)
-       VALUES ($1, $2, $3, 'active')
-       RETURNING id, name, plan, domain, status, created_at`,
+      `INSERT INTO organizations (name, plan, domain, status, access_until)
+       VALUES ($1, $2, $3, 'active', CURRENT_DATE + INTERVAL '1 month')
+       RETURNING id, name, plan, domain, status, access_until, created_at`,
       [name, plan, domain ?? null],
     )
     .then((r) => r.rows[0]);
@@ -94,6 +99,10 @@ export function setOrgOwner(orgId, userId, client = pool) {
  * НАМ, а оно считается из числа активных учеников (computeBill), а не из его
  * оборота. Поэтому количество студентов остаётся, деньги партнёра — нет.
  */
+/** Только 'active' — замороженный/выпустившийся/отчисленный студент не должен
+ * раздувать биллинг-счётчик (тот же фильтр, что уже стоит в super.repository.js
+ * для собственного дашборда SEO — раньше здесь его не было, и из-за этого
+ * счётчик Main Admin расходился с тем, что видит сам партнёр). */
 export function listPartners(client = pool) {
   return client
     .query(
@@ -101,7 +110,15 @@ export function listPartners(client = pool) {
               (SELECT count(*) FROM branches b
                  WHERE b.organization_id = o.id AND b.deleted_at IS NULL) AS branches,
               (SELECT count(*) FROM users u
-                 WHERE u.organization_id = o.id AND u.role = 'student' AND u.deleted_at IS NULL) AS students
+                 WHERE u.organization_id = o.id AND u.role = 'student'
+                   AND u.status = 'active' AND u.deleted_at IS NULL) AS students,
+              (SELECT count(*) FROM users u
+                 WHERE u.organization_id = o.id AND u.role = 'parent'
+                   AND u.status = 'active' AND u.deleted_at IS NULL) AS parents,
+              (SELECT count(*) FROM users u
+                 WHERE u.organization_id = o.id
+                   AND u.role IN ('seo', 'admin', 'mentor', 'methodist', 'branch_manager')
+                   AND u.status = 'active' AND u.deleted_at IS NULL) AS staff
          FROM organizations o
         WHERE o.deleted_at IS NULL
         ORDER BY o.created_at DESC`,
@@ -109,9 +126,284 @@ export function listPartners(client = pool) {
     .then((r) => r.rows);
 }
 
+// ---------- каталог платных фич (Main Admin ведёт сам) ----------
+
+export function listAddonPrices(client = pool) {
+  return client
+    .query(`SELECT * FROM platform_addon_prices ORDER BY created_at ASC`)
+    .then((r) => r.rows);
+}
+
+// feature_key используется как URL-сегмент (PATCH /api/main/addon-prices/:key) и как
+// строковый идентификатор в коде-гейтах — держим строго ASCII, транслитерируя кириллицу.
+const CYRILLIC_TO_LATIN = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i',
+  й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't',
+  у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '',
+  э: 'e', ю: 'yu', я: 'ya', ў: 'o', қ: 'q', ғ: 'g', ҳ: 'h',
+};
+
+function slugify(label) {
+  const transliterated = label
+    .trim()
+    .toLowerCase()
+    .split('')
+    .map((ch) => CYRILLIC_TO_LATIN[ch] ?? ch)
+    .join('');
+  return transliterated
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 50);
+}
+
+export async function insertAddonPrice({ label, price, createdBy }, client = pool) {
+  const base = slugify(label) || 'feature';
+  let key = base;
+  let suffix = 1;
+  // на случай совпадения слага у похожих названий — просто добавляем счётчик
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const exists = await client.query(`SELECT 1 FROM platform_addon_prices WHERE feature_key = $1`, [key]);
+    if (exists.rowCount === 0) break;
+    key = `${base}-${++suffix}`;
+  }
+  return client
+    .query(
+      `INSERT INTO platform_addon_prices (feature_key, label, price, created_by)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [key, label, price, createdBy],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function updateAddonPrice(key, { label, price }, client = pool) {
+  const cols = [];
+  const vals = [];
+  let i = 1;
+  if (label !== undefined) { cols.push(`label = $${i++}`); vals.push(label); }
+  if (price !== undefined) { cols.push(`price = $${i++}`); vals.push(price); }
+  cols.push(`updated_at = now()`);
+  vals.push(key);
+  return client
+    .query(
+      `UPDATE platform_addon_prices SET ${cols.join(', ')} WHERE feature_key = $${i} RETURNING *`,
+      vals,
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function deactivateAddonPrice(key, client = pool) {
+  return client
+    .query(
+      `UPDATE platform_addon_prices SET is_active = false, updated_at = now()
+        WHERE feature_key = $1 RETURNING *`,
+      [key],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function findAddonPrice(key, client = pool) {
+  return client
+    .query(`SELECT * FROM platform_addon_prices WHERE feature_key = $1`, [key])
+    .then((r) => r.rows[0] ?? null);
+}
+
+// ---------- фичи, включённые партнёру (org_feature_flags) ----------
+
+export function getOrgFeatureFlags(orgId, client = pool) {
+  return client
+    .query(`SELECT * FROM org_feature_flags WHERE organization_id = $1`, [orgId])
+    .then((r) => r.rows);
+}
+
+/** Все флаги сразу по всем партнёрам — для listPartners()'s join без N+1. */
+export function getAllOrgFeatureFlags(client = pool) {
+  return client.query(`SELECT * FROM org_feature_flags WHERE enabled = true`).then((r) => r.rows);
+}
+
+export function upsertOrgFeatureFlag(orgId, key, enabled, actorId, client = pool) {
+  return client
+    .query(
+      `INSERT INTO org_feature_flags (organization_id, feature_key, enabled, enabled_at, updated_by)
+       VALUES ($1, $2, $3, CASE WHEN $3 THEN now() ELSE NULL END, $4)
+       ON CONFLICT (organization_id, feature_key)
+       DO UPDATE SET enabled = $3,
+                     enabled_at = CASE WHEN $3 THEN now() ELSE org_feature_flags.enabled_at END,
+                     updated_by = $4, updated_at = now()
+       RETURNING *`,
+      [orgId, key, enabled, actorId],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function getOrgFeatureFlag(orgId, key, client = pool) {
+  return client
+    .query(
+      `SELECT * FROM org_feature_flags WHERE organization_id = $1 AND feature_key = $2`,
+      [orgId, key],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+// ---------- журнал платёж/бонус/кредит (platform_org_payments) ----------
+
+export function insertOrgPayment(
+  { orgId, type, amount = 0, method = null, periodCovered = null, monthsGranted = null, featureKey = null, note = null, createdBy },
+  client = pool,
+) {
+  return client
+    .query(
+      `INSERT INTO platform_org_payments
+         (organization_id, type, amount, method, period_covered, months_granted, feature_key, note, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [orgId, type, amount, method, periodCovered, monthsGranted, featureKey, note, createdBy],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function listOrgPayments(orgId, client = pool) {
+  return client
+    .query(
+      `SELECT * FROM platform_org_payments WHERE organization_id = $1 ORDER BY created_at DESC`,
+      [orgId],
+    )
+    .then((r) => r.rows);
+}
+
+export function extendAccessUntil(orgId, months, client = pool) {
+  return client
+    .query(
+      `UPDATE organizations
+          SET access_until = (GREATEST(access_until, CURRENT_DATE) + ($2 || ' months')::interval)::date,
+              updated_at = now()
+        WHERE id = $1
+        RETURNING access_until`,
+      [orgId, months],
+    )
+    .then((r) => r.rows[0]?.access_until ?? null);
+}
+
+// ---------- собственные расходы платформы ----------
+
+export function insertExpense({ label, amount, category, expenseDate, createdBy }, client = pool) {
+  return client
+    .query(
+      `INSERT INTO platform_expenses (label, amount, category, expense_date, created_by)
+       VALUES ($1, $2, $3, COALESCE($4, CURRENT_DATE), $5)
+       RETURNING *`,
+      [label, amount, category ?? null, expenseDate ?? null, createdBy],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function listExpenses(client = pool) {
+  return client
+    .query(
+      `SELECT * FROM platform_expenses WHERE deleted_at IS NULL ORDER BY expense_date DESC, created_at DESC`,
+    )
+    .then((r) => r.rows);
+}
+
+export function softDeleteExpense(id, client = pool) {
+  return client
+    .query(
+      `UPDATE platform_expenses SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
+      [id],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/** Помесячная выручка (только type='payment' — реальные деньги, не бонусы/кредиты)
+ * и расходы платформы за последние 12 месяцев, для тренда + баланса. */
+export function monthlyRevenueTrend(client = pool) {
+  return client
+    .query(
+      `SELECT to_char(created_at, 'YYYY-MM') AS month, SUM(amount)::int AS revenue
+         FROM platform_org_payments
+        WHERE type = 'payment' AND created_at >= now() - interval '12 months'
+        GROUP BY month ORDER BY month`,
+    )
+    .then((r) => r.rows);
+}
+
+export function monthlyExpenseTrend(client = pool) {
+  return client
+    .query(
+      `SELECT to_char(expense_date, 'YYYY-MM') AS month, SUM(amount)::int AS expense
+         FROM platform_expenses
+        WHERE deleted_at IS NULL AND expense_date >= now() - interval '12 months'
+        GROUP BY month ORDER BY month`,
+    )
+    .then((r) => r.rows);
+}
+
+export function totalRevenue(client = pool) {
+  return client
+    .query(`SELECT COALESCE(SUM(amount), 0)::int AS total FROM platform_org_payments WHERE type = 'payment'`)
+    .then((r) => r.rows[0].total);
+}
+
+export function totalExpenses(client = pool) {
+  return client
+    .query(`SELECT COALESCE(SUM(amount), 0)::int AS total FROM platform_expenses WHERE deleted_at IS NULL`)
+    .then((r) => r.rows[0].total);
+}
+
+export function setAccessUntil(orgId, date, client = pool) {
+  return client
+    .query(
+      `UPDATE organizations SET access_until = $2, updated_at = now() WHERE id = $1 RETURNING access_until`,
+      [orgId, date],
+    )
+    .then((r) => r.rows[0]?.access_until ?? null);
+}
+
+// ---------- заявки SEO на подключение/отключение фичи ----------
+
+export function listFeatureRequests(status, client = pool) {
+  const where = status ? 'WHERE fr.status = $1' : '';
+  const params = status ? [status] : [];
+  return client
+    .query(
+      `SELECT fr.*, o.name AS organization_name, ap.label AS feature_label,
+              (u.first_name || ' ' || u.last_name) AS requested_by_name
+         FROM platform_feature_requests fr
+         JOIN organizations o ON o.id = fr.organization_id
+         LEFT JOIN platform_addon_prices ap ON ap.feature_key = fr.feature_key
+         LEFT JOIN users u ON u.id = fr.requested_by
+         ${where}
+        ORDER BY fr.created_at DESC`,
+      params,
+    )
+    .then((r) => r.rows);
+}
+
+export function findFeatureRequest(id, client = pool) {
+  return client
+    .query(`SELECT * FROM platform_feature_requests WHERE id = $1`, [id])
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function reviewFeatureRequest(id, status, reviewedBy, client = pool) {
+  return client
+    .query(
+      `UPDATE platform_feature_requests
+          SET status = $2, reviewed_by = $3, reviewed_at = now()
+        WHERE id = $1 AND status = 'pending'
+        RETURNING *`,
+      [id, status, reviewedBy],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
 export function findOrgById(id, client = pool) {
   return client
-    .query(`SELECT id, name, status FROM organizations WHERE id = $1 AND deleted_at IS NULL`, [id])
+    .query(
+      `SELECT id, name, status, access_until FROM organizations WHERE id = $1 AND deleted_at IS NULL`,
+      [id],
+    )
     .then((r) => r.rows[0] ?? null);
 }
 
@@ -194,11 +486,13 @@ export function markLeadOnboarded(id, orgId, client = pool) {
 /**
  * Сколько адресатов у объявления на момент отправки.
  * `all-partners` — активные организации (адресат = центр как таковой),
- * `all-seo` — активные владельцы организаций (адресат = человек).
+ * `all-seo` — активные владельцы организаций (адресат = человек),
+ * `specific` — явный список organizationIds (длина массива).
  * Считаем в момент создания и сохраняем: список меняется, а «кому отправили»
  * должно остаться историческим фактом.
  */
-export function countAnnouncementRecipients(targetType, client = pool) {
+export function countAnnouncementRecipients(targetType, organizationIds, client = pool) {
+  if (targetType === 'specific') return Promise.resolve(organizationIds?.length ?? 0);
   if (targetType === 'all-seo') {
     return client
       .query(
@@ -215,8 +509,11 @@ export function countAnnouncementRecipients(targetType, client = pool) {
     .then((r) => r.rows[0].n);
 }
 
-export function insertAnnouncement({ senderId, title, body, targetType, recipientCount }, client = pool) {
-  return client
+export async function insertAnnouncement(
+  { senderId, title, body, targetType, recipientCount, organizationIds },
+  client = pool,
+) {
+  const row = await client
     .query(
       `INSERT INTO platform_announcements
          (sender_id, title, body, target_type, recipient_count)
@@ -225,6 +522,17 @@ export function insertAnnouncement({ senderId, title, body, targetType, recipien
       [senderId, title, body, targetType, recipientCount],
     )
     .then((r) => r.rows[0]);
+
+  if (targetType === 'specific' && organizationIds?.length) {
+    const values = organizationIds.map((_, i) => `($1, $${i + 2})`).join(', ');
+    await client.query(
+      `INSERT INTO platform_announcement_recipients (announcement_id, organization_id)
+       VALUES ${values}`,
+      [row.id, ...organizationIds],
+    );
+  }
+
+  return row;
 }
 
 export function listAnnouncements(client = pool) {
