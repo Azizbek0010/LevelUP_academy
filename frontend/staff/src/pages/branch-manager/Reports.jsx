@@ -10,8 +10,8 @@ export default function BranchManagerReports() {
   const [monthsCount, setMonthsCount] = useState(6);
   const { data, isLoading, error } = useBranchManagerReports(monthsCount);
 
-  if (isLoading) return <div className="p-8 text-center text-base-content/45">Yuklanmoqda...</div>;
-  if (error) return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
+  if (isLoading) return <div className="p-8 text-center text-base-content/45">Загрузка...</div>;
+  if (error) return <div className="p-8 text-center text-error">Произошла ошибка</div>;
 
   const summary = data?.monthlySeries || [];
   const totals = data?.totals || {};
@@ -27,8 +27,8 @@ export default function BranchManagerReports() {
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader
-        title="Hisobotlar"
-        subtitle={`Filial · moliyaviy hisobot`}
+        title="Отчеты"
+        subtitle={`Филиал · финансовый отчет`}
       >
         <div className="join">
           {[3, 6].map((n) => (
@@ -37,7 +37,7 @@ export default function BranchManagerReports() {
               onClick={() => setMonthsCount(n)}
               className={`btn btn-sm join-item ${monthsCount === n ? 'btn-primary' : 'btn-ghost border border-base-200'}`}
             >
-              {n} oy
+              {n} мес
             </button>
           ))}
         </div>
@@ -45,50 +45,50 @@ export default function BranchManagerReports() {
 
       {/* ── KPI ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Kpi Icon={TrendingUp} title="Jami daromad" value={money(totalIncome)} unit={`${monthsCount} oy ichida`} tone="success" />
-        <Kpi Icon={Receipt} title="Jami xarajat" value={money(totalExpenses)} unit={`${monthsCount} oy ichida`} tone="warning" />
-        <Kpi Icon={Sparkles} title="Jami foyda" value={money(totalProfit)} unit={`o'rtacha ${money(avgProfit)}/oy`} tone="neutral" />
-        <Kpi Icon={Wallet} title="Qarzdorlik" value={money(totalIncome - totalExpenses)} unit="filial bo'yicha" tone="danger" />
+        <Kpi Icon={TrendingUp} title="Общий доход" value={money(totalIncome)} unit={`за ${monthsCount} мес.`} tone="success" />
+        <Kpi Icon={Receipt} title="Общий расход" value={money(totalExpenses)} unit={`за ${monthsCount} мес.`} tone="warning" />
+        <Kpi Icon={Sparkles} title="Общая прибыль" value={money(totalProfit)} unit={`в среднем ${money(avgProfit)}/мес`} tone="neutral" />
+        <Kpi Icon={Wallet} title="Задолженность" value={money(totalIncome - totalExpenses)} unit="по филиалу" tone="danger" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         {/* ── Chart ── */}
-        <Panel title="Daromad vs xarajat" icon={CalendarDays} bodyClass="p-5">
+        <Panel title="Доход vs расход" icon={CalendarDays} bodyClass="p-5">
           <FinanceBars months={summary} />
           <div className="flex items-center gap-4 mt-4 pt-4 border-t border-base-200 text-[11px] text-base-content/45">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-success/70" /> Daromad
+              <span className="w-2.5 h-2.5 rounded-sm bg-success/70" /> Доход
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-error/60" /> Xarajat
+              <span className="w-2.5 h-2.5 rounded-sm bg-error/60" /> Расход
             </span>
           </div>
         </Panel>
 
         {/* ── Eng yaxshi oy ── */}
-        <Panel title="Eng samarali oy" icon={TrendingUp} bodyClass="p-5">
+        <Panel title="Самый продуктивный месяц" icon={TrendingUp} bodyClass="p-5">
           {maxMonth && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold">{maxMonth.label} oyi</span>
-                <span className="badge badge-success badge-sm">eng yuqori daromad</span>
+                <span className="text-sm font-bold">{maxMonth.label}</span>
+                <span className="badge badge-success badge-sm">самый высокий доход</span>
               </div>
               <dl className="grid grid-cols-3 gap-3">
                 <div className="rounded-xl border border-base-200 p-3">
-                  <dt className="text-[11px] text-base-content/45">Daromad</dt>
+                  <dt className="text-[11px] text-base-content/45">Доход</dt>
                   <dd className="font-extrabold tabular-nums text-success">{money(maxMonth.income)}</dd>
                 </div>
                 <div className="rounded-xl border border-base-200 p-3">
-                  <dt className="text-[11px] text-base-content/45">Xarajat</dt>
+                  <dt className="text-[11px] text-base-content/45">Расход</dt>
                   <dd className="font-extrabold tabular-nums">{money(maxMonth.expenses)}</dd>
                 </div>
                 <div className="rounded-xl border border-base-200 p-3">
-                  <dt className="text-[11px] text-base-content/45">Foyda</dt>
+                  <dt className="text-[11px] text-base-content/45">Прибыль</dt>
                   <dd className="font-extrabold tabular-nums text-primary">{money(maxMonth.profit)}</dd>
                 </div>
               </dl>
               <div className="text-[12px] text-base-content/45">
-                {maxMonth.payments} ta to'lov qabul qilingan
+                {maxMonth.payments} платежей получено
               </div>
             </div>
           )}
@@ -96,16 +96,16 @@ export default function BranchManagerReports() {
       </div>
 
       {/* ── Oylar jadvali ── */}
-      <Panel title="Oylik hisobot" icon={CalendarDays} bodyClass="p-0">
+      <Panel title="Ежемесячный отчет" icon={CalendarDays} bodyClass="p-0">
         <div className="overflow-x-auto">
           <table className="table table-sm">
             <thead>
               <tr className="text-[11px] uppercase tracking-wider text-base-content/45">
-                <th className="pl-5">Oy</th>
-                <th className="text-right">Daromad</th>
-                <th className="text-right">Xarajat</th>
-                <th className="text-right">Foyda</th>
-                <th className="text-right">To'lovlar</th>
+                <th className="pl-5">Месяц</th>
+                <th className="text-right">Доход</th>
+                <th className="text-right">Расход</th>
+                <th className="text-right">Прибыль</th>
+                <th className="text-right">Платежи</th>
               </tr>
             </thead>
             <tbody>

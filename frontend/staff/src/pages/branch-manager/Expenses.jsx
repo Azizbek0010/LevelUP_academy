@@ -10,8 +10,8 @@ export default function BranchManagerExpenses() {
   const [cat, setCat] = useState('');
   const { data, isLoading, error } = useBranchManagerExpenses(monthKey);
 
-  if (isLoading) return <div className="p-8 text-center text-base-content/45">Yuklanmoqda...</div>;
-  if (error) return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
+  if (isLoading) return <div className="p-8 text-center text-base-content/45">Загрузка...</div>;
+  if (error) return <div className="p-8 text-center text-error">Произошла ошибка</div>;
 
   const rows = (data?.expenses || []).filter(
     (e) => !cat || e.category === cat,
@@ -21,12 +21,12 @@ export default function BranchManagerExpenses() {
   const top = rows.length ? [...rows].sort((a, b) => b.amount - a.amount)[0] : null;
 
   const MONTHS = [
-    { key: '2026-03', label: 'Mart' },
-    { key: '2026-04', label: 'Aprel' },
-    { key: '2026-05', label: 'May' },
-    { key: '2026-06', label: 'Iyun' },
-    { key: '2026-07', label: 'Iyul' },
-    { key: '2026-08', label: 'Avgust' },
+    { key: '2026-03', label: 'Март' },
+    { key: '2026-04', label: 'Апрель' },
+    { key: '2026-05', label: 'Май' },
+    { key: '2026-06', label: 'Июнь' },
+    { key: '2026-07', label: 'Июль' },
+    { key: '2026-08', label: 'Август' },
   ];
   const month = MONTHS.find((m) => m.key === monthKey) ?? MONTHS[MONTHS.length - 1];
   const EXPENSE_CATEGORIES = [...categories].sort();
@@ -34,8 +34,8 @@ export default function BranchManagerExpenses() {
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader
-        title="Xarajatlar"
-        subtitle={`Filial · xarajatlari`}
+        title="Расходы"
+        subtitle={`Филиал · расходы`}
       />
 
       {/* ── Oy tanlash ── */}
@@ -57,12 +57,12 @@ export default function BranchManagerExpenses() {
 
       {/* ── KPI ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Kpi Icon={TrendingUp} title="Oy xarajati" value={money(total)} unit={`${month.label} oyi`} tone="warning" />
-        <Kpi Icon={Layers} title="Kategoriyalar" value={categories.size} unit="ishlatilgan" tone="neutral" />
-        <Kpi Icon={Receipt} title="Yozuvlar" value={rows.length} unit="ta xarajat" tone="neutral" />
+        <Kpi Icon={TrendingUp} title="Расход за месяц" value={money(total)} unit={`месяц ${month.label}`} tone="warning" />
+        <Kpi Icon={Layers} title="Категории" value={categories.size} unit="использовано" tone="neutral" />
+        <Kpi Icon={Receipt} title="Записи" value={rows.length} unit="расходов" tone="neutral" />
         <Kpi
           Icon={Tag}
-          title="Eng katta"
+          title="Самый большой"
           value={top ? money(top.amount) : '—'}
           unit={top ? top.category : ''}
           tone="danger"
@@ -72,7 +72,7 @@ export default function BranchManagerExpenses() {
       {/* ── Kategoriya filtri ── */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mr-1">
-          Kategoriya:
+          Категория:
         </span>
         <button
           onClick={() => setCat('')}
@@ -80,7 +80,7 @@ export default function BranchManagerExpenses() {
             cat === '' ? 'badge-primary' : 'badge-ghost border-base-200 text-base-content/60 hover:border-primary/40'
           }`}
         >
-          Hammasi
+          Все
         </button>
         {EXPENSE_CATEGORIES.map((c) => (
           <button
@@ -96,20 +96,20 @@ export default function BranchManagerExpenses() {
       </div>
 
       {/* ── Xarajatlar jadvali ── */}
-      <Panel title={`Xarajatlar — ${month.label}`} icon={Receipt} bodyClass="p-0">
+      <Panel title={`Расходы — ${month.label}`} icon={Receipt} bodyClass="p-0">
         {rows.length === 0 ? (
           <p className="text-[13px] text-base-content/45 text-center py-10">
-            Bu oyda xarajatlar yo'q
+            В этом месяце нет расходов
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="table table-sm">
               <thead>
                 <tr className="text-[11px] uppercase tracking-wider text-base-content/45">
-                  <th className="pl-5">Sana</th>
-                  <th>Kategoriya</th>
-                  <th>Izoh</th>
-                  <th className="pr-5 text-right">Summa</th>
+                  <th className="pl-5">Дата</th>
+                  <th>Категория</th>
+                  <th>Комментарий</th>
+                  <th className="pr-5 text-right">Сумма</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,7 +132,7 @@ export default function BranchManagerExpenses() {
               </tbody>
               <tfoot>
                 <tr className="border-t border-base-200">
-                  <td colSpan={3} className="pl-5 text-[12px] font-semibold text-base-content/60">Jami</td>
+                  <td colSpan={3} className="pl-5 text-[12px] font-semibold text-base-content/60">Итого</td>
                   <td className="pr-5 text-right text-[15px] font-extrabold tabular-nums text-error">{money(total)}</td>
                 </tr>
               </tfoot>

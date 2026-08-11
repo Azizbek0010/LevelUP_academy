@@ -10,8 +10,8 @@ export default function BranchManagerIncome() {
   const [monthKey, setMonthKey] = useState('2026-08');
   const { data, isLoading, error } = useBranchManagerIncome(monthKey);
 
-  if (isLoading) return <div className="p-8 text-center text-base-content/45">Yuklanmoqda...</div>;
-  if (error) return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
+  if (isLoading) return <div className="p-8 text-center text-base-content/45">Загрузка...</div>;
+  if (error) return <div className="p-8 text-center text-error">Произошла ошибка</div>;
 
   const rows = data?.payments || [];
   const total = data?.total || 0;
@@ -20,20 +20,20 @@ export default function BranchManagerIncome() {
   const debt = data?.debt || 0;
 
   const MONTHS = [
-    { key: '2026-03', label: 'Mart' },
-    { key: '2026-04', label: 'Aprel' },
-    { key: '2026-05', label: 'May' },
-    { key: '2026-06', label: 'Iyun' },
-    { key: '2026-07', label: 'Iyul' },
-    { key: '2026-08', label: 'Avgust' },
+    { key: '2026-03', label: 'Март' },
+    { key: '2026-04', label: 'Апрель' },
+    { key: '2026-05', label: 'Май' },
+    { key: '2026-06', label: 'Июнь' },
+    { key: '2026-07', label: 'Июль' },
+    { key: '2026-08', label: 'Август' },
   ];
   const month = MONTHS.find((m) => m.key === monthKey) ?? MONTHS[MONTHS.length - 1];
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader
-        title="Daromad"
-        subtitle={`Filial · to'lovlar va qarzdorlik`}
+        title="Доход"
+        subtitle={`Филиал · платежи и задолженность`}
       />
 
       {/* ── Oy tanlash ── */}
@@ -55,27 +55,27 @@ export default function BranchManagerIncome() {
 
       {/* ── KPI ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Kpi Icon={TrendingUp} title="Oy daromadi" value={money(total)} unit={`${month.label} oyi`} tone="success" />
-        <Kpi Icon={CheckCircle2} title="To'langan" value={paid} unit={`${rows.length} ta to'lovdan`} tone="neutral" />
-        <Kpi Icon={Wallet} title="Muddati o'tgan" value={overdue} unit="qarzdor to'lovlar" tone="danger" />
-        <Kpi Icon={CalendarDays} title="Umumiy qarzdorlik" value={money(debt)} unit="filial bo'yicha" tone="warning" />
+        <Kpi Icon={TrendingUp} title="Доход за месяц" value={money(total)} unit={`месяц ${month.label}`} tone="success" />
+        <Kpi Icon={CheckCircle2} title="Оплачено" value={paid} unit={`из ${rows.length} платежей`} tone="neutral" />
+        <Kpi Icon={Wallet} title="Просрочено" value={overdue} unit="просроченные платежи" tone="danger" />
+        <Kpi Icon={CalendarDays} title="Общая задолженность" value={money(debt)} unit="по филиалу" tone="warning" />
       </div>
 
       {/* ── To'lovlar jadvali ── */}
-      <Panel title={`To'lovlar — ${month.label}`} icon={CreditCard} bodyClass="p-0">
+      <Panel title={`Платежи — ${month.label}`} icon={CreditCard} bodyClass="p-0">
         {rows.length === 0 ? (
-          <p className="text-[13px] text-base-content/45 text-center py-10">Bu oyda to'lovlar yo'q</p>
+          <p className="text-[13px] text-base-content/45 text-center py-10">В этом месяце нет платежей</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="table table-sm">
               <thead>
                 <tr className="text-[11px] uppercase tracking-wider text-base-content/45">
-                  <th className="pl-5">Sana</th>
-                  <th>Talaba</th>
-                  <th>Guruh</th>
-                  <th className="hidden md:table-cell">Usul</th>
-                  <th className="text-right">Summa</th>
-                  <th className="pr-5 text-right">Holat</th>
+                  <th className="pl-5">Дата</th>
+                  <th>Студент</th>
+                  <th>Группа</th>
+                  <th className="hidden md:table-cell">Метод</th>
+                  <th className="text-right">Сумма</th>
+                  <th className="pr-5 text-right">Статус</th>
                 </tr>
               </thead>
               <tbody>
@@ -94,7 +94,7 @@ export default function BranchManagerIncome() {
               </tbody>
               <tfoot>
                 <tr className="border-t border-base-200">
-                  <td colSpan={4} className="pl-5 text-[12px] font-semibold text-base-content/60">Jami</td>
+                  <td colSpan={4} className="pl-5 text-[12px] font-semibold text-base-content/60">Итого</td>
                   <td className="text-right text-[15px] font-extrabold tabular-nums text-success">{money(total)}</td>
                   <td />
                 </tr>

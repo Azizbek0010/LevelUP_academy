@@ -29,56 +29,56 @@ export default function BranchManagerDashboard() {
   const recent = income?.payments?.slice(0, 5) || [];
 
   if (dashQ.isLoading || incomeQ.isLoading || reportsQ.isLoading) {
-    return <div className="p-8 text-center text-base-content/45">Yuklanmoqda...</div>;
+    return <div className="p-8 text-center text-base-content/45">Загрузка...</div>;
   }
   if (dashQ.error || incomeQ.error || reportsQ.error) {
-    return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
+    return <div className="p-8 text-center text-error">Произошла ошибка</div>;
   }
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader
-        title="Boshqaruv paneli"
-        subtitle={`${dash?.branch?.name || 'Filial'} · filialning umumiy holati`}
+        title="Панель управления"
+        subtitle={`${dash?.branch?.name || 'Филиал'} · общее состояние филиала`}
       />
 
       {/* ── Moliyaviy KPI ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Kpi
           Icon={TrendingUp}
-          title="Bu oy daromad"
+          title="Доход за этот месяц"
           value={money(cur?.income)}
-          unit={`${cur?.label || 'Avgust'} oyi`}
+          unit={`месяц ${cur?.label || 'Август'}`}
           tone="success"
           trend={trend('income')}
-          trendLabel="o'tgan oyga nisbatan"
+          trendLabel="по сравнению с прошлым месяцем"
           to="/income"
         />
         <Kpi
           Icon={Receipt}
-          title="Bu oy xarajat"
+          title="Расход за этот месяц"
           value={money(cur?.expenses)}
-          unit={`${cur?.label || 'Avgust'} oyi`}
+          unit={`месяц ${cur?.label || 'Август'}`}
           tone="warning"
           trend={trend('expenses')}
-          trendLabel="o'tgan oyga nisbatan"
+          trendLabel="по сравнению с прошлым месяцем"
           to="/expenses"
         />
         <Kpi
           Icon={Sparkles}
-          title="Foyda"
+          title="Прибыль"
           value={money(cur?.profit)}
-          unit="daromad − xarajat"
+          unit="доход − расход"
           tone="neutral"
           trend={trend('profit')}
-          trendLabel="o'tgan oyga nisbatan"
+          trendLabel="по сравнению с прошлым месяцем"
           to="/reports"
         />
         <Kpi
           Icon={Wallet}
-          title="Qarzdorlik"
+          title="Задолженность"
           value={money(dash?.outstandingDebt)}
-          unit="muddati o'tgan to'lovlar"
+          unit="просроченные платежи"
           tone="danger"
           to="/income"
         />
@@ -86,16 +86,16 @@ export default function BranchManagerDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* ── Filial joylashuvi kartasi ── */}
-        <Panel title="Filial" icon={Building2} bodyClass="p-4">
+        <Panel title="Филиал" icon={Building2} bodyClass="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h3 className="font-bold text-[15px] text-base-content truncate">{dash?.branch?.name}</h3>
               <span className="inline-block mt-1 text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5">
-                Asosiy filial
+                Главный филиал
               </span>
             </div>
             <Link to="/branch" className="btn btn-ghost btn-xs gap-1 text-primary">
-              Batafsil <ChevronRight size={13} />
+              Подробнее <ChevronRight size={13} />
             </Link>
           </div>
 
@@ -123,24 +123,24 @@ export default function BranchManagerDashboard() {
           {/* Qisqa statistika */}
           <dl className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-base-200">
             <div>
-              <dt className="text-[11px] text-base-content/45">Talabalar</dt>
+              <dt className="text-[11px] text-base-content/45">Студенты</dt>
               <dd className="font-bold tabular-nums">{fmt(dash?.totalStudents)}</dd>
             </div>
             <div>
-              <dt className="text-[11px] text-base-content/45">Guruhlar</dt>
+              <dt className="text-[11px] text-base-content/45">Группы</dt>
               <dd className="font-bold tabular-nums">{fmt(dash?.totalGroups)}</dd>
             </div>
             <div>
-              <dt className="text-[11px] text-base-content/45">Xodimlar</dt>
+              <dt className="text-[11px] text-base-content/45">Сотрудники</dt>
               <dd className="font-bold tabular-nums">{fmt(dash?.totalMentors)}</dd>
             </div>
           </dl>
         </Panel>
 
         {/* ── So'nggi to'lovlar ── */}
-        <Panel title="So'nggi to'lovlar" icon={CreditCard} bodyClass="p-4">
+        <Panel title="Последние платежи" icon={CreditCard} bodyClass="p-4">
           {recent.length === 0 ? (
-            <p className="text-[13px] text-base-content/45 text-center py-4">Hozircha to'lovlar yo'q</p>
+            <p className="text-[13px] text-base-content/45 text-center py-4">Пока нет платежей</p>
           ) : (
             <div className="space-y-2">
               {recent.map((p) => (
@@ -172,22 +172,22 @@ export default function BranchManagerDashboard() {
 
       {/* ── 6 oylik moliya charti ── */}
       <Panel
-        title="Oxirgi 6 oy: daromad vs xarajat"
+        title="Последние 6 месяцев: доход vs расход"
         icon={CalendarDays}
         bodyClass="p-5"
         action={
           <Link to="/reports" className="btn btn-ghost btn-xs gap-1 text-primary">
-            Hisobotlar <ChevronRight size={13} />
+            Отчеты <ChevronRight size={13} />
           </Link>
         }
       >
         <FinanceBars months={reports?.monthlySeries || []} />
         <div className="flex items-center gap-4 mt-4 pt-4 border-t border-base-200 text-[11px] text-base-content/45">
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm bg-success/70" /> Daromad
+            <span className="w-2.5 h-2.5 rounded-sm bg-success/70" /> Доход
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm bg-error/60" /> Xarajat
+            <span className="w-2.5 h-2.5 rounded-sm bg-error/60" /> Расход
           </span>
         </div>
       </Panel>

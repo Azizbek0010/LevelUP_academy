@@ -5,7 +5,11 @@
    komponentlar: moliyaviy ustun-chart va status badge.
    ────────────────────────────────────────────────────────────────────────── */
 import { money } from '../../format.js';
-import { PAYMENT_STATUS } from './_data.js';
+const PAYMENT_STATUS = {
+  paid: { label: "Оплачено", cls: 'badge-success' },
+  pending: { label: 'Частично', cls: 'badge-warning' },
+  overdue: { label: "Просрочено", cls: 'badge-error' },
+};
 
 /* ── Daromad vs Xarajat ustun-charti ────────────────────────────────────────
    Recharts emas, sof CSS: bir nechta ustun uchun kutubxona olib kelishdan
@@ -21,12 +25,12 @@ export function FinanceBars({ months, height = 160 }) {
           <div className="flex items-end justify-center gap-1 w-full flex-1">
             <div
               className="tooltip tooltip-top w-full max-w-[26px] rounded-t-md bg-success/70 hover:bg-success transition-colors"
-              data-tip={`${m.label} · Daromad ${money(m.income)}`}
+              data-tip={`${m.label} · Доход ${money(m.income)}`}
               style={{ height: bar(m.income) }}
             />
             <div
               className="tooltip tooltip-top w-full max-w-[26px] rounded-t-md bg-error/60 hover:bg-error transition-colors"
-              data-tip={`${m.label} · Xarajat ${money(m.expenses)}`}
+              data-tip={`${m.label} · Расход ${money(m.expenses)}`}
               style={{ height: bar(m.expenses) }}
             />
           </div>
