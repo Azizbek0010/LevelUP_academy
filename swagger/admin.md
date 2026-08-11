@@ -269,6 +269,71 @@ Soft-delete a branch expense
 
 ---
 
+### PATCH `/api/admin/expenses/{id}`
+Update a branch expense (partial — at least one field)
+
+**Auth:** Bearer JWT required
+**Role(s):** admin (own branch only)
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Request body:**
+- `category`: string (optional)
+- `amount`: number (optional)
+- `spentAt`: string (date) (optional)
+- `note`: string (optional)
+
+**Responses:**
+
+- **200** — Updated expense
+  - `expense` (optional):
+    - **Expense**:
+      - `id`: string (uuid) (optional)
+      - `category`: string (optional)
+      - `amount`: number (optional)
+      - `spentAt`: string (date-time) (optional)
+      - `note`: string (optional)
+      - `createdAt`: string (date-time) (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Expense not found
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
 ### POST `/api/admin/groups`
 Create a group in the branch, assigned to a mentor
 
@@ -599,6 +664,344 @@ Archive a group (read-only afterwards)
     - `stack`: string (optional) — Only present when NODE_ENV=development
 
 - **404** — Group not found in your branch
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### GET `/api/admin/groups/{id}/attendance`
+Group attendance roster for a lesson date
+
+Returns every active student of the group with their status on the given date (`null` if not yet marked) — a full roster, not only marked rows.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** admin (own branch only)
+
+**Params:**
+- `id` (path, string) **(required)**
+- `date` (query, string) **(required)**
+
+**Responses:**
+
+- **200** — Attendance roster
+  - _array of:_
+    - `id`: string (uuid) (optional)
+    - `studentId`: string (uuid) (optional)
+    - `studentName`: string (optional)
+    - `status`: enum: `present` | `absent` | `late` | `excused` (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### POST `/api/admin/groups/{id}/attendance`
+Mark/clear group attendance for a lesson date
+
+Records with a status are upserted; records with `status: null` clear the mark. Admins may correct past lessons but not future ones. Returns the refreshed roster.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** admin (own branch only)
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Request body:**
+- `lessonDate`: string **(required)** _e.g. "2026-07-20"_
+- `records` **(required)**:
+  - _array of:_
+    - `studentId`: string (uuid) **(required)**
+    - `status`: enum: `present` | `absent` | `late` | `excused` **(required)**
+
+**Responses:**
+
+- **200** — Refreshed roster
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### GET `/api/admin/groups/{id}/feedback`
+List group feedback (student/teacher reviews)
+
+**Auth:** Bearer JWT required
+**Role(s):** admin (own branch only)
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — Feedback list
+  - _array of:_
+    - `id`: string (uuid) (optional)
+    - `type`: enum: `student` | `teacher` (optional)
+    - `authorName`: string (optional)
+    - `content`: string (optional)
+    - `rating`: integer (optional)
+    - `createdAt`: string (date-time) (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### POST `/api/admin/groups/{id}/feedback`
+Add feedback to the group
+
+**Auth:** Bearer JWT required
+**Role(s):** admin (own branch only)
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Request body:**
+- `type`: enum: `student` | `teacher` **(required)**
+- `authorName`: string (optional)
+- `content`: string **(required)**
+- `rating`: integer **(required)**
+
+**Responses:**
+
+- **201** — Feedback created
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### GET `/api/admin/groups/{id}/homework`
+List group homework with submission progress
+
+**Auth:** Bearer JWT required
+**Role(s):** admin (own branch only)
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — Homework list
+  - _array of:_
+    - `id`: string (uuid) (optional)
+    - `title`: string (optional)
+    - `description`: string (optional)
+    - `dueDate`: string (optional) _e.g. "2026-07-27"_
+    - `status`: enum: `active` | `completed` | `overdue` (optional)
+    - `submissions`: integer (optional)
+    - `totalStudents`: integer (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### POST `/api/admin/groups/{id}/homework`
+Create homework for the group
+
+maxScore (100) and coinReward (0) use table defaults. If `dueDate` is omitted the deadline defaults to one week ahead.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** admin (own branch only)
+
+**Params:**
+- `id` (path, string) **(required)**
+
+**Request body:**
+- `title`: string **(required)**
+- `description`: string (optional)
+- `dueDate`: string (optional) _e.g. "2026-07-27"_
+
+**Responses:**
+
+- **201** — Homework created
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Resource not found (or not in caller's organization/scope)
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **409** — Conflict with current state (e.g. already fired / not fired)
   - **ErrorResponse**:
     - `success`: boolean **(required)** _e.g. false_
     - `message`: string **(required)**
@@ -1104,7 +1507,7 @@ Freeze or unfreeze a mentor account
 ### GET `/api/admin/settings`
 Branch-visible org settings (lesson duration)
 
-Read-only for admins — the value is owned by the organization and is edited by the Super Admin (PATCH /api/super/organization). The group form uses it to compute the lesson end time from the chosen start time.
+Read-only for admins — the value is owned by the organization and is edited by the SEO (PATCH /api/super/organization). The group form uses it to compute the lesson end time from the chosen start time.
 
 
 **Auth:** Bearer JWT required

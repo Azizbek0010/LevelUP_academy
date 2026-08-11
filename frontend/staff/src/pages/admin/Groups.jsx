@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Archive, ArchiveRestore, ChevronRight, Users, User, FolderOpen, LayoutGrid, List, Download, Clock, Pencil, CalendarDays, KeyRound, UserPlus, Copy, Check, BellRing } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
-import { useAdminGroups, useAdminMentors, useAdminSettings } from '../../queries.js';
+import { useAdminGroups, useAdminMentors, useAdminSettings, useAdminTrainingTypes } from '../../queries.js';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
@@ -18,7 +18,11 @@ const PRESETS = [
   { label: '2-4-6', days: ['tue', 'thu', 'sat'] },
 ];
 
-const emptyForm = { name: '', subject: '', monthlyPrice: '', room: '', mentorId: '', days: [], startTime: '', showCustomDays: false };
+// subject/monthlyPrice больше не вводятся руками — приходят из методики
+// (training_type), которую SEO уже оценил (Karis, 08.08.2026): методист
+// заводит методику -> SEO ставит цену -> только тогда она доступна здесь.
+// trainingTypeId — единственное, что выбирает admin/branch_manager.
+const emptyForm = { name: '', trainingTypeId: '', room: '', mentorId: '', days: [], startTime: '', showCustomDays: false };
 
 /** Вычисляет время конца урока: "15:00" + 80 мин → "16:20" */
 function calcEndTime(startTime, durationMin) {
@@ -217,7 +221,7 @@ function GroupCard({ g, onEdit, onArchive, onOpen, isExpanded, students = [] }) 
 
 /* ═══════════════ Group Form Modal ═══════════════ */
 /* Экспортируется: переиспользуется в GroupDetail.jsx (кнопка «Редактировать»). */
-export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, onSave, token, groups, subjectOptions = [] }) {
+export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, onSave, token, groups, trainingTypes = [] }) {
   const isEdit = Boolean(initial?.id);
   const [form, setForm] = useState(initial ?? emptyForm);
   const [busy, setBusy] = useState(false);
@@ -237,22 +241,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
   groupsRef.current = groups;
 
   const durationMin = Number(lessonDurationMin) || 80;
-
-  // Subject change → auto-fill price from any existing group with that subject
-  // (super admin's default price if set; otherwise Admin enters manually).
-  const handleSubjectChange = (value) => {
-    setForm((f) => {
-      const next = { ...f, subject: value };
-      if (isEdit || value.trim() === '') return next;
-      const match = (groupsRef.current || []).find(
-        (g) => String(g.subject || g.subject_name || '').trim().toLowerCase() === value.trim().toLowerCase() && Number(g.monthlyPrice || g.monthly_price || 0) > 0
-      );
-      if (match && !next.monthlyPrice) {
-        next.monthlyPrice = String(match.monthlyPrice || match.monthly_price || '');
-      }
-      return next;
-    });
-  };
+  const selectedTrainingType = trainingTypes.find((t) => t.id === form.trainingTypeId);
 
   // При смене ментора — тянем расписания его групп и строим карту занятости
   useEffect(() => {
@@ -349,8 +338,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
   const submit = async () => {
     setErr('');
     if (!form.name.trim()) return setErr('Введите название группы');
-    if (!form.subject.trim()) return setErr('Введите предмет');
-    if (!form.monthlyPrice) return setErr('Укажите стоимость');
+    if (!form.trainingTypeId) return setErr('Выберите направление');
     if (!form.mentorId) return setErr('Выберите ментора — это обязательное поле');
     if (!form.days || form.days.length === 0) return setErr('Выберите хотя бы один день занятий');
     if (!form.startTime) return setErr('Укажите время начала занятий');
@@ -358,12 +346,12 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
       return setErr('У ментора нет свободного времени в выбранные дни — измените дни или ментора');
     }
 
-    // transform for backend — send only what schema expects
+    // transform for backend — send only what schema expects. subject/monthlyPrice
+    // backend подставляет сам из training_type (не доверяем клиенту, см. admin.service.createGroup).
     const payload = {
       name: form.name.trim(),
-      subject: form.subject.trim(),
+      trainingTypeId: form.trainingTypeId,
       mentorId: form.mentorId,
-      monthlyPrice: Number(form.monthlyPrice),
       days: form.days,
       startTime: form.startTime,
     };
@@ -474,45 +462,38 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
             />
           </label>
 
+          {/* Направление — методика с ценой от SEO (методист создаёт -> SEO оценивает -> появляется здесь) */}
           <label className="form-control">
             <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
-              Предмет <span className="text-error">*</span>
+              Направление <span className="text-error">*</span>
             </span>
-            <input
-              className="input input-bordered w-full rounded-lg"
-              placeholder="напр. Веб-разработка"
-              list="group-subject-list"
-              value={form.subject}
-              onChange={(e) => handleSubjectChange(e.target.value)}
-            />
-            <datalist id="group-subject-list">
-              {subjectOptions.map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
-            <span className="text-[10px] text-base-content/40 mt-1">
-              {subjectOptions.length > 0 ? 'Выберите из списка предметов (methodist)' : 'Введите новый предмет'}
-            </span>
+            <select
+              className="select select-bordered w-full rounded-lg"
+              value={form.trainingTypeId}
+              onChange={(e) => setForm({ ...form, trainingTypeId: e.target.value })}
+            >
+              <option value="">— Выберите направление —</option>
+              {trainingTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            {trainingTypes.length === 0 ? (
+              <span className="text-[10px] text-warning mt-1">
+                Пока нет ни одного оценённого направления — методист создаёт методику, SEO ставит ей цену.
+              </span>
+            ) : (
+              <span className="text-[10px] text-base-content/40 mt-1">
+                Цену ставит SEO для всей методики — здесь не редактируется.
+              </span>
+            )}
           </label>
 
           <div className="grid grid-cols-2 gap-4">
             <label className="form-control">
               <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
-                Стоимость (UZS) <span className="text-error">*</span>
+                Стоимость (UZS)
               </span>
-              <input
-                className="input input-bordered w-full rounded-lg"
-                type="number"
-                min="0"
-                placeholder="0"
-                value={form.monthlyPrice}
-                onChange={(e) => setForm({ ...form, monthlyPrice: e.target.value })}
-              />
-              {!isEdit && form.subject.trim() && !form.monthlyPrice && (
-                <span className="text-[10px] text-warning mt-1 flex items-center gap-1">
-                  <BellRing size={11} /> Narx belgilanmagan — Karisga xabar yuboriladi
-                </span>
-              )}
+              <div className="input input-bordered w-full rounded-lg flex items-center text-base-content/70">
+                {selectedTrainingType ? `${Number(selectedTrainingType.price).toLocaleString('ru-RU')}` : '—'}
+              </div>
             </label>
             <label className="form-control">
               <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
@@ -795,11 +776,12 @@ export default function AdminGroups() {
   const { data, isLoading, error, refetch } = useAdminGroups();
   const { data: mentorsData } = useAdminMentors();
   const { data: settingsData } = useAdminSettings();
+  const { data: trainingTypesData } = useAdminTrainingTypes();
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState('card');
+  const [viewMode, setViewMode] = useState('table'); // по умолчанию таблица (Karis, 08.08.2026)
   const [showExport, setShowExport] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [groupStudents, setGroupStudents] = useState({});
@@ -850,6 +832,8 @@ export default function AdminGroups() {
   const mraw = mentorsData?.data || mentorsData || {};
   const mentors = mraw.mentors || (Array.isArray(mraw) ? mraw : []);
   const lessonDurationMin = settingsData?.lessonDurationMin ?? settingsData?.data?.lessonDurationMin ?? null;
+  const ttRaw = trainingTypesData?.data || trainingTypesData || {};
+  const trainingTypes = ttRaw.trainingTypes || (Array.isArray(ttRaw) ? ttRaw : []);
 
   const activeGroups = rows.filter((g) => !isArchived(g)).length;
   const archivedGroups = rows.filter((g) => isArchived(g)).length;
@@ -858,30 +842,6 @@ export default function AdminGroups() {
     ? rows.filter(g => g.name?.toLowerCase().includes(search.toLowerCase()) || g.mentor?.name?.toLowerCase().includes(search.toLowerCase()))
     : rows;
 
-  // Unique subjects seen in existing groups (methodist-catalog fallback)
-  const subjectOptions = useMemo(() => {
-    const seen = new Set();
-    rows.forEach((g) => {
-      const s = (g.subject || g.subject_name || '').trim();
-      if (s) seen.add(s);
-    });
-    return [...seen].sort((a, b) => a.localeCompare(b, 'ru'));
-  }, [rows]);
-
-  // Build API body from form state
-  const buildBody = (f) => {
-    const body = { 
-      name: f.name.trim(), 
-      subject: f.subject?.trim() || '',
-      monthlyPrice: Number(f.monthlyPrice) || 0,
-      mentorId: f.mentorId || undefined 
-    };
-    if (f.days?.length > 0) body.days = f.days;
-    if (f.startTime) body.startTime = f.startTime;
-    if (f.room?.trim()) body.room = f.room.trim();
-    return body;
-  };
-
   const openCreate = () => setForm({ ...emptyForm });
   const openEdit = (g) => {
     const scheduleDays = g.schedule?.map(s => String(s.day).toLowerCase()) || [];
@@ -889,22 +849,19 @@ export default function AdminGroups() {
     setForm({
       id: g.id,
       name: g.name || '',
-      subject: g.subject || '',
-      monthlyPrice: g.monthlyPrice || g.monthly_price || '',
+      trainingTypeId: g.trainingTypeId || g.training_type_id || '',
       room: g.room || '',
       mentorId: g.mentor?.id || g.mentorId || '',
-      maxStudents: g.maxStudents ?? g.max_students ?? MAX_STUDENTS,
       days: initialDays,
       startTime: g.startTime || g.start_time || '',
       showCustomDays: initialDays.length > 0 && !PRESETS.some(p => JSON.stringify([...p.days].sort()) === JSON.stringify([...initialDays].sort())),
     });
   };
 
-  const handleSave = async (f) => {
-    const body = buildBody(f);
-    const res = f.id
-      ? await api.adminUpdateGroup(token, f.id, body)
-      : await api.adminCreateGroup(token, body);
+  const handleSave = async (payload) => {
+    const res = payload.id
+      ? await api.adminUpdateGroup(token, payload.id, payload)
+      : await api.adminCreateGroup(token, payload);
     refetch();
     return res; // возвращаем созданную группу — нужна для привязки нового ученика
   };
@@ -1084,7 +1041,7 @@ export default function AdminGroups() {
         onSave={handleSave}
         token={token}
         groups={rows}
-        subjectOptions={subjectOptions}
+        trainingTypes={trainingTypes}
       />
 
       {/* ═══ Archive Confirm Modal (asks for a reason) ═══ */}

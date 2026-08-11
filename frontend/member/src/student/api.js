@@ -1,11 +1,14 @@
-// Все запросы идут на /api (dev-прокси Vite → http://localhost:4000).
+// Все запросы идут на /api (dev-прокси Vite → боевой бэкенд по конвенции
+// проекта, см. root member/api.js: по умолчанию — РЕАЛЬНЫЙ бэкенд).
 // VITE_API_URL — боевой бэкенд (Render) для production build.
-// USE_MOCKS — демо-данные в памяти для просмотра панели без бэкенда.
-//   По умолчанию включены; выключить боевым бэком: VITE_USE_MOCKS=false в .env.
+// USE_MOCKS — демо-данные в памяти, ТОЛЬКО по явному VITE_USE_MOCKS=true.
+// Раньше здесь было «моки по умолчанию» — из-за этого в рейтинге и других
+// страницах кабинета показывались выдуманные имена (Алишер) вместо реальных,
+// хотя вход уже шёл через настоящий бэкенд. Теперь по конвенции как у root.
 
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
 const USE_MOCKS =
-  typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS !== 'false' : true;
+  typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS === 'true' : false;
 
 let accessToken = null;
 let onSessionExpired = () => {};
@@ -32,12 +35,13 @@ const delay = (ms = 260) => new Promise((r) => setTimeout(r, ms));
 
 const mock = {
   user: {
-    // Совпадает с id, который root member/api.js выдаёт для demostud в mock-логине —
-    // иначе useAuth().user.id (root) и mock.user.id (этот модуль) расходятся, и
-    // Leaderboard не подсвечивает свою строку.
+    // Совпадает с id и ИМЕНЕМ, которые root member/api.js выдаёт для demostud
+    // в mock-логине (Диёр Собиров) — иначе useAuth().user (root) и mock.user
+    // расходятся, и Leaderboard не подсвечивает свою строку / показывает чужое
+    // имя на месте «ты».
     id: 'mock-student-id-001',
-    firstName: 'Алишер',
-    lastName: 'Рахимов',
+    firstName: 'Диёр',
+    lastName: 'Собиров',
     role: 'student',
     branchId: 'branch-001',
   },
@@ -133,7 +137,10 @@ function mockLeaderboard(period) {
   const base = [
     { studentId: 'x1', firstName: 'Мадина', lastName: 'Юсупова', coins: period === 'week' ? 640 : 2100 },
     { studentId: 'x2', firstName: 'Тимур', lastName: 'Алиев', coins: period === 'week' ? 580 : 1980 },
-    { studentId: mock.user.id, firstName: mock.user.firstName, lastName: mock.user.lastName, coins: mock.coins },
+    // Месячные коины ученика отличаются от недельных — иначе «скорость роста»
+    // в демо всегда была бы 100% (420/420). 1000/неделя 420 → темп 0.42 —
+    // я ниже лидера, но расту быстрее всех: ровно история «догоню Мадину».
+    { studentId: mock.user.id, firstName: mock.user.firstName, lastName: mock.user.lastName, coins: period === 'week' ? mock.coins : 1000 },
     { studentId: 'x3', firstName: 'Нигора', lastName: 'Ким', coins: period === 'week' ? 300 : 1200 },
     { studentId: 'x4', firstName: 'Botir', lastName: 'Хасанов', coins: period === 'week' ? 260 : 990 },
   ]

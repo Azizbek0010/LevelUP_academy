@@ -5,12 +5,16 @@ export const createTrainingTypeSchema = z.object({
   name: z.string().trim().min(1, 'Название обязательно').max(160),
   description: z.string().trim().max(1000).optional(),
   icon: z.string().trim().max(60).optional(),
+  // Aqlli tahlil: включать только там, где практика — реальный читаемый код
+  // (HTML/CSS/JS), не для курсов с большим числом файлов (React и т.п.)
+  aiReviewEnabled: z.coerce.boolean().default(false),
 });
 
 export const updateTrainingTypeSchema = z.object({
   name: z.string().trim().min(1).max(160).optional(),
   description: z.string().trim().max(1000).optional(),
   icon: z.string().trim().max(60).optional(),
+  aiReviewEnabled: z.coerce.boolean().optional(),
 });
 
 // ---------- Темы ----------
@@ -28,15 +32,25 @@ export const updateTopicSchema = z.object({
 });
 
 // ---------- Уроки (тест / практика) ----------
-export const createLessonSchema = z.object({
-  topicId: z.string().uuid(),
-  title: z.string().trim().min(1, 'Название обязательно').max(200),
-  lessonType: z.enum(['test', 'practical']),
-  description: z.string().trim().max(4000).optional(),
-  instruction: z.string().trim().max(2000).optional(),
-  coinReward: z.coerce.number().int().min(0).default(0),
-  videoUrl: z.string().trim().url('Некорректная ссылка').max(2000).or(z.literal('')).optional(),
-});
+export const createLessonSchema = z
+  .object({
+    topicId: z.string().uuid(),
+    title: z.string().trim().min(1, 'Название обязательно').max(200),
+    lessonType: z.enum(['test', 'practical']),
+    description: z.string().trim().max(4000).optional(),
+    instruction: z.string().trim().max(2000).optional(),
+    coinReward: z.coerce.number().int().min(0).default(0),
+    videoUrl: z.string().trim().url('Некорректная ссылка').max(2000).or(z.literal('')).optional(),
+  })
+  // practical → Aqlli tahlil (Groq) shu description'ga qarab tekshiradi —
+  // bo'sh bo'lsa AI vazifa nima ekanini bilmay, faqat kodning umumiy
+  // sifatini baholaydi (10.08.2026 xato — 70 ball vs to'g'ri 20 ball,
+  // aynan shu sabab tekshirilgan edi). Test-turdagi darsda o'z savollari
+  // bor, tavsif shart emas.
+  .refine((v) => v.lessonType !== 'practical' || Boolean(v.description?.trim()), {
+    message: "Amaliy (practical) dars uchun tavsif (description) majburiy — AI-tahlil shunga tayanadi",
+    path: ['description'],
+  });
 
 export const updateLessonSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),

@@ -1,7 +1,8 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './super.service.js';
+import * as shopService from '../admin/shop/shop-admin.service.js';
 
-// req.scope.organizationId проставляет authorize('superadmin') — своя организация
+// req.scope.organizationId проставляет authorize('seo') — своя организация
 const orgId = (req) => req.scope.organizationId;
 
 /**
@@ -54,15 +55,27 @@ export const listStudents = asyncHandler(async (req, res) => {
   res.json(await service.listStudents(orgId(req), { search, frozen, page, limit }));
 });
 
+export const studentsStats = asyncHandler(async (req, res) => {
+  res.json(await service.studentsStats(orgId(req), req.query.period, req.query.branchId));
+});
+
 export const deleteStudent = asyncHandler(async (req, res) => {
   const result = await service.deleteStudent(orgId(req), req.params.id);
   await audit(req, { action: 'student.delete', entityType: 'student', entityId: req.params.id });
   res.json(result);
 });
 
+export const studentDetail = asyncHandler(async (req, res) => {
+  res.json({ student: await service.studentDetail(orgId(req), req.params.id) });
+});
+
 // --- группы организации (Super Groups) ---
 export const listGroups = asyncHandler(async (req, res) => {
   res.json(await service.listGroups(orgId(req)));
+});
+
+export const groupDetail = asyncHandler(async (req, res) => {
+  res.json({ group: await service.groupDetail(orgId(req), req.params.id) });
 });
 export const archiveGroup = asyncHandler(async (req, res) => {
   const group = await service.setGroupArchived(orgId(req), req.params.id, true);
@@ -115,7 +128,7 @@ export const listAudit = asyncHandler(async (req, res) => {
 
 // --- статистика / отчёты ---
 export const stats = asyncHandler(async (req, res) => {
-  res.json(await service.stats(orgId(req), req.query.period));
+  res.json(await service.stats(orgId(req), req.query.period, req.query.branchId));
 });
 
 // --- филиалы ---
@@ -265,4 +278,131 @@ export const resetMethodistPassword = asyncHandler(async (req, res) => {
     entityLabel: `${methodist.firstName} ${methodist.lastName}`,
   });
   res.json({ methodist });
+});
+
+// --- branch managers ---
+
+export const createBranchManager = asyncHandler(async (req, res) => {
+  const manager = await service.createBranchManager(orgId(req), req.body);
+  await audit(req, {
+    action: 'branch_manager.create',
+    entityType: 'branch_manager',
+    entityId: manager.id,
+    entityLabel: `${manager.firstName} ${manager.lastName}`,
+  });
+  res.status(201).json({ manager });
+});
+
+export const listBranchManagers = asyncHandler(async (req, res) => {
+  res.json({ managers: await service.listBranchManagers(orgId(req)) });
+});
+
+export const resetBranchManagerPassword = asyncHandler(async (req, res) => {
+  const manager = await service.resetBranchManagerPassword(orgId(req), req.params.id);
+  await audit(req, {
+    action: 'branch_manager.reset_password',
+    entityType: 'branch_manager',
+    entityId: manager.id,
+    entityLabel: `${manager.firstName} ${manager.lastName}`,
+  });
+  res.json({ manager });
+});
+
+export const updateBranchManager = asyncHandler(async (req, res) => {
+  const manager = await service.updateBranchManager(orgId(req), req.params.id, req.body);
+  await audit(req, {
+    action: 'branch_manager.update',
+    entityType: 'branch_manager',
+    entityId: manager.id,
+    entityLabel: `${manager.firstName} ${manager.lastName}`,
+    meta: { fields: Object.keys(req.body) },
+  });
+  res.json({ manager });
+});
+
+export const reassignBranchManagers = asyncHandler(async (req, res) => {
+  const managers = await service.reassignBranchManagers(orgId(req), req.body.assignments);
+  await audit(req, {
+    action: 'branch_manager.reassign',
+    entityType: 'branch_manager',
+    meta: { assignments: req.body.assignments },
+  });
+  res.json({ managers });
+});
+
+export const freezeBranchManager = asyncHandler(async (req, res) => {
+  const manager = await service.setBranchManagerFrozen(orgId(req), req.params.id, req.body.frozen);
+  await audit(req, {
+    action: req.body.frozen ? 'branch_manager.freeze' : 'branch_manager.unfreeze',
+    entityType: 'branch_manager',
+    entityId: manager.id,
+    entityLabel: `${manager.firstName} ${manager.lastName}`,
+  });
+  res.json({ manager });
+});
+
+export const deleteBranchManager = asyncHandler(async (req, res) => {
+  const result = await service.deleteBranchManager(orgId(req), req.params.id);
+  await audit(req, {
+    action: 'branch_manager.delete',
+    entityType: 'branch_manager',
+    entityId: result.id,
+  });
+  res.json(result);
+});
+
+// --- методики / цена абонемента ---
+export const listTrainingTypes = asyncHandler(async (req, res) => {
+  res.json({ trainingTypes: await service.listTrainingTypes(orgId(req)) });
+});
+
+export const setTrainingTypePrice = asyncHandler(async (req, res) => {
+  const trainingType = await service.setTrainingTypePrice(orgId(req), req.params.id, req.body.price, req.body.maxStudents);
+  await audit(req, {
+    action: 'training_type.set_price',
+    entityType: 'training_type',
+    entityId: trainingType.id,
+    entityLabel: trainingType.name,
+  });
+  res.json({ trainingType });
+});
+
+export const setTrainingTypeArchived = asyncHandler(async (req, res) => {
+  const trainingType = await service.setTrainingTypeArchived(orgId(req), req.params.id, req.body.archived);
+  await audit(req, {
+    action: req.body.archived ? 'training_type.archive' : 'training_type.unarchive',
+    entityType: 'training_type',
+    entityId: trainingType.id,
+    entityLabel: trainingType.name,
+  });
+  res.json({ trainingType });
+});
+
+// ---------- shop-каталог: имя/цена/фото заводит SEO, остаток пополняет филиал (см. admin/shop) ----------
+
+export const listShopItems = asyncHandler(async (req, res) => {
+  res.json({ items: await shopService.listItemsForOrg(orgId(req), req.query.branchId) });
+});
+
+export const createShopItem = asyncHandler(async (req, res) => {
+  const item = await shopService.createItemForOrg(orgId(req), req.body);
+  await audit(req, { action: 'shop_item.create', entityType: 'shop_item', entityId: item.id, entityLabel: item.name });
+  res.status(201).json({ item });
+});
+
+export const updateShopItem = asyncHandler(async (req, res) => {
+  const item = await shopService.updateItemForOrg(orgId(req), req.params.id, req.body);
+  await audit(req, { action: 'shop_item.update', entityType: 'shop_item', entityId: item.id, entityLabel: item.name });
+  res.json({ item });
+});
+
+export const setShopItemArchived = asyncHandler(async (req, res) => {
+  const item = await shopService.setItemArchivedForOrg(orgId(req), req.params.id, req.body.archived);
+  await audit(req, {
+    action: req.body.archived ? 'shop_item.archive' : 'shop_item.unarchive',
+    entityType: 'shop_item',
+    entityId: item.id,
+    entityLabel: item.name,
+  });
+  res.json({ item });
 });

@@ -25,11 +25,15 @@ const PAGES = [
   '/landing/for-language-school',
   '/landing/for-courses',
   '/landing/crm-vs-excel',
+  '/landing/vs/modme',
+  '/landing/vs/umai',
   '/landing/blog',
   '/landing/blog/excel-to-crm',
   '/landing/blog/student-debts',
   '/landing/blog/attendance-automation',
   '/landing/gamification',
+  '/landing/faq',
+  '/landing/about',
   '/landing/contacts',
 ];
 

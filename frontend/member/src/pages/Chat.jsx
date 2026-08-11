@@ -35,7 +35,7 @@ const ROLE_STYLES = {
   admin: { bg: 'rgba(59,130,246,.12)', text: '#3b82f6', label: 'Админ', icon: 'shield-check' },
   mentor: { bg: 'rgba(168,85,247,.12)', text: '#a855f7', label: 'Учитель', icon: 'academic' },
   parent: { bg: 'rgba(34,197,94,.12)', text: '#22c55e', label: 'Родитель', icon: 'user' },
-  superadmin: { bg: 'rgba(245,158,11,.12)', text: '#f59e0b', label: 'Super Admin', icon: 'cog' },
+  seo: { bg: 'rgba(245,158,11,.12)', text: '#f59e0b', label: 'SEO', icon: 'cog' },
 };
 
 function TypingIndicator() {

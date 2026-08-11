@@ -6,6 +6,7 @@ import {
 import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
 import { IconTile, Ring, Pill, Skeleton, EmptyState, ErrorState, C } from '../components/ui.jsx';
+import { fmt, useI18n } from '../../i18n/index.jsx';
 
 /**
  * «Мои уроки» — реальные темы/уроки методиста (training_types → topics →
@@ -29,6 +30,7 @@ export function lessonPercent(lesson) {
 }
 
 function LessonRow({ lesson, onOpen, delay = 0 }) {
+  const { t } = useI18n();
   const isTest = lesson.type === 'test';
   const percent = lessonPercent(lesson);
   const done = isTest ? lesson.score != null : lesson.submissionStatus === 'graded';
@@ -46,15 +48,15 @@ function LessonRow({ lesson, onOpen, delay = 0 }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[11px] font-extrabold uppercase tracking-[0.08em]" style={{ color: C.muted }}>
-            {isTest ? 'Тест' : 'Домашнее задание'}
+            {isTest ? t.lessons.test : t.lessons.homework}
           </span>
-          {done && <Pill hue="teal"><Check size={11} strokeWidth={3.5} /> Готово</Pill>}
-          {inProgress && <Pill hue="amber"><Clock size={11} strokeWidth={3} /> На проверке</Pill>}
+          {done && <Pill hue="teal"><Check size={11} strokeWidth={3.5} /> {t.lessons.done}</Pill>}
+          {inProgress && <Pill hue="amber"><Clock size={11} strokeWidth={3} /> {t.lessons.checking}</Pill>}
         </div>
         <div className="text-[16px] font-extrabold leading-tight mt-1" style={{ color: C.text }}>{lesson.title}</div>
         {lesson.coinReward > 0 && (
           <div className="text-[12.5px] font-bold mt-0.5 flex items-center gap-1" style={{ color: C.limeDk }}>
-            <Star size={11} strokeWidth={3} fill="currentColor" /> +{lesson.coinReward} монет
+            <Star size={11} strokeWidth={3} fill="currentColor" /> {fmt(t.lessons.coins, { n: lesson.coinReward })}
           </div>
         )}
       </div>
@@ -70,6 +72,7 @@ function LessonRow({ lesson, onOpen, delay = 0 }) {
 export default function Lessons() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { t } = useI18n();
   const [topics, setTopics] = useState(null);
   const [error, setError] = useState(null);
 
@@ -97,8 +100,8 @@ export default function Lessons() {
         <EmptyState
           icon={Layers}
           hue="violet"
-          title="Уроков пока нет"
-          text="Курс твоей группы ещё не подключён методистом — загляни позже."
+          title={t.lessons.empty}
+          text={t.lessons.emptyText}
         />
       </div>
     );
@@ -118,10 +121,10 @@ export default function Lessons() {
         </Ring>
         <div className="min-w-0 flex-1">
           <h1 className="text-[24px] sm:text-[29px] font-extrabold leading-[1.1] tracking-[-0.025em]" style={{ color: C.text }}>
-            Мои уроки
+            {t.lessons.title}
           </h1>
           <p className="text-[13.5px] font-semibold mt-1" style={{ color: C.muted }}>
-            Готово {doneCount} из {allLessons.length}
+            {fmt(t.lessons.doneOf, { done: doneCount, total: allLessons.length })}
           </p>
         </div>
       </div>
@@ -136,7 +139,7 @@ export default function Lessons() {
               <span className="flex-1 h-px" style={{ background: C.line }} />
             </div>
             {topic.lessons.length === 0 ? (
-              <p className="text-[13px] font-semibold px-1" style={{ color: C.muted }}>Уроки скоро появятся</p>
+              <p className="text-[13px] font-semibold px-1" style={{ color: C.muted }}>{t.lessons.soon}</p>
             ) : (
               <div className="space-y-3">
                 {topic.lessons.map((lesson) => (

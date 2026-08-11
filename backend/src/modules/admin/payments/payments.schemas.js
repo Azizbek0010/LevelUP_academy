@@ -5,8 +5,10 @@ const money = z.coerce.number().positive().max(9_999_999_999);
 
 export const idParam = z.object({ id: z.string().uuid('Invalid id') });
 
+// card/transfer оставлены ради старых записей (см. 1784350000000_payment-method-uzbek-providers.js) —
+// новые платежи используют конкретный способ.
 const paymentPart = z.object({
-  method: z.enum(['cash', 'card', 'transfer']),
+  method: z.enum(['cash', 'card', 'transfer', 'humo', 'uzcard', 'uzum', 'payme', 'click', 'bank_transfer']),
   amount: money,
 });
 

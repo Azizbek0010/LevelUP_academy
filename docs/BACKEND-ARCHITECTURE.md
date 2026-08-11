@@ -3,7 +3,7 @@
 > Полная архитектура backend-части Educational CRM: Node.js + Express + PostgreSQL + Redis + Socket.io + BullMQ + MinIO/S3 + Telegram Bot.
 > Язык кода — JavaScript (ES Modules). Документ — единый источник правды для backend-разработки.
 
-> **🆕 SaaS / мульти-аренда (2026-07-05, одобрено тимлидом).** LevelUp Academy — платформа, которую мы продаём учебным центрам. Над филиалами появился слой **организаций** (тенант = партнёр) и роль **Main Admin** (владелец платформы). Иерархия: **Main Admin (мы) → Super Admin (партнёр/учебный центр) → Admin (филиал) → Mentor/Student/Parent**. Учебные центры оставляют заявку на лендинге (`leads`) → Main Admin создаёт для них `organization` + пользователя `super_admin`. Мульти-аренда стала двухуровневой: `organization → branch`. Биллинг партнёров (они платят нам за услугу) — модель оплаты пока **не определена**, схема будет добавлена после решения.
+> **🆕 SaaS / мульти-аренда (2026-07-05, одобрено тимлидом).** LevelUp Academy — платформа, которую мы продаём учебным центрам. Над филиалами появился слой **организаций** (тенант = партнёр) и роль **Main Admin** (владелец платформы). Иерархия: **Main Admin (мы) → SEO (партнёр/учебный центр) → Admin (филиал) → Mentor/Student/Parent**. Учебные центры оставляют заявку на лендинге (`leads`) → Main Admin создаёт для них `organization` + пользователя `seo`. Мульти-аренда стала двухуровневой: `organization → branch`. Биллинг партнёров (они платят нам за услугу) — модель оплаты пока **не определена**, схема будет добавлена после решения.
 
 ---
 
@@ -13,8 +13,8 @@
 
 | Роль | Область видимости | Ключевые возможности |
 |---|---|---|
-| **MainAdmin** 🆕 | Вся платформа (все организации) | Заявки с лендинга (`leads`), онбординг партнёров (создание `organization` + `super_admin`), наш доход и все партнёры, биллинг, управление организациями |
-| **SuperAdmin** | Своя организация (`organization_id`, все её филиалы) | Дашборд центра, доход/долги своей организации, CRUD филиалов, CRUD админов, отчёты по организации |
+| **MainAdmin** 🆕 | Вся платформа (все организации) | Заявки с лендинга (`leads`), онбординг партнёров (создание `organization` + `seo`), наш доход и все партнёры, биллинг, управление организациями |
+| **SEO** | Своя организация (`organization_id`, все её филиалы) | Дашборд центра, доход/долги своей организации, CRUD филиалов, CRUD админов, отчёты по организации |
 | **Admin** | Только свой филиал (`branch_id`) | Финансы (доход **и расход** `expenses`), отчёты, чеки, сплит-платежи, CRUD групп/студентов/менторов, заморозка студентов, тесты и ДЗ |
 | **Mentor** | Свои группы | Davomat (посещаемость), проверка ДЗ/тестов, коины ±, экзамены с таймером, свои зарплатные инсайты |
 | **Parent** | Только свой ребёнок | Посещаемость, оценки, статус ДЗ, долг, чат с Admin/Mentor |
@@ -103,7 +103,7 @@ educrm-backend/
 │   │   ├── shop/               # магазин за коины
 │   │   ├── videos/             # видеоуроки (S3 presigned)
 │   │   ├── chat/               # история сообщений (REST-часть чата)
-│   │   ├── reports/            # отчёты Admin/SuperAdmin, зарплаты менторов
+│   │   ├── reports/            # отчёты Admin/SEO, зарплаты менторов
 │   │   └── telegram/           # привязка TG-аккаунтов
 │   │
 │   ├── sockets/
@@ -120,7 +120,7 @@ educrm-backend/
 │   │
 │   ├── db/
 │   │   ├── migrations/         # node-pg-migrate
-│   │   └── seeds/              # default branch, superadmin
+│   │   └── seeds/              # default branch, seo
 │   │
 │   ├── utils/
 │   │   ├── AppError.js         # операционные ошибки с http-статусом
@@ -146,7 +146,7 @@ educrm-backend/
 
 - `id UUID PRIMARY KEY DEFAULT gen_random_uuid()`
 - `branch_id UUID NOT NULL REFERENCES branches(id)` — Multi-Tenancy с первого дня; тенант-корень — `branches.organization_id` (org → branch), поэтому организацию дочерних сущностей выводим через их филиал
-- Платформенные сущности (`organizations`, `leads`) и org-уровневые пользователи (`main_admin`, `super_admin`) не привязаны к одному филиалу — см. ниже
+- Платформенные сущности (`organizations`, `leads`) и org-уровневые пользователи (`main_admin`, `seo`) не привязаны к одному филиалу — см. ниже
 - `is_archived BOOLEAN NOT NULL DEFAULT false` + `deleted_at TIMESTAMPTZ` — архив и soft-delete раздельно
 - Деньги — `NUMERIC(12,2)`, никогда `FLOAT`
 - `created_at / updated_at TIMESTAMPTZ`
@@ -158,7 +158,7 @@ educrm-backend/
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";  -- gen_random_uuid()
 
 -- ---------- ENUMS ----------
-CREATE TYPE user_role          AS ENUM ('main_admin', 'superadmin', 'admin', 'mentor', 'parent', 'student');
+CREATE TYPE user_role          AS ENUM ('main_admin', 'seo', 'admin', 'mentor', 'parent', 'student');
 CREATE TYPE user_status        AS ENUM ('active', 'frozen', 'graduated', 'dropped');
 CREATE TYPE org_status         AS ENUM ('trial', 'active', 'frozen');   -- 🆕 статус организации-партнёра
 CREATE TYPE lead_status        AS ENUM ('new', 'contacted', 'onboarded', 'rejected');   -- 🆕 заявка с лендинга
@@ -177,7 +177,7 @@ CREATE TYPE tg_role            AS ENUM ('student', 'parent');
 CREATE TABLE organizations (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name          VARCHAR(160) NOT NULL,        -- напр. "Mars IT school"
-    owner_user_id UUID,                          -- super_admin владелец (FK добавляется после users)
+    owner_user_id UUID,                          -- seo владелец (FK добавляется после users)
     status        org_status NOT NULL DEFAULT 'trial',
     plan          VARCHAR(60),                   -- тариф 'pro'|'max' (config/plans.js)
     domain        VARCHAR(190),                  -- свой домен партнёра (marsit-school.us), unique; бэкенд общий
@@ -228,12 +228,12 @@ SELECT id, 'Main Branch', true FROM org;
 -- ---------- USERS (все роли в одной таблице) ----------
 -- 🆕 organization_id + nullable branch_id под иерархию ролей:
 --   main_admin  → org NULL,     branch NULL   (платформа)
---   superadmin  → org NOT NULL, branch NULL   (вся организация партнёра)
+--   seo  → org NOT NULL, branch NULL   (вся организация партнёра)
 --   admin/mentor/parent/student → org NOT NULL, branch NOT NULL (один филиал)
 CREATE TABLE users (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID REFERENCES organizations(id),      -- 🆕 NULL только у main_admin
-    branch_id       UUID REFERENCES branches(id),           -- 🆕 NULL у main_admin и superadmin
+    branch_id       UUID REFERENCES branches(id),           -- 🆕 NULL у main_admin и seo
     role            user_role NOT NULL,
     status          user_status NOT NULL DEFAULT 'active',
     first_name      VARCHAR(80)  NOT NULL,
@@ -249,7 +249,7 @@ CREATE TABLE users (
     CONSTRAINT uq_users_phone UNIQUE (phone),
     CONSTRAINT chk_user_scope CHECK (
         (role = 'main_admin' AND organization_id IS NULL AND branch_id IS NULL)
-        OR (role = 'superadmin' AND organization_id IS NOT NULL AND branch_id IS NULL)
+        OR (role = 'seo' AND organization_id IS NOT NULL AND branch_id IS NULL)
         OR (role IN ('admin','mentor','parent','student') AND organization_id IS NOT NULL AND branch_id IS NOT NULL)
     )
 );
@@ -599,7 +599,7 @@ export function authenticate(req, _res, next) {
   try {
     const payload = jwt.verify(header.slice(7), env.JWT_ACCESS_SECRET);
     // payload: { sub, role, organizationId, branchId } — подписывается в auth.service при логине
-    // organizationId = null у main_admin; branchId = null у main_admin и superadmin
+    // organizationId = null у main_admin; branchId = null у main_admin и seo
     req.user = {
       id: payload.sub,
       role: payload.role,
@@ -621,11 +621,11 @@ import { AppError } from '../utils/AppError.js';
 
 /**
  * RBAC guard.
- *   router.post('/groups', authenticate, authorize('superadmin', 'admin'), ...)
+ *   router.post('/groups', authenticate, authorize('seo', 'admin'), ...)
  *
  * Двухуровневый скоуп (org → branch), ПРИНУДИТЕЛЬНО подставляется в req.scope:
  *   - main_admin  → { organizationId: null, branchId: null } — вся платформа;
- *   - superadmin  → своя организация (organizationId из токена), branchId можно
+ *   - seo  → своя организация (organizationId из токена), branchId можно
  *     сузить через query до конкретного филиала своей организации;
  *   - остальные   → жёстко свой organizationId + branchId из токена.
  *   Клиентские organization_id / branch_id в body/query ниже своего уровня игнорируются.
@@ -641,7 +641,7 @@ export function authorize(...allowedRoles) {
 
     if (user.role === 'main_admin') {
       req.scope = { organizationId: null, branchId: null };           // вся платформа
-    } else if (user.role === 'superadmin') {
+    } else if (user.role === 'seo') {
       req.scope = { organizationId: user.organizationId, branchId: req.query.branchId ?? null };
     } else {
       req.scope = { organizationId: user.organizationId, branchId: user.branchId };
@@ -671,7 +671,7 @@ export async function findGroups(db, scope) {
     `SELECT g.* FROM groups g JOIN branches b ON b.id = g.branch_id
       WHERE ${where} ORDER BY g.created_at DESC`, params,
   );
-  return rows;   // main_admin: оба null → всё; superadmin: своя org; admin: свой филиал
+  return rows;   // main_admin: оба null → всё; seo: своя org; admin: свой филиал
 }
 ```
 
@@ -741,15 +741,15 @@ import * as ctrl from './groups.controller.js';
 const router = Router();
 router.use(authenticate);
 
-router.get('/',        authorize('superadmin', 'admin', 'mentor'), ctrl.list);
-router.get('/:id',     authorize('superadmin', 'admin', 'mentor'), ctrl.getOne);
-router.post('/',       authorize('superadmin', 'admin'), ctrl.create);
-router.put('/:id',     authorize('superadmin', 'admin'), archiveGuard('groups'), ctrl.update);
-router.delete('/:id',  authorize('superadmin', 'admin'), archiveGuard('groups'), ctrl.softDelete);
-router.post('/:id/archive', authorize('superadmin', 'admin'), ctrl.archive);
+router.get('/',        authorize('seo', 'admin', 'mentor'), ctrl.list);
+router.get('/:id',     authorize('seo', 'admin', 'mentor'), ctrl.getOne);
+router.post('/',       authorize('seo', 'admin'), ctrl.create);
+router.put('/:id',     authorize('seo', 'admin'), archiveGuard('groups'), ctrl.update);
+router.delete('/:id',  authorize('seo', 'admin'), archiveGuard('groups'), ctrl.softDelete);
+router.post('/:id/archive', authorize('seo', 'admin'), ctrl.archive);
 
 // дочерние сущности архивной группы тоже заблокированы:
-router.post('/:groupId/homework', authorize('superadmin', 'admin', 'mentor'),
+router.post('/:groupId/homework', authorize('seo', 'admin', 'mentor'),
   archiveGuard('groups', 'groupId'), ctrl.createHomework);
 
 export default router;
@@ -843,8 +843,8 @@ export function registerPresence(io, socket, redis) {
     await broadcastOnlineCount(io, redis);
   });
 
-  // дашборды SuperAdmin/Admin подписываются на комнату счётчика
-  if (user.role === 'superadmin' || user.role === 'admin') {
+  // дашборды SEO/Admin подписываются на комнату счётчика
+  if (user.role === 'seo' || user.role === 'admin') {
     socket.join('dashboards');
     getOnlineCount(redis).then((count) => socket.emit('presence:count', { count }));
   }
@@ -878,7 +878,7 @@ async function broadcastOnlineCount(io, redis) {
 // src/sockets/chat.js
 import { saveMessage } from '../modules/chat/chat.service.js';
 
-const GLOBAL_ROLES = new Set(['superadmin', 'admin', 'mentor', 'parent']);
+const GLOBAL_ROLES = new Set(['seo', 'admin', 'mentor', 'parent']);
 const parentRoom = (parentId) => `parent:${parentId}`;
 
 export function registerChat(io, socket, _redis) {
@@ -911,7 +911,7 @@ export function registerChat(io, socket, _redis) {
   // --- директ Admin/Mentor → Parent ---
   socket.on('chat:parent:send', async ({ parentId, body }, ack) => {
     try {
-      if (!['superadmin', 'admin', 'mentor'].includes(user.role)) {
+      if (!['seo', 'admin', 'mentor'].includes(user.role)) {
         throw new Error('Forbidden');
       }
 
@@ -933,7 +933,7 @@ export function registerChat(io, socket, _redis) {
 
   // ответ родителя идёт в ту же комнату — админ/ментор просто join'ится
   socket.on('chat:parent:join', ({ parentId }) => {
-    if (['superadmin', 'admin', 'mentor'].includes(user.role)) {
+    if (['seo', 'admin', 'mentor'].includes(user.role)) {
       socket.join(parentRoom(parentId));
     }
   });
@@ -957,7 +957,7 @@ import { notificationQueue } from '../../queues/notification.queue.js';
 
 /**
  * POST /api/payments
- * roles: superadmin, admin
+ * roles: seo, admin
  *
  * body (split example):
  * {
@@ -1322,15 +1322,15 @@ function fmt(n) {
 | Метод | Путь | Роли |
 |---|---|---|
 | POST | `/api/auth/login` / `/refresh` / `/logout` | все |
-| POST | `/api/main/partners` (онбординг: org+super_admin+план+домен) | main_admin |
+| POST | `/api/main/partners` (онбординг: org+seo+план+домен) | main_admin |
 | GET | `/api/main/partners`, `/api/main/dashboard` | main_admin |
-| GET/POST/PUT/DELETE | `/api/users` | superadmin, admin (свой филиал) |
-| POST | `/api/users/:id/freeze` | superadmin, admin |
-| GET/POST/PUT/DELETE | `/api/groups`, `/api/groups/:id/archive` | superadmin, admin |
+| GET/POST/PUT/DELETE | `/api/users` | seo, admin (свой филиал) |
+| POST | `/api/users/:id/freeze` | seo, admin |
+| GET/POST/PUT/DELETE | `/api/groups`, `/api/groups/:id/archive` | seo, admin |
 | GET/POST | `/api/attendance` | mentor (свои группы), admin |
-| POST | `/api/payments` (full/split) | superadmin, admin |
-| POST | `/api/payments/installment`, `/installment/:scheduleId/pay` | superadmin, admin |
-| GET | `/api/reports/revenue`, `/api/reports/debts` | superadmin (все), admin (филиал) |
+| POST | `/api/payments` (full/split) | seo, admin |
+| POST | `/api/payments/installment`, `/installment/:scheduleId/pay` | seo, admin |
+| GET | `/api/reports/revenue`, `/api/reports/debts` | seo (все), admin (филиал) |
 | GET | `/api/reports/my-salary` | mentor |
 | GET/POST | `/api/homework`, `/api/homework/:id/submissions` | mentor, admin, student (submit) |
 | POST | `/api/homework/submissions/:id/grade` | mentor |

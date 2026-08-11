@@ -1,13 +1,20 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 28.07.2026 10:49 (UTC+5, Toshkent vaqti)
-> Statistika: 190/207 task tugallangan (91%)
+> Oxirgi yangilanish: 09.08.2026 23:34 (UTC+5, Toshkent vaqti)
+> Statistika: 197/227 task tugallangan (86%)
 
 ---
 
-## Progress: [##################..] 91%
+## Progress: [#################...] 86%
 
 ## Tugallangan vazifalar
+
+### Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Karis, 09.08.2026) ✅
+- [x] AI-REVIEW: `methodology_submissions` uchun AI kod-tahlili — Groq
+- [x] TG-BRANCH-BIND: Branch Manager kabinetida (`Branch.jsx`) "Ota-onalar
+- [x] TG-ATTENDANCE: `attendance.service.js` — davomat belgilangach (3 daqiqa
+- [x] TG-TEST-RESULT: `submitTest` — har test topshirilgach natija (mavzu +
+- [x] TG-DAILY-DIGEST: har kuni 00:00 (Asia/Tashkent) — kecha muddati o'tib
 
 ### Backend — Auth (Karis)
 - [x] K-AUTH: login (3 endpoint: main/staff/member), JWT access 15m
@@ -26,7 +33,7 @@
 - [x] K-MAIN: Partner freeze/activate (PATCH /partners/:id/status)
 - [x] K-MAIN: YANGI narx modeli (2026-07-16) — o'quvchi bucket tariflari (Free/Start/Standard/Pro/Business/Network), filiallar bepul; config/plans.js TIERS + computeBill({students}); eski filial+o'quvchi formula bekor; GET /api/main/pricing endi { tiers, currency }
 
-### Backend — Super Admin (Karis)
+### Backend — SEO (Karis)
 - [x] K-SUPER: Organization dashboard (GET /api/super/dashboard: totals + branch breakdown)
 - [x] K-SUPER: CRUD branches (+ archive/unarchive) va CRUD admins (+ freeze)
 
@@ -44,7 +51,7 @@
 
 ### Backend — Xodimlar intizomi (Karis) ✅ 2026-07-18 (MVP1, main da)
 - [x] K-DISC: shtraf (summa + sabab, avto-yechish YO'Q) + qora (ishdan bo'shatish, status='fired', withTransaction)
-- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): superadmin→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
+- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): seo→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
 - [x] K-DISC: Ustav (org_charters, erkin matn, upsert, barcha xodimlarga ko'rinadi)
 - [x] K-DISC: Endpointlar — super PUT/GET /charter, POST/GET /penalties, POST /staff/:id/reactivate; admin GET /charter, POST/GET /penalties; shared GET /users/me/penalties, /users/me/charter
 - [x] K-DISC: Swagger — Discipline tegi, 10 endpoint, swagger/*.md qayta generatsiya (139 endpoint)
@@ -90,7 +97,7 @@
 - [x] AB-V1: Partner profit main dashboardda (income - expenses; pul jadvallariga faqat SELECT)
 - [x] AB-V1: Integration testlar: payments full/split + auth flow (login -> refresh -> reuse-detect -> OTP)
 
-### Backend — Super Admin Integratsiya (Karis) 🔥 hozirgi fokus
+### Backend — SEO Integratsiya (Karis) 🔥 hozirgi fokus
 - [x] K-SUPER-INT: GET + PATCH /api/super/organization — Settings (org profil) ✅ jonli tekshirildi (35586f6)
 - [x] K-SUPER-INT: Dars davomiyligi (2026-07-16) — organizations.lesson_duration_min + lessonDurationMin GET/PATCH /api/super/organization da
 - [x] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa (repository listOrgStudents: ILIKE search + LIMIT/OFFSET)
@@ -162,7 +169,7 @@
 
 ### Frontend — Auth (Elyor)
 - [x] AUTH: Login sahifalar (3 endpoint: main / staff / member) — `staff/pages/Login.jsx`, `member/pages/Login.jsx`, `main-admin/pages/Login.jsx`, uchalasi `/auth/{staff,member,main}/login` ga ulangan. `origin/elyor` da save-zone dan ortiqcha commit YO'Q — merge qilinadigan narsa qolmagan
-- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+superadmin route'larida ishlatiladi
+- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+seo route'larida ishlatiladi
 - [x] AUTH: Router setup by roles — staff/App.jsx da rolli route'lar
 - [x] AUTH: Redux authSlice — KERAK EMAS (useAuth() context yetarli, qaror 2026-07-15)
 - [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617). Auditda tasdiqlandi: `refreshPromise` 4 ta app da ham bor
@@ -170,7 +177,7 @@
 - [x] AUTH-FORGOT ✅ TUZATILDI 2026-07-28 (Karis): `staff/api.js` mock-blokiga
 - [x] AUTH-ELYOR-4 ✅ 4/4 YOPILDI 2026-07-28 (Karis): 1) admin dashboard — tuzatilgan
 
-### Frontend — Super Admin ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
+### Frontend — SEO ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 - [x] SUPER (front): Dashboard (org income, branches, admins, students)
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
 - [x] SUPER (front): CRUD admins
@@ -220,7 +227,7 @@
 - [x] MENTOR: Coins (assign/deduct)
 - [x] MENTOR: Chat — shaxsiy dm: xonalar, Socket.io + tarix, faqat xodim va ota-ona ko‘radi (2026-07-18)
 
-### Frontend — Student (Sardor) 🔥 to'liq egasi — 2026-07-26 dan
+### Frontend — Student (Odil) 🔥 to'liq egasi — 2026-08-09 dan
 - [x] STUDENT: Home (coins, groups, deadlines)
 - [x] STUDENT: Tests — Tests.jsx + TestTake.jsx (timer/scoring)
 - [x] STUDENT: Homework
@@ -231,6 +238,7 @@
 - [x] STUDENT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan): login,
 - [x] STUDENT ✅ BAJARILDI 2026-07-28 (Karis, Sardor'ning ishiga tegmasdan) —
 - [x] STUDENT UI-STATES ✅ 2026-07-28 (Karis): audit qilindi — `Home.jsx` va `TestTake.jsx`
+- [x] STUDENT (Odil): design-system — laym #C6FF34, Manrope, responsive
 
 ### Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
 - [x] PARENT: Child overview — Dashboard.jsx (useParentOverview hook)
@@ -251,7 +259,7 @@
 - [x] LANDING: Home, Features, Roles, Finance, Gamification, Contacts
 - [x] LANDING: Header, Footer, CTA
 
-### Frontend — Methodist (Said Islom, Aziz — Super Admin'dan o'tkazildi) ✅ karkas
+### Frontend — Methodist (Said Islom, Aziz — SEO'dan o'tkazildi) ✅ karkas
 - [x] METHODIST: Training Types (CRUD)
 - [x] METHODIST: Topics (CRUD)
 - [x] METHODIST: Lessons (CRUD + LessonEditor)
@@ -263,10 +271,13 @@
 - [x] UI-TABLES ✅ AUDIT + TUZATILDI 2026-07-28 (Karis): 162 ta `tabular-nums` ishlatilishi
 - [x] UI-CACHE ✅ AUDIT 2026-07-28 (Karis): barcha admin/mentor/methodist/super sahifalari
 
+### YANGI ROLLAR — Branch Manager + Finance Manager (2026-08-04, Karis og'zaki berdi)
+- [x] ROLE-RENAME-SUPERADMIN ✅ **YOPILDI 07.08.2026.** Karis SEO/CEO savoliga ikki marta
+
 ---
 
 ## Jamoa boyicha
 
-- Karis (Backend): 115 task
-- Abdulaziz (Backend): 79 task
-- Frontend jamoasi: 68 task
+- Karis (Backend): 121 task
+- Abdulaziz (Backend): 80 task
+- Frontend jamoasi: 69 task

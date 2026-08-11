@@ -5,22 +5,24 @@ import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
 import { PageHeader, Skeleton, EmptyState, ErrorState, Pill, IconTile, C } from '../components/ui.jsx';
 import { fmtDateTime } from '../format.js';
+import { fmt, useI18n } from '../../i18n/index.jsx';
 
-/** Статус теста для студента по данным списка. */
-export function testStatus(t) {
+/** Статус теста для студента по данным списка. Подписи — из словаря. */
+export function testStatus(test, t, lang = 'ru') {
   const now = Date.now();
-  if (t.finished_at) return { key: 'done', label: `Сдан · ${t.score}%`, hue: t.score >= 50 ? 'teal' : 'coral' };
-  if (t.started_at) return { key: 'inProgress', label: 'В процессе', hue: 'lime' };
-  if (t.starts_at && now < new Date(t.starts_at).getTime())
-    return { key: 'scheduled', label: `Откроется ${fmtDateTime(t.starts_at)}`, hue: 'muted' };
-  if (t.ends_at && now > new Date(t.ends_at).getTime())
-    return { key: 'closed', label: 'Закрыт', hue: 'muted' };
-  return { key: 'open', label: 'Доступен', hue: 'lime' };
+  if (test.finished_at) return { key: 'done', label: fmt(t.tests.done, { score: test.score }), hue: test.score >= 50 ? 'teal' : 'coral' };
+  if (test.started_at) return { key: 'inProgress', label: t.tests.inProgress, hue: 'lime' };
+  if (test.starts_at && now < new Date(test.starts_at).getTime())
+    return { key: 'scheduled', label: fmt(t.tests.opensAt, { date: fmtDateTime(test.starts_at, lang) }), hue: 'muted' };
+  if (test.ends_at && now > new Date(test.ends_at).getTime())
+    return { key: 'closed', label: t.tests.closed, hue: 'muted' };
+  return { key: 'open', label: t.tests.available, hue: 'lime' };
 }
 
 export default function Tests() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { lang, t } = useI18n();
   const [tests, setTests] = useState(null);
   const [error, setError] = useState(null);
 
@@ -36,7 +38,7 @@ export default function Tests() {
 
   return (
     <>
-      <PageHeader title="Тесты" subtitle="Сдай тест на 50% и выше — получишь коины" />
+      <PageHeader title={t.tests.title} subtitle={t.tests.subtitle} icon={ClipboardCheck} hue="violet" />
 
       {error ? (
         <ErrorState message={error.message} onRetry={load} />
@@ -44,31 +46,31 @@ export default function Tests() {
         <Skeleton h={72} count={4} />
       ) : tests.length === 0 ? (
         <div className="k-card">
-          <EmptyState icon={ClipboardCheck} title="Тестов пока нет" text="Ментор ещё не назначил тесты твоим группам." />
+          <EmptyState icon={ClipboardCheck} title={t.tests.empty} text={t.tests.emptyText} />
         </div>
       ) : (
-        <div className="k-card divide-y" style={{ borderColor: C.line }}>
-          {tests.map((t, i) => {
-            const st = testStatus(t);
+        <div className="k-card divide-y" style={{ borderColor: C.limeLine }}>
+          {tests.map((test, i) => {
+            const st = testStatus(test, t, lang);
             const clickable = st.key === 'open' || st.key === 'inProgress' || st.key === 'done';
             return (
               <div
-                key={t.id}
+                key={test.id}
                 role={clickable ? 'button' : undefined}
                 tabIndex={clickable ? 0 : undefined}
-                onClick={clickable ? () => navigate(`/tests/${t.id}`) : undefined}
-                onKeyDown={clickable ? (e) => (e.key === 'Enter' || e.key === ' ') && navigate(`/tests/${t.id}`) : undefined}
-                className={`k-pop-in flex items-center gap-3 px-4 py-3.5 transition-colors ${clickable ? 'k-press cursor-pointer hover:bg-[#FFF6E9]' : ''}`}
+                onClick={clickable ? () => navigate(`/tests/${test.id}`) : undefined}
+                onKeyDown={clickable ? (e) => (e.key === 'Enter' || e.key === ' ') && navigate(`/tests/${test.id}`) : undefined}
+                className={`k-pop-in flex items-center gap-3 px-4 py-3.5 flex-wrap sm:flex-nowrap transition-colors ${clickable ? 'k-press cursor-pointer hover:bg-[#EDF5E1]' : ''}`}
                 style={{ animationDelay: `${Math.min(i, 9) * 50}ms` }}
               >
                 <IconTile icon={ClipboardCheck} hue="blue" size={42} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-extrabold truncate" style={{ color: C.text }}>{t.title}</div>
-                  <div className="text-xs font-bold mt-0.5 flex items-center gap-1 flex-wrap" style={{ color: C.muted }}>
-                    <span>{t.questions.length} вопросов · {t.duration_min} мин</span>
-                    {t.coin_reward > 0 && (
+                  <div className="text-[15px] font-extrabold truncate" style={{ color: C.text }}>{test.title}</div>
+                  <div className="text-[13px] font-bold mt-0.5 flex items-center gap-1 flex-wrap" style={{ color: C.muted }}>
+                    <span>{fmt(t.tests.meta, { questions: test.questions.length, minutes: test.duration_min })}</span>
+                    {test.coin_reward > 0 && (
                       <span className="inline-flex items-center gap-0.5 font-bold" style={{ color: C.limeDk }}>
-                        · <Coins size={12} /> +{t.coin_reward}
+                        · <Coins size={12} /> {fmt(t.tests.reward, { n: test.coin_reward })}
                       </span>
                     )}
                   </div>

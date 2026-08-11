@@ -38,7 +38,7 @@
 ### Ключевые принципы
 
 - **НЕ одна SPA — пять отдельных Vite-приложений** (исправлено 2026-07-26):
-  `landing-page` · `main-admin` · `staff` (Admin + Super Admin + Mentor + Methodist) ·
+  `landing-page` · `main-admin` · `staff` (Admin + SEO + Mentor + Methodist) ·
   `member` (вход + кабинет Parent) · `student`. Внутри `staff` роль из JWT определяет
   layout и дерево маршрутов — но между приложениями общего роутера нет.
 - **Нет ролевой логики «на глазок»** — только через `RoleGuard` и ролевые layouts.
@@ -55,16 +55,16 @@
 
 | Человек | Его панель | ❌ НЕЛЬЗЯ трогать |
 |---------|-----------|-------------------|
-| Elyor | Auth | Super Admin, Admin, Mentor, Methodist |
-| Said Islom | Super Admin (дашборд) | Auth, Admin, Mentor, Methodist |
-| Aziz | Super Admin (филиалы) | Auth, Admin, Mentor, Methodist |
+| Elyor | Auth | SEO, Admin, Mentor, Methodist |
+| Said Islom | SEO (дашборд) | Auth, Admin, Mentor, Methodist |
+| Aziz | SEO (филиалы) | Auth, Admin, Mentor, Methodist |
 | Abduloh | Admin (студенты) + **весь фронт** | 🔓 **ИСКЛЮЧЕНИЕ — ограничений нет** (см. ниже) |
-| Odil | Admin (группы) | Auth, Super Admin, Mentor, Methodist |
-| Hamidula | Admin (расходы) | Auth, Super Admin, Mentor, Methodist |
-| Sardor | Mentor (дашборд) | Auth, Super Admin, Admin, Methodist |
-| Kozim | Mentor (домашки) | Auth, Super Admin, Admin, Methodist |  
-| Alish | Mentor (тесты) | Auth, Super Admin, Admin, Methodist |
-| Azizbek | Methodist | Auth, Super Admin, Admin, Mentor |
+| Odil | Admin (группы) | Auth, SEO, Mentor, Methodist |
+| Hamidula | Admin (расходы) | Auth, SEO, Mentor, Methodist |
+| Sardor | Mentor (дашборд) | Auth, SEO, Admin, Methodist |
+| Kozim | Mentor (домашки) | Auth, SEO, Admin, Methodist |  
+| Alish | Mentor (тесты) | Auth, SEO, Admin, Methodist |
+| Azizbek | Methodist | Auth, SEO, Admin, Mentor |
 
 **Почему:** Каждая панель — отдельное Vite-приложение. Смешивание кода = конфликты + ломает рабочий процесс.
 
@@ -134,7 +134,7 @@
 | Endpoint | Роль | Способ входа |
 |----------|------|-------------|
 | `POST /api/auth/main/login` | Main Admin | Email + пароль |
-| `POST /api/auth/staff/login` | Super Admin + Admin + Mentor | Email + пароль |
+| `POST /api/auth/staff/login` | SEO + Admin + Mentor | Email + пароль |
 | `POST /api/auth/member/login` | Student + Parent | Логин-код (8 симв.) + пароль (6 цифр) |
 
 > ⚠️ Единого `/api/auth/login` НЕТ. Тело у всех `{ login, password }`. Чужая роль на чужом endpoint → 401.
@@ -142,7 +142,7 @@
 ### Google OAuth (Firebase)
 
 - `POST /api/auth/main/google` — только main_admin
-- `POST /api/auth/staff/google` — admin/superadmin/mentor
+- `POST /api/auth/staff/google` — admin/seo/mentor
 - member (student/parent) — **без Google**
 
 ### Сброс пароля
@@ -170,12 +170,12 @@
 // src/app/router.jsx — ключевые маршруты
 /login          → Navigate to /login/staff
 /login/main     → LoginPage variant="main"    // Main Admin
-/login/staff    → LoginPage variant="staff"   // Super Admin + Admin + Mentor + Methodist
+/login/staff    → LoginPage variant="staff"   // SEO + Admin + Mentor + Methodist
 /login/member   → LoginPage variant="member"  // Student + Parent
 
 /student        → RoleGuard allow={['student']}   → StudentLayout
 /admin          → RoleGuard allow={['admin']}     → AdminLayout
-/superadmin     → RoleGuard allow={['superadmin']} → SuperAdminLayout
+/seo     → RoleGuard allow={['seo']} → SEOLayout
 /mentor         → RoleGuard allow={['mentor']}    → MentorLayout
 /methodist      → RoleGuard allow={['methodist']}  → MethodistLayout
 ```
@@ -189,7 +189,7 @@ frontend/
 ├── TEAM-TASKS.md          ← ЭТОТ ФАЙЛ
 ├── landing-page/          # Лендинг (React + Vite)
 ├── main-admin/            # Панель Main Admin (DaisyUI лайм)
-├── staff/                 # Панель Admin + Super Admin + Mentor + Methodist (ОБЩИЙ)
+├── staff/                 # Панель Admin + SEO + Mentor + Methodist (ОБЩИЙ)
 ├── auth/                  # Логин/регистрация (общий)
 └── logos/                 # Логотипы
 ```
@@ -222,7 +222,7 @@ src/
 |--------|-----------|------|-------------|----------|
 | **Auth** | все | Elyor | K-AUTH ✅ | §7 этого файла |
 | **Main Admin** | `main-admin` | Shohjahon | K-MAIN ✅ (announcements/profile ❌ нет) | `TASK.md` |
-| **Super Admin** | `staff/pages/super` | Said Islom, Aziz | K-SUPER ✅ + AB-SUPER-* ✅ | §8 этого файла |
+| **SEO** | `staff/pages/super` | Said Islom, Aziz | K-SUPER ✅ + AB-SUPER-* ✅ | §8 этого файла |
 | **Admin** | `staff/pages/admin` | Abduloh, Odil, Hamidula, XOB | K-ADMIN ✅ (+ group attendance/homework/feedback ✅) | §9 этого файла |
 | **Mentor** | `staff/pages/mentor` | Kozim, Alish | AB-MENTOR ✅ | §10 этого файла |
 | **Methodist** | `staff/pages/methodist` | Said Islom, Aziz (каркас — Karis) | AB-METHODIST ✅ | §11 этого файла |
@@ -262,7 +262,7 @@ src/
 #### 7.2 Страницы логина — 3 endpoint'а
 
 - `/login/main` → **Main Admin** → `POST /api/auth/main/login`
-- `/login/staff` → **Super Admin / Admin / Mentor** → `POST /api/auth/staff/login`
+- `/login/staff` → **SEO / Admin / Mentor** → `POST /api/auth/staff/login`
 - `/login/member` → **Student / Parent** (логин-код 8 симв. + пароль 6 цифр) → `POST /api/auth/member/login`
 - Голый `/login` → редирект на `/login/staff`
 
@@ -292,11 +292,11 @@ src/
 
 ---
 
-## 8. Super Admin — Karis
+## 8. SEO — Karis
 
-> 🔒 **Панель Super Admin — задача Karis.** Shohjahon её собрал (богатые страницы), Karis доводит/стилизует и закрывает. **Остальным не трогать** (Said Islom, Aziz переведены в Methodist). Разделы 8.1–8.2 ниже — исторический API-контракт, теперь под Karis.
+> 🔒 **Панель SEO — задача Karis.** Shohjahon её собрал (богатые страницы), Karis доводит/стилизует и закрывает. **Остальным не трогать** (Said Islom, Aziz переведены в Methodist). Разделы 8.1–8.2 ниже — исторический API-контракт, теперь под Karis.
 
-**Панель:** Super Admin (владелец организации, видит ВСЕ филиалы)
+**Панель:** SEO (владелец организации, видит ВСЕ филиалы)
 **Backend:** Karis, K-SUPER — ✅ готов
 
 > Скоуп своей организации бэк ставит по токену — org/branch с фронта слать НЕ нужно.
@@ -305,9 +305,9 @@ src/
 
 #### Задачи
 
-- `SuperAdminLayout`: тёмный сайдбар (Dashboard, Branches, Admins, Reports, Settings), topbar с live-онлайном, профиль, логаут
+- `SEOLayout`: тёмный сайдбар (Dashboard, Branches, Admins, Reports, Settings), topbar с live-онлайном, профиль, логаут
 - `ErrorBoundary` на layout, `lazy()` подключение
-- Dashboard (`/superadmin`): стат-карточки (Total Revenue, Outstanding Debts, Active Students, Live Online), графики (bar по филиалам, тренд долгов), таблица-обзор филиалов
+- Dashboard (`/seo`): стат-карточки (Total Revenue, Outstanding Debts, Active Students, Live Online), графики (bar по филиалам, тренд долгов), таблица-обзор филиалов
 
 #### API
 
@@ -320,7 +320,7 @@ src/
 
 #### Definition of Done
 
-- [ ] Layout + сайдбар + guard (`allow={['superadmin']}`)
+- [ ] Layout + сайдбар + guard (`allow={['seo']}`)
 - [ ] Дашборд тянет `/api/super/dashboard`, live-счётчик обновляется
 - [ ] Skeleton при загрузке, EmptyState если данных нет
 
@@ -328,8 +328,8 @@ src/
 
 #### Страницы
 
-- **Branches** (`/superadmin/branches`): CRUD филиалов, архивация/разархивация, бейдж «главный» (`isMain`)
-- **Branch Detail** (`/superadmin/branches/:id`): KPI филиала + список админов и групп
+- **Branches** (`/seo/branches`): CRUD филиалов, архивация/разархивация, бейдж «главный» (`isMain`)
+- **Branch Detail** (`/seo/branches/:id`): KPI филиала + список админов и групп
 
 #### API
 
@@ -396,7 +396,7 @@ src/
 - **Ментор** — обязателен (селектор из `GET /api/admin/mentors`).
 - **Дни:** быстрые пресеты **1-3-5** (`["mon","wed","fri"]`) и **2-4-6** (`["tue","thu","sat"]`) + кнопка «другие дни» → галочки `mon..sun` (любой набор).
 - **Время начала** — админ вводит (напр. `15:00`).
-- **Конец урока — НЕ вводится**, показывается превью: возьми длительность из `GET /api/admin/settings` → `{ lessonDurationMin }` (её задаёт Super Admin), посчитай `start + duration` (напр. 15:00 + 80 = 16:20). Реальный конец всё равно считает бэкенд — превью только для UX.
+- **Конец урока — НЕ вводится**, показывается превью: возьми длительность из `GET /api/admin/settings` → `{ lessonDurationMin }` (её задаёт SEO), посчитай `start + duration` (напр. 15:00 + 80 = 16:20). Реальный конец всё равно считает бэкенд — превью только для UX.
 - Позже день/время/ментора можно менять тем же PATCH.
 
 #### API
@@ -413,9 +413,9 @@ src/
 #### Definition of Done
 
 - [ ] CRUD групп + archive/unarchive (archiveGuard 403 ловится глобальным toast)
-- [x] 🆕 Форма группы: обязательный ментор + дни (пресеты 1-3-5 / 2-4-6 + «другие дни» галочки) + время начала
-- [x] 🆕 Превью конца урока = `startTime` + `lessonDurationMin` (из `/api/admin/settings`), пересчёт вживую
-- [x] 🆕 Правка группы: менять день/время/ментора (`days`+`startTime` вместе)
+- [ ] 🆕 Форма группы: обязательный ментор + дни (пресеты 1-3-5 / 2-4-6 + «другие дни» галочки) + время начала
+- [ ] 🆕 Превью конца урока = `startTime` + `lessonDurationMin` (из `/api/admin/settings`), пересчёт вживую
+- [ ] 🆕 Правка группы: менять день/время/ментора (`days`+`startTime` вместе)
 - [ ] Group Detail: состав, ментор, add/remove студента
 - [ ] Отчёты по филиалу из `/api/admin/dashboard`
 
@@ -542,6 +542,15 @@ src/
 - [ ] **Заглушки и Ошибки**: Реализовать Skeleton-загрузчики, EmptyState (пустые списки) и Error-компоненты с кнопкой перезагрузки на всех экранах методиста.
 - [ ] **Мобильная адаптация**: Адаптировать сетки под экраны 1280px / 768px / 375px без горизонтального скролла.
 
+#### 👤 Said Islom (Требования практических заданий) — фронт-мок ✅
+- [x] **Обязательные требования (rubrics)**: Для практических уроков вместо формы вопросов — блок «Обязательные требования» (текст + баллы, inline-строки, кнопка «Сохранить»). В списке уроков счётчик `requirements_count`, в копировании урока требования переносятся.
+- ⚠️ **API-контракт (нужен Karis на реальном бэкенде):**
+  - `GET /methodist/lessons/:id/requirements` → `[{ id, lesson_id, text, points, sort_order }]`
+  - `POST /methodist/requirements` `{ lessonId, text, points }`
+  - `PATCH /methodist/requirements/:id` `{ text, points }`
+  - `DELETE /methodist/requirements/:id`
+  - Урок (`GET/POST`) получает поле `requirements_count`; копирование урока (`POST .../copy`) переносит и требования.
+
 #### 👤 Aziz & Джава (Бизнес-логика, Редакторы и API)
 - [x] **Медиа-материалы**: Добавить поле «Видео-урок» (ссылки на YouTube/S3) в форму создания/редактирования уроков.
 - [x] **Загрузка ДЗ**: Реализовать привязку файлов (PDF, Архивы) к практическим урокам через S3-хранилище (presigned URLs).
@@ -581,7 +590,7 @@ src/
 - **Landing Page** — ✅ Готово
 - **Auth** — ✅ Готово (email/код + пароль, Google OAuth)
 - **Main Admin** — ✅ Готово (дашборд, заявки, онбординг)
-- **Super Admin** — ✅ Готово (филиалы, админы, дашборд)
+- **SEO** — ✅ Готово (филиалы, админы, дашборд)
 - **Admin** — ✅ Готово (дашборд, расходы, студенты, группы)
 - **Mentor** — ✅ Готово (ДЗ, тесты, коины, посещаемость)
 - **Student** — ✅ Готово (тесты, ДЗ, видео, магазин)
@@ -615,7 +624,7 @@ cd frontend/auth && npm run dev
 # Main Admin
 cd frontend/main-admin && npm run dev
 
-# Staff (Admin + Super Admin + Mentor + Methodist)
+# Staff (Admin + SEO + Mentor + Methodist)
 cd frontend/staff && npm run dev
 ```
 
@@ -626,7 +635,7 @@ cd frontend/staff && npm run dev
 | Роль | Email / Код | Пароль |
 |------|-------------|--------|
 | Main Admin | hp8187081014laptop@gmail.com | azizbek_10.3 |
-| Super Admin | azizbekamangeldiev.2010@gmail.com | (создаётся при онбординге) |
+| SEO | azizbekamangeldiev.2010@gmail.com | (создаётся при онбординге) |
 | Student | demostud | 123456 |
 | Parent | demopare | 654321 |
 | Mentor | mentor.demo@levelup.local | ChangeMe123! |

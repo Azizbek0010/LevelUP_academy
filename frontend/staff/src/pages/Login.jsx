@@ -55,7 +55,7 @@ function EmailField({ value, onChange, placeholder, autoFocus }) {
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="input input-bordered w-full pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]"
+        className="input input-bordered w-full pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(59,130,246,0.18)]"
       />
     </div>
   );
@@ -74,7 +74,7 @@ function PasswordField({ value, onChange, placeholder, autoComplete, minLength }
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="input input-bordered w-full pr-11 pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]"
+        className="input input-bordered w-full pr-11 pl-11 transition-shadow focus:shadow-[0_0_0_4px_rgba(59,130,246,0.18)]"
       />
       <span className="absolute inset-y-0 left-0 grid w-11 place-items-center text-base-content/40 pointer-events-none">
         <LockIcon />
@@ -115,14 +115,10 @@ function LoginForm({ onForgot }) {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    // Пробелы по краям (автозаполнение, мобильная клавиатура, вставка) не должны
-    // превращать верный логин/пароль в «неверный». Внутренние пробели сохраняем.
-    const mail = email.trim();
-    const pass = password.trim();
-    if (!mail || !pass) { setError('Введите email и пароль'); return; }
+    if (!email.trim() || !password) { setError('Введите email и пароль'); return; }
     setBusy(true);
     try {
-      await login(mail, pass);
+      await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
       if (err.status === 401) setError('Неверный email или пароль');
@@ -147,9 +143,8 @@ function LoginForm({ onForgot }) {
 
   return (
     <>
-      <div className="h-1 w-10 rounded-full bg-limebrand mb-4 animate-slide-up" />
       <h1 className="text-2xl font-bold tracking-tight animate-slide-up">Вход в панель</h1>
-      <p className="text-sm opacity-60 mb-6 animate-slide-up stagger-1">Super Admin · Администратор · Ментор · Методист</p>
+      <p className="text-sm opacity-60 mb-6 animate-slide-up stagger-1">SEO · Администратор · Branch Manager · Ментор · Методист</p>
       {error && <div role="alert" className="alert alert-error text-sm py-2 mb-4 animate-fade-in"><span>{error}</span></div>}
 
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
@@ -249,7 +244,7 @@ function ForgotForm({ onBack }) {
           </p>
           <input inputMode="numeric" maxLength={6} required autoFocus autoComplete="one-time-code" value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-            placeholder="Код из письма (6 цифр)" className="input input-bordered w-full text-center text-lg tracking-[0.5em] transition-shadow focus:shadow-[0_0_0_4px_rgba(64,131,59,0.22)]" />
+            placeholder="Код из письма (6 цифр)" className="input input-bordered w-full text-center text-lg tracking-[0.5em] transition-shadow focus:shadow-[0_0_0_4px_rgba(59,130,246,0.18)]" />
           <PasswordField
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
@@ -293,7 +288,7 @@ export default function Login() {
         <img src="/logo-white.svg" alt="LevelUp Academy" className="relative h-10 w-auto self-start animate-slide-up" />
         <div className="relative">
           <h2 className="text-3xl font-bold leading-tight animate-slide-up">Панель управления</h2>
-          <p className="opacity-60 mt-2 max-w-sm animate-slide-up stagger-1">Super Admin, Администратор, Ментор и Методист — управляйте своей организацией из одной панели.</p>
+          <p className="opacity-60 mt-2 max-w-sm animate-slide-up stagger-1">SEO, Администратор, Branch Manager, Ментор и Методист — управляйте своей организацией из одной панели.</p>
           <ul className="mt-8 space-y-3">
             {FEATURES.map((f, i) => (
               <li key={f} className={`flex items-center gap-3 text-sm opacity-80 animate-slide-up stagger-${i + 2}`}>

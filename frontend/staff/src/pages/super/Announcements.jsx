@@ -19,7 +19,7 @@ const TARGET_LABELS = {
 };
 
 const ROLE_LABEL = {
-  superadmin: 'Super Admin',
+  seo: 'SEO',
   admin:      'Администратор',
   mentor:     'Ментор',
   methodist:  'Методист',

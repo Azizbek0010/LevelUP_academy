@@ -1,6 +1,9 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { env } from '../../config/env.js';
+import { redis } from '../../config/redis.js';
 import * as service from './auth.service.js';
+import { resolveUserByQrToken } from './qr-login.service.js';
+import { AppError } from '../../utils/AppError.js';
 
 const REFRESH_COOKIE = 'refresh_token';
 const REFRESH_COOKIE_PATH = '/api/auth';
@@ -36,11 +39,11 @@ const readRefreshCookie = (req) => readCookie(req, REFRESH_COOKIE);
 
 // три раздельных входа — каждый пускает только свою группу ролей (безопасность):
 //   main   → main_admin (владелец платформы)
-//   staff  → admin, superadmin, mentor (сотрудники, вход по email)
+//   staff  → admin, seo, mentor (сотрудники, вход по email)
 //   member → student, parent (вход по логин-коду)
 const ROLE_GROUPS = {
   main: ['main_admin'],
-  staff: ['admin', 'superadmin', 'mentor', 'methodist'],
+  staff: ['admin', 'seo', 'mentor', 'methodist', 'branch_manager'],
   member: ['student', 'parent'],
 };
 
@@ -60,8 +63,23 @@ export const loginMain = makeLogin(ROLE_GROUPS.main, 'main');
 export const loginStaff = makeLogin(ROLE_GROUPS.staff, 'staff');
 export const loginMember = makeLogin(ROLE_GROUPS.member, 'member');
 
+/**
+ * Вход студента по QR — токен постоянный (users.qr_token), выдаёт admin через
+ * POST /admin/students/:id/qr-token. Тот же QR читается сколько угодно раз;
+ * логин через loginByUserId — тот же путь, что и у входа через Telegram
+ * (identity уже доказана не паролем).
+ */
+export const qrLoginMember = asyncHandler(async (req, res) => {
+  const userId = await resolveUserByQrToken(req.body.token);
+  if (!userId) throw new AppError(401, 'Invalid QR code');
+  const { user, accessToken, refreshToken } = await service.loginByUserId(userId, ROLE_GROUPS.member);
+  res.cookie(REFRESH_COOKIE, refreshToken, refreshCookieOptions());
+  res.cookie(cookieNameFor('member'), refreshToken, refreshCookieOptions());
+  res.json({ user, accessToken });
+});
+
 // вход через Google (Firebase) — по группам ролей, как обычный логин.
-// доступен main_admin И staff (admin/superadmin/mentor). Один Firebase-проект на всех.
+// доступен main_admin И staff (admin/seo/mentor). Один Firebase-проект на всех.
 // member (student/parent) — без Google (нет email, вход по логин-коду).
 function makeGoogleLogin(allowedRoles, group) {
   return asyncHandler(async (req, res) => {

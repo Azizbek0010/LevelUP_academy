@@ -167,7 +167,7 @@ sequenceDiagram
     participant S as Student (socket)
     participant IO as Socket.io
     participant R as Redis
-    participant D as SuperAdmin/Admin Dashboard
+    participant D as SEO/Admin Dashboard
 
     S->>IO: connect (JWT)
     S->>IO: presence:online

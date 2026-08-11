@@ -11,7 +11,7 @@ import {
   HiOutlineChartBar, HiOutlineCog,
   HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
-  HiOutlineExclamationTriangle,
+  HiOutlineCreditCard, HiOutlineGift, HiOutlineCalendarDays,
 } from 'react-icons/hi2';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
@@ -37,7 +37,7 @@ function useMediaQuery(query) {
 
 /* ──────────────────── NAV CONFIG ──────────────────── */
 /**
- * Меню Super Admin: тринадцать пунктов свёрнуты в семь.
+ * Меню SEO: тринадцать пунктов свёрнуты в семь.
  *
  * Две проблемы были одновременно. Первая — длина: одиннадцать ссылок подряд,
  * где ежедневный дашборд стоял наравне с аудитом, который открывают раз в
@@ -81,6 +81,9 @@ const superNav = [
       { to: '/announcements', label: 'Объявления' },
       { to: '/reminders',     label: 'Напоминания' },
       { to: '/audit',         label: 'Аудит' },
+      { to: '/methodics',     label: 'Методики' },
+      { to: '/shop-catalog',  label: 'Магазин' },
+      { to: '/settings',      label: 'Настройки' },
     ],
   },
 ];
@@ -90,11 +93,32 @@ const adminNav = [
   { to: '/students',  label: 'Студенты',    Icon: HiOutlineAcademicCap },
   { to: '/groups',    label: 'Группы',      Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Менторы',     Icon: HiOutlineUserCircle },
-  { to: '/discipline', label: 'Дисциплина', Icon: HiOutlineExclamationTriangle },
   { to: '/chat',      label: 'Чат',         Icon: HiOutlineChatBubbleLeftRight },
+  { to: '/shop',      label: 'Магазин',     Icon: HiOutlineGift },
+  { to: '/schedule',  label: 'Расписание',  Icon: HiOutlineCalendarDays },
   { to: '/payments',  label: 'Платежи',     Icon: HiOutlineWallet },
   { to: '/expenses',  label: 'Расходы',     Icon: HiOutlineReceiptPercent },
   { to: '/reports',   label: 'Отчёты',      Icon: HiOutlineChartBar },
+];
+
+/**
+ * Меню Branch Manager — 07.08.2026 роль поднята с read-only до полных прав
+ * admin в своём филиале (решение Karis): те же Студенты/Группы/Менторы/
+ * Платежи, что у admin (те же страницы, req.scope уже ограничивает своим
+ * филиалом), плюс собственный обзорный блок (Filial/Daromad/Hisobotlar).
+ */
+const branchManagerNav = [
+  { to: '/',          label: 'Boshqaruv', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/students',  label: 'Studentlar', Icon: HiOutlineAcademicCap },
+  { to: '/groups',    label: 'Guruhlar',  Icon: HiOutlineUsers },
+  { to: '/mentors',   label: 'Mentorlar', Icon: HiOutlineUserCircle },
+  { to: '/shop',      label: 'Do\'kon',   Icon: HiOutlineGift },
+  { to: '/schedule',  label: 'Jadval',    Icon: HiOutlineCalendarDays },
+  { to: '/branch',    label: 'Filial',    Icon: HiOutlineBuildingOffice2 },
+  { to: '/payments',  label: 'To\'lovlar', Icon: HiOutlineCreditCard },
+  { to: '/income',    label: 'Daromad',   Icon: HiOutlineWallet },
+  { to: '/expenses',  label: 'Xarajatlar', Icon: HiOutlineReceiptPercent },
+  { to: '/reports',   label: 'Hisobotlar', Icon: HiOutlineChartBar },
 ];
 
 /**
@@ -120,22 +144,25 @@ const methodistNav = [
 ];
 
 const ROLE_NAV = {
-  superadmin: superNav,
+  seo: superNav,
   admin: adminNav,
+  branch_manager: branchManagerNav,
   mentor: mentorNav,
   methodist: methodistNav,
 };
 
 const ROLE_TITLE = {
-  superadmin: 'Super Admin',
+  seo: 'SEO',
   admin: 'Администратор',
+  branch_manager: 'Branch Manager',
   mentor: 'Ментор',
   methodist: 'Методист',
 };
 
 const ROLE_COLORS = {
-  superadmin: '#8b5cf6',
+  seo: '#8b5cf6',
   admin: '#3b82f6',
+  branch_manager: '#0ea5e9',
   mentor: '#3b82f6',
   methodist: '#f59e0b',
 };
@@ -225,9 +252,9 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
   );
 }
 
-/* ──────────────────── SUPER ADMIN: список филиалов ────────────────────
+/* ──────────────────── SEO: список филиалов ────────────────────
    То же решение, что у ментора с группами: филиал — главная сущность
-   Super Admin, и выбирать его логично один раз в меню, а не заходить сначала
+   SEO, и выбирать его логично один раз в меню, а не заходить сначала
    в список, потом в карточку. Хук вызывается только под этой ролью —
    у остальных /super/branches вернул бы 403. */
 function SuperBranchesNav({ collapsed, onExpandSidebar }) {
@@ -789,6 +816,9 @@ function Header({ sidebarWidth, onMobileToggle }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const role = user?.role;
+  // Профиль есть не у всех ролей: у branch_manager отдельной страницы пока нет,
+  // и пункт «Профиль» в меню аккаунта был бы кнопкой, которая ведёт на «/».
+  const hasProfilePage = ['admin', 'seo', 'mentor', 'methodist'].includes(role);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 
@@ -890,16 +920,18 @@ function Header({ sidebarWidth, onMobileToggle }) {
             </div>
 
             <div className="p-1.5">
-              <button
-                role="menuitem"
-                onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[rgba(59,130,246,0.08)] hover:text-[var(--text)] transition-colors"
-              >
-                <span className="w-7 h-7 rounded-lg bg-[var(--surface-hover)] grid place-items-center shrink-0">
-                  <UserIcon size={14} />
-                </span>
-                Профиль
-              </button>
+              {hasProfilePage && (
+                <button
+                  role="menuitem"
+                  onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[rgba(59,130,246,0.08)] hover:text-[var(--text)] transition-colors"
+                >
+                  <span className="w-7 h-7 rounded-lg bg-[var(--surface-hover)] grid place-items-center shrink-0">
+                    <UserIcon size={14} />
+                  </span>
+                  Профиль
+                </button>
+              )}
               <button
                 role="menuitem"
                 onClick={onLogout}

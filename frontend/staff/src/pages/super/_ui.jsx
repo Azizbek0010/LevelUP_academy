@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Search, Inbox, X, ArrowRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 /**
- * Общие кирпичики панели Super Admin.
+ * Общие кирпичики панели SEO.
  *
  * Из 15 страниц только 3 сидели на ../mentor/_ui.jsx, остальные 12 писали
  * карточки/поиск/пустоты/модалки руками — набралось 5 форм KPI-плитки,

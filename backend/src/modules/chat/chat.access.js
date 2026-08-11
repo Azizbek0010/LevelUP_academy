@@ -20,7 +20,7 @@ import { AppError } from '../../utils/AppError.js';
  * Право на диалог = наличие реальной связи в данных, а не роль сама по себе:
  *   mentor     — родитель имеет ребёнка в группе ЭТОГО ментора;
  *   admin      — ребёнок учится в филиале админа;
- *   superadmin — ребёнок учится в одном из филиалов его организации.
+ *   seo        — ребёнок учится в одном из филиалов его организации.
  * main_admin исключён: платформенный владелец не переписывается с родителями
  * партнёров.
  *
@@ -36,7 +36,7 @@ export function isUuid(value) {
 }
 
 /** Роли, которым вообще разрешена личная переписка с родителем. */
-export const DM_STAFF_ROLES = new Set(['mentor', 'admin', 'superadmin']);
+export const DM_STAFF_ROLES = new Set(['mentor', 'admin', 'seo']);
 
 /** Ключ комнаты личного диалога. Порядок фиксирован: staff, затем parent. */
 export function dmRoom(staffId, parentId) {
@@ -92,7 +92,7 @@ export async function canStaffChatParent(user, parentId, db = pool) {
     return rows.length > 0;
   }
 
-  // superadmin — любой филиал своей организации
+  // seo — любой филиал своей организации
   if (!user.organizationId) return false;
   const { rows } = await db.query(
     `SELECT 1

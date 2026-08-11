@@ -37,7 +37,7 @@ frontend/
 ├── landing-page/     # Лендинг, форма заявки → POST /api/leads (публично, без токена)
 ├── main-admin/       # Main Admin: свой логин (email+пароль, POST /api/auth/main/login + Google)
 ├── staff/            # ОДНО приложение, ОДИН логин (POST /api/auth/staff/login) —
-│                     # Admin + Mentor + Methodist + Super Admin. Роль из JWT решает,
+│                     # Admin + Mentor + Methodist + SEO. Роль из JWT решает,
 │                     # какой раздел показывать (App.jsx: DashboardRedirect/RequireSuperadmin)
 ├── member/           # Student/Parent: логин-код+пароль (POST /api/auth/member/login)
 │   └── src/student/  # Кабинет ученика (уроки/тесты/ДЗ/видео/магазин/лидерборд).
@@ -70,19 +70,19 @@ frontend/
 
 ### Особый случай: `frontend/staff/src/pages/super/`
 
-Super Admin-раздел (роуты `/super/*`) — перенесённый код отдельного прототипа
+SEO-раздел (роуты `/super/*`) — перенесённый код отдельного прототипа
 (автор Shohjahon), архитектурно ОТЛИЧАЕТСЯ от остального staff:
 
 - **TypeScript (.ts/.tsx)**, а не JS/JSX — Vite это поддерживает без доп. конфига
-- Свой `Layout` (`layouts/SuperAdminLayout.tsx`) — не общий `components/Layout.jsx`
+- Свой `Layout` (`layouts/SEOLayout.tsx`) — не общий `components/Layout.jsx`
 - Свой auth-store на **zustand** (`shared/stores/auth.ts`), а не React Context — синхронизируется
   с общим `useAuth()` через `AuthSync.jsx` (mount-обёртка, копирует token/user в zustand при их
   смене), поэтому логин один общий, но код читает сессию по-своему
 - Свой fetch-клиент `shared/api/http.ts` (не общий `api.js`), TanStack Query — тот же клиент,
   что и остальной staff (`QueryClientProvider` в `main.jsx` один на всё приложение)
-- Свой CSS: `superadmin.css` — портирован с Tailwind v4 (оригинал) под Tailwind v3 (staff),
+- Свой CSS: `seo.css` — портирован с Tailwind v4 (оригинал) под Tailwind v3 (staff),
   с CSS-переменными-мостиком под тему `tailwind.config.js`
-- Внутренняя структура (`features/superadmin/<domain>/*Page.tsx`, `shared/ui/*`,
+- Внутренняя структура (`features/seo/<domain>/*Page.tsx`, `shared/ui/*`,
   `shared/api/endpoints/*`) — не описывается здесь построчно, см. сам код в
   `frontend/staff/src/pages/super/`
 
@@ -106,12 +106,12 @@ const AdminLayout   = lazy(() => import('../layouts/AdminLayout'));
 export const router = createBrowserRouter([
   // 3 РАЗДЕЛЬНЫХ входа по группам ролей — у каждого СВОЙ endpoint (безопасность):
   //   main   → POST /api/auth/main/login   (main_admin)
-  //   staff  → POST /api/auth/staff/login  (admin, superadmin, mentor)
+  //   staff  → POST /api/auth/staff/login  (admin, seo, mentor)
   //   member → POST /api/auth/member/login (student, parent)
   // Чужая роль на чужом endpoint → 401 (как неверный пароль). Тело у всех { login, password }.
   { path: '/login',        element: <Navigate to="/login/staff" replace /> },
   { path: '/login/main',   element: <LoginPage variant="main" /> },     // Main Admin (платформа)
-  { path: '/login/staff',  element: <LoginPage variant="staff" /> },    // Super Admin + Admin + Mentor
+  { path: '/login/staff',  element: <LoginPage variant="staff" /> },    // SEO + Admin + Mentor
   { path: '/login/member', element: <LoginPage variant="member" /> },   // Student + Parent
 
   {
@@ -133,7 +133,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/admin',
-        element: <RoleGuard allow={['admin', 'superadmin']}><AdminLayout /></RoleGuard>,
+        element: <RoleGuard allow={['admin', 'seo']}><AdminLayout /></RoleGuard>,
         children: [
           { index: true, element: <AdminDashboard /> },          // live-онлайн, выручка
           { path: 'students', element: <StudentsPage /> },
@@ -144,7 +144,7 @@ export const router = createBrowserRouter([
           { path: 'chat',     element: <ChatPage /> },
         ],
       },
-      // /mentor, /parent, /superadmin — по тому же паттерну
+      // /mentor, /parent, /seo — по тому же паттерну
     ],
   },
 
@@ -159,7 +159,7 @@ import { useSelector } from 'react-redux';
 
 const HOME_BY_ROLE = {
   main_admin: '/main',
-  superadmin: '/superadmin',
+  seo: '/seo',
   admin: '/admin',
   mentor: '/mentor',
   parent: '/parent',
@@ -188,7 +188,7 @@ export function RoleGuard({ allow, children }) {
 | URL | Для кого | variant | endpoint |
 |---|---|---|---|
 | `/login/main` | Main Admin (владельцы платформы) | `main` | `POST /api/auth/main/login` |
-| `/login/staff` | Super Admin + Admin + Mentor | `staff` | `POST /api/auth/staff/login` |
+| `/login/staff` | SEO + Admin + Mentor | `staff` | `POST /api/auth/staff/login` |
 | `/login/member` | Student + Parent | `member` | `POST /api/auth/member/login` |
 
 - Голый `/login` → редирект на `/login/staff` (дефолт).
@@ -373,7 +373,7 @@ export function disconnectSocket() {
 ```
 
 ```js
-// src/hooks/useOnlineCount.js — live-счётчик для дашбордов SuperAdmin/Admin
+// src/hooks/useOnlineCount.js — live-счётчик для дашбордов SEO/Admin
 import { useEffect, useState } from 'react';
 import { connectSocket } from '../sockets/socket';
 
@@ -481,7 +481,7 @@ export default {
 | | Платежи | `POST /api/payments` (full/split), `/installment` | — |
 | | Группы/студенты | CRUD, `/:id/archive`, `/users/:id/freeze` | — |
 | | Чат | история по REST | `chat:global:*`, `chat:parent:*` |
-| **SuperAdmin** | Глобальный дашборд | те же отчёты без branch-фильтра | `presence:count` |
+| **SEO** | Глобальный дашборд | те же отчёты без branch-фильтра | `presence:count` |
 
 ### Ключевые UI-паттерны страниц
 

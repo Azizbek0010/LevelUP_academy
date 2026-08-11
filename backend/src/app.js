@@ -20,6 +20,7 @@ import mainRoutes from './modules/main/main.routes.js';
 import leadsRoutes from './modules/main/leads.routes.js';
 import superRoutes from './modules/super/super.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
+import branchManagerRoutes from './modules/branch-manager/branch-manager.routes.js';
 import methodistRoutes from './modules/methodist/methodist.routes.js';
 import telegramRoutes from './modules/telegram/telegram.routes.js';
 
@@ -151,9 +152,10 @@ export function createApp() {
   app.use('/api/chat', chatRoutes);
   app.use('/api/leads', leadsRoutes); // ПУБЛИЧНЫЙ приём заявок с лендинга (без токена)
   app.use('/api/main', mainRoutes);   // Main Admin: онбординг партнёров, дашборд платформы
-  app.use('/api/super', superRoutes); // Super Admin: филиалы + админы своей организации
-  app.use('/api/admin', adminRoutes); // K-ADMIN: филиал — дашборд, расходы, студенты, группы
-  app.use('/api/methodist', methodistRoutes); // METHODIST: тесты, ДЗ, аналитика
+  app.use('/api/super', superRoutes); // SEO: филиалы + админы своей организации
+app.use('/api/admin', adminRoutes); // K-ADMIN: филиал — дашборд, расходы, студенты, группы
+app.use('/api/branch-manager', branchManagerRoutes); // BRANCH MANAGER: дашборд/доход/расход/отчёты/карточка своего филиала
+app.use('/api/methodist', methodistRoutes); // METHODIST: тесты, ДЗ, аналитика
   app.use('/api/coins', coinsRoutes);       // AB: студент — баланс/история коинов
   app.use('/api/users', usersRoutes);       // AB-SHARED: профиль, список филиала
   app.use('/api/mentor', mentorRoutes);     // AB-MENTOR: davomat, ДЗ, тесты, зарплата

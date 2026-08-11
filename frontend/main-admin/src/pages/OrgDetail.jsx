@@ -17,7 +17,7 @@ import { SkeletonKpis } from '../components/Skeleton.jsx';
 
 function Kpi({ Icon, label, value, sub, tint, accent }) {
   return (
-    <div className={`card shadow-sm border ${accent ? 'bg-primary border-primary' : 'bg-base-100 border-base-200/60'}`}>
+    <div className={`card shadow-sm border ${accent ? 'bg-gradient-to-br from-lime-400 to-lime-500 border-lime-400' : 'bg-base-100 border-base-200/60'}`}>
       <div className="card-body p-5">
         <div className="flex items-center gap-2 mb-2">
           <span
@@ -26,10 +26,10 @@ function Kpi({ Icon, label, value, sub, tint, accent }) {
           >
             <Icon size={15} strokeWidth={2.3} />
           </span>
-          <span className={`text-[11px] font-semibold uppercase tracking-wider ${accent ? 'text-primary-content/60' : 'text-base-content/45'}`}>{label}</span>
+          <span className={`text-[11px] font-semibold uppercase tracking-wider ${accent ? 'text-lime-950/60' : 'text-base-content/45'}`}>{label}</span>
         </div>
-        <div className={`text-3xl font-extrabold leading-none ${accent ? 'text-primary-content' : ''}`}>{value}</div>
-        {sub && <div className={`text-xs mt-1 ${accent ? 'text-primary-content/55' : 'text-base-content/45'}`}>{sub}</div>}
+        <div className={`text-3xl font-extrabold leading-none ${accent ? 'text-lime-950' : ''}`}>{value}</div>
+        {sub && <div className={`text-xs mt-1 ${accent ? 'text-lime-950/55' : 'text-base-content/45'}`}>{sub}</div>}
       </div>
     </div>
   );
@@ -79,7 +79,7 @@ function BillingBreakdown({ partner, pricing, cur }) {
         </div>
         <div className="border-t border-base-300 pt-3 flex items-center justify-between">
           <span className="font-bold">По тарифу / мес</span>
-          <span className="text-xl font-extrabold text-primary-content tabular-nums">{tierPriceLabel(tier, cur)}</span>
+          <span className="text-xl font-extrabold text-lime-600 tabular-nums">{tierPriceLabel(tier, cur)}</span>
         </div>
       </div>
       {diff && (
@@ -174,7 +174,7 @@ export default function OrgDetail() {
         <>
           {/* Hero header */}
           <div className="card bg-base-100 border border-base-200/60 shadow-sm overflow-hidden">
-            <div className="h-2 bg-primary" />
+            <div className="h-2 bg-gradient-to-r from-lime-400 via-lime-500 to-lime-600" />
             <div className="card-body flex-row flex-wrap items-start gap-5 pt-5">
               <div className="relative shrink-0">
                 <Avatar name={partner.name} size={68} />
@@ -215,9 +215,9 @@ export default function OrgDetail() {
                     <span className="text-base-content/60">Учеников:</span>
                     <span className="font-bold">{fmt(partner.students)}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/30 rounded-lg">
-                    <Wallet size={13} className="text-primary-content" />
-                    <span className="text-primary-content font-bold">{fmt(partner.monthlyBill)} {cur}/мес</span>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-lime-50 border border-lime-200 rounded-lg">
+                    <Wallet size={13} className="text-lime-600" />
+                    <span className="text-lime-700 font-bold">{fmt(partner.monthlyBill)} {cur}/мес</span>
                   </div>
                 </div>
               </div>
@@ -267,7 +267,7 @@ export default function OrgDetail() {
                     onClick={() => setTab(t.key)}
                     className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-semibold border-b-2 transition-colors -mb-px ${
                       tab === t.key
-                        ? 'border-primary text-primary-content'
+                        ? 'border-lime-500 text-lime-700'
                         : 'border-transparent text-base-content/50 hover:text-base-content'
                     }`}
                   >
@@ -287,14 +287,14 @@ export default function OrgDetail() {
                     <div className="p-4 border border-base-200 rounded-2xl">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <TrendingUp size={15} className="text-primary-content" />
+                          <TrendingUp size={15} className="text-lime-600" />
                           <span className="font-semibold text-sm">Доля в доходе платформы</span>
                         </div>
-                        <span className="text-lg font-extrabold text-primary-content">{share}%</span>
+                        <span className="text-lg font-extrabold text-lime-600">{share}%</span>
                       </div>
                       <div className="h-2 bg-base-200 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-primary rounded-full transition-all"
+                          className="h-full bg-gradient-to-r from-lime-400 to-lime-500 rounded-full transition-all"
                           style={{ width: `${Math.min(100, parseFloat(share))}%` }}
                         />
                       </div>
@@ -322,7 +322,7 @@ export default function OrgDetail() {
                   <div className="grid grid-cols-3 gap-3">
                     {[
                       { label: 'Ученик / филиал', value: partner.branches ? (partner.students / partner.branches).toFixed(1) : '—', note: 'среднее', color: 'text-blue-600' },
-                      { label: 'Счёт / ученик', value: partner.students ? fmt(Math.round(partner.monthlyBill / partner.students)) : '—', note: cur + '/мес', color: 'text-primary-content' },
+                      { label: 'Счёт / ученик', value: partner.students ? fmt(Math.round(partner.monthlyBill / partner.students)) : '—', note: cur + '/мес', color: 'text-lime-600' },
                       { label: 'Счёт / филиал', value: partner.branches ? fmt(Math.round(partner.monthlyBill / partner.branches)) : '—', note: cur + '/мес', color: 'text-purple-600' },
                     ].map((item) => (
                       <div key={item.label} className="bg-base-200/40 rounded-xl p-3 text-center">
@@ -340,7 +340,7 @@ export default function OrgDetail() {
                 <div className="space-y-5">
                   <div>
                     <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                      <CreditCard size={15} className="text-primary-content" />
+                      <CreditCard size={15} className="text-lime-600" />
                       Расчёт счёта по тарифам
                     </h3>
                     <BillingBreakdown partner={partner} pricing={pricing} cur={cur} />
@@ -349,10 +349,10 @@ export default function OrgDetail() {
                   <div className="border-t border-base-200 pt-4">
                     <h3 className="font-bold text-sm mb-3">Фактические данные</h3>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
-                        <div className="text-xs text-primary-content/70 mb-1 font-semibold uppercase tracking-wide">К оплате / мес</div>
-                        <div className="text-2xl font-extrabold text-primary-content">{fmt(partner.monthlyBill)}</div>
-                        <div className="text-xs text-primary-content/60 mt-0.5">{cur}</div>
+                      <div className="bg-lime-50 border border-lime-100 rounded-xl p-4">
+                        <div className="text-xs text-lime-700/70 mb-1 font-semibold uppercase tracking-wide">К оплате / мес</div>
+                        <div className="text-2xl font-extrabold text-lime-700">{fmt(partner.monthlyBill)}</div>
+                        <div className="text-xs text-lime-700/60 mt-0.5">{cur}</div>
                       </div>
                       <div className="bg-base-200/40 border border-base-200 rounded-xl p-4">
                         <div className="text-xs text-base-content/50 mb-1 font-semibold uppercase tracking-wide">Доля платформы</div>
@@ -375,7 +375,7 @@ export default function OrgDetail() {
                     ['Дней на платформе', String(daysSince)],
                     ['Количество филиалов', fmt(partner.branches)],
                     ['Количество учеников', fmt(partner.students)],
-                    ['Ежемесячный счёт', <span key="b" className="font-bold text-primary-content">{fmt(partner.monthlyBill)} {cur}</span>],
+                    ['Ежемесячный счёт', <span key="b" className="font-bold text-lime-700">{fmt(partner.monthlyBill)} {cur}</span>],
                     ['Доля в доходе', `${share}%`],
                     ['ID', <span key="id" className="font-mono text-xs text-base-content/50">{partner.id}</span>],
                   ].map(([label, val]) => (

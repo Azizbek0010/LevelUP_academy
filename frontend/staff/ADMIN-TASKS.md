@@ -109,7 +109,7 @@
 
 ### 13. Charter.jsx — Abduloh 🆕 (yangi sahifa, faqat o'qish)
 - [ ] **FE-ADMIN-CHARTER:** backend TAYYOR — `GET /api/admin/charter` (faqat o'qish,
-      egasi Super Admin — `PUT /api/super/charter`). Swagger: `swagger/discipline.md`.
+      egasi SEO — `PUT /api/super/charter`). Swagger: `swagger/discipline.md`.
       Admin panelda ustav matnini ko'rsatish (read-only). Settings ichida tab sifatida ham bo'lishi mumkin.
 
 ---

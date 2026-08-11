@@ -147,7 +147,7 @@ export const components = {
         id: { type: 'string', format: 'uuid' },
         role: {
           type: 'string',
-          enum: ['main_admin', 'superadmin', 'admin', 'mentor', 'student', 'parent', 'methodist'],
+          enum: ['main_admin', 'seo', 'admin', 'mentor', 'student', 'parent', 'methodist'],
         },
         organizationId: { type: 'string', format: 'uuid', nullable: true },
         branchId: { type: 'string', format: 'uuid', nullable: true },
@@ -221,7 +221,7 @@ export const components = {
     Organization: {
       type: 'object',
       description:
-        'Partner organization profile (Super Admin → Settings). `plan` is derived at read time ' +
+        'Partner organization profile (SEO → Settings). `plan` is derived at read time ' +
         'from the org tier via config/plans.js — it is not a stored column.',
       properties: {
         id: { type: 'string', format: 'uuid' },
@@ -271,7 +271,7 @@ export const components = {
         id: { type: 'string', format: 'uuid' },
         title: { type: 'string' },
         body: { type: 'string' },
-        targetType: { type: 'string', enum: ['all-partners', 'all-superadmins'] },
+        targetType: { type: 'string', enum: ['all-partners', 'all-seo'] },
         recipientCount: {
           type: 'integer',
           description: 'Counted at send time and frozen — the audience changes later.',
@@ -301,7 +301,7 @@ export const components = {
       description:
         'Staff penalty seen from the platform level. READ-ONLY for main_admin: by the ' +
         'CAN_ISSUE matrix the platform owner issues penalties to nobody — they are issued ' +
-        'by Super Admin and Admin inside their own organization.',
+        'by SEO and Admin inside their own organization.',
       properties: {
         id: { type: 'string', format: 'uuid' },
         type: { type: 'string', enum: ['sariq', 'qizil', 'qora'] },
@@ -1412,7 +1412,7 @@ export const components = {
         target_role: { type: 'string', enum: ['admin', 'mentor', 'methodist'] },
         target_name: { type: 'string' },
         issued_by: { type: 'string', format: 'uuid' },
-        issuer_role: { type: 'string', enum: ['superadmin', 'admin'] },
+        issuer_role: { type: 'string', enum: ['seo', 'admin'] },
         issued_by_name: { type: 'string' },
       },
     },

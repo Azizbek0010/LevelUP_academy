@@ -5,7 +5,7 @@ export const idParamSchema = z.object({
 });
 
 export const listUsersQuerySchema = z.object({
-  role: z.enum(['main_admin', 'superadmin', 'admin', 'mentor', 'methodist', 'parent', 'student']).optional(),
+  role: z.enum(['main_admin', 'seo', 'admin', 'mentor', 'methodist', 'parent', 'student']).optional(),
   status: z.enum(['active', 'frozen', 'graduated', 'dropped']).optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),

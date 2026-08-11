@@ -4,26 +4,119 @@
 > Statistika qo'lda YOZILMAYDI — real raqamlar faqat `done.md` da.
 > V1 SCOPE: naqd + karta (full/split). Click/Payme/UzCard/Humo — FAQAT v3. Nasiya/рассрочка — V1 DA YO'Q (qaror 2026-07-05, tasdiqlangan 2026-07-07).
 
-## ⚠️ Jamoa branch'lari — save-zone'ga hali qo'shilmagan (2026-07-28 tekshiruvi)
+## Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Karis, 09.08.2026) ✅
 
-> `git fetch --all` + har birini save-zone'ga merge qilishga urinildi. Uchtasi konflikt/muammo
-> tufayli qo'shilmadi — **konfliktni branch egasi hal qilsin, Karis emas** (qoida). Boshqa hamma
-> branch (Abduloh, Bilol, Islom, abdulaziz/student-panel, alisher/mentor-panel, aziz/branches,
-> elyor, methodist, rey, shohjahon, xob) — save-zone bilan bab-baravar, qo'shimcha ish yo'q.
+> Backend'ga tegishli bo'lgan hammasi — Karis qildi (Claude bilan birga, shu
+> sessiyada) — odatdagi zona egasi (Abdulaziz: Mentor/Student/Parent) emas,
+> chunki Karis Team Lead sifatida to'g'ridan-to'g'ri o'zi ishladi.
+>
+> (1) AI kod-review (backend, Groq — Gemini emas, pastga qara), (2) Branch
+> Manager filial uchun ota-onalar Telegram guruhini ulaydi, (3) davomat va
+> (4) test natijasi shu guruhga avto boradi, (5) har kuni 00:00'da kecha
+> topshirilmagan uy vazifalari sodig'i. Hammasi save-zone'ga PUSH QILINDI
+> (`d75d8d9`, `11af73c`), migratsiyalar Neon'ga qo'llandi, testlar yashil.
 
-- **`hamidulla`** (1 commit, 07-21, admin sahifalar — Expenses/GroupDetail/Groups/Mentors/
-  Payments/Reports/StudentDetail/Students): save-zone o'shandan beri ancha oldinga ketgan,
-  merge 9 ta faylda konflikt beryapti. Hamidula o'zida `git merge save-zone`, konfliktlarni
-  hal qilib qayta pushlasin.
-- **`iface9808` (Kama)** (1 commit, 07-27, member chat redesign): `api.js`/`Chat.jsx`/
-  `Profile.jsx`/`vite.config.js` da konflikt — aynan shu fayllarda 07-28 da AB-VERIFY bag
-  tuzatildi (parent chat `dm:` xona formatiga o'tkazildi + `/socket.io` prokси). Kama
-  save-zone'ni tortib olib, ESKI `parent:<id>` formatga qaytarib yubormasdan o'z dizaynini
-  ustiga qursin — aks holda chat yana ishlamay qoladi.
-- **`alish`** (2 commit, 07-14): repo ILDIZIGA butunlay yangi Vite-ilova qo'yilgan
-  (`package.json`, `src/pages/ChatPage.jsx` va h.k. — `frontend/` ichida emas). Bu allaqachon
-  ma'lum muammo (frontend/TEAM-TASKS.md'da yozilgan). Merge qilinmadi — Alish `frontend/`
-  ichida to'g'ri joyda qayta boshlashi kerak, aks holda repo tuzilishi buziladi.
+- [x] AI-REVIEW: `methodology_submissions` uchun AI kod-tahlili — Groq
+      (`openai/gpt-oss-120b`, bepul tarif, ma'lumotlarda o'qitilmaydi — shuning
+      uchun Gemini emas Groq tanlandi). Migratsiya (review/review_source/
+      review_status/review_attempts/reviewed_at + training_types.ai_review_enabled),
+      extractor (fayl/zip/GitHub/matn), BullMQ queue+worker, `submitHomework`
+      hook, `GET /student/home` ga `topicStats`+`review`, methodist toggle.
+      ⚠️ Ishlashi uchun BullMQ worker kerak — pastga BUG-NO-WORKER'ga qara.
+      Jonli sinovdan o'tkazildi (ru+uz, Groq API orqali, DB'siz) — ishlaydi.
+- [x] TG-BRANCH-BIND: Branch Manager kabinetida (`Branch.jsx`) "Ota-onalar
+      guruhi" kartasi — kod so'raydi, botni guruhga QO'LDA qo'shadi, guruhda
+      `/bindbranch <kod>` yuboradi. Backend: `branches.parent_tg_chat_id`,
+      `/api/branch-manager/telegram/{status,bind-token,unlink}`, bot
+      handler (`bot.handlers.js`). BUG-NO-WORKER'ga BOG'LIQ EMAS — bot
+      webhook orqali web-processda ishlaydi (worker emas).
+- [x] TG-ATTENDANCE: `attendance.service.js` — davomat belgilangach (3 daqiqa
+      debounce, chunki UI har bosishda avtosaqlaydi) kunlik yakuniy davomat
+      guruhga ketadi. BUG-NO-WORKER'ga bog'liq emas (event, web-processdan).
+- [x] TG-TEST-RESULT: `submitTest` — har test topshirilgach natija (mavzu +
+      foiz) guruhga ketadi. BUG-NO-WORKER'ga bog'liq emas.
+- [x] TG-DAILY-DIGEST: har kuni 00:00 (Asia/Tashkent) — kecha muddati o'tib
+      topshirilmagan uy vazifalari ro'yxati guruhga. `dailyDigest.worker.js`.
+      🔴 **BUG-NO-WORKER tufayli PRODDA ISHLAMAYDI** — kod tayyor, lekin
+      Render'da `type: worker` servisi yo'q (TASK.md'dagi eski yozuvga qara),
+      demak worker.js umuman ishga tushmaydi. Boshqa 3 tadan farqli — bu
+      croni, event emas, workersiz imkoni yo'q.
+
+### 🔲 OCHIQ VAZIFA — EGASI: **KARIS** (pul kerak, Claude sotib ololmaydi)
+
+- [ ] RENDER-STARTER: web-servisni (`LevelUP_academy-1`) Free'dan Starter'ga
+      ($7/oy) ko'tarish — 09.08.2026 auditda topilgan sabab: free plan 15
+      daqiqa jimlikdan keyin uxlaydi, uyg'onish 30-60 son, + Neon o'zi ham
+      uxlaydi (+5s) — ikkalasi ustma-ust tushganda birinchi so'rov 500 bilan
+      qaytadi ("guruh bilan kirganda ba'zan ishlamaydi" — Karis 09.08 xabari).
+      Starter uxlamaydi — muammo yo'qoladi.
+- [ ] WORKER-MERGE (Claude qiladi, Starter sotib olingandan keyin): `worker.js`
+      ni `server.js` ichiga qo'shish — o'sha $7/oy servis o'zi AI-review
+      navbatini ham, 00:00 kunlik svodkani ham, billing/overdue/due-soon
+      cronlarini ham ushlaydi. Alohida worker servisi ($7/oy qo'shimcha)
+      SHART EMAS — bitta har doim yonib turgan process yetarli.
+      ⚠️ Kelishilgan trade-off: shu tufayli AI-review'dagi bag butun saytni
+      ham yiqitishi mumkin (bitta process) — kichik markaz uchun qabul
+      qilingan.
+
+**Ochiq savollar Karis'ga:**
+1. `npm run migrate` boshqa hech qachon lokal gonilmagan — Neon'ga to'g'ridan-
+   to'g'ri qo'lda gonish kerakmi hozir, yoki keyingi deploy'gacha kutamizmi?
+2. `GROQ_API_KEY` faqat lokal `.env`'da — Render'ga qachon qo'shamiz?
+3. BUG-NO-WORKER — pullik Render worker / vaqtinchalik inline-run / tashqi
+   cron — qaysi yo'l bilan yechamiz? Daily-digest shungacha ishlamaydi.
+
+## ⚠️ Jamoa branch'lari — save-zone'ga hali qo'shilmagan (2026-08-09 tekshiruvi)
+
+> `git fetch --all --prune` qilindi, har bir branch save-zone bilan solishtirildi
+> (`git log save-zone..origin/<branch>`). **hamidulla endi save-zone'da** — 07-28'dagi
+> 9 fayldagi konflikt o'shandan beri hal qilingan va merge bo'lgan. Boshqa hamma branch
+> (Bilol, Islom, abdulaziz/student-panel, alisher/mentor-panel, aziz/branches, elyor,
+> hamidulla, kozim, methodist, rey, shohjahon) — save-zone bilan bab-baravar
+> (ancestor), qo'shimcha ish yo'q. FAQAT 3 tasida qo'shimcha commit bor:
+
+- **`Abduloh`** (1 commit, 08-08): `feat(admin/expenses): add payment method icons,
+  recurring expenses, fix paymentMethod bug, add flex-wrap footer` —
+  `frontend/staff/src/api.js` + `pages/admin/Expenses.jsx` (+106/−22). Merge qilinmadi.
+- **`aziz/finance-manager`** (Aziz, 2 commit, 08-07): yangi **Finance Manager** paneli —
+  `frontend/staff/src/pages/finance/{Dashboard,Expenses,Income,Reports,Salaries,_data,
+  _i18n,_ui}.jsx` (13 fayl, +1460/−48), `Layout.jsx`/`App.jsx`/`Login.jsx`/`api.js` ga
+  ulangan, barcha rollar uchun sidebar i18n tarjimasi. TASK.md da bu ishning izi yo'q
+  edi — yangi bo'lim sifatida pastga qo'shildi. Merge qilinmadi, review kerak (yangi
+  panel — boshqa panellar bilan marshrut/kirish nizosi bo'lishi mumkin).
+- **`iface9808` (Kama)** (4 commit, 08-07): parent panelga to'liq i18n (ru/uz/en,
+  `frontend/member/src/i18n/{en,ru,uz}.js` + `i18n.jsx` + `LanguageSwitcher.jsx`),
+  test ball foizi ko'rsatilishi tuzatildi, guruh nomi overflow tuzatildi
+  (initsiallar+truncate), chat backendga ulanishga tayyorlandi (21 fayl, +1287/−320).
+  Eski TASK.md yozuvi (07-27, chat redesign konflikt haqida) ESKIRGAN — o'sha ish
+  allaqachon save-zone'da, bu 08-07'dagi YANGI commitlar. Merge qilinmadi.
+  ⚠️ **KONFLIKT XAVFI:** shu branch ham `frontend/member/src/i18n/{ru,uz}.js` ni
+  MUSTAQIL yaratgan — endi shu fayllar save-zone'da XOB versiyasi bilan allaqachon
+  bor (pastga qara). Merge qilinganda `header`/boshqa umumiy bo'limlarda albatta
+  konflikt chiqadi — Kama o'z `hub`/`parent` bo'limlarini XOB'ning `header`/`home`/
+  `feedback`/`leaderboard` bo'limlari USTIGA qo'shishi kerak, ustidan yozib emas.
+- **`alish`** (2 commit, 07-14, o'zgarishsiz 07-28'dan beri): hali ham repo ILDIZIGA
+  alohida Vite-ilova — muammo hal qilinmagan, Alish `frontend/` ichida qayta boshlashi
+  kerak (pastdagi ALISH bo'limiga qara).
+
+### ✅ `xob` — save-zone'ga merge qilindi (2026-08-09, Claude, commit `172d250`)
+
+Student paneli qayta ishlandi — responsive, to'liq i18n (ru/uz), yangi `/study`
+sahifasi (LessonsHub), «Aqlli tahlil» AI-review MAKETI (backend hali yo'q, dev/mock
+rejimida ko'rinadi). 21 fayl, +2051/−336.
+
+Merge oldidan kod tekshirildi, **1 ta haqiqiy bag topildi va tuzatildi**:
+`frontend/member/src/i18n/ru.js` dagi `header.tgBind`…`tgUnlinkSuccess` (13 ta kalit)
+o'zbekcha matn bilan qolib ketgan edi (uz.js'dan copy-paste, tarjima qilinmagan).
+Kod hozircha bu kalitlarni hech qayerda ishlatmaydi (o'lik), lekin kimdir ulasa
+rus interfeysida o'zbekcha matn chiqib qolardi — merge commitida to'g'ridan-to'g'ri
+tuzatildi. Boshqa hech narsa buzilmagan: `npm run build` (frontend/member) toza
+o'tdi, 1915 modul, xatosiz.
+
+Merge paytida BITTA konflikt bo'ldi — `App.jsx`: save-zone'da xob ketganidan keyin
+`/qr-login` marshruti qo'shilgan edi (QR-kirish fichasi), xob esa `I18nProvider`
+bilan o'radi. Ikkalasi ham saqlab qolindi (konflikt mazmunan yo'q edi, faqat bir xil
+qatorga tegilgan).
 
 ---
 
@@ -46,7 +139,7 @@
 - [x] K-MAIN: Partner freeze/activate (PATCH /partners/:id/status)
 - [x] K-MAIN: YANGI narx modeli (2026-07-16) — o'quvchi bucket tariflari (Free/Start/Standard/Pro/Business/Network), filiallar bepul; config/plans.js TIERS + computeBill({students}); eski filial+o'quvchi formula bekor; GET /api/main/pricing endi { tiers, currency }
 
-## Backend — Super Admin (Karis)
+## Backend — SEO (Karis)
 
 - [x] K-SUPER: Organization dashboard (GET /api/super/dashboard: totals + branch breakdown)
 - [x] K-SUPER: CRUD branches (+ archive/unarchive) va CRUD admins (+ freeze)
@@ -71,7 +164,7 @@
 > 1783820000000 (staff_penalties), 1783830000000 (org_charters).
 
 - [x] K-DISC: shtraf (summa + sabab, avto-yechish YO'Q) + qora (ishdan bo'shatish, status='fired', withTransaction)
-- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): superadmin→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
+- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): seo→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
 - [x] K-DISC: Ustav (org_charters, erkin matn, upsert, barcha xodimlarga ko'rinadi)
 - [x] K-DISC: Endpointlar — super PUT/GET /charter, POST/GET /penalties, POST /staff/:id/reactivate; admin GET /charter, POST/GET /penalties; shared GET /users/me/penalties, /users/me/charter
 - [x] K-DISC: Swagger — Discipline tegi, 10 endpoint, swagger/*.md qayta generatsiya (139 endpoint)
@@ -89,7 +182,7 @@
       • Bekendga ikkita yangi funksiya: `api.myPenalties`/`api.myCharter`
         (`GET /api/users/me/penalties`, `/users/me/charter`) — ilgari frontda umuman
         chaqirilmagan edi
-- [x] K-DISC-FRONT-ADMIN 🔄 EGASI: **ABDULOH** (Hamidula'dan o'tkazildi, 2026-07-28, Karis).
+- [ ] K-DISC-FRONT-ADMIN 🔄 EGASI: **ABDULOH** (Hamidula'dan o'tkazildi, 2026-07-28, Karis).
       Admin panelda: shtraf berish formasi + ro'yxat (`POST/GET /api/admin/penalties`),
       ustavni faqat o'qish (`GET /api/admin/charter`). Huquqlar matritsasi bo'yicha
       admin → mentor/methodist'ga shtraf bera oladi, qora ro'yxat esa FAQAT mentor'ga —
@@ -278,9 +371,9 @@
 - [x] AB-V1: Partner profit main dashboardda (income - expenses; pul jadvallariga faqat SELECT)
 - [x] AB-V1: Integration testlar: payments full/split + auth flow (login -> refresh -> reuse-detect -> OTP)
 
-## Backend — Super Admin Integratsiya (Karis) 🔥 hozirgi fokus
+## Backend — SEO Integratsiya (Karis) 🔥 hozirgi fokus
 
-> Super Admin FRONT = to'liq Shohjahon versiyasi (14 sahifa), lekin uning yangi sahifalari
+> SEO FRONT = to'liq Shohjahon versiyasi (14 sahifa), lekin uning yangi sahifalari
 > backend endpoint'larini chaqiradi — ular YO'Q edi. **Karis quradi** (avval Abdulaziz'ga berilgandi →
 > Team Lead o'ziga qaytarib oldi). Zona: `modules/super`.
 
@@ -300,7 +393,7 @@
 - [x] K-SUPER-INT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Dashboard, Филиалы, Студенты, Группы,
       Отчёты, Статистика (7/30/90 kunlik almashtirish), Дисциплина (взыскание/устав),
       Объявления (real create+delete+audit), Напоминания, Настройки (lessonDurationMin
-      saqlash) — barchasi real superadmin login bilan tekshirildi, hech qanday xato topilmadi
+      saqlash) — barchasi real seo login bilan tekshirildi, hech qanday xato topilmadi
 
 ## Backend — YANGI TOPSHIRIQ (Abdulaziz) 🔥 2026-07-19, Karis bergan
 
@@ -444,7 +537,7 @@
 > 4 ta vazifa allaqachon bajarilgan, 1 tasi kerak emas. Faqat BITTA haqiqiy tirqish topildi (pastda).
 
 - [x] AUTH: Login sahifalar (3 endpoint: main / staff / member) — `staff/pages/Login.jsx`, `member/pages/Login.jsx`, `main-admin/pages/Login.jsx`, uchalasi `/auth/{staff,member,main}/login` ga ulangan. `origin/elyor` da save-zone dan ortiqcha commit YO'Q — merge qilinadigan narsa qolmagan
-- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+superadmin route'larida ishlatiladi
+- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+seo route'larida ishlatiladi
 - [x] AUTH: Router setup by roles — staff/App.jsx da rolli route'lar
 - [x] AUTH: Redux authSlice — KERAK EMAS (useAuth() context yetarli, qaror 2026-07-15)
 - [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617). Auditda tasdiqlandi: `refreshPromise` 4 ta app da ham bor
@@ -464,7 +557,7 @@
       3) Google COOP — FE-COOP bilan yopildi. 4) React Router future-flag — FE-ROUTER-FLAG
       bilan yopildi
 
-## Frontend — Super Admin ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
+## Frontend — SEO ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 
 > ❌ Bu bo'lim ilgari "✅ TUGADI" deb turgan edi — bu NOTO'G'RI bo'lgan.
 > Sahifalar chizilgan, lekin 3 tasi bo'sh qaytadi va 1 tasi O'YLAB TOPILGAN raqam ko'rsatadi.
@@ -514,7 +607,7 @@
       (`Announcements.jsx`, `Reminders.jsx`, `Audit.jsx`) allaqachon o'z real endpointlariga
       ulangan (`api.superAnnouncements/superReminders/superAudit` va CRUD mutatsiyalar),
       `useSuperDashboard` ga tayanib qolgan joy yo'q. Kim tomonidan yopilgani noaniq —
-      TASK.md eskirgan edi. Qolgan ish: jonli superadmin login bilan E2E (AB-VERIFY/
+      TASK.md eskirgan edi. Qolgan ish: jonli seo login bilan E2E (AB-VERIFY/
       K-SUPER-INT blokiga qara), kod tomoni yopiq
 
 ## Main Admin (Karis) 🔥 to'liq egasi — 2026-07-26 dan, front + backend
@@ -555,7 +648,7 @@
       Ilgari front mavjud bo'lmagan 4 ta yo'lga urilardi. Endi ular bor:
       • `GET/POST/DELETE /api/main/announcements` — platforma e'lonlari.
         Yangi migratsiya `1783900000000_platform-announcements` (`platform_announcements`
-        jadvali + `platform_announcement_target` enum: `all-partners` / `all-superadmins`).
+        jadvali + `platform_announcement_target` enum: `all-partners` / `all-seos`).
         Super'nikidan alohida: u yerda auditoriya bitta tashkilot ichida, bu yerda —
         hamkorlarning o'zi, qiymatlar kesishmaydi.
         ⚠️ Navbatga (`notificationQueue`) ATAYIN qo'yilmaydi: qabul qiluvchilar xodimlar,
@@ -573,7 +666,7 @@
       `initialMock` (6 ta o'ylab topilgan hamkor va jarima) butunlay olib tashlandi.
       **Qaror: shtraf yozish formasi olib tashlandi, sahifa faqat ko'rish uchun.**
       Sabab kod bilan tasdiqlangan: `discipline` modulidagi CAN_ISSUE matritsasida
-      `main_admin` HECH KIMGA jazo bera olmaydi — jazoni Super Admin va Admin o'z
+      `main_admin` HECH KIMGA jazo bera olmaydi — jazoni SEO va Admin o'z
       tashkiloti ichida beradi. Ya'ni "jarima yozish" tugmasi tamoyil bo'yicha ishlay
       olmasdi, uni backendga ulash mumkin emas edi.
       O'rniga: `GET /api/main/penalties` — barcha hamkorlar bo'yicha intizom sharhi
@@ -622,13 +715,31 @@
 - [x] ADMIN ✅ (Abduloh) `GroupDetail.jsx` real API ga ulangan ekan — tekshirildi 2026-07-28
       (Karis, `646060e`/27.07): attendance/homework/feedback oltala endpoint ham chaqirilyapti,
       mock qolmagan. TASK.md eskirgan edi
-- [x] ADMIN (Abduloh): 🔄 **Odil'dan o'tkazildi (2026-07-28, Karis qarori)** — Guruh formasi:
+- [ ] ADMIN (Abduloh): 🔄 **Odil'dan o'tkazildi (2026-07-28, Karis qarori)** — Guruh formasi:
       mentor majburiy + kunlar (1-3-5/2-4-6 preset yoki boshqa kunlar galochka) + boshlanish
       vaqti + tugash vaqti AVTO (GET /api/admin/settings) → POST/PATCH { days, startTime };
       kontrakt TEAM-TASKS §9.2
 - [x] ADMIN: Payments UI (full/split modal; K-PAY chiqqach ulanadi) — Payments.jsx (775 qator)
 - [x] ADMIN: Expenses CRUD — Expenses.jsx + PDF eksport (Abduloh, jspdf)
 - [x] ADMIN: Reports — Reports.jsx, GET /api/admin/reports ga ulangan
+- [ ] ADMIN-EXPENSES-V2 🆕 (Abduloh, branch `Abduloh`, 08-08): to'lov usuli ikonkalari,
+      takroriy xarajatlar (recurring), `paymentMethod` bagi tuzatildi, footer flex-wrap.
+      Save-zone'ga hali merge qilinmagan
+
+## Frontend — Finance Manager (Aziz) 🆕 2026-08-09 — branch `aziz/finance-manager`, hali merge qilinmagan
+
+> Yangi panel — TASK.md da ilgari umuman yozilmagan edi, `git fetch` orqali topildi.
+> `frontend/staff/src/pages/finance/*` (13 fayl), `Layout.jsx`/`App.jsx`/`Login.jsx`/`api.js`
+> ga ulangan. Karis ko'rib chiqishi kerak: yangi rol/marshrut boshqa panellar bilan
+> to'qnashmasligini tekshirish, keyin save-zone'ga merge.
+
+- [ ] FIN-DASHBOARD (Aziz): `pages/finance/Dashboard.jsx`
+- [ ] FIN-EXPENSES (Aziz): `pages/finance/Expenses.jsx`
+- [ ] FIN-INCOME (Aziz): `pages/finance/Income.jsx`
+- [ ] FIN-REPORTS (Aziz): `pages/finance/Reports.jsx`
+- [ ] FIN-SALARIES (Aziz): `pages/finance/Salaries.jsx`
+- [ ] FIN-I18N (Aziz): barcha rollar uchun sidebar label tarjimasi (`_i18n.jsx`, 323 qator)
+- [ ] FIN-REVIEW (Karis): merge oldidan ko'rib chiqish — marshrut/kirish nizosi bormi
 
 ## Frontend — YANGI TASKLAR: Kozim / Alish 🆕 2026-07-19 (2026-07-26 da yangilandi)
 
@@ -696,13 +807,17 @@
 - [x] MENTOR: Coins (assign/deduct)
 - [x] MENTOR: Chat — shaxsiy dm: xonalar, Socket.io + tarix, faqat xodim va ota-ona ko‘radi (2026-07-18)
 
-## Frontend — Student (Sardor) 🔥 to'liq egasi — 2026-07-26 dan
+## Frontend — Student (Odil) 🔥 to'liq egasi — 2026-08-09 dan
 
-> 🔄 **Egasi almashdi (2026-07-26, Karis qarori):** panel Abdulaziz'dan Sardor'ga o'tdi.
+> 🔄 **Egasi almashdi (2026-08-09, Karis qarori):** panel Sardor'dan Odil'ga o'tdi.
+> Pastdagi "EGALIK SAVOLI" (XOB shu panelni 09.08'da qurgan, lekin jamoa jadvalida
+> yo'q edi) shu tarzda yopildi — Karis Odil'ni rasmiy egasi qilib belgiladi.
+>
+> 🔄 **Eski yozuv (2026-07-26, tarix uchun):** panel Abdulaziz'dan Sardor'ga o'tgan edi.
 > Abdulaziz **faqat backend**da qoladi (`Backend — Student`, `Backend — Mentor`,
 > `Backend — Parent`, `Backend — Infrastructure`, SEO) — frontendda uning zonasi yo'q.
 > Sardor'ning eski vazifalari (FE-DEAD-CODE / FE-ROUTER-FLAG / FE-COOP / UI-DS)
-> boshqalarga berildi — u endi FAQAT shu panel bilan shug'ullanadi.
+> boshqalarga berildi.
 
 > ⚠️ Barcha sahifalar QURILGAN va api kontraktiga ulangan, LEKIN mock rejimida ishlaydi
 > (BUG-PROD-MOCKS ga qara). Jonli E2E qilinmagan.
@@ -724,7 +839,15 @@
 - [x] STUDENT UI-STATES ✅ 2026-07-28 (Karis): audit qilindi — `Home.jsx` va `TestTake.jsx`
       da allaqachon bor edi, `Homework.jsx` va `Shop.jsx` da yo'q edi (xuddi shu "abadiy
       Skeleton" bagi) — tuzatildi. Endi student panelidagi barcha 7 sahifada 3 holat ham bor
-- [ ] STUDENT (Sardor): design-system — laym #C6FF34, Manrope, responsive 1280/768/375
+- [x] STUDENT (Odil): design-system — laym #C6FF34, Manrope, responsive
+      ✅ MERGE QILINDI 2026-08-09 (branch `xob`, commit `172d250`): to'liq responsive
+      qayta ishlash, i18n ru/uz, yangi `/study` (LessonsHub) sahifasi, «Aqlli tahlil»
+      AI-review maketi (backend endi TAYYOR — yuqoridagi "AI-REVIEW" bo'limiga qara).
+      21 fayl, +2051/−336. Kod tekshirildi, 1 ta bag topilib tuzatildi (yuqorida
+      "✅ xob — save-zone'ga merge qilindi" ga qara).
+      ✅ **EGALIK SAVOLI YOPILDI (2026-08-09, Karis qarori):** panel rasman
+      Odil'niki qilindi. Amaldagi ish (09.08 redizayn) XOB tomonidan qilingan edi —
+      jamoa jadvalida u umuman yo'q, TASK.md'da tarix uchun shunday qoldirildi.
 
 ## Frontend — Parent (Kama — @Azizovcf, git iface9808-sketch) 🔥 to'liq egasi
 
@@ -737,6 +860,11 @@
 - [x] PARENT: Baholar / uy vazifa natijalari — Grades.jsx
 - [x] PARENT: To'lov / qarz — Debt.jsx
 - [x] PARENT: Chat — Chat.jsx (16 chaqiruv) ✅ Socket.io realtime tasdiqlandi (2026-07-21)
+- [ ] PARENT-I18N 🆕 (Kama, branch `iface9808`, 08-07): to'liq i18n ru/uz/en
+      (`frontend/member/src/i18n/{en,ru,uz}.js`, locale-aware formatlar), til
+      almashtirgich UI (`LanguageSwitcher.jsx`), test ball foizi ko'rsatilishi va
+      guruh nomi overflow (initsiallar+truncate) tuzatildi, chat backendga ulanishga
+      tayyorlandi. Save-zone'ga hali merge qilinmagan
 - [x] PARENT: Bildirishnomalar — Notifications.jsx
 - [x] PARENT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Обзор, Посещаемость, Оценки, Оплата,
       Уведомления, Профиль (Telegram tugmasi, preference toggle'lar) — real login bilan
@@ -767,13 +895,13 @@
 - [x] LANDING: Home, Features, Roles, Finance, Gamification, Contacts
 - [x] LANDING: Header, Footer, CTA
 
-## Frontend — Methodist (Said Islom, Aziz — Super Admin'dan o'tkazildi) ✅ karkas
+## Frontend — Methodist (Said Islom, Aziz — SEO'dan o'tkazildi) ✅ karkas
 
 > Panel karkasi tayyor (Karis). Said Islom + Aziz endi Methodist jamoasida — qo'shimcha ish + MVP2 kontent-menejer + support/maintenance.
 > ⚠️ **2026-07-26:** bu bo'limda ochiq vazifa YO'Q, lekin ikkalasining REAL ochiq ishi bor —
-> `Frontend — Super Admin` bo'limidagi FE-SUPER-STATS / FE-SUPER-REPORTS / FE-SUPER-WIRE.
-> Git-hisobotda ular shu sababli endi "Super Admin" panelida ko'rinadi (ilgari "Methodist · 0 vazifa"
-> deb turardi, Super Admin esa egasiz ko'rinardi — ikkalasi ham noto'g'ri manzara berardi).
+> `Frontend — SEO` bo'limidagi FE-SUPER-STATS / FE-SUPER-REPORTS / FE-SUPER-WIRE.
+> Git-hisobotda ular shu sababli endi "SEO" panelida ko'rinadi (ilgari "Methodist · 0 vazifa"
+> deb turardi, SEO esa egasiz ko'rinardi — ikkalasi ham noto'g'ri manzara berardi).
 > Methodist ishi qaytadan boshlansa (MVP2 kontent-menejer) — hisobotdagi panel qaytariladi.
 
 - [x] METHODIST: Training Types (CRUD)
@@ -821,3 +949,73 @@
       tekshirildi — qayerda mutatsiya bo'lsa, o'sha yerda `invalidate()`/`invalidateQueries`/
       `refetch()` bor. Chat va Attendance (mentor) — sokat orqali live yangilanadi,
       alohida invalidatsiya kerak emas. Tuzatishga hojat topilmadi
+
+## 🆕 YANGI ROLLAR — Branch Manager + Finance Manager (2026-08-04, Karis og'zaki berdi)
+
+> ⚠️ Hozircha faqat REJALASHTIRISH — kod yozilmagan. Ikkalasi ham hozirgi 7 ta rolga
+> (main_admin/seo/admin/mentor/student/parent/methodist) qo'shiladigan YANGI rol.
+> **Karis o'zi 2026-08-04 aytdi: backend integratsiyani (DB migratsiya, `authorize`
+> middleware, RBAC) O'ZI qiladi — jamoadan FAQAT frontend (UI, mock-rejim bilan) kerak.**
+> Backend tomon `backend/src/middlewares/authorize.js`da: rol nomi `req.user.role` bilan
+> to'g'ridan-to'g'ri solishtiriladi, scope esa `else` shoxobchasida (org+branch, xuddi
+> admin'dek) — Branch Manager va Finance Manager ikkalasi ham shu naqshga tushadi,
+> Karis uchun bu kichik o'zgarish. Jamoa bemalol UI'ni mock data bilan boshlashi mumkin,
+> backend keyin ulanadi (xuddi boshqa panellar VITE_USE_MOCKS bilan qurilgani kabi).
+
+- [ ] ROLE-BRANCH 🔄 EGASI (frontend, jamoa): **Elyor, Said Islom, Kozim** (Karis
+      tayinladi, 2026-08-04 — Abduloh'dan bu uchoviga o'tkazildi).
+      Yangi rol — **Branch Manager** (Filial menejeri). Karis ta'rifi: "Admin'lar bilan bir
+      qatorda turadi, filialga TO'LIQ javobgar odam — Admin'dan KO'PROQ ma'lumotga ega
+      bo'ladi". Ya'ni Branch Manager ⊃ Admin (kengroq), Admin'dan esa 1-2 narsa OLIB
+      TASHLANADI (qaysi huquq/sahifa — Karis hali aniq aytmadi).
+      **BU UCHOVNING ISHI — aniq QANCHA va NIMA ko'rinishini HAL QILISH** (Karis: "shuni
+      hal qilishi kerak"): Admin panelidagi (`frontend/staff/src/pages/admin/`) qaysi
+      sahifa/ma'lumot Branch Manager'da QO'SHIMCHA ko'rinadi (masalan: boshqa filiallar bilan
+      solishtirish, filial darajasidagi to'liqroq moliyaviy ko'rinish, xodimlar bo'yicha
+      kengroq hisobot — aniq ro'yxat SHU UCHOVDAN chiqishi kerak, keyin Karis bilan
+      tasdiqlanadi), va Admin'dan aynan NIMA olib tashlanishi kerak.
+      Amaliy boshlanish nuqtasi: Admin panelining nusxasini olib (`pages/admin/*` —
+      Dashboard/Students/Groups/Mentors/Payments/Reports/Expenses), yangi `pages/branch/`
+      papkasida Branch Manager variantini qurish, farqlarni taklif sifatida yozib qo'yish.
+      Mock-rejimda ishlang — backend Karis'da.
+
+- [x] ROLE-RENAME-SUPERADMIN ✅ **YOPILDI 07.08.2026.** Karis SEO/CEO savoliga ikki marta
+      aniq javob berdi: SEO, CEO emas. To'liq texnik o'zgartirish qilindi (faqat UI matni
+      emas) — Postgres enum (`user_role` va `platform_announcement_target`), JWT/RBAC
+      (`authorize.js` va h.k.), barcha rol-tekshiruvlari backend+frontend, hujjatlar.
+      Migratsiya `1784320000000_rename-superadmin-to-seo.js` — `ALTER TYPE ... RENAME VALUE`,
+      Docker'da tekshirilgan, hali hech qanday bazaga qo'llanmagan (prod ham, local ham).
+      Qo'llashda: barcha joriy SEO/Super Admin foydalanuvchilari qayta login qilishi kerak
+      (JWT'dagi eski role qiymati bilan `authorize('seo')` endi mos kelmaydi).
+
+- [ ] ROLE-FINANCE 🔄 EGASI (frontend, jamoa): **Shohjahon, Aziz, Alish** (Karis
+      tayinladi, 2026-08-04). Yangi rol — **Finance Manager** (Finans menejeri). Karis
+      ta'rifi: daromad, rashod, xodimlar oyligi va boshqa BARCHA xarajatlarni kuzatadi.
+      Scope hali aniqlanmagan (butun tashkilotmi — seo darajasida, yoki filial —
+      admin darajasida?) — bu ham jamoa taklifi bilan Karis'ga qaytishi kerak.
+      Boshlanish nuqtasi: mavjud moliyaviy sahifalarni ko'rib chiqish —
+      `admin/Expenses.jsx`, `admin/Reports.jsx`, `super/Reports.jsx`, `main/Revenue.jsx`,
+      `main/Billing.jsx` (oylik/xodim xarajati hali alohida sahifa sifatida YO'Q — buni
+      ham shu jamoa loyihalashi kerak). Mock-rejimda, yangi `pages/finance/` papkasida.
+
+## 🆕 STUDENT — chat kabinetga qo'shiladi (2026-08-04, Karis)
+
+> ⚠️ **DIQQAT — ehtimoliy to'qnashuv:** shu kunning o'zida bu ish OpenCode (avtomat agent)
+> orqali ALLAQACHON boshlangan edi — `frontend/member/src/student/api.js` ga mock chat
+> hisob-kitobi (`mockChatAppend`, `chatThreads`/`chatMessages`/`chatMarkRead`) yozib
+> ulgurgan, `student/pages/Chat.jsx` yozishga tayyorlangan edi. Karis to'xtatishni
+> so'ragan edi, lekin tool chaqiruvi RAD ETILDI — ya'ni OpenCode sessiyasi hali ham
+> shu faylni yozib turgan yoki yozib bo'lgan bo'lishi mumkin. **Sardor va Odil
+> boshlashdan OLDIN albatta tekshirsin: `frontend/member/src/student/` papkasida
+> `Chat.jsx`/`api.js` allaqachon bormi — bo'lsa, NOLDAN yozmasdan O'SHANI ko'rib
+> chiqib davom ettirsin, aks holda ikki xil chat ustma-ust qurilib chiqadi.**
+
+- [ ] STUDENT-CHAT 🔄 EGASI: **Sardor, Odil** (Karis tayinladi, 2026-08-04). Hozircha
+      Student kabineti (`frontend/member/src/student/`, roulari `/student /lessons /tests
+      /homework /videos /shop /leaderboard`)da chat sahifasi UMUMAN yo'q edi — faqat
+      Parent'da bor (`member/src/pages/Chat.jsx`, `roomKey = parent:${user.id}`).
+      Namuna: `frontend/staff/components/StaffChat.jsx` (variant bilan mentor/admin
+      ikkalasiga xizmat qiladi) va yuqoridagi Parent Chat.jsx — bir xil naqsh, roomKey/rol
+      farqi bilan. Backend tomon (`backend/src/sockets/chat.js`, `modules/chat`) allaqachon
+      tayyor, student→mentor yo'nalishi ham (`AB-VERIFY` yozuviga qara yuqorida) ishlaydi —
+      demak bu asosan FRONTEND ish, mock kerak emas, real socket bilan qurilishi mumkin.

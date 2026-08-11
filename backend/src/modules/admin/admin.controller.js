@@ -64,6 +64,10 @@ export const regenerateStudentPassword = asyncHandler(async (req, res) => {
   res.json(await service.regenerateStudentPassword(branchId(req), req.params.id));
 });
 
+export const getStudentCredentials = asyncHandler(async (req, res) => {
+  res.json(await service.getStudentCredentials(branchId(req), req.params.id));
+});
+
 export const deleteStudent = asyncHandler(async (req, res) => {
   await service.deleteStudent(branchId(req), req.params.id);
   res.status(204).end();
@@ -99,12 +103,45 @@ export const createGroup = asyncHandler(async (req, res) => {
   res.status(201).json({ group: await service.createGroup(branchId(req), req.body) });
 });
 
+export const schedule = asyncHandler(async (req, res) => {
+  res.json(await service.schedule(branchId(req)));
+});
+
+export const listTrainingTypes = asyncHandler(async (req, res) => {
+  res.json({ trainingTypes: await service.listTrainingTypes(branchId(req)) });
+});
+
+export const studentAttendance = asyncHandler(async (req, res) => {
+  res.json(await service.studentAttendance(branchId(req), req.params.id, req.query));
+});
+
+export const createStudentQrToken = asyncHandler(async (req, res) => {
+  res.json(await service.createStudentQrToken(branchId(req), req.params.id));
+});
+
+export const regenerateStudentQrToken = asyncHandler(async (req, res) => {
+  res.json(await service.regenerateStudentQrToken(branchId(req), req.params.id));
+});
+
+export const studentTelegramStatus = asyncHandler(async (req, res) => {
+  res.json(await service.studentTelegramStatus(branchId(req), req.params.id));
+});
+
+export const sendStudentTelegramMessage = asyncHandler(async (req, res) => {
+  await service.sendStudentTelegramMessage(branchId(req), req.params.id, req.body);
+  res.json({ success: true });
+});
+
 export const listGroups = asyncHandler(async (req, res) => {
   res.json(await service.listGroups(branchId(req), req.query));
 });
 
 export const groupDetail = asyncHandler(async (req, res) => {
   res.json({ group: await service.groupDetail(branchId(req), req.params.id) });
+});
+
+export const groupCredentials = asyncHandler(async (req, res) => {
+  res.json(await service.groupCredentials(branchId(req), req.params.id));
 });
 
 export const updateGroup = asyncHandler(async (req, res) => {

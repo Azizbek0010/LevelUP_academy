@@ -24,7 +24,7 @@ import { SkeletonKpis, SkeletonTable } from '../components/Skeleton.jsx';
 
 function Kpi({ Icon, tint, title, value, unit, accent }) {
   return (
-    <div className={`card shadow-sm border ${accent ? 'bg-primary border-primary' : 'bg-base-100 border-base-200/60'}`}>
+    <div className={`card shadow-sm border ${accent ? 'bg-gradient-to-br from-lime-400 to-lime-500 border-lime-400' : 'bg-base-100 border-base-200/60'}`}>
       <div className="card-body p-5">
         <div className="flex items-center gap-3">
           <span
@@ -33,12 +33,12 @@ function Kpi({ Icon, tint, title, value, unit, accent }) {
           >
             <Icon size={20} strokeWidth={2.2} />
           </span>
-          <div className={`text-[11px] font-semibold uppercase tracking-wider leading-tight ${accent ? 'text-primary-content/60' : 'text-base-content/45'}`}>
+          <div className={`text-[11px] font-semibold uppercase tracking-wider leading-tight ${accent ? 'text-lime-950/60' : 'text-base-content/45'}`}>
             {title}
           </div>
         </div>
-        <div className={`text-3xl font-extrabold mt-3 leading-none ${accent ? 'text-primary-content' : ''}`}>{value}</div>
-        {unit && <div className={`text-xs mt-1.5 ${accent ? 'text-primary-content/55' : 'text-base-content/45'}`}>{unit}</div>}
+        <div className={`text-3xl font-extrabold mt-3 leading-none ${accent ? 'text-lime-950' : ''}`}>{value}</div>
+        {unit && <div className={`text-xs mt-1.5 ${accent ? 'text-lime-950/55' : 'text-base-content/45'}`}>{unit}</div>}
       </div>
     </div>
   );
@@ -125,8 +125,8 @@ export default function Billing() {
 
           {/* Тарифная сетка — только чтение */}
           <div className="card bg-base-100 shadow-sm border border-base-200/60 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-5 border-b border-base-200 flex items-center gap-3">
-              <span className="w-11 h-11 rounded-xl bg-primary text-primary-content grid place-items-center shrink-0">
+            <div className="bg-gradient-to-r from-lime-100 via-lime-50 to-transparent px-6 py-5 border-b border-base-200 flex items-center gap-3">
+              <span className="w-11 h-11 rounded-xl bg-lime-400 text-lime-950 grid place-items-center shrink-0">
                 <Sparkles size={20} strokeWidth={2.4} />
               </span>
               <div className="min-w-0">
@@ -159,11 +159,11 @@ export default function Billing() {
                       {tiers.map((t) => {
                         const isPreview = previewTier?.id === t.id;
                         return (
-                          <tr key={t.id} className={isPreview ? 'bg-primary/10' : undefined}>
+                          <tr key={t.id} className={isPreview ? 'bg-lime-50' : undefined}>
                             <td className="font-semibold">
                               {t.label}
                               {isPreview && (
-                                <span className="ml-2 badge badge-sm bg-primary border-0 text-primary-content">
+                                <span className="ml-2 badge badge-sm bg-lime-400 border-0 text-lime-950">
                                   подходит
                                 </span>
                               )}
@@ -227,7 +227,7 @@ export default function Billing() {
                   </div>
                   <div className="flex items-center justify-between px-4 py-3 bg-base-200/40">
                     <span className="font-bold">Итого / месяц</span>
-                    <span className="text-xl font-extrabold text-primary-content tabular-nums">
+                    <span className="text-xl font-extrabold text-lime-600 tabular-nums">
                       {tierPriceLabel(previewTier, cur)}
                     </span>
                   </div>

@@ -135,12 +135,6 @@ function AttendanceTab({ groupId, token }) {
   const group = groupRaw.group || groupRaw;
   const students = group.students || [];
 
-  // Замороженные ученики: в журнале им отметки ставить/менять нельзя.
-  const frozenIds = useMemo(
-    () => new Set(students.filter((s) => s.status === 'frozen').map((s) => s.id || s.studentId)),
-    [students],
-  );
-
   // Determine lesson weekdays from group schedule
   // schedule may come as JSON string from DB — force parse to array
   const scheduleArray = useMemo(() => {
@@ -291,7 +285,6 @@ function AttendanceTab({ groupId, token }) {
   const toggleDay = useCallback((studentId, day) => {
     const dateKey = dateKeyFor(day);
     if (dateKey > todayStr) return; // будущий урок — не трогаем
-    if (frozenIds.has(studentId)) return; // замороженный ученик — не трогаем
     const key = `${studentId}_${dateKey}`;
     const cycle = { absent: 'present', present: 'late', late: 'absent' };
     const next = cycle[mapRef.current[key]] || 'present';
@@ -302,7 +295,7 @@ function AttendanceTab({ groupId, token }) {
     correctedRef.current = { ...correctedRef.current, [key]: true };
     setCorrectedMap({ ...correctedRef.current });
     queueSave(dateKey, studentId, next);
-  }, [year, month, groupId, token, frozenIds]);
+  }, [year, month, groupId, token]);
 
   /* ── Auto-save with debounce ── */
   const flush = useCallback(async () => {
@@ -419,6 +412,12 @@ function AttendanceTab({ groupId, token }) {
             Не пришёл
           </li>
           <li className="flex items-center gap-1.5">
+            <span className="w-6 h-6 rounded-lg border border-gray-200 grid place-items-center text-gray-300">
+              <Minus size={13} />
+            </span>
+            Не отмечен
+          </li>
+          <li className="flex items-center gap-1.5">
             <span className="relative w-6 h-6 rounded-lg border border-base-300 grid place-items-center ring-2 ring-indigo-500 ring-offset-1">
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-base-100" />
             </span>
@@ -523,12 +522,10 @@ function AttendanceTab({ groupId, token }) {
                 const firstName = s.firstName || s.first_name || '';
                 const lastName = s.lastName || s.last_name || '';
                 const studentFullName = fullName(s);
-                const frozen = s.status === 'frozen';
                 // Count present days
                 let presentCount = 0;
                 DAYS.forEach((d) => {
-                  const st = attendanceMap[`${sid}_${dateKeyFor(d)}`];
-                  if (st === 'present' || st === 'late') presentCount++;
+                  if (attendanceMap[`${sid}_${dateKeyFor(d)}`] === 'present') presentCount++;
                 });
 
                 return (
@@ -548,11 +545,6 @@ function AttendanceTab({ groupId, token }) {
                           <div className="text-sm font-semibold truncate text-base-content group-hover:text-primary transition-colors">
                             {firstName} {lastName}
                           </div>
-                          {frozen && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
-                              Заморожен
-                            </span>
-                          )}
                         </div>
                       </Link>
                     </td>
@@ -563,9 +555,8 @@ function AttendanceTab({ groupId, token }) {
                       const cellKey = `${sid}_${dateKey}`;
                       const status = attendanceMap[cellKey];
                       const corrected = correctedMap[cellKey];
-                      // Будущий урок и замороженный ученик — не редактируются.
+                      // Будущий урок — не редактируется (как и у ментора).
                       const future = dateKey > todayStr;
-                      const notEditable = future || frozen;
                       return (
                         <td
                           key={d}
@@ -573,13 +564,12 @@ function AttendanceTab({ groupId, token }) {
                         >
                           <button
                             onClick={() => toggleDay(sid, d)}
-                            disabled={notEditable}
+                            disabled={future}
                             title={
-                              frozen ? 'Ученик заморожен — отметить нельзя'
-                                : future ? 'Будущий урок — отметить нельзя'
+                              future ? 'Будущий урок — отметить нельзя'
                                 : corrected ? 'Исправлено администратором' : undefined
                             }
-                            className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status)} ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''} ${notEditable ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'} ${future ? 'opacity-40' : frozen ? 'opacity-60' : ''}`}
+                            className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status)} ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''} ${future ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'}`}
                           >
                             {cellIcon(status)}
                             {/* Отметка «исправлено администратором»: клетка держит
@@ -669,7 +659,10 @@ function AttendanceTab({ groupId, token }) {
 }
 
 /* ═══════════════ HomeworkTab ═══════════════ */
-function HomeworkTab({ groupId, token }) {
+// canManage=false — branch_manager: ДЗ ведёт ментор (см. роли в CLAUDE.md),
+// менеджеру филиала оставлен только просмотр — видно, задано ДЗ или нет,
+// без права создать/отредактировать (Karis, 08.08.2026).
+function HomeworkTab({ groupId, token, canManage = true }) {
   const { data: hwData, refetch } = useAdminGroupHomework(groupId);
   const hw = hwData?.data || hwData || [];
   const [showAdd, setShowAdd] = useState(false);
@@ -680,7 +673,7 @@ function HomeworkTab({ groupId, token }) {
 
   const statusBadge = (s) => {
     if (s === 'active') return 'bg-emerald-100 text-emerald-700';
-    if (s === 'completed') return 'bg-success/15 text-success';
+    if (s === 'completed') return 'bg-blue-100 text-blue-700';
     if (s === 'overdue') return 'bg-red-100 text-red-700';
     return 'bg-gray-100 text-gray-500';
   };
@@ -696,10 +689,7 @@ function HomeworkTab({ groupId, token }) {
     if (!form.title.trim()) return;
     setSubmitting(true);
     try {
-      const body = { title: form.title.trim() };
-      if (form.description?.trim()) body.description = form.description.trim();
-      if (form.dueDate) body.dueDate = form.dueDate;
-      await api.adminCreateGroupHomework(token, groupId, body);
+      await api.adminCreateGroupHomework(token, groupId, form);
       setForm({ title: '', description: '', dueDate: '' });
       setShowAdd(false);
       refetch();
@@ -723,9 +713,11 @@ function HomeworkTab({ groupId, token }) {
             className="input input-bordered input-xs w-32 sm:w-40 rounded-lg text-[12px]"
           />
         </div>
-        <button className="btn btn-primary btn-sm gap-1 shrink-0" onClick={() => setShowAdd(true)}>
-          <Plus size={14} /> Добавить
-        </button>
+        {canManage && (
+          <button className="btn btn-primary btn-sm gap-1 shrink-0" onClick={() => setShowAdd(true)}>
+            <Plus size={14} /> Добавить
+          </button>
+        )}
       </div>
 
       {/* Status filter pills */}
@@ -819,7 +811,9 @@ function HomeworkTab({ groupId, token }) {
 }
 
 /* ═══════════════ FeedbackTab ═══════════════ */
-function FeedbackTab({ groupId, token }) {
+// canManage=false — branch_manager: отзыв пишет сам ученик/ментор, а не
+// сотрудник филиала за них (та же логика, что и у HomeworkTab выше, Karis 08.08.2026).
+function FeedbackTab({ groupId, token, canManage = true }) {
   const { data: fbData, refetch } = useAdminGroupFeedback(groupId);
   const fb = fbData?.data || fbData || [];
   const [filter, setFilter] = useState('all');
@@ -875,9 +869,11 @@ function FeedbackTab({ groupId, token }) {
             </button>
           ))}
         </div>
-        <button className="btn btn-primary btn-sm gap-1" onClick={() => setShowAdd(true)}>
-          <Plus size={14} /> Добавить
-        </button>
+        {canManage && (
+          <button className="btn btn-primary btn-sm gap-1" onClick={() => setShowAdd(true)}>
+            <Plus size={14} /> Добавить
+          </button>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -892,13 +888,13 @@ function FeedbackTab({ groupId, token }) {
               <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                    f.type === 'student' ? 'bg-success/15 text-success' : 'bg-purple-100 text-purple-700'
+                    f.type === 'student' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
                   }`}>
                     {f.type === 'student' ? 'О' : 'М'}
                   </div>
                   <span className="text-[13px] font-bold text-base-content">{f.authorName || 'Аноним'}</span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                    f.type === 'student' ? 'bg-success/10 text-success' : 'bg-purple-50 text-purple-600'
+                    f.type === 'student' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
                   }`}>
                     {f.type === 'student' ? 'Ученик' : 'Ментор'}
                   </span>
@@ -980,7 +976,7 @@ const TABS = [
 
 export default function AdminGroupDetail() {
   const { id } = useParams();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { data, isLoading, error, refetch } = useAdminGroupDetail(id);
   const { data: studentsData } = useAdminStudents();
   const [activeTab, setActiveTab] = useState('attendance');
@@ -1016,9 +1012,8 @@ export default function AdminGroupDetail() {
   const group = raw.group || raw;
   const students = group.students || raw.students || [];
   const totalDebt = students.reduce((sum, s) => sum + Number(s.totalDebt ?? s.total_debt ?? 0), 0);
-  const sRaw = studentsData?.data || studentsData || {};
-  const allStudents = sRaw.students || (Array.isArray(sRaw) ? sRaw : []);
-  const candidates = allStudents.filter((s) => !students.some((gs) => (gs.id || gs.studentId || gs.student_id) === (s.id || s.studentId || s.student_id)));
+  const allStudents = (studentsData?.data || studentsData || {}).students || [];
+  const candidates = allStudents.filter((s) => !students.some((gs) => gs.id === s.id));
 
   const add = async () => {
     if (!pick) return;
@@ -1067,6 +1062,22 @@ export default function AdminGroupDetail() {
       try { await api.adminArchiveGroup(token, group.id); refetch(); }
       catch (e) { alert(e.message || 'Ошибка'); }
     }
+  };
+
+  const [credsBusy, setCredsBusy] = useState(false);
+  const downloadCredentials = async () => {
+    setCredsBusy(true);
+    try {
+      const res = await api.adminGroupCredentials(token, group.id);
+      const r = res?.data || res;
+      const { exportGroupCredentialsPDF } = await import('../../utils/exportUtils.js');
+      await exportGroupCredentialsPDF({
+        groupName: r.group?.name || group.name,
+        mentorName: r.mentor?.name,
+        students: r.students || [],
+      });
+    } catch (e) { alert(e.message || 'Не удалось собрать PDF'); }
+    finally { setCredsBusy(false); }
   };
 
   if (isLoading) {
@@ -1121,6 +1132,15 @@ export default function AdminGroupDetail() {
         <button className="btn btn-primary btn-sm gap-1" onClick={() => setAdding(true)}>
           <UserPlus size={16} /> Добавить
         </button>
+        <button
+          className="btn btn-ghost btn-sm gap-1.5"
+          onClick={downloadCredentials}
+          disabled={credsBusy || students.length === 0}
+          title="PDF с QR-кодом, логином и паролем каждого ученика группы"
+        >
+          {credsBusy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+          Пароли группы
+        </button>
       </PageHeader>
 
       {/* Мета-строка группы. Раньше здесь была почти пустая карточка с двумя
@@ -1159,8 +1179,8 @@ export default function AdminGroupDetail() {
       {/* Tab Content */}
       <div className="card bg-base-100 p-5 animate-fade-in stagger-3">
         {activeTab === 'attendance' && <AttendanceTab groupId={id} token={token} />}
-        {activeTab === 'homework' && <HomeworkTab groupId={id} token={token} />}
-        {activeTab === 'feedback' && <FeedbackTab groupId={id} token={token} />}
+        {activeTab === 'homework' && <HomeworkTab groupId={id} token={token} canManage={user?.role !== 'branch_manager'} />}
+        {activeTab === 'feedback' && <FeedbackTab groupId={id} token={token} canManage={user?.role !== 'branch_manager'} />}
       </div>
 
       {/* Add Student Modal */}

@@ -44,6 +44,100 @@ List the current parent's children (short cards for a picker screen)
 
 ---
 
+### GET `/api/parent/children/{childId}/attendance`
+Paginated attendance history for one child (FE-PARENT-PAGINATION)
+
+Unlike the overview's "recent" list (capped at 5), this returns the full history, page by page.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** parent (own children only)
+
+**Params:**
+- `childId` (path, string) **(required)**
+- `page` (query, integer) (optional)
+- `limit` (query, integer) (optional)
+
+**Responses:**
+
+- **200** — Page of attendance records
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### GET `/api/parent/children/{childId}/grades`
+Paginated grades history for one child — homework or tests (FE-PARENT-PAGINATION)
+
+**Auth:** Bearer JWT required
+**Role(s):** parent (own children only)
+
+**Params:**
+- `childId` (path, string) **(required)**
+- `type` (query, string) (optional)
+- `page` (query, integer) (optional)
+- `limit` (query, integer) (optional)
+
+**Responses:**
+
+- **200** — Page of grades
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
 ### GET `/api/parent/children/{childId}/overview`
 Full overview of one child (coins, debt, rank, groups, attendance, grades)
 
@@ -134,5 +228,50 @@ The child must be linked to this parent (`student_profiles.parent_id`) — a chi
     - `message`: string (optional) _e.g. "Validation failed"_
     - `details` (optional):
       - _(free-form object)_
+
+---
+
+### GET `/api/parent/notifications`
+Notification feed (grades, attendance, payments) across all of the parent's children
+
+No dedicated notifications table — the feed is synthesized on read from existing data (graded homework/tests, absences/lateness, received payments, overdue invoices), scoped to this parent's children and sorted by date desc (top 30 per page). `read` is always `false` — the frontend does not yet call a mark-as-read mutation. FE-PARENT-PAGINATION: pass `before` (nextCursor from the previous page) to load older events — a plain offset does not work here since the feed is re-merged from 5 sources on every read.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** parent (own children only)
+
+**Params:**
+- `before` (query, string) (optional) — Load events strictly older than this timestamp (nextCursor of the previous page)
+
+**Responses:**
+
+- **200** — Notification feed page
+  - `success`: boolean (optional) _e.g. true_
+  - `data` (optional):
+    - `items` (optional):
+      - _array of:_
+        - `id`: string (optional)
+        - `type`: enum: `grade` | `attendance` | `payment` (optional)
+        - `title`: string (optional)
+        - `body`: string (optional)
+        - `createdAt`: string (date-time) (optional)
+        - `read`: boolean (optional) _e.g. false_
+    - `nextCursor`: string (date-time) (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
 
 ---

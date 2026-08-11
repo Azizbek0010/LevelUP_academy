@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Snowflake, Sun, Archive, KeyRound, GraduationCap, UserCheck, UserX,
@@ -7,19 +7,43 @@ import {
 import { useAuth } from '../../auth.jsx';
 import { useAdminStudents, useAdminGroups } from '../../queries.js';
 import { api } from '../../api.js';
-import { formatPhone } from '../../format.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
-import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip, Modal } from '../mentor/_ui.jsx';
+import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip } from '../mentor/_ui.jsx';
 
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
 
-/* Qarz summasi — backend `totalDebt` kabi qaytaradi (eski aliaslar ham saqlanadi) */
-const studentDebt = (s) => Number(s.totalDebt || s.debt || s.outstandingDebt || s.balance || 0);
+// backend хранит имя/фамилию раздельно, форма — одним полем «Имя Фамилия»
+// (как «Vakil ismi» у референса): делим по первому пробелу, остаток — фамилия;
+// без пробела — и то, и то одно слово (лучше так, чем блокировать сохранение).
+const splitName = (full) => {
+  const parts = full.trim().split(/\s+/);
+  return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || parts[0] || '' };
+};
 
-const emptyForm = { firstName: '', lastName: '', phone: '', birthDate: '', groupId: '', parentFirstName: '', parentLastName: '', parentPhone: '' };
+// Поля 1:1 с backend createStudentSchema (admin.schemas.js). Родитель —
+// вложенный объект {firstName,lastName,phone}, а не плоский parentPhone.
+// gender/address/school/leadSource/hasLaptop/offerSigned подключены к
+// student_profiles 08.08.2026 (миграция 1784340000000) — были декоративными,
+// теперь реально сохраняются и питают виджет «Профиль заполнен» на StudentDetail.
+// preferredLanguage/comment/phoneOwner-поля остаются статикой — под них ещё
+// нет колонок, Karis подтвердил 08.08.2026: можно копить, пока не появятся.
+const emptyForm = {
+  firstName: '', lastName: '', phone: '', birthDate: '', groupId: '',
+  // Родитель — поля всегда видны (как у референса), не за чекбоксом.
+  // Отправляется на backend, только если заполнены имя и телефон разом.
+  parentName: '', parentPhone: '',
+  gender: '', address: '', school: '', leadSource: '', hasLaptop: false, offerSigned: false,
+  preferredLanguage: '', comment: '',
+  phoneOwner: '', parentPhoneOwner: '', extraPhone: '', extraPhoneOwner: '',
+};
+
+/* Подпись над полем — как у референса (marsit.uz), но нашим зелёным вместо их синего. */
+function Lbl({ children }) {
+  return <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">{children}</label>;
+}
 
 const STATUS_COLORS = {
   active: { bg: '#2ECC7115', text: '#2ECC71', label: 'Активен' },
@@ -30,8 +54,7 @@ const STATUS_COLORS = {
 /* ═══════════════ Student Card ═══════════════ */
 function StudentCard({ s, onNavigate }) {
   const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
-  const groupNames = (s.groups && s.groups.length > 0) ? s.groups.map((g) => g.name).filter(Boolean) : (s.groupName ? [s.groupName] : []);
-  const debt = studentDebt(s);
+  const groupNames = (s.groups || []).map((g) => g.name).filter(Boolean);
 
   return (
     <div className="card bg-base-100 p-4 card-hover-premium group cursor-pointer" onClick={() => onNavigate?.(s.id)}>
@@ -45,18 +68,10 @@ function StudentCard({ s, onNavigate }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-bold text-base-content truncate">{fullName(s)}</span>
-            {s.status !== 'active' && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                style={{ background: status.bg, color: status.text }}>
-                {status.label}
-              </span>
-            )}
-            {debt > 0 && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                style={{ background: '#E8543E15', color: '#E8543E' }}>
-                <AlertTriangle size={10} /> Долг {debt.toLocaleString('ru-RU')} сум
-              </span>
-            )}
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+              style={{ background: status.bg, color: status.text }}>
+              {status.label}
+            </span>
           </div>
 
           <div className="flex items-center gap-3 mt-1.5 text-[11px] text-base-content/45">
@@ -65,7 +80,7 @@ function StudentCard({ s, onNavigate }) {
                 <KeyRound size={10} /> {s.login_code || s.loginCode}
               </span>
             ) : null}
-            {s.phone && <span>{formatPhone(s.phone)}</span>}
+            {s.phone && <span>{s.phone}</span>}
             {s.coins != null && s.coins > 0 && (
               <span className="flex items-center gap-1 text-primary font-semibold">
                 <Coins size={10} /> {s.coins}
@@ -93,16 +108,12 @@ export default function AdminStudents() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState('card'); // 'card' | 'table'
+  const [viewMode, setViewMode] = useState('table'); // 'card' | 'table' — референс marsit.uz показывает плотную таблицу
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'frozen'
   const qs = search ? `?search=${encodeURIComponent(search)}` : '';
-  // «Задолжен» tab: qarzdorlar ro'yxati har daqiqada avtomatik yangilanadi
-  // (backenda qarz oyiga o'zgaradi; refetchOnWindowFocus global false — interval kerak)
-  const { data, isLoading, error, refetch } = useAdminStudents(
-    qs,
-    statusFilter === 'debt' ? { refetchInterval: 60_000 } : {}
-  );
-  const { data: groupsData } = useAdminGroups('?limit=200');
+  const { data, isLoading, error, refetch } = useAdminStudents(qs);
+  const { data: groupsData } = useAdminGroups();
+  const groupOptions = (groupsData?.groups || groupsData?.data?.groups || []).filter((g) => !g.isArchived);
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -115,48 +126,40 @@ export default function AdminStudents() {
 
   const activeCount = rows.filter((s) => s.status !== 'frozen').length;
   const frozenCount = rows.filter((s) => s.status === 'frozen').length;
-const debtCount = rows.filter((s) => studentDebt(s) > 0).length;
-  const filteredRows = useMemo(() => {
-    let result = rows;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter((s) => {
-        const name = fullName(s).toLowerCase();
-        const phone = (s.phone || '').toLowerCase();
-        const code = (s.login_code || s.loginCode || '').toLowerCase();
-        return name.includes(q) || phone.includes(q) || code.includes(q);
-      });
-    }
-    if (statusFilter === 'all') return result;
-    if (statusFilter === 'active') return result.filter(s => s.status !== 'frozen');
-    if (statusFilter === 'frozen') return result.filter(s => s.status === 'frozen');
-    if (statusFilter === 'debt') return result.filter(s => studentDebt(s) > 0);
-    return result;
-  }, [rows, search, statusFilter]);
+  const debtCount = rows.filter((s) => (s.debt || s.outstandingDebt || 0) > 0).length;
+  const filteredRows = (() => {
+    if (statusFilter === 'all') return rows;
+    if (statusFilter === 'active') return rows.filter(s => s.status !== 'frozen');
+    if (statusFilter === 'frozen') return rows.filter(s => s.status === 'frozen');
+    if (statusFilter === 'debt') return rows.filter(s => (s.debt || s.outstandingDebt || 0) > 0);
+    return rows;
+  })();
+
+  const hasParent = form && form.parentName.trim() && form.parentPhone;
 
   const create = async () => {
     setBusy(true); setErr('');
     try {
-      const payload = {
+      const res = await api.adminCreateStudent(token, {
         firstName: form.firstName,
         lastName: form.lastName,
-        phone: form.phone || undefined,
+        phone: form.phone,
         birthDate: form.birthDate || undefined,
         groupId: form.groupId || undefined,
-      };
-      
-      if (form.parentFirstName || form.parentLastName || form.parentPhone) {
-        payload.parent = {
-          firstName: form.parentFirstName || form.firstName,
-          lastName: form.parentLastName || form.lastName,
-          phone: form.parentPhone || undefined,
-        };
-      }
-      
-      const res = await api.adminCreateStudent(token, payload);
+        parent: hasParent
+          ? { ...splitName(form.parentName), phone: form.parentPhone }
+          : undefined,
+        gender: form.gender || undefined,
+        address: form.address.trim() || undefined,
+        school: form.school.trim() || undefined,
+        leadSource: form.leadSource || undefined,
+        hasLaptop: form.hasLaptop || undefined,
+        offerSigned: form.offerSigned || undefined,
+      });
+      // backend возвращает { student: { loginCode, password, ... }, parent }
       const r = res?.data || res;
       setForm(null);
-      setCreds({ login_code: r.login_code || r.loginCode || r.student?.login_code || r.student?.loginCode, password: r.password || r.student?.password });
+      setCreds({ login_code: r.student?.loginCode, password: r.student?.password, parent: r.parent });
       refetch();
     } catch (e) { setErr(e.message || 'Ошибка'); }
     finally { setBusy(false); }
@@ -193,11 +196,9 @@ const debtCount = rows.filter((s) => studentDebt(s) > 0).length;
         <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={filteredRows.length === 0}>
           <Download size={14} /> Экспорт
         </button>
-        {statusFilter !== 'frozen' && (
-          <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
-            <Plus size={16} /> Добавить студента
-          </button>
-        )}
+        <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
+          <Plus size={16} /> Добавить студента
+        </button>
       </PageHeader>
 
       {/* ═══ Stats ═══ */}
@@ -268,19 +269,10 @@ const debtCount = rows.filter((s) => studentDebt(s) > 0).length;
         <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
       ) : filteredRows.length === 0 ? (
         <EmptyState
-          icon={statusFilter === 'debt' ? AlertTriangle : GraduationCap}
-          title={
-            search ? 'Попробуйте изменить запрос'
-              : statusFilter === 'frozen' ? 'Нет замороженных студентов'
-              : statusFilter === 'debt' ? 'Нет должников'
-              : 'Нет студентов'
-          }
-          hint={
-            search || statusFilter === 'frozen' ? undefined
-              : statusFilter === 'debt' ? 'У всех студентов оплата в порядке'
-              : 'Добавьте первого студента'
-          }
-          action={(!search && statusFilter !== 'frozen' && statusFilter !== 'debt') ? (
+          icon={GraduationCap}
+          title={search ? 'Попробуйте изменить запрос' : 'Нет студентов'}
+          hint={search ? undefined : 'Добавьте первого студента'}
+          action={!search ? (
             <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
               <Plus size={14} /> Добавить
             </button>
@@ -294,75 +286,48 @@ const debtCount = rows.filter((s) => studentDebt(s) > 0).length;
           ))}
         </div>
       ) : (
-        /* Table view */
+        /* Table view — по референсу: № + студент, телефон, ментор, группа, направление */
         <div className="card bg-base-100 overflow-hidden animate-fade-in">
           <div className="overflow-x-auto">
             <table className="table w-full text-[13px]">
               <thead>
                 <tr>
                   <th>Студент</th>
-                  <th>Код</th>
                   <th>Телефон</th>
-                  <th>Группы</th>
-                  <th>Коины</th>
-                  <th>Долг</th>
-                  <th>Статус</th>
+                  <th>Ментор</th>
+                  <th>Группа</th>
+                  <th>Направление</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredRows.map(s => (
-                  <tr key={s.id} className="hover:bg-base-200 cursor-pointer" onClick={() => navigate(`/students/${s.id}`)}>
-                    <td>
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={fullName(s)} size="sm" />
-                        <span className="font-semibold text-base-content">{fullName(s)}</span>
-                      </div>
-                    </td>
-                    <td className="font-mono text-base-content/70">{s.login_code || s.loginCode || '—'}</td>
-                    <td className="text-base-content/45">{formatPhone(s.phone)}</td>
-                    <td>
-                      <div className="flex flex-wrap gap-1">
-                        {(() => {
-                          const tg = (s.groups && s.groups.length > 0) ? s.groups : (s.groupName ? [{name: s.groupName}] : []);
-                          return [
-                            ...tg.slice(0, 2).map((g, i) => (
-                              <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-primary/10 text-primary">
-                                {g.name}
-                              </span>
-                            )),
-                            tg.length > 2 && (
-                              <span key="more" className="text-[9px] text-base-content/45">+{tg.length - 2}</span>
-                            )
-                          ];
-                        })()}
-                      </div>
-                    </td>
-                    <td className="tabular-nums">
-                      {s.coins != null && s.coins > 0 ? (
-                        <span className="flex items-center gap-1 text-primary font-semibold text-[12px]">
-                          <Coins size={11} /> {s.coins}
-                        </span>
-                      ) : '—'}
-                    </td>
-                    <td className="tabular-nums">
-                      {studentDebt(s) > 0 ? (
-                        <span className="inline-flex items-center gap-1 font-bold text-[11px]" style={{ color: '#E8543E' }}>
-                          <AlertTriangle size={11} /> {studentDebt(s).toLocaleString('ru-RU')}
-                        </span>
-                      ) : (
-                        <span className="text-[11px] font-semibold" style={{ color: '#2ECC71' }}>Нет</span>
-                      )}
-                    </td>
-                    <td>
-                      {s.status !== 'active' && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
-                          style={{ background: (STATUS_COLORS[s.status] || STATUS_COLORS.active).bg, color: (STATUS_COLORS[s.status] || STATUS_COLORS.active).text }}>
-                          {(STATUS_COLORS[s.status] || STATUS_COLORS.active).label}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {filteredRows.map((s, i) => {
+                  const g0 = (s.groups || [])[0];
+                  const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
+                  return (
+                    <tr key={s.id} className="hover:bg-base-200 cursor-pointer" onClick={() => navigate(`/students/${s.id}`)}>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <span className="text-base-content/40 font-mono text-[11px] tabular-nums">{i + 1}.</span>
+                          <span className="font-semibold text-base-content">{fullName(s)}</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                            style={{ background: status.bg, color: status.text }}>
+                            {status.label}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="text-primary font-medium">{s.phone || '—'}</td>
+                      <td className="text-base-content/70">{g0?.mentor || '—'}</td>
+                      <td className="text-base-content/70">{g0?.name || '—'}</td>
+                      <td>
+                        {g0?.subject ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-[6px] text-[10px] font-semibold bg-primary/10 text-primary">
+                            {g0.subject}
+                          </span>
+                        ) : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -370,85 +335,244 @@ const debtCount = rows.filter((s) => studentDebt(s) > 0).length;
       )}
 
       {/* ═══ Create Modal ═══ */}
-      <Modal
-        isOpen={!!form}
-        onClose={() => setForm(null)}
-        title="Новый студент"
-        actions={
-          <div className="modal-action">
-            <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>
-            <button className="btn btn-primary" onClick={create} disabled={busy || !form?.firstName || !form?.lastName}>
-              {busy && <span className="loading loading-spinner loading-xs" />} Создать
-            </button>
-          </div>
-        }
-      >
-        {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
-        <div className="space-y-4">
-          <div>
-            <h4 className="text-[12px] font-bold text-base-content/50 uppercase tracking-wider mb-2">Данные студента</h4>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <input className="input input-bordered w-full" placeholder="Имя" value={form?.firstName || ''} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
-              <input className="input input-bordered w-full" placeholder="Фамилия" value={form?.lastName || ''} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+      {form && (
+        <dialog className="modal modal-open">
+          <div className="modal-box card bg-base-100 border border-base-300 max-w-6xl p-0 max-h-[85vh] flex flex-col">
+            <div className="px-8 pt-7 pb-5 border-b border-base-200 shrink-0">
+              <h3 className="font-extrabold text-2xl text-base-content">Новый студент</h3>
+              <p className="text-[13px] text-base-content/50 mt-1">Заполните данные — логин и пароль сгенерируются автоматически</p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <PhoneInput className="input input-bordered w-full" value={form?.phone || ''} onChange={(v) => setForm({ ...form, phone: v })} />
-              <input className="input input-bordered w-full" type="date" placeholder="Дата рождения" value={form?.birthDate || ''} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
-            </div>
-          </div>
 
-          <div>
-            <h4 className="text-[12px] font-bold text-base-content/50 uppercase tracking-wider mb-2">Данные родителя (опционально)</h4>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <input className="input input-bordered w-full" placeholder="Имя родителя" value={form?.parentFirstName || ''} onChange={(e) => setForm({ ...form, parentFirstName: e.target.value })} />
-              <input className="input input-bordered w-full" placeholder="Фамилия родителя" value={form?.parentLastName || ''} onChange={(e) => setForm({ ...form, parentLastName: e.target.value })} />
+            <div className="px-8 pt-5 pb-6 overflow-y-auto">
+              {err && <div className="alert alert-error mb-4 py-2 text-sm">{err}</div>}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                <div>
+                  <div className="space-y-3">
+                    <div>
+                      <Lbl>Имя *</Lbl>
+                      <input className="input input-bordered input-sm w-full" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+                    </div>
+                    <div>
+                      <Lbl>Фамилия *</Lbl>
+                      <input className="input input-bordered input-sm w-full" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+                    </div>
+
+                    {/* Пол — визуальное поле по референсу, backend его не хранит (нет колонки) */}
+                    <div>
+                      <Lbl>Пол</Lbl>
+                      <div className="flex items-center gap-3">
+                        <label className={`flex-1 flex items-center justify-center gap-2 cursor-pointer input input-bordered ${form.gender === 'male' ? 'border-primary text-primary' : ''}`}>
+                          <input type="radio" name="gender" className="radio radio-xs" checked={form.gender === 'male'} onChange={() => setForm({ ...form, gender: 'male' })} />
+                          Мужской
+                        </label>
+                        <label className={`flex-1 flex items-center justify-center gap-2 cursor-pointer input input-bordered ${form.gender === 'female' ? 'border-primary text-primary' : ''}`}>
+                          <input type="radio" name="gender" className="radio radio-xs" checked={form.gender === 'female'} onChange={() => setForm({ ...form, gender: 'female' })} />
+                          Женский
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Lbl>Дата рождения</Lbl>
+                      <input className="input input-bordered input-sm w-full" type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
+                    </div>
+
+                    <div className="grid grid-cols-[3fr_2fr] gap-3">
+                      <div>
+                        <Lbl>Телефон *</Lbl>
+                        <PhoneInput className="input input-bordered input-sm w-full" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+                      </div>
+                      <div>
+                        <Lbl>Кому принадлежит</Lbl>
+                        <input className="input input-bordered input-sm w-full" placeholder="Студенту" value={form.phoneOwner} onChange={(e) => setForm({ ...form, phoneOwner: e.target.value })} />
+                      </div>
+                    </div>
+
+                    {/* Телефон родителя — реально уходит на backend как parent{firstName,lastName,phone},
+                        но здесь всегда на виду, а не за чекбоксом (как у референса) */}
+                    <div>
+                      <Lbl>Имя родителя</Lbl>
+                      <input className="input input-bordered input-sm w-full" value={form.parentName} onChange={(e) => setForm({ ...form, parentName: e.target.value })} />
+                    </div>
+                    <div className="grid grid-cols-[3fr_2fr] gap-3">
+                      <div>
+                        <Lbl>Телефон родителя</Lbl>
+                        <PhoneInput className="input input-bordered input-sm w-full" value={form.parentPhone} onChange={(v) => setForm({ ...form, parentPhone: v })} />
+                      </div>
+                      <div>
+                        <Lbl>Кому принадлежит</Lbl>
+                        <input className="input input-bordered input-sm w-full" placeholder="Родителю" value={form.parentPhoneOwner} onChange={(e) => setForm({ ...form, parentPhoneOwner: e.target.value })} />
+                      </div>
+                    </div>
+
+                    {/* Доп. телефон — визуальное поле по референсу, backend хранит только один номер родителя */}
+                    <div className="grid grid-cols-[3fr_2fr] gap-3">
+                      <div>
+                        <Lbl>Доп. телефон</Lbl>
+                        <PhoneInput className="input input-bordered input-sm w-full" value={form.extraPhone} onChange={(v) => setForm({ ...form, extraPhone: v })} />
+                      </div>
+                      <div>
+                        <Lbl>Кому принадлежит</Lbl>
+                        <input className="input input-bordered input-sm w-full" value={form.extraPhoneOwner} onChange={(e) => setForm({ ...form, extraPhoneOwner: e.target.value })} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="space-y-3">
+                    <div>
+                      <Lbl>Группа</Lbl>
+                      <select className="select select-bordered select-sm w-full" value={form.groupId} onChange={(e) => setForm({ ...form, groupId: e.target.value })}>
+                        <option value="">Без группы</option>
+                        {groupOptions.map((g) => <option key={g.id} value={g.id}>{g.name} · {g.subject}</option>)}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Lbl>Язык обучения</Lbl>
+                        <select className="select select-bordered select-sm w-full" value={form.preferredLanguage} onChange={(e) => setForm({ ...form, preferredLanguage: e.target.value })}>
+                          <option value="">----</option>
+                          <option value="uz">O'zbekcha</option>
+                          <option value="ru">Русский</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Lbl>Источник</Lbl>
+                        <select className="select select-bordered select-sm w-full" value={form.leadSource} onChange={(e) => setForm({ ...form, leadSource: e.target.value })}>
+                          <option value="">----</option>
+                          <option value="instagram">Instagram</option>
+                          <option value="telegram">Telegram</option>
+                          <option value="referral">По рекомендации</option>
+                          <option value="walk-in">Пришёл сам</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Lbl>Номер школы</Lbl>
+                        <input className="input input-bordered input-sm w-full" value={form.school} onChange={(e) => setForm({ ...form, school: e.target.value })} />
+                      </div>
+                      <div>
+                        <Lbl>Адрес</Lbl>
+                        <input className="input input-bordered input-sm w-full" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                      </div>
+                    </div>
+                    <div>
+                      <Lbl>Комментарий для преподавателя</Lbl>
+                      <textarea className="textarea textarea-bordered textarea-sm w-full" rows={2} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
+                    </div>
+                    <div className="flex items-center gap-4 pt-1">
+                      <label className="flex items-center gap-1.5 text-[12px] font-semibold text-base-content/70 cursor-pointer">
+                        <input type="checkbox" className="checkbox checkbox-sm checkbox-primary" checked={form.hasLaptop} onChange={(e) => setForm({ ...form, hasLaptop: e.target.checked })} />
+                        Есть ноутбук
+                      </label>
+                      <label className="flex items-center gap-1.5 text-[12px] font-semibold text-base-content/70 cursor-pointer">
+                        <input type="checkbox" className="checkbox checkbox-sm checkbox-primary" checked={form.offerSigned} onChange={(e) => setForm({ ...form, offerSigned: e.target.checked })} />
+                        Оферта подписана
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-base-content/40">
+                      Если заполнены имя, фамилия и телефон родителя слева — ему тоже создастся отдельный вход.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <PhoneInput className="input input-bordered w-full" value={form?.parentPhone || ''} onChange={(v) => setForm({ ...form, parentPhone: v })} />
+
+            <div className="modal-action px-8 pb-7 pt-4 mt-0 border-t border-base-200 shrink-0">
+              <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>
+              <button
+                className="btn btn-primary gap-1.5"
+                onClick={create}
+                disabled={
+                  busy || !form.firstName || !form.lastName || !form.phone ||
+                  // родитель — всё или ничего: если хоть одно поле тронуто, второе обязательно
+                  ((form.parentName.trim() || form.parentPhone) && !(form.parentName.trim() && form.parentPhone))
+                }
+              >
+                {busy && <span className="loading loading-spinner loading-xs" />} Создать
+              </button>
+            </div>
           </div>
-        </div>
-      </Modal>
+          <div className="modal-backdrop" onClick={() => setForm(null)} />
+        </dialog>
+      )}
 
       <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="students" data={filteredRows} />
 
       {/* ═══ Credentials Modal ═══ */}
-      <Modal
-        isOpen={!!creds}
-        onClose={() => setCreds(null)}
-        title="Данные для входа"
-        actions={
-          <div className="modal-action">
-            <button className="btn btn-primary" onClick={() => setCreds(null)}>Понятно</button>
-          </div>
-        }
-      >
-        <p className="text-sm text-base-content/45 mb-4">Передайте студенту. Пароль показывается один раз.</p>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
-            <span className="text-[13px] text-base-content/70">Логин-код</span>
-            <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-[14px]">{creds?.login_code || '—'}</span>
-              {creds?.login_code && (
-                <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
-                  onClick={() => copyToClipboard(creds.login_code, 'login')}>
-                  {copied === 'login' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
-                </button>
-              )}
+      {creds && (
+        <dialog className="modal modal-open">
+          <div className="modal-box card bg-base-100 border border-base-300">
+            <h3 className="font-bold text-lg mb-2">Данные для входа</h3>
+            <p className="text-sm text-base-content/45 mb-4">Передайте студенту. Пароль показывается один раз.</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
+                <span className="text-[13px] text-base-content/70">Логин-код</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-[14px]">{creds.login_code || '—'}</span>
+                  {creds.login_code && (
+                    <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
+                      onClick={() => copyToClipboard(creds.login_code, 'login')}>
+                      {copied === 'login' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
+                <span className="text-[13px] text-base-content/70">Пароль</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-[14px]">{creds.password || '—'}</span>
+                  {creds.password && (
+                    <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
+                      onClick={() => copyToClipboard(creds.password, 'pass')}>
+                      {copied === 'pass' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {creds.parent && (
+              <>
+                <p className="text-sm text-base-content/45 mt-4 mb-2">Родитель ({creds.parent.firstName} {creds.parent.lastName})</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
+                    <span className="text-[13px] text-base-content/70">Логин-код</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-[14px]">{creds.parent.loginCode || '—'}</span>
+                      {creds.parent.loginCode && (
+                        <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
+                          onClick={() => copyToClipboard(creds.parent.loginCode, 'parent-login')}>
+                          {copied === 'parent-login' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
+                    <span className="text-[13px] text-base-content/70">Пароль</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-[14px]">{creds.parent.password || '—'}</span>
+                      {creds.parent.password && (
+                        <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
+                          onClick={() => copyToClipboard(creds.parent.password, 'parent-pass')}>
+                          {copied === 'parent-pass' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="modal-action">
+              <button className="btn btn-primary" onClick={() => setCreds(null)}>Понятно</button>
             </div>
           </div>
-          <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
-            <span className="text-[13px] text-base-content/70">Пароль</span>
-            <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-[14px]">{creds?.password || '—'}</span>
-              {creds?.password && (
-                <button className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-primary/10 transition-colors"
-                  onClick={() => copyToClipboard(creds.password, 'pass')}>
-                  {copied === 'pass' ? <Check size={12} className="text-primary" /> : <Copy size={12} className="text-base-content/45" />}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </Modal>
+        </dialog>
+      )}
     </div>
   );
 }

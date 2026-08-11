@@ -36,7 +36,7 @@ Academy» в США, Сербии, Сингапуре, Молдове и Тад�
 Семь ролей, у каждой свой кабинет и права доступа:
 
 - **Main Admin** — владелец платформы: заявки, партнёры, биллинг.
-- **Super Admin** — учебный центр: филиалы, админы, доход организации.
+- **SEO** — учебный центр: филиалы, админы, доход организации.
 - **Admin** — филиал: студенты, группы, платежи, расходы.
 - **Mentor** — преподаватель: свои группы, ДЗ, тесты, коины, посещаемость.
 - **Methodist** — методист: тесты, ДЗ, учебные материалы, аналитика.
@@ -69,7 +69,11 @@ Academy» в США, Сербии, Сингапуре, Молдове и Тад�
 - [Для языковой школы](https://levelup-academy.uz/landing/for-language-school) — группы по уровням (A1–C1, IELTS), посещаемость, оплаты.
 - [Для курсов и репетиторов](https://levelup-academy.uz/landing/for-courses) — группы и индивидуальные занятия, оплаты за курс.
 - [CRM вместо Excel](https://levelup-academy.uz/landing/crm-vs-excel) — сравнение таблиц и CRM по задачам центра, переход за неделю.
+- [LevelUp Academy или Modme](https://levelup-academy.uz/landing/vs/modme) — сравнение цен и функций, данные с сайта Modme на 05.08.2026.
+- [LevelUp Academy или Umai CRM](https://levelup-academy.uz/landing/vs/umai) — сравнение цен и функций, данные с сайта Umai CRM на 05.08.2026.
 - [Геймификация](https://levelup-academy.uz/landing/gamification) — коины, магазин, лидерборды.
+- [Вопросы и ответы](https://levelup-academy.uz/landing/faq) — вход по логин-коду, блокировка при просрочке, сплит-платежи, заморозка ученика, права доступа.
+- [О компании](https://levelup-academy.uz/landing/about) — кто разрабатывает систему: основана в 2026, команда 6 человек, Узбекистан.
 - [Контакты](https://levelup-academy.uz/landing/contacts) — связь и заявка на подключение.
 - [База знаний](https://levelup-academy.uz/landing/blog) — статьи о переходе на CRM, контроле долгов и автоматизации.
   - [Как перейти с Excel на CRM](https://levelup-academy.uz/landing/blog/excel-to-crm)

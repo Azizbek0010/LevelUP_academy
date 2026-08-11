@@ -18,10 +18,10 @@ export function useSuperDashboard() {
   return useAuthedQuery(['super-dashboard'], () => api.superDashboard(token));
 }
 
-/** Статистика организации за период: 7d / 30d / 90d. */
-export function useSuperStats(period = '30d') {
+/** Статистика организации за период: 7d / 30d / 90d / 12m, опционально по одному филиалу. */
+export function useSuperStats(period = '30d', branchId = '') {
   const { token } = useAuth();
-  return useAuthedQuery(['super-stats', period], () => api.superStats(token, period));
+  return useAuthedQuery(['super-stats', period, branchId], () => api.superStats(token, period, branchId));
 }
 
 export function useSuperBranches() {
@@ -36,6 +36,25 @@ export function useSuperBranchDetail(id) {
   });
 }
 
+export function useSuperStudentDetail(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-student', id], () => api.superStudentDetail(token, id), {
+    enabled: !!id,
+  });
+}
+
+export function useSuperStudentsStats(period = '30d', branchId = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-students-stats', period, branchId], () => api.superStudentsStats(token, period, branchId));
+}
+
+export function useSuperGroupDetail(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-group', id], () => api.superGroupDetail(token, id), {
+    enabled: !!id,
+  });
+}
+
 export function useSuperAdmins() {
   const { token } = useAuth();
   return useAuthedQuery(['super-admins'], () => api.superAdmins(token));
@@ -46,11 +65,65 @@ export function useSuperOrganization() {
   return useAuthedQuery(['super-organization'], () => api.superGetOrganization(token));
 }
 
+export function useSuperTrainingTypes() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-training-types'], () => api.superTrainingTypes(token));
+}
+
 export function useSuperMethodists() {
   const { token } = useAuth();
   return useAuthedQuery(['super-methodists'], () => api.superMethodists(token));
 }
 
+// -------- SUPER ADMIN: Branch Managers --------
+export function useSuperBranchManagers() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-branch-managers'], () => api.superBranchManagers(token));
+}
+
+// -------- BRANCH MANAGER --------
+export function useBranchManagerDashboard() {
+  const { token } = useAuth();
+  return useAuthedQuery(['branch-manager-dashboard'], () => api.branchManagerDashboard(token));
+}
+
+export function useBranchManagerInfo() {
+  const { token } = useAuth();
+  return useAuthedQuery(['branch-manager-info'], () => api.branchManagerInfo(token));
+}
+
+export function useBranchManagerIncome(month) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['branch-manager-income', month],
+    () => api.branchManagerIncome(token, month),
+    { enabled: !!month },
+  );
+}
+
+export function useBranchManagerExpenses(month) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['branch-manager-expenses', month],
+    () => api.branchManagerExpenses(token, month),
+    { enabled: !!month },
+  );
+}
+
+export function useBranchManagerReports(months = 6) {
+  const { token } = useAuth();
+  return useAuthedQuery(
+    ['branch-manager-reports', months],
+    () => api.branchManagerReports(token, months),
+  );
+}
+
+export function useBranchManagerTelegramStatus() {
+  const { token } = useAuth();
+  return useAuthedQuery(['branch-manager-telegram-status'], () => api.branchManagerTelegramStatus(token));
+}
+
+// -------- ADMIN --------
 /** Менторы организации — только чтение (заводит/редактирует их Admin филиала). */
 export function useSuperMentors() {
   const { token } = useAuth();
@@ -78,6 +151,23 @@ export function useAdminStudentDetail(id) {
   return useAuthedQuery(['admin-student', id], () => api.adminStudentDetail(token, id), { enabled: !!id });
 }
 
+export function useAdminStudentAttendance(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-student-attendance', id], () => api.adminStudentAttendance(token, id), { enabled: !!id });
+}
+
+export function useAdminStudentTelegram(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-student-telegram', id], () => api.adminStudentTelegram(token, id), { enabled: !!id });
+}
+
+// enabled отдельно от !!id — пароль расшифровываем на сервере только когда
+// модалка реально открыта, не на каждый рендер StudentDetail.
+export function useAdminStudentCredentials(id, enabled) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-student-credentials', id], () => api.adminStudentCredentials(token, id), { enabled: !!id && enabled });
+}
+
 export function useAdminGroups(qs = '') {
   const { token } = useAuth();
   return useAuthedQuery(['admin-groups', qs], () => api.adminGroups(token, qs));
@@ -93,9 +183,39 @@ export function useAdminMentors() {
   return useAuthedQuery(['admin-mentors'], () => api.adminMentors(token));
 }
 
+export function useAdminTrainingTypes() {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-training-types'], () => api.adminTrainingTypes(token));
+}
+
 export function useAdminInvoices(qs = '') {
   const { token } = useAuth();
   return useAuthedQuery(['admin-invoices', qs], () => api.adminInvoices(token, qs));
+}
+
+export function useAdminShopItems() {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-shop-items'], () => api.adminShopItems(token));
+}
+
+export function useAdminShopOrders(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-shop-orders', qs], () => api.adminShopOrders(token, qs));
+}
+
+export function useSuperShopItems(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-shop-items', qs], () => api.superShopItems(token, qs));
+}
+
+export function useAdminSchedule() {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-schedule'], () => api.adminSchedule(token));
+}
+
+export function useAdminRooms() {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-rooms'], () => api.adminRooms(token));
 }
 
 export function useAdminReports(qs = '') {
@@ -133,11 +253,6 @@ export function useAdminGroupFeedback(groupId) {
 export function useAdminSettings() {
   const { token } = useAuth();
   return useAuthedQuery(['admin-settings'], () => api.adminSettings(token), { retry: false });
-}
-
-export function useAdminPenalties(qs = '') {
-  const { token } = useAuth();
-  return useAuthedQuery(['admin-penalties', qs], () => api.adminPenalties(token, qs));
 }
 
 // -------- MENTOR --------

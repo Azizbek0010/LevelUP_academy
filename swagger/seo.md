@@ -1,4 +1,4 @@
-# Super Admin
+# SEO
 
 Organization owner: branches, admins, methodists, org dashboard
 
@@ -7,17 +7,16 @@ Organization owner: branches, admins, methodists, org dashboard
 ### POST `/api/super/admins`
 Create an admin assigned to one of the organization's branches
 
-Login (email) and password are set directly by the Super Admin (not auto-generated).
+Login (email) is set by SEO; password is auto-generated and returned once (tempPassword).
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Request body:**
 - **CreateAdminRequest**:
   - `firstName`: string **(required)**
   - `lastName`: string **(required)**
   - `email`: string (email) **(required)**
-  - `password`: string **(required)**
   - `branchId`: string (uuid) **(required)**
   - `phone`: string (optional)
 
@@ -83,7 +82,7 @@ Login (email) and password are set directly by the Super Admin (not auto-generat
 List admins of the organization
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Responses:**
 
@@ -124,7 +123,7 @@ Update an admin (partial — at least one field; can reassign branch)
 If `branchId` is changed, the new branch must belong to the same organization.
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -190,7 +189,7 @@ If `branchId` is changed, the new branch must belong to the same organization.
 Freeze or unfreeze an admin account
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -249,24 +248,21 @@ Freeze or unfreeze an admin account
 ---
 
 ### GET `/api/super/announcements`
-⚠️ STUB — always returns an empty list
-
-NOT IMPLEMENTED. There is no announcements table in the schema yet. The endpoint exists only so the Announcements page can render its EmptyState. Real implementation = migration + notificationQueue.
-
+List organization announcements (migration 1783870000000_super-announcements)
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Responses:**
 
-- **200** — Always empty
+- **200** — Announcements
   - `announcements` (optional):
     - _array of:_
       - _(free-form object)_
   - `items` (optional):
     - _array of:_
       - _(free-form object)_
-  - `total`: integer (optional) _e.g. 0_
+  - `total`: integer (optional)
 
 - **401** — Missing/invalid/expired bearer token
   - **ErrorResponse**:
@@ -287,16 +283,21 @@ NOT IMPLEMENTED. There is no announcements table in the schema yet. The endpoint
 ---
 
 ### POST `/api/super/announcements`
-⚠️ NOT IMPLEMENTED — always 501
-
-Needs an announcements table + migration. Do not wire the UI to this yet.
+Create an announcement — queues Telegram delivery for parent/student audiences
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
+
+**Request body:**
+- `title`: string **(required)**
+- `body`: string **(required)**
+- `targetType`: enum: `all-staff` | `all-admins` | `all-mentors` | `all-parents` | `all-students` **(required)**
 
 **Responses:**
 
-- **501** — Endpoint is a stub — the feature has no DB table/migration yet. The route exists so the front-end can render, but it always fails. Do not wire UI to it.
+- **201** — Created
+
+- **401** — Missing/invalid/expired bearer token
   - **ErrorResponse**:
     - `success`: boolean **(required)** _e.g. false_
     - `message`: string **(required)**
@@ -304,20 +305,58 @@ Needs an announcements table + migration. Do not wire the UI to this yet.
       - _(free-form object)_
     - `stack`: string (optional) — Only present when NODE_ENV=development
 
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
 ---
 
 ### DELETE `/api/super/announcements/{id}`
-⚠️ NOT IMPLEMENTED — always 501
+Soft-delete an announcement
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
 
 **Responses:**
 
-- **501** — Endpoint is a stub — the feature has no DB table/migration yet. The route exists so the front-end can render, but it always fails. Do not wire UI to it.
+- **200** — Deleted
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Announcement not found in your organization
   - **ErrorResponse**:
     - `success`: boolean **(required)** _e.g. false_
     - `message`: string **(required)**
@@ -334,7 +373,7 @@ Attendance across the organization (optional group/date filter)
 
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `groupId` (query, string) (optional)
@@ -382,20 +421,112 @@ Attendance across the organization (optional group/date filter)
 ---
 
 ### GET `/api/super/audit`
-⚠️ STUB — always returns an empty list
-
-NOT IMPLEMENTED. No audit-log table yet; returns an empty list so the page renders.
+Organization audit log (migration 1783880000000_audit-log)
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Responses:**
 
-- **200** — Always empty
+- **200** — Audit entries
   - `items` (optional):
     - _array of:_
       - _(free-form object)_
-  - `total`: integer (optional) _e.g. 0_
+  - `total`: integer (optional)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### POST `/api/super/branch-managers`
+Create a branch manager assigned to one of the organization's branches
+
+**Auth:** Bearer JWT required
+**Role(s):** seo
+
+**Request body:**
+- _CreateBranchManagerRequest_ (unresolved ref)
+
+**Responses:**
+
+- **201** — Branch manager created
+  - `manager` (optional):
+    - _BranchManagerSummary_ (unresolved ref)
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Branch not found in your organization
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **409** — Email already in use
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### GET `/api/super/branch-managers`
+List branch managers of the organization
+
+**Auth:** Bearer JWT required
+**Role(s):** seo
+
+**Responses:**
+
+- **200** — List of branch managers
+  - `managers` (optional):
+    - _array of:_
+      - _BranchManagerSummary_ (unresolved ref)
+      - `branchName`: string (optional)
+      - `createdAt`: string (date-time) (optional)
 
 - **401** — Missing/invalid/expired bearer token
   - **ErrorResponse**:
@@ -421,7 +552,7 @@ Create a branch in the organization
 The organization's first branch is automatically flagged `isMain`.
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Request body:**
 - **CreateBranchRequest**:
@@ -476,7 +607,7 @@ The organization's first branch is automatically flagged `isMain`.
 List branches of the organization (with admin/student counts)
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Responses:**
 
@@ -516,7 +647,7 @@ List branches of the organization (with admin/student counts)
 Branch detail — branch info + its admins + its groups
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -589,7 +720,7 @@ Branch detail — branch info + its admins + its groups
 Update branch fields (partial — at least one field required)
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -655,7 +786,7 @@ Update branch fields (partial — at least one field required)
 Archive a branch (read-only afterwards)
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -703,7 +834,7 @@ Archive a branch (read-only afterwards)
 Unarchive a branch
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -751,7 +882,7 @@ Unarchive a branch
 Organization dashboard (revenue, debt, students, per-branch breakdown)
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Responses:**
 
@@ -796,7 +927,7 @@ Organization dashboard (revenue, debt, students, per-branch breakdown)
 List groups across the whole organization
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Responses:**
 
@@ -837,7 +968,7 @@ List groups across the whole organization
 Soft-delete a group of the organization
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -877,7 +1008,7 @@ Soft-delete a group of the organization
 Archive a group (read-only, mutations return 403 afterwards)
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -919,7 +1050,7 @@ Archive a group (read-only, mutations return 403 afterwards)
 Unarchive a group
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -957,18 +1088,47 @@ Unarchive a group
 
 ---
 
+### GET `/api/super/mentors`
+List mentors of the organization (read-only — Admin of the branch manages them)
+
+Нужен только для выбора цели в «Взыскании» — CRUD ментора остаётся у Admin филиала.
+
+**Auth:** Bearer JWT required
+**Role(s):** seo
+
+**Responses:**
+
+- **200** — List of mentors
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
 ### POST `/api/super/methodists`
 Create a methodist (organization-level, not tied to a branch)
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Request body:**
 - **CreateMethodistRequest**:
   - `firstName`: string **(required)**
   - `lastName`: string **(required)**
   - `email`: string (email) **(required)**
-  - `password`: string **(required)**
   - `phone`: string (optional)
 
 **Responses:**
@@ -1025,7 +1185,7 @@ Create a methodist (organization-level, not tied to a branch)
 List methodists of the organization
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Responses:**
 
@@ -1063,7 +1223,7 @@ List methodists of the organization
 Update a methodist (partial — at least one field)
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -1128,7 +1288,7 @@ Update a methodist (partial — at least one field)
 Freeze or unfreeze a methodist account
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -1193,7 +1353,7 @@ Returns the partner organization profile. `plan` is derived from the organizatio
 
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Responses:**
 
@@ -1242,7 +1402,7 @@ Partial update — at least one field is required. `lessonDurationMin` applies t
 
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Request body:**
 - **UpdateOrganizationRequest**:
@@ -1311,23 +1471,28 @@ Partial update — at least one field is required. `lessonDurationMin` applies t
 ---
 
 ### GET `/api/super/reminders`
-⚠️ STUB — always returns an empty list
+History of automated payment reminders (payment.due / payment.due_soon / debt.overdue)
 
-NOT IMPLEMENTED. No reminders table yet; returns an empty list so the page renders.
+Not written by an HTTP handler — a BullMQ QueueEvents listener (reminders/reminders.listener.js) logs each reminder job as it completes or fails on the shared 'notifications' queue. Scoped to this organization, newest first.
+
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Responses:**
 
-- **200** — Always empty
-  - `reminders` (optional):
-    - _array of:_
-      - _(free-form object)_
+- **200** — Reminder history
   - `items` (optional):
     - _array of:_
-      - _(free-form object)_
-  - `total`: integer (optional) _e.g. 0_
+      - `id`: string (uuid) (optional)
+      - `studentName`: string (optional)
+      - `parentName`: string (optional)
+      - `message`: string (optional)
+      - `status`: enum: `pending` | `sent` | `failed` (optional)
+      - `error`: string (optional)
+      - `sentAt`: string (date-time) (optional)
+      - `createdAt`: string (date-time) (optional)
+  - `total`: integer (optional)
 
 - **401** — Missing/invalid/expired bearer token
   - **ErrorResponse**:
@@ -1348,17 +1513,19 @@ NOT IMPLEMENTED. No reminders table yet; returns an empty list so the page rende
 ---
 
 ### DELETE `/api/super/reminders/{id}`
-⚠️ NOT IMPLEMENTED — always 501
+Delete a reminder history entry
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
 
 **Responses:**
 
-- **501** — Endpoint is a stub — the feature has no DB table/migration yet. The route exists so the front-end can render, but it always fails. Do not wire UI to it.
+- **200** — Deleted
+
+- **401** — Missing/invalid/expired bearer token
   - **ErrorResponse**:
     - `success`: boolean **(required)** _e.g. false_
     - `message`: string **(required)**
@@ -1366,20 +1533,134 @@ NOT IMPLEMENTED. No reminders table yet; returns an empty list so the page rende
       - _(free-form object)_
     - `stack`: string (optional) — Only present when NODE_ENV=development
 
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Reminder not found in your organization
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
 ---
 
 ### POST `/api/super/reminders/{id}/resend`
-⚠️ NOT IMPLEMENTED — always 501
+Re-queue the same reminder job (same payload) — history is not overwritten, a new entry appears once it settles
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**
 
 **Responses:**
 
-- **501** — Endpoint is a stub — the feature has no DB table/migration yet. The route exists so the front-end can render, but it always fails. Do not wire UI to it.
+- **200** — Re-queued
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Reminder not found in your organization
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **422** — zod validation failed (body/params/query)
+  - **ValidationErrorResponse**:
+    - **ErrorResponse**:
+      - `success`: boolean **(required)** _e.g. false_
+      - `message`: string **(required)**
+      - `details` (optional):
+        - _(free-form object)_
+      - `stack`: string (optional) — Only present when NODE_ENV=development
+    - `message`: string (optional) _e.g. "Validation failed"_
+    - `details` (optional):
+      - _(free-form object)_
+
+---
+
+### GET `/api/super/stats`
+Organization statistics — KPIs, revenue series, per-branch and per-method breakdown
+
+**Auth:** Bearer JWT required
+**Role(s):** seo
+
+**Params:**
+- `period` (query, string) (optional)
+
+**Responses:**
+
+- **200** — Stats
+  - `period`: string (optional)
+  - `totals` (optional):
+    - `revenue`: number (optional)
+    - `outstandingDebt`: number (optional)
+    - `activeStudents`: integer (optional)
+    - `admins`: integer (optional)
+    - `branches`: integer (optional)
+    - `avgRevenue`: number (optional)
+    - `debtRatio`: number (optional)
+    - `currency`: string (optional)
+  - `branches` (optional):
+    - _array of:_
+      - `id`: string (uuid) (optional)
+      - `name`: string (optional)
+      - `revenue`: number (optional)
+      - `debt`: number (optional)
+      - `students`: integer (optional)
+      - `admins`: integer (optional)
+      - `share`: number (optional) — Доля филиала в общей выручке организации, %
+  - `revenueSeries` (optional):
+    - _array of:_
+      - _(free-form object)_
+  - `paymentMethods` (optional):
+    - _array of:_
+      - _(free-form object)_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Authenticated but role not allowed on this endpoint
   - **ErrorResponse**:
     - `success`: boolean **(required)** _e.g. false_
     - `message`: string **(required)**
@@ -1396,7 +1677,7 @@ Search matches first name, last name or phone (ILIKE). Scope is the caller's org
 
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `search` (query, string) (optional) — Substring match on first name / last name / phone
@@ -1445,7 +1726,7 @@ Soft-delete a student of the organization
 Sets `deleted_at`; the row is kept for finance history.
 
 **Auth:** Bearer JWT required
-**Role(s):** superadmin
+**Role(s):** seo
 
 **Params:**
 - `id` (path, string) **(required)**

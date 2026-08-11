@@ -16,13 +16,12 @@ import { Search, Inbox, X, ArrowRight, ArrowUpRight, ArrowDownRight } from 'luci
    Было `bg-primary/20 text-primary-content`: primary-content — БЕЛЫЙ, то есть
    белая буква на бледно-зелёной заливке (контраст ~1.3:1, инициал не читался).
    Теперь буква — сам primary на его же светлой подложке. */
-export function Avatar({ name, size = 'md', onPrimary = false, className = '' }) {
+export function Avatar({ name, size = 'md', onPrimary = false }) {
   const letter = (name?.trim()?.[0] || '?').toUpperCase();
   const cls = {
     sm: 'w-8 h-8 text-xs',
     md: 'w-9 h-9 text-sm',
     lg: 'w-11 h-11 text-base',
-    xl: 'w-14 h-14 text-lg',
   }[size];
   // `onPrimary` — аватар лежит на заливке primary (выделенная строка списка).
   // Без него зелёная буква на зелёном фоне сливается ровно так же, как раньше
@@ -32,7 +31,7 @@ export function Avatar({ name, size = 'md', onPrimary = false, className = '' })
     : 'bg-primary/15 text-primary';
   return (
     <span
-      className={`${cls} ${tone} rounded-full grid place-items-center font-bold shrink-0 ${className}`}
+      className={`${cls} ${tone} rounded-full grid place-items-center font-bold shrink-0`}
       aria-hidden="true"
     >
       {letter}
@@ -130,7 +129,7 @@ export function Panel({ title, icon: Icon, action, children, bodyClass = 'p-4' }
    backdrop не докрывал экран сверху/слева (см. Discipline.jsx: «tepa va yon
    tomonida blur yoq»). Портал прямо в body убирает эту зависимость целиком —
    не нужно искать, у какого именно предка transform. */
-export function Modal({ isOpen, onClose, title, children, actions, boxClass = '' }) {
+export function Modal({ isOpen, onClose, title, children, actions }) {
   const ref = useRef(null);
   useEffect(() => {
     const el = ref.current;
@@ -141,12 +140,12 @@ export function Modal({ isOpen, onClose, title, children, actions, boxClass = ''
   if (!isOpen) return null;
   return createPortal(
     <dialog ref={ref} className="modal modal-open" onClose={onClose}>
-      <div className={`modal-box glass-strong border border-[var(--border)] ${boxClass}`}>
+      <div className="modal-box glass-strong border border-[var(--border)]">
         <div className="flex items-center justify-between mb-4">
-          {title && <h3 className="font-bold text-lg">{title}</h3>}
+          <h3 className="font-bold text-lg">{title}</h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors ml-auto"
+            className="w-8 h-8 rounded-lg grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors"
             aria-label="Yopish"
           >
             <X size={16} />

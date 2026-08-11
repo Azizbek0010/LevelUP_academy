@@ -69,6 +69,42 @@ Ownership check: a mentor may only act on students enrolled in one of their own 
 
 ---
 
+### GET `/api/mentor/coins/groups/{groupId}/budget`
+Remaining monthly coin allowance for a group
+
+A mentor may hand out `coins_per_student × current group size` coins per calendar month, per group. Nothing is pre-allocated: the figure is derived on read, so enrolling a student raises the allowance immediately. Whatever is left over does not carry into the next month. Deductions made by the mentor within the same month return to the allowance; deductions of coins granted in an earlier month do not.
+
+
+**Auth:** Bearer JWT required
+**Role(s):** mentor + admin
+
+**Params:**
+- `groupId` (path, string) **(required)**
+
+**Responses:**
+
+- **200** — Budget state for the current month
+  - `success`: boolean (optional) _e.g. true_
+  - `data` (optional):
+    - `month`: string (optional) _e.g. "2026-07"_
+    - `coinsPerStudent`: integer (optional) _e.g. 10_
+    - `students`: integer (optional) _e.g. 12_
+    - `allocated`: integer (optional) _e.g. 120_
+    - `spent`: integer (optional) _e.g. 45_
+    - `remaining`: integer (optional) _e.g. 75_
+
+- **401** — Missing/invalid/expired bearer token
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **404** — Not your group
+
+---
+
 ### GET `/api/mentor/coins/students/{studentId}`
 Paginated coin history of a student (within actor's scope)
 

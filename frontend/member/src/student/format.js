@@ -1,17 +1,33 @@
+/* Дата/деньги/дедлайн — с учётом языка интерфейса: locale и слова-подписи
+   зависят от lang ('ru' | 'uz'), чтобы в узбекском режиме не оставалось
+   русских «сегодня»/«авг»/«сум». Сам язык приходит из useI18n().lang. */
 const nf = new Intl.NumberFormat('ru-RU');
 
 export const fmtNum = (n) => nf.format(Number(n) || 0);
 
-export const fmtMoney = (n) => `${nf.format(Number(n) || 0)} сум`;
+export const fmtMoney = (n, lang = 'ru') => `${nf.format(Number(n) || 0)} ${lang === 'uz' ? "so'm" : 'сум'}`;
 
-export function fmtDate(value) {
+const LOCALES = { ru: 'ru-RU', uz: 'uz-UZ' };
+/* Браузер без данных узбекской локали (редкие окружения) выбросит RangeError
+   на toLocaleDateString('uz-UZ') — тогда молча откатываемся на русскую. */
+const localeOf = (lang) => {
+  const loc = LOCALES[lang] ?? 'ru-RU';
+  try {
+    new Intl.DateTimeFormat(loc).format(new Date());
+    return loc;
+  } catch {
+    return 'ru-RU';
+  }
+};
+
+export function fmtDate(value, lang = 'ru') {
   if (!value) return '—';
-  return new Date(value).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(value).toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export function fmtDateTime(value) {
+export function fmtDateTime(value, lang = 'ru') {
   if (!value) return '—';
-  return new Date(value).toLocaleString('ru-RU', {
+  return new Date(value).toLocaleString(localeOf(lang), {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -28,14 +44,15 @@ export function fmtDuration(totalSec) {
 }
 
 /** Дедлайн относительно now: «через 3 дня» / «сегодня» / «просрочено». */
-export function deadlineLabel(deadline) {
+export function deadlineLabel(deadline, lang = 'ru') {
   if (!deadline) return '';
+  const uz = lang === 'uz';
   const diffMs = new Date(deadline).getTime() - Date.now();
-  if (diffMs < 0) return 'просрочено';
+  if (diffMs < 0) return uz ? 'muddati o‘tgan' : 'просрочено';
   const days = Math.floor(diffMs / 86_400_000);
-  if (days === 0) return 'сегодня';
-  if (days === 1) return 'завтра';
-  return `через ${days} дн.`;
+  if (days === 0) return uz ? 'bugun' : 'сегодня';
+  if (days === 1) return uz ? 'ertaga' : 'завтра';
+  return uz ? `${days} kundan keyin` : `через ${days} дн.`;
 }
 
 /** 158000 → «154 КБ», 3400000 → «3.2 МБ» */

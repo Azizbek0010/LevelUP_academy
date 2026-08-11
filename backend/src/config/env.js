@@ -65,10 +65,23 @@ const schema = z.object({
   // за сколько дней до due_date слать родителям напоминание payment.due_soon
   DUE_SOON_REMINDER_DAYS: z.coerce.number().int().positive().default(2),
 
+  // Aqlli tahlil (AI-review практических уроков). Пусто → review.service сразу
+  // пишет review_status='failed' и не делает сетевых вызовов — сдача ДЗ
+  // продолжает работать без AI. Groq (не Gemini) — 09.08.2026 переключились:
+  // бесплатный тариф Groq/Cerebras НЕ обучается на входных данных (в отличие
+  // от free tier самого Google), а сюда прилетает код реальных детей.
+  GROQ_API_KEY: z.string().optional().or(z.literal('')),
+  // Запасные ключи (10.08.2026, запрос пользователя): free tier одного ключа
+  // gpt-oss-120b — ~200K токенов/день, это ~100 проверок — школа может
+  // упереться за один день. groq.client.js пробует их по очереди, любой
+  // не заданный просто пропускается.
+  GROQ_API_KEY_2: z.string().optional().or(z.literal('')),
+  GROQ_API_KEY_3: z.string().optional().or(z.literal('')),
+
   SEED_MAIN_ADMIN_PHONE: z.string().default('+998900000000'),
   SEED_MAIN_ADMIN_EMAIL: z.string().email().default('hp8187081014laptop@gmail.com'),
   SEED_MAIN_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),
-  SEED_SUPERADMIN_EMAIL: z.string().email().default('azizbekamangeldiev.2010@gmail.com'),
+  SEED_SEO_EMAIL: z.string().email().default('azizbekamangeldiev.2010@gmail.com'),
 }).superRefine((cfg, ctx) => {
   if (cfg.NODE_ENV !== 'production') return;
 

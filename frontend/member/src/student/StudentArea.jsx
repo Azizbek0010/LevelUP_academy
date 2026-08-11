@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { fmtMoney } from './format.js';
+import { useI18n } from '../i18n/index.jsx';
 import { setAccessToken, setOnPaymentOverdue, setOnSessionExpired } from './api.js';
 import { Button } from './components/ui.jsx';
 
@@ -20,14 +21,18 @@ function InfoScreen({ title, children, action }) {
 
 /** 402 от blockIfOverdue — просроченный счёт закрывает весь кабинет студента до оплаты. */
 function PaymentOverdue({ amount, onLogout }) {
+  const { lang, t } = useI18n();
+  const uz = lang === 'uz';
   return (
     <InfoScreen
-      title="Доступ приостановлен"
-      action={<Button hue="muted" onClick={onLogout}>Выйти</Button>}
+      title={uz ? 'Kirish vaqtincha to‘xtatildi' : 'Доступ приостановлен'}
+      action={<Button hue="muted" onClick={onLogout}>{uz ? 'Chiqish' : 'Выйти'}</Button>}
     >
-      По твоему счёту есть просроченная задолженность
-      {amount ? <> — <b className="text-base-content">{fmtMoney(amount)}</b></> : null}. Кабинет
-      откроется сразу после оплаты — обратись к администратору учебного центра.
+      {uz ? 'Hisobingda muddati o‘tgan qarz bor' : 'По твоему счёту есть просроченная задолженность'}
+      {amount ? <> — <b className="text-base-content">{fmtMoney(amount, lang)}</b></> : null}.
+      {uz
+        ? ' Kabinet to‘lovdan so‘ng darhol ochiladi — o‘quv markazi administratoriga murojaat qil.'
+        : ' Кабинет откроется сразу после оплаты — обратись к администратору учебного центра.'}
     </InfoScreen>
   );
 }

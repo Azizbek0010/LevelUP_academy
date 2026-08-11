@@ -12,12 +12,12 @@ import { SkeletonList } from '../components/Skeleton.jsx';
 // ---- Constants ----
 
 const TARGET_LABELS = {
-  'all-partners':    'Все партнёры',
-  'all-superadmins': 'Все Super Admin',
+  'all-partners': 'Все партнёры',
+  'all-seo':      'Все SEO',
 };
 
 const ROLE_LABEL = {
-  superadmin: 'Super Admin',
+  seo: 'SEO',
   admin:      'Администратор',
   mentor:     'Ментор',
   methodist:  'Методист',
@@ -41,8 +41,8 @@ function timeAgo(iso) {
 }
 
 function targetIcon(targetType) {
-  if (targetType === 'all-superadmins') return <Shield size={14} className="text-purple-600" />;
-  if (targetType === 'all-partners') return <Building2 size={14} className="text-primary-content" />;
+  if (targetType === 'all-seo') return <Shield size={14} className="text-purple-600" />;
+  if (targetType === 'all-partners') return <Building2 size={14} className="text-lime-600" />;
   return <Users size={14} className="text-primary" />;
 }
 
@@ -126,7 +126,7 @@ export default function Announcements() {
     <div className="space-y-6">
       <PageHeader title="Анонсы" subtitle="Сообщения для партнёров платформы">
         <button
-          className="btn btn-primary btn-sm gap-1.5"
+          className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 btn-sm gap-1.5"
           onClick={() => setModalOpen(true)}
         >
           <Plus size={16} /> Новый анонс
@@ -269,7 +269,7 @@ export default function Announcements() {
                 <label className="label"><span className="label-text">Заголовок</span></label>
                 <input
                   type="text"
-                  className="input input-bordered input-sm focus:border-primary focus:outline-primary/40"
+                  className="input input-bordered input-sm focus:border-lime-400 focus:outline-lime-200"
                   placeholder="Важное объявление"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -278,7 +278,7 @@ export default function Announcements() {
               <div className="form-control">
                 <label className="label"><span className="label-text">Текст</span></label>
                 <textarea
-                  className="textarea textarea-bordered textarea-sm resize-none focus:border-primary focus:outline-primary/40"
+                  className="textarea textarea-bordered textarea-sm resize-none focus:border-lime-400 focus:outline-lime-200"
                   rows={4}
                   placeholder="Текст анонса..."
                   value={form.body}
@@ -288,12 +288,12 @@ export default function Announcements() {
               <div className="form-control">
                 <label className="label"><span className="label-text">Получатели</span></label>
                 <select
-                  className="select select-bordered select-sm focus:border-primary focus:outline-primary/40"
+                  className="select select-bordered select-sm focus:border-lime-400 focus:outline-lime-200"
                   value={form.targetType}
                   onChange={(e) => setForm((f) => ({ ...f, targetType: e.target.value }))}
                 >
                   <option value="all-partners">Все партнёры</option>
-                  <option value="all-superadmins">Все Super Admin</option>
+                  <option value="all-seo">Все SEO</option>
                 </select>
               </div>
 
@@ -314,7 +314,7 @@ export default function Announcements() {
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-primary btn-sm"
+                  className="btn bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 btn-sm"
                   disabled={createMutation.isPending}
                 >
                   {createMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Отправить'}

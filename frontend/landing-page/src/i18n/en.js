@@ -19,8 +19,12 @@ export default {
     langSchool: 'Language schools',
     courses: 'Courses & tutors',
     vsExcel: 'CRM vs Excel',
+    vsModme: 'Compared to Modme',
+    vsUmai: 'Compared to Umai CRM',
     blog: 'Knowledge base',
     gamification: 'Motivation',
+    faq: 'FAQ',
+    about: 'About us',
     contacts: 'Contact',
     home: 'Home',
     login: 'Log in',
@@ -117,7 +121,7 @@ export default {
     rolesLead:
       'After login, the role in the token opens the right workspace by itself. Nobody sees more than they should — the server decides access.',
     roles: [
-      { tag: 'SA', title: 'SuperAdmin', text: 'The whole branch network and global reports with no branch filter.' },
+      { tag: 'SA', title: 'SEO', text: 'The whole branch network and global reports with no branch filter.' },
       { tag: 'A', title: 'Admin', text: 'Payments, groups, students and reports for their own branch.' },
       { tag: 'M', title: 'Mentor', text: 'Attendance, homework review, coins, exams and their own payroll.' },
       { tag: 'ME', title: 'Methodist', text: 'Curriculum, topics and lessons with video, question bank for tests.' },
@@ -179,7 +183,7 @@ export default {
       },
       {
         q: 'What roles does the system have?',
-        a: 'Main Admin (platform owner), Super Admin (organization), Admin (branch), Mentor (teacher), Student, Parent and Methodist — each role has its own workspace and permissions.',
+        a: 'Main Admin (platform owner), SEO (organization), Admin (branch), Mentor (teacher), Student, Parent and Methodist — each role has its own workspace and permissions.',
       },
       {
         q: 'What can it do?',
@@ -260,7 +264,7 @@ export default {
       {
         icon: 'building',
         title: 'Multi-branch',
-        text: 'Every branch is isolated: an admin sees only their own. The SuperAdmin looks at the whole network — compares branches and finds room to grow.',
+        text: 'Every branch is isolated: an admin sees only their own. The SEO looks at the whole network — compares branches and finds room to grow.',
         tags: ['Data isolation', 'Branch network'],
       },
     ],
@@ -288,7 +292,7 @@ export default {
       },
       {
         q: 'How many branches can we connect?',
-        a: 'There is no limit. Multi-branch support is built in from day one: each branch is isolated, while the SuperAdmin sees the entire network.',
+        a: 'There is no limit. Multi-branch support is built in from day one: each branch is isolated, while the SEO sees the entire network.',
       },
       {
         q: 'Do parents need to install an app?',
@@ -310,7 +314,7 @@ export default {
     items: [
       {
         tag: 'SA',
-        title: 'SuperAdmin — the whole network at a glance',
+        title: 'SEO — the whole network at a glance',
         text: 'Sees every branch and the entire network at once: total revenue, debts, a live online counter. Manages branches, admins and the global chat.',
         list: [
           'Consolidated reports across all branches, no filter',
@@ -1136,6 +1140,400 @@ export default {
     ],
   },
 
+  vsModme: {
+    badge: 'Comparison',
+    h1: 'LevelUp Academy vs Modme',
+    lead: 'Both systems solve the same job — tracking students, payments and attendance in an education center. The difference is in price, in what the plan includes, and in how mature the mobile side is.',
+    checkedNote:
+      'Modme’s prices and terms are taken from their pricing page and were checked on 5 August 2026. Verify them on their site before deciding — terms may have changed.',
+
+    priceHead: 'Cost per month',
+    priceLead:
+      'Modme bills in blocks of at least 3 months, so their price is converted to a monthly figure for comparison.',
+    priceTable: {
+      param: 'Center size',
+      us: 'LevelUp Academy',
+      them: 'Modme',
+      rows: [
+        { task: 'Up to 30 students', before: 'free plan', after: 'no free plan' },
+        { task: '100 students', before: '199,000 UZS/mo', after: '500,000 UZS/mo (1,500,000 per 3 months)' },
+        { task: '300 students', before: '349,000 UZS/mo', after: '1,040,000 UZS/mo (3,120,000 per 3 months)' },
+        { task: '600 students', before: '599,000 UZS/mo', after: '1,560,000 UZS/mo (4,680,000 per 3 months)' },
+        { task: 'Over 1,000 students', before: 'custom quote', after: '3,000,000 UZS/mo (9,000,000 per 3 months)' },
+      ],
+    },
+
+    compareHead: 'What the price includes',
+    compare: {
+      task: 'Item',
+      before: 'LevelUp Academy',
+      after: 'Modme',
+      rows: [
+        { task: 'Minimum billing period', before: 'one month', after: 'three months' },
+        { task: 'Free trial', before: 'first week, no card', after: 'demo version, up to 7 days' },
+        { task: 'Gamification (coins, leaderboards)', before: 'included in every plan', after: 'separate module, 150,000 UZS/mo' },
+        { task: 'Branches', before: 'unlimited on every plan', after: 'tied to the student-count plan' },
+        { task: 'Long-term discount', before: '15% on annual billing', after: '+2 bonus months on the 12-month plan' },
+        { task: 'Refund', before: '30 days, 100% of the amount', after: 'per their public offer' },
+        { task: 'Mobile apps', before: 'none — runs in the phone browser', after: 'yes: student and teacher apps' },
+        { task: 'Site and material languages', before: "русский, o'zbekcha, English", after: "o'zbekcha, русский, English" },
+      ],
+    },
+
+    themHead: 'When Modme is the fairer choice',
+    themLead: 'We do not claim to fit everyone. Here is where they make more sense.',
+    them: [
+      {
+        icon: 'grid',
+        title: 'You need native apps',
+        text: 'Modme ships separate apps for students and teachers. With us everything runs in the phone browser — functionally the same, but there is no icon on the home screen.',
+      },
+      {
+        icon: 'check',
+        title: 'You are already on Modme and happy',
+        text: 'Switching for the sake of switching does not pay off. If the system covers the center’s needs and the team knows it, the savings are not worth a week of migration.',
+      },
+      {
+        icon: 'building',
+        title: 'Vendor track record matters to you',
+        text: 'Modme has been on the market longer and is better known. We were founded in 2026 — if that is a dealbreaker, it is fairer to say so up front.',
+      },
+    ],
+
+    usHead: 'When we work out cheaper',
+    us: [
+      {
+        icon: 'coin',
+        title: 'A center under 30 students',
+        text: 'That is our free plan, with no time limit. Modme has no free plan — you start with a three-month payment.',
+      },
+      {
+        icon: 'receipt',
+        title: 'You would rather not prepay a quarter',
+        text: 'We bill monthly: if it does not fit, you simply do not renew. On top of that, there are 30 days to get the full amount back if the system turns out to be wrong for you.',
+      },
+      {
+        icon: 'trophy',
+        title: 'You want motivation from day one',
+        text: 'Coins, the rewards shop and leaderboards are in every plan. At Modme, gamification is a separate module at 150,000 UZS per month on top of the plan.',
+      },
+      {
+        icon: 'building',
+        title: 'A network of branches',
+        text: 'Branches are unlimited on every plan; you pay only for active students. The owner sees revenue, debt and attendance across the whole network.',
+      },
+    ],
+
+    faqHead: 'Questions about switching',
+    faq: [
+      {
+        q: 'Which is cheaper for a 300-student center — LevelUp Academy or Modme?',
+        a: 'LevelUp Academy: 349,000 UZS per month. Modme at that size is the Basic plan — 3,120,000 UZS per 3 months, i.e. 1,040,000 UZS per month. That is roughly a threefold difference, and gamification is included in our plan while Modme charges a separate 150,000 UZS per month for it. Figures from Modme’s site as of 5 August 2026.',
+      },
+      {
+        q: 'Can data be migrated from Modme?',
+        a: 'Yes. What needs to move is active students, groups, mentors and outstanding debts — years of history do not have to come along. We have no automatic Modme import: our team does the migration as part of the 7-day launch. For the first week a center usually runs both systems and reconciles revenue and debt.',
+      },
+      {
+        q: 'Does LevelUp Academy have a mobile app?',
+        a: 'There is no separate app — the system opens in the phone browser, and students submit homework, take tests and watch video lessons from there. Notifications arrive in Telegram. Modme does have native apps, so if that is essential, it counts in their favour.',
+      },
+      {
+        q: 'How does LevelUp Academy handle payments differently?',
+        a: 'One invoice can be closed by several payments — part cash, part card — and the remaining balance stays exact. When an invoice goes overdue, the student’s access is blocked automatically and comes back immediately after payment, with no recalculation to wait for.',
+      },
+    ],
+
+    ctaTitle: 'Want the difference calculated for your center?',
+    ctaText:
+      'Send a request — we will price it for your student count and walk through the system on your workflows. First week free.',
+  },
+
+  vsUmai: {
+    badge: 'Comparison',
+    h1: 'LevelUp Academy vs Umai CRM',
+    lead: 'Umai CRM is a strong system leaning towards sales and marketing: pipelines, an AI bot, broadcasts. We lean towards the teaching side and price. Below are facts, not slogans.',
+    checkedNote:
+      'Umai CRM’s prices and features are taken from their site and pricing page and were checked on 5 August 2026. Verify them on their site before deciding.',
+
+    priceHead: 'Cost per month',
+    priceLead:
+      'Umai CRM’s price does not depend on student count — it depends on the feature set. Ours is the opposite: one feature set, with price growing as the center grows.',
+    priceTable: {
+      param: 'Center size',
+      us: 'LevelUp Academy',
+      them: 'Umai CRM',
+      rows: [
+        { task: 'Up to 30 students', before: 'free plan', after: 'no free plan' },
+        { task: '100 students', before: '199,000 UZS/mo', after: 'from 500,000 UZS/mo (416,667 on annual billing)' },
+        { task: '300 students', before: '349,000 UZS/mo', after: 'from 500,000 UZS/mo — price is not tied to student count' },
+        { task: '600 students', before: '599,000 UZS/mo', after: 'from 500,000 UZS/mo' },
+        { task: 'Over 1,000 students', before: 'custom quote', after: 'Enterprise plan — custom quote' },
+      ],
+    },
+
+    compareHead: 'What the price includes',
+    compare: {
+      task: 'Item',
+      before: 'LevelUp Academy',
+      after: 'Umai CRM',
+      rows: [
+        { task: 'Free trial', before: 'first week, no card', after: '7 days, no card' },
+        { task: 'What the price depends on', before: 'number of active students', after: 'feature set; unlimited students' },
+        { task: 'Top plan', before: '799,000 UZS/mo (601–1,000 students)', after: '2,250,000 UZS/mo — the AI plan (annual billing)' },
+        { task: 'Onboarding and setup', before: 'included, live in 7 days', after: '3,750,000 UZS one-off; free on a 12-month payment' },
+        { task: 'Expert hour', before: 'included in support', after: '375,000 UZS' },
+        { task: 'Sales pipelines, lead kanban, AI chatbot', before: 'no', after: 'yes, from the extended plans up' },
+        { task: 'WhatsApp and Instagram broadcasts', before: 'no — notifications go through Telegram', after: 'yes' },
+        { task: 'Mobile apps', before: 'none — runs in the phone browser', after: 'yes: student, teacher and administrator apps' },
+        { task: 'Refund', before: '30 days, 100% of the amount', after: 'per their offer, up to 21 business days' },
+      ],
+    },
+
+    themHead: 'When Umai CRM is the fairer choice',
+    themLead: 'Their strengths are real — here is where choosing them is justified.',
+    them: [
+      {
+        icon: 'send',
+        title: 'The center runs on sales',
+        text: 'If the real pain is not record-keeping but lead handling: pipelines, a lead kanban, an AI bot and broadcasts over WhatsApp and Instagram. We do not have that, and it is not on the near-term roadmap.',
+      },
+      {
+        icon: 'grid',
+        title: 'You need native apps',
+        text: 'Umai CRM has three apps — for students, teachers and administrators. With us everything runs in the phone browser.',
+      },
+      {
+        icon: 'building',
+        title: 'A very large center',
+        text: 'Their price does not grow with student count. Past a thousand active students, a flat plan may well beat ours.',
+      },
+    ],
+
+    usHead: 'When we work out cheaper',
+    us: [
+      {
+        icon: 'coin',
+        title: 'Small and mid-sized centers',
+        text: 'Up to 30 students is free, up to 100 is 199,000 UZS per month. Umai CRM’s entry plan starts at 500,000 UZS per month whether you have ten students or three hundred.',
+      },
+      {
+        icon: 'rocket',
+        title: 'You would rather not pay for onboarding separately',
+        text: 'We configure and launch the center in 7 days, and that is part of the plan. At Umai CRM onboarding is a separate 3,750,000 UZS, free only if you pay 12 months up front.',
+      },
+      {
+        icon: 'book',
+        title: 'The teaching side is what matters',
+        text: 'Attendance, server-timed tests, homework, video lessons, coins and leaderboards. We invest in what happens in class rather than in marketing funnels.',
+      },
+      {
+        icon: 'lock',
+        title: 'Branch isolation matters',
+        text: 'Every request is checked on the server and scoped to the organization and branch: an administrator of one branch cannot see another’s data, even knowing the URL.',
+      },
+    ],
+
+    faqHead: 'Questions about switching',
+    faq: [
+      {
+        q: 'Which is cheaper for a 100-student center — LevelUp Academy or Umai CRM?',
+        a: 'LevelUp Academy: 199,000 UZS per month. Umai CRM: from 500,000 UZS per month on monthly billing (416,667 UZS if paid annually), plus 3,750,000 UZS for onboarding unless you pay 12 months up front. Figures from Umai CRM’s site as of 5 August 2026.',
+      },
+      {
+        q: 'Does LevelUp Academy integrate with WhatsApp and Instagram?',
+        a: 'No. Notifications to parents and students about absences, payments and debts go through a Telegram bot. If a center needs marketing broadcasts and pipelines on WhatsApp and Instagram, Umai CRM has that and we do not.',
+      },
+      {
+        q: 'Can data be migrated from Umai CRM?',
+        a: 'Yes. We move active students, groups, mentors and outstanding debts; years of history do not have to come along. We have no automatic Umai CRM import — our team does the migration as part of the 7-day launch.',
+      },
+      {
+        q: 'Is it true that LevelUp Academy’s price grows with student count?',
+        a: 'Yes, and that is deliberate: a small center should not pay like a network. Up to 30 students is free; 31–100 is 199,000; 101–300 is 349,000; 301–600 is 599,000; 601–1,000 is 799,000 UZS per month. Branches are unlimited on every plan.',
+      },
+    ],
+
+    ctaTitle: 'Want the difference calculated for your center?',
+    ctaText:
+      'Send a request — we will price it for your student count and tell you honestly if your case fits another product better.',
+  },
+
+  faqHub: {
+    badge: 'FAQ',
+    h1: 'Frequently asked questions about LevelUp Academy',
+    lead: 'Answers to what people ask before signing up: how students log in, what happens when a payment is overdue, who can see what, and how a center is migrated into the system.',
+    intro:
+      'Questions about pricing, moving off Excel and running a language school live on their own pages — links at the bottom.',
+
+    groups: [
+      {
+        title: 'Getting started',
+        items: [
+          {
+            q: 'Is there anything to install?',
+            a: 'No. LevelUp Academy runs in the browser — on a desktop, a tablet or a phone. There is no separate mobile app to install: students submit homework and watch video lessons straight from the phone browser.',
+          },
+          {
+            q: 'Who sets the system up — you or the center?',
+            a: 'We do. We create the branches, groups, mentors and active students and take the center live in 7 days. If we miss that deadline, the next month is free.',
+          },
+          {
+            q: 'How do students and parents log in?',
+            a: 'Students and parents have no email: an administrator issues them an 8-character login code and a 6-digit password. The code excludes look-alike characters (0/O, 1/I) so it can be read out over the phone without mistakes. Staff — administrators, mentors, methodists — sign in with an email and password.',
+          },
+          {
+            q: 'How are Telegram notifications set up?',
+            a: 'An account is linked to the bot through a one-time link from the dashboard — it lives for a few minutes and works once. After linking, alerts about absences, payments and debts arrive in regular Telegram; no extra app is needed.',
+          },
+        ],
+      },
+      {
+        title: 'Payments and debts',
+        items: [
+          {
+            q: 'What happens when a student pays late?',
+            a: 'Once an invoice goes overdue, the student’s access to homework, tests, video lessons and the rewards shop is blocked automatically. As soon as a payment goes through — even a partial one — access is restored on the very next page load, with no nightly recalculation to wait for.',
+          },
+          {
+            q: 'Can a payment be split across methods?',
+            a: 'Yes. One invoice can be closed by several payments — part in cash at the desk, part by card. Every payment is tied to the same invoice, so the remaining balance is exact rather than approximate.',
+          },
+          {
+            q: 'How is a student’s debt calculated?',
+            a: 'The system recalculates the balance when an invoice is issued and when it is paid — nothing is totted up by hand. A branch administrator sees the list of debtors and the branch total; the network owner sees every branch at once.',
+          },
+          {
+            q: 'Can a student be put on hold?',
+            a: 'Yes. A freeze stops the charges: the debt does not grow while the student is away, and the payment, grade and attendance history is kept in full. When they come back, they pick up where they left off.',
+          },
+        ],
+      },
+      {
+        title: 'Coursework, access and data',
+        items: [
+          {
+            q: 'Can the test timer be cheated?',
+            a: 'No. The test clock runs on the server, not in the browser: reloading the page, losing connection or opening a second window does not extend it.',
+          },
+          {
+            q: 'Who on staff can see what?',
+            a: 'A mentor sees only their own groups, an administrator only their own branch, and the network owner sees every branch. Permissions are checked on the server on every request, so knowing a URL is not enough to open someone else’s branch.',
+          },
+          {
+            q: 'What do parents see?',
+            a: 'Their own child’s performance, attendance and outstanding balance, plus a direct chat with the administrator and the mentor. Absences, grades and payment reminders arrive in Telegram on their own — no phone calls needed.',
+          },
+          {
+            q: 'What happens to the center’s data over time?',
+            a: 'Nothing is physically deleted: a departed student moves to a read-only archive, and their payments, grades and attendance stay available for reporting. On top of that, a backup is taken every day.',
+          },
+        ],
+      },
+    ],
+
+    moreHead: 'Topic-specific questions live on their own pages',
+    more: [
+      { label: 'Pricing, plans and refunds', path: '/landing/pricing' },
+      { label: 'Moving from Excel to a CRM', path: '/landing/crm-vs-excel' },
+      { label: 'For language schools', path: '/landing/for-language-school' },
+      { label: 'For courses and tutors', path: '/landing/for-courses' },
+      { label: 'Roles and access rights', path: '/landing/roles' },
+      { label: 'About us', path: '/landing/about' },
+    ],
+
+    ctaTitle: 'Did not find your question?',
+    ctaText: 'Send a request — we will answer for your setup and walk you through the system live.',
+  },
+
+  about: {
+    badge: 'About us',
+    h1: 'The company behind LevelUp Academy',
+    lead: 'LevelUp Academy is student management software for education centers: enrollment, payments, attendance and coursework all live in one system. It is built by a team of six; the company was founded in 2026 in Uzbekistan.',
+    intro:
+      'We are not a school and not a coding academy. We build the software that education centers run on every day.',
+
+    whyHead: 'Three problems the product is built around',
+    whyLead: 'These are the ones that repeat in almost every center — and the reason the system exists.',
+    why: [
+      {
+        icon: 'receipt',
+        title: 'Money lives in scattered spreadsheets',
+        text: 'Payments, debts and installments sit in different files kept by different people. The total outstanding balance almost never adds up on the first try.',
+      },
+      {
+        icon: 'calendar',
+        title: 'Attendance is never consolidated',
+        text: 'Attendance is marked on paper, and by the end of the month it turns out a student missed half the classes. Parents are the last to find out.',
+      },
+      {
+        icon: 'grid',
+        title: 'Branches cannot be compared',
+        text: 'Every branch keeps its own records, so there is no network-wide picture: where revenue dipped and where debt is growing only becomes visible after the fact.',
+      },
+    ],
+
+    principlesHead: 'The principles the system is built on',
+    principlesLead: 'Not slogans — decisions baked into the architecture.',
+    principles: [
+      {
+        icon: 'lock',
+        title: 'The server decides access',
+        text: 'The role is carried in the token and checked on every request, and data is scoped to the organization and branch. Knowing a URL is not enough to open another branch.',
+      },
+      {
+        icon: 'shield',
+        title: 'Data outranks new features',
+        text: 'Daily backups, and deletion is soft: payment, grade and attendance history stays available for reporting even for archived records.',
+      },
+      {
+        icon: 'coin',
+        title: 'Every number is a ledger entry',
+        text: 'Payments (including cash and card splits) and coins change only through a ledger entry with a stated reason. Balances cannot be rewritten after the fact.',
+      },
+      {
+        icon: 'rocket',
+        title: 'Live in a week',
+        text: 'We migrate a center into the system in 7 days, and the first week of use is free. If we miss the deadline, the next month is on us.',
+      },
+    ],
+
+    factsHead: 'Company card',
+    factsLead: 'A short reference for anyone checking who they are dealing with.',
+    facts: [
+      { label: 'Name', value: 'LevelUp Academy (LevelUp Academy CRM)' },
+      { label: 'What it is', value: 'SaaS platform for running an education center' },
+      { label: 'Founded', value: '2026' },
+      { label: 'Team', value: '6 people' },
+      { label: 'Country', value: 'Uzbekistan' },
+      { label: 'Languages', value: "русский, o'zbekcha, English" },
+      {
+        label: 'Built for',
+        value: 'Education centers, language schools, course providers and tutoring businesses',
+      },
+      { label: 'Website', value: 'levelup-academy.uz' },
+      { label: 'Email', value: 'info@levelup-academy.uz' },
+      { label: 'Telegram', value: '@levelupacademycrm' },
+      { label: 'Instagram', value: '@levelup_academy_uz' },
+    ],
+
+    sameHead: 'We are often confused with others',
+    sameText:
+      'Organizations in the USA, Serbia, Singapore, Moldova and Tajikistan share the name LevelUp Academy — schools, courses and IT academies. We are not affiliated with any of them: LevelUp Academy at levelup-academy.uz is a CRM system for education centers in Uzbekistan, that is, software rather than a place where classes are taught.',
+
+    linksHead: 'Where to go next',
+    links: [
+      { label: 'What the system does', path: '/landing/features' },
+      { label: 'Pricing', path: '/landing/pricing' },
+      { label: 'Roles and access', path: '/landing/roles' },
+      { label: 'Contact us', path: '/landing/contacts' },
+    ],
+
+    ctaTitle: 'Want to see the system from the inside?',
+    ctaText:
+      'Send a request — we will walk through LevelUp Academy on your center’s workflow and set up the first week free.',
+  },
+
   notFound: {
     badge: '404',
     h1: 'This page does not exist',
@@ -1157,7 +1555,7 @@ export default {
     roles: {
       title: 'Roles and permissions — 6 workspaces | LevelUp Academy',
       description:
-        'SuperAdmin, Admin, Mentor, Methodist, Parent and Student — each role has its own workspace. Access is decided by server-side RBAC: nobody sees more than they should.',
+        'SEO, Admin, Mentor, Methodist, Parent and Student — each role has its own workspace. Access is decided by server-side RBAC: nobody sees more than they should.',
     },
     finance: {
       title: 'Student payment and debt tracking | LevelUp Academy',
@@ -1198,6 +1596,26 @@ export default {
       title: 'Contact and request a demo | LevelUp Academy',
       description:
         'Send a request — we will tell you about LevelUp Academy and answer your questions. First week free, no card and no commitment.',
+    },
+    vsModme: {
+      title: 'LevelUp Academy vs Modme — pricing and features compared',
+      description:
+        'An honest comparison of LevelUp Academy and Modme: price by student count, minimum billing period, gamification in the plan and mobile apps. Data checked 05.08.2026.',
+    },
+    vsUmai: {
+      title: 'LevelUp Academy vs Umai CRM — pricing and features compared',
+      description:
+        'An honest comparison of LevelUp Academy and Umai CRM: what drives the price, onboarding cost, sales pipelines and mobile apps. Data checked 05.08.2026.',
+    },
+    faqHub: {
+      title: 'FAQ — student management software | LevelUp Academy',
+      description:
+        'Answers about LevelUp Academy: student login codes, access blocked on overdue invoices, split payments, freezing a student, access rights and how center data is kept.',
+    },
+    about: {
+      title: 'About us — the team behind LevelUp Academy',
+      description:
+        'LevelUp Academy is student management software from Uzbekistan: founded in 2026, a team of six. Who we are, how the system is built and what we are not.',
     },
     notFound: {
       title: 'Page not found — LevelUp Academy',

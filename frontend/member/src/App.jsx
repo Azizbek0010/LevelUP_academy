@@ -5,6 +5,7 @@ import Splash from './components/Splash.jsx';
 import Layout from './components/Layout.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import Login from './pages/Login.jsx';
+import QrLogin from './pages/QrLogin.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Attendance from './pages/Attendance.jsx';
 import Grades from './pages/Grades.jsx';
@@ -13,6 +14,7 @@ import Chat from './pages/Chat.jsx';
 import Notifications from './pages/Notifications.jsx';
 import Profile from './pages/Profile.jsx';
 import { ToastProvider } from './student/components/toast.jsx';
+import { I18nProvider } from './i18n/index.jsx';
 import StudentArea from './student/StudentArea.jsx';
 import StudentLayout from './student/components/Layout.jsx';
 import StudentHome from './student/pages/Home.jsx';
@@ -22,6 +24,7 @@ import StudentHomework from './student/pages/Homework.jsx';
 import StudentVideos from './student/pages/Videos.jsx';
 import StudentLessons from './student/pages/Lessons.jsx';
 import StudentLessonDetail from './student/pages/LessonDetail.jsx';
+import LessonsHub from './student/pages/LessonsHub.jsx';
 import StudentShop from './student/pages/Shop.jsx';
 import StudentLeaderboard from './student/pages/Leaderboard.jsx';
 
@@ -59,9 +62,12 @@ export default function App() {
   if (loading) return <Splash />;
 
   return (
-    <ErrorBoundary>
-      <Routes>
-        <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
+    <I18nProvider>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
+          {/* Публичный — сам логинит по одноразовому токену, авторизация не нужна */}
+          <Route path="/qr-login" element={<QrLogin />} />
 
         <Route
           path="/"
@@ -105,6 +111,7 @@ export default function App() {
         >
           <Route element={<StudentLayout />}>
             <Route path="/student" element={<StudentHome />} />
+            <Route path="/study" element={<LessonsHub />} />
             <Route path="/lessons" element={<StudentLessons />} />
             <Route path="/lessons/:id" element={<StudentLessonDetail />} />
             <Route path="/tests" element={<StudentTests />} />
@@ -116,8 +123,9 @@ export default function App() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </ErrorBoundary>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
+    </I18nProvider>
   );
 }

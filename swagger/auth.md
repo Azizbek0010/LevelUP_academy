@@ -47,7 +47,8 @@ Always returns the same success message regardless of whether the account exists
 ### POST `/api/auth/logout`
 Revoke the current refresh token and clear the cookie
 
-Reads `refresh_token` cookie; silently no-ops if absent or already revoked.
+Legacy shared endpoint, kept only for already-deployed frontends. New clients should use /api/auth/{main,staff,member}/logout.
+
 
 **Auth:** Public — no token required
 
@@ -76,7 +77,7 @@ Verifies the Google id-token (audience = GOOGLE_CLIENT_ID) via google-auth-libra
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `superadmin` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)
@@ -137,7 +138,7 @@ Only accounts with role `main_admin` may authenticate here. Any other role retur
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `superadmin` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)
@@ -202,7 +203,7 @@ Login as member (student, parent) via login-code + password
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `superadmin` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)
@@ -239,10 +240,23 @@ Login as member (student, parent) via login-code + password
 
 ---
 
-### POST `/api/auth/refresh`
-Rotate refresh token and issue a new access token
+### POST `/api/auth/member/logout`
+Revoke the current refresh token, scoped to this panel's own cookie
 
-Reads the `refresh_token` httpOnly cookie (no request body). Implements rotation with reuse-detection: presenting an already-revoked token revokes the user's entire token family and returns 401. On success, the old token is revoked and a new refresh/access token pair is issued.
+Same as /api/auth/logout, but clears the group-scoped cookie.
+
+**Auth:** Public — no token required
+
+**Responses:**
+
+- **204** — Logged out (cookie cleared, refresh token revoked if it existed)
+
+---
+
+### POST `/api/auth/member/refresh`
+Rotate refresh token, scoped to this panel's own cookie
+
+Same rotation/reuse-detection as /api/auth/refresh, but reads/writes a group-scoped cookie (`refresh_token_main` / `_staff` / `_member`) instead of the shared one. A token belonging to a role outside this group is rejected with 401 even if presented (defense in depth — in practice it can't happen, since login only ever writes the matching group's cookie).
 
 
 **Auth:** Public — no token required
@@ -254,7 +268,47 @@ Reads the `refresh_token` httpOnly cookie (no request body). Implements rotation
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `superadmin` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `organizationId`: string (uuid) (optional)
+        - `branchId`: string (uuid) (optional)
+        - `firstName`: string (optional)
+        - `lastName`: string (optional)
+    - `accessToken`: string (optional) — JWT, 15 min TTL
+
+- **401** — Refresh token missing, invalid, expired, wrong role, or reuse detected
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+- **403** — Account is frozen
+  - **ErrorResponse**:
+    - `success`: boolean **(required)** _e.g. false_
+    - `message`: string **(required)**
+    - `details` (optional):
+      - _(free-form object)_
+    - `stack`: string (optional) — Only present when NODE_ENV=development
+
+---
+
+### POST `/api/auth/refresh`
+Rotate refresh token and issue a new access token
+
+Legacy shared endpoint, kept only for already-deployed frontends. New clients should use /api/auth/{main,staff,member}/refresh — those read a group-scoped cookie so a session from one panel can't leak into another (this endpoint's single `refresh_token` cookie has no role check). Implements rotation with reuse-detection: presenting an already-revoked token revokes the user's entire token family and returns 401.
+
+
+**Auth:** Public — no token required
+
+**Responses:**
+
+- **200** — New token pair issued
+  - **AuthResponse**:
+    - `user` (optional):
+      - **AuthUser**:
+        - `id`: string (uuid) (optional)
+        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)
@@ -330,7 +384,7 @@ On success, revokes ALL of the user's existing refresh tokens (forces re-login o
 ---
 
 ### POST `/api/auth/staff/google`
-Login as staff (admin, superadmin, mentor, methodist) via Google/Firebase id-token
+Login as staff (admin, seo, mentor, methodist) via Google/Firebase id-token
 
 Same flow as /api/auth/main/google, restricted to staff roles.
 
@@ -347,7 +401,7 @@ Same flow as /api/auth/main/google, restricted to staff roles.
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `superadmin` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)
@@ -389,9 +443,9 @@ Same flow as /api/auth/main/google, restricted to staff roles.
 ---
 
 ### POST `/api/auth/staff/login`
-Login as staff (admin, superadmin, mentor, methodist) via email + password
+Login as staff (admin, seo, mentor, methodist) via email + password
 
-Only accounts with role `admin`, `superadmin`, `mentor` or `methodist` may authenticate here. Sets the `refresh_token` httpOnly cookie on success.
+Only accounts with role `admin`, `seo`, `mentor` or `methodist` may authenticate here. Sets the `refresh_token` httpOnly cookie on success.
 
 
 **Auth:** Public — no token required
@@ -408,7 +462,7 @@ Only accounts with role `admin`, `superadmin`, `mentor` or `methodist` may authe
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `superadmin` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)

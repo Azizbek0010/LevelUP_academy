@@ -34,9 +34,11 @@ export async function listTopicsWithLessons(trainingTypeIds, db = pool) {
 export async function getLessonForStudent(lessonId, trainingTypeIds, db = pool) {
   const { rows: [lesson] } = await db.query(
     `SELECT l.id, l.title, l.lesson_type, l.description, l.instruction, l.coin_reward,
-            l.video_url, l.file_key, t.name AS topic_name, t.training_type_id
+            l.video_url, l.file_key, t.name AS topic_name, t.training_type_id,
+            tt.ai_review_enabled
        FROM methodology_lessons l
        JOIN topics t ON t.id = l.topic_id
+       JOIN training_types tt ON tt.id = t.training_type_id
       WHERE l.id = $1 AND t.training_type_id = ANY($2)
         AND l.deleted_at IS NULL AND l.is_archived = false AND t.deleted_at IS NULL`,
     [lessonId, trainingTypeIds],
@@ -120,6 +122,88 @@ export async function upsertSubmission({ lessonId, studentId, fileKey, textAnswe
     [lessonId, studentId, fileKey ?? null, textAnswer ?? null],
   );
   return r ?? null;
+}
+
+export async function getStudentName(studentId, db = pool) {
+  const { rows: [r] } = await db.query(
+    `SELECT first_name, last_name FROM users WHERE id = $1`,
+    [studentId],
+  );
+  return r ? `${r.first_name} ${r.last_name}`.trim() : null;
+}
+
+// ---------- Aqlli tahlil (AI-review): читает/пишет worker'ом, не HTTP-слоем ----------
+
+/** description/instruction — то самое задание методиста ("Описание задачи"), без
+ * которого AI разбирал код "вообще", а не "выполнил ли ученик ИМЕННО ЭТО задание"
+ * (запрос пользователя 10.08.2026). file_key — вложение САМОГО УРОКА (методист мог
+ * приложить, например, макет/спеку), отдельно от file_key ученика в submission. */
+export async function getSubmissionById(id, db = pool) {
+  const { rows: [r] } = await db.query(
+    `SELECT s.id, s.lesson_id, s.student_id, s.file_key, s.text_answer, s.review_attempts,
+            l.title AS lesson_title, l.description AS lesson_description,
+            l.instruction AS lesson_instruction, l.file_key AS lesson_file_key
+       FROM methodology_submissions s
+       JOIN methodology_lessons l ON l.id = s.lesson_id
+      WHERE s.id = $1`,
+    [id],
+  );
+  return r ?? null;
+}
+
+/** attempts — читается воркером перед вызовом (getSubmissionById), сюда просто новое значение.
+ * score (methodology_submissions.score, для topicStats/рейтинга) обновляется ТОЛЬКО когда
+ * AI реально прочитал код/текст (review.score от Groq) — при 'tests'/'unreadable'/'failed'
+ * оценка не выдумывается (п.6 спеки: "92% отлично" при непрочитанном коде запрещено). */
+export async function saveReview(id, { review, reviewSource, reviewStatus, reviewAttempts }, db = pool) {
+  const score = (reviewSource === 'code' || reviewSource === 'text') ? review?.score ?? null : null;
+  await db.query(
+    `UPDATE methodology_submissions
+        SET review = $2::jsonb, review_source = $3, review_status = $4,
+            review_attempts = $5, reviewed_at = now(),
+            score = COALESCE($6, score)
+      WHERE id = $1`,
+    [id, review ? JSON.stringify(review) : null, reviewSource, reviewStatus, reviewAttempts, score],
+  );
+}
+
+/** Последняя готовая (done) AI-оценка студента — для GET /student/home. */
+export async function getLatestReview(studentId, db = pool) {
+  const { rows: [r] } = await db.query(
+    `SELECT s.review, s.review_source, s.review_status, s.reviewed_at, l.title AS lesson_title
+       FROM methodology_submissions s
+       JOIN methodology_lessons l ON l.id = s.lesson_id
+      WHERE s.student_id = $1 AND s.review_status = 'done'
+      ORDER BY s.reviewed_at DESC
+      LIMIT 1`,
+    [studentId],
+  );
+  return r ?? null;
+}
+
+/** % по теме = средний результат уроков этой темы (тест — score попытки,
+ * практика — score AI-review, если есть). Без AI, 0 доп. стоимости —
+ * системная картина "где ученик слабее", а не разбор одной сдачи. */
+export async function getTopicStats(studentId, db = pool) {
+  const { rows } = await db.query(
+    `SELECT t.id AS topic_id, t.name AS topic_name,
+            ROUND(AVG(scored.score))::int AS pct,
+            COUNT(scored.score)::int AS graded_count
+       FROM topics t
+       JOIN methodology_lessons l ON l.topic_id = t.id AND l.deleted_at IS NULL
+       JOIN (
+         SELECT lesson_id, score FROM methodology_test_attempts
+          WHERE student_id = $1 AND finished_at IS NOT NULL
+          UNION ALL
+         SELECT lesson_id, score FROM methodology_submissions
+          WHERE student_id = $1 AND score IS NOT NULL
+       ) scored ON scored.lesson_id = l.id
+      WHERE t.deleted_at IS NULL
+      GROUP BY t.id, t.name
+      ORDER BY pct ASC`,
+    [studentId],
+  );
+  return rows;
 }
 
 // ---------- прогресс для списка уроков одним батчем (без N+1) ----------

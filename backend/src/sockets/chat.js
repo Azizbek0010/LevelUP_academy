@@ -1,7 +1,7 @@
 import { saveMessage, sendDirectMessage } from '../modules/chat/chat.service.js';
 import { userRoom } from '../modules/chat/chat.access.js';
 
-const GLOBAL_ROLES = new Set(['main_admin', 'superadmin', 'admin', 'mentor']);
+const GLOBAL_ROLES = new Set(['main_admin', 'seo', 'admin', 'mentor']);
 
 /**
  * Сокеты — только транспорт live-доставки; история персистится в chat_messages

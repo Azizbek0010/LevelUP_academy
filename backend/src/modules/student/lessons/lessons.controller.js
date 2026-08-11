@@ -21,7 +21,7 @@ export const startTest = asyncHandler(async (req, res) => {
 
 /** POST /lessons/:lessonId/submit */
 export const submitTest = asyncHandler(async (req, res) => {
-  const data = await service.submitTest(req.user.id, req.params.lessonId, req.body.answers);
+  const data = await service.submitTest(req.user.id, req.params.lessonId, req.body.answers, req.user.branchId);
   res.json({ success: true, data });
 });
 

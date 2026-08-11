@@ -301,7 +301,7 @@ Staff SPA (Vite + React 18)
 |---------|--------|
 | Personal info | firstName, lastName, nickname, age, email |
 | Password | Change current password |
-| Role display | admin / superadmin / mentor / methodist |
+| Role display | admin / seo / mentor / methodist |
 | API | `api.request('auth/me', PATCH)` |
 
 ---

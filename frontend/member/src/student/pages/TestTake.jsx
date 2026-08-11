@@ -5,6 +5,7 @@ import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
 import { Skeleton, Button, CountUp, Ring, C } from '../components/ui.jsx';
 import { fmtDuration } from '../format.js';
+import { fmt, useI18n } from '../../i18n/index.jsx';
 
 /**
  * Прохождение теста: intro → start (таймер от сервера) → вопросы → submit → результат.
@@ -14,6 +15,7 @@ import { fmtDuration } from '../format.js';
 export default function TestTake() {
   const { testId } = useParams();
   const toast = useToast();
+  const { t } = useI18n();
 
   const [test, setTest] = useState(null);
   const [row, setRow] = useState(null); // строка из списка: started_at / finished_at / score
@@ -70,10 +72,12 @@ export default function TestTake() {
         const d = await api.submitTest(testId, answers);
         setScore(d.data.score);
         setPhase('done');
-        if (!auto) toast('Тест сдан!', 'success');
+        if (!auto) {
+          toast(d.data.score >= 50 ? t.testTake.testPassed : t.testTake.testFailed, d.data.score >= 50 ? 'success' : 'error');
+        }
       } catch (err) {
         if (err.status === 409) {
-          setError(err.message === 'Time is up' ? 'Время вышло — ответы не приняты' : err.message);
+          setError(err.message === 'Time is up' ? t.testTake.timeUp : err.message);
           setPhase('done');
           setScore(null);
         } else {
@@ -129,18 +133,18 @@ export default function TestTake() {
                 </span>
               </Ring>
             </div>
-            <h2 className="text-xl font-extrabold mb-2" style={{ color: C.text }}>{score >= 50 ? 'Тест сдан!' : 'Тест не сдан'}</h2>
+            <h2 className="text-xl font-extrabold mb-2" style={{ color: C.text }}>{score >= 50 ? t.testTake.testPassed : t.testTake.testFailed}</h2>
             <p className="text-sm font-semibold mb-6" style={{ color: C.muted }}>
               {score >= 50
                 ? row?.coin_reward > 0
-                  ? `Коины за тест уже начислены (+${row.coin_reward}).`
-                  : 'Отличная работа!'
-                : 'Порог сдачи — 50%. Спроси ментора про пересдачу.'}
+                  ? fmt(t.testTake.coinsEarned, { n: row.coin_reward })
+                  : t.testTake.greatJob
+                : t.testTake.retakeClosed}
             </p>
           </>
         ) : (
           <>
-            <h2 className="text-xl font-extrabold mb-2" style={{ color: C.text }}>Попытка завершена</h2>
+            <h2 className="text-xl font-extrabold mb-2" style={{ color: C.text }}>{t.testTake.attemptDone}</h2>
             <p className="text-sm font-semibold mb-6" style={{ color: C.muted }}>{error}</p>
           </>
         )}
@@ -149,7 +153,7 @@ export default function TestTake() {
           className="k-press inline-flex items-center justify-center gap-2 font-extrabold px-5 py-3 text-[14.5px] rounded-2xl"
           style={{ background: C.violet, color: '#fff', boxShadow: '0 4px 0 #5C34E0' }}
         >
-          <ArrowLeft size={16} /> К списку тестов
+          <ArrowLeft size={16} /> {t.testTake.toList}
         </Link>
       </div>
     );
@@ -158,22 +162,22 @@ export default function TestTake() {
   if (phase === 'intro') {
     return (
       <div className="k-card k-pop-in max-w-lg mx-auto mt-8 sm:mt-12 p-7">
-        <h2 className="text-xl font-extrabold mb-3" style={{ color: C.text }}>{test?.title ?? 'Тест'}</h2>
+        <h2 className="text-xl font-extrabold mb-3" style={{ color: C.text }}>{test?.title ?? t.testTake.title}</h2>
         {error ? (
           <div className="rounded-2xl text-sm font-semibold px-4 py-3 mb-5" style={{ background: '#FFE6E2', color: '#C23018' }}>{error}</div>
         ) : (
           <p className="text-sm font-semibold mb-6 leading-relaxed" style={{ color: C.muted }}>
-            {test.questions.length} вопросов · {test.duration_min} минут
-            {test.coin_reward > 0 && ` · +${test.coin_reward} коинов при результате ≥ 50%`}.
+            {fmt(t.testTake.questions, { n: test.questions.length, minutes: test.duration_min })}
+            {test.coin_reward > 0 && ` · ${fmt(t.testTake.reward, { n: test.coin_reward })}`}.
             <br />
-            Таймер запустится сразу после старта — выйти и продолжить позже не получится без потери времени.
+            {t.testTake.timerNotice}
           </p>
         )}
         <div className="flex gap-2.5">
-          <Link to="/tests" className="k-press-sm px-5 py-2.5 rounded-2xl text-[14.5px] font-extrabold" style={{ color: C.muted }}>Назад</Link>
+          <Link to="/tests" className="k-press-sm px-5 py-2.5 rounded-2xl text-[14.5px] font-extrabold" style={{ color: C.muted }}>{t.testTake.back}</Link>
           {!error && (
             <Button className="flex-1" onClick={start} disabled={busy}>
-              {busy ? <span className="loading loading-spinner loading-sm" /> : 'Начать тест'}
+              {busy ? <span className="loading loading-spinner loading-sm" /> : t.testTake.start}
             </Button>
           )}
         </div>
@@ -242,10 +246,10 @@ export default function TestTake() {
 
       <div className="k-card mt-4 p-4 flex items-center justify-between gap-4 sticky bottom-4 sm:static">
         <span className="text-sm font-bold" style={{ color: C.muted }}>
-          Отвечено: <b className="k-num" style={{ color: C.text }}><CountUp value={answered} />/{test.questions.length}</b>
+          {t.testTake.answered}: <b className="k-num" style={{ color: C.text }}><CountUp value={answered} />/{test.questions.length}</b>
         </span>
         <Button onClick={() => submit(false)} disabled={busy}>
-          {busy ? <span className="loading loading-spinner loading-sm" /> : 'Завершить тест'}
+          {busy ? <span className="loading loading-spinner loading-sm" /> : t.testTake.finish}
         </Button>
       </div>
     </div>
