@@ -18,9 +18,10 @@ import { AppError } from '../../utils/AppError.js';
  * Требование заказчика — админ не видит переписку ментора с родителем вообще.
  *
  * Право на диалог = наличие реальной связи в данных, а не роль сама по себе:
- *   mentor     — родитель имеет ребёнка в группе ЭТОГО ментора;
- *   admin      — ребёнок учится в филиале админа;
- *   seo        — ребёнок учится в одном из филиалов его организации.
+ *   mentor          — родитель имеет ребёнка в группе ЭТОГО ментора;
+ *   admin           — ребёнок учится в филиале админа;
+ *   branch_manager  — то же, что admin: ребёнок учится в филиале менеджера;
+ *   seo             — ребёнок учится в одном из филиалов его организации.
  * main_admin исключён: платформенный владелец не переписывается с родителями
  * партнёров.
  *
@@ -36,7 +37,7 @@ export function isUuid(value) {
 }
 
 /** Роли, которым вообще разрешена личная переписка с родителем. */
-export const DM_STAFF_ROLES = new Set(['mentor', 'admin', 'seo']);
+export const DM_STAFF_ROLES = new Set(['mentor', 'admin', 'branch_manager', 'seo']);
 
 /** Ключ комнаты личного диалога. Порядок фиксирован: staff, затем parent. */
 export function dmRoom(staffId, parentId) {
@@ -79,7 +80,7 @@ export async function canStaffChatParent(user, parentId, db = pool) {
     return rows.length > 0;
   }
 
-  if (user.role === 'admin') {
+  if (user.role === 'admin' || user.role === 'branch_manager') {
     if (!user.branchId) return false;
     const { rows } = await db.query(
       `SELECT 1
@@ -140,8 +141,8 @@ export async function canStaffChatStudent(user, studentId, db = pool) {
   // Админ филиала переписывается ТОЛЬКО с родителями, не с самими учениками
   // (решение 2026-07-21): работа с учеником — забота ментора, админ общается со
   // взрослой стороной. Поэтому прямой диалог админ↔ученик запрещён на уровне
-  // права, а не только скрыт из списка контактов.
-  if (user.role === 'admin') return false;
+  // права, а не только скрыт из списка контактов. Branch_manager — та же линия.
+  if (user.role === 'admin' || user.role === 'branch_manager') return false;
 
   if (!user.organizationId) return false;
   const { rows } = await db.query(
@@ -217,7 +218,7 @@ export async function listStaffStudentContacts(user, db = pool) {
                  JOIN groups g         ON g.id = gs.group_id AND g.deleted_at IS NULL`;
     scopeWhere = 'g.mentor_id = $2';
     scopeParam = user.id;
-  } else if (user.role === 'admin') {
+  } else if (user.role === 'admin' || user.role === 'branch_manager') {
     if (!user.branchId) return [];
     scopeJoin = '';
     scopeWhere = 'sp.branch_id = $2';
@@ -285,7 +286,7 @@ export async function listStaffContacts(user, db = pool) {
                  JOIN groups g         ON g.id = gs.group_id AND g.deleted_at IS NULL`;
     scopeWhere = 'g.mentor_id = $2';
     scopeParam = user.id;
-  } else if (user.role === 'admin') {
+  } else if (user.role === 'admin' || user.role === 'branch_manager') {
     if (!user.branchId) return [];
     scopeJoin = '';
     scopeWhere = 'sp.branch_id = $2';

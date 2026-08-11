@@ -16,7 +16,9 @@ export const getContacts = asyncHandler(async (req, res) => {
   // Админ филиала — только родители (решение 2026-07-21): прямого диалога
   // админ↔ученик нет (см. canStaffChatStudent), поэтому и в список учеников
   // не добавляем. Ментор по-прежнему видит и учеников, и родителей.
-  const includeStudents = req.user.role !== 'admin';
+  // Branch_manager — та же линия, что и admin: только родители.
+  const includeStudents =
+    req.user.role !== 'admin' && req.user.role !== 'branch_manager';
   const [parents, students] = await Promise.all([
     listStaffContacts(req.user),
     includeStudents ? listStaffStudentContacts(req.user) : Promise.resolve([]),
