@@ -40,8 +40,12 @@ export default {
           success: '#22c55e',
           warning: '#f59e0b',
           error: '#ef4444',
-          '--rounded-box': '1rem',
-          '--rounded-btn': '0.6rem',
+          // Скругления уменьшены намеренно (11.08.2026, по прямой просьбе):
+          // 1rem/0.6rem читались слишком "мягко/потребительски" для
+          // финансовой admin-панели — острее углы = серьёзнее продукт.
+          '--rounded-box': '0.5rem',
+          '--rounded-btn': '0.375rem',
+          '--rounded-badge': '0.25rem',
         },
       },
     ],

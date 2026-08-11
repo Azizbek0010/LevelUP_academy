@@ -28,7 +28,7 @@ function Kpi({ Icon, tint, title, value, unit, accent }) {
       <div className="card-body p-5">
         <div className="flex items-center gap-3">
           <span
-            className="w-10 h-10 rounded-xl grid place-items-center shrink-0"
+            className="w-10 h-10 rounded-md grid place-items-center shrink-0"
             style={accent ? { background: 'rgba(0,0,0,0.12)', color: '#1a2e05' } : { background: tint.bg, color: tint.fg }}
           >
             <Icon size={20} strokeWidth={2.2} />
@@ -126,7 +126,7 @@ export default function Billing() {
           {/* Тарифная сетка — только чтение */}
           <div className="card bg-base-100 shadow-sm border border-base-200/60 overflow-hidden">
             <div className="bg-gradient-to-r from-lime-100 via-lime-50 to-transparent px-6 py-5 border-b border-base-200 flex items-center gap-3">
-              <span className="w-11 h-11 rounded-xl bg-lime-400 text-lime-950 grid place-items-center shrink-0">
+              <span className="w-11 h-11 rounded-md bg-lime-400 text-lime-950 grid place-items-center shrink-0">
                 <Sparkles size={20} strokeWidth={2.4} />
               </span>
               <div className="min-w-0">
@@ -214,7 +214,7 @@ export default function Billing() {
               </label>
 
               {previewTier && (
-                <div className="mt-5 rounded-xl border border-base-200 divide-y divide-base-200">
+                <div className="mt-5 rounded-md border border-base-200 divide-y divide-base-200">
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-sm text-base-content/60">Тариф</span>
                     <span className="font-semibold">

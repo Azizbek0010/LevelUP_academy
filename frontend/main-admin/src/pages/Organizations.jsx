@@ -36,7 +36,7 @@ function StatCard({ Icon, tint, title, value, unit }) {
     <div className="card bg-base-100 shadow-sm border border-base-200/60">
       <div className="card-body p-4">
         <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl grid place-items-center shrink-0" style={{ background: tint.bg, color: tint.fg }}>
+          <span className="w-10 h-10 rounded-md grid place-items-center shrink-0" style={{ background: tint.bg, color: tint.fg }}>
             <Icon size={18} strokeWidth={2.3} />
           </span>
           <div>
@@ -314,7 +314,7 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
               </div>
 
               {frozen && (
-                <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 flex items-center gap-2">
+                <div className="rounded-md border border-blue-200 bg-blue-50/60 p-4 flex items-center gap-2">
                   <Snowflake size={14} className="text-blue-500 shrink-0" />
                   <span className="text-sm text-blue-800">
                     Партнёр заморожен — вход на платформу для него закрыт
@@ -408,21 +408,21 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
                   <Wallet size={12} /> Финансовый профиль
                 </div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                  <div className="flex items-center justify-between p-2.5 rounded-md bg-base-200/40">
                     <span className="text-base-content/60">Счёт / мес</span>
                     <span className="font-bold text-lime-700 tabular-nums">
                       {fmt(partner.monthlyBill)} {cur}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                  <div className="flex items-center justify-between p-2.5 rounded-md bg-base-200/40">
                     <span className="text-base-content/60">Доля платформы</span>
                     <span className="font-bold tabular-nums">{share}%</span>
                   </div>
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                  <div className="flex items-center justify-between p-2.5 rounded-md bg-base-200/40">
                     <span className="text-base-content/60">Дней на платформе</span>
                     <span className="font-bold tabular-nums">{daysOnPlatform}</span>
                   </div>
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                  <div className="flex items-center justify-between p-2.5 rounded-md bg-base-200/40">
                     <span className="text-base-content/60">Ученики на филиал</span>
                     <span className="font-bold tabular-nums">{studentsPerBranch}</span>
                   </div>

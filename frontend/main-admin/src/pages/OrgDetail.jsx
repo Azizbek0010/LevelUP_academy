@@ -113,7 +113,7 @@ function AccessTab({ partner, token, invalidate }) {
       {err && <div className="alert alert-error text-sm"><span>{err}</span></div>}
 
       <div className="grid md:grid-cols-2 gap-5">
-        <form onSubmit={askPayment} className="p-4 border border-base-200 rounded-2xl space-y-3">
+        <form onSubmit={askPayment} className="p-4 border border-base-200 rounded-lg space-y-3">
           <h3 className="font-bold text-sm flex items-center gap-2"><Receipt size={15} className="text-lime-600" /> Записать оплату</h3>
           <input
             type="number" min="0" placeholder="Сумма, UZS" required
@@ -133,7 +133,7 @@ function AccessTab({ partner, token, invalidate }) {
           </button>
         </form>
 
-        <div className="p-4 border border-base-200 rounded-2xl space-y-3">
+        <div className="p-4 border border-base-200 rounded-lg space-y-3">
           <h3 className="font-bold text-sm flex items-center gap-2"><Gift size={15} className="text-lime-600" /> Бонус — бесплатный период</h3>
           <p className="text-xs text-base-content/50">Продлевает доступ поверх текущего срока. Не считается выручкой.</p>
           <div className="flex gap-2">
@@ -246,7 +246,7 @@ function FeatureToggles({ partner, token, invalidate }) {
         ) : (
           <div className="space-y-2">
             {paid.map((f) => (
-              <div key={f.key} className="flex items-center justify-between p-3 border border-base-200 rounded-xl">
+              <div key={f.key} className="flex items-center justify-between p-3 border border-base-200 rounded-md">
                 <div>
                   <div className="font-semibold text-sm">{f.label}</div>
                   <div className="text-xs text-base-content/45">{money(f.price)}/мес</div>
@@ -265,7 +265,7 @@ function FeatureToggles({ partner, token, invalidate }) {
         <h3 className="font-bold text-sm mb-2">Бесплатные кабинеты</h3>
         <div className="space-y-2">
           {free.map((f) => (
-            <div key={f.key} className="flex items-center justify-between p-3 border border-base-200 rounded-xl">
+            <div key={f.key} className="flex items-center justify-between p-3 border border-base-200 rounded-md">
               <div className="font-semibold text-sm">{f.key === 'student_panel' ? 'Кабинет ученика' : 'Кабинет родителя'}</div>
               <input
                 type="checkbox" className="toggle toggle-success"
@@ -286,7 +286,7 @@ function Kpi({ Icon, label, value, sub, tint, accent }) {
       <div className="card-body p-5">
         <div className="flex items-center gap-2 mb-2">
           <span
-            className="w-8 h-8 rounded-lg grid place-items-center shrink-0"
+            className="w-8 h-8 rounded-md grid place-items-center shrink-0"
             style={accent ? { background: 'rgba(0,0,0,0.12)', color: '#1a2e05' } : { background: tint.bg, color: tint.fg }}
           >
             <Icon size={15} strokeWidth={2.3} />
@@ -305,7 +305,7 @@ function BillingRow({ Icon, tint, label, sub, value }) {
     <div className="flex items-center justify-between gap-3 px-4 py-3.5">
       <span className="flex items-center gap-3 min-w-0">
         <span
-          className="w-9 h-9 rounded-xl grid place-items-center shrink-0"
+          className="w-9 h-9 rounded-md grid place-items-center shrink-0"
           style={{ background: tint.bg, color: tint.fg }}
         >
           <Icon size={16} strokeWidth={2.2} />
@@ -335,10 +335,10 @@ function BillingBreakdown({ partner, pricing, cur }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-base-200 overflow-hidden">
+      <div className="rounded-lg border border-base-200 overflow-hidden">
         <div className="bg-gradient-to-r from-lime-100 via-lime-50 to-transparent px-4 py-3.5 border-b border-base-200">
           <div className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-xl bg-lime-400 text-lime-950 grid place-items-center shrink-0">
+            <span className="w-9 h-9 rounded-md bg-lime-400 text-lime-950 grid place-items-center shrink-0">
               <Landmark size={16} strokeWidth={2.4} />
             </span>
             <div className="min-w-0">
@@ -371,7 +371,7 @@ function BillingBreakdown({ partner, pricing, cur }) {
         </div>
       </div>
       {diff && (
-        <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-xl text-xs text-base-content/60">
+        <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-md text-xs text-base-content/60">
           <Info size={13} className="text-warning shrink-0 mt-0.5" />
           Фактический счёт: <span className="font-semibold">{fmt(actual)} {cur}</span> — расхождение с расчётом тарифа
         </div>
@@ -450,7 +450,7 @@ export default function OrgDetail() {
       {isLoading ? (
         <>
           <div className="card bg-base-100 border border-base-200/60 shadow-sm">
-            <div className="card-body h-32 animate-pulse bg-base-200/30 rounded-2xl" />
+            <div className="card-body h-32 animate-pulse bg-base-200/30 rounded-lg" />
           </div>
           <SkeletonKpis count={4} />
         </>
@@ -464,7 +464,7 @@ export default function OrgDetail() {
           {/* Hero header — тёмная ink-панель вместо белой карточки с зелёной полоской:
               главная сущность страницы должна читаться сразу, а не сливаться с
               остальными белыми карточками ниже. */}
-          <div className="rounded-3xl bg-ink text-white overflow-hidden relative">
+          <div className="rounded-lg bg-ink text-white overflow-hidden relative">
             <div
               className="absolute inset-0 opacity-[0.07] pointer-events-none"
               style={{ backgroundImage: 'radial-gradient(circle at 15% 20%, #C6FF34, transparent 45%)' }}
@@ -578,7 +578,7 @@ export default function OrgDetail() {
                 <div className="space-y-5">
                   <div className="grid sm:grid-cols-2 gap-4">
                     {/* Revenue share */}
-                    <div className="p-4 border border-base-200 rounded-2xl">
+                    <div className="p-4 border border-base-200 rounded-lg">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <TrendingUp size={15} className="text-lime-600" />
@@ -599,7 +599,7 @@ export default function OrgDetail() {
                     </div>
 
                     {/* Status card */}
-                    <div className="p-4 border border-base-200 rounded-2xl">
+                    <div className="p-4 border border-base-200 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
                         <Shield size={15} className="text-base-content/50" />
                         <span className="font-semibold text-sm">Статус аккаунта</span>
@@ -613,7 +613,7 @@ export default function OrgDetail() {
                   </div>
 
                   {/* Расчётные показатели — плоская строка с разделителями, не сетка мини-карточек */}
-                  <div className="flex items-stretch divide-x divide-base-200 border border-base-200 rounded-2xl">
+                  <div className="flex items-stretch divide-x divide-base-200 border border-base-200 rounded-lg">
                     {[
                       { label: 'Ученик / филиал', value: partner.branches ? (partner.students / partner.branches).toFixed(1) : '—', note: 'среднее' },
                       { label: 'Счёт / ученик', value: partner.students ? fmt(Math.round(partner.monthlyBill / partner.students)) : '—', note: cur + '/мес' },
@@ -643,12 +643,12 @@ export default function OrgDetail() {
                   <div className="border-t border-base-200 pt-4">
                     <h3 className="font-bold text-sm mb-3">Фактические данные</h3>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-lime-50 border border-lime-100 rounded-xl p-4">
+                      <div className="bg-lime-50 border border-lime-100 rounded-md p-4">
                         <div className="text-xs text-lime-700/70 mb-1 font-semibold uppercase tracking-wide">К оплате / мес</div>
                         <div className="text-2xl font-extrabold text-lime-700">{fmt(partner.monthlyBill)}</div>
                         <div className="text-xs text-lime-700/60 mt-0.5">{cur}</div>
                       </div>
-                      <div className="bg-base-200/40 border border-base-200 rounded-xl p-4">
+                      <div className="bg-base-200/40 border border-base-200 rounded-md p-4">
                         <div className="text-xs text-base-content/50 mb-1 font-semibold uppercase tracking-wide">Доля платформы</div>
                         <div className="text-2xl font-extrabold">{share}%</div>
                         <div className="text-xs text-base-content/40 mt-0.5">от общего дохода</div>

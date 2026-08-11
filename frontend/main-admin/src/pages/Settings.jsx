@@ -25,7 +25,7 @@ function Spec({ label, value }) {
 function CardHead({ Icon, title }) {
   return (
     <div className="flex items-center gap-2.5 mb-5">
-      <span className="w-8 h-8 rounded-lg bg-ink/[0.06] text-ink grid place-items-center shrink-0">
+      <span className="w-8 h-8 rounded-md bg-ink/[0.06] text-ink grid place-items-center shrink-0">
         <Icon size={15} strokeWidth={2.3} />
       </span>
       <h2 className="font-bold text-sm">{title}</h2>
@@ -132,13 +132,13 @@ export default function Settings() {
 
       {/* Identity — тёмная ink-панель, как на странице партнёра: это владелец
           платформы, а не ещё одна белая карточка среди прочих. */}
-      <div className="rounded-3xl bg-ink text-white overflow-hidden relative">
+      <div className="rounded-lg bg-ink text-white overflow-hidden relative">
         <div
           className="absolute inset-0 opacity-[0.07] pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(circle at 85% 15%, #C6FF34, transparent 45%)' }}
         />
         <div className="relative flex flex-wrap items-center gap-5 p-6">
-          <div className="w-16 h-16 rounded-2xl bg-limebrand text-ink font-extrabold text-2xl grid place-items-center shrink-0">
+          <div className="w-16 h-16 rounded-lg bg-limebrand text-ink font-extrabold text-2xl grid place-items-center shrink-0">
             {initials}
           </div>
           <div className="flex-1 min-w-0">
@@ -168,7 +168,7 @@ export default function Settings() {
           <div className="card-body">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-lg bg-ink/[0.06] text-ink grid place-items-center shrink-0">
+                <span className="w-8 h-8 rounded-md bg-ink/[0.06] text-ink grid place-items-center shrink-0">
                   <User size={15} strokeWidth={2.3} />
                 </span>
                 <h2 className="font-bold text-sm">Данные профиля</h2>
@@ -320,7 +320,7 @@ export default function Settings() {
         <div className="card-body">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-lg bg-ink/[0.06] text-ink grid place-items-center shrink-0">
+              <span className="w-8 h-8 rounded-md bg-ink/[0.06] text-ink grid place-items-center shrink-0">
                 <Wallet size={15} strokeWidth={2.3} />
               </span>
               <h2 className="font-bold text-sm">Доход платформы — детали</h2>
@@ -399,10 +399,10 @@ export default function Settings() {
               <Link
                 key={to}
                 to={to}
-                className="flex items-center gap-3 p-4 rounded-xl border border-base-200/60 bg-base-100
+                className="flex items-center gap-3 p-4 rounded-md border border-base-200/60 bg-base-100
                            hover:border-lime-400/50 hover:shadow-sm transition-all active:scale-[0.98]"
               >
-                <span className="w-9 h-9 rounded-lg bg-ink/[0.06] text-ink grid place-items-center shrink-0">
+                <span className="w-9 h-9 rounded-md bg-ink/[0.06] text-ink grid place-items-center shrink-0">
                   <Icon size={17} />
                 </span>
                 <div>

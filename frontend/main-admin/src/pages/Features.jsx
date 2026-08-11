@@ -103,7 +103,7 @@ function CatalogRow({ feature, token, invalidate }) {
   return (
     <div className={`flex items-center justify-between px-5 py-3 ${!feature.is_active ? 'opacity-40' : ''}`}>
       <div className="flex items-center gap-3 min-w-0">
-        <span className="w-9 h-9 rounded-xl grid place-items-center shrink-0 bg-ink/[0.06] text-ink">
+        <span className="w-9 h-9 rounded-md grid place-items-center shrink-0 bg-ink/[0.06] text-ink">
           <Package size={15} strokeWidth={2.2} />
         </span>
         <div className="min-w-0">
@@ -170,7 +170,7 @@ export default function Features() {
 
       <section className="card bg-base-100 border border-base-200/60 shadow-sm overflow-hidden">
         <div className="flex items-center gap-2.5 px-5 py-4 border-b border-base-200">
-          <span className="w-9 h-9 rounded-xl bg-ink/[0.06] text-ink grid place-items-center shrink-0">
+          <span className="w-9 h-9 rounded-md bg-ink/[0.06] text-ink grid place-items-center shrink-0">
             <Inbox size={16} strokeWidth={2.2} />
           </span>
           <h2 className="font-bold text-sm">
@@ -190,7 +190,7 @@ export default function Features() {
 
       <section className="card bg-base-100 border border-base-200/60 shadow-sm overflow-hidden">
         <div className="flex items-center gap-2.5 px-5 py-4 border-b border-base-200 bg-gradient-to-r from-lime-100 via-lime-50 to-transparent">
-          <span className="w-9 h-9 rounded-xl bg-limebrand text-ink grid place-items-center shrink-0">
+          <span className="w-9 h-9 rounded-md bg-limebrand text-ink grid place-items-center shrink-0">
             <Sparkles size={16} strokeWidth={2.4} />
           </span>
           <h2 className="font-bold text-sm">Каталог платных фич</h2>

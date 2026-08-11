@@ -30,7 +30,7 @@ const PasswordInput = forwardRef(function PasswordInput({ className = '', ...res
         tabIndex={-1}
         aria-label={visible ? 'Скрыть пароль' : 'Показать пароль'}
         title={visible ? 'Скрыть пароль' : 'Показать пароль'}
-        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg
+        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md
                    text-base-content/40 hover:text-base-content/70 hover:bg-base-200
                    transition-colors"
       >

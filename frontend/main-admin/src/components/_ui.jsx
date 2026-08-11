@@ -38,7 +38,7 @@ export function Kpi({ Icon, title, value, unit, tone = 'neutral', trend, trendLa
   const body = (
     <div className="p-4 text-left w-full">
       <div className="flex items-center gap-2.5">
-        <span className={`w-8 h-8 rounded-lg grid place-items-center shrink-0 ${TONES[tone] ?? TONES.neutral}`}>
+        <span className={`w-8 h-8 rounded-md grid place-items-center shrink-0 ${TONES[tone] ?? TONES.neutral}`}>
           <Icon size={16} strokeWidth={2.2} />
         </span>
         <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
@@ -98,7 +98,7 @@ export function Panel({ title, icon: Icon, action, children, bodyClass = 'p-4' }
 export function EmptyState({ icon: Icon = Inbox, title, hint, action }) {
   return (
     <div className="flex flex-col items-center justify-center text-center px-6 py-14">
-      <span className="w-14 h-14 rounded-2xl bg-base-200 text-base-content/35 grid place-items-center mb-4">
+      <span className="w-14 h-14 rounded-lg bg-base-200 text-base-content/35 grid place-items-center mb-4">
         <Icon size={26} />
       </span>
       <p className="text-sm font-semibold text-base-content/70">{title}</p>
@@ -122,7 +122,7 @@ export function SearchInput({ value, onChange, placeholder = 'Поиск...', cl
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="input input-bordered input-sm w-full pl-9 rounded-lg text-base sm:text-sm"
+        className="input input-bordered input-sm w-full pl-9 rounded-md text-base sm:text-sm"
       />
     </div>
   );
@@ -178,7 +178,7 @@ export function RowSkeleton({ count = 3, height = 'h-14' }) {
   return (
     <div className="space-y-2">
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className={`skeleton ${height} w-full rounded-xl`} />
+        <div key={i} className={`skeleton ${height} w-full rounded-md`} />
       ))}
     </div>
   );
@@ -202,7 +202,7 @@ export function Modal({ isOpen, onClose, title, children, actions, className = '
           <h3 className="font-bold text-lg">{title}</h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg grid place-items-center text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors"
+            className="w-8 h-8 rounded-md grid place-items-center text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors"
             aria-label="Закрыть"
           >
             <X size={16} />

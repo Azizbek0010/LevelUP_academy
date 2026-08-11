@@ -31,7 +31,7 @@ const nav = [
 ];
 
 const itemBase =
-  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors';
+  'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors';
 const itemIdle =
   'text-neutral-content/60 hover:bg-white/[0.07] hover:text-neutral-content';
 const itemActive = 'bg-primary/[0.13] text-primary';
@@ -93,7 +93,7 @@ function PartnersNav({ onNavigate }) {
                 placeholder="Поиск"
                 aria-label="Поиск партнёра"
                 // text-base до sm: iOS Safari зумит страницу на поле мельче 16px
-                className="w-full rounded-lg bg-white/[0.06] pl-7 pr-2 py-1.5 text-base sm:text-xs
+                className="w-full rounded-md bg-white/[0.06] pl-7 pr-2 py-1.5 text-base sm:text-xs
                            text-neutral-content placeholder:text-neutral-content/35
                            focus:outline-none focus:bg-white/[0.1]"
               />
@@ -102,7 +102,7 @@ function PartnersNav({ onNavigate }) {
 
           <button
             onClick={() => { navigate('/organizations'); onNavigate?.(); }}
-            className={`w-full text-left rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+            className={`w-full text-left rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors ${
               location.pathname === '/organizations'
                 ? 'text-primary bg-primary/10'
                 : 'text-neutral-content/45 hover:text-neutral-content hover:bg-white/[0.06]'
@@ -118,7 +118,7 @@ function PartnersNav({ onNavigate }) {
                 key={p.id}
                 onClick={() => { navigate(`/organizations/${p.id}`); onNavigate?.(); }}
                 title={p.name}
-                className={`w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
+                className={`w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors ${
                   active
                     ? 'bg-primary/[0.13] text-primary font-bold'
                     : 'text-neutral-content/55 hover:bg-white/[0.06] hover:text-neutral-content'
@@ -199,7 +199,7 @@ function SidebarContent({ user, logout, onNavigate }) {
           <div className="text-xs text-neutral-content/50">Main Admin</div>
         </div>
         <button
-          className="ml-auto p-1.5 rounded-lg text-neutral-content/50 hover:text-error hover:bg-error/10 transition-colors"
+          className="ml-auto p-1.5 rounded-md text-neutral-content/50 hover:text-error hover:bg-error/10 transition-colors"
           onClick={logout}
           title="Выйти"
         >
