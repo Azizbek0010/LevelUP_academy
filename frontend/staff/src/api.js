@@ -555,6 +555,8 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
         // полностью статичные (pages/branch-manager/). С VITE_USE_MOCKS=true
         // вход этим аккаунтом в боевой бэкенд упадёт — это ожидаемо.
         { email: 'kozim.manager@gmail.com', password: 'ChangeMe123!', role: 'branch_manager', firstName: 'Baxtiyor', lastName: 'Umarov' },
+        // Finance Manager — только mock-режим (pages/finance/), как и branch_manager.
+        { email: 'finance.manager@gmail.com', password: 'pass123', role: 'finance_manager', firstName: 'Aziz', lastName: 'Karimov' },
       ];
 
       const account = MOCK_ACCOUNTS.find(
