@@ -3,7 +3,13 @@ import { withTransaction } from '../../config/db.js';
 import { AppError } from '../../utils/AppError.js';
 import { computeBill, tierForStudents, TIERS } from '../../config/plans.js';
 import { genTempPassword } from '../auth/credentials.js';
+import { computeProrationCredit } from '../../shared/proration.js';
+import { invalidateOrgAccessCache } from '../../middlewares/orgAccessGate.js';
 import * as repo from './main.repository.js';
+
+// Бесплатные тумблеры — не в каталоге platform_addon_prices, поэтому и не
+// платные, и без про-рейта при отключении (просто открывают/закрывают вход).
+const FREE_FEATURE_KEYS = new Set(['student_panel', 'parent_panel']);
 
 /**
  * Онбординг партнёра: создаём организацию + её SEO (бывш. Super Admin) одной транзакцией.
@@ -73,9 +79,12 @@ function decoratePartner(row) {
     plan: row.plan,
     domain: row.domain,
     status: row.status,
+    accessUntil: row.access_until,
     createdAt: row.created_at,
     branches,
     students,
+    parents: Number(row.parents),
+    staff: Number(row.staff),
     tier: tier.label, // тариф по числу учеников (Free/Start/…)
     monthlyBill: computeBill({ students }), // сколько партнёр платит нам (сумы), филиалы не влияют
   };
@@ -105,6 +114,8 @@ export async function platformDashboard() {
   const totals = partners.reduce(
     (acc, p) => {
       acc.students += p.students;
+      acc.parents += p.parents;
+      acc.staff += p.staff;
       acc.branches += p.branches;
       acc.ourMonthlyIncome += p.monthlyBill;
       return acc;
@@ -112,6 +123,8 @@ export async function platformDashboard() {
     {
       partners: partners.length,
       students: 0,
+      parents: 0,
+      staff: 0,
       branches: 0,
       ourMonthlyIncome: 0,
     },
@@ -168,7 +181,211 @@ export async function platformRevenue() {
 export async function setPartnerStatus(id, status) {
   const org = await repo.setOrgStatus(id, status);
   if (!org) throw new AppError(404, 'Partner not found');
+  await invalidateOrgAccessCache(id); // 'frozen' — независимый override гейта доступа
   return { id: org.id, name: org.name, status: org.status };
+}
+
+// ---------- каталог платных фич ----------
+
+export async function listAddonPrices() {
+  return repo.listAddonPrices();
+}
+
+export async function createAddonFeature({ label, price }, actorId) {
+  return repo.insertAddonPrice({ label, price, createdBy: actorId });
+}
+
+export async function updateAddonFeature(key, { label, price }) {
+  const row = await repo.updateAddonPrice(key, { label, price });
+  if (!row) throw new AppError(404, 'Feature not found');
+  return row;
+}
+
+export async function deactivateAddonFeature(key) {
+  const row = await repo.deactivateAddonPrice(key);
+  if (!row) throw new AppError(404, 'Feature not found');
+  return row;
+}
+
+// ---------- фичи партнёра (тумблеры + про-рейт при досрочном отключении) ----------
+
+export async function getPartnerFeatures(orgId) {
+  const [catalog, flags] = await Promise.all([
+    repo.listAddonPrices(),
+    repo.getOrgFeatureFlags(orgId),
+  ]);
+  const flagByKey = new Map(flags.map((f) => [f.feature_key, f]));
+  const paid = catalog
+    .filter((c) => c.is_active)
+    .map((c) => ({
+      key: c.feature_key,
+      label: c.label,
+      price: c.price,
+      enabled: flagByKey.get(c.feature_key)?.enabled ?? false,
+    }));
+  const free = [...FREE_FEATURE_KEYS].map((key) => ({
+    key,
+    enabled: flagByKey.get(key)?.enabled ?? false,
+  }));
+  return { paid, free };
+}
+
+/**
+ * Включить/выключить фичу партнёру. Платная (есть в каталоге) + выключаем +
+ * уже была включена → считаем про-рейт-кредит за неиспользованные дни
+ * текущего месяца и пишем его в журнал (виден партнёру в его биллинге).
+ * Бесплатные (student_panel/parent_panel) — без про-рейта, просто тумблер.
+ */
+export async function setFeatureFlag(orgId, key, enabled, actorId) {
+  const isFree = FREE_FEATURE_KEYS.has(key);
+  const addon = isFree ? null : await repo.findAddonPrice(key);
+  if (!isFree && !addon) throw new AppError(404, 'Feature not found in catalog');
+
+  const current = await repo.getOrgFeatureFlag(orgId, key);
+
+  if (!enabled && addon && current?.enabled) {
+    const credit = computeProrationCredit({ price: addon.price, enabledAt: current.enabled_at });
+    if (credit.amount > 0) {
+      await repo.insertOrgPayment({
+        orgId,
+        type: 'addon_credit',
+        amount: credit.amount,
+        featureKey: key,
+        note: `Про-рейт-кредит за отключение "${addon.label}" (${credit.daysRemaining}/${credit.totalDays} дн.)`,
+        createdBy: actorId,
+      });
+    }
+  }
+
+  const flag = await repo.upsertOrgFeatureFlag(orgId, key, enabled, actorId);
+  await invalidateOrgAccessCache(orgId);
+  return flag;
+}
+
+// ---------- заявки SEO на подключение/отключение фичи ----------
+
+export async function listFeatureRequests(status) {
+  return repo.listFeatureRequests(status);
+}
+
+/** Approve — тот же путь, что и прямое включение/отключение Main Admin'ом
+ * (включая про-рейт-кредит при approve на remove), только с привязкой к
+ * заявке. Reject — просто закрывает заявку, ничего не переключает. */
+export async function decideFeatureRequest(id, decision, actorId) {
+  const request = await repo.findFeatureRequest(id);
+  if (!request) throw new AppError(404, 'Request not found');
+  if (request.status !== 'pending') throw new AppError(409, 'Request already reviewed');
+
+  if (decision === 'approve') {
+    await setFeatureFlag(request.organization_id, request.feature_key, request.type === 'add', actorId);
+  }
+
+  const status = decision === 'approve' ? 'approved' : 'rejected';
+  return repo.reviewFeatureRequest(id, status, actorId);
+}
+
+// ---------- биллинг: оплата / бонус / журнал ----------
+
+/** Последний календарный день периода 'YYYY-MM'. */
+function endOfPeriod(periodCovered) {
+  const [year, month] = periodCovered.split('-').map(Number);
+  return new Date(Date.UTC(year, month, 0)); // day=0 следующего месяца = последний день этого
+}
+
+/**
+ * Main Admin вручную фиксирует, что партнёр заплатил (наличные/карта/перевод,
+ * вне системы) за конкретный месяц ('YYYY-MM'). access_until сдвигается до
+ * конца этого месяца — не накопительно поверх текущего значения, в отличие
+ * от бонуса: оплата это "плачу конкретно за такой-то месяц", а не "продли
+ * ещё на N". Если период раньше уже оплаченного — access_until не двигаем
+ * назад (может быть доплата задним числом за про-рейт первого периода).
+ */
+export async function recordPayment(orgId, { amount, method, periodCovered }, actorId) {
+  const org = await repo.findOrgById(orgId);
+  if (!org) throw new AppError(404, 'Partner not found');
+
+  const payment = await repo.insertOrgPayment({ orgId, type: 'payment', amount, method, periodCovered, createdBy: actorId });
+
+  const newUntil = endOfPeriod(periodCovered);
+  if (!org.access_until || newUntil > new Date(org.access_until)) {
+    await repo.setAccessUntil(orgId, newUntil.toISOString().slice(0, 10));
+  }
+  await invalidateOrgAccessCache(orgId);
+  return payment;
+}
+
+export async function grantBonus(orgId, months, actorId) {
+  const org = await repo.findOrgById(orgId);
+  if (!org) throw new AppError(404, 'Partner not found');
+  await repo.insertOrgPayment({ orgId, type: 'bonus', monthsGranted: months, note: `Бонус ${months} мес.`, createdBy: actorId });
+  const accessUntil = await repo.extendAccessUntil(orgId, months);
+  await invalidateOrgAccessCache(orgId);
+  return { accessUntil };
+}
+
+export async function listOrgLedger(orgId) {
+  return repo.listOrgPayments(orgId);
+}
+
+// ---------- собственные расходы платформы + P&L ----------
+
+export async function listExpenses() {
+  return repo.listExpenses();
+}
+
+export async function createExpense({ label, amount, category, expenseDate }, actorId) {
+  return repo.insertExpense({ label, amount, category, expenseDate, createdBy: actorId });
+}
+
+export async function deleteExpense(id) {
+  const row = await repo.softDeleteExpense(id);
+  if (!row) throw new AppError(404, 'Expense not found');
+  return row;
+}
+
+function currentMonthKey(date = new Date()) {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function previousMonthKey(date = new Date()) {
+  const prev = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1));
+  return currentMonthKey(prev);
+}
+
+/** Баланс платформы = вся реальная выручка (payment) минус все расходы;
+ * может уйти в минус, если расходов записано больше, чем оплат партнёров. */
+export async function platformFinance() {
+  const [revenueRows, expenseRows, totalRev, totalExp] = await Promise.all([
+    repo.monthlyRevenueTrend(),
+    repo.monthlyExpenseTrend(),
+    repo.totalRevenue(),
+    repo.totalExpenses(),
+  ]);
+
+  const revenueByMonth = new Map(revenueRows.map((r) => [r.month, r.revenue]));
+  const expenseByMonth = new Map(expenseRows.map((r) => [r.month, r.expense]));
+  const months = [...new Set([...revenueByMonth.keys(), ...expenseByMonth.keys()])].sort();
+  const trend = months.map((month) => ({
+    month,
+    revenue: revenueByMonth.get(month) ?? 0,
+    expense: expenseByMonth.get(month) ?? 0,
+    net: (revenueByMonth.get(month) ?? 0) - (expenseByMonth.get(month) ?? 0),
+  }));
+
+  const thisMonth = currentMonthKey();
+  const lastMonth = previousMonthKey();
+  const thisMonthNet = trend.find((t) => t.month === thisMonth) ?? { revenue: 0, expense: 0, net: 0 };
+  const lastMonthNet = trend.find((t) => t.month === lastMonth) ?? { revenue: 0, expense: 0, net: 0 };
+
+  return {
+    balance: totalRev - totalExp,
+    totalRevenue: totalRev,
+    totalExpenses: totalExp,
+    thisMonth: thisMonthNet,
+    lastMonth: lastMonthNet,
+    trend,
+    currency: 'UZS',
+  };
 }
 
 // ---------- заявки с лендинга (leads) ----------
@@ -233,9 +450,9 @@ export async function listAnnouncements() {
  * поэтому в очередь уведомлений НЕ кладём: воркер всё равно не нашёл бы chat_id
  * и задание молча пропало бы. Объявление живёт как запись в панели.
  */
-export async function createAnnouncement(senderId, { title, body, targetType }) {
-  const recipientCount = await repo.countAnnouncementRecipients(targetType);
-  const row = await repo.insertAnnouncement({ senderId, title, body, targetType, recipientCount });
+export async function createAnnouncement(senderId, { title, body, targetType, organizationIds }) {
+  const recipientCount = await repo.countAnnouncementRecipients(targetType, organizationIds);
+  const row = await repo.insertAnnouncement({ senderId, title, body, targetType, recipientCount, organizationIds });
   return mapAnnouncement(row);
 }
 

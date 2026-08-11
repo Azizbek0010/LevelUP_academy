@@ -2,13 +2,14 @@ import { Router } from 'express';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
+import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
 import * as ctrl from './users.controller.js';
 import * as discipline from '../discipline/discipline.controller.js';
 import { idParamSchema, listUsersQuerySchema, updateProfileSchema } from './users.schemas.js';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, orgAccessGate);
 
 /**
  * @openapi

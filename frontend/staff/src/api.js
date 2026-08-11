@@ -555,6 +555,8 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
         // полностью статичные (pages/branch-manager/). С VITE_USE_MOCKS=true
         // вход этим аккаунтом в боевой бэкенд упадёт — это ожидаемо.
         { email: 'kozim.manager@gmail.com', password: 'ChangeMe123!', role: 'branch_manager', firstName: 'Baxtiyor', lastName: 'Umarov' },
+        // Finance Manager — только mock-режим (pages/finance/), как и branch_manager.
+        { email: 'finance.manager@gmail.com', password: 'pass123', role: 'finance_manager', firstName: 'Aziz', lastName: 'Karimov' },
       ];
 
       const account = MOCK_ACCOUNTS.find(
@@ -2618,6 +2620,18 @@ export const api = {
   superAnnouncements: (token) => request('/super/announcements', { token }),
   superCreateAnnouncement: (token, body) => request('/super/announcements', { method: 'POST', token, body }),
   superDeleteAnnouncement: (token, id) => request(`/super/announcements/${id}`, { method: 'DELETE', token }),
+
+  // -------- SUPER ADMIN: анонсы от LevelUp Academy (Main Admin), read-only --------
+  superPlatformAnnouncements: (token) => request('/super/platform-announcements', { token }),
+
+  // -------- SUPER ADMIN: каталог платных фич + свои заявки на подключение/отключение --------
+  superFeatureCatalog: (token) => request('/super/features/catalog', { token }),
+  superFeatureRequests: (token) => request('/super/features/requests', { token }),
+  superCreateFeatureRequest: (token, body) => request('/super/features/requests', { method: 'POST', token, body }),
+
+  // -------- SUPER ADMIN: свой биллинг (read-only) --------
+  superBilling: (token) => request('/super/billing', { token }),
+  superBillingLedger: (token) => request('/super/billing/ledger', { token }),
 
   // -------- SUPER ADMIN: Reminders --------
   superReminders: (token) => request('/super/reminders', { token }),

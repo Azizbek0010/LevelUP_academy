@@ -3,7 +3,17 @@ import { buildObjectKey, getUploadUrl as getS3UploadUrl } from '../../config/s3.
 import * as repo from './content.repository.js';
 
 // ==================== ТИПЫ ОБУЧЕНИЯ ====================
+
+/** AI-review — платная фича (Main Admin включает партнёру отдельно); методист
+ * не может включить её сам, если она не куплена/не подключена организации. */
+async function assertAiReviewPurchased(orgId) {
+  if (!(await repo.isAiReviewEnabledForOrg(orgId))) {
+    throw new AppError(403, 'AI-review is not enabled for your organization — ask the platform owner to turn it on');
+  }
+}
+
 export async function createTrainingType(orgId, userId, payload) {
+  if (payload.aiReviewEnabled) await assertAiReviewPurchased(orgId);
   return repo.insertTrainingType({ orgId, createdBy: userId, ...payload });
 }
 
@@ -12,6 +22,7 @@ export async function listTrainingTypes(orgId) {
 }
 
 export async function updateTrainingType(id, orgId, payload) {
+  if (payload.aiReviewEnabled) await assertAiReviewPurchased(orgId);
   const item = await repo.updateTrainingType(id, orgId, payload);
   if (!item) throw new AppError(404, 'Training type not found');
   return item;

@@ -8,8 +8,38 @@ import { pool, withTransaction } from '../../config/db.js';
 import { sendMail } from '../../config/mailer.js';
 import { logger } from '../../config/logger.js';
 import { AppError } from '../../utils/AppError.js';
+import { isOrgAccessBlocked } from '../../shared/orgAccess.js';
 import * as repo from './auth.repository.js';
 import { buildOtpEmail } from './otpEmail.js';
+
+const FREE_PANEL_FLAG_BY_ROLE = { student: 'student_panel', parent: 'parent_panel' };
+
+/**
+ * Org-level гейт при выдаче/продлении сессии — main_admin без organization_id
+ * пропускается молча (у него нет организации). Для student/parent
+ * дополнительно проверяется бесплатный тумблер "кабинет включён этому
+ * партнёру" (Main Admin включает/выключает целиком для организации, без
+ * миграции по одному студенту — см. TASK.md WORKER-MERGE-соседний план).
+ *
+ * Это ЛОГИН-ТАЙМ часть проверки — она не ловит уже выданный (до часа живой)
+ * токен, для request-time блокировки есть orgAccessGate.js middleware,
+ * читающий ту же isOrgAccessBlocked().
+ */
+async function assertOrgAccessible(user) {
+  if (!user.organization_id) return;
+
+  const panelFlag = FREE_PANEL_FLAG_BY_ROLE[user.role];
+  if (panelFlag) {
+    const enabled = await repo.findOrgFeatureFlag(user.organization_id, panelFlag);
+    if (!enabled) throw new AppError(403, 'This panel is not enabled for your organization yet');
+  }
+
+  const org = await repo.findOrgAccessInfo(user.organization_id);
+  const check = isOrgAccessBlocked(org);
+  if (check.blocked) {
+    throw new AppError(402, 'Organization access suspended — contact platform owner', { reason: check.reason });
+  }
+}
 
 const ACCESS_TTL = '1h';
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 дней
@@ -73,6 +103,7 @@ export async function login({ login, password }, allowedRoles = null) {
   if (user.status === 'frozen') {
     throw new AppError(403, 'Account is frozen');
   }
+  await assertOrgAccessible(user);
   const tokens = await issueTokens(user);
   return { user: publicUser(user), ...tokens };
 }
@@ -94,6 +125,7 @@ export async function loginByUserId(userId, allowedRoles = null) {
   }
   if (user.status === 'frozen') throw new AppError(403, 'Account is frozen');
   if (user.status !== 'active') throw new AppError(403, 'Account is not active');
+  await assertOrgAccessible(user);
 
   const tokens = await issueTokens(user);
   return { user: publicUser(user), ...tokens };
@@ -125,6 +157,7 @@ export async function googleLogin({ idToken, allowedRoles = null } = {}) {
     throw new AppError(403, 'This account is not allowed here');
   }
   if (user.status === 'frozen') throw new AppError(403, 'Account is frozen');
+  await assertOrgAccessible(user);
 
   const tokens = await issueTokens(user);
   return { user: publicUser(user), ...tokens };
@@ -160,6 +193,7 @@ export async function refresh(presentedToken, allowedRoles = null) {
       throw new AppError(401, 'Invalid refresh token');
     }
     if (user.status === 'frozen') throw new AppError(403, 'Account is frozen');
+    await assertOrgAccessible(user);
 
     // rotation: гасим старый токен, выдаём новую пару
     await repo.revokeRefreshToken(row.id, client);

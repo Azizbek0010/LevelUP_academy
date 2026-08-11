@@ -13,7 +13,8 @@ export async function setupFixtures() {
   const ts = Date.now();
 
   const { rows: [org] } = await pool.query(
-    `INSERT INTO organizations (name, status, plan) VALUES ($1, 'active', 'test') RETURNING id`,
+    `INSERT INTO organizations (name, status, plan, access_until)
+     VALUES ($1, 'active', 'test', CURRENT_DATE + INTERVAL '1 month') RETURNING id`,
     [`Student Test Org ${ts}`],
   );
   const organizationId = org.id;

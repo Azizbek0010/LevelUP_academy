@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Inbox, Building2, Settings, LogOut, Menu, ChevronDown, Search,
+  LayoutDashboard, Inbox, Building2, Settings, LogOut, Menu, ChevronDown, Search, Puzzle,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
-import { useDashboard, useLeads } from '../queries.js';
+import { useDashboard, useLeads, useFeatureRequests } from '../queries.js';
 
 /**
  * Меню намеренно короткое — как у ментора.
@@ -26,6 +26,7 @@ const nav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
   { type: 'partners' },
   { to: '/leads', label: 'Заявки', Icon: Inbox, badge: 'leads' },
+  { to: '/features', label: 'Фичи', Icon: Puzzle, badge: 'featureRequests' },
   { to: '/settings', label: 'Настройки', Icon: Settings },
 ];
 
@@ -150,6 +151,7 @@ function SidebarContent({ user, logout, onNavigate }) {
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || 'M';
   const { data: leads } = useLeads();
   const newLeads = (leads ?? []).filter((l) => l.status === 'new').length;
+  const { data: pendingRequests } = useFeatureRequests('pending');
 
   return (
     <aside className="w-64 min-h-full bg-sidebar text-neutral-content flex flex-col py-5 px-3.5">
@@ -177,6 +179,11 @@ function SidebarContent({ user, logout, onNavigate }) {
               {badge === 'leads' && newLeads > 0 && (
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary text-primary-content">
                   {newLeads}
+                </span>
+              )}
+              {badge === 'featureRequests' && (pendingRequests?.length ?? 0) > 0 && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary text-primary-content">
+                  {pendingRequests.length}
                 </span>
               )}
             </NavLink>

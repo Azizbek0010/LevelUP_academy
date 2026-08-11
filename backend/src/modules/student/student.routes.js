@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { blockIfOverdue } from '../../middlewares/paymentGate.js';
+import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
 import homeRoutes from './home/home.routes.js';
 import shopRoutes from './shop/shop.routes.js';
 import homeworkRoutes from './homework/homework.routes.js';
@@ -22,7 +23,7 @@ import lessonsRoutes from './lessons/lessons.routes.js';
  */
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, orgAccessGate);
 
 router.use('/home', authorize('student'), blockIfOverdue, homeRoutes);
 router.use('/shop', authorize('student', 'admin', 'mentor'), blockIfOverdue, shopRoutes);

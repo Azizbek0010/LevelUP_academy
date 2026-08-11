@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
+import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
 import { validate } from '../../middlewares/validate.js';
 import {
   idParam,
@@ -45,7 +46,7 @@ const router = Router();
 // branch_manager получил те же права, что admin, в своём филиале (07.08.2026,
 // решение Karis) — req.scope у обеих ролей уже совпадает (authorize.js:32),
 // так что второй набор эндпоинтов не нужен, достаточно пустить сюда роль.
-router.use(authenticate, authorize('admin', 'branch_manager'));
+router.use(authenticate, orgAccessGate, authorize('admin', 'branch_manager'));
 
 router.use('/payments', paymentsRoutes);
 router.use('/reports', reportsRoutes);

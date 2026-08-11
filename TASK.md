@@ -4,6 +4,80 @@
 > Statistika qo'lda YOZILMAYDI — real raqamlar faqat `done.md` da.
 > V1 SCOPE: naqd + karta (full/split). Click/Payme/UzCard/Humo — FAQAT v3. Nasiya/рассрочка — V1 DA YO'Q (qaror 2026-07-05, tasdiqlangan 2026-07-07).
 
+## 🔴 SHOSHILINCH — Upstash Redis limit tugagan (11.08.2026 topildi)
+
+`npm test` orqali aniqlandi: `ERR max requests limit exceeded. Limit: 500000, Usage: 500001`
+— Upstash free-tier oyliq so'rov limiti tugagan. Ta'sir qiladi: leaderboard
+(Redis ZSET — rank butun kodda `null`/`undefined` bo'lib qoladi), OTP
+(forgotPassword/resetPassword ishlamaydi), ehtimol BullMQ navbatlar ham.
+**Bu proddagi PLATFORMA UCHUN HAM haqiqiy** — faqat local test emas, chunki
+`.env` bir xil Upstash'ga qaraydi (Path A, boshqa fayllarda yozilganidek).
+Yechim: Upstash dashboard → planni ko'tarish yoki keyingi oyni kutish (qachon
+reset bo'lishini Upstash'dan tekshirish kerak). Claude o'zi to'lov qila
+olmaydi — Karis'ning ishi.
+
+**11.08.2026, kechqurun — prod 502 bo'lib qoldi, sababi topildi va tuzatildi
+(lekin Upstash kvotasi hali HAM tugagan holicha qoladi):** `server.js`da
+kron-planlashtirish (`scheduleOverdueCron`/`Billing`/`DueSoon`/`DailyDigest`)
+himoyasiz top-level `await` edi — Redis reject qilganda (kvota tufayli)
+butun process qulardi, hattoki HTTP-port allaqachon tinglayotgan bo'lsa ham.
+Bittasi `client.on('error')`dan ham o'tib ketadigan ioredis'ning ichki AUTH
+retry'i edi. Tuzatildi: har bir schedule chaqiruvi try/catch'ga o'raldi +
+process-level `unhandledRejection` guard qo'shildi. `main`ga alohida commit
+bilan pushlandi (Karis ruxsati bilan), Render qayta deploy qildi, prod
+tekshirildi — `HTTP 200`. ⚠️ Bu Redis'ni "tuzatmaydi" — faqat Redis
+o'chganda API'ning butunlay yiqilib tushishini to'xtatadi (leaderboard/OTP/
+navbatlar baribir ishlamaydi, kvota tugagunicha yoki ko'tarilgunicha).
+
+## Backend — Main Admin: tarif/fича-flag/to'lov/xarajat/anons (Karis, 11.08.2026)
+
+> Katta blok — to'liq reja `C:\Users\user\.claude\plans\playful-moseying-conway.md`.
+> 6 ta yangi migratsiya (M1-M6) + backfill (kritik xato topildi va tuzatildi —
+> `access_until IS NULL` yangi ustunni backfill qilmasdan barcha mavjud
+> organizatsiyalarni login'da bloklab qo'ygan edi, testlar orqali deploy'dan
+> OLDIN topildi). Backend to'liq: fича-katalog CRUD, org-level access gate
+> (login + har bir so'rov, 10 ta router'ga ulandi), AI-review gate, to'lov/
+> bonus/про-рейт, platform_expenses + balans, SEO fича so'rovlari, anons bagi
+> tuzatildi + nishonlash.
+>
+> **Frontend ham qo'shildi** (11.08.2026, davomi): Main Admin — `Features.jsx`
+> (katalog CRUD + kiruvchi so'rovlar inbox'i), `OrgDetail.jsx`'ga "Доступ"
+> tab (to'lov/bonus/ledger) + "Финансы" tab'ga fича-tumbler'lar, sidebar
+> badge. `staff/super` (SEO tomoni) — `Features.jsx` (katalog ko'rish +
+> подключение/отключение so'rash, tumbler yo'q — faqat so'rov), `Billing.jsx`
+> (access_until/grace status + ledger, YANGI backend endpoint'lar
+> `GET /super/billing` va `GET /super/billing/ledger` shu bilan birga
+> qo'shildi — rejada bor edi, ammo backend yo'q edi), `Announcements.jsx`ga
+> "От LevelUp Academy" read-only blok.
+>
+> **Xato topildi va tuzatildi shu davomida**: `getFeatureCatalog(orgId)`
+> `repo.listActiveAddonCatalog(orgId)`ni chaqirardi, lekin bu funksiya
+> `orgId`ni emas, `client`ni (DB pool) kutadi — natijada
+> `GET /super/features/catalog` runtime'da `client.query is not a function`
+> bilan buzilardi (hech qachon chaqirilmagan/testlanmagan edi).
+> `super.service.js:962`da tuzatildi.
+>
+> Ikkala frontend (`main-admin`, `staff`) `npm run build` bilan tekshirildi —
+> xatosiz.
+>
+> **✅ Live e2e test o'tkazildi (11.08.2026, kechqurun), butunlay yashil:**
+> alohida test-org (`E2E QA Test Org`, keyin frozen qilindi, real partnyorlarga
+> tegmaydi) orqali: onboarding → access_until avto to'g'ri qo'yildi → SEO
+> login ishlaydi → access_until 60 kunga orqaga surildi → SEO login `402
+> payment_overdue` bilan bloklandi → to'lov yozildi → login qayta ishladi →
+> **allaqachon chiqarilgan (eski) student токен** access_until orqaga
+> surilgandan keyin keyingi so'rovda `402`ga uchradi — bu request-time
+> gate'ning (login-time emas) asosiy isboti → bonus +2 oy stackланди to'g'ri
+> (`GREATEST(access_until, bugun) + N`) → student_panel/parent_panel
+> mustaqil ishlaydi (bittasini yoqish ikkinchisiga tegmaydi) → SEO fича
+> so'rovi → Main Admin approve → flag va SEO'dagi katalog ikkalasi ham
+> yangilandi → `GET /super/billing`, `/billing/ledger`, `/features/catalog`
+> — hammasi to'g'ri javob qaytardi (avvalgi bug tuzatilgani ham shu bilan
+> tasdiqlandi) → dashboard user-count (students/parents/staff) aniq to'g'ri
+> chiqdi. Brauzer orqali ham tekshirildi: Main Admin `/features` sahifasida
+> yangi fича jonli yaratildi (slug avto-generatsiya to'g'ri), `OrgDetail`
+> "Доступ" tab'i ledger'ni aniq ko'rsatdi, konsolda xatolik yo'q.
+
 ## Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Karis, 09.08.2026) ✅
 
 > Backend'ga tegishli bo'lgan hammasi — Karis qildi (Claude bilan birga, shu

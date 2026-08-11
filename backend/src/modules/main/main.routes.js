@@ -11,6 +11,16 @@ import {
   createAnnouncementSchema,
   updateProfileSchema,
   idParam,
+  createAddonFeatureSchema,
+  updateAddonFeatureSchema,
+  featureKeyParam,
+  partnerFeatureKeyParam,
+  setPartnerFeatureSchema,
+  recordPaymentSchema,
+  grantBonusSchema,
+  createExpenseSchema,
+  featureRequestListQuery,
+  decideFeatureRequestSchema,
 } from './main.schemas.js';
 import * as ctrl from './main.controller.js';
 
@@ -146,6 +156,53 @@ router.patch(
   '/partners/:id/status',
   validate({ params: idParam, body: partnerStatusSchema }),
   ctrl.setPartnerStatus,
+);
+
+// --- каталог платных фич (Main Admin ведёт сам, не фиксированный список) ---
+router.get('/addon-prices', ctrl.listAddonPrices);
+router.post('/addon-prices', validate({ body: createAddonFeatureSchema }), ctrl.createAddonFeature);
+router.patch(
+  '/addon-prices/:key',
+  validate({ params: featureKeyParam, body: updateAddonFeatureSchema }),
+  ctrl.updateAddonFeature,
+);
+router.delete('/addon-prices/:key', validate({ params: featureKeyParam }), ctrl.deactivateAddonFeature);
+
+// --- фичи конкретного партнёра ---
+router.get('/partners/:id/features', validate({ params: idParam }), ctrl.getPartnerFeatures);
+router.patch(
+  '/partners/:id/features/:key',
+  validate({ params: partnerFeatureKeyParam, body: setPartnerFeatureSchema }),
+  ctrl.setPartnerFeature,
+);
+
+// --- биллинг партнёра (ручная фиксация оплаты/бонуса, вне платёжного шлюза) ---
+router.post(
+  '/partners/:id/payments',
+  validate({ params: idParam, body: recordPaymentSchema }),
+  ctrl.recordPayment,
+);
+router.post(
+  '/partners/:id/bonus',
+  validate({ params: idParam, body: grantBonusSchema }),
+  ctrl.grantBonus,
+);
+router.get('/partners/:id/ledger', validate({ params: idParam }), ctrl.listOrgLedger);
+
+// --- собственные расходы платформы (домен/хостинг/т.п. — НЕ расходы партнёра) ---
+router.get('/expenses', ctrl.listExpenses);
+router.post('/expenses', validate({ body: createExpenseSchema }), ctrl.createExpense);
+router.delete('/expenses/:id', validate({ params: idParam }), ctrl.deleteExpense);
+
+// --- баланс/P&L платформы (реальная выручка минус собственные расходы) ---
+router.get('/finance', ctrl.finance);
+
+// --- входящие заявки SEO на подключение/отключение фичи ---
+router.get('/feature-requests', validate({ query: featureRequestListQuery }), ctrl.listFeatureRequests);
+router.patch(
+  '/feature-requests/:id',
+  validate({ params: idParam, body: decideFeatureRequestSchema }),
+  ctrl.decideFeatureRequest,
 );
 
 /**

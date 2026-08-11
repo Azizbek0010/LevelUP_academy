@@ -18,6 +18,22 @@ export function findUserByLogin(login, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
+/** Для org-level гейта на login (см. shared/orgAccess.js) — минимум полей. */
+export function findOrgAccessInfo(orgId, client = pool) {
+  return client
+    .query(`SELECT status, access_until FROM organizations WHERE id = $1 AND deleted_at IS NULL`, [orgId])
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function findOrgFeatureFlag(orgId, key, client = pool) {
+  return client
+    .query(
+      `SELECT enabled FROM org_feature_flags WHERE organization_id = $1 AND feature_key = $2`,
+      [orgId, key],
+    )
+    .then((r) => r.rows[0]?.enabled ?? false);
+}
+
 export function findUserByEmail(email, client = pool) {
   return client
     .query(

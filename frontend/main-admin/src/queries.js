@@ -45,3 +45,38 @@ export function useInvalidate() {
   const qc = useQueryClient();
   return (...keys) => keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
 }
+
+export function useAddonPrices() {
+  const { token } = useAuth();
+  return useAuthedQuery(['addonPrices'], () => api.addonPrices(token), { select: (d) => d.features });
+}
+
+export function usePartnerFeatures(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['partnerFeatures', id], () => api.partnerFeatures(token, id), { enabled: !!id });
+}
+
+export function useOrgLedger(id) {
+  const { token } = useAuth();
+  return useAuthedQuery(['orgLedger', id], () => api.orgLedger(token, id), {
+    enabled: !!id,
+    select: (d) => d.ledger,
+  });
+}
+
+export function useExpenses() {
+  const { token } = useAuth();
+  return useAuthedQuery(['expenses'], () => api.expenses(token), { select: (d) => d.expenses });
+}
+
+export function useFinance() {
+  const { token } = useAuth();
+  return useAuthedQuery(['finance'], () => api.finance(token));
+}
+
+export function useFeatureRequests(status) {
+  const { token } = useAuth();
+  return useAuthedQuery(['featureRequests', status], () => api.featureRequests(token, status), {
+    select: (d) => d.requests,
+  });
+}

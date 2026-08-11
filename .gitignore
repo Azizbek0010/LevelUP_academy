@@ -45,3 +45,4 @@ playwright-report/
 !frontend/*/public/**
 !frontend/*/src/assets/**
 .vercel
+logs/
