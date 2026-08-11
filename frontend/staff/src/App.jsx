@@ -34,6 +34,7 @@ const FinanceIncome = lazy(() => import('./pages/finance/Income.jsx'));
 const FinanceExpenses = lazy(() => import('./pages/finance/Expenses.jsx'));
 const FinanceSalaries = lazy(() => import('./pages/finance/Salaries.jsx'));
 const FinanceReports = lazy(() => import('./pages/finance/Reports.jsx'));
+const FinanceTax = lazy(() => import('./pages/finance/Tax.jsx'));
 const FinanceSettings = lazy(() => import('./pages/finance/Settings.jsx'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
@@ -163,6 +164,7 @@ export default function App() {
           <Route path="/finance/expenses" element={<SW><FinanceExpenses /></SW>} />
           <Route path="/finance/salaries" element={<SW><FinanceSalaries /></SW>} />
           <Route path="/finance/reports" element={<SW><FinanceReports /></SW>} />
+          <Route path="/finance/tax" element={<SW><FinanceTax /></SW>} />
           <Route path="/finance/settings" element={<SW><FinanceSettings /></SW>} />
         </Route>
 

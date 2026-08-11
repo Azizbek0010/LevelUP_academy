@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Wallet, TrendingUp } from 'lucide-react';
+import { Wallet, TrendingUp, Search, CreditCard } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
-import { Metric, Card, StatusBadge, BranchSelect, MonthSelect } from './_ui.jsx';
+import { Metric, Card, StatusBadge, MethodBadge, BranchSelect, MonthSelect } from './_ui.jsx';
 import { useT } from './_i18n.jsx';
 import { BRANCHES, MONTHS, CURRENT_MONTH, INCOME, monthRow, MONTH_LABEL } from './_data.js';
 
@@ -20,6 +20,8 @@ export default function FinanceIncome() {
   const { t } = useT();
   const [branchId, setBranchId] = useState('all');
   const [monthKey, setMonthKey] = useState(CURRENT_MONTH);
+  const [search, setSearch] = useState('');
+  const [method, setMethod] = useState('all');
 
   const total = scopeTotal(branchId, monthKey);
   const prevTotal = scopeTotal(branchId, prevMonthKey(monthKey));
@@ -27,6 +29,27 @@ export default function FinanceIncome() {
 
   // Детальные платежи видны только по конкретному филиалу за текущий месяц
   const detail = branchId !== 'all' && monthKey === CURRENT_MONTH ? INCOME[branchId] : null;
+
+  // Разбивка по методам оплаты (текущий месяц)
+  const methodBreakdown = useMemo(() => {
+    if (!detail) return [];
+    const map = new Map();
+    detail.forEach((p) => map.set(p.method, (map.get(p.method) ?? 0) + p.amount));
+    return ['Karta', 'Naqd', 'Hybrid']
+      .map((m) => ({ method: m, value: map.get(m) ?? 0, count: detail.filter((p) => p.method === m).length }))
+      .filter((r) => r.count > 0);
+  }, [detail]);
+
+  // Фильтрация: поиск по ученику/группе + фильтр метода оплаты
+  const filteredDetail = useMemo(() => {
+    if (!detail) return [];
+    const q = search.trim().toLowerCase();
+    return detail.filter((p) => {
+      if (method !== 'all' && p.method !== method) return false;
+      if (!q) return true;
+      return `${p.student} ${p.group}`.toLowerCase().includes(q);
+    });
+  }, [detail, search, method]);
 
   const rows = useMemo(() => {
     if (branchId === 'all') {
@@ -60,6 +83,29 @@ export default function FinanceIncome() {
           tone="info"
         />
       </div>
+
+      {detail && methodBreakdown.length > 0 && (
+        <Card
+          title={t('income.byMethod')}
+          subtitle={`${label} · ${MONTH_LABEL[monthKey]}`}
+          bodyClass="p-4"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {methodBreakdown.map((r) => (
+              <div key={r.method} className="flex items-center gap-3 rounded-xl border border-base-300 bg-base-200/40 px-4 py-3">
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-base-content/5">
+                  <CreditCard size={18} className="text-base-content/60" />
+                </span>
+                <div className="min-w-0">
+                  <MethodBadge method={r.method} t={t} />
+                  <p className="mt-1 text-[16px] font-extrabold tabular-nums">{money(r.value)}</p>
+                </div>
+                <span className="ml-auto text-[12px] text-base-content/40">{r.count} {t('common.total').toLowerCase()}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card
         title={t('income.tableTitle')}
@@ -98,6 +144,26 @@ export default function FinanceIncome() {
       {detail && (
         <Card
           title={`${t('income.tableTitle')} · ${label} · ${MONTH_LABEL[monthKey]}`}
+          action={
+            <div className="flex items-center gap-2">
+              <label className="input input-bordered input-sm flex items-center gap-2">
+                <Search size={14} className="text-base-content/40" />
+                <input
+                  type="text"
+                  placeholder={t('common.search')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-40"
+                />
+              </label>
+              <select className="select select-bordered select-sm" value={method} onChange={(e) => setMethod(e.target.value)}>
+                <option value="all">{t('common.method')} · {t('common.all')}</option>
+                {['Karta', 'Naqd', 'Hybrid'].map((m) => (
+                  <option key={m} value={m}>{t(m === 'Karta' ? 'method.karta' : m === 'Naqd' ? 'method.naqd' : 'method.hybrid')}</option>
+                ))}
+              </select>
+            </div>
+          }
           bodyClass="p-0"
         >
           <div className="overflow-x-auto">
@@ -113,12 +179,12 @@ export default function FinanceIncome() {
                 </tr>
               </thead>
               <tbody>
-                {detail.map((p) => (
+                {filteredDetail.map((p) => (
                   <tr key={p.id} className="text-sm">
                     <td className="tabular-nums whitespace-nowrap">{p.date}</td>
                     <td className="font-medium">{p.student}</td>
                     <td className="text-base-content/70">{p.group}</td>
-                    <td>{p.method}</td>
+                    <td><MethodBadge method={p.method} t={t} /></td>
                     <td><StatusBadge status={p.status} /></td>
                     <td className="text-right tabular-nums font-semibold">{money(p.amount)}</td>
                   </tr>

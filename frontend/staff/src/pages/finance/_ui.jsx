@@ -86,6 +86,26 @@ export function StatusBadge({ status }) {
   return <span className={`badge badge-sm ${meta.cls}`}>{meta.label}</span>;
 }
 
+/* ── Badge метода оплаты (карта / наличные / гибрид) ── */
+const METHOD_META = {
+  Karta:  { cls: 'badge-info',    icon: '💳' },
+  Naqd:   { cls: 'badge-success', icon: '💵' },
+  Hybrid: { cls: 'badge-warning', icon: '🔀' },
+};
+
+export function MethodBadge({ method, t }) {
+  const meta = METHOD_META[method] ?? { cls: 'badge-ghost', icon: '' };
+  const key = method === 'Karta' ? 'method.karta' : method === 'Naqd' ? 'method.naqd' : 'method.hybrid';
+  return <span className={`badge badge-sm gap-1 ${meta.cls}`}><span className="text-[11px]">{meta.icon}</span>{t?.(key) ?? method}</span>;
+}
+
+/* ── Badge плановости расхода ── */
+export function PlannedBadge({ planned, t }) {
+  return planned
+    ? <span className="badge badge-sm badge-ghost">{t('expenses.planned')}</span>
+    : <span className="badge badge-sm badge-error gap-1">⚠ {t('expenses.unplanned')}</span>;
+}
+
 /* ── Селекты филиала и месяца ── */
 export function BranchSelect({ value, onChange, allLabel, branches }) {
   return (

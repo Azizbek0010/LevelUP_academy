@@ -655,7 +655,6 @@ export default function AdminStudentDetail() {
               </button>
             </div>
             <div className="modal-backdrop" onClick={() => setEditing(false)} />
-          </div>
         </dialog>
       )}
 

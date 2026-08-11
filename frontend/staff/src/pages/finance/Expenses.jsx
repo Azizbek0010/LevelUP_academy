@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Receipt, PieChart as PieIcon } from 'lucide-react';
+import { Receipt, PieChart as PieIcon, AlertTriangle, Search } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
-import { Metric, Card, BranchSelect, MonthSelect, compactMoney } from './_ui.jsx';
+import { Metric, Card, BranchSelect, MonthSelect, PlannedBadge } from './_ui.jsx';
 import { useT } from './_i18n.jsx';
 import { BRANCHES, MONTHS, CURRENT_MONTH, EXPENSES, monthRow, MONTH_LABEL } from './_data.js';
 
@@ -23,12 +23,29 @@ export default function FinanceExpenses() {
   const { t } = useT();
   const [branchId, setBranchId] = useState('all');
   const [monthKey, setMonthKey] = useState(CURRENT_MONTH);
+  const [search, setSearch] = useState('');
+  const [planned, setPlanned] = useState('all');
 
   const total = scopeTotal(branchId, monthKey);
   const prevTotal = scopeTotal(branchId, prevMonthKey(monthKey));
   const trend = prevTotal ? Math.round(((total - prevTotal) / prevTotal) * 100) : 0;
 
   const detail = branchId !== 'all' && monthKey === CURRENT_MONTH ? EXPENSES[branchId] : null;
+
+  // Неплановые расходы текущего месяца по выбранному филиалу
+  const unplannedTotal = detail ? detail.filter((e) => e.planned === false).reduce((a, e) => a + e.amount, 0) : null;
+
+  // Фильтрация: поиск по примечанию/категории + фильтр плановости
+  const filteredDetail = useMemo(() => {
+    if (!detail) return [];
+    const q = search.trim().toLowerCase();
+    return detail.filter((e) => {
+      if (planned === 'planned' && e.planned !== true) return false;
+      if (planned === 'unplanned' && e.planned !== false) return false;
+      if (!q) return true;
+      return `${e.category} ${e.note}`.toLowerCase().includes(q);
+    });
+  }, [detail, search, planned]);
 
   // Разбивка по категориям из детальных транзакций текущего месяца
   const catBreakdown = useMemo(() => {
@@ -62,6 +79,15 @@ export default function FinanceExpenses() {
           trend={trend}
           trendLabel={t('common.vsPrev')}
         />
+        {unplannedTotal !== null && (
+          <Metric
+            Icon={AlertTriangle}
+            label={t('expenses.unplannedKpi')}
+            value={money(unplannedTotal)}
+            sub={t('expenses.unplannedSub')}
+            tone="info"
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -127,6 +153,25 @@ export default function FinanceExpenses() {
       {detail && (
         <Card
           title={`${t('expenses.title')} · ${label} · ${MONTH_LABEL[monthKey]}`}
+          action={
+            <div className="flex items-center gap-2">
+              <label className="input input-bordered input-sm flex items-center gap-2">
+                <Search size={14} className="text-base-content/40" />
+                <input
+                  type="text"
+                  placeholder={t('common.search')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-40"
+                />
+              </label>
+              <select className="select select-bordered select-sm" value={planned} onChange={(e) => setPlanned(e.target.value)}>
+                <option value="all">{t('expenses.allExpenses')}</option>
+                <option value="planned">{t('expenses.planned')}</option>
+                <option value="unplanned">{t('expenses.unplanned')}</option>
+              </select>
+            </div>
+          }
           bodyClass="p-0"
         >
           <div className="overflow-x-auto">
@@ -136,15 +181,17 @@ export default function FinanceExpenses() {
                   <th>{t('common.date')}</th>
                   <th>{t('common.category')}</th>
                   <th>{t('common.note')}</th>
+                  <th>{t('common.filter')}</th>
                   <th className="text-right">{t('common.amount')}</th>
                 </tr>
               </thead>
               <tbody>
-                {detail.map((e) => (
+                {filteredDetail.map((e) => (
                   <tr key={e.id} className="text-sm">
                     <td className="tabular-nums whitespace-nowrap">{e.date}</td>
                     <td><span className="badge badge-sm badge-outline">{e.category}</span></td>
                     <td className="text-base-content/70">{e.note}</td>
+                    <td><PlannedBadge planned={e.planned} t={t} /></td>
                     <td className="text-right tabular-nums font-semibold text-warning">{money(e.amount)}</td>
                   </tr>
                 ))}
