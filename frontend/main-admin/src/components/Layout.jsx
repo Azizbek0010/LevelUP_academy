@@ -155,9 +155,8 @@ function SidebarContent({ user, logout, onNavigate }) {
 
   return (
     <aside className="w-64 min-h-full bg-sidebar text-neutral-content flex flex-col py-5 px-3.5">
-      <div className="flex items-center gap-2.5 font-extrabold text-[17px] text-white px-2.5 pb-5">
-        <img src="/logo-mark.svg" alt="" className="w-7 h-7" />
-        LevelUp Academy
+      <div className="px-2.5 pb-5">
+        <img src="/logo-white.svg" alt="LevelUp Academy" className="h-7 w-auto" />
       </div>
 
       <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">

@@ -82,18 +82,18 @@ function PartnerCard({ p, cur, maxBill, totalIncome, onToggle, busyId, onCardCli
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
-          <div className="text-center rounded-lg bg-base-200/40 p-2">
-            <div className="text-xs text-base-content/50">Ученики</div>
-            <div className="font-extrabold text-base tabular-nums">{fmt(p.students)}</div>
+        <div className="flex items-stretch divide-x divide-base-200 border-y border-base-200 -mx-5 px-5 py-2.5">
+          <div className="flex-1 pr-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/40">Ученики</div>
+            <div className="font-extrabold text-base tabular-nums mt-0.5">{fmt(p.students)}</div>
           </div>
-          <div className="text-center rounded-lg bg-base-200/40 p-2">
-            <div className="text-xs text-base-content/50">Филиалы</div>
-            <div className="font-extrabold text-base tabular-nums">{fmt(p.branches)}</div>
+          <div className="flex-1 px-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/40">Филиалы</div>
+            <div className="font-extrabold text-base tabular-nums mt-0.5">{fmt(p.branches)}</div>
           </div>
-          <div className="text-center rounded-lg bg-lime-50 p-2">
-            <div className="text-xs text-lime-700/70">Счёт/мес</div>
-            <div className="font-extrabold text-base tabular-nums text-lime-700">{fmt(p.monthlyBill)}</div>
+          <div className="flex-1 pl-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-lime-700/60">Счёт/мес</div>
+            <div className="font-extrabold text-base tabular-nums mt-0.5 text-lime-700">{fmt(p.monthlyBill)}</div>
           </div>
         </div>
 
@@ -282,18 +282,18 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
           {detailTab === 'overview' && (
             <>
               {/* Metrics */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="text-center rounded-lg bg-base-200/40 p-3">
-                  <div className="text-xs text-base-content/50">Филиалы</div>
-                  <div className="font-extrabold text-lg tabular-nums">{fmt(partner.branches)}</div>
+              <div className="flex items-stretch divide-x divide-base-200 border-y border-base-200 py-3">
+                <div className="flex-1 text-center px-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/40">Филиалы</div>
+                  <div className="font-extrabold text-lg tabular-nums mt-0.5">{fmt(partner.branches)}</div>
                 </div>
-                <div className="text-center rounded-lg bg-base-200/40 p-3">
-                  <div className="text-xs text-base-content/50">Ученики</div>
-                  <div className="font-extrabold text-lg tabular-nums">{fmt(partner.students)}</div>
+                <div className="flex-1 text-center px-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/40">Ученики</div>
+                  <div className="font-extrabold text-lg tabular-nums mt-0.5">{fmt(partner.students)}</div>
                 </div>
-                <div className="text-center rounded-lg bg-lime-50 p-3">
-                  <div className="text-xs text-lime-700/70">Счёт/мес</div>
-                  <div className="font-extrabold text-lg tabular-nums text-lime-700">{fmt(partner.monthlyBill)}</div>
+                <div className="flex-1 text-center px-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-lime-700/60">Счёт/мес</div>
+                  <div className="font-extrabold text-lg tabular-nums mt-0.5 text-lime-700">{fmt(partner.monthlyBill)}</div>
                 </div>
               </div>
 

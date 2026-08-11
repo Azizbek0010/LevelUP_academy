@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Check, X, Pencil, Trash2, Inbox, Package } from 'lucide-react';
+import { Plus, Check, X, Pencil, Trash2, Inbox, Package, Sparkles } from 'lucide-react';
 import { useAddonPrices, useFeatureRequests, useInvalidate } from '../queries.js';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
@@ -38,26 +38,26 @@ function NewFeatureForm({ token, invalidate }) {
   };
 
   return (
-    <form onSubmit={submit} className="flex flex-wrap items-end gap-2 p-4 bg-base-200/40 rounded-2xl">
-      <div className="flex-1 min-w-[180px]">
+    <form onSubmit={submit} className="flex flex-wrap items-end gap-3 px-5 py-4 bg-paper/60 border-b border-base-200">
+      <div className="flex-1 min-w-[200px]">
         <label className="text-xs font-semibold text-base-content/50 mb-1 block">Название фичи</label>
         <input
-          className="input input-bordered input-sm w-full"
+          className="input input-bordered input-sm w-full bg-base-100"
           placeholder="напр. TG-бот, Скриншоты в чат"
           value={label} onChange={(e) => setLabel(e.target.value)}
         />
       </div>
-      <div className="w-40">
+      <div className="w-44">
         <label className="text-xs font-semibold text-base-content/50 mb-1 block">Цена / мес, UZS</label>
         <input
-          type="number" min="0" className="input input-bordered input-sm w-full"
+          type="number" min="0" className="input input-bordered input-sm w-full bg-base-100"
           value={price} onChange={(e) => setPrice(e.target.value)}
         />
       </div>
-      {err && <div className="text-xs text-error basis-full">{err}</div>}
-      <button type="submit" className="btn btn-sm bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 gap-1.5" disabled={busy}>
-        {busy ? <span className="loading loading-spinner loading-xs" /> : <><Plus size={14} /> Добавить</>}
+      <button type="submit" className="btn btn-sm bg-limebrand hover:brightness-95 border-0 text-ink gap-1.5" disabled={busy}>
+        {busy ? <span className="loading loading-spinner loading-xs" /> : <><Plus size={14} /> Добавить в каталог</>}
       </button>
+      {err && <div className="text-xs text-error basis-full">{err}</div>}
     </form>
   );
 }
@@ -91,7 +91,7 @@ function CatalogRow({ feature, token, invalidate }) {
 
   if (editing) {
     return (
-      <div className="flex items-center gap-2 p-3 border border-base-200 rounded-xl">
+      <div className="flex items-center gap-2 px-5 py-3">
         <input className="input input-bordered input-xs flex-1" value={label} onChange={(e) => setLabel(e.target.value)} />
         <input type="number" min="0" className="input input-bordered input-xs w-28" value={price} onChange={(e) => setPrice(e.target.value)} />
         <button className="btn btn-xs btn-success" onClick={save} disabled={busy}><Check size={12} /></button>
@@ -101,16 +101,21 @@ function CatalogRow({ feature, token, invalidate }) {
   }
 
   return (
-    <div className={`flex items-center justify-between p-3 border border-base-200 rounded-xl ${!feature.is_active ? 'opacity-40' : ''}`}>
-      <div>
-        <div className="font-semibold text-sm flex items-center gap-2">
-          {feature.label}
-          {!feature.is_active && <span className="badge badge-ghost badge-xs">снята с продажи</span>}
+    <div className={`flex items-center justify-between px-5 py-3 ${!feature.is_active ? 'opacity-40' : ''}`}>
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="w-9 h-9 rounded-xl grid place-items-center shrink-0 bg-ink/[0.06] text-ink">
+          <Package size={15} strokeWidth={2.2} />
+        </span>
+        <div className="min-w-0">
+          <div className="font-semibold text-sm flex items-center gap-2">
+            {feature.label}
+            {!feature.is_active && <span className="badge badge-ghost badge-xs">снята с продажи</span>}
+          </div>
+          <div className="text-xs text-base-content/45 font-mono">{feature.feature_key} · {money(feature.price)}/мес</div>
         </div>
-        <div className="text-xs text-base-content/45 font-mono">{feature.feature_key} · {money(feature.price)}/мес</div>
       </div>
       {feature.is_active && (
-        <div className="flex gap-1">
+        <div className="flex gap-1 shrink-0">
           <button className="btn btn-xs btn-ghost" onClick={() => setEditing(true)} title="Изменить"><Pencil size={13} /></button>
           <button className="btn btn-xs btn-ghost text-error" onClick={deactivate} disabled={busy} title="Снять с продажи"><Trash2 size={13} /></button>
         </div>
@@ -135,8 +140,8 @@ function RequestRow({ request, token, invalidate }) {
   };
 
   return (
-    <div className="flex items-center justify-between p-3 border border-base-200 rounded-xl">
-      <div>
+    <div className="flex items-center justify-between px-5 py-3 gap-3">
+      <div className="min-w-0">
         <div className="font-semibold text-sm">
           {request.organization_name} просит <span className="text-lime-700">{REQUEST_TYPE_LABEL[request.type]}</span> «{request.feature_label ?? request.feature_key}»
         </div>
@@ -160,31 +165,43 @@ export default function Features() {
   const { data: pending, isLoading: pendingLoading } = useFeatureRequests('pending');
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader title="Фичи" subtitle="Каталог платных фич и заявки партнёров на подключение/отключение" />
 
-      <section className="space-y-3">
-        <h2 className="font-bold text-sm flex items-center gap-2"><Inbox size={15} className="text-lime-600" /> Входящие заявки{pending?.length ? ` (${pending.length})` : ''}</h2>
+      <section className="card bg-base-100 border border-base-200/60 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-base-200">
+          <span className="w-9 h-9 rounded-xl bg-ink/[0.06] text-ink grid place-items-center shrink-0">
+            <Inbox size={16} strokeWidth={2.2} />
+          </span>
+          <h2 className="font-bold text-sm">
+            Входящие заявки{pending?.length ? ` · ${pending.length}` : ''}
+          </h2>
+        </div>
         {pendingLoading ? (
-          <SkeletonList count={2} />
+          <div className="p-5"><SkeletonList count={2} /></div>
         ) : !pending?.length ? (
-          <div className="text-sm text-base-content/40 p-4 text-center border border-dashed border-base-200 rounded-2xl">Нет заявок</div>
+          <div className="text-sm text-base-content/40 p-6 text-center">Нет заявок</div>
         ) : (
-          <div className="space-y-2">
+          <div className="divide-y divide-base-200">
             {pending.map((r) => <RequestRow key={r.id} request={r} token={token} invalidate={invalidate} />)}
           </div>
         )}
       </section>
 
-      <section className="space-y-3">
-        <h2 className="font-bold text-sm flex items-center gap-2"><Package size={15} className="text-lime-600" /> Каталог</h2>
+      <section className="card bg-base-100 border border-base-200/60 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-base-200 bg-gradient-to-r from-lime-100 via-lime-50 to-transparent">
+          <span className="w-9 h-9 rounded-xl bg-limebrand text-ink grid place-items-center shrink-0">
+            <Sparkles size={16} strokeWidth={2.4} />
+          </span>
+          <h2 className="font-bold text-sm">Каталог платных фич</h2>
+        </div>
         <NewFeatureForm token={token} invalidate={invalidate} />
         {catalogLoading ? (
-          <SkeletonList count={3} />
+          <div className="p-5"><SkeletonList count={3} /></div>
         ) : !catalog?.length ? (
-          <div className="text-sm text-base-content/40 p-4 text-center">Каталог пуст</div>
+          <div className="text-sm text-base-content/40 p-6 text-center">Каталог пуст</div>
         ) : (
-          <div className="space-y-2">
+          <div className="divide-y divide-base-200">
             {catalog.map((f) => <CatalogRow key={f.feature_key} feature={f} token={token} invalidate={invalidate} />)}
           </div>
         )}

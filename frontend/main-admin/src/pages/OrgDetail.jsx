@@ -351,14 +351,14 @@ function BillingBreakdown({ partner, pricing, cur }) {
         <div className="divide-y divide-base-200">
           <BillingRow
             Icon={Users}
-            tint={{ bg: '#EDE9FE', fg: '#5B21B6' }}
+            tint={{ bg: '#eef2ee', fg: '#1D2417' }}
             label={`Пользователей: ${fmt(totalUsers)}`}
             sub={`${fmt(partner.students)} учеников · ${fmt(partner.parents)} родителей · ${fmt(partner.staff)} сотрудников`}
             value={tierPriceLabel(tier, cur)}
           />
           <BillingRow
             Icon={GitBranch}
-            tint={{ bg: '#F3E8FF', fg: '#7E22CE' }}
+            tint={{ bg: '#eef2ee', fg: '#1D2417' }}
             label={`Филиалы: ${fmt(partner.branches)}`}
             sub="входят в тариф безлимитом"
             value={`0 ${cur}`}
@@ -461,13 +461,18 @@ export default function OrgDetail() {
         </div>
       ) : (
         <>
-          {/* Hero header */}
-          <div className="card bg-base-100 border border-base-200/60 shadow-sm overflow-hidden">
-            <div className="h-2 bg-gradient-to-r from-lime-400 via-lime-500 to-lime-600" />
-            <div className="card-body flex-row flex-wrap items-start gap-5 pt-5">
+          {/* Hero header — тёмная ink-панель вместо белой карточки с зелёной полоской:
+              главная сущность страницы должна читаться сразу, а не сливаться с
+              остальными белыми карточками ниже. */}
+          <div className="rounded-3xl bg-ink text-white overflow-hidden relative">
+            <div
+              className="absolute inset-0 opacity-[0.07] pointer-events-none"
+              style={{ backgroundImage: 'radial-gradient(circle at 15% 20%, #C6FF34, transparent 45%)' }}
+            />
+            <div className="relative flex flex-row flex-wrap items-start gap-5 p-6">
               <div className="relative shrink-0">
                 <Avatar name={partner.name} size={68} />
-                <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-base-100 ${
+                <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-ink ${
                   partner.status === 'active' ? 'bg-success' :
                   partner.status === 'trial' ? 'bg-warning' : 'bg-error'
                 }`} />
@@ -475,9 +480,9 @@ export default function OrgDetail() {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
                   <h1 className="text-2xl font-extrabold leading-tight">{partner.name}</h1>
-                  <span className={`badge ${s.cls} badge-sm`}>{s.label}</span>
+                  <span className={`badge ${s.cls} badge-sm border-0`}>{s.label}</span>
                 </div>
-                <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-base-content/55">
+                <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-white/50">
                   {partner.domain && (
                     <span className="flex items-center gap-1.5">
                       <Globe size={13} />
@@ -493,32 +498,32 @@ export default function OrgDetail() {
                     <span className="font-mono text-xs">{partner.id}</span>
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-3 mt-3 text-sm">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-base-200/60 rounded-lg">
-                    <Building2 size={13} className="text-blue-500" />
-                    <span className="text-base-content/60">Филиалов:</span>
-                    <span className="font-bold">{fmt(partner.branches)}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-base-200/60 rounded-lg">
-                    <GraduationCap size={13} className="text-purple-500" />
-                    <span className="text-base-content/60">Учеников:</span>
-                    <span className="font-bold">{fmt(partner.students)}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-lime-50 border border-lime-200 rounded-lg">
-                    <Wallet size={13} className="text-lime-600" />
-                    <span className="text-lime-700 font-bold">{fmt(partner.monthlyBill)} {cur}/мес</span>
-                  </div>
+                <div className="flex flex-wrap gap-4 mt-4 text-sm">
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="text-white/40">Филиалов</span>
+                    <span className="font-bold tabular-nums">{fmt(partner.branches)}</span>
+                  </span>
+                  <span className="w-px bg-white/15" />
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="text-white/40">Учеников</span>
+                    <span className="font-bold tabular-nums">{fmt(partner.students)}</span>
+                  </span>
+                  <span className="w-px bg-white/15" />
+                  <span className="flex items-baseline gap-1.5 text-limebrand">
+                    <Wallet size={13} />
+                    <span className="font-bold tabular-nums">{fmt(partner.monthlyBill)} {cur}/мес</span>
+                  </span>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 self-start">
                 <button
-                  className="btn btn-sm btn-outline gap-1.5"
+                  className="btn btn-sm bg-white/10 hover:bg-white/15 border-0 text-white gap-1.5"
                   onClick={() => setOnboard(true)}
                 >
                   <UserPlus size={14} /> Онбординг
                 </button>
                 <button
-                  className={`btn btn-sm ${partner.status === 'frozen' ? 'btn-success' : 'btn-outline btn-error'}`}
+                  className={`btn btn-sm border-0 ${partner.status === 'frozen' ? 'bg-success text-success-content hover:bg-success/90' : 'bg-error/90 text-white hover:bg-error'}`}
                   onClick={toggle}
                   disabled={busy}
                 >
@@ -530,7 +535,7 @@ export default function OrgDetail() {
             </div>
           </div>
 
-          {/* KPIs */}
+          {/* KPIs — единая дуотон-палитра (ink/lime), не радуга случайных пастелей */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Kpi
               Icon={Wallet}
@@ -540,9 +545,9 @@ export default function OrgDetail() {
               tint={{ bg: '#E6F4D7', fg: '#3F6212' }}
               accent
             />
-            <Kpi Icon={Building2} label="Филиалы" value={fmt(partner.branches)} sub="активных" tint={{ bg: '#E0F2FE', fg: '#075985' }} />
-            <Kpi Icon={Users} label="Пользователи" value={fmt(partner.totalUsers ?? (partner.students + partner.parents + partner.staff))} sub={`${fmt(partner.students)} учеников`} tint={{ bg: '#EDE9FE', fg: '#5B21B6' }} />
-            <Kpi Icon={Clock} label="Дней на платформе" value={String(daysSince)} sub={`с ${dateShort(partner.createdAt)}`} tint={{ bg: '#FFEDD5', fg: '#9A3412' }} />
+            <Kpi Icon={Building2} label="Филиалы" value={fmt(partner.branches)} sub="активных" tint={{ bg: '#eef2ee', fg: '#1D2417' }} />
+            <Kpi Icon={Users} label="Пользователи" value={fmt(partner.totalUsers ?? (partner.students + partner.parents + partner.staff))} sub={`${fmt(partner.students)} учеников`} tint={{ bg: '#eef2ee', fg: '#1D2417' }} />
+            <Kpi Icon={Clock} label="Дней на платформе" value={String(daysSince)} sub={`с ${dateShort(partner.createdAt)}`} tint={{ bg: '#eef2ee', fg: '#1D2417' }} />
           </div>
 
           {/* Tabs */}
@@ -607,15 +612,15 @@ export default function OrgDetail() {
                     </div>
                   </div>
 
-                  {/* Quick stats grid */}
-                  <div className="grid grid-cols-3 gap-3">
+                  {/* Расчётные показатели — плоская строка с разделителями, не сетка мини-карточек */}
+                  <div className="flex items-stretch divide-x divide-base-200 border border-base-200 rounded-2xl">
                     {[
-                      { label: 'Ученик / филиал', value: partner.branches ? (partner.students / partner.branches).toFixed(1) : '—', note: 'среднее', color: 'text-blue-600' },
-                      { label: 'Счёт / ученик', value: partner.students ? fmt(Math.round(partner.monthlyBill / partner.students)) : '—', note: cur + '/мес', color: 'text-lime-600' },
-                      { label: 'Счёт / филиал', value: partner.branches ? fmt(Math.round(partner.monthlyBill / partner.branches)) : '—', note: cur + '/мес', color: 'text-purple-600' },
+                      { label: 'Ученик / филиал', value: partner.branches ? (partner.students / partner.branches).toFixed(1) : '—', note: 'среднее' },
+                      { label: 'Счёт / ученик', value: partner.students ? fmt(Math.round(partner.monthlyBill / partner.students)) : '—', note: cur + '/мес' },
+                      { label: 'Счёт / филиал', value: partner.branches ? fmt(Math.round(partner.monthlyBill / partner.branches)) : '—', note: cur + '/мес' },
                     ].map((item) => (
-                      <div key={item.label} className="bg-base-200/40 rounded-xl p-3 text-center">
-                        <div className={`text-xl font-extrabold ${item.color}`}>{item.value}</div>
+                      <div key={item.label} className="flex-1 text-center py-3.5 px-2">
+                        <div className="text-xl font-extrabold tabular-nums">{item.value}</div>
                         <div className="text-xs font-semibold text-base-content/60 mt-0.5">{item.label}</div>
                         <div className="text-[10px] text-base-content/35">{item.note}</div>
                       </div>

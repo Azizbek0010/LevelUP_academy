@@ -122,10 +122,10 @@ export default function Leads() {
       {showErr && <div className="alert alert-error text-sm"><span>{showErr}</span></div>}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard Icon={Sparkles} tint={{ bg: '#DBEAFE', fg: '#1E40AF' }} title="Новые" value={counts.new || 0} active={tab === 'new'} onClick={() => setTab('new')} />
-        <StatCard Icon={PhoneCall} tint={{ bg: '#FEF3C7', fg: '#92400E' }} title="Связались" value={counts.contacted || 0} active={tab === 'contacted'} onClick={() => setTab('contacted')} />
-        <StatCard Icon={CheckCircle2} tint={{ bg: '#DCFCE7', fg: '#166534' }} title="Онбординг" value={counts.onboarded || 0} active={tab === 'onboarded'} onClick={() => setTab('onboarded')} />
-        <StatCard Icon={XCircle} tint={{ bg: '#FEE2E2', fg: '#991B1B' }} title="Отклонены" value={counts.rejected || 0} active={tab === 'rejected'} onClick={() => setTab('rejected')} />
+        <StatCard Icon={Sparkles} tint={{ bg: '#eef2ee', fg: '#1D2417' }} title="Новые" value={counts.new || 0} active={tab === 'new'} onClick={() => setTab('new')} />
+        <StatCard Icon={PhoneCall} tint={{ bg: '#eef2ee', fg: '#1D2417' }} title="Связались" value={counts.contacted || 0} active={tab === 'contacted'} onClick={() => setTab('contacted')} />
+        <StatCard Icon={CheckCircle2} tint={{ bg: '#eef2ee', fg: '#1D2417' }} title="Онбординг" value={counts.onboarded || 0} active={tab === 'onboarded'} onClick={() => setTab('onboarded')} />
+        <StatCard Icon={XCircle} tint={{ bg: '#eef2ee', fg: '#1D2417' }} title="Отклонены" value={counts.rejected || 0} active={tab === 'rejected'} onClick={() => setTab('rejected')} />
       </div>
 
       {isLoading ? (
