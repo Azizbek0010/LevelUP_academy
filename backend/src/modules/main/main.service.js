@@ -246,10 +246,14 @@ export async function getPartnerFeatures(orgId) {
  */
 export async function setFeatureFlag(orgId, key, enabled, actorId) {
   const isFree = FREE_FEATURE_KEYS.has(key);
-  const addon = isFree ? null : await repo.findAddonPrice(key);
+  // Независимые запросы (разные таблицы, разные условия) — параллельно,
+  // а не одно за другим: на Neon один такой круговой рейс ~150-250мс,
+  // последовательно это удваивалось без всякой причины.
+  const [addon, current] = await Promise.all([
+    isFree ? null : repo.findAddonPrice(key),
+    repo.getOrgFeatureFlag(orgId, key),
+  ]);
   if (!isFree && !addon) throw new AppError(404, 'Feature not found in catalog');
-
-  const current = await repo.getOrgFeatureFlag(orgId, key);
 
   if (!enabled && addon && current?.enabled) {
     const credit = computeProrationCredit({ price: addon.price, enabledAt: current.enabled_at });
@@ -265,8 +269,13 @@ export async function setFeatureFlag(orgId, key, enabled, actorId) {
     }
   }
 
+  // invalidateOrgAccessCache здесь НЕ нужен: тот кэш (org:access:<orgId>)
+  // хранит только status/access_until (см. orgAccessGate.js) — флаги фич
+  // читаются отдельным прямым запросом к БД (auth.service.js:33,
+  // repo.findOrgFeatureFlag) и через этот кэш вообще не проходят. Вызов
+  // был лишним Redis round-trip'ом на каждый клик тумблера — при
+  // деградировавшем Upstash (11.08.2026) это и ощущалось как "долго думает".
   const flag = await repo.upsertOrgFeatureFlag(orgId, key, enabled, actorId);
-  await invalidateOrgAccessCache(orgId);
   return flag;
 }
 
