@@ -4,16 +4,230 @@ import {
   ArrowLeft, Building2, GraduationCap, Wallet, Calendar,
   Globe, GitBranch, Landmark, UserPlus, RefreshCw,
   TrendingUp, Shield, Clock, ChevronRight, Hash,
-  LayoutDashboard, CreditCard, Info,
+  LayoutDashboard, CreditCard, Info, KeyRound, Gift, Receipt,
 } from 'lucide-react';
-import { useDashboard, usePricing, useInvalidate } from '../queries.js';
+import { useDashboard, usePricing, useInvalidate, usePartnerFeatures, useOrgLedger } from '../queries.js';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
-import { fmt, dateShort, ORG_STATUS } from '../format.js';
+import { fmt, money, dateShort, ORG_STATUS } from '../format.js';
 import { tierForStudents, tierRange, tierPriceLabel } from '../lib/pricing.js';
 import Avatar from '../components/Avatar.jsx';
 import OnboardModal from '../components/OnboardModal.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
+
+const PAYMENT_METHODS = [
+  { value: 'cash', label: 'Наличные' },
+  { value: 'card', label: 'Карта' },
+  { value: 'transfer', label: 'Перевод' },
+  { value: 'other', label: 'Другое' },
+];
+
+const LEDGER_TYPE_LABEL = {
+  payment: { label: 'Оплата', cls: 'badge-success' },
+  bonus: { label: 'Бонус', cls: 'badge-info' },
+  addon_credit: { label: 'Кредит', cls: 'badge-warning' },
+};
+
+function currentPeriod() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Дни до грейс-дедлайна (5 число месяца после access_until) — та же логика,
+ * что backend/src/shared/orgAccess.js, только для отображения на фронте. */
+function accessStatus(accessUntil) {
+  if (!accessUntil) return { label: 'Не оплачено', tone: 'error', days: null };
+  const until = new Date(accessUntil);
+  const now = new Date();
+  if (now <= until) {
+    const days = Math.ceil((until - now) / 86_400_000);
+    return { label: `Оплачено до ${dateShort(accessUntil)}`, tone: 'success', days };
+  }
+  const graceDeadline = new Date(Date.UTC(until.getUTCFullYear(), until.getUTCMonth() + 1, 5, 23, 59, 59));
+  if (now <= graceDeadline) {
+    const days = Math.ceil((graceDeadline - now) / 86_400_000);
+    return { label: `Грейс-период — доступ отключится через ${days} дн.`, tone: 'warning', days };
+  }
+  return { label: 'Доступ заблокирован (не оплачено)', tone: 'error', days: 0 };
+}
+
+function AccessTab({ partner, token, invalidate }) {
+  const { data: ledger } = useOrgLedger(partner.id);
+  const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState('cash');
+  const [period, setPeriod] = useState(currentPeriod());
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const status = accessStatus(partner.accessUntil);
+
+  const submitPayment = async (e) => {
+    e.preventDefault();
+    if (!amount || Number(amount) <= 0) return;
+    setBusy(true);
+    setErr('');
+    try {
+      await api.recordPayment(token, partner.id, { amount: Number(amount), method, periodCovered: period });
+      setAmount('');
+      invalidate('dashboard', 'orgLedger');
+    } catch (e2) {
+      setErr(e2.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const grantBonus = async (months) => {
+    setBusy(true);
+    setErr('');
+    try {
+      await api.grantBonus(token, partner.id, months);
+      invalidate('dashboard', 'orgLedger');
+    } catch (e2) {
+      setErr(e2.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className={`alert ${status.tone === 'success' ? 'alert-success' : status.tone === 'warning' ? 'alert-warning' : 'alert-error'} text-sm`}>
+        <KeyRound size={16} />
+        <span className="font-semibold">{status.label}</span>
+      </div>
+
+      {err && <div className="alert alert-error text-sm"><span>{err}</span></div>}
+
+      <div className="grid md:grid-cols-2 gap-5">
+        <form onSubmit={submitPayment} className="p-4 border border-base-200 rounded-2xl space-y-3">
+          <h3 className="font-bold text-sm flex items-center gap-2"><Receipt size={15} className="text-lime-600" /> Записать оплату</h3>
+          <input
+            type="number" min="0" placeholder="Сумма, UZS" required
+            className="input input-bordered input-sm w-full"
+            value={amount} onChange={(e) => setAmount(e.target.value)}
+          />
+          <select className="select select-bordered select-sm w-full" value={method} onChange={(e) => setMethod(e.target.value)}>
+            {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+          <input
+            type="month" required
+            className="input input-bordered input-sm w-full"
+            value={period} onChange={(e) => setPeriod(e.target.value)}
+          />
+          <button type="submit" className="btn btn-sm bg-lime-400 hover:bg-lime-500 border-0 text-lime-950 w-full" disabled={busy}>
+            {busy ? <span className="loading loading-spinner loading-xs" /> : 'Записать'}
+          </button>
+        </form>
+
+        <div className="p-4 border border-base-200 rounded-2xl space-y-3">
+          <h3 className="font-bold text-sm flex items-center gap-2"><Gift size={15} className="text-lime-600" /> Бонус — бесплатный период</h3>
+          <p className="text-xs text-base-content/50">Продлевает доступ поверх текущего срока. Не считается выручкой.</p>
+          <div className="flex gap-2">
+            {[1, 2, 3].map((m) => (
+              <button key={m} type="button" className="btn btn-sm btn-outline flex-1" onClick={() => grantBonus(m)} disabled={busy}>
+                +{m} мес
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="font-bold text-sm mb-2">Журнал</h3>
+        {!ledger?.length ? (
+          <div className="text-sm text-base-content/40 py-4 text-center">Пока пусто</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table table-sm">
+              <thead>
+                <tr>
+                  <th>Тип</th><th>Сумма</th><th>Способ</th><th>Период</th><th>Примечание</th><th>Дата</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ledger.map((row) => {
+                  const t = LEDGER_TYPE_LABEL[row.type] || { label: row.type, cls: 'badge-ghost' };
+                  return (
+                    <tr key={row.id}>
+                      <td><span className={`badge badge-sm ${t.cls}`}>{t.label}</span></td>
+                      <td className="font-semibold tabular-nums">{row.amount ? money(row.amount) : '—'}</td>
+                      <td>{row.method ? PAYMENT_METHODS.find((m) => m.value === row.method)?.label ?? row.method : '—'}</td>
+                      <td>{row.period_covered || (row.months_granted ? `+${row.months_granted} мес` : '—')}</td>
+                      <td className="text-base-content/50 max-w-xs truncate">{row.note || '—'}</td>
+                      <td className="text-base-content/40 whitespace-nowrap">{dateShort(row.created_at)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FeatureToggles({ partner, token, invalidate }) {
+  const { data: features } = usePartnerFeatures(partner.id);
+  const [busyKey, setBusyKey] = useState(null);
+
+  // GET /main/partners/:id/features -> { paid: [{key,label,price,enabled}], free: [{key,enabled}] }
+  const paid = features?.paid ?? [];
+  const free = features?.free ?? [];
+
+  const toggle = async (key, current) => {
+    setBusyKey(key);
+    try {
+      await api.setPartnerFeature(token, partner.id, key, !current);
+      invalidate('dashboard', 'partnerFeatures');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="font-bold text-sm mb-2">Платные фичи</h3>
+        {!paid.length ? (
+          <div className="text-xs text-base-content/40">Каталог пуст — добавь фичу на странице «Фичи».</div>
+        ) : (
+          <div className="space-y-2">
+            {paid.map((f) => (
+              <div key={f.key} className="flex items-center justify-between p-3 border border-base-200 rounded-xl">
+                <div>
+                  <div className="font-semibold text-sm">{f.label}</div>
+                  <div className="text-xs text-base-content/45">{money(f.price)}/мес</div>
+                </div>
+                <input
+                  type="checkbox" className="toggle toggle-success"
+                  checked={f.enabled} disabled={busyKey === f.key}
+                  onChange={() => toggle(f.key, f.enabled)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div>
+        <h3 className="font-bold text-sm mb-2">Бесплатные кабинеты</h3>
+        <div className="space-y-2">
+          {free.map((f) => (
+            <div key={f.key} className="flex items-center justify-between p-3 border border-base-200 rounded-xl">
+              <div className="font-semibold text-sm">{f.key === 'student_panel' ? 'Кабинет ученика' : 'Кабинет родителя'}</div>
+              <input
+                type="checkbox" className="toggle toggle-success"
+                checked={f.enabled} disabled={busyKey === f.key}
+                onChange={() => toggle(f.key, f.enabled)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Kpi({ Icon, label, value, sub, tint, accent }) {
   return (
@@ -95,6 +309,7 @@ function BillingBreakdown({ partner, pricing, cur }) {
 const TABS = [
   { key: 'overview', label: 'Обзор', Icon: LayoutDashboard },
   { key: 'finance', label: 'Финансы', Icon: CreditCard },
+  { key: 'access', label: 'Доступ', Icon: KeyRound },
   { key: 'details', label: 'Детали', Icon: Info },
 ];
 
@@ -361,8 +576,15 @@ export default function OrgDetail() {
                       </div>
                     </div>
                   </div>
+
+                  <div className="border-t border-base-200 pt-4">
+                    <FeatureToggles partner={partner} token={token} invalidate={invalidate} />
+                  </div>
                 </div>
               )}
+
+              {/* Access Tab */}
+              {tab === 'access' && <AccessTab partner={partner} token={token} invalidate={invalidate} />}
 
               {/* Details Tab */}
               {tab === 'details' && (
@@ -374,7 +596,10 @@ export default function OrgDetail() {
                     ['Дата регистрации', dateShort(partner.createdAt)],
                     ['Дней на платформе', String(daysSince)],
                     ['Количество филиалов', fmt(partner.branches)],
-                    ['Количество учеников', fmt(partner.students)],
+                    ['Учеников', fmt(partner.students)],
+                    ['Родителей', fmt(partner.parents)],
+                    ['Сотрудников', fmt(partner.staff)],
+                    ['Всего пользователей', fmt(partner.students + partner.parents + partner.staff)],
                     ['Ежемесячный счёт', <span key="b" className="font-bold text-lime-700">{fmt(partner.monthlyBill)} {cur}</span>],
                     ['Доля в доходе', `${share}%`],
                     ['ID', <span key="id" className="font-mono text-xs text-base-content/50">{partner.id}</span>],

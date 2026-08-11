@@ -2619,6 +2619,18 @@ export const api = {
   superCreateAnnouncement: (token, body) => request('/super/announcements', { method: 'POST', token, body }),
   superDeleteAnnouncement: (token, id) => request(`/super/announcements/${id}`, { method: 'DELETE', token }),
 
+  // -------- SUPER ADMIN: анонсы от LevelUp Academy (Main Admin), read-only --------
+  superPlatformAnnouncements: (token) => request('/super/platform-announcements', { token }),
+
+  // -------- SUPER ADMIN: каталог платных фич + свои заявки на подключение/отключение --------
+  superFeatureCatalog: (token) => request('/super/features/catalog', { token }),
+  superFeatureRequests: (token) => request('/super/features/requests', { token }),
+  superCreateFeatureRequest: (token, body) => request('/super/features/requests', { method: 'POST', token, body }),
+
+  // -------- SUPER ADMIN: свой биллинг (read-only) --------
+  superBilling: (token) => request('/super/billing', { token }),
+  superBillingLedger: (token) => request('/super/billing/ledger', { token }),
+
   // -------- SUPER ADMIN: Reminders --------
   superReminders: (token) => request('/super/reminders', { token }),
   superDeleteReminder: (token, id) => request(`/super/reminders/${id}`, { method: 'DELETE', token }),

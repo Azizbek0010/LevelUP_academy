@@ -81,6 +81,8 @@ const superNav = [
       { to: '/announcements', label: 'Объявления' },
       { to: '/reminders',     label: 'Напоминания' },
       { to: '/audit',         label: 'Аудит' },
+      { to: '/features',      label: 'Фичи' },
+      { to: '/billing',       label: 'Оплата' },
       { to: '/methodics',     label: 'Методики' },
       { to: '/shop-catalog',  label: 'Магазин' },
       { to: '/settings',      label: 'Настройки' },

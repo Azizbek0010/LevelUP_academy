@@ -1417,4 +1417,8 @@ router.get('/features/catalog', ctrl.getFeatureCatalog);
 router.post('/features/requests', validate({ body: createFeatureRequestSchema }), ctrl.createFeatureRequest);
 router.get('/features/requests', ctrl.listOwnFeatureRequests);
 
+// --- свой биллинг (read-only): статус доступа + журнал оплат/бонусов/кредитов ---
+router.get('/billing', ctrl.getOwnBilling);
+router.get('/billing/ledger', ctrl.getOwnLedger);
+
 export default router;

@@ -106,7 +106,7 @@ export function setOrgOwner(orgId, userId, client = pool) {
 export function listPartners(client = pool) {
   return client
     .query(
-      `SELECT o.id, o.name, o.plan, o.domain, o.status, o.created_at,
+      `SELECT o.id, o.name, o.plan, o.domain, o.status, o.access_until, o.created_at,
               (SELECT count(*) FROM branches b
                  WHERE b.organization_id = o.id AND b.deleted_at IS NULL) AS branches,
               (SELECT count(*) FROM users u

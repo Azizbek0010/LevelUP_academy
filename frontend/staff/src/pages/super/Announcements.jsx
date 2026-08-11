@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, Trash2, ChevronDown, ChevronRight,
-  Megaphone, Users, Shield, GraduationCap, Clock,
+  Megaphone, Users, Shield, GraduationCap, Clock, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
@@ -71,6 +71,49 @@ function useAnnouncementsQuery() {
   return q;
 }
 
+// ---- От LevelUp Academy (read-only, от Main Admin) ----
+
+function usePlatformAnnouncements() {
+  const { token, logout } = useAuth();
+  const q = useQuery({
+    queryKey: ['super-platform-announcements'],
+    queryFn: () => api.superPlatformAnnouncements(token),
+    enabled: !!token,
+  });
+  useEffect(() => {
+    if (q.error?.status === 401) logout();
+  }, [q.error, logout]);
+  return q;
+}
+
+function PlatformAnnouncements() {
+  const { data, isLoading, error } = usePlatformAnnouncements();
+  const items = data?.items ?? data?.announcements ?? [];
+
+  if (isLoading || (error && error.status !== 401) || items.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-sm font-bold text-base-content/70">
+        <Sparkles size={15} className="text-warning" /> От LevelUp Academy
+      </div>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <Card key={item.id} className="p-4 border-warning/20 bg-warning/5">
+            <div className="flex items-center justify-between gap-3 mb-1">
+              <h3 className="font-bold text-sm">{item.title}</h3>
+              <span className="text-xs text-base-content/40 flex items-center gap-1 shrink-0">
+                <Clock size={11} /> {timeAgo(item.createdAt ?? item.created_at)}
+              </span>
+            </div>
+            <p className="text-sm text-base-content/60">{item.body}</p>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ---- Main Component ----
 
 export default function SuperAnnouncements() {
@@ -125,6 +168,8 @@ export default function SuperAnnouncements() {
           <Plus size={16} /> Новый анонс
         </button>
       </PageHeader>
+
+      <PlatformAnnouncements />
 
       {/* Content */}
       {isLoading ? (

@@ -5,6 +5,7 @@ import { logger } from '../../config/logger.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
 import { genTempPassword } from '../auth/credentials.js';
 import { withTransaction } from '../../config/db.js';
+import { isOrgAccessBlocked } from '../../shared/orgAccess.js';
 import * as repo from './super.repository.js';
 
 // ---------- филиалы ----------
@@ -960,7 +961,7 @@ export async function listPlatformAnnouncements(orgId) {
 // ---------- каталог платных фич + заявки (SEO не переключает сам) ----------
 
 export async function getFeatureCatalog(orgId) {
-  const [catalog, flags] = await Promise.all([repo.listActiveAddonCatalog(orgId), repo.getOwnFeatureFlags(orgId)]);
+  const [catalog, flags] = await Promise.all([repo.listActiveAddonCatalog(), repo.getOwnFeatureFlags(orgId)]);
   const enabledKeys = new Set(flags.filter((f) => f.enabled).map((f) => f.feature_key));
   return catalog.map((c) => ({ ...c, enabled: enabledKeys.has(c.feature_key) }));
 }
@@ -973,4 +974,21 @@ export async function createFeatureRequest(orgId, { featureKey, type, note }, re
 
 export async function listOwnFeatureRequests(orgId) {
   return repo.listOwnFeatureRequests(orgId);
+}
+
+// ---------- свой биллинг (read-only) ----------
+
+export async function getOwnBilling(orgId) {
+  const org = await repo.getOwnAccessInfo(orgId);
+  const { blocked, reason } = isOrgAccessBlocked(org);
+  return {
+    status: org?.status ?? null,
+    accessUntil: org?.access_until ?? null,
+    blocked,
+    reason,
+  };
+}
+
+export async function getOwnLedger(orgId) {
+  return repo.listOwnLedger(orgId);
 }

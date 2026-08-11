@@ -79,6 +79,7 @@ function decoratePartner(row) {
     plan: row.plan,
     domain: row.domain,
     status: row.status,
+    accessUntil: row.access_until,
     createdAt: row.created_at,
     branches,
     students,

@@ -424,3 +424,12 @@ export const createFeatureRequest = asyncHandler(async (req, res) => {
 export const listOwnFeatureRequests = asyncHandler(async (req, res) => {
   res.json({ requests: await service.listOwnFeatureRequests(orgId(req)) });
 });
+
+// --- свой биллинг (read-only): статус доступа + журнал оплат/бонусов/кредитов ---
+export const getOwnBilling = asyncHandler(async (req, res) => {
+  res.json(await service.getOwnBilling(orgId(req)));
+});
+
+export const getOwnLedger = asyncHandler(async (req, res) => {
+  res.json({ items: await service.getOwnLedger(orgId(req)) });
+});

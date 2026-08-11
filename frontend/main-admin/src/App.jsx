@@ -13,6 +13,7 @@ import Billing from './pages/Billing.jsx';
 import Revenue from './pages/Revenue.jsx';
 import Settings from './pages/Settings.jsx';
 import Announcements from './pages/Announcements.jsx';
+import Features from './pages/Features.jsx';
 
 function BootGate({ children }) {
   const { token, loading } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/billing" element={<Billing />} />
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/revenue" element={<Revenue />} />
+          <Route path="/features" element={<Features />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

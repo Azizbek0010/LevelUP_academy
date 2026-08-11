@@ -1102,6 +1102,27 @@ export function listOwnFeatureRequests(orgId, client = pool) {
     .then((r) => r.rows);
 }
 
+// ---------- свой биллинг (access_until/status + журнал) — read-only для SEO ----------
+
+export function getOwnAccessInfo(orgId, client = pool) {
+  return client
+    .query(`SELECT status, access_until FROM organizations WHERE id = $1`, [orgId])
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function listOwnLedger(orgId, client = pool) {
+  return client
+    .query(
+      `SELECT p.*, ap.label AS feature_label
+         FROM platform_org_payments p
+         LEFT JOIN platform_addon_prices ap ON ap.feature_key = p.feature_key
+        WHERE p.organization_id = $1
+        ORDER BY p.created_at DESC`,
+      [orgId],
+    )
+    .then((r) => r.rows);
+}
+
 export function listPlatformAnnouncementsForOrg(orgId, client = pool) {
   return client
     .query(

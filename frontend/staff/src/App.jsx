@@ -23,6 +23,8 @@ const SuperReminders = lazy(() => import('./pages/super/Reminders.jsx'));
 const SuperAudit = lazy(() => import('./pages/super/Audit.jsx'));
 const SuperDiscipline = lazy(() => import('./pages/super/Discipline.jsx'));
 const SuperAttendance = lazy(() => import('./pages/super/Attendance.jsx'));
+const SuperFeatures = lazy(() => import('./pages/super/Features.jsx'));
+const SuperBilling = lazy(() => import('./pages/super/Billing.jsx'));
 
 const BranchManagerDashboard = lazy(() => import('./pages/branch-manager/Dashboard.jsx'));
 const BranchManagerIncome = lazy(() => import('./pages/branch-manager/Income.jsx'));
@@ -169,6 +171,8 @@ export default function App() {
           <Route path="/admins/:role/:id" element={<SW><SuperStaffDetail /></SW>} />
           <Route path="/stats" element={<SW><SuperStats /></SW>} />
           <Route path="/announcements" element={<SW><SuperAnnouncements /></SW>} />
+          <Route path="/features" element={<SW><SuperFeatures /></SW>} />
+          <Route path="/billing" element={<SW><SuperBilling /></SW>} />
           <Route path="/reminders" element={<SW><SuperReminders /></SW>} />
           <Route path="/audit" element={<SW><SuperAudit /></SW>} />
           <Route path="/methodics" element={<SW><SuperTrainingTypes /></SW>} />
