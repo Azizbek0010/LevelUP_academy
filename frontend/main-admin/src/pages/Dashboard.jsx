@@ -26,7 +26,7 @@ const STATUS_ICON = { new: Sparkles, contacted: PhoneCall, onboarded: CheckCircl
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-base-100 border border-base-200 rounded-xl shadow-xl px-4 py-3 text-sm">
+    <div className="bg-base-100 border border-base-200 rounded-md shadow-xl px-4 py-3 text-sm">
       <div className="font-semibold mb-1 truncate max-w-[200px]">{payload[0]?.payload?.fullName || label}</div>
       <div className="text-primary font-bold">{fmt(payload[0]?.value)} UZS/мес</div>
     </div>
@@ -355,7 +355,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
                   <button
                     type="button"
                     key={p.id}
-                    className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-primary/10 transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-primary/10 transition-colors text-left"
                     onClick={() => setModal({ type: 'partner', p })}
                   >
                     <span className="w-6 text-center text-xs font-extrabold text-base-content/40 tabular-nums">{i + 1}</span>
@@ -421,18 +421,18 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         size="lg"
       >
         <div className="space-y-4">
-          <div className="rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-5 text-primary-content">
+          <div className="rounded-lg bg-gradient-to-br from-primary to-primary/80 p-5 text-primary-content">
             <div className="text-xs font-semibold uppercase tracking-wider opacity-70">Итого / мес</div>
             <div className="text-4xl font-black mt-1">{fmt(t.ourMonthlyIncome)} <span className="text-base font-bold">{cur}</span></div>
             <div className="text-xs mt-2 opacity-70">Сумма счетов {partners.length} активных партнёров</div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-base-200 p-4">
+            <div className="rounded-md border border-base-200 p-4">
               <div className="text-[11px] text-base-content/50 uppercase font-semibold">Средний счёт</div>
               <div className="text-2xl font-extrabold mt-1">{fmt(avgBill)} <span className="text-xs text-base-content/50">{cur}</span></div>
             </div>
-            <div className="rounded-xl border border-base-200 p-4">
+            <div className="rounded-md border border-base-200 p-4">
               <div className="text-[11px] text-base-content/50 uppercase font-semibold">Партнёров на биллинге</div>
               <div className="text-2xl font-extrabold mt-1">{fmt(partners.length)}</div>
             </div>
@@ -441,7 +441,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
           {/* Тарифы — бакеты по числу активных учеников. Здесь стояла старая
               формула (база + доп. филиал + за ученика): бэкенд этих полей не
               отдаёт, и все три строки печатали пустое значение. */}
-          <div className="rounded-xl bg-base-200/50 p-4 space-y-2">
+          <div className="rounded-md bg-base-200/50 p-4 space-y-2">
             <div className="text-xs font-semibold text-base-content/60 uppercase mb-1">Тарифы по числу учеников</div>
             {(pricing.tiers ?? []).map((t) => (
               <div key={t.id} className="flex justify-between text-sm">
@@ -480,7 +480,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
               <Link
                 to={`/organizations/${p.id}`}
                 key={p.id}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200/50 transition-colors"
+                className="flex items-center gap-3 p-2 rounded-md hover:bg-base-200/50 transition-colors"
                 onClick={() => setModal(null)}
               >
                 <Avatar name={p.name} size={30} />
@@ -503,7 +503,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         Icon={GraduationCap}
         size="lg"
       >
-        <div className="rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 p-5 text-white mb-4">
+        <div className="rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 p-5 text-white mb-4">
           <div className="text-xs font-semibold uppercase tracking-wider opacity-70">Всего учеников</div>
           <div className="text-4xl font-black mt-1">{fmt(t.students)}</div>
           <div className="text-xs mt-2 opacity-70">В среднем {partners.length ? Math.round(t.students / partners.length) : 0} на партнёра</div>
@@ -540,7 +540,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         Icon={Store}
         size="lg"
       >
-        <div className="rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 p-5 text-white mb-4">
+        <div className="rounded-lg bg-gradient-to-br from-orange-400 to-orange-500 p-5 text-white mb-4">
           <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Всего филиалов</div>
           <div className="text-4xl font-black mt-1">{fmt(t.branches)}</div>
           <div className="text-xs mt-2 opacity-80">
@@ -601,9 +601,9 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
 function StatusTile({ color, label, count, total, Icon }) {
   const pct = total ? Math.round((count / total) * 100) : 0;
   return (
-    <div className="rounded-2xl border border-base-200 p-4">
+    <div className="rounded-lg border border-base-200 p-4">
       <div className="flex items-center gap-2 mb-2">
-        <span className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: `${color}33`, color: '#365314' }}>
+        <span className="w-8 h-8 rounded-md grid place-items-center" style={{ background: `${color}33`, color: '#365314' }}>
           <Icon size={15} />
         </span>
         <span className="text-xs font-semibold uppercase tracking-wider text-base-content/50">{label}</span>
@@ -623,7 +623,7 @@ function PillMetric({ Icon, title, value, sub, tone }) {
   return (
     <div className="card bg-base-100 shadow-sm border border-base-200/60">
       <div className="card-body p-4 flex flex-row items-center gap-3">
-        <span className={`w-11 h-11 rounded-xl grid place-items-center shrink-0 ${tones[tone] || tones.lime}`}>
+        <span className={`w-11 h-11 rounded-md grid place-items-center shrink-0 ${tones[tone] || tones.lime}`}>
           <Icon size={20} strokeWidth={2.2} />
         </span>
         <div className="min-w-0">
@@ -690,7 +690,7 @@ function PartnerModal({ p, totalIncome, cur, onClose, onToggle, busy }) {
 
 function MiniStat({ Icon, label, value, accent }) {
   return (
-    <div className={`rounded-xl p-3 border ${accent ? 'bg-gradient-to-br from-primary to-primary/80 border-primary text-primary-content' : 'border-base-200 bg-base-100'}`}>
+    <div className={`rounded-md p-3 border ${accent ? 'bg-gradient-to-br from-primary to-primary/80 border-primary text-primary-content' : 'border-base-200 bg-base-100'}`}>
       <div className="flex items-center gap-1.5 mb-1">
         <Icon size={12} className={accent ? 'text-primary-content/70' : 'text-base-content/40'} />
         <span className={`text-[10px] font-semibold uppercase tracking-wider ${accent ? 'text-primary-content/70' : 'text-base-content/50'}`}>{label}</span>

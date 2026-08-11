@@ -1,7 +1,7 @@
 import argon2 from 'argon2';
 import { withTransaction } from '../../config/db.js';
 import { AppError } from '../../utils/AppError.js';
-import { computeBill, tierForStudents, TIERS } from '../../config/plans.js';
+import { computeBill, tierForUsers, TIERS } from '../../config/plans.js';
 import { genTempPassword } from '../auth/credentials.js';
 import { computeProrationCredit } from '../../shared/proration.js';
 import { invalidateOrgAccessCache } from '../../middlewares/orgAccessGate.js';
@@ -65,14 +65,19 @@ export async function onboardPartner({ organizationName, domain, admin, leadId }
  * Что владелец платформы знает о партнёре.
  *
  * Граница простая: нам видно то, из чего считается НАШ счёт, и не видно то,
- * как партнёр зарабатывает. Число учеников — основание тарифа, поэтому оно
- * здесь. Оборот, расходы и прибыль партнёра убраны: это деньги чужого бизнеса,
- * и платформе они не нужны ни для биллинга, ни для поддержки.
+ * как партнёр зарабатывает. Общее число пользователей (ученики+родители+
+ * сотрудники) — основание тарифа (пересчитано с "только учеников" на "все
+ * пользователи" 11.08.2026, по просьбе Karis), поэтому оно здесь. Оборот,
+ * расходы и прибыль партнёра убраны: это деньги чужого бизнеса, и платформе
+ * они не нужны ни для биллинга, ни для поддержки.
  */
 function decoratePartner(row) {
   const students = Number(row.students);
+  const parents = Number(row.parents);
+  const staff = Number(row.staff);
+  const totalUsers = students + parents + staff;
   const branches = Number(row.branches);
-  const tier = tierForStudents(students);
+  const tier = tierForUsers(totalUsers);
   return {
     id: row.id,
     name: row.name,
@@ -83,10 +88,11 @@ function decoratePartner(row) {
     createdAt: row.created_at,
     branches,
     students,
-    parents: Number(row.parents),
-    staff: Number(row.staff),
-    tier: tier.label, // тариф по числу учеников (Free/Start/…)
-    monthlyBill: computeBill({ students }), // сколько партнёр платит нам (сумы), филиалы не влияют
+    parents,
+    staff,
+    totalUsers,
+    tier: tier.label, // тариф по общему числу пользователей (Free/Start/…)
+    monthlyBill: computeBill({ users: totalUsers }), // сколько партнёр платит нам (сумы), филиалы не влияют
   };
 }
 
@@ -116,6 +122,7 @@ export async function platformDashboard() {
       acc.students += p.students;
       acc.parents += p.parents;
       acc.staff += p.staff;
+      acc.totalUsers += p.totalUsers;
       acc.branches += p.branches;
       acc.ourMonthlyIncome += p.monthlyBill;
       return acc;
@@ -125,6 +132,7 @@ export async function platformDashboard() {
       students: 0,
       parents: 0,
       staff: 0,
+      totalUsers: 0,
       branches: 0,
       ourMonthlyIncome: 0,
     },
@@ -238,10 +246,14 @@ export async function getPartnerFeatures(orgId) {
  */
 export async function setFeatureFlag(orgId, key, enabled, actorId) {
   const isFree = FREE_FEATURE_KEYS.has(key);
-  const addon = isFree ? null : await repo.findAddonPrice(key);
+  // Независимые запросы (разные таблицы, разные условия) — параллельно,
+  // а не одно за другим: на Neon один такой круговой рейс ~150-250мс,
+  // последовательно это удваивалось без всякой причины.
+  const [addon, current] = await Promise.all([
+    isFree ? null : repo.findAddonPrice(key),
+    repo.getOrgFeatureFlag(orgId, key),
+  ]);
   if (!isFree && !addon) throw new AppError(404, 'Feature not found in catalog');
-
-  const current = await repo.getOrgFeatureFlag(orgId, key);
 
   if (!enabled && addon && current?.enabled) {
     const credit = computeProrationCredit({ price: addon.price, enabledAt: current.enabled_at });
@@ -257,8 +269,13 @@ export async function setFeatureFlag(orgId, key, enabled, actorId) {
     }
   }
 
+  // invalidateOrgAccessCache здесь НЕ нужен: тот кэш (org:access:<orgId>)
+  // хранит только status/access_until (см. orgAccessGate.js) — флаги фич
+  // читаются отдельным прямым запросом к БД (auth.service.js:33,
+  // repo.findOrgFeatureFlag) и через этот кэш вообще не проходят. Вызов
+  // был лишним Redis round-trip'ом на каждый клик тумблера — при
+  // деградировавшем Upstash (11.08.2026) это и ощущалось как "долго думает".
   const flag = await repo.upsertOrgFeatureFlag(orgId, key, enabled, actorId);
-  await invalidateOrgAccessCache(orgId);
   return flag;
 }
 

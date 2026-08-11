@@ -32,7 +32,7 @@ function Kpi({ Icon, tint, title, value, unit, accent }) {
       <div className="card-body p-5">
         <div className="flex items-center gap-3">
           <span
-            className="w-10 h-10 rounded-xl grid place-items-center shrink-0"
+            className="w-10 h-10 rounded-md grid place-items-center shrink-0"
             style={accent ? { background: 'rgba(0,0,0,0.12)', color: '#1a2e05' } : { background: tint.bg, color: tint.fg }}
           >
             <Icon size={20} strokeWidth={2.2} />
@@ -51,7 +51,7 @@ function Kpi({ Icon, tint, title, value, unit, accent }) {
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-base-100 border border-base-200 rounded-xl shadow-lg px-4 py-3 text-sm">
+    <div className="bg-base-100 border border-base-200 rounded-md shadow-lg px-4 py-3 text-sm">
       <div className="font-semibold mb-1 max-w-[160px] truncate">{label}</div>
       <div className="text-lime-600 font-bold">{fmt(payload[0]?.value)} UZS</div>
     </div>
@@ -79,12 +79,12 @@ function BarDetailModal({ bar, partner, total, cur, onClose }) {
           </button>
         </div>
         <div className="px-6 py-5 space-y-3">
-          <div className="rounded-xl bg-gradient-to-br from-lime-400 to-lime-500 p-4 text-lime-950">
+          <div className="rounded-md bg-gradient-to-br from-lime-400 to-lime-500 p-4 text-lime-950">
             <div className="text-[11px] font-semibold uppercase tracking-wider opacity-70">Счёт / мес</div>
             <div className="text-3xl font-black mt-1">{fmt(bar.value)} <span className="text-sm font-bold">{cur}</span></div>
             <div className="text-xs mt-1 opacity-70">Доля в общем доходе: {share}%</div>
           </div>
-          <div className="rounded-xl border border-base-200 p-3">
+          <div className="rounded-md border border-base-200 p-3">
             <div className="flex justify-between text-sm mb-1">
               <span className="text-base-content/60">Доля</span>
               <span className="font-bold tabular-nums">{share}%</span>
@@ -95,11 +95,11 @@ function BarDetailModal({ bar, partner, total, cur, onClose }) {
           </div>
           {partner && (
             <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-lg bg-base-200/40 p-2 text-center">
+              <div className="rounded-md bg-base-200/40 p-2 text-center">
                 <div className="text-xs text-base-content/50">Филиалы</div>
                 <div className="font-extrabold tabular-nums">{fmt(partner.branches)}</div>
               </div>
-              <div className="rounded-lg bg-base-200/40 p-2 text-center">
+              <div className="rounded-md bg-base-200/40 p-2 text-center">
                 <div className="text-xs text-base-content/50">Ученики</div>
                 <div className="font-extrabold tabular-nums">{fmt(partner.students)}</div>
               </div>
@@ -132,7 +132,7 @@ function PartnerRow({ p, cur, tone }) {
     : null;
   const s = ORG_STATUS[p.status] || { label: p.status, cls: 'badge-ghost' };
   return (
-    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-base-200/40">
+    <div className="flex items-center gap-3 p-2.5 rounded-md bg-base-200/40">
       <Avatar name={p.name} size={32} />
       <div className="min-w-0 flex-1">
         <div className="text-sm font-semibold truncate">{p.name}</div>
@@ -323,7 +323,7 @@ export default function Revenue() {
                       { label: 'Триал', count: stats.trial.length, rev: stats.trialRev, color: 'text-warning', bg: 'bg-warning/10' },
                       { label: 'Заморожены', count: stats.frozen.length, rev: stats.frozenRev, color: 'text-error', bg: 'bg-error/10' },
                     ].map((item) => (
-                      <div key={item.label} className={`rounded-lg p-3 ${item.bg}`}>
+                      <div key={item.label} className={`rounded-md p-3 ${item.bg}`}>
                         <div className="flex items-center justify-between mb-0.5">
                           <span className={`text-sm font-semibold ${item.color}`}>{item.label}</span>
                           <span className="text-sm font-bold">{item.count}</span>
@@ -347,9 +347,9 @@ export default function Revenue() {
                   <span className="text-xs text-base-content/40">с кем лучше / хуже работать</span>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50/40 p-4">
+                  <div className="rounded-lg border-2 border-emerald-200 bg-emerald-50/40 p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 grid place-items-center">
+                      <span className="w-8 h-8 rounded-md bg-emerald-100 text-emerald-700 grid place-items-center">
                         <ThumbsUp size={16} />
                       </span>
                       <div>
@@ -365,15 +365,15 @@ export default function Revenue() {
                         <div className="text-xs text-base-content/40 text-center py-4">Нет данных</div>
                       )}
                     </div>
-                    <div className="mt-3 rounded-lg bg-emerald-100/60 p-2.5 text-xs text-emerald-800 flex items-start gap-2">
+                    <div className="mt-3 rounded-md bg-emerald-100/60 p-2.5 text-xs text-emerald-800 flex items-start gap-2">
                       <TrendingUp size={13} className="shrink-0 mt-0.5" />
                       <span>Рекомендуем усилить сотрудничество: расширить пакет, предложить дополнительные модули</span>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border-2 border-rose-200 bg-rose-50/40 p-4">
+                  <div className="rounded-lg border-2 border-rose-200 bg-rose-50/40 p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 grid place-items-center">
+                      <span className="w-8 h-8 rounded-md bg-rose-100 text-rose-700 grid place-items-center">
                         <TrendingDown size={16} />
                       </span>
                       <div>
@@ -389,7 +389,7 @@ export default function Revenue() {
                         <div className="text-xs text-base-content/40 text-center py-4">Нет данных</div>
                       )}
                     </div>
-                    <div className="mt-3 rounded-lg bg-rose-100/60 p-2.5 text-xs text-rose-800 flex items-start gap-2">
+                    <div className="mt-3 rounded-md bg-rose-100/60 p-2.5 text-xs text-rose-800 flex items-start gap-2">
                       <AlertTriangle size={13} className="shrink-0 mt-0.5" />
                       <span>Рассмотреть пересмотр условий: провести звонок, выяснить блокеры, предложить план развития</span>
                     </div>

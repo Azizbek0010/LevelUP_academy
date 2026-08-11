@@ -7,8 +7,15 @@ export default {
         sans: ['Manrope', 'system-ui', 'sans-serif'],
       },
       colors: {
-        sidebar: '#16210f', // тёмный графит-зелёный сайдбар (как в макете)
-        limebrand: '#C6FF34',
+        // Палитра бренда — источник правды: frontend/logos/README.md.
+        // Раньше sidebar/limebrand были случайными хексами, набранными на глаз
+        // ("тёмный графит-зелёный, как в макете") — теперь это ровно те же
+        // токены, что в фирменных логотипах, а не ещё один похожий оттенок.
+        sidebar: '#1D2417', // Ink
+        limebrand: '#C6FF34', // Lime
+        ink: '#1D2417',
+        paper: '#F6FBEA',
+        muted: '#5E6E52',
       },
     },
   },
@@ -18,12 +25,12 @@ export default {
       {
         levelup: {
           primary: '#C6FF34',
-          'primary-content': '#16210f',
-          secondary: '#16210f',
+          'primary-content': '#1D2417',
+          secondary: '#1D2417',
           'secondary-content': '#ffffff',
           accent: '#a3e635',
-          'accent-content': '#16210f',
-          neutral: '#16210f',
+          'accent-content': '#1D2417',
+          neutral: '#1D2417',
           'neutral-content': '#e8f0df',
           'base-100': '#ffffff',
           'base-200': '#f5f8f1',
@@ -33,8 +40,12 @@ export default {
           success: '#22c55e',
           warning: '#f59e0b',
           error: '#ef4444',
-          '--rounded-box': '1rem',
-          '--rounded-btn': '0.6rem',
+          // Скругления уменьшены намеренно (11.08.2026, по прямой просьбе):
+          // 1rem/0.6rem читались слишком "мягко/потребительски" для
+          // финансовой admin-панели — острее углы = серьёзнее продукт.
+          '--rounded-box': '0.5rem',
+          '--rounded-btn': '0.375rem',
+          '--rounded-badge': '0.25rem',
         },
       },
     ],

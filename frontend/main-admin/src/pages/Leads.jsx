@@ -39,7 +39,7 @@ function StatCard({ Icon, tint, title, value, active, onClick }) {
     >
       <div className="card-body p-4">
         <div className="flex items-center gap-3">
-          <span className="w-11 h-11 rounded-xl grid place-items-center shrink-0" style={{ background: tint.bg, color: tint.fg }}>
+          <span className="w-11 h-11 rounded-md grid place-items-center shrink-0" style={{ background: tint.bg, color: tint.fg }}>
             <Icon size={19} strokeWidth={2.3} />
           </span>
           <div>
@@ -122,10 +122,10 @@ export default function Leads() {
       {showErr && <div className="alert alert-error text-sm"><span>{showErr}</span></div>}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard Icon={Sparkles} tint={{ bg: '#DBEAFE', fg: '#1E40AF' }} title="Новые" value={counts.new || 0} active={tab === 'new'} onClick={() => setTab('new')} />
-        <StatCard Icon={PhoneCall} tint={{ bg: '#FEF3C7', fg: '#92400E' }} title="Связались" value={counts.contacted || 0} active={tab === 'contacted'} onClick={() => setTab('contacted')} />
-        <StatCard Icon={CheckCircle2} tint={{ bg: '#DCFCE7', fg: '#166534' }} title="Онбординг" value={counts.onboarded || 0} active={tab === 'onboarded'} onClick={() => setTab('onboarded')} />
-        <StatCard Icon={XCircle} tint={{ bg: '#FEE2E2', fg: '#991B1B' }} title="Отклонены" value={counts.rejected || 0} active={tab === 'rejected'} onClick={() => setTab('rejected')} />
+        <StatCard Icon={Sparkles} tint={{ bg: '#eef2ee', fg: '#1D2417' }} title="Новые" value={counts.new || 0} active={tab === 'new'} onClick={() => setTab('new')} />
+        <StatCard Icon={PhoneCall} tint={{ bg: '#eef2ee', fg: '#1D2417' }} title="Связались" value={counts.contacted || 0} active={tab === 'contacted'} onClick={() => setTab('contacted')} />
+        <StatCard Icon={CheckCircle2} tint={{ bg: '#eef2ee', fg: '#1D2417' }} title="Онбординг" value={counts.onboarded || 0} active={tab === 'onboarded'} onClick={() => setTab('onboarded')} />
+        <StatCard Icon={XCircle} tint={{ bg: '#eef2ee', fg: '#1D2417' }} title="Отклонены" value={counts.rejected || 0} active={tab === 'rejected'} onClick={() => setTab('rejected')} />
       </div>
 
       {isLoading ? (
@@ -313,7 +313,7 @@ function LeadDetail({ lead, onClose, onChangeStatus, onOnboard, busy }) {
             </div>
           )}
           {isRejected && (
-            <div className="rounded-xl bg-rose-50 border border-rose-200 p-3 text-sm text-rose-800 flex items-center gap-2">
+            <div className="rounded-md bg-rose-50 border border-rose-200 p-3 text-sm text-rose-800 flex items-center gap-2">
               <XCircle size={16} /> Заявка отклонена — можно восстановить.
             </div>
           )}
@@ -322,19 +322,19 @@ function LeadDetail({ lead, onClose, onChangeStatus, onOnboard, busy }) {
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-2">Контакты</div>
             <div className="space-y-2">
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-base-200">
+              <div className="flex items-center gap-3 p-3 rounded-md border border-base-200">
                 <User size={16} className="text-base-content/40 shrink-0" />
                 <span className="text-sm font-medium">{lead.name || '—'}</span>
               </div>
               {lead.phone && (
-                <a href={`tel:${lead.phone}`} className="flex items-center gap-3 p-3 rounded-xl border border-base-200 hover:border-lime-400 hover:bg-lime-50/40 transition-colors">
+                <a href={`tel:${lead.phone}`} className="flex items-center gap-3 p-3 rounded-md border border-base-200 hover:border-lime-400 hover:bg-lime-50/40 transition-colors">
                   <Phone size={16} className="text-base-content/40 shrink-0" />
                   <span className="text-sm font-medium">{lead.phone}</span>
                   <span className="ml-auto text-xs text-lime-600 font-semibold">Позвонить</span>
                 </a>
               )}
               {lead.email && (
-                <a href={`mailto:${lead.email}`} className="flex items-center gap-3 p-3 rounded-xl border border-base-200 hover:border-lime-400 hover:bg-lime-50/40 transition-colors">
+                <a href={`mailto:${lead.email}`} className="flex items-center gap-3 p-3 rounded-md border border-base-200 hover:border-lime-400 hover:bg-lime-50/40 transition-colors">
                   <Mail size={16} className="text-base-content/40 shrink-0" />
                   <span className="text-sm font-medium truncate">{lead.email}</span>
                   <span className="ml-auto text-xs text-lime-600 font-semibold">Написать</span>
@@ -349,7 +349,7 @@ function LeadDetail({ lead, onClose, onChangeStatus, onOnboard, busy }) {
               <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-2 flex items-center gap-1.5">
                 <MessageSquare size={12} /> Сообщение
               </div>
-              <div className="rounded-xl bg-base-200/60 p-3 text-sm whitespace-pre-wrap leading-relaxed">
+              <div className="rounded-md bg-base-200/60 p-3 text-sm whitespace-pre-wrap leading-relaxed">
                 {lead.message}
               </div>
             </div>

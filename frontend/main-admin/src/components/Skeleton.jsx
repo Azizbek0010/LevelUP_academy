@@ -6,7 +6,7 @@ export function SkeletonKpis({ count = 4 }) {
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="card bg-base-100"><div className="card-body p-5 gap-3">
           <div className="flex items-center gap-3">
-            <div className="skeleton w-10 h-10 rounded-xl" />
+            <div className="skeleton w-10 h-10 rounded-md" />
             <div className="skeleton h-3 w-20" />
           </div>
           <div className="skeleton h-8 w-24 mt-1" />

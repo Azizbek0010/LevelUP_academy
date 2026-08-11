@@ -1,27 +1,28 @@
 /**
- * Тарифная модель платформы (с 2026-07-16).
+ * Тарифная модель платформы (с 2026-07-16, пересчёт на "все пользователи" 11.08.2026).
  *
- * Цена = фиксированная сумма за бакет активных учеников; филиалы включены
- * безлимитом. Старая формула (база за первый филиал + доплата за каждый
- * следующий + цена за ученика) ОТМЕНЕНА, и бэкенд соответствующих полей
- * больше не отдаёт: `GET /api/main/pricing` возвращает `{ tiers, currency }`.
+ * Цена = фиксированная сумма за бакет общего числа пользователей организации
+ * (ученики + родители + сотрудники); филиалы включены безлимитом. Раньше
+ * бакет считался только по ученикам — Karis попросил считать по всем
+ * пользователям (SEO с 31 учеником, но 50 пользователями всего, должен
+ * тарифицироваться по 50, не по 31).
  *
  * Модуль появился потому, что правило выбора бакета уже было продублировано
  * в Billing.jsx, а Dashboard, OrgDetail и Settings всё ещё читали
  * `pricing.baseFirstBranch` / `pricing.perStudent` и рисовали пустые значения.
  * Пусть правило живёт в одном месте.
  *
- * Зеркало `tierForStudents()` из `backend/src/config/plans.js`. Дублирование
+ * Зеркало `tierForUsers()` из `backend/src/config/plans.js`. Дублирование
  * намеренное: калькулятор должен считать мгновенно, без запроса. Сами тарифы
  * при этом приходят с сервера — здесь только правило выбора.
  */
 import { fmt } from '../format.js';
 
-export function tierForStudents(tiers, students) {
+export function tierForUsers(tiers, users) {
   const list = Array.isArray(tiers) ? tiers : [];
-  const s = Math.max(0, Number(students) || 0);
+  const u = Math.max(0, Number(users) || 0);
   return (
-    list.find((t) => s >= t.minStudents && (t.maxStudents == null || s <= t.maxStudents)) ??
+    list.find((t) => u >= t.minUsers && (t.maxUsers == null || u <= t.maxUsers)) ??
     list[list.length - 1] ??
     null
   );
@@ -29,8 +30,8 @@ export function tierForStudents(tiers, students) {
 
 export function tierRange(t) {
   if (!t) return '—';
-  if (t.maxStudents == null) return `${fmt(t.minStudents)}+`;
-  return `${fmt(t.minStudents)}–${fmt(t.maxStudents)}`;
+  if (t.maxUsers == null) return `${fmt(t.minUsers)}+`;
+  return `${fmt(t.minUsers)}–${fmt(t.maxUsers)}`;
 }
 
 /** `price: null` — договорная цена (верхний бакет), `0` — бесплатно. */
