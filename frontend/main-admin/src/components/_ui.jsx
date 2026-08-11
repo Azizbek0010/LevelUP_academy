@@ -63,10 +63,12 @@ export function Kpi({ Icon, title, value, unit, tone = 'neutral', trend, trendLa
   );
 
   const card = 'card bg-base-100 border border-base-200/60 shadow-sm';
-  if (to) return <Link to={to} className={`${card} hover:border-primary/40 transition-colors block`}>{body}</Link>;
+  const interactive =
+    'hover:border-primary/40 hover:shadow-md transition-[border-color,box-shadow,transform] duration-150 active:scale-[0.98]';
+  if (to) return <Link to={to} className={`${card} ${interactive} block`}>{body}</Link>;
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} className={`${card} hover:border-primary/40 transition-colors`}>
+      <button type="button" onClick={onClick} className={`${card} ${interactive}`}>
         {body}
       </button>
     );

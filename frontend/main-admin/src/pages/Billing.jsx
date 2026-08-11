@@ -24,7 +24,7 @@ import { SkeletonKpis, SkeletonTable } from '../components/Skeleton.jsx';
 
 function Kpi({ Icon, tint, title, value, unit, accent }) {
   return (
-    <div className={`card shadow-sm border ${accent ? 'bg-gradient-to-br from-lime-400 to-lime-500 border-lime-400' : 'bg-base-100 border-base-200/60'}`}>
+    <div className={`card shadow-sm border transition-shadow hover:shadow-md ${accent ? 'bg-gradient-to-br from-lime-400 to-lime-500 border-lime-400' : 'bg-base-100 border-base-200/60'}`}>
       <div className="card-body p-5">
         <div className="flex items-center gap-3">
           <span
