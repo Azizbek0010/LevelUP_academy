@@ -71,6 +71,7 @@ function publicUser(u) {
     branchId: u.branch_id ?? null,
     firstName: u.first_name,
     lastName: u.last_name,
+    preferredLanguage: u.preferred_language ?? null,
   };
 }
 

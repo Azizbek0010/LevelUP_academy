@@ -29,6 +29,57 @@ tekshirildi — `HTTP 200`. ⚠️ Bu Redis'ni "tuzatmaydi" — faqat Redis
 o'chganda API'ning butunlay yiqilib tushishini to'xtatadi (leaderboard/OTP/
 navbatlar baribir ishlamaydi, kvota tugagunicha yoki ko'tarilgunicha).
 
+## Backend — Student paneli: XOB so'rovi (Telegram, 12.08.2026) ✅ kod tayyor, migratsiya KUTMOQDA
+
+> Manba: XOB → Karis, Telegram shaxsiy chat, 2026-08-12T10:50. Kodlandi 13.08.2026
+> (Karis so'rovi bilan, shu sessiyada). **4 tasi ham backendda yozildi**, lekin
+> to'liq jonli tekshiruv 2 ta sababdan BLOKLANGAN — kod emas, muhit:
+> (1) yangi migratsiya `1786574763938_add-student-preferred-language.js`
+> `.env`dagi `DATABASE_URL` to'g'ridan-to'g'ri Neon (prod)ga qarayotgani uchun
+> ATAYLAB ishga tushirilmadi (CLAUDE.md qoidasi: migratsiya faqat localhost'da,
+> yoki Karis ruxsati bilan qo'lda) — shu ustun yo'qligi sababli `npm test`da
+> auth-suite'ning bir qismi `column "preferred_language" does not exist` beradi;
+> (2) yuqoridagi 🔴 Upstash kvota muammosi hali yechilmagan — leaderboard/shop/
+> payments suite'lari "Command timed out"/"max requests limit" bilan yiqiladi,
+> bularning hech biri shu ishga aloqador emas (mentor/homework/tests/videos —
+> Redisga tegmaydigan hamma narsa — yashil). **Karis: migratsiyani ishga
+> tushirish kerak** (`npm run migrate`, Neon'ga) — shundan keyin bu blok ham
+> yopiladi.
+
+- [x] XOB-1 LEADERBOARD-GROUP: `GET /api/student/leaderboard?groupId=...`
+      — Redisga qo'shimcha yuk bermaslik uchun (Upstash kvotasi tugagan holda)
+      ZSET orqali emas, `coin_history`dan to'g'ridan-to'g'ri SQL bilan
+      hisoblanadi (guruh a'zolari + shu davrdagi ijobiy coin'lar yig'indisi).
+      403, agar talaba shu guruhga a'zo bo'lmasa. Javob formati filial-
+      leaderboard bilan bir xil (`{period, top, me}` — XOB `items` deb yozgan
+      edi, lekin bordagi field nomi haqiqatda `top`, shunga moslandi).
+      Fayllar: `leaderboard.schemas.js`, `leaderboard.controller.js`,
+      `leaderboard/leaderboard.service.js` (`getGroupLeaderboard`).
+- [x] XOB-2 VISIT-STREAK: `GET /api/student/home` ga `streak`/`longestStreak`
+      — `attendance`dan hisoblanadi (kun = "borilgan", agar o'sha kunning
+      BARCHA yozuvlari 'present' bo'lsa — bir necha guruhli talabalar uchun).
+      `home.repository.js` (`getAttendanceHistory`), `home.service.js`
+      (`computeAttendanceStreaks`).
+- [x] XOB-3 LESSON-REVIEW: `GET /api/student/lessons/:id` submission ichiga
+      `review` + `reviewStatus` — ma'lumot DB'da allaqachon bor edi, faqat
+      qaytarilmagan edi. `lessons.service.js` (`getLessonDetail`).
+- [x] XOB-4 STUDENT-LANGUAGE: `users.preferred_language` ('ru'|'uz', NULL =
+      hali tanlanmagan) — yangi migratsiya. `GET /student/home` va barcha
+      login javoblarida (`publicUser`, `auth.service.js`) qaytariladi;
+      talaba o'zi yozishi uchun **yangi endpoint** `PATCH /student/home/language`
+      qo'shildi (XOB spekada yo'q edi, lekin maydon hech qachon to'lmasligi
+      uchun kerak edi). Ishlatildi: `ai-review/service.js` (DEFAULT_LANG
+      o'rniga `submission.student_language`), `notifyTestResult`
+      (`lessons.service.js` — sarlavha ru/uz, hali tanlamagan uchun eski
+      xulq-atvor — uz — saqlanadi), Telegram-bot `/home /coins /rating`
+      buyruqlari (`bot.handlers.js` — `dataCommand` ichida `messages()`
+      endi global emas, foydalanuvchi tilida). ⚠️ `/start /help /bindbranch
+      /stop` — hali aniqlanmagan foydalanuvchi, global til qoladi (boshqacha
+      imkoni yo'q). `coinsCommand`/`ratingCommand`/`homeCommand`
+      (`bot.commands.js`) matni — alohida, `messages()`ga bog'liq emas, hali
+      100% qattiq uzbekcha qoladi — buni tarjima qilish XOB so'ragan doiradan
+      tashqarida (katta, alohida ish).
+
 ## Backend — Main Admin: tarif/fича-flag/to'lov/xarajat/anons (Karis, 11.08.2026)
 
 > Katta blok — to'liq reja `C:\Users\user\.claude\plans\playful-moseying-conway.md`.

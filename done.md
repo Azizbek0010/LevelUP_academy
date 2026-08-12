@@ -1,13 +1,19 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 11.08.2026 05:49 (UTC+5, Toshkent vaqti)
-> Statistika: 200/228 task tugallangan (87%)
+> Oxirgi yangilanish: 13.08.2026 03:57 (UTC+5, Toshkent vaqti)
+> Statistika: 204/232 task tugallangan (87%)
 
 ---
 
 ## Progress: [#################...] 87%
 
 ## Tugallangan vazifalar
+
+### Backend — Student paneli: XOB so'rovi (Telegram, 12.08.2026) ✅ kod tayyor, migratsiya KUTMOQDA
+- [x] XOB-1 LEADERBOARD-GROUP: `GET /api/student/leaderboard?groupId=...`
+- [x] XOB-2 VISIT-STREAK: `GET /api/student/home` ga `streak`/`longestStreak`
+- [x] XOB-3 LESSON-REVIEW: `GET /api/student/lessons/:id` submission ichiga
+- [x] XOB-4 STUDENT-LANGUAGE: `users.preferred_language` ('ru'|'uz', NULL =
 
 ### Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Karis, 09.08.2026) ✅
 - [x] AI-REVIEW: `methodology_submissions` uchun AI kod-tahlili — Groq
@@ -282,5 +288,5 @@
 ## Jamoa boyicha
 
 - Karis (Backend): 124 task
-- Abdulaziz (Backend): 80 task
+- Abdulaziz (Backend): 84 task
 - Frontend jamoasi: 69 task

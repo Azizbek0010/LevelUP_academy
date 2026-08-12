@@ -61,10 +61,14 @@ export function registerTelegramBotHandlers({ bot, pool, redis, logger, language
           await ctx.reply(t.loginNotLinked);
           return;
         }
+        // XOB (12.08): до входа личность неизвестна — эти строки остаются на
+        // языке бота по умолчанию. С этой точки студент уже определён —
+        // дальше отвечаем на ЕГО языке, а не на глобальном TELEGRAM_BOT_LANG.
+        const tUser = messages(user.preferredLanguage || language);
         // Родителю эти цифры не подходят: у него нет своих коинов и рейтинга,
         // а данные ребёнка требуют выбора, какого именно.
         if (user.role !== 'student') {
-          await ctx.reply(t.onlyForStudents);
+          await ctx.reply(tUser.onlyForStudents);
           return;
         }
 
