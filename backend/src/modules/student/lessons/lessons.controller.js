@@ -34,6 +34,6 @@ export const getHomeworkUploadUrl = asyncHandler(async (req, res) => {
 
 /** POST /lessons/:lessonId/homework — { fileKey?, textAnswer? } */
 export const submitHomework = asyncHandler(async (req, res) => {
-  const data = await service.submitHomework(req.user.id, req.params.lessonId, req.body);
+  const data = await service.submitHomework(req.user.id, req.user.organizationId, req.params.lessonId, req.body);
   res.json({ success: true, data });
 });

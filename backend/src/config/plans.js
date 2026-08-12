@@ -1,9 +1,14 @@
 /**
  * Тарифные планы партнёров (SEO платит нам).
  *
- * ВАЖНО (2026-07-16): цена = фикс по числу активных учеников (см. TIERS ниже),
- * филиалы включены безлимитом. Старая модель (за филиал + за ученика) ОТМЕНЕНА.
- * PLANS pro/max ниже — legacy, не влияют на счёт (оставлены для совместимости).
+ * ВАЖНО (2026-07-16, пересчёт по общему числу пользователей — 11.08.2026):
+ * цена = фикс по бакету общего числа пользователей организации (ученики +
+ * родители + сотрудники, см. TIERS ниже), филиалы включены безлимитом.
+ * Раньше бакет считался только по ученикам — Karis попросил считать по всем
+ * пользователям (пример: SEO с 31 учеником, но 50 пользователями всего,
+ * должен тарифицироваться по 50, не по 31). Старая модель (за филиал +
+ * за ученика) ОТМЕНЕНА ещё раньше. PLANS pro/max ниже — legacy, не влияют
+ * на счёт (оставлены для совместимости).
  */
 export const PLAN_IDS = ['pro', 'max'];
 
@@ -13,34 +18,35 @@ export const PLANS = {
 };
 
 /**
- * НОВАЯ модель тарификации (2026-07-16): фикс по бакету активных учеников,
- * филиалы включены безлимитом (на цену НЕ влияют). Прайс здесь = источник правды.
+ * Модель тарификации: фикс по бакету общего числа пользователей (ученики +
+ * родители + сотрудники), филиалы включены безлимитом (на цену НЕ влияют).
+ * Прайс здесь = источник правды.
  * TODO v2: сделать тарифы редактируемыми Main Admin'ом через БД.
  */
 export const TIERS = [
-  { id: 'free', label: 'Free', minStudents: 0, maxStudents: 30, price: 0 },
-  { id: 'start', label: 'Start', minStudents: 31, maxStudents: 100, price: 199000 },
-  { id: 'standard', label: 'Standard', minStudents: 101, maxStudents: 300, price: 349000 },
-  { id: 'pro', label: 'Pro', minStudents: 301, maxStudents: 600, price: 599000 },
-  { id: 'business', label: 'Business', minStudents: 601, maxStudents: 1000, price: 799000 },
-  { id: 'network', label: 'Network', minStudents: 1001, maxStudents: null, price: null }, // договорная
+  { id: 'free', label: 'Free', minUsers: 0, maxUsers: 30, price: 0 },
+  { id: 'start', label: 'Start', minUsers: 31, maxUsers: 100, price: 199000 },
+  { id: 'standard', label: 'Standard', minUsers: 101, maxUsers: 300, price: 349000 },
+  { id: 'pro', label: 'Pro', minUsers: 301, maxUsers: 600, price: 599000 },
+  { id: 'business', label: 'Business', minUsers: 601, maxUsers: 1000, price: 799000 },
+  { id: 'network', label: 'Network', minUsers: 1001, maxUsers: null, price: null }, // договорная
 ];
 
-/** Тариф партнёра по числу активных учеников. */
-export function tierForStudents(students = 0) {
-  const s = Math.max(0, Number(students) || 0);
+/** Тариф партнёра по общему числу пользователей (ученики+родители+сотрудники). */
+export function tierForUsers(users = 0) {
+  const u = Math.max(0, Number(users) || 0);
   return (
-    TIERS.find((t) => s >= t.minStudents && (t.maxStudents == null || s <= t.maxStudents)) ??
+    TIERS.find((t) => u >= t.minUsers && (t.maxUsers == null || u <= t.maxUsers)) ??
     TIERS[TIERS.length - 1]
   );
 }
 
 /**
- * Счёт партнёра за месяц (сумы) = цена тарифа по числу учеников.
+ * Счёт партнёра за месяц (сумы) = цена тарифа по общему числу пользователей.
  * Филиалы на цену не влияют. Network (1000+) — договорная → в авто-расчёте 0.
  */
-export function computeBill({ students = 0 } = {}) {
-  return tierForStudents(students).price ?? 0;
+export function computeBill({ users = 0 } = {}) {
+  return tierForUsers(users).price ?? 0;
 }
 
 /** Лимиты плана (для будущей проверки при создании филиалов/студентов). */

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Inbox, Building2, Settings, LogOut, Menu, ChevronDown, Search,
+  LayoutDashboard, Inbox, Building2, Settings, LogOut, Menu, ChevronDown, Search, Puzzle,
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
-import { useDashboard, useLeads } from '../queries.js';
+import { useDashboard, useLeads, useFeatureRequests } from '../queries.js';
 
 /**
  * Меню намеренно короткое — как у ментора.
@@ -26,11 +26,12 @@ const nav = [
   { to: '/', label: 'Дашборд', Icon: LayoutDashboard, end: true },
   { type: 'partners' },
   { to: '/leads', label: 'Заявки', Icon: Inbox, badge: 'leads' },
+  { to: '/features', label: 'Фичи', Icon: Puzzle, badge: 'featureRequests' },
   { to: '/settings', label: 'Настройки', Icon: Settings },
 ];
 
 const itemBase =
-  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors';
+  'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors';
 const itemIdle =
   'text-neutral-content/60 hover:bg-white/[0.07] hover:text-neutral-content';
 const itemActive = 'bg-primary/[0.13] text-primary';
@@ -92,7 +93,7 @@ function PartnersNav({ onNavigate }) {
                 placeholder="Поиск"
                 aria-label="Поиск партнёра"
                 // text-base до sm: iOS Safari зумит страницу на поле мельче 16px
-                className="w-full rounded-lg bg-white/[0.06] pl-7 pr-2 py-1.5 text-base sm:text-xs
+                className="w-full rounded-md bg-white/[0.06] pl-7 pr-2 py-1.5 text-base sm:text-xs
                            text-neutral-content placeholder:text-neutral-content/35
                            focus:outline-none focus:bg-white/[0.1]"
               />
@@ -101,7 +102,7 @@ function PartnersNav({ onNavigate }) {
 
           <button
             onClick={() => { navigate('/organizations'); onNavigate?.(); }}
-            className={`w-full text-left rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+            className={`w-full text-left rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors ${
               location.pathname === '/organizations'
                 ? 'text-primary bg-primary/10'
                 : 'text-neutral-content/45 hover:text-neutral-content hover:bg-white/[0.06]'
@@ -117,7 +118,7 @@ function PartnersNav({ onNavigate }) {
                 key={p.id}
                 onClick={() => { navigate(`/organizations/${p.id}`); onNavigate?.(); }}
                 title={p.name}
-                className={`w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
+                className={`w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors ${
                   active
                     ? 'bg-primary/[0.13] text-primary font-bold'
                     : 'text-neutral-content/55 hover:bg-white/[0.06] hover:text-neutral-content'
@@ -150,12 +151,12 @@ function SidebarContent({ user, logout, onNavigate }) {
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || 'M';
   const { data: leads } = useLeads();
   const newLeads = (leads ?? []).filter((l) => l.status === 'new').length;
+  const { data: pendingRequests } = useFeatureRequests('pending');
 
   return (
     <aside className="w-64 min-h-full bg-sidebar text-neutral-content flex flex-col py-5 px-3.5">
-      <div className="flex items-center gap-2.5 font-extrabold text-[17px] text-white px-2.5 pb-5">
-        <img src="/logo-mark.svg" alt="" className="w-7 h-7" />
-        LevelUp Academy
+      <div className="px-2.5 pb-5">
+        <img src="/logo-white.svg" alt="LevelUp Academy" className="h-7 w-auto" />
       </div>
 
       <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">
@@ -179,6 +180,11 @@ function SidebarContent({ user, logout, onNavigate }) {
                   {newLeads}
                 </span>
               )}
+              {badge === 'featureRequests' && (pendingRequests?.length ?? 0) > 0 && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary text-primary-content">
+                  {pendingRequests.length}
+                </span>
+              )}
             </NavLink>
           );
         })}
@@ -193,7 +199,7 @@ function SidebarContent({ user, logout, onNavigate }) {
           <div className="text-xs text-neutral-content/50">Main Admin</div>
         </div>
         <button
-          className="ml-auto p-1.5 rounded-lg text-neutral-content/50 hover:text-error hover:bg-error/10 transition-colors"
+          className="ml-auto p-1.5 rounded-md text-neutral-content/50 hover:text-error hover:bg-error/10 transition-colors"
           onClick={logout}
           title="Выйти"
         >

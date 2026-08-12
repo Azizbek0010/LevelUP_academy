@@ -197,14 +197,15 @@ export async function getHomeworkUploadUrl(studentId, lessonId, { filename, cont
  * AI-review в очередь. Сам ручной grading ментора — отдельная, не связанная
  * с этим история (см. чат с Karis) — review здесь не заменяет его, а
  * дополняет: "что показал код", а не финальная оценка ментора. */
-export async function submitHomework(studentId, lessonId, { fileKey, textAnswer }) {
+export async function submitHomework(studentId, orgId, lessonId, { fileKey, textAnswer }) {
   const lesson = await assertAccess(studentId, lessonId);
   if (lesson.lesson_type !== 'practical') throw new AppError(409, 'This lesson has no homework');
 
   const submission = await repo.upsertSubmission({ lessonId, studentId, fileKey, textAnswer });
   if (!submission) throw new AppError(409, 'Already graded, cannot resubmit');
 
-  if (lesson.ai_review_enabled) {
+  const aiPurchased = lesson.ai_review_enabled && (await repo.isAiReviewEnabledForOrg(orgId));
+  if (aiPurchased) {
     // Сбой постановки в очередь не должен ронять сдачу ДЗ — ученик своё дело
     // сделал, review просто останется 'pending' и подхватится веб-панелью
     // как "ещё считается" (или потребует ручной разбор, если Redis правда лёг).

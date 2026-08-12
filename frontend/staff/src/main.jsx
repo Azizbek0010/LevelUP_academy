@@ -29,3 +29,10 @@ createRoot(document.getElementById('root')).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+
+// ErrorBoundary ставит этот флаг перед авто-reload'ом на "битый чанк после
+// деплоя" — не даёт зациклиться, если новая загрузка тоже упадёт. Если же
+// 5 секунд всё стабильно, значит сборка рабочая — снимаем флаг, чтобы
+// следующий деплой (через несколько часов/дней в той же вкладке) тоже
+// получил свой один авто-reload, а не сразу ручную кнопку.
+setTimeout(() => sessionStorage.removeItem('levelup-chunk-reload-attempted'), 5000);

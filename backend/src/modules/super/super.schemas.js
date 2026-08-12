@@ -211,3 +211,10 @@ export const setShopItemArchivedSchema = z.object({
 export const listShopItemsQuery = z.object({
   branchId: z.string().uuid('Invalid branchId').optional(),
 });
+
+// SEO не переключает фичи сам — только просит Main Admin подключить/отключить.
+export const createFeatureRequestSchema = z.object({
+  featureKey: z.string().trim().min(1).max(60),
+  type: z.enum(['add', 'remove']),
+  note: z.string().trim().max(500).optional(),
+});

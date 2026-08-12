@@ -4,6 +4,80 @@
 > Statistika qo'lda YOZILMAYDI — real raqamlar faqat `done.md` da.
 > V1 SCOPE: naqd + karta (full/split). Click/Payme/UzCard/Humo — FAQAT v3. Nasiya/рассрочка — V1 DA YO'Q (qaror 2026-07-05, tasdiqlangan 2026-07-07).
 
+## 🔴 SHOSHILINCH — Upstash Redis limit tugagan (11.08.2026 topildi)
+
+`npm test` orqali aniqlandi: `ERR max requests limit exceeded. Limit: 500000, Usage: 500001`
+— Upstash free-tier oyliq so'rov limiti tugagan. Ta'sir qiladi: leaderboard
+(Redis ZSET — rank butun kodda `null`/`undefined` bo'lib qoladi), OTP
+(forgotPassword/resetPassword ishlamaydi), ehtimol BullMQ navbatlar ham.
+**Bu proddagi PLATFORMA UCHUN HAM haqiqiy** — faqat local test emas, chunki
+`.env` bir xil Upstash'ga qaraydi (Path A, boshqa fayllarda yozilganidek).
+Yechim: Upstash dashboard → planni ko'tarish yoki keyingi oyni kutish (qachon
+reset bo'lishini Upstash'dan tekshirish kerak). Claude o'zi to'lov qila
+olmaydi — Karis'ning ishi.
+
+**11.08.2026, kechqurun — prod 502 bo'lib qoldi, sababi topildi va tuzatildi
+(lekin Upstash kvotasi hali HAM tugagan holicha qoladi):** `server.js`da
+kron-planlashtirish (`scheduleOverdueCron`/`Billing`/`DueSoon`/`DailyDigest`)
+himoyasiz top-level `await` edi — Redis reject qilganda (kvota tufayli)
+butun process qulardi, hattoki HTTP-port allaqachon tinglayotgan bo'lsa ham.
+Bittasi `client.on('error')`dan ham o'tib ketadigan ioredis'ning ichki AUTH
+retry'i edi. Tuzatildi: har bir schedule chaqiruvi try/catch'ga o'raldi +
+process-level `unhandledRejection` guard qo'shildi. `main`ga alohida commit
+bilan pushlandi (Karis ruxsati bilan), Render qayta deploy qildi, prod
+tekshirildi — `HTTP 200`. ⚠️ Bu Redis'ni "tuzatmaydi" — faqat Redis
+o'chganda API'ning butunlay yiqilib tushishini to'xtatadi (leaderboard/OTP/
+navbatlar baribir ishlamaydi, kvota tugagunicha yoki ko'tarilgunicha).
+
+## Backend — Main Admin: tarif/fича-flag/to'lov/xarajat/anons (Karis, 11.08.2026)
+
+> Katta blok — to'liq reja `C:\Users\user\.claude\plans\playful-moseying-conway.md`.
+> 6 ta yangi migratsiya (M1-M6) + backfill (kritik xato topildi va tuzatildi —
+> `access_until IS NULL` yangi ustunni backfill qilmasdan barcha mavjud
+> organizatsiyalarni login'da bloklab qo'ygan edi, testlar orqali deploy'dan
+> OLDIN topildi). Backend to'liq: fича-katalog CRUD, org-level access gate
+> (login + har bir so'rov, 10 ta router'ga ulandi), AI-review gate, to'lov/
+> bonus/про-рейт, platform_expenses + balans, SEO fича so'rovlari, anons bagi
+> tuzatildi + nishonlash.
+>
+> **Frontend ham qo'shildi** (11.08.2026, davomi): Main Admin — `Features.jsx`
+> (katalog CRUD + kiruvchi so'rovlar inbox'i), `OrgDetail.jsx`'ga "Доступ"
+> tab (to'lov/bonus/ledger) + "Финансы" tab'ga fича-tumbler'lar, sidebar
+> badge. `staff/super` (SEO tomoni) — `Features.jsx` (katalog ko'rish +
+> подключение/отключение so'rash, tumbler yo'q — faqat so'rov), `Billing.jsx`
+> (access_until/grace status + ledger, YANGI backend endpoint'lar
+> `GET /super/billing` va `GET /super/billing/ledger` shu bilan birga
+> qo'shildi — rejada bor edi, ammo backend yo'q edi), `Announcements.jsx`ga
+> "От LevelUp Academy" read-only blok.
+>
+> **Xato topildi va tuzatildi shu davomida**: `getFeatureCatalog(orgId)`
+> `repo.listActiveAddonCatalog(orgId)`ni chaqirardi, lekin bu funksiya
+> `orgId`ni emas, `client`ni (DB pool) kutadi — natijada
+> `GET /super/features/catalog` runtime'da `client.query is not a function`
+> bilan buzilardi (hech qachon chaqirilmagan/testlanmagan edi).
+> `super.service.js:962`da tuzatildi.
+>
+> Ikkala frontend (`main-admin`, `staff`) `npm run build` bilan tekshirildi —
+> xatosiz.
+>
+> **✅ Live e2e test o'tkazildi (11.08.2026, kechqurun), butunlay yashil:**
+> alohida test-org (`E2E QA Test Org`, keyin frozen qilindi, real partnyorlarga
+> tegmaydi) orqali: onboarding → access_until avto to'g'ri qo'yildi → SEO
+> login ishlaydi → access_until 60 kunga orqaga surildi → SEO login `402
+> payment_overdue` bilan bloklandi → to'lov yozildi → login qayta ishladi →
+> **allaqachon chiqarilgan (eski) student токен** access_until orqaga
+> surilgandan keyin keyingi so'rovda `402`ga uchradi — bu request-time
+> gate'ning (login-time emas) asosiy isboti → bonus +2 oy stackланди to'g'ri
+> (`GREATEST(access_until, bugun) + N`) → student_panel/parent_panel
+> mustaqil ishlaydi (bittasini yoqish ikkinchisiga tegmaydi) → SEO fича
+> so'rovi → Main Admin approve → flag va SEO'dagi katalog ikkalasi ham
+> yangilandi → `GET /super/billing`, `/billing/ledger`, `/features/catalog`
+> — hammasi to'g'ri javob qaytardi (avvalgi bug tuzatilgani ham shu bilan
+> tasdiqlandi) → dashboard user-count (students/parents/staff) aniq to'g'ri
+> chiqdi. Brauzer orqali ham tekshirildi: Main Admin `/features` sahifasida
+> yangi fича jonli yaratildi (slug avto-generatsiya to'g'ri), `OrgDetail`
+> "Доступ" tab'i ledger'ni aniq ko'rsatdi, konsolda xatolik yo'q.
+
 ## Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Karis, 09.08.2026) ✅
 
 > Backend'ga tegishli bo'lgan hammasi — Karis qildi (Claude bilan birga, shu
@@ -42,29 +116,43 @@
       demak worker.js umuman ishga tushmaydi. Boshqa 3 tadan farqli — bu
       croni, event emas, workersiz imkoni yo'q.
 
-### 🔲 OCHIQ VAZIFA — EGASI: **KARIS** (pul kerak, Claude sotib ololmaydi)
+### 🔲 OCHIQ VAZIFA — EGASI: **KARIS** (pul kerak, Claude sotib ololmaydi/kirita olmaydi)
 
-- [ ] RENDER-STARTER: web-servisni (`LevelUP_academy-1`) Free'dan Starter'ga
+- [x] STORJ-UPGRADE ($5/oy dan, hisob bo'yicha minimum): 10.08.2026 aniqlandi —
+      bepul trial 4 kun oldin tugagan, Storage/Download limiti 0'ga tushgan,
+      shuning uchun barcha fayl yuklash (ДЗ, video, chek, AI-review) 403
+      AccessDenied bilan qaytadi edi. ✅ 11.08.2026 — asosiy loyiha
+      (wEc4jgBwQxy) Pay as you go'ga o'tkazildi, karta bog'landi, PUT+GET
+      jonli tekshirildi (eski bucket'dagi ma'lumotlar saqlanib qolgan).
+      ⚠️ Yo'lda vaqtinchalik ikkinchi (yangi triyal) Storj akkaunt yaratilgan
+      va bir necha soat `.env`/Render'da turgan edi — endi to'liq olib
+      tashlandi, asosiy akkaunt kalitlari qaytarildi (`.env` va Render
+      Environment, ikkalasi ham), jonli tekshirildi.
+- [x] RENDER-STARTER: web-servisni (`LevelUP_academy-1`) Free'dan Starter'ga
       ($7/oy) ko'tarish — 09.08.2026 auditda topilgan sabab: free plan 15
       daqiqa jimlikdan keyin uxlaydi, uyg'onish 30-60 son, + Neon o'zi ham
       uxlaydi (+5s) — ikkalasi ustma-ust tushganda birinchi so'rov 500 bilan
       qaytadi ("guruh bilan kirganda ba'zan ishlamaydi" — Karis 09.08 xabari).
-      Starter uxlamaydi — muammo yo'qoladi.
-- [ ] WORKER-MERGE (Claude qiladi, Starter sotib olingandan keyin): `worker.js`
-      ni `server.js` ichiga qo'shish — o'sha $7/oy servis o'zi AI-review
-      navbatini ham, 00:00 kunlik svodkani ham, billing/overdue/due-soon
-      cronlarini ham ushlaydi. Alohida worker servisi ($7/oy qo'shimcha)
-      SHART EMAS — bitta har doim yonib turgan process yetarli.
-      ⚠️ Kelishilgan trade-off: shu tufayli AI-review'dagi bag butun saytni
-      ham yiqitishi mumkin (bitta process) — kichik markaz uchun qabul
-      qilingan.
+      Starter uxlamaydi — muammo yo'qoladi. ✅ 11.08.2026 1:28 — to'landi,
+      dashboard'da tasdiqlandi (0.5 CPU/512MB, "Instance type changed from
+      Free to Starter"), qayta deploy Live.
+- [x] WORKER-MERGE: `worker.js` `server.js` ichiga qo'shildi — o'sha $7/oy
+      servis o'zi AI-review navbatini ham, 00:00 kunlik svodkani ham,
+      billing/overdue/due-soon cronlarini ham ushlaydi. Alohida worker
+      servisi ($7/oy qo'shimcha) SHART EMAS edi — bitta har doim yonib
+      turgan process yetarli. ✅ 11.08.2026 — `worker.js` o'chirildi,
+      `npm run worker`/`worker:dev` olib tashlandi, `render.yaml`dagi
+      ishlatilmagan worker-shablon o'chirildi, testlar yashil (mentor/
+      student/payments/auth PASS, `parent` — eski, bog'liq emas), `save-zone`
+      ga push qilindi (`e72e314`). ⚠️ Kelishilgan trade-off: shu tufayli
+      AI-review'dagi bag butun saytni ham yiqitishi mumkin (bitta process) —
+      kichik markaz uchun qabul qilingan. Hali `main` ga merj qilinmagan.
 
-**Ochiq savollar Karis'ga:**
-1. `npm run migrate` boshqa hech qachon lokal gonilmagan — Neon'ga to'g'ridan-
-   to'g'ri qo'lda gonish kerakmi hozir, yoki keyingi deploy'gacha kutamizmi?
-2. `GROQ_API_KEY` faqat lokal `.env`'da — Render'ga qachon qo'shamiz?
-3. BUG-NO-WORKER — pullik Render worker / vaqtinchalik inline-run / tashqi
-   cron — qaysi yo'l bilan yechamiz? Daily-digest shungacha ishlamaydi.
+**Jami: ~$12/oy** (Render Starter $7 + Storj Pay as you go $5 dan, ikkalasi ham to'langan, 11.08.2026).
+
+**Yopilgan savollar** (edi, endi hal): `npm run migrate` Neon'ga to'g'ridan-
+to'g'ri gonildi (17/17 test o'tdi) · `GROQ_API_KEY`/`_2`/`_3` Render
+Environment'ga qo'shildi va deploy qilindi (10.08.2026).
 
 ## ⚠️ Jamoa branch'lari — save-zone'ga hali qo'shilmagan (2026-08-09 tekshiruvi)
 

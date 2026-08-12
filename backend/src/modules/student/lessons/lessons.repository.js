@@ -1,5 +1,17 @@
 import { pool } from '../../../config/db.js';
 
+/** Defense in depth: даже если training_types.ai_review_enabled ещё true,
+ * отключённый Main Admin'ом org-level addon сразу останавливает новые
+ * постановки в очередь (см. content.service.js — то же самое на входе у методиста). */
+export function isAiReviewEnabledForOrg(orgId, db = pool) {
+  return db
+    .query(
+      `SELECT enabled FROM org_feature_flags WHERE organization_id = $1 AND feature_key = 'ai_review'`,
+      [orgId],
+    )
+    .then((r) => r.rows[0]?.enabled ?? false);
+}
+
 /** training_type_id всех активных групп студента, без дублей/null — так студент
     может проходить программу нескольких курсов сразу, если состоит в нескольких группах. */
 export async function getTrainingTypeIdsForStudent(studentId, db = pool) {

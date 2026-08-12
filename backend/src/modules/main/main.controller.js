@@ -31,6 +31,71 @@ export const setPartnerStatus = asyncHandler(async (req, res) => {
   res.json({ partner: await service.setPartnerStatus(req.params.id, req.body.status) });
 });
 
+// --- каталог платных фич ---
+export const listAddonPrices = asyncHandler(async (_req, res) => {
+  res.json({ features: await service.listAddonPrices() });
+});
+
+export const createAddonFeature = asyncHandler(async (req, res) => {
+  res.status(201).json({ feature: await service.createAddonFeature(req.body, req.user.id) });
+});
+
+export const updateAddonFeature = asyncHandler(async (req, res) => {
+  res.json({ feature: await service.updateAddonFeature(req.params.key, req.body) });
+});
+
+export const deactivateAddonFeature = asyncHandler(async (req, res) => {
+  res.json({ feature: await service.deactivateAddonFeature(req.params.key) });
+});
+
+// --- фичи партнёра ---
+export const getPartnerFeatures = asyncHandler(async (req, res) => {
+  res.json(await service.getPartnerFeatures(req.params.id));
+});
+
+export const setPartnerFeature = asyncHandler(async (req, res) => {
+  res.json({ flag: await service.setFeatureFlag(req.params.id, req.params.key, req.body.enabled, req.user.id) });
+});
+
+// --- биллинг партнёра ---
+export const recordPayment = asyncHandler(async (req, res) => {
+  res.status(201).json({ payment: await service.recordPayment(req.params.id, req.body, req.user.id) });
+});
+
+export const grantBonus = asyncHandler(async (req, res) => {
+  res.json(await service.grantBonus(req.params.id, req.body.months, req.user.id));
+});
+
+export const listOrgLedger = asyncHandler(async (req, res) => {
+  res.json({ ledger: await service.listOrgLedger(req.params.id) });
+});
+
+// --- собственные расходы платформы ---
+export const listExpenses = asyncHandler(async (_req, res) => {
+  res.json({ expenses: await service.listExpenses() });
+});
+
+export const createExpense = asyncHandler(async (req, res) => {
+  res.status(201).json({ expense: await service.createExpense(req.body, req.user.id) });
+});
+
+export const deleteExpense = asyncHandler(async (req, res) => {
+  res.json(await service.deleteExpense(req.params.id));
+});
+
+export const finance = asyncHandler(async (_req, res) => {
+  res.json(await service.platformFinance());
+});
+
+// --- заявки SEO на подключение/отключение фичи ---
+export const listFeatureRequests = asyncHandler(async (req, res) => {
+  res.json({ requests: await service.listFeatureRequests(req.query.status) });
+});
+
+export const decideFeatureRequest = asyncHandler(async (req, res) => {
+  res.json({ request: await service.decideFeatureRequest(req.params.id, req.body.decision, req.user.id) });
+});
+
 // --- заявки с лендинга ---
 export const submitLead = asyncHandler(async (req, res) => {
   // публичный endpoint — наружу только id

@@ -83,12 +83,12 @@ export default function OnboardModal({ lead, onClose, onDone }) {
               </div>
             </div>
 
-            <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
+            <div className="bg-warning/10 border border-warning/30 rounded-md p-4">
               <div className="flex items-start gap-2 mb-3">
                 <AlertTriangle size={16} className="text-warning shrink-0 mt-0.5" />
                 <p className="text-sm font-semibold text-warning">Сохраните пароль — показывается только один раз!</p>
               </div>
-              <div className="bg-base-100 rounded-lg p-3 space-y-2">
+              <div className="bg-base-100 rounded-md p-3 space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-base-content/55 w-20 shrink-0">Организация:</span>
                   <span className="font-semibold">{done.organization?.name}</span>
@@ -100,7 +100,7 @@ export default function OnboardModal({ lead, onClose, onDone }) {
                 <div className="border-t border-base-200 pt-2 mt-2">
                   <div className="text-xs text-base-content/50 mb-1.5 font-semibold uppercase tracking-wider">Временный пароль</div>
                   <div className="flex items-center gap-2">
-                    <code className="font-mono font-bold text-xl tracking-widest bg-base-200 px-3 py-2 rounded-lg flex-1 text-center">
+                    <code className="font-mono font-bold text-xl tracking-widest bg-base-200 px-3 py-2 rounded-md flex-1 text-center">
                       {done.tempPassword}
                     </code>
                     <button
@@ -181,7 +181,7 @@ export default function OnboardModal({ lead, onClose, onDone }) {
                     <User size={15} className="text-lime-600" />
                     <span className="font-semibold text-sm">Аккаунт SEO</span>
                   </div>
-                  <span className="text-xs text-base-content/50 bg-base-200 px-2 py-1 rounded-lg">{form.organizationName}</span>
+                  <span className="text-xs text-base-content/50 bg-base-200 px-2 py-1 rounded-md">{form.organizationName}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <label className="form-control">

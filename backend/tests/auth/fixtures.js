@@ -19,8 +19,12 @@ export async function setupFixtures() {
   const ts = Date.now();
   const passwordHash = await argon2.hash(PASSWORD, { type: argon2.argon2id });
 
+  // access_until: без него orgAccessGate/login считает организацию неоплаченной
+  // и блокирует всё (see 1784520000000_backfill-org-access-until.js) — тестовая
+  // org должна быть в том же состоянии, что и реально онбордженный партнёр.
   const { rows: [org] } = await pool.query(
-    `INSERT INTO organizations (name, status, plan) VALUES ($1, 'active', 'test') RETURNING id`,
+    `INSERT INTO organizations (name, status, plan, access_until)
+     VALUES ($1, 'active', 'test', CURRENT_DATE + INTERVAL '1 month') RETURNING id`,
     [`Auth Test Org ${ts}`],
   );
   const organizationId = org.id;

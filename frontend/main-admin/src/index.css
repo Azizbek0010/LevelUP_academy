@@ -14,6 +14,27 @@ body {
   font-feature-settings: 'cv11', 'ss01';
 }
 
+/* Кривые заданы отдельно от duration намеренно: встроенные CSS-easing'и
+   (ease, ease-out) слишком слабые — не дают ощущения отклика. Эти взяты из
+   практики Apple/Vercel: сильный ease-out для входа/интерактивных элементов,
+   сильный ease-in-out для движения уже на экране. ease-in для UI не
+   используется нигде намеренно — он тормозит именно в момент, когда
+   пользователь смотрит внимательнее всего. */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* Кнопки должны ощущаться отзывчивыми — реакция на press, а не только на
+   hover. Подавлено для reduced-motion ниже. */
+.btn {
+  transition: transform 120ms var(--ease-out), background-color 150ms var(--ease-out),
+    border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), opacity 150ms var(--ease-out);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
 /* карточки — единый мягкий стиль */
 .card {
   border: 1px solid theme('colors.base-300');
@@ -30,10 +51,32 @@ body {
   font-weight: 700;
 }
 .table tbody tr {
-  transition: background-color 0.12s ease;
+  transition: background-color 150ms var(--ease-out);
 }
 .table tbody tr:hover {
   background: #f6faef;
+}
+
+/* Модалка daisyUI по умолчанию всплывает без масштаба — добавляем лёгкий
+   scale-in из 0.96 (не 0 — ничего в реальном мире не появляется из точки),
+   плюс сильный ease-out, чтобы вход ощущался мгновенным. */
+.modal-box {
+  transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out);
+}
+.modal:not(.modal-open) .modal-box {
+  transform: scale(0.96) translateY(4px);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .btn:active:not(:disabled),
+  .table tbody tr,
+  .modal-box,
+  .modal:not(.modal-open) .modal-box {
+    transition-duration: 1ms !important;
+    transform: none !important;
+  }
 }
 
 /* скролл-контейнеры */

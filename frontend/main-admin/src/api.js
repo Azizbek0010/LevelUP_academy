@@ -114,4 +114,37 @@ export const api = {
   // profile update
   updateProfile: (token, body) =>
     request('/main/profile', { method: 'PATCH', token, body }),
+
+  // каталог платных фич (не фиксированный список — Main Admin ведёт сам)
+  addonPrices: (token) => request('/main/addon-prices', { token }),
+  createAddonFeature: (token, body) =>
+    request('/main/addon-prices', { method: 'POST', token, body }),
+  updateAddonFeature: (token, key, body) =>
+    request(`/main/addon-prices/${key}`, { method: 'PATCH', token, body }),
+  deactivateAddonFeature: (token, key) =>
+    request(`/main/addon-prices/${key}`, { method: 'DELETE', token }),
+
+  // фичи конкретного партнёра
+  partnerFeatures: (token, id) => request(`/main/partners/${id}/features`, { token }),
+  setPartnerFeature: (token, id, key, enabled) =>
+    request(`/main/partners/${id}/features/${key}`, { method: 'PATCH', token, body: { enabled } }),
+
+  // биллинг партнёра (ручная фиксация оплаты/бонуса)
+  recordPayment: (token, id, body) =>
+    request(`/main/partners/${id}/payments`, { method: 'POST', token, body }),
+  grantBonus: (token, id, months) =>
+    request(`/main/partners/${id}/bonus`, { method: 'POST', token, body: { months } }),
+  orgLedger: (token, id) => request(`/main/partners/${id}/ledger`, { token }),
+
+  // собственные расходы платформы + P&L
+  expenses: (token) => request('/main/expenses', { token }),
+  createExpense: (token, body) => request('/main/expenses', { method: 'POST', token, body }),
+  deleteExpense: (token, id) => request(`/main/expenses/${id}`, { method: 'DELETE', token }),
+  finance: (token) => request('/main/finance', { token }),
+
+  // заявки SEO на подключение/отключение фичи
+  featureRequests: (token, status) =>
+    request(`/main/feature-requests${status ? `?status=${status}` : ''}`, { token }),
+  decideFeatureRequest: (token, id, decision) =>
+    request(`/main/feature-requests/${id}`, { method: 'PATCH', token, body: { decision } }),
 };

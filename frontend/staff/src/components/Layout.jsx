@@ -12,6 +12,7 @@ import {
   HiOutlineUserCircle, HiOutlineChatBubbleLeftRight, HiOutlineWallet,
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
   HiOutlineCreditCard, HiOutlineGift, HiOutlineCalendarDays,
+  HiOutlinePresentationChartLine, HiOutlineCurrencyDollar,
 } from 'react-icons/hi2';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
@@ -19,6 +20,8 @@ import Avatar from './Avatar.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { disconnectSocket, getSocket } from '../socket.js';
 import { useMentorGroups, useSuperBranches, useChatContacts } from '../queries.js';
+import { LangSwitch } from '../pages/finance/_ui.jsx';
+import { useT } from '../pages/finance/_i18n.jsx';
 import {
   playNotificationSound, unlockSound, isSoundEnabled, setSoundEnabled,
 } from '../lib/notificationSound.js';
@@ -52,50 +55,58 @@ function useMediaQuery(query) {
  * каждый. Ничего не спрятано глубже двух клика.
  */
 const superNav = [
-  { to: '/',           label: 'Дашборд',    Icon: HiOutlineSquares2X2, end: true },
+  { to: '/',           label: 'Дашборд',    labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
   { type: 'super-branches' },
-  { to: '/admins',     label: 'Сотрудники', Icon: HiOutlineUsers },
+  { to: '/admins',     label: 'Сотрудники', labelKey: 'nav.admins', Icon: HiOutlineUsers },
+  // Финансы владельца центра — вся организация (доход/расход/зарплаты/отчёты)
+  { to: '/finance',    label: 'Финансы',    labelKey: 'nav.finance', Icon: HiOutlineCurrencyDollar },
   {
     type: 'group',
     key: 'analytics',
     label: 'Аналитика',
+    labelKey: 'nav.analytics',
     Icon: HiOutlineChartBar,
     items: [
       // «Отчёты» слиты в «Статистику» 2026-07-28 — были одной и той же выборкой
-      { to: '/stats',   label: 'Статистика' },
+      { to: '/stats',   label: 'Статистика', labelKey: 'nav.stats' },
       // общие срезы по всей организации; разбор по одному филиалу — внутри него
-      { to: '/students',   label: 'Все ученики' },
-      { to: '/groups',     label: 'Все группы' },
-      { to: '/attendance', label: 'Посещаемость' },
+      { to: '/students',   label: 'Все ученики', labelKey: 'nav.allStudents' },
+      { to: '/groups',     label: 'Все группы',  labelKey: 'nav.allGroups' },
+      { to: '/attendance', label: 'Посещаемость', labelKey: 'nav.attendance' },
     ],
   },
   {
     type: 'group',
     key: 'more',
     label: 'Ещё',
+    labelKey: 'nav.more',
     Icon: HiOutlineCog,
     items: [
       // Дисциплина живёт здесь, а не строкой верхнего уровня: взыскания
       // выписывают редко, а место она занимала наравне с ежедневной работой
-      { to: '/discipline',    label: 'Дисциплина' },
-      { to: '/announcements', label: 'Объявления' },
-      { to: '/reminders',     label: 'Напоминания' },
-      { to: '/audit',         label: 'Аудит' },
+      { to: '/discipline',    label: 'Дисциплина',  labelKey: 'nav.discipline' },
+      { to: '/announcements', label: 'Объявления',  labelKey: 'nav.announcements' },
+      { to: '/reminders',     label: 'Напоминания', labelKey: 'nav.reminders' },
+      { to: '/audit',         label: 'Аудит',       labelKey: 'nav.audit' },
+      { to: '/features',      label: 'Фичи' },
+      { to: '/billing',       label: 'Оплата' },
       { to: '/methodics',     label: 'Методики' },
       { to: '/shop-catalog',  label: 'Магазин' },
-      { to: '/settings',      label: 'Настройки' },
+      { to: '/settings',      label: 'Настройки',   labelKey: 'nav.settings' },
     ],
   },
 ];
 
 const adminNav = [
-  { to: '/',          label: 'Дашборд',     Icon: HiOutlineSquares2X2, end: true },
-  { to: '/students',  label: 'Студенты',    Icon: HiOutlineAcademicCap },
-  { to: '/groups',    label: 'Группы',      Icon: HiOutlineUsers },
-  { to: '/mentors',   label: 'Менторы',     Icon: HiOutlineUserCircle },
-  { to: '/chat',      label: 'Чат',         Icon: HiOutlineChatBubbleLeftRight },
-  { to: '/payments',  label: 'Платежи',     Icon: HiOutlineWallet },
-  { to: '/reports',   label: 'Отчёты',      Icon: HiOutlineChartBar },
+  { to: '/',          label: 'Дашборд',     labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/students',  label: 'Студенты',    labelKey: 'nav.students', Icon: HiOutlineAcademicCap },
+  { to: '/groups',    label: 'Группы',      labelKey: 'nav.groups', Icon: HiOutlineUsers },
+  { to: '/mentors',   label: 'Менторы',     labelKey: 'nav.mentors', Icon: HiOutlineUserCircle },
+  { to: '/chat',      label: 'Чат',         labelKey: 'nav.chat', Icon: HiOutlineChatBubbleLeftRight },
+  { to: '/payments',  label: 'Платежи',     labelKey: 'nav.payments', Icon: HiOutlineWallet },
+  { to: '/reports',   label: 'Отчёты',      labelKey: 'nav.reports', Icon: HiOutlineChartBar },
+  // admin: Settings сознательно не добавлен — page/admin/Settings.jsx удалён (Abduloh),
+  // пункта в adminNav быть не должно, иначе мёртвая ссылка.
 ];
 
 /**
@@ -105,16 +116,16 @@ const adminNav = [
  * филиалом), плюс собственный обзорный блок (Филиал/Доход/Отчёты).
  */
 const branchManagerNav = [
-  { to: '/',          label: 'Панель',      Icon: HiOutlineSquares2X2, end: true },
-  { to: '/students',  label: 'Студенты',    Icon: HiOutlineAcademicCap },
-  { to: '/groups',    label: 'Группы',      Icon: HiOutlineUsers },
-  { to: '/mentors',   label: 'Менторы',     Icon: HiOutlineUserCircle },
-  { to: '/chat',      label: 'Чат',         Icon: HiOutlineChatBubbleLeftRight },
-  { to: '/branch',    label: 'Филиал',      Icon: HiOutlineBuildingOffice2 },
-  { to: '/payments',  label: 'Платежи',     Icon: HiOutlineCreditCard },
-  { to: '/income',    label: 'Доход',       Icon: HiOutlineWallet },
-  { to: '/expenses',  label: 'Расходы',     Icon: HiOutlineReceiptPercent },
-  { to: '/reports',   label: 'Отчёты',      Icon: HiOutlineChartBar },
+  { to: '/',          label: 'Boshqaruv',  labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/students',  label: 'Studentlar', labelKey: 'nav.students', Icon: HiOutlineAcademicCap },
+  { to: '/groups',    label: 'Guruhlar',   labelKey: 'nav.groups', Icon: HiOutlineUsers },
+  { to: '/mentors',   label: 'Mentorlar',  labelKey: 'nav.mentors', Icon: HiOutlineUserCircle },
+  { to: '/chat',      label: 'Чат',        labelKey: 'nav.chat', Icon: HiOutlineChatBubbleLeftRight },
+  { to: '/branch',    label: 'Filial',     labelKey: 'nav.branch', Icon: HiOutlineBuildingOffice2 },
+  { to: '/payments',  label: 'To\'lovlar', labelKey: 'nav.payments', Icon: HiOutlineCreditCard },
+  { to: '/income',    label: 'Daromad',    labelKey: 'nav.income', Icon: HiOutlineWallet },
+  { to: '/expenses',  label: 'Xarajatlar', labelKey: 'nav.expenses', Icon: HiOutlineReceiptPercent },
+  { to: '/reports',   label: 'Hisobotlar', labelKey: 'nav.reports', Icon: HiOutlineChartBar },
 ];
 
 /**
@@ -128,21 +139,38 @@ const branchManagerNav = [
  * Чат остаётся снаружи: переписка идёт с родителями, а не с группой.
  */
 const mentorNav = [
-  { to: '/',     label: 'Дашборд',  Icon: HiOutlineSquares2X2, end: true },
+  { to: '/',     label: 'Дашборд',  labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
   { type: 'mentor-groups' },
-  { to: '/chat', label: 'Чат', Icon: HiOutlineChatBubbleLeftRight },
+  { to: '/chat', label: 'Чат', labelKey: 'nav.chat', Icon: HiOutlineChatBubbleLeftRight },
 ];
 
 const methodistNav = [
-  { to: '/',                   label: 'Дашборд',     Icon: HiOutlineSquares2X2, end: true },
-  { to: '/methodist/types',    label: 'Типы обучения',Icon: HiOutlineBookOpen },
-  { to: '/methodist/analytics',label: 'Аналитика',   Icon: HiOutlineArrowTrendingUp },
+  { to: '/',                   label: 'Дашборд',      labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/methodist/types',    label: 'Типы обучения', labelKey: 'nav.methodistTypes', Icon: HiOutlineBookOpen },
+  { to: '/methodist/analytics',label: 'Аналитика',    labelKey: 'nav.analytics', Icon: HiOutlineArrowTrendingUp },
+];
+
+/**
+ * Меню Finance Manager — вся организация насквозь: сводка, доходы, расходы,
+ * фонд оплаты труда, отчёты. Сверху вниз: дашборд → приход → расход → ФОТ →
+ * сводка. Статический демо-раздел (backend-роль ещё не заведена), как и
+ * branch_manager.
+ */
+const financeManagerNav = [
+  { to: '/',          label: 'Boshqaruv',   labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/finance',   label: 'Hisobot',     labelKey: 'nav.report', Icon: HiOutlinePresentationChartLine },
+  { to: '/finance/income',    label: 'Daromad',   labelKey: 'nav.income', Icon: HiOutlineWallet },
+  { to: '/finance/expenses',  label: 'Xarajatlar', labelKey: 'nav.expenses', Icon: HiOutlineReceiptPercent },
+  { to: '/finance/salaries',  label: 'Oyliklar',   labelKey: 'nav.salaries', Icon: HiOutlineCurrencyDollar },
+  { to: '/finance/reports',   label: 'Tahlil',     labelKey: 'nav.reports', Icon: HiOutlineChartBar },
+  { to: '/finance/settings',  label: 'Sozlamalar', labelKey: 'nav.settings', Icon: HiOutlineCog },
 ];
 
 const ROLE_NAV = {
   seo: superNav,
   admin: adminNav,
   branch_manager: branchManagerNav,
+  finance_manager: financeManagerNav,
   mentor: mentorNav,
   methodist: methodistNav,
 };
@@ -151,6 +179,7 @@ const ROLE_TITLE = {
   seo: 'SEO',
   admin: 'Администратор',
   branch_manager: 'Управляющий',
+  finance_manager: 'Finance Manager',
   mentor: 'Ментор',
   methodist: 'Методист',
 };
@@ -159,6 +188,7 @@ const ROLE_COLORS = {
   seo: '#8b5cf6',
   admin: '#3b82f6',
   branch_manager: '#0ea5e9',
+  finance_manager: '#0d9488',
   mentor: '#3b82f6',
   methodist: '#f59e0b',
 };
@@ -169,6 +199,7 @@ const ROLE_COLORS = {
 function MentorGroupsNav({ collapsed, onExpandSidebar }) {
   const { data } = useMentorGroups();
   const location = useLocation();
+  const { t } = useT();
   const groups = data?.data || [];
 
   const insideGroup = location.pathname.startsWith('/groups');
@@ -186,7 +217,7 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
     <div>
       <button
         onClick={toggle}
-        title={collapsed ? 'Группы' : undefined}
+        title={collapsed ? t('nav.groups') : undefined}
         aria-expanded={collapsed ? false : open}
         className={`group w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-sm ${
           collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
@@ -199,7 +230,7 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
         <HiOutlineUserGroup size={18} strokeWidth={insideGroup ? 2.2 : 1.8} className="shrink-0" />
         {!collapsed && (
           <>
-            <span className="flex-1 text-left font-medium">Группы</span>
+            <span className="flex-1 text-left font-medium">{t('nav.groups')}</span>
             <span
               className="text-[10px] font-bold px-1.5 py-0.5 rounded"
               style={{ background: 'rgba(64,131,59,0.12)', color: 'rgba(64,131,59,0.75)' }}
@@ -219,7 +250,7 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
         <ul className="mt-1 space-y-0.5 pl-3 border-l ml-4" style={{ borderColor: 'rgba(64,131,59,0.15)' }}>
           {groups.length === 0 ? (
             <li className="px-3 py-2 text-[11px]" style={{ color: 'rgba(232,239,226,0.3)' }}>
-              Групп нет
+              {t('nav.noGroups')}
             </li>
           ) : (
             groups.map((g) => {
@@ -256,6 +287,7 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
 function SuperBranchesNav({ collapsed, onExpandSidebar }) {
   const { data } = useSuperBranches();
   const location = useLocation();
+  const { t } = useT();
   const branches = data?.branches ?? [];
 
   const inside = location.pathname.startsWith('/branches');
@@ -270,7 +302,7 @@ function SuperBranchesNav({ collapsed, onExpandSidebar }) {
     <div>
       <button
         onClick={toggle}
-        title={collapsed ? 'Филиалы' : undefined}
+        title={collapsed ? t('nav.branches') : undefined}
         aria-expanded={collapsed ? false : open}
         className={`group w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-sm ${
           collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
@@ -283,7 +315,7 @@ function SuperBranchesNav({ collapsed, onExpandSidebar }) {
         <HiOutlineBuildingOffice2 size={18} strokeWidth={inside ? 2.2 : 1.8} className="shrink-0" />
         {!collapsed && (
           <>
-            <span className="flex-1 text-left font-medium">Филиалы</span>
+            <span className="flex-1 text-left font-medium">{t('nav.branches')}</span>
             <span
               className="text-[10px] font-bold px-1.5 py-0.5 rounded"
               style={{ background: 'rgba(64,131,59,0.12)', color: 'rgba(64,131,59,0.75)' }}
@@ -312,7 +344,7 @@ function SuperBranchesNav({ collapsed, onExpandSidebar }) {
                 fontWeight: isActive ? 600 : 400,
               })}
             >
-              Все филиалы
+              {t('nav.allBranches')}
             </NavLink>
           </li>
           {branches.map((b) => {
@@ -335,7 +367,7 @@ function SuperBranchesNav({ collapsed, onExpandSidebar }) {
                       className="text-[9px] font-bold px-1 py-0.5 rounded shrink-0"
                       style={{ background: 'rgba(64,131,59,0.12)', color: 'rgba(64,131,59,0.7)' }}
                     >
-                      осн
+                      {t('nav.main')}
                     </span>
                   )}
                 </NavLink>
@@ -344,7 +376,7 @@ function SuperBranchesNav({ collapsed, onExpandSidebar }) {
           })}
           {branches.length === 0 && (
             <li className="px-3 py-2 text-[11px]" style={{ color: 'rgba(232,239,226,0.3)' }}>
-              Филиалов нет
+              {t('nav.noBranches')}
             </li>
           )}
         </ul>
@@ -357,8 +389,9 @@ function SuperBranchesNav({ collapsed, onExpandSidebar }) {
    Нужна, чтобы редкие разделы (отчёты, аудит, рассылки) не занимали по строке
    в меню каждый. Раскрыта, если пользователь уже внутри одного из её пунктов —
    иначе после перехода группа схлопывалась бы и прятала текущую страницу. */
-function NavGroup({ label, Icon, items, collapsed, onExpandSidebar }) {
+function NavGroup({ label, labelKey, Icon, items, collapsed, onExpandSidebar }) {
   const location = useLocation();
+  const { t } = useT();
   const inside = items.some((i) => location.pathname === i.to);
   const [open, setOpen] = useState(inside);
 
@@ -371,7 +404,7 @@ function NavGroup({ label, Icon, items, collapsed, onExpandSidebar }) {
     <div>
       <button
         onClick={toggle}
-        title={collapsed ? label : undefined}
+        title={collapsed ? t(labelKey ?? label) : undefined}
         aria-expanded={collapsed ? false : open}
         className={`group w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-sm ${
           collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
@@ -384,7 +417,7 @@ function NavGroup({ label, Icon, items, collapsed, onExpandSidebar }) {
         <Icon size={18} strokeWidth={inside ? 2.2 : 1.8} className="shrink-0" />
         {!collapsed && (
           <>
-            <span className="flex-1 text-left font-medium">{label}</span>
+            <span className="flex-1 text-left font-medium">{t(labelKey ?? label)}</span>
             <ChevronDown
               size={14}
               className="shrink-0 transition-transform duration-200"
@@ -408,7 +441,7 @@ function NavGroup({ label, Icon, items, collapsed, onExpandSidebar }) {
                   fontWeight: isActive ? 600 : 400,
                 })}
               >
-                {i.label}
+                {t(i.labelKey ?? i.label)}
               </NavLink>
             </li>
           ))}
@@ -431,6 +464,7 @@ function Sidebar({
   const nav = ROLE_NAV[role] || [];
   const { user } = useAuth();
   const location = useLocation();
+  const { t } = useT();
 
   return (
     <aside
@@ -498,6 +532,7 @@ function Sidebar({
               <NavGroup
                 key={item.key}
                 label={item.label}
+                labelKey={item.labelKey}
                 Icon={item.Icon}
                 items={item.items}
                 collapsed={collapsed}
@@ -505,14 +540,14 @@ function Sidebar({
               />
             );
           }
-          const { to, label, Icon, end, soon } = item;
+          const { to, label, labelKey, Icon, end, soon } = item;
           const isActive = location.pathname === to || (end && location.pathname === to) || (!end && location.pathname.startsWith(to) && to !== '/');
           return (
             <NavLink
               key={to}
               to={to}
               end={end}
-              title={collapsed ? label : undefined}
+              title={collapsed ? t(labelKey ?? label) : undefined}
               className={`group flex items-center gap-3 rounded-xl transition-all duration-200 ${
                 collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5'
               } text-sm relative overflow-hidden`}
@@ -545,7 +580,7 @@ function Sidebar({
                 <span className="flex-1 font-medium transition-colors" style={{
                   color: isActive ? '#40833B' : soon ? 'rgba(232,239,226,0.3)' : undefined,
                 }}>
-                  {label}
+                  {t(labelKey ?? label)}
                 </span>
               )}
 
@@ -581,13 +616,13 @@ function Sidebar({
             color: 'rgba(232,239,226,0.35)',
             background: 'rgba(64,131,59,0.06)',
           }}
-          title={pinned ? 'Свернуть панель' : 'Закрепить панель'}
+          title={pinned ? t('nav.collapsePanel') : t('nav.pinPanel')}
           aria-pressed={pinned}
         >
           {pinned ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
           {!collapsed && (
             <span className="font-medium">
-              {pinned ? 'Свернуть' : 'Закрепить'}
+              {pinned ? t('nav.collapse') : t('nav.pin')}
             </span>
           )}
         </button>
@@ -917,6 +952,8 @@ function Header({ sidebarWidth, onMobileToggle }) {
             </div>
 
             <div className="p-1.5">
+              <LangSwitch />
+              <div className="border-t border-[var(--border)] my-1.5" />
               {hasProfilePage && (
                 <button
                   role="menuitem"

@@ -66,14 +66,72 @@ export const partnerStatusSchema = z.object({
   status: z.enum(['active', 'frozen']),
 });
 
+// ---- каталог платных фич ----
+
+export const createAddonFeatureSchema = z.object({
+  label: z.string().trim().min(1, 'Label is required').max(80),
+  price: z.number().int().nonnegative(),
+});
+
+export const updateAddonFeatureSchema = z
+  .object({
+    label: z.string().trim().min(1).max(80),
+    price: z.number().int().nonnegative(),
+  })
+  .partial()
+  .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
+
+export const featureKeyParam = z.object({ key: z.string().trim().min(1).max(60) });
+export const partnerFeatureKeyParam = z.object({ id: z.string().uuid('Invalid id'), key: z.string().trim().min(1).max(60) });
+
+export const setPartnerFeatureSchema = z.object({ enabled: z.boolean() });
+
+// ---- биллинг партнёра ----
+
+export const recordPaymentSchema = z.object({
+  amount: z.number().int().nonnegative(),
+  method: z.enum(['cash', 'card', 'transfer', 'other']),
+  periodCovered: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Format: YYYY-MM'),
+});
+
+export const grantBonusSchema = z.object({
+  months: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+});
+
+// ---- собственные расходы платформы ----
+
+// ---- заявки SEO на фичи ----
+
+export const featureRequestListQuery = z.object({
+  status: z.enum(['pending', 'approved', 'rejected']).optional(),
+});
+
+export const decideFeatureRequestSchema = z.object({
+  decision: z.enum(['approve', 'reject']),
+});
+
+export const createExpenseSchema = z.object({
+  label: z.string().trim().min(1, 'Label is required').max(160),
+  amount: z.number().int().positive(),
+  category: z.string().trim().max(60).optional(),
+  expenseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format: YYYY-MM-DD').optional(),
+});
+
 // ---- объявления платформы ----
 
 // Аудитории совпадают с enum `platform_announcement_target` в БД.
-export const createAnnouncementSchema = z.object({
-  title: z.string().trim().min(1, 'Title is required').max(200),
-  body: z.string().trim().min(1, 'Body is required'),
-  targetType: z.enum(['all-partners', 'all-seo']),
-});
+// 'specific' — точечно на список партнёров, organizationIds обязателен и непуст.
+export const createAnnouncementSchema = z
+  .object({
+    title: z.string().trim().min(1, 'Title is required').max(200),
+    body: z.string().trim().min(1, 'Body is required'),
+    targetType: z.enum(['all-partners', 'all-seo', 'specific']),
+    organizationIds: z.array(z.string().uuid()).optional(),
+  })
+  .refine((v) => v.targetType !== 'specific' || (v.organizationIds && v.organizationIds.length > 0), {
+    message: 'organizationIds is required and non-empty when targetType is "specific"',
+    path: ['organizationIds'],
+  });
 
 // ---- профиль main_admin ----
 

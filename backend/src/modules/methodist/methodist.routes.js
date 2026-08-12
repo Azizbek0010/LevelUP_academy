@@ -3,6 +3,7 @@ import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
 import { archiveGuard } from '../../middlewares/archiveGuard.js';
+import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
 import {
   createTestSchema,
   updateTestSchema,
@@ -36,7 +37,7 @@ import * as ctrl from './methodist.controller.js';
  */
 const router = Router();
 
-router.use(authenticate, authorize('methodist'));
+router.use(authenticate, orgAccessGate, authorize('methodist'));
 
 // NOTE (docs gap): methodist.controller.js also exports createTest/listTests/getTest/
 // updateTest/archiveTest and createHomework/listHomework/updateHomework/archiveHomework

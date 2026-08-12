@@ -5,6 +5,7 @@ import { logger } from '../../config/logger.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
 import { genTempPassword } from '../auth/credentials.js';
 import { withTransaction } from '../../config/db.js';
+import { isOrgAccessBlocked } from '../../shared/orgAccess.js';
 import * as repo from './super.repository.js';
 
 // ---------- филиалы ----------
@@ -808,7 +809,7 @@ export async function createBranchManager(orgId, { firstName, lastName, email, b
   } catch (err) {
     if (err.code === '23505') {
       if (isBranchManagerDuplicate(err)) {
-        throw new AppError(409, 'Branch manager already exists in this branch');
+        throw new AppError(409, 'This branch already has 2 managers (limit reached)');
       }
       throw new AppError(409, 'Email already in use');
     }
@@ -855,7 +856,7 @@ export async function updateBranchManager(orgId, id, fields) {
   } catch (err) {
     if (err.code === '23505') {
       if (isBranchManagerDuplicate(err)) {
-        throw new AppError(409, 'Branch manager already exists in this branch');
+        throw new AppError(409, 'This branch already has 2 managers (limit reached)');
       }
       throw new AppError(409, 'Email already in use');
     }
@@ -876,17 +877,18 @@ export async function resetBranchManagerPassword(orgId, id) {
 
 /**
  * Переставить нескольких Branch Manager'ов между филиалами одной транзакцией —
- * нужно, когда КАЖДЫЙ участвующий филиал уже занят, и обычный `updateBranchManager`
- * по одному упирается в constraint (целевой филиал занят тем, кого мы как раз
- * пытаемся передвинуть дальше по цепочке).
+ * нужно, когда участвующие филиалы уже под завязку (по 2 менеджера каждый), и
+ * обычный `updateBranchManager` по одному упирается в constraint (целевой
+ * филиал занят теми, кого мы как раз пытаемся передвинуть дальше по цепочке).
  *
- * Работает благодаря 1784310000000_deferred-branch-manager-constraint.js:
- * проверка «1 менеджер на филиал» там DEFERRABLE INITIALLY DEFERRED — то есть
- * считается один раз в конце транзакции (на COMMIT), а не после каждого UPDATE.
- * Поэтому промежуточное состояние внутри транзакции (пока по цепочке кто-то
- * временно оказался «дублем» или филиал временно пуст) не мешает — важен
- * только финальный результат: у каждого филиала из assignments ровно один
- * менеджер после того, как выполнятся ВСЕ перестановки.
+ * Работает благодаря 1784310000000_deferred-branch-manager-constraint.js
+ * (+ лимит поднят до 2 в 1784430000000_branch-manager-max-two-per-branch.js):
+ * проверка «максимум 2 менеджера на филиал» там DEFERRABLE INITIALLY DEFERRED —
+ * то есть считается один раз в конце транзакции (на COMMIT), а не после
+ * каждого UPDATE. Поэтому промежуточное состояние внутри транзакции (пока по
+ * цепочке кто-то временно оказался «третьим» или филиал временно пуст) не
+ * мешает — важен только финальный результат: у каждого филиала из assignments
+ * не больше 2 менеджеров после того, как выполнятся ВСЕ перестановки.
  *
  * assignments — полный список новых назначений, например для кольцевого
  * свопа A→филиал2, B→филиал3, C→филиал1:
@@ -916,7 +918,7 @@ export async function reassignBranchManagers(orgId, assignments) {
   } catch (err) {
     if (err.code === '23505') {
       if (isBranchManagerDuplicate(err)) {
-        throw new AppError(409, 'Reassignment leaves a branch with more than one manager');
+        throw new AppError(409, 'Reassignment leaves a branch with more than 2 managers');
       }
       throw new AppError(409, 'Email already in use');
     }
@@ -948,4 +950,45 @@ export async function deleteBranchManager(orgId, id) {
   const row = await repo.deleteBranchManager(id, orgId);
   if (!row) throw new AppError(404, 'Branch manager not found in your organization');
   return { id: row.id };
+}
+
+// ---------- анонсы платформы (от Main Admin, только чтение) ----------
+
+export async function listPlatformAnnouncements(orgId) {
+  return repo.listPlatformAnnouncementsForOrg(orgId);
+}
+
+// ---------- каталог платных фич + заявки (SEO не переключает сам) ----------
+
+export async function getFeatureCatalog(orgId) {
+  const [catalog, flags] = await Promise.all([repo.listActiveAddonCatalog(), repo.getOwnFeatureFlags(orgId)]);
+  const enabledKeys = new Set(flags.filter((f) => f.enabled).map((f) => f.feature_key));
+  return catalog.map((c) => ({ ...c, enabled: enabledKeys.has(c.feature_key) }));
+}
+
+export async function createFeatureRequest(orgId, { featureKey, type, note }, requestedBy) {
+  const existing = await repo.findPendingFeatureRequest(orgId, featureKey, type);
+  if (existing) throw new AppError(409, 'A pending request for this feature already exists');
+  return repo.insertFeatureRequest({ orgId, featureKey, type, note, requestedBy });
+}
+
+export async function listOwnFeatureRequests(orgId) {
+  return repo.listOwnFeatureRequests(orgId);
+}
+
+// ---------- свой биллинг (read-only) ----------
+
+export async function getOwnBilling(orgId) {
+  const org = await repo.getOwnAccessInfo(orgId);
+  const { blocked, reason } = isOrgAccessBlocked(org);
+  return {
+    status: org?.status ?? null,
+    accessUntil: org?.access_until ?? null,
+    blocked,
+    reason,
+  };
+}
+
+export async function getOwnLedger(orgId) {
+  return repo.listOwnLedger(orgId);
 }

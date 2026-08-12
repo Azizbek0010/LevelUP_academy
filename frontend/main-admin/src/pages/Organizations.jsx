@@ -36,7 +36,7 @@ function StatCard({ Icon, tint, title, value, unit }) {
     <div className="card bg-base-100 shadow-sm border border-base-200/60">
       <div className="card-body p-4">
         <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl grid place-items-center shrink-0" style={{ background: tint.bg, color: tint.fg }}>
+          <span className="w-10 h-10 rounded-md grid place-items-center shrink-0" style={{ background: tint.bg, color: tint.fg }}>
             <Icon size={18} strokeWidth={2.3} />
           </span>
           <div>
@@ -82,18 +82,18 @@ function PartnerCard({ p, cur, maxBill, totalIncome, onToggle, busyId, onCardCli
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
-          <div className="text-center rounded-lg bg-base-200/40 p-2">
-            <div className="text-xs text-base-content/50">Ученики</div>
-            <div className="font-extrabold text-base tabular-nums">{fmt(p.students)}</div>
+        <div className="flex items-stretch divide-x divide-base-200 border-y border-base-200 -mx-5 px-5 py-2.5">
+          <div className="flex-1 pr-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/40">Ученики</div>
+            <div className="font-extrabold text-base tabular-nums mt-0.5">{fmt(p.students)}</div>
           </div>
-          <div className="text-center rounded-lg bg-base-200/40 p-2">
-            <div className="text-xs text-base-content/50">Филиалы</div>
-            <div className="font-extrabold text-base tabular-nums">{fmt(p.branches)}</div>
+          <div className="flex-1 px-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/40">Филиалы</div>
+            <div className="font-extrabold text-base tabular-nums mt-0.5">{fmt(p.branches)}</div>
           </div>
-          <div className="text-center rounded-lg bg-lime-50 p-2">
-            <div className="text-xs text-lime-700/70">Счёт/мес</div>
-            <div className="font-extrabold text-base tabular-nums text-lime-700">{fmt(p.monthlyBill)}</div>
+          <div className="flex-1 pl-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-lime-700/60">Счёт/мес</div>
+            <div className="font-extrabold text-base tabular-nums mt-0.5 text-lime-700">{fmt(p.monthlyBill)}</div>
           </div>
         </div>
 
@@ -282,18 +282,18 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
           {detailTab === 'overview' && (
             <>
               {/* Metrics */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="text-center rounded-lg bg-base-200/40 p-3">
-                  <div className="text-xs text-base-content/50">Филиалы</div>
-                  <div className="font-extrabold text-lg tabular-nums">{fmt(partner.branches)}</div>
+              <div className="flex items-stretch divide-x divide-base-200 border-y border-base-200 py-3">
+                <div className="flex-1 text-center px-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/40">Филиалы</div>
+                  <div className="font-extrabold text-lg tabular-nums mt-0.5">{fmt(partner.branches)}</div>
                 </div>
-                <div className="text-center rounded-lg bg-base-200/40 p-3">
-                  <div className="text-xs text-base-content/50">Ученики</div>
-                  <div className="font-extrabold text-lg tabular-nums">{fmt(partner.students)}</div>
+                <div className="flex-1 text-center px-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/40">Ученики</div>
+                  <div className="font-extrabold text-lg tabular-nums mt-0.5">{fmt(partner.students)}</div>
                 </div>
-                <div className="text-center rounded-lg bg-lime-50 p-3">
-                  <div className="text-xs text-lime-700/70">Счёт/мес</div>
-                  <div className="font-extrabold text-lg tabular-nums text-lime-700">{fmt(partner.monthlyBill)}</div>
+                <div className="flex-1 text-center px-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-lime-700/60">Счёт/мес</div>
+                  <div className="font-extrabold text-lg tabular-nums mt-0.5 text-lime-700">{fmt(partner.monthlyBill)}</div>
                 </div>
               </div>
 
@@ -314,7 +314,7 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
               </div>
 
               {frozen && (
-                <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 flex items-center gap-2">
+                <div className="rounded-md border border-blue-200 bg-blue-50/60 p-4 flex items-center gap-2">
                   <Snowflake size={14} className="text-blue-500 shrink-0" />
                   <span className="text-sm text-blue-800">
                     Партнёр заморожен — вход на платформу для него закрыт
@@ -408,21 +408,21 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
                   <Wallet size={12} /> Финансовый профиль
                 </div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                  <div className="flex items-center justify-between p-2.5 rounded-md bg-base-200/40">
                     <span className="text-base-content/60">Счёт / мес</span>
                     <span className="font-bold text-lime-700 tabular-nums">
                       {fmt(partner.monthlyBill)} {cur}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                  <div className="flex items-center justify-between p-2.5 rounded-md bg-base-200/40">
                     <span className="text-base-content/60">Доля платформы</span>
                     <span className="font-bold tabular-nums">{share}%</span>
                   </div>
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                  <div className="flex items-center justify-between p-2.5 rounded-md bg-base-200/40">
                     <span className="text-base-content/60">Дней на платформе</span>
                     <span className="font-bold tabular-nums">{daysOnPlatform}</span>
                   </div>
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-base-200/40">
+                  <div className="flex items-center justify-between p-2.5 rounded-md bg-base-200/40">
                     <span className="text-base-content/60">Ученики на филиал</span>
                     <span className="font-bold tabular-nums">{studentsPerBranch}</span>
                   </div>

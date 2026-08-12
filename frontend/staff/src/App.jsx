@@ -4,6 +4,7 @@ import { useAuth } from './auth.jsx';
 
 import Layout from './components/Layout.jsx';
 import Login from './pages/Login.jsx';
+import { LangProvider } from './pages/finance/_i18n.jsx';
 import RoleGuard from './components/RoleGuard.jsx';
 import Splash from './components/Splash.jsx';
 // Lazy-loaded pages
@@ -23,11 +24,20 @@ const SuperReminders = lazy(() => import('./pages/super/Reminders.jsx'));
 const SuperAudit = lazy(() => import('./pages/super/Audit.jsx'));
 const SuperDiscipline = lazy(() => import('./pages/super/Discipline.jsx'));
 const SuperAttendance = lazy(() => import('./pages/super/Attendance.jsx'));
+const SuperFeatures = lazy(() => import('./pages/super/Features.jsx'));
+const SuperBilling = lazy(() => import('./pages/super/Billing.jsx'));
 
 const BranchManagerDashboard = lazy(() => import('./pages/branch-manager/Dashboard.jsx'));
 const BranchManagerIncome = lazy(() => import('./pages/branch-manager/Income.jsx'));
 const BranchManagerReports = lazy(() => import('./pages/branch-manager/Reports.jsx'));
 const BranchManagerBranch = lazy(() => import('./pages/branch-manager/Branch.jsx'));
+
+const FinanceDashboard = lazy(() => import('./pages/finance/Dashboard.jsx'));
+const FinanceIncome = lazy(() => import('./pages/finance/Income.jsx'));
+const FinanceExpenses = lazy(() => import('./pages/finance/Expenses.jsx'));
+const FinanceSalaries = lazy(() => import('./pages/finance/Salaries.jsx'));
+const FinanceReports = lazy(() => import('./pages/finance/Reports.jsx'));
+const FinanceSettings = lazy(() => import('./pages/finance/Settings.jsx'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
 const AdminStudents = lazy(() => import('./pages/admin/Students.jsx'));
@@ -71,6 +81,7 @@ function DashboardRedirect() {
   if (role === 'seo') return <SuperDashboard />;
   if (role === 'admin') return <AdminDashboard />;
   if (role === 'branch_manager') return <BranchManagerDashboard />;
+  if (role === 'finance_manager') return <FinanceDashboard />;
   if (role === 'mentor') return <MentorDashboard />;
   if (role === 'methodist') return <MethodistDashboard />;
   return <AdminDashboard />;
@@ -109,7 +120,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
-      <Route element={<Protected><Layout /></Protected>}>
+      <Route element={<LangProvider><Protected><Layout /></Protected></LangProvider>}>
         <Route path="/" element={<SW><DashboardRedirect /></SW>} />
 
         {/* Shared paths dispatched by role */}
@@ -165,6 +176,18 @@ export default function App() {
           <Route path="/branch" element={<SW><BranchManagerBranch /></SW>} />
         </Route>
 
+        {/* Finance Manager routes — static demo (backend rol hali yo'q).
+            'superadmin' роль переименована в 'seo' 07.08.2026 — здесь
+            заменено, иначе SEO не смог бы открыть /finance из своего меню. */}
+        <Route element={<RoleGuard allow={['finance_manager', 'seo']} />}>
+          <Route path="/finance" element={<SW><FinanceDashboard /></SW>} />
+          <Route path="/finance/income" element={<SW><FinanceIncome /></SW>} />
+          <Route path="/finance/expenses" element={<SW><FinanceExpenses /></SW>} />
+          <Route path="/finance/salaries" element={<SW><FinanceSalaries /></SW>} />
+          <Route path="/finance/reports" element={<SW><FinanceReports /></SW>} />
+          <Route path="/finance/settings" element={<SW><FinanceSettings /></SW>} />
+        </Route>
+
         {/* SEO routes */}
         <Route element={<RoleGuard allow={['seo']} />}>
           <Route path="/branches" element={<SW><SuperBranches /></SW>} />
@@ -173,6 +196,8 @@ export default function App() {
           <Route path="/admins/:role/:id" element={<SW><SuperStaffDetail /></SW>} />
           <Route path="/stats" element={<SW><SuperStats /></SW>} />
           <Route path="/announcements" element={<SW><SuperAnnouncements /></SW>} />
+          <Route path="/features" element={<SW><SuperFeatures /></SW>} />
+          <Route path="/billing" element={<SW><SuperBilling /></SW>} />
           <Route path="/reminders" element={<SW><SuperReminders /></SW>} />
           <Route path="/audit" element={<SW><SuperAudit /></SW>} />
           <Route path="/methodics" element={<SW><SuperTrainingTypes /></SW>} />
