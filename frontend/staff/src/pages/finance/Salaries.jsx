@@ -3,7 +3,7 @@ import { BadgeDollarSign, Users } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
 import { Metric, Card, BranchSelect, MonthSelect } from './_ui.jsx';
-import { useT } from './_i18n.jsx';
+import { useTranslation } from "react-i18next";
 import { BRANCHES, MONTHS, CURRENT_MONTH, SALARIES, monthRow, MONTH_LABEL } from './_data.js';
 
 const scopeTotal = (branchId, monthKey) =>

@@ -8,7 +8,7 @@ import { User, Mail, Phone, MapPin, Save, BadgeCheck, Globe, ShieldCheck, CheckC
 import PageHeader from '../../components/PageHeader.jsx';
 import { useAuth } from '../../auth.jsx';
 import { Card, LangSwitch } from './_ui.jsx';
-import { useT } from './_i18n.jsx';
+import { useTranslation } from "react-i18next";
 import { PROFILE } from './_data.js';
 
 const STORAGE_KEY = 'finance_profile';

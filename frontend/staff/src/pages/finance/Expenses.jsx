@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recha
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
 import { Metric, Card, BranchSelect, MonthSelect, PlannedBadge } from './_ui.jsx';
-import { useT } from './_i18n.jsx';
+import { useTranslation } from "react-i18next";
 import { BRANCHES, MONTHS, CURRENT_MONTH, EXPENSES, monthRow, MONTH_LABEL } from './_data.js';
 
 const scopeTotal = (branchId, monthKey) =>

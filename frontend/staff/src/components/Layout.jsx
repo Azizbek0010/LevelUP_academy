@@ -224,7 +224,7 @@ const ROLE_COLORS = {
 function MentorGroupsNav({ collapsed, onExpandSidebar }) {
   const { data } = useMentorGroups();
   const location = useLocation();
-  const { t } = useT();
+  const { t } = useTranslation();
   const groups = data?.data || [];
 
   const insideGroup = location.pathname.startsWith('/groups');
@@ -312,7 +312,7 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
 function SuperBranchesNav({ collapsed, onExpandSidebar }) {
   const { data } = useSuperBranches();
   const location = useLocation();
-  const { t } = useT();
+  const { t } = useTranslation();
   const branches = data?.branches ?? [];
 
   const inside = location.pathname.startsWith('/branches');
@@ -416,7 +416,7 @@ function SuperBranchesNav({ collapsed, onExpandSidebar }) {
    иначе после перехода группа схлопывалась бы и прятала текущую страницу. */
 function NavGroup({ label, labelKey, Icon, items, collapsed, onExpandSidebar }) {
   const location = useLocation();
-  const { t } = useT();
+  const { t } = useTranslation();
   const inside = items.some((i) => location.pathname === i.to);
   const [open, setOpen] = useState(inside);
 
@@ -489,7 +489,7 @@ function Sidebar({
   const nav = ROLE_NAV[role] || [];
   const { user } = useAuth();
   const location = useLocation();
-  const { t } = useT();
+  const { t } = useTranslation();
 
   return (
     <aside

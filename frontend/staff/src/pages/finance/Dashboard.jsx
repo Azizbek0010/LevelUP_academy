@@ -8,13 +8,13 @@ import {
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
 import { Metric, Card, compactMoney } from './_ui.jsx';
-import { useT } from './_i18n.jsx';
+import { useTranslation } from 'react-i18next';
 import { BRANCHES, MONTHS, CURRENT_MONTH, monthRow, orgSeries, MONTH_LABEL } from './_data.js';
 
 const BRANCH_COLORS = ['#16a34a', '#f59e0b', '#0ea5e9'];
 
 export default function FinanceDashboard() {
-  const { t, lang } = useT();
+  const { t, lang } = useTranslation();
   const series = orgSeries();
   const cur = series[series.length - 1];
   const prev = series[series.length - 2] || cur;
