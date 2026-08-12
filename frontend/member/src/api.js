@@ -25,7 +25,7 @@ const MOCK_OVERVIEW = {
   currentInvoice: { totalAmount: 200000, paidAmount: 50000 },
   rank: { rank: 3, coins: 350 },
   groups: [
-    { id: 'g1', name: 'A1', subject: 'A1', mentorName: 'Акбар Каримов', studentCount: 12 },
+    { id: 'g1', name: 'A1', subject: 'Английский язык', mentorName: 'Акбар Каримов', studentCount: 12 },
   ],
   attendance: {
     windowDays: 30,
@@ -48,7 +48,7 @@ const MOCK_OVERVIEW = {
       { id: 'hw-004', title: 'Лабораторная работа #2', score: 95, maxScore: 100, gradedAt: '2026-07-02T10:00:00.000Z', groupName: 'A1', description: 'Написать программу на Python: сортировка массива методом пузырька. Добавить комментарии к каждому шагу.' },
     ],
     tests: [
-      { id: 'test-001', title: 'Тест по английскому (Beginner)', score: 8, maxScore: 10, finishedAt: '2026-07-13T14:00:00.000Z', groupName: 'A1', durationMin: 30,
+      { id: 'test-001', title: 'Тест по английскому (Beginner)', score: 90, maxScore: 10, finishedAt: '2026-07-13T14:00:00.000Z', groupName: 'A1', durationMin: 30,
         questions: [
           { q: '"Achieve" means:', options: ['To reach a goal', 'To give up', 'To sleep', 'To eat'], correct: 0, studentAnswer: 0 },
           { q: 'Choose the correct form: "She ___ to school every day."', options: ['goes', 'go', 'going', 'gone'], correct: 0, studentAnswer: 0 },
@@ -61,7 +61,7 @@ const MOCK_OVERVIEW = {
           { q: '"The book is ___ the table."', options: ['on', 'in', 'at', 'by'], correct: 0, studentAnswer: 0 },
           { q: '"He asked me where ___."', options: ['I lived', 'did I live', 'I live', 'do I live'], correct: 0, studentAnswer: 0 },
         ]},
-      { id: 'test-002', title: 'Тест по математике (Квадратные уравнения)', score: 6, maxScore: 10, finishedAt: '2026-07-08T14:00:00.000Z', groupName: 'A1', durationMin: 25,
+      { id: 'test-002', title: 'Тест по математике (Квадратные уравнения)', score: 70, maxScore: 10, finishedAt: '2026-07-08T14:00:00.000Z', groupName: 'A1', durationMin: 25,
         questions: [
           { q: 'Решите: x² - 5x + 6 = 0', options: ['x=2, x=3', 'x=1, x=6', 'x=-2, x=-3', 'x=0, x=5'], correct: 0, studentAnswer: 0 },
           { q: 'Дискриминант уравнения 2x² + 3x - 5 = 0 равен:', options: ['49', '25', '1', '9'], correct: 0, studentAnswer: 0 },
@@ -74,7 +74,7 @@ const MOCK_OVERVIEW = {
           { q: 'Корни уравнения 3x² - 12x + 9 = 0:', options: ['x=1, x=3', 'x=2, x=6', 'x=3, x=9', 'x=0, x=4'], correct: 0, studentAnswer: 0 },
           { q: 'Дискриминант: x² - 6x + 9 = 0', options: ['0', '36', '9', '12'], correct: 0, studentAnswer: 0 },
         ]},
-      { id: 'test-003', title: 'Тест по основам программирования', score: 9, maxScore: 10, finishedAt: '2026-07-05T14:00:00.000Z', groupName: 'A1', durationMin: 20,
+      { id: 'test-003', title: 'Тест по основам программирования', score: 90, maxScore: 10, finishedAt: '2026-07-05T14:00:00.000Z', groupName: 'A1', durationMin: 20,
         questions: [
           { q: 'Что такое переменная?', options: ['Именованная область памяти', 'Тип данных', 'Функция', 'Цикл'], correct: 0, studentAnswer: 0 },
           { q: 'Какой оператор используется для условий?', options: ['if', 'for', 'while', 'return'], correct: 0, studentAnswer: 0 },

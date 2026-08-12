@@ -4,6 +4,7 @@ import { timeAgo } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { EmptyState, ErrorState } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
+import { useI18n } from '../i18n.jsx';
 
 const ICON_MAP = {
   grade: 'academic',
@@ -22,13 +23,14 @@ const COLOR_MAP = {
 };
 
 const FILTERS = [
-  { key: 'all', label: 'Все' },
-  { key: 'grade', label: 'Оценки' },
-  { key: 'attendance', label: 'Посещаемость' },
-  { key: 'payment', label: 'Оплата' },
+  { key: 'all', label: 'notif.filter.all' },
+  { key: 'grade', label: 'notif.filter.grade' },
+  { key: 'attendance', label: 'notif.filter.attendance' },
+  { key: 'payment', label: 'notif.filter.payment' },
 ];
 
 export default function Notifications() {
+  const { t } = useI18n();
   const { items, isLoading, isFetchingMore, hasMore, loadMore, error, refetch } = useNotifications();
   const [filter, setFilter] = useState('all');
 
@@ -38,7 +40,7 @@ export default function Notifications() {
   if (error) {
     return (
       <>
-        <PageHeader title="Уведомления" />
+        <PageHeader title={t('notif.title')} />
         <ErrorState message={error.message} onRetry={refetch} />
       </>
     );
@@ -47,8 +49,8 @@ export default function Notifications() {
   return (
     <>
       <PageHeader
-        title="Уведомления"
-        subtitle={unread > 0 ? `${unread} непрочитанных` : 'Все прочитаны'}
+        title={t('notif.title')}
+        subtitle={unread > 0 ? t('notif.unread', { count: unread }) : t('notif.allRead')}
       />
 
       {/* Filter Tabs */}
@@ -68,7 +70,7 @@ export default function Notifications() {
               {f.key !== 'all' && (
                 <div className="w-2 h-2 rounded-full" style={{ background: COLOR_MAP[f.key] }} />
               )}
-              {f.label}
+              {t(f.label)}
               {count > 0 && (
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                   filter === f.key ? 'bg-primary-content/20' : 'bg-base-200'
@@ -90,7 +92,7 @@ export default function Notifications() {
 
       {/* Empty */}
       {!isLoading && filtered.length === 0 && (
-        <EmptyState icon="bell" title="Нет уведомлений" message="Здесь будут важные события" />
+        <EmptyState icon="bell" title={t('notif.emptyTitle')} message={t('notif.emptyMsg')} />
       )}
 
       {/* Notification Cards */}
@@ -143,7 +145,7 @@ export default function Notifications() {
             onClick={loadMore}
             disabled={isFetchingMore}
           >
-            {isFetchingMore ? <span className="loading loading-spinner loading-xs" /> : 'Показать ещё'}
+            {isFetchingMore ? <span className="loading loading-spinner loading-xs" /> : t('notif.showMore')}
           </button>
         </div>
       )}

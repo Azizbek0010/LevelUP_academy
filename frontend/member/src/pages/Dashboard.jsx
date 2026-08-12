@@ -1,30 +1,42 @@
 import { useState } from 'react';
 import { useParentOverview, useGroupRating } from '../queries.js';
 import { useChild } from '../child-context.jsx';
-import { fmt, money, dateShort, timeAgo, ATTENDANCE_STATUS } from '../format.js';
+import { fmt, money, dateShort, timeAgo, ATTENDANCE_STATUS, gradePercent } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressRing, StatCard } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
+import { useI18n } from '../i18n.jsx';
 
 const RANK_COLORS = ['#f59e0b', '#94a3b8', '#cd7f32'];
 const RANK_ICONS = ['trophy', 'star', 'star'];
 
+function groupInitials(name = '') {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+}
+
 export default function Dashboard() {
+  const { t } = useI18n();
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
   const { data: ratingData, isLoading: ratingLoading } = useGroupRating(selectedChild?.id);
   const [showRating, setShowRating] = useState(false);
 
   if (!selectedChild) {
-    return <EmptyState icon="user-circle" title="Выберите ребёнка" message="Добавьте ребёнка в профиль для просмотра данных" />;
+    return <EmptyState icon="user-circle" title={t('dash.noChildTitle')} message={t('dash.noChildMsg')} />;
   }
 
   if (isLoading) {
     return (
       <>
-        <PageHeader title="Обзор" />
+        <PageHeader title={t('dash.title')} />
         <SkeletonKpis />
       </>
     );
@@ -48,7 +60,7 @@ export default function Dashboard() {
 
   const avgScore =
     allGrades.length > 0
-      ? Math.round(allGrades.reduce((s, g) => s + (g.score / g.maxScore) * 100, 0) / allGrades.length)
+      ? Math.round(allGrades.reduce((s, g) => s + gradePercent(g.score, g.maxScore, g.type), 0) / allGrades.length)
       : 0;
 
   const group = d.groups?.[0];
@@ -58,13 +70,13 @@ export default function Dashboard() {
   if (showRating && group) {
     return (
       <>
-        <PageHeader title={`Группа ${group.name}`} subtitle={group.mentorName} />
+        <PageHeader title={t('dash.rating.title', { name: group.name })} subtitle={group.mentorName} />
         <button
           onClick={() => setShowRating(false)}
           className="flex items-center gap-2 text-sm text-primary mb-4 hover:underline"
         >
           <Icon name="arrow-left" className="w-4 h-4" />
-          Назад к обзору
+          {t('common.back')}
         </button>
 
         {/* Guruh ma'lumotlari */}
@@ -72,12 +84,12 @@ export default function Dashboard() {
           <div className="card-body py-4">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center">
-                <span className="text-xl font-extrabold text-primary">{group.name}</span>
+                <span className="text-lg font-extrabold text-primary leading-none">{groupInitials(group.name)}</span>
               </div>
-              <div className="flex-1">
-                <h2 className="text-lg font-bold">{group.name}</h2>
-                <p className="text-sm opacity-50">{group.subject} · {group.mentorName}</p>
-                <p className="text-xs opacity-30 mt-0.5">{students.length} учеников</p>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold truncate">{group.name}</h2>
+                <p className="text-sm opacity-50 truncate">{group.subject} · {group.mentorName}</p>
+                <p className="text-xs opacity-30 mt-0.5">{t('dash.rating.members', { count: students.length })}</p>
               </div>
             </div>
           </div>
@@ -88,7 +100,7 @@ export default function Dashboard() {
           <div className="card-body">
             <h3 className="card-title text-sm gap-2 mb-3">
               <Icon name="trophy" className="w-4 h-4 text-primary" />
-              Рейтинг группы
+              {t('dash.rating.header')}
             </h3>
 
             {ratingLoading ? (
@@ -98,7 +110,7 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : students.length === 0 ? (
-              <EmptyState icon="trophy" title="Нет данных" message="Рейтинг пока пуст" />
+              <EmptyState icon="trophy" title={t('dash.rating.emptyTitle')} message={t('dash.rating.emptyMsg')} />
             ) : (
               <div className="space-y-2">
                 {students.map((s, i) => {
@@ -133,9 +145,9 @@ export default function Dashboard() {
                         <div className="min-w-0">
                           <p className={`text-sm font-semibold truncate ${isMe ? 'text-primary' : ''}`}>
                             {s.firstName} {s.lastName}
-                            {isMe && <span className="text-[10px] ml-1 opacity-50">(вы)</span>}
+                            {isMe && <span className="text-[10px] ml-1 opacity-50">{t('dash.rating.you')}</span>}
                           </p>
-                          <p className="text-[11px] opacity-40">{fmt(s.coins)} коинов</p>
+                          <p className="text-[11px] opacity-40">{fmt(s.coins)} {t('common.coins')}</p>
                         </div>
                       </div>
 
@@ -144,7 +156,7 @@ export default function Dashboard() {
                         <p className="text-sm font-bold" style={{ color: s.avgScore >= 80 ? '#22c55e' : s.avgScore >= 60 ? '#f59e0b' : '#ef4444' }}>
                           {s.avgScore}%
                         </p>
-                        <p className="text-[10px] opacity-30">ср. балл</p>
+                        <p className="text-[10px] opacity-30">{t('dash.rating.avgScore')}</p>
                       </div>
                     </div>
                   );
@@ -159,7 +171,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <PageHeader title="Обзор" subtitle={`${d.child.firstName} ${d.child.lastName}`} />
+      <PageHeader title={t('dash.title')} subtitle={`${d.child.firstName} ${d.child.lastName}`} />
 
       {/* Hero Card */}
       <div className="card bg-gradient-to-br from-sidebar via-[#1a2e12] to-[#0f1a0a] text-white mb-6 overflow-hidden relative">
@@ -172,27 +184,27 @@ export default function Dashboard() {
               <ProgressRing value={attPct} size={80} stroke={5} color="#C6FF34" bg="rgba(255,255,255,.12)" />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-lg font-extrabold">{attPct}%</span>
-                <span className="text-[9px] opacity-40">посещ.</span>
+                <span className="text-[9px] opacity-40">{t('dash.attendanceShort')}</span>
               </div>
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-xl font-extrabold tracking-tight">{d.child.firstName} {d.child.lastName}</h2>
               <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                 {group && (
-                  <span className="text-xs opacity-50 flex items-center gap-1">
-                    <Icon name="academic" className="w-3.5 h-3.5" />
-                    {group.name}
+                  <span className="text-xs opacity-50 flex items-center gap-1 max-w-full">
+                    <Icon name="academic" className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{group.name}</span>
                   </span>
                 )}
                 <span className="opacity-20">·</span>
                 <span className="text-xs opacity-50 flex items-center gap-1">
                   <Icon name="trophy" className="w-3.5 h-3.5" />
-                  Рейтинг {d.rank?.rank ? `#${d.rank.rank}` : '—'}
+                  {d.rank?.rank ? t('dash.hero.rating', { rank: `#${d.rank.rank}` }) : t('dash.hero.ratingEmpty')}
                 </span>
                 <span className="opacity-20">·</span>
                 <span className="text-xs opacity-50 flex items-center gap-1">
                   <Icon name="star" className="w-3.5 h-3.5" />
-                  {fmt(d.coins)} коинов
+                  {t('dash.hero.coins', { coins: fmt(d.coins) })}
                 </span>
               </div>
             </div>
@@ -202,16 +214,16 @@ export default function Dashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <StatCard icon="star" label="Коины" value={fmt(d.coins)} color="#C6FF34" sub="Заработанные баллы" />
+        <StatCard icon="star" label={t('dash.kpi.coins')} value={fmt(d.coins)} color="#C6FF34" sub={t('dash.kpi.coinsSub')} />
         <StatCard
           icon="wallet"
-          label="Долг"
+          label={t('dash.kpi.debt')}
           value={money(d.totalDebt)}
           color={Number(d.totalDebt) > 0 ? '#ef4444' : '#22c55e'}
-          sub={Number(d.totalDebt) > 0 ? 'Требуется оплата' : 'Нет задолженности'}
+          sub={Number(d.totalDebt) > 0 ? t('dash.kpi.debtSub.yes') : t('dash.kpi.debtSub.no')}
         />
-        <StatCard icon="trophy" label="Рейтинг" value={d.rank?.rank ? `#${d.rank.rank}` : '—'} color="#f59e0b" sub="Среди одногруппников" />
-        <StatCard icon="chart-bar" label="Посещаемость" value={`${attPct}%`} color="#3b82f6" sub={`${att.present || 0} из ${attTotal}`} />
+        <StatCard icon="trophy" label={t('dash.kpi.rating')} value={d.rank?.rank ? `#${d.rank.rank}` : '—'} color="#f59e0b" sub={t('dash.kpi.ratingSub')} />
+        <StatCard icon="chart-bar" label={t('dash.kpi.attendance')} value={`${attPct}%`} color="#3b82f6" sub={t('dash.kpi.attendanceSub', { present: att.present || 0, total: attTotal })} />
       </div>
 
       {/* Attendance + Group */}
@@ -221,21 +233,21 @@ export default function Dashboard() {
           <div className="card-body">
             <h3 className="card-title text-sm gap-2">
               <Icon name="calendar-check" className="w-4 h-4 text-primary" />
-              Посещаемость (30 дней)
+              {t('dash.attendance.title')}
             </h3>
             <div className="flex items-center gap-6 mt-3">
               <div className="relative">
                 <ProgressRing value={attPct} size={100} stroke={8} />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-2xl font-extrabold">{attPct}%</span>
-                  <span className="text-[10px] opacity-40">присутствие</span>
+                  <span className="text-[10px] opacity-40">{t('dash.attendance.present')}</span>
                 </div>
               </div>
               <div className="flex-1 space-y-2.5">
                 {['present', 'absent', 'late', 'excused'].map((s) => {
                   const count = att[s] || 0;
                   const pct = Math.round((count / attTotal) * 100);
-                  const st = ATTENDANCE_STATUS[s];
+                  const st = ATTENDANCE_STATUS()[s];
                   return (
                     <div key={s} className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ background: st?.color }} />
@@ -257,28 +269,28 @@ export default function Dashboard() {
           <div className="card-body">
             <h3 className="card-title text-sm gap-2">
               <Icon name="academic" className="w-4 h-4 text-primary" />
-              Группа
+              {t('dash.group.title')}
             </h3>
             {!group ? (
-              <EmptyState icon="folder" title="Нет группы" message="Ещё не записан" />
+              <EmptyState icon="folder" title={t('dash.group.emptyTitle')} message={t('dash.group.emptyMsg')} />
             ) : (
               <button
                 onClick={() => setShowRating(true)}
                 className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:from-primary/10 hover:to-primary/15 hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer w-full text-left mt-2"
               >
-                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-lg font-extrabold text-primary shrink-0 group-hover:scale-110 transition-transform">
-                  {group.name}
+                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-base font-extrabold text-primary shrink-0 group-hover:scale-110 transition-transform">
+                  {groupInitials(group.name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold">{group.name}</p>
+                  <p className="text-sm font-bold truncate">{group.name}</p>
                   <p className="text-xs opacity-40 flex items-center gap-1 mt-0.5">
                     <Icon name="user" className="w-3 h-3" />
-                    {group.mentorName}
+                    <span className="truncate">{group.mentorName}</span>
                   </p>
-                  <p className="text-[11px] opacity-30 mt-0.5">{group.studentCount || '—'} учеников</p>
+                  <p className="text-[11px] opacity-30 mt-0.5">{group.studentCount ? t('common.students', { count: group.studentCount }) : '—'}</p>
                 </div>
                 <div className="flex items-center gap-1.5 text-primary shrink-0">
-                  <span className="text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">Рейтинг</span>
+                  <span className="text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">{t('dash.group.rating')}</span>
                   <Icon name="chevron-right" className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </button>
@@ -292,16 +304,16 @@ export default function Dashboard() {
         <div className="card-body">
           <h3 className="card-title text-sm gap-2">
             <Icon name="clock" className="w-4 h-4 text-primary" />
-            Последние занятия
+            {t('dash.lessons.title')}
           </h3>
           {d.attendance?.recent?.length === 0 ? (
-            <EmptyState icon="calendar" title="Нет записей" />
+            <EmptyState icon="calendar" title={t('dash.lessons.emptyTitle')} />
           ) : (
             <div className="mt-3 relative">
               <div className="absolute left-[19px] top-2 bottom-2 w-px bg-base-300" />
               <div className="space-y-1">
                 {d.attendance?.recent?.slice(0, 5).map((r, i) => {
-                  const st = ATTENDANCE_STATUS[r.status];
+                  const st = ATTENDANCE_STATUS()[r.status];
                   return (
                     <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-base-200/50 transition-colors relative">
                       <div className="relative z-10">
@@ -337,28 +349,28 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-1">
             <h3 className="card-title text-sm gap-2">
               <Icon name="document-text" className="w-4 h-4 text-primary" />
-              Последние оценки
+              {t('dash.grades.title')}
             </h3>
             {allGrades.length > 0 && (
-              <span className="text-xs opacity-40">Средний: <span className="font-bold opacity-100">{avgScore}%</span></span>
+              <span className="text-xs opacity-40">{t('dash.grades.avg', { avg: avgScore })}</span>
             )}
           </div>
           {allGrades.length === 0 ? (
-            <EmptyState icon="document-text" title="Нет оценок" />
+            <EmptyState icon="document-text" title={t('dash.grades.emptyTitle')} />
           ) : (
             <div className="overflow-x-auto">
               <table className="table table-sm">
                 <thead>
                   <tr>
-                    <th>Название</th>
-                    <th>Тип</th>
-                    <th>Балл</th>
-                    <th className="text-right">Дата</th>
+                    <th>{t('dash.grades.colName')}</th>
+                    <th>{t('dash.grades.colType')}</th>
+                    <th>{t('dash.grades.colScore')}</th>
+                    <th className="text-right">{t('dash.grades.colDate')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {allGrades.map((g, i) => {
-                    const pct = g.maxScore > 0 ? Math.round((g.score / g.maxScore) * 100) : 0;
+                    const pct = gradePercent(g.score, g.maxScore, g.type);
                     const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
                     return (
                       <tr key={i} className="hover:bg-base-200/50 transition-colors">
@@ -371,7 +383,7 @@ export default function Dashboard() {
                               color: g.type === 'hw' ? '#3b82f6' : '#a855f7',
                             }}
                           >
-                            {g.type === 'hw' ? 'ДЗ' : 'Тест'}
+                            {g.type === 'hw' ? t('dash.grades.hw') : t('dash.grades.test')}
                           </span>
                         </td>
                         <td>
@@ -379,7 +391,7 @@ export default function Dashboard() {
                             <div className="w-14 h-1.5 bg-base-200 rounded-full overflow-hidden">
                               <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${pct}%`, background: color }} />
                             </div>
-                            <span className="text-xs font-mono" style={{ color }}>{g.score}/{g.maxScore}</span>
+                            <span className="text-xs font-mono" style={{ color }}>{g.type === 'test' ? `${pct}%` : `${g.score}/${g.maxScore}`}</span>
                           </div>
                         </td>
                         <td className="text-xs opacity-40 text-right whitespace-nowrap">

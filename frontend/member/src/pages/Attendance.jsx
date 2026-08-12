@@ -6,18 +6,20 @@ import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressRing } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
+import { useI18n } from '../i18n.jsx';
 
 const PAGE_SIZE = 15;
 
 const FILTERS = [
-  { key: 'all', label: 'Все' },
-  { key: 'present', label: 'Присутствовал' },
-  { key: 'absent', label: 'Отсутствовал' },
-  { key: 'late', label: 'Опоздал' },
-  { key: 'excused', label: 'По уважит.' },
+  { key: 'all', label: 'att.filter.all' },
+  { key: 'present', label: 'att.filter.present' },
+  { key: 'absent', label: 'att.filter.absent' },
+  { key: 'late', label: 'att.filter.late' },
+  { key: 'excused', label: 'att.filter.excused' },
 ];
 
 export default function Attendance() {
+  const { t } = useI18n();
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
   const [filter, setFilter] = useState('all');
@@ -32,12 +34,12 @@ export default function Attendance() {
     refetch: refetchPage,
   } = useAttendancePage(selectedChild?.id, page, PAGE_SIZE);
 
-  if (!selectedChild) return <EmptyState icon="user-circle" title="Выберите ребёнка" />;
+  if (!selectedChild) return <EmptyState icon="user-circle" title={t('dash.noChildTitle')} />;
 
   if (isLoading || isPageLoading) {
     return (
       <>
-        <PageHeader title="Посещаемость" />
+        <PageHeader title={t('att.title')} />
         <SkeletonTable rows={6} cols={4} />
       </>
     );
@@ -65,7 +67,7 @@ export default function Attendance() {
   return (
     <>
       <PageHeader
-        title="Посещаемость"
+        title={t('att.title')}
         subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
       />
 
@@ -77,13 +79,13 @@ export default function Attendance() {
               <ProgressRing value={pct} size={96} stroke={8} />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-2xl font-extrabold">{pct}%</span>
-                <span className="text-[9px] opacity-40">присутствие</span>
+                <span className="text-[9px] opacity-40">{t('att.presentLabel')}</span>
               </div>
             </div>
             <div className="flex-1 w-full">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {['present', 'absent', 'late', 'excused'].map((s) => {
-                  const st = ATTENDANCE_STATUS[s];
+                  const st = ATTENDANCE_STATUS()[s];
                   const count = summary[s] || 0;
                   const isActive = filter === s;
                   return (
@@ -115,7 +117,7 @@ export default function Attendance() {
       <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl flex-wrap shadow-sm">
         {FILTERS.map((f) => {
           const isActive = filter === f.key;
-          const statusData = ATTENDANCE_STATUS[f.key];
+          const statusData = ATTENDANCE_STATUS()[f.key];
           return (
             <button
               key={f.key}
@@ -129,7 +131,7 @@ export default function Attendance() {
               {f.key !== 'all' && (
                 <div className="w-2 h-2 rounded-full" style={{ background: statusData?.color }} />
               )}
-              {f.label}
+              {f.label && t(f.label)}
               {f.key !== 'all' && (
                 <span className="opacity-60">{summary[f.key] || 0}</span>
               )}
@@ -143,10 +145,10 @@ export default function Attendance() {
         <div className="card-body">
           <h3 className="card-title text-sm gap-2">
             <Icon name="clock" className="w-4 h-4 text-primary" />
-            История посещений
+            {t('att.history')}
           </h3>
           {filtered.length === 0 ? (
-            <EmptyState icon="calendar" title="Нет записей" message="Посещаемость ещё не отмечена" />
+            <EmptyState icon="calendar" title={t('att.emptyTitle')} message={t('att.emptyMsg')} />
           ) : (
             <>
               {/* Desktop Table */}
@@ -154,15 +156,15 @@ export default function Attendance() {
                 <table className="table table-sm">
                   <thead>
                     <tr>
-                      <th>Дата</th>
-                      <th>Группа</th>
-                      <th>Статус</th>
-                      <th>Комментарий</th>
+                      <th>{t('att.colDate')}</th>
+                      <th>{t('att.colGroup')}</th>
+                      <th>{t('att.colStatus')}</th>
+                      <th>{t('att.colComment')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.map((r, i) => {
-                      const st = ATTENDANCE_STATUS[r.status];
+                      const st = ATTENDANCE_STATUS()[r.status];
                       return (
                         <tr key={i} className="hover:bg-base-200/50 transition-colors">
                           <td className="text-sm whitespace-nowrap font-medium">{dateShort(r.lessonDate)}</td>
@@ -186,7 +188,7 @@ export default function Attendance() {
               {/* Mobile Cards */}
               <div className="sm:hidden space-y-2 mt-3">
                 {filtered.map((r, i) => {
-                  const st = ATTENDANCE_STATUS[r.status];
+                  const st = ATTENDANCE_STATUS()[r.status];
                   return (
                     <div key={i} className="p-3 rounded-xl bg-base-200/40 hover:bg-base-200/60 transition-colors">
                       <div className="flex items-center justify-between mb-1">
@@ -214,7 +216,7 @@ export default function Attendance() {
           {/* FE-PARENT-PAGINATION */}
           {pageCount > 1 && (
             <div className="flex items-center justify-between px-1 py-3 mt-2 border-t border-base-200">
-              <span className="text-xs text-base-content/50">Страница {page} из {pageCount}</span>
+              <span className="text-xs text-base-content/50">{t('common.page', { page, total: pageCount })}</span>
               <div className="join">
                 <button className="join-item btn btn-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>«</button>
                 <button className="join-item btn btn-xs" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>»</button>
