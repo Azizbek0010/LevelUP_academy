@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@fontsource-variable/manrope';
 import { AuthProvider } from './auth.jsx';
+import './i18n.js';
 import App from './App.jsx';
 import './index.css';
 

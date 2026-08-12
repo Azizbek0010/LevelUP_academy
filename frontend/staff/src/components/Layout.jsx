@@ -15,17 +15,40 @@ import {
   HiOutlinePresentationChartLine, HiOutlineCurrencyDollar,
   HiOutlineCalculator,
 } from 'react-icons/hi2';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
 import Avatar from './Avatar.jsx';
+import UserMenu from './UserMenu.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { disconnectSocket, getSocket } from '../socket.js';
 import { useMentorGroups, useSuperBranches, useChatContacts } from '../queries.js';
-import { LangSwitch } from '../pages/finance/_ui.jsx';
-import { useT } from '../pages/finance/_i18n.jsx';
-import {
-  playNotificationSound, unlockSound, isSoundEnabled, setSoundEnabled,
+import { playNotificationSound, unlockSound, isSoundEnabled, setSoundEnabled,
 } from '../lib/notificationSound.js';
+
+/* ─── Shared Language Switcher ─── */
+export function LangSwitch() {
+  const { i18n } = useTranslation();
+  const current = i18n.language || 'ru';
+
+  const toggle = () => {
+    const next = current === 'ru' ? 'uz' : 'ru';
+    i18n.changeLanguage(next);
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--text-secondary)] hover:bg-primary/5 hover:text-primary transition-all group"
+    >
+      <span className="w-8 h-8 rounded-lg bg-base-200 grid place-items-center shrink-0 group-hover:bg-primary/10 transition-colors uppercase font-bold text-[10px]">
+        {current === 'ru' ? 'UZ' : 'RU'}
+      </span>
+      <span>{current === 'ru' ? "O'zbek tili" : 'Русский язык'}</span>
+    </button>
+  );
+}
+
 
 /* ──────────────────── HOOKS ──────────────────── */
 function useMediaQuery(query) {
@@ -849,21 +872,8 @@ function Notifications() {
 function Header({ sidebarWidth, onMobileToggle }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const role = user?.role;
-  // Профиль есть не у всех ролей: у branch_manager отдельной страницы пока нет,
-  // и пункт «Профиль» в меню аккаунта был бы кнопкой, которая ведёт на «/».
-  const hasProfilePage = ['admin', 'seo', 'mentor', 'methodist'].includes(role);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const userMenuRef = useRef(null);
-
-  // Close user menu on outside click
-  useEffect(() => {
-    const handler = (e) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
 
   const onLogout = async () => {
     disconnectSocket();
@@ -891,97 +901,16 @@ function Header({ sidebarWidth, onMobileToggle }) {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Поиск и счётчик «онлайн» отсюда убраны.
-          Поиск ничего не искал: поле не было ни к чему подключено, только
-          подсвечивалось при фокусе — то есть обещало функцию, которой нет.
-          Счётчик онлайна показывал число, на которое ментор всё равно никак
-          не реагирует. */}
-
       <Notifications />
 
-      {/* Разделительная палка убрана: колокольчик и профиль теперь один ряд
-          однотипных элементов, разделять их нечем и незачем. */}
-
-      {/* User profile */}
-      <div className="relative" ref={userMenuRef}>
-        <button
-          onClick={() => setShowUserMenu(!showUserMenu)}
-          aria-expanded={showUserMenu}
-          aria-label="Меню аккаунта"
-          /* Было hover:scale — от наведения дёргался весь блок вместе с
-             текстом. Подсветка фона спокойнее и не сдвигает соседей. */
-          className={`flex items-center gap-2.5 p-1 sm:pr-3 rounded-full transition-colors ${
-            showUserMenu ? 'bg-[var(--green-bg)]' : 'hover:bg-[var(--green-bg)]'
-          }`}
-        >
-          <Avatar name={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`} size={36} />
-          <span className="hidden sm:block text-left leading-tight">
-            <span className="block text-sm font-bold text-[var(--text)]">
-              {user?.firstName} {user?.lastName}
-            </span>
-            <span className="block text-[11px] text-[var(--text-muted)]">
-              {ROLE_TITLE[role] || role}
-            </span>
-          </span>
-          <ChevronDown
-            size={14}
-            className={`hidden sm:block text-[var(--text-muted)] transition-transform ${
-              showUserMenu ? 'rotate-180' : ''
-            }`}
-          />
-        </button>
-
-        {/* Меню аккаунта.
-            Ховеры теперь классами Tailwind, а не onMouseEnter/onMouseLeave с
-            ручной подменой style: JS-обработчики не знают про :focus-visible,
-            поэтому при навигации с клавиатуры пункты никак не подсвечивались. */}
-        {showUserMenu && (
-          <div
-            role="menu"
-            className="popover-surface fixed sm:absolute left-3 right-3 top-[4.25rem] sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-64 overflow-hidden animate-scale-in z-50"
-          >
-            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--border)]">
-              <Avatar name={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`} size={44} />
-              <div className="min-w-0">
-                <div className="text-sm font-bold text-[var(--text)] truncate">
-                  {user?.firstName} {user?.lastName}
-                </div>
-                <div className="text-[11px] text-[var(--text-muted)] truncate">{user?.email}</div>
-                <span className="inline-block mt-1 text-[10px] font-bold text-[var(--primary)] bg-[rgba(59,130,246,0.1)] rounded-full px-2 py-0.5">
-                  {ROLE_TITLE[role] || role}
-                </span>
-              </div>
-            </div>
-
-            <div className="p-1.5">
-              <LangSwitch />
-              <div className="border-t border-[var(--border)] my-1.5" />
-              {hasProfilePage && (
-                <button
-                  role="menuitem"
-                  onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[rgba(59,130,246,0.08)] hover:text-[var(--text)] transition-colors"
-                >
-                  <span className="w-7 h-7 rounded-lg bg-[var(--surface-hover)] grid place-items-center shrink-0">
-                    <UserIcon size={14} />
-                  </span>
-                  Профиль
-                </button>
-              )}
-              <button
-                role="menuitem"
-                onClick={onLogout}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--danger)] hover:bg-[var(--danger-light)] transition-colors"
-              >
-                <span className="w-7 h-7 rounded-lg bg-[var(--danger-light)] grid place-items-center shrink-0">
-                  <LogOut size={14} />
-                </span>
-                Выйти
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* User profile with Unified Modal */}
+      <UserMenu
+        user={user}
+        role={role}
+        roleTitle={t(`role.${role}`)}
+        onLogout={onLogout}
+        langSwitch={LangSwitch}
+      />
     </header>
   );
 }

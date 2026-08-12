@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
 import { useI18n } from '../i18n.jsx';
@@ -35,10 +35,27 @@ function ChildCard({ child }) {
 }
 
 export default function Layout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { t } = useI18n();
   const { selectedChild } = useChild();
   const [mobileOpen, setMobileOpen] = useState(false);
+  
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const onLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   const sidebar = (
     <div className="flex flex-col h-full bg-sidebar text-neutral-content">
@@ -68,8 +85,52 @@ export default function Layout() {
         ))}
       </nav>
 
-      <div className="mt-auto p-3 space-y-2 border-t border-white/5">
-        <LanguageSwitcher />
+      <div className="mt-auto p-3 space-y-2 border-t border-white/5 relative" ref={userMenuRef}>
+        {showUserMenu && (
+          <div className="absolute bottom-full left-3 right-3 mb-2 bg-[#1b2612] border border-white/10 rounded-2xl shadow-xl p-3.5 z-50 animate-scale-in text-neutral-content space-y-3.5">
+            {/* User Info */}
+            <div className="flex items-center gap-3 pb-3 border-b border-white/5">
+              <Avatar name={`${user?.firstName} ${user?.lastName}`} size={40} />
+              <div className="min-w-0">
+                <p className="text-sm font-bold truncate">{user?.firstName} {user?.lastName}</p>
+                <p className="text-[11px] opacity-50 truncate">{user?.email}</p>
+                <span className="inline-block mt-1 text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5 uppercase tracking-wider">
+                  {user?.role === 'parent' ? t('common.role.parent') : t('common.role.student')}
+                </span>
+              </div>
+            </div>
+
+            {/* Language Switcher inside popup */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold opacity-45 uppercase tracking-wider pl-1">
+                {t('langSwitch.label') || 'Til'}
+              </p>
+              <LanguageSwitcher />
+            </div>
+
+            <div className="border-t border-white/5 my-1" />
+
+            {/* Options */}
+            <div className="space-y-1">
+              <button
+                onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
+                className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl text-xs font-semibold hover:bg-white/5 hover:text-white transition-colors text-left"
+              >
+                <Icon name="user" className="w-4 h-4 opacity-70 shrink-0" />
+                <span>{t('prof.title') || 'Profil'}</span>
+              </button>
+              
+              <button
+                onClick={onLogout}
+                className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl text-xs font-semibold text-error hover:bg-error/10 transition-colors text-left"
+              >
+                <Icon name="arrow-left-on-rectangle" className="w-4 h-4 opacity-70 shrink-0" />
+                <span>{t('prof.logout') || 'Chiqish'}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <NavLink
           to="/notifications"
           onClick={() => setMobileOpen(false)}
@@ -85,10 +146,11 @@ export default function Layout() {
           <span>{t('nav.notifications')}</span>
         </NavLink>
 
-        <NavLink
-          to="/profile"
-          onClick={() => setMobileOpen(false)}
-          className="flex items-center gap-3 p-2 -mx-1 rounded-xl hover:bg-white/5 transition-colors group"
+        <button
+          onClick={() => setShowUserMenu(!showUserMenu)}
+          className={`w-full flex items-center gap-3 p-2 rounded-xl transition-colors text-left ${
+            showUserMenu ? 'bg-white/5' : 'hover:bg-white/5'
+          }`}
         >
           <div className="relative">
             <Avatar name={`${user?.firstName} ${user?.lastName}`} size={36} />
@@ -98,10 +160,10 @@ export default function Layout() {
             <p className="text-sm font-semibold truncate">{user?.firstName} {user?.lastName}</p>
             <p className="text-[11px] opacity-40 flex items-center gap-1">
               {t('nav.profile')}
-              <Icon name="chevron-right" className="w-3 h-3" />
+              <Icon name="chevron-up" className={`w-3 h-3 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
             </p>
           </div>
-        </NavLink>
+        </button>
       </div>
     </div>
   );
