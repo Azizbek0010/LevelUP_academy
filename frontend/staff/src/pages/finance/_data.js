@@ -82,20 +82,25 @@ export const branchSeries = (id) => SERIES[id] ?? [];
 export const monthRow = (id, monthKey) =>
   branchSeries(id).find((r) => r.monthKey === monthKey);
 
-/* ── Расчёт налогов по данным филиала ──
-   return { ndss, soc_nalog, otzyvnoy_nalog, total } */
+/* ── Расчёт налогов филиала за месяц ──
+   НДС 20%      — со всего дохода
+   Соцналог 10% — с дохода за вычетом прямых расходов (зарплаты НЕ вычитаются)
+   Оборотный 1.5% — с чистой прибыли (если прибыль отрицательна — 0)
+   return { income, expenses, salaries, ndss, soc_nalog, otzyvnoy_nalog, total, net, branch } */
 export function taxCalc(row, branch) {
-  const income  = row.income;
-  const expenses = row.expenses;
-  const salaries = row.salaries;
-  const profit  = income - expenses - salaries;
-  const net     = income - expenses - salaries; // чистая прибыль (до налогов)
+  const { income, expenses, salaries } = row;
+  const net = income - expenses - salaries;                    // чистая прибыль (может быть убытком)
+
+  const ndss = income * TAX.ndss;                              // НДС со всего дохода
+  const soc_nalog = (income - expenses) * TAX.soc_nalog;       // соцналог: доход минус прямые расходы
+  const otzyvnoy_nalog = Math.max(0, net) * TAX.otzyvnoy_nalog; // оборотный: только с прибыли
+
   return {
-    ndss:          income * TAX.ndss,
-    soc_nalog:     (income - expenses) * TAX.soc_nalog,
-    otzyvnoy_nalog: Math.max(0, net) * TAX.otzyvnoy_nalog,
-    total:         income * TAX.ndss + (income - expenses) * TAX.soc_nalog + Math.max(0, net) * TAX.otzyvnoy_nalog,
-    profit,
+    income, expenses, salaries, // исходники — нужны таблице и CSV на странице налогов
+    ndss,
+    soc_nalog,
+    otzyvnoy_nalog,
+    total: ndss + soc_nalog + otzyvnoy_nalog,
     net,
     branch,
   };
@@ -111,28 +116,28 @@ export const PAYMENT_STATUS = {
 /* ── Доходы текущего месяца по филиалам (суммы = серия 2026-08) ── */
 export const INCOME = {
   downtown: [
-    { id: 'p1',  date: '2026-08-03', student: "O'zbekov Sardor",   group: 'Frontend React',   amount: 850000,  method: 'Karta', status: 'paid' },
-    { id: 'p2',  date: '2026-08-03', student: 'Karimova Nilufar',   group: 'Python Bootcamp', amount: 900000,  method: 'Naqd',  status: 'paid' },
-    { id: 'p3',  date: '2026-08-02', student: 'Hasanov Botir',     group: 'Frontend React',   amount: 850000,  method: 'Karta', status: 'pending' },
-    { id: 'p4',  date: '2026-08-02', student: 'Rahimova Gulnora',   group: 'Python Bootcamp', amount: 450000,  method: 'Naqd',  status: 'paid' },
-    { id: 'p5',  date: '2026-08-01', student: 'Abdullayev Javlon',  group: 'UI/UX Design',    amount: 800000,  method: 'Karta', status: 'paid' },
-    { id: 'p6',  date: '2026-08-01', student: 'Tursunov Dilshod',   group: 'Frontend React',  amount: 850000,  method: 'Naqd',  status: 'overdue' },
-    { id: 'p7',  date: '2026-07-31', student: 'Nazarova Malika',    group: 'IELTS Intensive', amount: 1200000, method: 'Karta', status: 'paid' },
-    { id: 'p8',  date: '2026-07-30', student: 'Aliyev Bekzod',      group: 'English A2',      amount: 900000,  method: 'Naqd',  status: 'paid' },
+    { id: 'p1',  date: '2026-08-03', student: "O'zbekov Sardor",   group: 'Frontend React',   amount: 850000,  method: 'Karta',  status: 'paid' },
+    { id: 'p2',  date: '2026-08-03', student: 'Karimova Nilufar',   group: 'Python Bootcamp', amount: 900000,  method: 'Naqd',   status: 'paid' },
+    { id: 'p3',  date: '2026-08-02', student: 'Hasanov Botir',     group: 'Frontend React',   amount: 850000,  method: 'Karta',  status: 'pending' },
+    { id: 'p4',  date: '2026-08-02', student: 'Rahimova Gulnora',   group: 'Python Bootcamp', amount: 450000,  method: 'Hybrid', status: 'paid' },
+    { id: 'p5',  date: '2026-08-01', student: 'Abdullayev Javlon',  group: 'UI/UX Design',    amount: 800000,  method: 'Karta',  status: 'paid' },
+    { id: 'p6',  date: '2026-08-01', student: 'Tursunov Dilshod',   group: 'Frontend React',  amount: 850000,  method: 'Naqd',   status: 'overdue' },
+    { id: 'p7',  date: '2026-07-31', student: 'Nazarova Malika',    group: 'IELTS Intensive', amount: 1200000, method: 'Karta',  status: 'paid' },
+    { id: 'p8',  date: '2026-07-30', student: 'Aliyev Bekzod',      group: 'English A2',      amount: 900000,  method: 'Naqd',   status: 'paid' },
   ],
   chilanzar: [
-    { id: 'c1', date: '2026-08-04', student: 'Yuldashev Otabek',    group: 'Python Bootcamp', amount: 950000, method: 'Karta', status: 'paid' },
-    { id: 'c2', date: '2026-08-04', student: 'Raxmonova Dildora',   group: 'English A2',      amount: 800000, method: 'Naqd',  status: 'paid' },
-    { id: 'c3', date: '2026-08-03', student: 'Toshpulatov Sardor',  group: 'Frontend React',  amount: 900000, method: 'Karta', status: 'paid' },
-    { id: 'c4', date: '2026-08-02', student: 'Murodova Dilafruz',   group: 'IELTS Intensive', amount: 950000, method: 'Karta', status: 'pending' },
-    { id: 'c5', date: '2026-08-02', student: 'Xakimov Shohruh',     group: 'English B1',      amount: 1000000, method: 'Naqd', status: 'paid' },
+    { id: 'c1', date: '2026-08-04', student: 'Yuldashev Otabek',    group: 'Python Bootcamp', amount: 950000, method: 'Karta',  status: 'paid' },
+    { id: 'c2', date: '2026-08-04', student: 'Raxmonova Dildora',   group: 'English A2',      amount: 800000, method: 'Naqd',   status: 'paid' },
+    { id: 'c3', date: '2026-08-03', student: 'Toshpulatov Sardor',  group: 'Frontend React',  amount: 900000, method: 'Karta',  status: 'paid' },
+    { id: 'c4', date: '2026-08-02', student: 'Murodova Dilafruz',   group: 'IELTS Intensive', amount: 950000, method: 'Hybrid', status: 'pending' },
+    { id: 'c5', date: '2026-08-02', student: 'Xakimov Shohruh',     group: 'English B1',      amount: 1000000, method: 'Naqd',  status: 'paid' },
   ],
   yunusabad: [
-    { id: 'y1', date: '2026-08-04', student: 'Abdurahmonova Zilola', group: 'Speaking Club', amount: 700000, method: 'Karta', status: 'paid' },
-    { id: 'y2', date: '2026-08-03', student: 'Erkinov Farrux',       group: 'Python Bootcamp', amount: 800000, method: 'Naqd', status: 'paid' },
-    { id: 'y3', date: '2026-08-02', student: 'Saidova Malika',       group: 'IELTS Intensive', amount: 850000, method: 'Karta', status: 'paid' },
-    { id: 'y4', date: '2026-08-01', student: 'Yusupov Jasur',        group: 'Frontend React', amount: 850000, method: 'Naqd', status: 'paid' },
-    { id: 'y5', date: '2026-08-01', student: 'Karimov Davron',       group: 'English A2',     amount: 500000, method: 'Karta', status: 'pending' },
+    { id: 'y1', date: '2026-08-04', student: 'Abdurahmonova Zilola', group: 'Speaking Club', amount: 700000, method: 'Karta',  status: 'paid' },
+    { id: 'y2', date: '2026-08-03', student: 'Erkinov Farrux',       group: 'Python Bootcamp', amount: 800000, method: 'Hybrid', status: 'paid' },
+    { id: 'y3', date: '2026-08-02', student: 'Saidova Malika',       group: 'IELTS Intensive', amount: 850000, method: 'Karta',  status: 'paid' },
+    { id: 'y4', date: '2026-08-01', student: 'Yusupov Jasur',        group: 'Frontend React', amount: 850000, method: 'Naqd',   status: 'paid' },
+    { id: 'y5', date: '2026-08-01', student: 'Karimov Davron',       group: 'English A2',     amount: 500000, method: 'Karta',  status: 'pending' },
   ],
 };
 
@@ -142,18 +147,18 @@ export const EXPENSE_CATEGORIES = [
 
 export const EXPENSES = {
   downtown: [
-    { id: 'e1', date: '2026-08-04', category: 'Jihozlar', amount: 250000, note: '3 ta klaviatura + sichqoncha' },
-    { id: 'e2', date: '2026-08-01', category: 'Oylik',    amount: 800000, note: 'Tozalash xodimi avans' },
-    { id: 'e3', date: '2026-07-30', category: 'Kommunal', amount: 450000, note: 'Elektr + suv, iyul' },
+    { id: 'e1', date: '2026-08-04', category: 'Jihozlar', amount: 250000, planned: false, note: '3 ta klaviatura + sichqoncha' },
+    { id: 'e2', date: '2026-08-01', category: 'Oylik',    amount: 800000, planned: true,  note: 'Tozalash xodimi avans' },
+    { id: 'e3', date: '2026-07-30', category: 'Kommunal', amount: 450000, planned: true,  note: 'Elektr + suv, iyul' },
   ],
   chilanzar: [
-    { id: 'ce1', date: '2026-08-05', category: 'Kanselyariya', amount: 300000, note: 'Daftar, ruchka, qog\u2018oz' },
-    { id: 'ce2', date: '2026-08-02', category: 'Reklama',      amount: 400000, note: 'Instagram kampaniya' },
-    { id: 'ce3', date: '2026-07-30', category: 'Kommunal',     amount: 600000, note: 'Elektr + suv, iyul' },
+    { id: 'ce1', date: '2026-08-05', category: 'Kanselyariya', amount: 300000, planned: true,  note: 'Daftar, ruchka, qog\u2018oz' },
+    { id: 'ce2', date: '2026-08-02', category: 'Reklama',      amount: 400000, planned: false, note: 'Instagram kampaniya' },
+    { id: 'ce3', date: '2026-07-30', category: 'Kommunal',     amount: 600000, planned: true,  note: 'Elektr + suv, iyul' },
   ],
   yunusabad: [
-    { id: 'ye1', date: '2026-08-03', category: 'Ijara',   amount: 700000, note: 'Avgust oyi ijarasi' },
-    { id: 'ye2', date: '2026-08-01', category: 'Oylik',   amount: 400000, note: 'Tozalash xodimi avans' },
+    { id: 'ye1', date: '2026-08-03', category: 'Ijara',   amount: 700000, planned: true, note: 'Avgust oyi ijarasi' },
+    { id: 'ye2', date: '2026-08-01', category: 'Oylik',   amount: 400000, planned: true, note: 'Tozalash xodimi avans' },
   ],
 };
 

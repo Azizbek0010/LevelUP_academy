@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Wallet, Receipt, BadgeDollarSign, TrendingUp, Download } from 'lucide-react';
+import { Wallet, Receipt, BadgeDollarSign, TrendingUp, Download, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
 import { Metric, Card, MonthSelect, compactMoney } from './_ui.jsx';
 import { useT } from './_i18n.jsx';
-import { BRANCHES, MONTHS, CURRENT_MONTH, monthRow, MONTH_LABEL } from './_data.js';
+import { BRANCHES, MONTHS, CURRENT_MONTH, EXPENSES, monthRow, MONTH_LABEL } from './_data.js';
 
 const prevMonthKey = (monthKey) => {
   const i = MONTHS.findIndex((m) => m.key === monthKey);
@@ -45,7 +45,12 @@ export default function FinanceReports() {
     const r = rowFor(b, monthKey);
     const p = prev ? rowFor(b, prev)?.net : null;
     const trend = prev && r && p ? Math.round(((r.net - p) / (p || 1)) * 100) : null;
-    return { branch: b, r, trend };
+    // Неплановые расходы видны только по детальным данным текущего месяца
+    const unplanned =
+      monthKey === CURRENT_MONTH
+        ? (EXPENSES[b.id] ?? []).filter((e) => e.planned === false).reduce((a, e) => a + e.amount, 0)
+        : null;
+    return { branch: b, r, trend, unplanned };
   });
 
   const totals = rows.reduce(
@@ -171,10 +176,11 @@ export default function FinanceReports() {
                 <th className="text-right">{t('nav.salaries')}</th>
                 <th className="text-right">{t('reports.opProfit')}</th>
                 <th className="text-right">{t('reports.net')}</th>
+                <th className="text-right">{t('reports.unplanned')}</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ branch, r }) => (
+              {rows.map(({ branch, r, unplanned }) => (
                 <tr key={branch.id} className="text-sm">
                   <td className="font-medium">{branch.name}</td>
                   <td className="text-base-content/70">{branch.students}</td>
@@ -183,6 +189,9 @@ export default function FinanceReports() {
                   <td className="text-right tabular-nums text-info">{r ? money(r.salaries) : '—'}</td>
                   <td className="text-right tabular-nums">{r ? money(r.op) : '—'}</td>
                   <td className={`text-right tabular-nums font-bold ${r && r.net >= 0 ? 'text-success' : 'text-error'}`}>{r ? money(r.net) : '—'}</td>
+                  <td className={`text-right tabular-nums ${unplanned ? 'text-error font-semibold' : 'text-base-content/30'}`}>
+                    {unplanned ? money(unplanned) : '—'}
+                  </td>
                 </tr>
               ))}
               <tr className="border-t border-base-300 bg-base-200/50 font-bold text-sm">
@@ -193,6 +202,7 @@ export default function FinanceReports() {
                 <td className="text-right tabular-nums text-info">{money(totals.salaries)}</td>
                 <td className="text-right tabular-nums">{money(totals.income - totals.expenses)}</td>
                 <td className={`text-right tabular-nums font-bold ${totals.net >= 0 ? 'text-success' : 'text-error'}`}>{money(totals.net)}</td>
+                <td className="text-right tabular-nums text-error">{money(rows.reduce((a, { unplanned }) => a + (unplanned ?? 0), 0))}</td>
               </tr>
             </tbody>
           </table>

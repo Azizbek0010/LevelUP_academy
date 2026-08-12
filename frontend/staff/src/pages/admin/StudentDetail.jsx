@@ -609,7 +609,7 @@ export default function AdminStudentDetail() {
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Сохранить
               </button>
             </div>
-          </div>
+</div>
           <div className="modal-backdrop" onClick={() => setEditing(false)} />
         </dialog>
       )}

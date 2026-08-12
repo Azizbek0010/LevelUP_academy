@@ -13,6 +13,7 @@ import {
   HiOutlineReceiptPercent, HiOutlineBookOpen, HiOutlineArrowTrendingUp,
   HiOutlineCreditCard, HiOutlineGift, HiOutlineCalendarDays,
   HiOutlinePresentationChartLine, HiOutlineCurrencyDollar,
+  HiOutlineCalculator,
 } from 'react-icons/hi2';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
@@ -163,6 +164,7 @@ const financeManagerNav = [
   { to: '/finance/expenses',  label: 'Xarajatlar', labelKey: 'nav.expenses', Icon: HiOutlineReceiptPercent },
   { to: '/finance/salaries',  label: 'Oyliklar',   labelKey: 'nav.salaries', Icon: HiOutlineCurrencyDollar },
   { to: '/finance/reports',   label: 'Tahlil',     labelKey: 'nav.reports', Icon: HiOutlineChartBar },
+  { to: '/finance/tax',       label: 'Soliqlar',   labelKey: 'nav.tax', Icon: HiOutlineCalculator },
   { to: '/finance/settings',  label: 'Sozlamalar', labelKey: 'nav.settings', Icon: HiOutlineCog },
 ];
 
