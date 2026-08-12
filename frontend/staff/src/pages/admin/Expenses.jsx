@@ -15,17 +15,17 @@ const CATEGORY_LABELS = {
   All: 'Все', Rent: 'Аренда', Salary: 'Зарплата', Materials: 'Материалы', Utility: 'Коммунальные', Other: 'Другое',
 };
 const CATEGORY_COLORS = {
-  Rent: '#2ECC71', Salary: '#8B5CF6', Materials: '#F59E0B',
+  Rent: '#2ECC71', Salary: '#1D2417', Materials: '#5E6E52',
   Utility: '#E8543E', Other: '#2ECC71',
 };
 const CATEGORY_COLORS_LIGHT = {
-  Rent: 'rgba(46,204,113,0.12)', Salary: 'rgba(139,92,246,0.12)', Materials: 'rgba(245,158,11,0.12)',
+  Rent: 'rgba(46,204,113,0.12)', Salary: 'rgba(29,36,23,0.12)', Materials: 'rgba(94,110,82,0.12)',
   Utility: 'rgba(232,84,62,0.12)', Other: 'rgba(46,204,113,0.12)',
 };
 
 const STATUS_CLASSES = {
   paid: { className: 'bg-success/10 text-success', label: 'Оплачен', dot: 'bg-success' },
-  pending: { className: 'bg-warning/10 text-warning', label: 'Ожидает', dot: 'bg-warning' },
+  pending: { className: 'bg-[rgba(94,110,82,0.12)] text-[#5E6E52]', label: 'Ожидает', dot: 'bg-[#5E6E52]' },
   rejected: { className: 'bg-error/10 text-error', label: 'Отклонён', dot: 'bg-error' },
   cancelled: { className: 'bg-base-200 text-base-content/70', label: 'Отменён', dot: 'bg-base-content/40' },
 };
@@ -579,7 +579,7 @@ export default function Expenses() {
                         </td>
                         <td className="px-5 py-4 text-base-content/70 text-[11px]">
                           {e.isRecurring ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-[6px] bg-[rgba(139,92,246,0.12)] text-[10px] font-medium" style={{ color: '#8B5CF6' }}>
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-[6px] bg-[rgba(94,110,82,0.12)] text-[10px] font-medium" style={{ color: '#5E6E52' }}>
                               <RefreshCw className="w-3 h-3" />
                               {e.recurringPeriod === 'monthly' ? 'Har oy' : e.recurringPeriod === 'quarterly' ? 'Har chorak' : 'Har yil'}
                               {e.nextPaymentAt && ` → ${formatDate(e.nextPaymentAt)}`}

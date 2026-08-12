@@ -35,9 +35,10 @@ function InfoRow({ Icon, label, value, href }) {
   );
 }
 
-/** Ota-onalar guruhini Telegram-botga ulash. Bot guruhga QO'LDA qo'shiladi
- * (Branch Manager o'zi qiladi — botni tashqaridan avtomatik qo'shib bo'lmaydi),
- * so'ng kod guruhning o'ziga /bindbranch <kod> buyrug'i sifatida yuboriladi. */
+/** Привязка группы родителей к Telegram-боту. Бот добавляется в группу
+ * вручную (Branch Manager делает это самостоятельно — нельзя добавить бота
+ * автоматически извне), затем код отправляется в группу командой
+ * /bindbranch <код>. */
 function TelegramGroupCard() {
   const { token } = useAuth();
   const { data: status, isLoading, refetch } = useBranchManagerTelegramStatus();
@@ -60,7 +61,7 @@ function TelegramGroupCard() {
   }
 
   async function unlink() {
-    if (!window.confirm("Вы хотите отключить группу?")) return;
+    if (!window.confirm('Вы действительно хотите отключить группу?')) return;
     await api.branchManagerTelegramUnlink(token);
     setCode(null);
     refetch();
@@ -125,11 +126,45 @@ function TelegramGroupCard() {
 }
 
 export default function BranchManagerBranch() {
-  const { data: branch, isLoading, error } = useBranchManagerInfo();
+  const { data: rawBranch, isLoading, error } = useBranchManagerInfo();
+  const branch = rawBranch?.branch || rawBranch;
 
-  if (isLoading) return <div className="p-8 text-center text-base-content/45">Загрузка...</div>;
-  if (error) return <div className="p-8 text-center text-error">Произошла ошибка</div>;
-  if (!branch) return <div className="p-8 text-center text-base-content/45">Данные не найдены</div>;
+  if (isLoading) {
+    return (
+      <div className="space-y-6 pb-8 animate-page-enter">
+        <PageHeader title="Филиал" subtitle="Загрузка данных..." />
+        <div className="rounded-2xl bg-base-200/60 animate-pulse h-64" />
+        <div className="rounded-2xl bg-base-200/60 animate-pulse h-32" />
+        <div className="rounded-2xl bg-base-200/60 animate-pulse h-48" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <div className="inline-flex flex-col items-center gap-3 text-error">
+          <span className="text-4xl">⚠</span>
+          <span className="text-lg font-semibold">Произошла ошибка при загрузке данных</span>
+          <button
+            className="btn btn-sm btn-error btn-outline mt-2"
+            onClick={() => window.location.reload()}
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!branch) {
+    return (
+      <div className="p-8 text-center text-base-content/45">
+        <Building2 size={48} className="mx-auto mb-3 opacity-30" />
+        <p className="text-lg font-semibold">Данные филиала не найдены</p>
+      </div>
+    );
+  }
 
   const s = branch.stats;
 
@@ -137,7 +172,7 @@ export default function BranchManagerBranch() {
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader title="Филиал" subtitle={`${branch.name} · расположение и статистика`} />
 
-      {/* ── Bosh karta ── */}
+      {/* ── Основная карточка ── */}
       <Panel title="О филиале" icon={Building2} bodyClass="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -160,7 +195,7 @@ export default function BranchManagerBranch() {
           </div>
           <div className="rounded-xl border border-base-200 p-4">
             <dt className="text-[11px] text-base-content/45">Менторы</dt>
-            <dd className="text-2xl font-extrabold tabular-nums mt-1">{fmt(s.mentors)}</dd>
+            <dd className="text-2xl font-extrabold tabular-nums mt-1">{fmt(s.staff || s.mentors || 0)}</dd>
           </div>
           <div className="rounded-xl border border-base-200 p-4">
             <dt className="text-[11px] text-base-content/45">Задолженность</dt>
@@ -171,10 +206,10 @@ export default function BranchManagerBranch() {
         </dl>
       </Panel>
 
-      {/* ── Telegram: ota-onalar guruhi ── */}
+      {/* ── Telegram: группа родителей ── */}
       <TelegramGroupCard />
 
-      {/* ── Kontaktlar ── */}
+      {/* ── Контакты ── */}
       <Panel title="Контакты" icon={MapPin} bodyClass="p-5">
         <div className="space-y-1">
           <InfoRow Icon={MapPin} label="Адрес" value={branch.address} />
@@ -182,7 +217,7 @@ export default function BranchManagerBranch() {
         </div>
       </Panel>
 
-      {/* ── Moliya ── */}
+      {/* ── Финансы ── */}
       <Panel title="Финансы (итого)" icon={Building2} bodyClass="p-5">
         <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>

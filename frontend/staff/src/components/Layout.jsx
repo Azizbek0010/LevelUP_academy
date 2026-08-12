@@ -99,22 +99,22 @@ const adminNav = [
 ];
 
 /**
- * Меню Branch Manager — 07.08.2026 роль поднята с read-only до полных прав
- * admin в своём филиале (решение Karis): те же Студенты/Группы/Менторы/
+ * Меню Управляющего филиалом — 07.08.2026 роль повышена с read-only до полных
+ * прав admin в своём филиале (решение Karis): те же Студенты/Группы/Менторы/
  * Платежи, что у admin (те же страницы, req.scope уже ограничивает своим
- * филиалом), плюс собственный обзорный блок (Filial/Daromad/Hisobotlar).
+ * филиалом), плюс собственный обзорный блок (Филиал/Доход/Отчёты).
  */
 const branchManagerNav = [
-  { to: '/',          label: 'Boshqaruv', Icon: HiOutlineSquares2X2, end: true },
-  { to: '/students',  label: 'Studentlar', Icon: HiOutlineAcademicCap },
-  { to: '/groups',    label: 'Guruhlar',  Icon: HiOutlineUsers },
-  { to: '/mentors',   label: 'Mentorlar', Icon: HiOutlineUserCircle },
-  { to: '/chat',      label: 'Chat',      Icon: HiOutlineChatBubbleLeftRight },
-  { to: '/branch',    label: 'Filial',    Icon: HiOutlineBuildingOffice2 },
-  { to: '/payments',  label: 'To\'lovlar', Icon: HiOutlineCreditCard },
-  { to: '/income',    label: 'Daromad',   Icon: HiOutlineWallet },
-  { to: '/expenses',  label: 'Xarajatlar', Icon: HiOutlineReceiptPercent },
-  { to: '/reports',   label: 'Hisobotlar', Icon: HiOutlineChartBar },
+  { to: '/',          label: 'Панель',      Icon: HiOutlineSquares2X2, end: true },
+  { to: '/students',  label: 'Студенты',    Icon: HiOutlineAcademicCap },
+  { to: '/groups',    label: 'Группы',      Icon: HiOutlineUsers },
+  { to: '/mentors',   label: 'Менторы',     Icon: HiOutlineUserCircle },
+  { to: '/chat',      label: 'Чат',         Icon: HiOutlineChatBubbleLeftRight },
+  { to: '/branch',    label: 'Филиал',      Icon: HiOutlineBuildingOffice2 },
+  { to: '/payments',  label: 'Платежи',     Icon: HiOutlineCreditCard },
+  { to: '/income',    label: 'Доход',       Icon: HiOutlineWallet },
+  { to: '/expenses',  label: 'Расходы',     Icon: HiOutlineReceiptPercent },
+  { to: '/reports',   label: 'Отчёты',      Icon: HiOutlineChartBar },
 ];
 
 /**
@@ -150,7 +150,7 @@ const ROLE_NAV = {
 const ROLE_TITLE = {
   seo: 'SEO',
   admin: 'Администратор',
-  branch_manager: 'Branch Manager',
+  branch_manager: 'Управляющий',
   mentor: 'Ментор',
   methodist: 'Методист',
 };

@@ -1,27 +1,28 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   Branch Manager — umumiy UI yordamchilari (faqat shu panel uchun).
-   Asosiy qurilmalar (Panel, Kpi, Avatar, Modal) mentor/_ui.jsx dan import
-   qilinadi — dizayn tizimi bitta. Bu yerda faqat branch-manager'ga xos
-   komponentlar: moliyaviy ustun-chart va status badge.
+   Branch Manager — общие UI-хелперы (только для этой панели).
+   Основные компоненты (Panel, Kpi, Avatar, Modal) импортируются из
+   mentor/_ui.jsx — дизайн-система единая. Здесь только специфичные
+   для branch-manager компоненты: финансовый столбцовый график и бейдж статуса.
    ────────────────────────────────────────────────────────────────────────── */
 import { money } from '../../format.js';
+
 const PAYMENT_STATUS = {
-  paid: { label: "Оплачено", cls: 'badge-success' },
-  pending: { label: 'Частично', cls: 'badge-warning' },
-  overdue: { label: "Просрочено", cls: 'badge-error' },
+  paid: { label: 'Оплачено', cls: 'badge-success' },
+  pending: { label: 'Частично', cls: 'badge-neutral' },
+  overdue: { label: 'Просрочено', cls: 'badge-error' },
 };
 
-/* ── Daromad vs Xarajat ustun-charti ────────────────────────────────────────
-   Recharts emas, sof CSS: bir nechta ustun uchun kutubxona olib kelishdan
-   ko'ra oddiyroq va qulayroq. `tooltip` DaisyUI — hover'da qiymat ko'rsatadi. */
+/* ── Столбцовый график «Доход vs Расход» ────────────────────────────────────
+   Без Recharts, на чистом CSS: несколько столбцов не требуют библиотеки.
+   Используется DaisyUI tooltip — при наведении показывает значение. */
 export function FinanceBars({ months, height = 160 }) {
-  const max = Math.max(...months.flatMap((m) => [m.income, m.expenses]));
+  const max = Math.max(...months.flatMap((m) => [m.income, m.expenses]), 1);
   const bar = (value) => `${Math.round((value / max) * height)}px`;
 
   return (
     <div className="flex items-end gap-2 sm:gap-3" style={{ height }}>
       {months.map((m) => (
-        <div key={m.key} className="flex-1 flex flex-col items-center justify-end gap-1.5 min-w-0">
+        <div key={m.month || m.key} className="flex-1 flex flex-col items-center justify-end gap-1.5 min-w-0">
           <div className="flex items-end justify-center gap-1 w-full flex-1">
             <div
               className="tooltip tooltip-top w-full max-w-[26px] rounded-t-md bg-success/70 hover:bg-success transition-colors"
@@ -43,7 +44,7 @@ export function FinanceBars({ months, height = 160 }) {
   );
 }
 
-/* ── To'lov statusi badge ────────────────────────────────────────────────── */
+/* ── Бейдж статуса платежа ────────────────────────────────────────────────── */
 export function PaymentStatusBadge({ status }) {
   const meta = PAYMENT_STATUS[status] ?? { label: status, cls: 'badge-ghost' };
   return <span className={`badge badge-sm ${meta.cls}`}>{meta.label}</span>;

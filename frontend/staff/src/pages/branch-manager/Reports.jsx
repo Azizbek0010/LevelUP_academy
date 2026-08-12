@@ -10,8 +10,39 @@ export default function BranchManagerReports() {
   const [monthsCount, setMonthsCount] = useState(6);
   const { data, isLoading, error } = useBranchManagerReports(monthsCount);
 
-  if (isLoading) return <div className="p-8 text-center text-base-content/45">Загрузка...</div>;
-  if (error) return <div className="p-8 text-center text-error">Произошла ошибка</div>;
+  if (isLoading) {
+    return (
+      <div className="space-y-6 pb-8 animate-page-enter">
+        <PageHeader title="Отчёты" subtitle="Загрузка данных..." />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="rounded-2xl bg-base-200/60 animate-pulse h-28" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <div className="rounded-2xl bg-base-200/60 animate-pulse h-64" />
+          <div className="rounded-2xl bg-base-200/60 animate-pulse h-64" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <div className="inline-flex flex-col items-center gap-3 text-error">
+          <span className="text-4xl">⚠</span>
+          <span className="text-lg font-semibold">Произошла ошибка при загрузке данных</span>
+          <button
+            className="btn btn-sm btn-error btn-outline mt-2"
+            onClick={() => window.location.reload()}
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const summary = data?.monthlySeries || [];
   const totals = data?.totals || {};
@@ -19,7 +50,6 @@ export default function BranchManagerReports() {
   const totalIncome = totals.totalIncome || 0;
   const totalExpenses = totals.totalExpenses || 0;
   const totalProfit = totals.totalProfit || 0;
-  const totalPayments = totals.totalPayments || 0;
 
   const maxMonth = [...summary].sort((a, b) => b.income - a.income)[0];
   const avgProfit = summary.length ? Math.round(totalProfit / summary.length) : 0;
@@ -27,17 +57,17 @@ export default function BranchManagerReports() {
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader
-        title="Отчеты"
-        subtitle={`Филиал · финансовый отчет`}
+        title="Отчёты"
+        subtitle={`Филиал · финансовый отчёт за ${monthsCount} месяцев`}
       >
         <div className="join">
-          {[3, 6].map((n) => (
+          {[3, 6, 12].map((n) => (
             <button
               key={n}
               onClick={() => setMonthsCount(n)}
               className={`btn btn-sm join-item ${monthsCount === n ? 'btn-primary' : 'btn-ghost border border-base-200'}`}
             >
-              {n} мес
+              {n} мес.
             </button>
           ))}
         </div>
@@ -46,13 +76,19 @@ export default function BranchManagerReports() {
       {/* ── KPI ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Kpi Icon={TrendingUp} title="Общий доход" value={money(totalIncome)} unit={`за ${monthsCount} мес.`} tone="success" />
-        <Kpi Icon={Receipt} title="Общий расход" value={money(totalExpenses)} unit={`за ${monthsCount} мес.`} tone="warning" />
-        <Kpi Icon={Sparkles} title="Общая прибыль" value={money(totalProfit)} unit={`в среднем ${money(avgProfit)}/мес`} tone="neutral" />
-        <Kpi Icon={Wallet} title="Задолженность" value={money(totalIncome - totalExpenses)} unit="по филиалу" tone="danger" />
+        <Kpi Icon={Receipt} title="Общий расход" value={money(totalExpenses)} unit={`за ${monthsCount} мес.`} tone="danger" />
+        <Kpi Icon={Sparkles} title="Общая прибыль" value={money(totalProfit)} unit={`в среднем ${money(avgProfit)}/мес.`} tone="neutral" />
+        <Kpi
+          Icon={Wallet}
+          title="Рентабельность"
+          value={totalIncome > 0 ? `${Math.round((totalProfit / totalIncome) * 100)}%` : '—'}
+          unit="прибыль / доход"
+          tone={totalProfit >= 0 ? 'success' : 'danger'}
+        />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        {/* ── Chart ── */}
+        {/* ── График ── */}
         <Panel title="Доход vs расход" icon={CalendarDays} bodyClass="p-5">
           <FinanceBars months={summary} />
           <div className="flex items-center gap-4 mt-4 pt-4 border-t border-base-200 text-[11px] text-base-content/45">
@@ -65,9 +101,9 @@ export default function BranchManagerReports() {
           </div>
         </Panel>
 
-        {/* ── Eng yaxshi oy ── */}
+        {/* ── Лучший месяц ── */}
         <Panel title="Самый продуктивный месяц" icon={TrendingUp} bodyClass="p-5">
-          {maxMonth && (
+          {maxMonth ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold">{maxMonth.label}</span>
@@ -91,38 +127,60 @@ export default function BranchManagerReports() {
                 {maxMonth.payments} платежей получено
               </div>
             </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-base-content/45">
+              <TrendingUp size={32} className="mb-2 opacity-40" />
+              <p className="text-[13px]">Нет данных за выбранный период</p>
+            </div>
           )}
         </Panel>
       </div>
 
-      {/* ── Oylar jadvali ── */}
-      <Panel title="Ежемесячный отчет" icon={CalendarDays} bodyClass="p-0">
-        <div className="overflow-x-auto">
-          <table className="table table-sm">
-            <thead>
-              <tr className="text-[11px] uppercase tracking-wider text-base-content/45">
-                <th className="pl-5">Месяц</th>
-                <th className="text-right">Доход</th>
-                <th className="text-right">Расход</th>
-                <th className="text-right">Прибыль</th>
-                <th className="text-right">Платежи</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summary.map((m) => (
-                <tr key={m.key} className="hover:bg-base-200/50 transition-colors">
-                  <td className="pl-5 text-[13px] font-semibold">{m.label}</td>
-                  <td className="text-right text-[13px] font-semibold tabular-nums text-success">{money(m.income)}</td>
-                  <td className="text-right text-[13px] tabular-nums">{money(m.expenses)}</td>
-                  <td className={`text-right text-[13px] font-bold tabular-nums ${m.profit >= 0 ? 'text-primary' : 'text-error'}`}>
-                    {money(m.profit)}
-                  </td>
-                  <td className="pr-5 text-right text-[13px] tabular-nums text-base-content/70">{fmt(m.payments)}</td>
+      {/* ── Ежемесячная таблица ── */}
+      <Panel title="Ежемесячный отчёт" icon={CalendarDays} bodyClass="p-0">
+        {summary.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-base-content/45">
+            <CalendarDays size={32} className="mb-2 opacity-40" />
+            <p className="text-[13px]">Нет данных за выбранный период</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table table-sm">
+              <thead>
+                <tr className="text-[11px] uppercase tracking-wider text-base-content/45">
+                  <th className="pl-5">Месяц</th>
+                  <th className="text-right">Доход</th>
+                  <th className="text-right">Расход</th>
+                  <th className="text-right">Прибыль</th>
+                  <th className="pr-5 text-right">Платежи</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {summary.map((m) => (
+                  <tr key={m.month || m.key} className="hover:bg-base-200/50 transition-colors">
+                    <td className="pl-5 text-[13px] font-semibold">{m.label}</td>
+                    <td className="text-right text-[13px] font-semibold tabular-nums text-success">{money(m.income)}</td>
+                    <td className="text-right text-[13px] tabular-nums">{money(m.expenses)}</td>
+                    <td className={`text-right text-[13px] font-bold tabular-nums ${m.profit >= 0 ? 'text-primary' : 'text-error'}`}>
+                      {money(m.profit)}
+                    </td>
+                    <td className="pr-5 text-right text-[13px] tabular-nums text-base-content/70">{fmt(m.payments)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              {/* Итоги */}
+              <tfoot>
+                <tr className="border-t-2 border-base-200 font-bold">
+                  <td className="pl-5 text-[12px] text-base-content/60">Итого</td>
+                  <td className="text-right text-[13px] tabular-nums text-success">{money(totalIncome)}</td>
+                  <td className="text-right text-[13px] tabular-nums">{money(totalExpenses)}</td>
+                  <td className={`text-right text-[13px] tabular-nums ${totalProfit >= 0 ? 'text-primary' : 'text-error'}`}>{money(totalProfit)}</td>
+                  <td className="pr-5 text-right text-[13px] tabular-nums text-base-content/70">{fmt(totals.totalPayments || 0)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
       </Panel>
     </div>
   );

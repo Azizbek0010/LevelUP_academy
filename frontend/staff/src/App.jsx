@@ -26,7 +26,6 @@ const SuperAttendance = lazy(() => import('./pages/super/Attendance.jsx'));
 
 const BranchManagerDashboard = lazy(() => import('./pages/branch-manager/Dashboard.jsx'));
 const BranchManagerIncome = lazy(() => import('./pages/branch-manager/Income.jsx'));
-const BranchManagerExpenses = lazy(() => import('./pages/branch-manager/Expenses.jsx'));
 const BranchManagerReports = lazy(() => import('./pages/branch-manager/Reports.jsx'));
 const BranchManagerBranch = lazy(() => import('./pages/branch-manager/Branch.jsx'));
 
@@ -36,6 +35,7 @@ const AdminGroups = lazy(() => import('./pages/admin/Groups.jsx'));
 const AdminGroupDetail = lazy(() => import('./pages/admin/GroupDetail.jsx'));
 const AdminStudentDetail = lazy(() => import('./pages/admin/StudentDetail.jsx'));
 const AdminPayments = lazy(() => import('./pages/admin/Payments.jsx'));
+const AdminExpenses = lazy(() => import('./pages/admin/Expenses.jsx'));
 const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'));
 const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
 const AdminMentorDetail = lazy(() => import('./pages/admin/MentorDetail.jsx'));
@@ -154,8 +154,10 @@ export default function App() {
           {/* <Route path="/schedule" element={<SW><AdminSchedule /></SW>} /> */}
         </Route>
         {/* Расходы — с 11.08.2026 только у branch manager (Karis); у админа
-            раздел убран из UI, страница осталась для менеджера. */}
-        <Route path="/expenses" element={<SW><RoleView views={{ branch_manager: BranchManagerExpenses }} /></SW>} />
+            раздел убран из UI. С 12.08.2026 (Abduloh) страница переведена на
+            admin/Expenses (полный CRUD), branch-manager больше не ограничен
+            read-only: add/edit/delete доступны как у админа. */}
+        <Route path="/expenses" element={<SW><RoleView views={{ branch_manager: AdminExpenses }} /></SW>} />
 
         {/* Branch Manager: свой обзорный дашборд + разделы, специфичные для роли */}
         <Route element={<RoleGuard allow={['branch_manager']} />}>

@@ -867,13 +867,16 @@ if (path === '/branch-manager/dashboard') {
   const totalRevenue = branch ? branch.revenue : 0;
   const totalExpenses = 8200000;
   const outstandingDebt = branch ? branch.debt : 0;
+  const dashboard = {
+    totalStudents, activeStudents: Math.round(totalStudents * 0.85),
+    totalGroups: 12, totalMentors: branchAdmins.length,
+    totalRevenue, totalExpenses, outstandingDebt,
+    debts: outstandingDebt, overdueInvoices: 5, currency: 'UZS',
+  };
   return {
-    dashboard: {
-      totalStudents, activeStudents: Math.round(totalStudents * 0.85),
-      totalGroups: 12, totalMentors: branchAdmins.length,
-      totalRevenue, totalExpenses, outstandingDebt,
-      debts: outstandingDebt, overdueInvoices: 5, currency: 'UZS',
-    },
+    dashboard,
+    ...dashboard,
+    branch,
   };
 }
 
@@ -888,7 +891,7 @@ if (path === '/branch-manager/branch') {
       workHours: 'Dush–Shan · 9:00–21:00', founded: 'Yanvar 2026',
       coords: '41.3111° N, 69.2797° E', mapUrl: 'https://yandex.uz/maps/?text=41.3111,69.2797',
       manager: { firstName: 'Baxtiyor', lastName: 'Umarov', phone: '+998907654321' },
-      stats: { students: branch.students, groups: 12, staff: 9, debt: branch.debt },
+      stats: { students: branch.students, groups: 12, staff: 9, debt: branch.debt, revenue: branch.revenue || 0, expenses: 0, profit: branch.revenue || 0 },
     },
   };
 }
@@ -918,10 +921,10 @@ if (path === '/branch-manager/expenses') {
   const qs = new URL(path, 'http://localhost').searchParams;
   const month = qs.get('month') || '2026-08';
   const expenses = [
-    { id: 'e1', date: '2026-08-04', category: 'Jihozlar', amount: 250000, note: "3 ta klaviatura + sichqoncha" },
-    { id: 'e2', date: '2026-08-01', category: 'Oylik', amount: 800000, note: "Tozalash xodimi avans" },
-    { id: 'e3', date: '2026-07-30', category: 'Kommunal', amount: 450000, note: "Elektr + suv, iyul" },
-  ].filter((e) => e.date.startsWith(month));
+    { id: 'e1', date: '2026-08-04', spent_at: '2026-08-04', category: 'Jihozlar', amount: 250000, note: "3 ta klaviatura + sichqoncha" },
+    { id: 'e2', date: '2026-08-01', spent_at: '2026-08-01', category: 'Oylik', amount: 800000, note: "Tozalash xodimi avans" },
+    { id: 'e3', date: '2026-07-30', spent_at: '2026-07-30', category: 'Kommunal', amount: 450000, note: "Elektr + suv, iyul" },
+  ].filter((e) => (e.spent_at || e.date).startsWith(month));
   const totalAmount = expenses.reduce((s, e) => s + e.amount, 0);
   const categories = [...new Set(expenses.map((e) => e.category))];
   return { expenses, totalAmount, categories };
@@ -932,12 +935,12 @@ if (path === '/branch-manager/reports') {
   const qs = new URL(path, 'http://localhost').searchParams;
   const months = parseInt(qs.get('months') || '6', 10);
   const monthlySeries = [
-    { month: '2026-03', label: 'Mart', income: 4200000, expenses: 1100000, profit: 3100000, payments: 4 },
-    { month: '2026-04', label: 'Aprel', income: 5100000, expenses: 1400000, profit: 3700000, payments: 5 },
-    { month: '2026-05', label: 'May', income: 4800000, expenses: 1300000, profit: 3500000, payments: 6 },
-    { month: '2026-06', label: 'Iyun', income: 6000000, expenses: 1600000, profit: 4400000, payments: 7 },
-    { month: '2026-07', label: 'Iyul', income: 5600000, expenses: 1500000, profit: 4100000, payments: 7 },
-    { month: '2026-08', label: 'Avgust', income: 6800000, expenses: 1500000, profit: 5300000, payments: 8 },
+    { month: '2026-03', key: '2026-03', label: 'Mart', income: 4200000, expenses: 1100000, profit: 3100000, payments: 4 },
+    { month: '2026-04', key: '2026-04', label: 'Aprel', income: 5100000, expenses: 1400000, profit: 3700000, payments: 5 },
+    { month: '2026-05', key: '2026-05', label: 'May', income: 4800000, expenses: 1300000, profit: 3500000, payments: 6 },
+    { month: '2026-06', key: '2026-06', label: 'Iyun', income: 6000000, expenses: 1600000, profit: 4400000, payments: 7 },
+    { month: '2026-07', key: '2026-07', label: 'Iyul', income: 5600000, expenses: 1500000, profit: 4100000, payments: 7 },
+    { month: '2026-08', key: '2026-08', label: 'Avgust', income: 6800000, expenses: 1500000, profit: 5300000, payments: 8 },
   ].slice(-months);
   const totalIncome = monthlySeries.reduce((s, m) => s + m.income, 0);
   const totalExpenses = monthlySeries.reduce((s, m) => s + m.expenses, 0);
