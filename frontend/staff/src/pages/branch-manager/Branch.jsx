@@ -43,15 +43,18 @@ function TelegramGroupCard() {
   // Karis (13.08.2026): Main Admin не включил Telegram-интеграцию партнёру —
   // карточки не должно быть вообще, не только кнопки внутри неё.
   const tgEnabled = Boolean(user?.orgFeatures?.telegramIntegration);
-  // Хук ниже не умеет condition-fetch — вызываем его всегда (правило хуков),
-  // но пока фича выключена, просто не рендерим карточку с его данными.
+  // Все хуки — ДО любого условного return (Rules of Hooks): иначе когда
+  // tgEnabled переключится между рендерами (напр. user только что загрузился),
+  // React увидит другое число вызванных хуков и упадёт с "Rendered more/fewer
+  // hooks than during the previous render". Хук ниже не умеет condition-fetch —
+  // вызываем всегда, просто не рендерим карточку с его данными, пока выключено.
   const { data: status, isLoading, refetch } = useBranchManagerTelegramStatus();
   const [issuing, setIssuing] = useState(false);
   const [code, setCode] = useState(null);
-
-  if (!tgEnabled) return null;
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
+
+  if (!tgEnabled) return null;
 
   async function issueCode() {
     setIssuing(true);

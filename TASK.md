@@ -4,6 +4,34 @@
 > Statistika qo'lda YOZILMAYDI — real raqamlar faqat `done.md` da.
 > V1 SCOPE: naqd + karta (full/split). Click/Payme/UzCard/Humo — FAQAT v3. Nasiya/рассрочка — V1 DA YO'Q (qaror 2026-07-05, tasdiqlangan 2026-07-07).
 
+## ✅ Shop/TG gate — qayta tekshirildi va JONLI tasdiqlandi (13.08.2026, Karis so'rovi)
+
+> Ikkita migratsiya ishga tushirildi (`npm run migrate`, Neon) — bulardan biri
+> **prodda login'ni butunlay buzib turgan edi** (`preferred_language` ustuni
+> yo'q edi, XOB-4 committidan beri). Login endi ishlaydi.
+>
+> Qayta o'qishda topilgan va tuzatilgan xatolar:
+> 1. **Real bag**: `Branch.jsx` `TelegramGroupCard` — `useState` shartli
+>    `return null`dan KEYIN chaqirilardi (Rules of Hooks buzilishi) — React
+>    "Rendered more/fewer hooks" bilan qulagan bo'lardi. Barcha hook'lar
+>    return'dan oldinga ko'chirildi.
+> 2. **Ortiqcha DB so'rov**: `telegram.controller.js` `pollLogin` —
+>    `isFeatureEnabledForOrg` ni yana chaqirardi, holbuki `loginByUserId`
+>    (`publicUser()`) buni ALLAQACHON hisoblagan (`session.user.orgFeatures`).
+>    Olib tashlandi.
+>
+> **Jonli tekshirildi (brauzer + to'g'ridan-to'g'ri DB, Karis test org'i,
+> keyin asl holatiga qaytarildi):**
+> - `requireOrgFeature` middleware: OFF → 403, ON → o'tkazadi (to'g'ridan-to'g'ri).
+> - Branch Manager sidebar: Shop OFF → "Do'kon" yo'q, `/shop`ga to'g'ridan-to'g'ri
+>   kirish → redirect `/`ga. Shop ON (DB orqali) → "Do'kon" paydo bo'ldi,
+>   `/shop` ochildi (bo'sh katalog, kutilganidek).
+> - Main Admin → Партнёр → Финансы → **haqiqiy UI tumbler bosildi** (skript
+>   emas) — `shop` `org_feature_flags`da `true` bo'lib yozildi, brauzerda
+>   yashil ko'rindi. To'liq zanjir ishlaydi: tumbler → PATCH → DB → gate → UI.
+> - `/features` katalogida "Магазин коинов (Shop)" va "Telegram-интеграция"
+>   ikkalasi ham ko'rinadi (seed-migratsiya ishladi).
+
 ## Backend+Frontend — Shop va Telegram fича-gate (Karis, 13.08.2026) ✅ kod tayyor, migratsiya KUTMOQDA
 
 > So'rov: Main Admin Shop va Telegram-integratsiyani partnyorlarga alohida

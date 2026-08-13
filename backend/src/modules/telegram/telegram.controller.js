@@ -5,7 +5,6 @@ import { redis } from '../../config/redis.js';
 import { AppError } from '../../utils/AppError.js';
 import * as repo from './telegram.repository.js';
 import { loginByUserId } from '../auth/auth.service.js';
-import { isFeatureEnabledForOrg } from '../../shared/orgFeatures.js';
 
 const allowedRoles = new Set(['student', 'parent']);
 
@@ -126,13 +125,13 @@ export async function pollLogin(req, res, next) {
     // до этой строки req.user нет) — поэтому фича-гейт здесь, а не в роуте
     // (requireOrgFeature на bind-token его уже не пускал бы новую привязку,
     // но старая привязка могла остаться от момента, когда фича была включена).
-    const tgAllowed = await isFeatureEnabledForOrg(session.user.organizationId, 'telegram_integration');
-    if (!tgAllowed) {
-      await loginNonceService.consume(nonce);
+    // publicUser() (auth.service.js) уже посчитал orgFeatures — второй запрос
+    // к БД тут был бы дублем той же самой строки.
+    await loginNonceService.consume(nonce);
+    if (!session.user.orgFeatures.telegramIntegration) {
       throw new AppError(403, 'Telegram integration is not enabled for your organization');
     }
 
-    await loginNonceService.consume(nonce);
     res.json({ success: true, data: { status: 'approved', ...session } });
   } catch (err) {
     next(err);
