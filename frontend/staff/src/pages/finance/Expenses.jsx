@@ -52,7 +52,7 @@ export default function FinanceExpenses() {
       <PageHeader title={t('expenses.title')} subtitle={t('expenses.subtitle')}>
       </PageHeader>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
         <Metric
           Icon={Receipt}
           label={t('kpi.expenses')}
@@ -64,7 +64,7 @@ export default function FinanceExpenses() {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
         <Card
           title={t('expenses.title')}
           action={

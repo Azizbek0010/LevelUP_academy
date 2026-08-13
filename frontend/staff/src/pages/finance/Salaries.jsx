@@ -33,7 +33,7 @@ export default function FinanceSalaries() {
       <PageHeader title={t('salaries.title')} subtitle={t('salaries.subtitle')}>
       </PageHeader>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
         <Metric
           Icon={BadgeDollarSign}
           label={t('salaries.payroll')}
@@ -50,7 +50,7 @@ export default function FinanceSalaries() {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
         <Card
           title={t('common.period')}
           action={
