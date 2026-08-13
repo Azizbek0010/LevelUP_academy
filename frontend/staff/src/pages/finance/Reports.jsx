@@ -126,7 +126,7 @@ export default function FinanceReports() {
 
       {/* ── Cash Flow по филиалам ── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
-        <Card title={t('reports.cashFlow')} subtitle={MONTH_LABEL[monthKey]} bodyClass="p-4 h-[320px] xl:col-span-2">
+        <Card title={t('reports.cashFlow')} subtitle={MONTH_LABEL[monthKey]} className="xl:col-span-2" bodyClass="p-4 h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-base-300)" vertical={false} />
@@ -196,7 +196,7 @@ export default function FinanceReports() {
           каждая строка теперь просто "бейдж/лейбл ... сумма", в одну линию,
           без соседей, которым не хватало ширины. */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
-        <Card title={t('reports.paymentsThisMonth')} subtitle={MONTH_LABEL[CURRENT_MONTH]} bodyClass="p-4 xl:col-span-2">
+        <Card title={t('reports.paymentsThisMonth')} subtitle={MONTH_LABEL[CURRENT_MONTH]} className="xl:col-span-2" bodyClass="p-4">
           <div className="grid sm:grid-cols-2 gap-x-8 gap-y-5">
             <div>
               <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-2.5">
