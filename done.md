@@ -1,13 +1,20 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 13.08.2026 03:57 (UTC+5, Toshkent vaqti)
-> Statistika: 204/232 task tugallangan (87%)
+> Oxirgi yangilanish: 13.08.2026 05:08 (UTC+5, Toshkent vaqti)
+> Statistika: 209/237 task tugallangan (88%)
 
 ---
 
-## Progress: [#################...] 87%
+## Progress: [#################...] 88%
 
 ## Tugallangan vazifalar
+
+### Backend+Frontend — Shop va Telegram fича-gate (Karis, 13.08.2026) ✅ kod tayyor, migratsiya KUTMOQDA
+- [x] Umumiy: `shared/orgFeatures.js` (`isFeatureEnabledForOrg`, Redis'siz —
+- [x] Shop: gейт `student.routes.js` (`/shop`), `admin.routes.js` (`/shop`),
+- [x] Telegram: gейт `telegram.routes.js` (`POST /bind-token`),
+- [x] Frontend Telegram-UI: `frontend/staff` — Branch Manager
+- [x] `orgFeatures: {shop, telegramIntegration}` — `publicUser()`
 
 ### Backend — Student paneli: XOB so'rovi (Telegram, 12.08.2026) ✅ kod tayyor, migratsiya KUTMOQDA
 - [x] XOB-1 LEADERBOARD-GROUP: `GET /api/student/leaderboard?groupId=...`
@@ -287,6 +294,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 124 task
+- Karis (Backend): 129 task
 - Abdulaziz (Backend): 84 task
-- Frontend jamoasi: 69 task
+- Frontend jamoasi: 74 task

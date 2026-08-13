@@ -3,6 +3,7 @@ import { getLeaderboard } from '../../leaderboard/leaderboard.service.js';
 import { listHomeworkForStudent } from '../../homework/homework.repository.js';
 import { getStudentGroupIds } from '../../../shared/membership.js';
 import { getTopicStats, getLatestReview } from '../lessons/lessons.repository.js';
+import { isFeatureEnabledForOrg } from '../../../shared/orgFeatures.js';
 import * as homeRepo from './home.repository.js';
 
 const UPCOMING_HOMEWORK_LIMIT = 5;
@@ -57,7 +58,7 @@ export async function getDashboard(user) {
   const studentId = user.id;
   const groupIds = await getStudentGroupIds(studentId);
 
-  const [coins, totalDebt, leaderboard, groups, homeworkList, topicStats, latestReview, attendanceHistory, preferredLanguage] =
+  const [coins, totalDebt, leaderboard, groups, homeworkList, topicStats, latestReview, attendanceHistory, preferredLanguage, shopEnabled, tgEnabled] =
     await Promise.all([
       getBalance(studentId),
       homeRepo.getTotalDebt(studentId),
@@ -68,6 +69,8 @@ export async function getDashboard(user) {
       getLatestReview(studentId),
       homeRepo.getAttendanceHistory(studentId),
       homeRepo.getPreferredLanguage(studentId),
+      isFeatureEnabledForOrg(user.organizationId, 'shop'),
+      isFeatureEnabledForOrg(user.organizationId, 'telegram_integration'),
     ]);
   const { streak, longestStreak } = computeAttendanceStreaks(attendanceHistory);
 
@@ -88,6 +91,7 @@ export async function getDashboard(user) {
     streak,
     longestStreak,
     preferredLanguage,
+    orgFeatures: { shop: shopEnabled, telegramIntegration: tgEnabled },
   };
 }
 

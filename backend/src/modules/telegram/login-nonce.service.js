@@ -11,7 +11,8 @@ import {
  *
  *   create()   — фронт получает nonce и deep-link, в Redis кладётся `pending`
  *   approve()  — бот нашёл чат в telegram_accounts и подставляет userId
- *   claim()    — фронт забирает userId и СРАЗУ удаляет ключ
+ *   claim()    — фронт смотрит, подтверждено ли (ключ НЕ удаляется)
+ *   consume()  — вызывается ПОСЛЕ того, как сессия реально выдана
  *
  * Почему nonce, а не сразу токены в боте: access-token нельзя отдавать в чат —
  * он останется в истории переписки и в бэкапах Telegram навсегда. Через nonce в
@@ -53,17 +54,24 @@ export class TelegramLoginNonceService {
   }
 
   /**
-   * Забрать результат. `getdel` — атомарно: даже если фронт опрашивает из двух
-   * вкладок, токены выпишутся ровно один раз.
+   * Посмотреть результат БЕЗ удаления ключа. Раньше это удаляло nonce сразу —
+   * если после этого выдача сессии (loginByUserId) падала (напр. Redis сам не
+   * отвечает, org-гейт и т.п.), настоящая ошибка терялась: следующий опрос
+   * видел уже пустой ключ и показывал «ссылка истекла» вместо реальной причины.
+   * Теперь удаление — отдельный шаг (`consume`), вызывающий код зовёт его
+   * только после того, как сессия реально выдана.
    */
   async claim(nonce) {
     if (!nonce) return { status: 'unknown' };
     const value = await this.redis.get(loginNonceKey(nonce));
     if (value === null) return { status: 'unknown' }; // не выдавали или уже истёк
     if (value === LOGIN_PENDING) return { status: 'pending' };
-
-    await this.redis.del(loginNonceKey(nonce));
     return { status: 'approved', userId: value };
+  }
+
+  /** Одноразовость: зовётся ПОСЛЕ успешной выдачи сессии, не до. */
+  async consume(nonce) {
+    await this.redis.del(loginNonceKey(nonce));
   }
 
   async #createUniqueNonce() {

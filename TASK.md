@@ -4,6 +4,83 @@
 > Statistika qo'lda YOZILMAYDI — real raqamlar faqat `done.md` da.
 > V1 SCOPE: naqd + karta (full/split). Click/Payme/UzCard/Humo — FAQAT v3. Nasiya/рассрочка — V1 DA YO'Q (qaror 2026-07-05, tasdiqlangan 2026-07-07).
 
+## Backend+Frontend — Shop va Telegram fича-gate (Karis, 13.08.2026) ✅ kod tayyor, migratsiya KUTMOQDA
+
+> So'rov: Main Admin Shop va Telegram-integratsiyani partnyorlarga alohida
+> yoqib/o'chira olishi kerak (xuddi shu mexanizm — `org_feature_flags` +
+> `platform_addon_prices` + SEO so'rov-inbox — allaqachon AI-review uchun
+> ishlagan, endi shu ikkisiga ham qo'shildi). O'chirilgan bo'lsa — sidebar'da
+> ko'rinmasin VA to'g'ridan-to'g'ri link bilan ham ochilmasin (backend ham
+> 403 qaytaradi, front ham yashiradi).
+>
+> **Migratsiya `1786578520188_seed-shop-telegram-feature-keys.js` — ATAYLAB
+> ishga tushirilmadi** (o'sha CLAUDE.md qoidasi: faqat localhost yoki Karis
+> ruxsati bilan). `npm run migrate` qilinmaguncha `shop`/`telegram_integration`
+> `platform_addon_prices` katalogida ko'rinmaydi va Main Admin ularni hali
+> tumbler qila olmaydi — kod tayyor, birgina shu qadam qolgan.
+
+- [x] Umumiy: `shared/orgFeatures.js` (`isFeatureEnabledForOrg`, Redis'siz —
+      Upstash kvotasi ustiga yana bir gейт qo'ymaslik uchun), middleware
+      `requireOrgFeature(key)` — rout-daraxtga osiladi, 403 qaytaradi.
+- [x] Shop: gейт `student.routes.js` (`/shop`), `admin.routes.js` (`/shop`),
+      `super.routes.js` (4 ta `/shop/items*` rout alohida-alohida, chunki
+      sub-router emas). Sidebar: `frontend/staff` — `Layout.jsx`
+      `filterNavByFeatures()` (admin/seo/branch_manager), route guard —
+      yangi `FeatureGuard.jsx` (`App.jsx` `/shop`, `/shop-catalog`).
+      `frontend/member` (student) — `student/components/Layout.jsx`
+      `buildNav()`, route guard — `App.jsx` ichidagi lokal `FeatureGuard`.
+- [x] Telegram: gейт `telegram.routes.js` (`POST /bind-token`),
+      `branch-manager.routes.js` (`POST /telegram/bind-token`),
+      `admin.routes.js` (`POST /students/:id/telegram/message`). Login
+      (`/telegram/login/*`) — PUBLIC rout, org faqat `loginByUserId`dan KEYIN
+      ma'lum bo'ladi, shuning uchun gейт `telegram.controller.js`
+      `pollLogin()` ichida (session chiqqandan keyin, lekin consume'dan
+      oldin). Bot tomonidan yangi bind (`bot.handlers.js` `handleBind`) —
+      race uchun qo'shimcha tekshiruv (token band bo'lgan payt fича yoqiq
+      edi, lekin bot bilan gaplashguncha o'chirilgan bo'lishi mumkin).
+      `getStatus`/`unlink` — ATAYLAB gейtланмаган (o'chirilgan holda ham
+      eski bog'lanishni ko'rish/uzish imkoni qolsin — xavfsizlik klapani).
+- [x] Frontend Telegram-UI: `frontend/staff` — Branch Manager
+      `TelegramGroupCard` (`Branch.jsx`, butunlay yashirin), Admin
+      `StudentDetail.jsx` "Написать в Telegram" bloki. `frontend/member` —
+      student sidebar TG-bind bloki (`student/components/Layout.jsx`),
+      Parent `Profile.jsx` TG-karta butunlay.
+      ⚠️ **Login sahifasidagi "Telegram orqali kirish" tugmasi — ГЕЙТЛАНМАДИ.**
+      Bu login'gacha, foydalanuvchi (demak — organizatsiya) hali noma'lum;
+      qaysi orgга tekshirish kerakligini frontend oldindan bila olmaydi.
+      Amalda himoyalangan — backend `pollLogin` o'chirilgan bo'lsa 403
+      qaytaradi (endi haqiqiy xato ko'rinadi, "muddati tugadi" emas — pastga
+      qara).
+- [x] `orgFeatures: {shop, telegramIntegration}` — `publicUser()`
+      (`auth.service.js`, barcha login/refresh javoblarida), `GET
+      /api/users/me` (staff-front shu orqali biladi), `GET /api/student/home`.
+
+## 🐛 TG-LOGIN BUG (topildi va tuzatildi 13.08.2026 shu sessiyada)
+
+> Karis: "student tg orqali kirish ishlamayapti". Sabab ikkita, ikkalasi ham
+> tuzatildi:
+>
+> 1. **`telegram.controller.js` `pollLogin()`** — nonce'ni `loginByUserId()`
+>    MUVAFFAQIYATLI bo'lishidan OLDIN o'chirar edi (`login-nonce.service.js`
+>    `claim()`). `loginByUserId` xato bersa (Redis o'chgan, org-gate va h.k.)
+>    — xato haqiqiy edi, lekin nonce allaqachon o'chgan, keyingi opros
+>    "unknown" ko'rsatardi. Tuzatildi: `claim()` endi FAQAT o'qiydi,
+>    yangi `consume()` faqat sessiya muvaffaqiyatli chiqqandan KEYIN chaqiriladi.
+> 2. **`frontend/member/src/pages/Login.jsx`** `onTelegramLogin` — real xatoni
+>    (masalan 403/500, `err.status` bor) tarmoq uzilishi bilan bir xil `catch
+>    {}`ga solib, jim yutib yuborardi, keyingi tikda "muddati tugadi" degan
+>    umumiy xabar chiqardi. Tuzatildi: `err.status` bo'lsa — haqiqiy xabar
+>    ko'rsatiladi, bo'lmasa (tarmoq uzilishi) — opros davom etadi.
+>
+> ⚠️ **Karis'ning o'z test-akkaunti (`demostud`) uchun TEKSHIRILDI — bu ikkisi
+> sabab emas edi.** `org_feature_flags` (`student_panel`/`parent_panel`) —
+> `true`, `telegram_accounts` — bog'langan, org — `active`, `access_until`
+> kelajakda. To'g'ridan-to'g'ri probe qilindi: xuddi shu `SET...NX` buyrug'i
+> (nonce yaratish nima ishlatadi) jonli Redis'da **`Command timed out`**
+> qaytardi — demak asosiy sabab hozircha ham 🔴 yuqoridagi Upstash kvotasi
+> (pastga qara), kod bagi emas. Kvota tiklanmaguncha TG-login (yangi
+> bind ham) baribir ishlamaydi — bu Claude to'lay olmaydigan narsa.
+
 ## 🔴 SHOSHILINCH — Upstash Redis limit tugagan (11.08.2026 topildi)
 
 `npm test` orqali aniqlandi: `ERR max requests limit exceeded. Limit: 500000, Usage: 500001`

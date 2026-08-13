@@ -4,6 +4,7 @@ import { TelegramLoginNonceService } from './login-nonce.service.js';
 import { BranchBindTokenService } from './branch-bind-token.service.js';
 import { LOGIN_PAYLOAD_PREFIX } from './constants.js';
 import { resolveUser, coinsCommand, ratingCommand, homeCommand } from './bot.commands.js';
+import { isFeatureEnabledForOrg } from '../../shared/orgFeatures.js';
 
 export function registerTelegramBotHandlers({ bot, pool, redis, logger, language = 'ru' }) {
   if (!bot) return;
@@ -203,8 +204,16 @@ async function handleBind({ ctx, pool, bindTokens, logger, messages: t, token })
   }
 
   try {
-    const role = await resolveTelegramRole(pool, userId);
-    if (!role) {
+    const target = await resolveTelegramRole(pool, userId);
+    if (!target) {
+      await ctx.reply(t.tokenInvalid);
+      return;
+    }
+    const { role, organizationId } = target;
+
+    // Гонка: токен выпущен, пока фича была включена, но Main Admin выключил
+    // её партнёру до того, как студент дописал привязку в боте.
+    if (!(await isFeatureEnabledForOrg(organizationId, 'telegram_integration'))) {
       await ctx.reply(t.tokenInvalid);
       return;
     }
@@ -229,12 +238,13 @@ async function handleBind({ ctx, pool, bindTokens, logger, messages: t, token })
 
 async function resolveTelegramRole(pool, userId) {
   const { rows } = await pool.query(
-    `SELECT role FROM users WHERE id = $1 AND deleted_at IS NULL AND status = 'active'`,
+    `SELECT role, organization_id FROM users WHERE id = $1 AND deleted_at IS NULL AND status = 'active'`,
     [userId],
   );
 
-  const role = rows[0]?.role;
-  return role === 'student' || role === 'parent' ? role : null;
+  const row = rows[0];
+  if (!row || (row.role !== 'student' && row.role !== 'parent')) return null;
+  return { role: row.role, organizationId: row.organization_id };
 }
 
 async function replyDuplicateBinding({ pool, ctx, userId, chatId, messages: t }) {

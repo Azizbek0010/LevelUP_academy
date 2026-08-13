@@ -36,12 +36,14 @@ const LESSON_PATHS = ['/study', '/lessons', '/tests', '/homework', '/videos'];
 
 /* Меню строится из словаря: подписи пунктов живут в i18n (nav.*),
    маршруты и иконки — здесь. */
-function buildNav(t) {
+function buildNav(t, orgFeatures) {
   return {
     main: [{ to: '/student', label: t.nav.home, icon: Home, end: true }],
     lessons: { to: '/study', label: t.nav.study, icon: BookOpen },
+    // Karis (13.08.2026): Shop — управляемая Main Admin'ом фича, партнёру
+    // может быть не включена — тогда пункта в меню нет вообще.
     rest: [
-      { to: '/shop', label: t.nav.shop, icon: ShoppingBag },
+      ...(orgFeatures?.shop ? [{ to: '/shop', label: t.nav.shop, icon: ShoppingBag }] : []),
       { to: '/leaderboard', label: t.nav.rating, icon: Trophy },
     ],
   };
@@ -120,7 +122,7 @@ function DebtChip({ days }) {
 export default function Layout() {
   const { user, logout } = useAuth();
   const { lang, setLanguage, t } = useI18n();
-  const nav = buildNav(t);
+  const nav = buildNav(t, user?.orgFeatures);
   const location = useLocation();
   const stats = useHeaderStats();
   const streak = useDailyStreak();
@@ -322,8 +324,9 @@ export default function Layout() {
                       аккаунта, и место ей рядом с выходом, а не под меню разделов.
                       Скрыт целиком, когда сервер отвечает configured: false —
                       предлагать действие, которое заведомо вернёт ошибку, хуже,
-                      чем не предлагать вовсе. */}
-                  {tg?.configured !== false && (
+                      чем не предлагать вовсе. Плюс (Karis, 13.08.2026) — Main
+                      Admin мог не включить Telegram-интеграцию партнёру вообще. */}
+                  {tg?.configured !== false && user?.orgFeatures?.telegramIntegration && (
                     <>
                       <button
                         role="menuitem"

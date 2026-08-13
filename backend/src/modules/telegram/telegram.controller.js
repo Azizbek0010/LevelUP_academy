@@ -5,6 +5,7 @@ import { redis } from '../../config/redis.js';
 import { AppError } from '../../utils/AppError.js';
 import * as repo from './telegram.repository.js';
 import { loginByUserId } from '../auth/auth.service.js';
+import { isFeatureEnabledForOrg } from '../../shared/orgFeatures.js';
 
 const allowedRoles = new Set(['student', 'parent']);
 
@@ -116,7 +117,22 @@ export async function pollLogin(req, res, next) {
       return;
     }
 
+    // Удаляем nonce ТОЛЬКО после успешной выдачи сессии — иначе сбой здесь
+    // (напр. Redis/БД недоступны) стирает nonce впустую, и следующий опрос
+    // видит "unknown" вместо настоящей ошибки (см. login-nonce.service.js).
     const session = await loginByUserId(result.userId, ['student', 'parent']);
+
+    // Вход одобрен ботом раньше, чем мы узнали организацию (nonce публичный,
+    // до этой строки req.user нет) — поэтому фича-гейт здесь, а не в роуте
+    // (requireOrgFeature на bind-token его уже не пускал бы новую привязку,
+    // но старая привязка могла остаться от момента, когда фича была включена).
+    const tgAllowed = await isFeatureEnabledForOrg(session.user.organizationId, 'telegram_integration');
+    if (!tgAllowed) {
+      await loginNonceService.consume(nonce);
+      throw new AppError(403, 'Telegram integration is not enabled for your organization');
+    }
+
+    await loginNonceService.consume(nonce);
     res.json({ success: true, data: { status: 'approved', ...session } });
   } catch (err) {
     next(err);

@@ -3,6 +3,7 @@ import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
 import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
+import { requireOrgFeature } from '../../middlewares/requireOrgFeature.js';
 import {
   createBranchSchema,
   createAdminSchema,
@@ -1325,8 +1326,8 @@ router.post('/discipline-rules', validate({ body: createRuleSchema }), disciplin
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.get('/shop/items', validate({ query: listShopItemsQuery }), ctrl.listShopItems);
-router.post('/shop/items', validate({ body: createShopItemSchema }), ctrl.createShopItem);
+router.get('/shop/items', requireOrgFeature('shop'), validate({ query: listShopItemsQuery }), ctrl.listShopItems);
+router.post('/shop/items', requireOrgFeature('shop'), validate({ body: createShopItemSchema }), ctrl.createShopItem);
 
 /**
  * @openapi
@@ -1359,7 +1360,7 @@ router.post('/shop/items', validate({ body: createShopItemSchema }), ctrl.create
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.patch('/shop/items/:id', validate({ params: idParam, body: updateShopItemSchema }), ctrl.updateShopItem);
+router.patch('/shop/items/:id', requireOrgFeature('shop'), validate({ params: idParam, body: updateShopItemSchema }), ctrl.updateShopItem);
 
 /**
  * @openapi
@@ -1389,7 +1390,7 @@ router.patch('/shop/items/:id', validate({ params: idParam, body: updateShopItem
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.patch('/shop/items/:id/archive', validate({ params: idParam, body: setShopItemArchivedSchema }), ctrl.setShopItemArchived);
+router.patch('/shop/items/:id/archive', requireOrgFeature('shop'), validate({ params: idParam, body: setShopItemArchivedSchema }), ctrl.setShopItemArchived);
 
 /**
  * @openapi

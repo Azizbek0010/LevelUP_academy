@@ -170,6 +170,21 @@ const financeManagerNav = [
   { to: '/finance/settings',  label: 'Sozlamalar', labelKey: 'nav.settings', Icon: HiOutlineCog },
 ];
 
+// Пункты, скрываемые целиком, если Main Admin не включил фичу партнёру
+// (Karis, 13.08.2026: не только спрятать в sidebar, но и route guard ниже
+// не пускает по прямой ссылке — см. FeatureGuard).
+const FEATURE_GATED_PATHS = { '/shop': 'shop', '/shop-catalog': 'shop' };
+
+function filterNavByFeatures(nav, orgFeatures) {
+  const allowed = (to) => {
+    const key = FEATURE_GATED_PATHS[to];
+    return !key || Boolean(orgFeatures?.[key]);
+  };
+  return nav
+    .filter((item) => allowed(item.to))
+    .map((item) => (item.items ? { ...item, items: item.items.filter((sub) => allowed(sub.to)) } : item));
+}
+
 const ROLE_NAV = {
   seo: superNav,
   admin: adminNav,
@@ -465,8 +480,8 @@ function Sidebar({
   hoverProps = {},    // обработчики наведения — только у десктопного экземпляра
   overlaying = false, // раскрыт наведением поверх контента
 }) {
-  const nav = ROLE_NAV[role] || [];
   const { user } = useAuth();
+  const nav = filterNavByFeatures(ROLE_NAV[role] || [], user?.orgFeatures);
   const location = useLocation();
   const { t } = useT();
 

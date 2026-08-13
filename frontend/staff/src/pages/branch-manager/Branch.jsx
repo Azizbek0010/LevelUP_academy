@@ -39,10 +39,17 @@ function InfoRow({ Icon, label, value, href }) {
  * (Branch Manager o'zi qiladi — botni tashqaridan avtomatik qo'shib bo'lmaydi),
  * so'ng kod guruhning o'ziga /bindbranch <kod> buyrug'i sifatida yuboriladi. */
 function TelegramGroupCard() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  // Karis (13.08.2026): Main Admin не включил Telegram-интеграцию партнёру —
+  // карточки не должно быть вообще, не только кнопки внутри неё.
+  const tgEnabled = Boolean(user?.orgFeatures?.telegramIntegration);
+  // Хук ниже не умеет condition-fetch — вызываем его всегда (правило хуков),
+  // но пока фича выключена, просто не рендерим карточку с его данными.
   const { data: status, isLoading, refetch } = useBranchManagerTelegramStatus();
   const [issuing, setIssuing] = useState(false);
   const [code, setCode] = useState(null);
+
+  if (!tgEnabled) return null;
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
 

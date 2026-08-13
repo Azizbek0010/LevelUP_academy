@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { webhookCallback } from 'grammy';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { createRateLimiter } from '../../middlewares/rateLimiter.js';
+import { requireOrgFeature } from '../../middlewares/requireOrgFeature.js';
 import { env } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
 import { bot, usesWebhook } from './bot.js';
@@ -53,7 +54,7 @@ const router = Router();
  *       503:
  *         description: Telegram is not configured on this server
  */
-router.post('/bind-token', authenticate, createBindToken);
+router.post('/bind-token', authenticate, requireOrgFeature('telegram_integration'), createBindToken);
 
 /**
  * @openapi
