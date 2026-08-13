@@ -38,7 +38,7 @@ export default function FinanceDashboard() {
   })).filter((b) => b.value > 0);
 
   return (
-    <div className="space-y-6 pb-8 animate-page-enter">
+    <div className="space-y-6 pb-8 animate-fade-in">
       <PageHeader title={t('dash.title')} subtitle={t('dash.subtitle')} />
 
       {/* ── KPI организации за текущий месяц ── */}
