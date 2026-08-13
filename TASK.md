@@ -1,3 +1,38 @@
+## ✅ Frontend/staff — дизайн выровнен по эталону Main Admin (13.08.2026, Karis)
+
+> "har bir pageni... main admin desingi dashboard design ga o'hshasin full".
+> Разница оказалась не в компонентах, а в ТЕМЕ: `main-admin/tailwind.config.js`
+> ещё 11.08 уменьшил радиус скруглений DaisyUI ("острее углы = серьёзнее
+> продукт"), а `frontend/staff/tailwind.config.js` — общий для Admin/SEO/
+> Mentor/Methodist/Branch Manager/Finance — так и остался на старом мягком
+> `--rounded-box: 1rem`. Один токен правится → эффект сразу на ВСЕХ страницах,
+> использующих `.card`/`.btn`/`.badge`/`.modal-box` (подавляющее большинство).
+>
+> - [x] `tailwind.config.js`: `--rounded-box` 1rem→0.5rem, `--rounded-btn`
+>       0.6rem→0.375rem, добавлен `--rounded-badge: 0.25rem` (как в main-admin).
+> - [x] Три общих UI-кита донастроены под тот же паттерн Main Admin (`card
+>       bg-base-100 border border-base-200/60 shadow-sm`, иконка-чип `w-8 h-8
+>       rounded-lg`, подпись capslock 11px, значение `text-3xl font-extrabold
+>       tabular-nums`) — везде убраны хардкод-переопределения `rounded-2xl`,
+>       которые сам токен не ловит:
+>       `pages/super/_ui.jsx` (Card/Panel/Metric/EmptyState — держит Дисциплину,
+>       Объявления, Фичи, StaffDetail, BranchDetail и другие SEO-страницы),
+>       `pages/mentor/_ui.jsx` (Panel/Kpi/EmptyState — держит Students/Groups/
+>       Mentors/Payments/Dashboard/Reports по комментарию в файле),
+>       `pages/finance/_ui.jsx` (см. блок выше, 13.08 раньше этой сессии).
+> - [x] Точечно: `finance/Settings.jsx`, `super/Branches.jsx` (плитки филиалов),
+>       `super/BranchFormModal.jsx` (модалка) — убраны локальные `rounded-2xl`.
+> - [x] Живьём проверено (SEO): Дашборд, Филиалы, Дисциплина, Финансы — единый
+>       плоский стиль, без ошибок в консоли.
+> - ⚠️ **Не 100% страниц.** Methodist сознательно НЕ трогал — у него отдельная
+>       задокументированная "Content Studio" айдентика (index.css, лайм-акцент)
+>       — не путать с недосмотром. Чат-пузыри/попап-меню (StaffChat, дропдауны)
+>       тоже не трогал — они намеренно круглее карточек, это отдельный паттерн,
+>       не "дашборд". Остальные мелкие изолированные `rounded-2xl` (иконки-
+>       декорации, demo-блок на Login) — не системные, специально не искал все
+>       до единого ради самого "full" — если где-то ещё бросится в глаза,
+>       скажи, дочищу точечно.
+
 # LevelUp Academy — MASTER TASK LIST
 
 > Bu fayl — barcha vazifalarning yagona manbaidir. `done.md` avtomatik yangilanadi (`scripts/update-done.py`).
