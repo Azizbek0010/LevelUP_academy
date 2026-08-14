@@ -125,7 +125,7 @@ export default function Layout() {
   const stats = useHeaderStats();
   const streak = useDailyStreak();
   const inLessons = LESSON_PATHS.some((p) => location.pathname.startsWith(p));
-  const name = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || (lang === 'uz' ? "O'quvchi" : 'Ученик');
+  const name = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || (lang === 'uz' ? "O'quvchi" : lang === 'en' ? 'Student' : 'Ученик');
   // Уведомления и профиль — выпадающие панели от кнопки (как в Mentor-панели),
   // не модалки по центру экрана: закрываются кликом снаружи или Escape.
   const [showNotifications, setShowNotifications] = useState(false);
@@ -191,11 +191,7 @@ export default function Layout() {
       // чтобы кнопка сама переключилась на «привязан», без перезагрузки страницы.
       setTimeout(loadTgStatus, 4000);
     } catch (e) {
-      setTgError(
-        e?.status === 503
-          ? 'Telegram hali sozlanmagan — administratorga ayting'
-          : 'Ulab bo‘lmadi, keyinroq urinib ko‘ring',
-      );
+      setTgError(e?.status === 503 ? t.header.tgNotConfigured : t.header.tgBindError);
     } finally {
       setTgBusy(false);
     }
@@ -217,7 +213,7 @@ export default function Layout() {
       await loadTgStatus();
       closeTgModal();
     } catch {
-      setTgError('Uzib bo‘lmadi, keyinroq urinib ko‘ring');
+      setTgError(t.header.tgUnlinkError);
     } finally {
       setTgBusy(false);
     }
@@ -341,15 +337,15 @@ export default function Layout() {
                           {tg?.linked
                             ? tg.username
                               ? `@${tg.username}`
-                              : 'Telegram ulangan'
-                            : 'Telegramni ulash'}
+                              : t.header.tgLinked
+                            : t.header.tgBind}
                         </span>
                         {tg?.linked && (
                           <span
                             className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded shrink-0"
                             style={{ background: '#E8F6EC', color: '#1F7A3D' }}
                           >
-                            ULANGAN
+                            {t.header.tgBadge}
                           </span>
                         )}
                       </button>
@@ -513,7 +509,7 @@ export default function Layout() {
               </div>
               <div className="min-w-0">
                 <div className="text-[15px] font-extrabold truncate" style={{ color: C.text }}>
-                  {tg.username ? `@${tg.username}` : tg.firstName || 'Telegram ulangan'}
+                  {tg.username ? `@${tg.username}` : tg.firstName || t.header.tgLinked}
                 </div>
                 {tg.firstName && tg.username && (
                   <div className="text-[12px] font-semibold truncate" style={{ color: C.muted }}>
@@ -524,7 +520,7 @@ export default function Layout() {
             </div>
             {tg.linkedAt && (
               <div className="text-[12px] font-semibold mt-3" style={{ color: C.muted }}>
-                Ulangan sana:{' '}
+                {t.header.tgLinkedAt}{' '}
                 {new Date(tg.linkedAt).toLocaleDateString('ru-RU', {
                   day: '2-digit',
                   month: '2-digit',
@@ -535,9 +531,15 @@ export default function Layout() {
           </div>
 
           <div className="text-[13px] leading-relaxed mb-4" style={{ color: C.muted }}>
-            Botda <b style={{ color: C.text }}>/home</b>, <b style={{ color: C.text }}>/coins</b> va{' '}
-            <b style={{ color: C.text }}>/rating</b> buyruqlari ishlaydi. Saytga parolsiz kirish
-            ham shu ulanish orqali.
+            {/* Команды в тексте выделяем жирным: строка словаря — обычный текст,
+                разбиваем по /home /coins /rating и оборачиваем их в <b>. */}
+            {t.header.tgCommands.split(/(\/home|\/coins|\/rating)/).map((part, i) =>
+              part.startsWith('/') ? (
+                <b key={i} style={{ color: C.text }}>{part}</b>
+              ) : (
+                <span key={i}>{part}</span>
+              ),
+            )}
           </div>
 
           {tgError && (
@@ -550,11 +552,10 @@ export default function Layout() {
           {tgConfirmUnlink ? (
             <div className="rounded-xl p-4" style={{ background: '#FFF2EF' }}>
               <div className="text-[13px] font-bold mb-1" style={{ color: '#8E2C1B' }}>
-                Aniq uzmoqchimisiz?
+                {t.header.tgConfirmTitle}
               </div>
               <div className="text-[12px] leading-snug mb-3" style={{ color: '#8E2C1B' }}>
-                Xabarlar to‘xtaydi va Telegram orqali kirish ishlamay qoladi. Qayta ulash uchun
-                yana shu tugmadan o‘tish kerak.
+                {t.header.tgConfirmText}
               </div>
               <div className="flex gap-2">
                 <button
@@ -563,7 +564,7 @@ export default function Layout() {
                   className="k-press-sm flex-1 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40"
                   style={{ background: '#C0392B', color: '#fff' }}
                 >
-                  {tgBusy ? 'Uzilmoqda…' : 'Ha, uz'}
+                  {tgBusy ? t.header.tgBusy : t.header.tgYes}
                 </button>
                 <button
                   onClick={() => setTgConfirmUnlink(false)}
@@ -571,7 +572,7 @@ export default function Layout() {
                   className="k-press-sm flex-1 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40"
                   style={{ background: C.card, color: C.text, border: `1px solid ${C.line}` }}
                 >
-                  Bekor qilish
+                  {t.header.tgCancel}
                 </button>
               </div>
             </div>
@@ -581,7 +582,7 @@ export default function Layout() {
               className="k-press-sm w-full py-2.5 rounded-xl text-[13px] font-extrabold"
               style={{ background: '#FFE6E2', color: '#C0392B' }}
             >
-              Ulanishni uzish
+              {t.header.tgUnlink}
             </button>
           )}
         </Modal>

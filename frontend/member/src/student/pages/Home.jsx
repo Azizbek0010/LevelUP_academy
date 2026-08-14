@@ -14,13 +14,7 @@ import {
 } from '../components/ui.jsx';
 import { useDailyStreak } from '../useDailyStreak.js';
 import { deadlineLabel } from '../format.js';
-import FeedbackDemo from '../components/FeedbackDemo.jsx';
-
-/* ⚠️ MAKET — «Aqlli tahlil» demo-bloki. Faqat dev/mock rejimida ko'rinadi —
-   import.meta.env.DEV false (prod-build) yoki VITE_USE_MOCKS=false bo'lsa
-   (prod-env) avtomatik o'chadi, mock ma'lumotlar prod'ga tushib qolmaydi.
-   Backend tayyor bo'lgach: blok va importni butunlay olib tashlang. */
-const MAKET_FEEDBACK = import.meta.env.DEV || import.meta.env.VITE_USE_MOCKS === 'true';
+import SmartReview from '../components/SmartReview.jsx';
 
 /**
  * Главная кабинета ученика (2026-08-01, v3).
@@ -183,7 +177,7 @@ export default function Home() {
           </Ring>
           <div className="min-w-0 flex-1">
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'rgba(255,255,255,0.75)' }}>
-              {fmt(t.home.hello, { name: user?.firstName || (lang === 'uz' ? "o'quvchi" : 'ученик') })}
+              {fmt(t.home.hello, { name: user?.firstName || (lang === 'uz' ? "o'quvchi" : lang === 'en' ? 'student' : 'ученик') })}
             </div>
             <h1 className="text-[22px] sm:text-[25px] font-extrabold leading-[1.15] tracking-[-0.01em] mt-1 text-white">
               {fmt(t.home.levelTitle, { level })}
@@ -192,7 +186,10 @@ export default function Home() {
               {fmt(t.home.coinsToNext, { n: toNext, level: level + 1 })}
             </p>
           </div>
-          <div className="flex items-center gap-4 sm:gap-5 shrink-0">
+          {/* Mobil'da statistika o'z qatoriga tushadi (basis-full), aks holda
+              min-w-0 o'rta ustun siqilib yozuvlar ring yonida ezilardi —
+              flex-wrap bu yerda ish bermaydi, chunki sig'adigan element bor. */}
+          <div className="flex items-center gap-4 sm:gap-5 shrink-0 basis-full sm:basis-auto">
             {rank && (
               <StatChip icon={TrendingUp} label={t.home.placeWeek}>
                 #{rank}
@@ -282,15 +279,12 @@ export default function Home() {
             </div>
             <LevelBar level={level} progress={progress} hue="lime" size="lg" />
           </div>
+
+          {/* ══ Aqlli tahlil — REAL: /student/home → data.review (backend AI-review,
+               Groq). review yo'q bo'lsa — komponent o'zi hech narsa chiqarmaydi. ══ */}
+          {data?.review ? <SmartReview review={data.review} /> : null}
         </>
       )}
-
-      {/* ══ Aqlli tahlil — MAKET (demo): backend hali ulanmagan, ma'lumotlar mock.
-           /student/home ga bog'liq EMAS — shuning uchun SurpriseCard kabi yuklanish
-           ternary'sidan tashqarida, hero va asosiy topshiriqlardan pastda turadi:
-           demo hech qachon yo'qolmaydi (API xato bo'lsa ham) va birinchi ekran
-           maqtov bloki bilan to'lib ketmaydi. ══ */}
-      {MAKET_FEEDBACK && <FeedbackDemo />}
 
       {/* ══ Факт дня — не зависит от /student/home, поэтому показываем
            сразу, не дожидаясь его загрузки (иначе внизу пустая яма,

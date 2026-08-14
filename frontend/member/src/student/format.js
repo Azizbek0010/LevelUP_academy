@@ -5,9 +5,9 @@ const nf = new Intl.NumberFormat('ru-RU');
 
 export const fmtNum = (n) => nf.format(Number(n) || 0);
 
-export const fmtMoney = (n, lang = 'ru') => `${nf.format(Number(n) || 0)} ${lang === 'uz' ? "so'm" : 'сум'}`;
+export const fmtMoney = (n, lang = 'ru') => `${nf.format(Number(n) || 0)} ${lang === 'uz' ? "so'm" : lang === 'en' ? 'sum' : 'сум'}`;
 
-const LOCALES = { ru: 'ru-RU', uz: 'uz-UZ' };
+const LOCALES = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
 /* Браузер без данных узбекской локали (редкие окружения) выбросит RangeError
    на toLocaleDateString('uz-UZ') — тогда молча откатываемся на русскую. */
 const localeOf = (lang) => {
@@ -46,13 +46,14 @@ export function fmtDuration(totalSec) {
 /** Дедлайн относительно now: «через 3 дня» / «сегодня» / «просрочено». */
 export function deadlineLabel(deadline, lang = 'ru') {
   if (!deadline) return '';
+  const en = lang === 'en';
   const uz = lang === 'uz';
   const diffMs = new Date(deadline).getTime() - Date.now();
-  if (diffMs < 0) return uz ? 'muddati o‘tgan' : 'просрочено';
+  if (diffMs < 0) return en ? 'overdue' : uz ? 'muddati o‘tgan' : 'просрочено';
   const days = Math.floor(diffMs / 86_400_000);
-  if (days === 0) return uz ? 'bugun' : 'сегодня';
-  if (days === 1) return uz ? 'ertaga' : 'завтра';
-  return uz ? `${days} kundan keyin` : `через ${days} дн.`;
+  if (days === 0) return en ? 'today' : uz ? 'bugun' : 'сегодня';
+  if (days === 1) return en ? 'tomorrow' : uz ? 'ertaga' : 'завтра';
+  return en ? `in ${days} days` : uz ? `${days} kundan keyin` : `через ${days} дн.`;
 }
 
 /** 158000 → «154 КБ», 3400000 → «3.2 МБ» */

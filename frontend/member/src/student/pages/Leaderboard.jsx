@@ -470,7 +470,9 @@ export default function Leaderboard() {
                   {fmt(t.leaderboard.coinsToNext, { n: toNext })}
                 </div>
               </div>
-              <div className="text-right shrink-0">
+              {/* Mobil'da tangalar o'z qatoriga tushadi — aks holda min-w-0
+                  o'rta ustun (daraja matnlari) siqilib ezilardi. */}
+              <div className="text-right shrink-0 basis-full sm:basis-auto">
                 <div className="k-num text-[22px] font-extrabold flex items-center justify-end gap-1.5" style={{ color: C.text }}>
                   <CountUp value={Number(myRow?.coins) || 0} />
                   <Star size={14} strokeWidth={2.4} fill={C.lime} color={C.lime} />

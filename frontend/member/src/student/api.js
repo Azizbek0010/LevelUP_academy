@@ -1,14 +1,14 @@
-// Все запросы идут на /api (dev-прокси Vite → боевой бэкенд по конвенции
-// проекта, см. root member/api.js: по умолчанию — РЕАЛЬНЫЙ бэкенд).
+// Все запросы идут на /api (dev-прокси Vite → боевой бэкенд по конвенции проекта).
 // VITE_API_URL — боевой бэкенд (Render) для production build.
-// USE_MOCKS — демо-данные в памяти, ТОЛЬКО по явному VITE_USE_MOCKS=true.
-// Раньше здесь было «моки по умолчанию» — из-за этого в рейтинге и других
-// страницах кабинета показывались выдуманные имена (Алишер) вместо реальных,
-// хотя вход уже шёл через настоящий бэкенд. Теперь по конвенции как у root.
+// USE_MOCKS — демо-данные в памяти. По умолчанию ВКЛ, как в root member/api.js:
+// иначе root-auth (mock) и student (real) рассинхронизируются — после логина
+// первый student-запрос уходит на реальный бэкенд с мок-токеном, 401 → refresh
+// падает → logout → обратно на /login. Реальный бэкенд — только при явном
+// VITE_USE_MOCKS=false (production build, .env.production уже так и делает).
 
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
 const USE_MOCKS =
-  typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS === 'true' : false;
+  typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS !== 'false' : true;
 
 let accessToken = null;
 let onSessionExpired = () => {};
@@ -174,7 +174,31 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
         .filter((h) => new Date(h.deadline).getTime() > now && h.submission_status !== 'graded')
         .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
         .slice(0, 5);
-      return { data: { coins: mock.coins, totalDebt: mock.totalDebt, rank: mockLeaderboard('week').me, groups: mock.groups, upcomingHomework } };
+      return {
+        data: {
+          coins: mock.coins,
+          totalDebt: mock.totalDebt,
+          rank: mockLeaderboard('week').me,
+          groups: mock.groups,
+          upcomingHomework,
+          // Aqlli tahlil — backend kontrakti bilan bir xil shakl (GET /student/home → data.review)
+          review: {
+            score: 92,
+            praise: { topic: 'Семантическая вёрстка', comment: 'Структура — просто отлично! section и article расставлены правильно.' },
+            growth_area: { topic: 'Доступность', comment: 'У картинок нет alt — добавишь, и страница станет удобной для всех.' },
+            tips: [
+              'Добавь alt к изображениям',
+              'Держи заголовки одного размера',
+              'Проверь отступы между секциями',
+            ],
+            summary: 'Отличная работа! Подправишь мелочи — и будет супер!',
+            source: 'code',
+            status: 'done',
+            lessonTitle: 'Практика: карточка товара',
+            reviewedAt: new Date(Date.now() - 86400000).toISOString(),
+          },
+        },
+      };
     }
 
     if (area === 'tests') {
