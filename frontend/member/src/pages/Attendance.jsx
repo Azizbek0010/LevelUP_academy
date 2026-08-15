@@ -1,11 +1,11 @@
 import { useState } from 'react';
+import { CalendarCheck, GraduationCap, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useParentOverview, useAttendancePage } from '../queries.js';
 import { useChild } from '../child-context.jsx';
 import { dateShort, ATTENDANCE_STATUS } from '../format.js';
-import PageHeader from '../components/PageHeader.jsx';
-import { SkeletonTable } from '../components/Skeleton.jsx';
-import { EmptyState, ErrorState, ProgressRing } from '../components/ui.jsx';
-import Icon from '../components/Icons.jsx';
+import {
+  C, Ring, IconTile, PageHeader, EmptyState, ErrorState, Skeleton, RowSkeleton,
+} from '../student/components/ui.jsx';
 import { useI18n } from '../i18n.jsx';
 
 const PAGE_SIZE = 15;
@@ -17,6 +17,9 @@ const FILTERS = [
   { key: 'late', label: 'att.filter.late' },
   { key: 'excused', label: 'att.filter.excused' },
 ];
+
+const KPI_ORDER = ['present', 'absent', 'late', 'excused'];
+const KPI_HUES = ['green', 'coral', 'amber', 'blue'];
 
 export default function Attendance() {
   const { t } = useI18n();
@@ -34,19 +37,38 @@ export default function Attendance() {
     refetch: refetchPage,
   } = useAttendancePage(selectedChild?.id, page, PAGE_SIZE);
 
-  if (!selectedChild) return <EmptyState icon="user-circle" title={t('dash.noChildTitle')} />;
+  if (!selectedChild) {
+    return (
+      <div className="k-card">
+        <EmptyState icon={GraduationCap} hue="violet" title={t('dash.noChildTitle')} text={t('dash.noChildMsg')} />
+      </div>
+    );
+  }
 
   if (isLoading || isPageLoading) {
     return (
       <>
-        <PageHeader title={t('att.title')} />
-        <SkeletonTable rows={6} cols={4} />
+        <PageHeader title={t('att.title')} subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`} />
+        <Skeleton h={128} count={1} />
+        <div className="mt-4"><RowSkeleton count={5} height={60} /></div>
       </>
     );
   }
 
-  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
-  if (pageError) return <ErrorState message={pageError.message} onRetry={refetchPage} />;
+  if (error) {
+    return (
+      <div className="k-card">
+        <ErrorState message={error.message} onRetry={refetch} />
+      </div>
+    );
+  }
+  if (pageError) {
+    return (
+      <div className="k-card">
+        <ErrorState message={pageError.message} onRetry={refetchPage} />
+      </div>
+    );
+  }
 
   const d = data?.data;
   if (!d) return null;
@@ -64,166 +86,138 @@ export default function Attendance() {
     setPage(1);
   };
 
+  const statuses = ATTENDANCE_STATUS();
+
   return (
     <>
-      <PageHeader
-        title={t('att.title')}
-        subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
-      />
+      <PageHeader title={t('att.title')} subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`} />
 
-      {/* Summary Card */}
-      <div className="card bg-base-100 mb-6">
-        <div className="card-body">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <div className="relative">
-              <ProgressRing value={pct} size={96} stroke={8} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-extrabold">{pct}%</span>
-                <span className="text-[9px] opacity-40">{t('att.presentLabel')}</span>
-              </div>
-            </div>
-            <div className="flex-1 w-full">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {['present', 'absent', 'late', 'excused'].map((s) => {
-                  const st = ATTENDANCE_STATUS()[s];
-                  const count = summary[s] || 0;
-                  const isActive = filter === s;
-                  return (
-                    <button
-                      key={s}
-                      onClick={() => onFilterChange(filter === s ? 'all' : s)}
-                      className={`p-3 rounded-xl text-center transition-all duration-200 border-2 ${
-                        isActive
-                          ? 'shadow-md scale-[1.02]'
-                          : 'border-transparent hover:bg-base-200/60 hover:-translate-y-0.5'
-                      }`}
-                      style={isActive ? {
-                        borderColor: st?.color,
-                        background: st?.bg,
-                      } : {}}
-                    >
-                      <p className="text-xl font-extrabold" style={{ color: st?.color }}>{count}</p>
-                      <p className="text-[10px] opacity-50 mt-0.5">{st?.label}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+      {/* ══ Сводка: кольцо + статусы-фильтры ══ */}
+      <div className="k-card p-5 mb-4 flex flex-col sm:flex-row items-center gap-6">
+        <Ring percent={pct} size={104} thickness={9} color={C.lime} track={C.line}>
+          <div className="text-center leading-none">
+            <div className="k-num text-[24px]" style={{ color: C.text }}>{pct}%</div>
+            <div className="text-[10px] font-bold mt-0.5" style={{ color: C.muted }}>{t('att.presentLabel')}</div>
           </div>
+        </Ring>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full flex-1">
+          {KPI_ORDER.map((s, i) => {
+            const st = statuses[s];
+            const count = summary[s] || 0;
+            const isActive = filter === s;
+            return (
+              <button
+                key={s}
+                onClick={() => onFilterChange(filter === s ? 'all' : s)}
+                className="k-card k-hover k-press p-3.5 text-center transition-all duration-150"
+                style={isActive ? { borderColor: st?.color, boxShadow: `0 0 0 2px ${st?.color}30` } : undefined}
+              >
+                <p className="k-num text-[22px] font-extrabold" style={{ color: st?.color }}>{count}</p>
+                <p className="text-[11px] font-bold mt-0.5" style={{ color: C.muted }}>{st?.label}</p>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Filter Pills */}
-      <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl flex-wrap shadow-sm">
+      {/* ══ Фильтры ══ */}
+      <div className="flex gap-1.5 mb-4 flex-wrap">
         {FILTERS.map((f) => {
           const isActive = filter === f.key;
-          const statusData = ATTENDANCE_STATUS()[f.key];
+          const st = ATTENDANCE_STATUS()[f.key];
           return (
             <button
               key={f.key}
               onClick={() => onFilterChange(f.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                isActive
-                  ? 'bg-primary text-primary-content shadow-sm'
-                  : 'text-base-content/50 hover:bg-base-200'
-              }`}
+              className="k-press-sm flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12.5px] font-bold transition-all"
+              style={{
+                background: isActive ? `${st?.color || C.lime}1c` : C.card,
+                color: isActive ? (st?.color || C.limeDk) : C.muted,
+                border: `1px solid ${isActive ? (st?.color || C.lime) : C.line}`,
+              }}
             >
+              {f.key !== 'all' && <span className="w-2 h-2 rounded-full" style={{ background: st?.color }} />}
+              {t(f.label)}
               {f.key !== 'all' && (
-                <div className="w-2 h-2 rounded-full" style={{ background: statusData?.color }} />
-              )}
-              {f.label && t(f.label)}
-              {f.key !== 'all' && (
-                <span className="opacity-60">{summary[f.key] || 0}</span>
+                <span className="text-[10.5px] font-semibold opacity-70">{summary[f.key] || 0}</span>
               )}
             </button>
           );
         })}
       </div>
 
-      {/* History Table */}
-      <div className="card bg-base-100">
-        <div className="card-body">
-          <h3 className="card-title text-sm gap-2">
-            <Icon name="clock" className="w-4 h-4 text-primary" />
-            {t('att.history')}
-          </h3>
-          {filtered.length === 0 ? (
-            <EmptyState icon="calendar" title={t('att.emptyTitle')} message={t('att.emptyMsg')} />
-          ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden sm:block overflow-x-auto mt-3">
-                <table className="table table-sm">
-                  <thead>
-                    <tr>
-                      <th>{t('att.colDate')}</th>
-                      <th>{t('att.colGroup')}</th>
-                      <th>{t('att.colStatus')}</th>
-                      <th>{t('att.colComment')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((r, i) => {
-                      const st = ATTENDANCE_STATUS()[r.status];
-                      return (
-                        <tr key={i} className="hover:bg-base-200/50 transition-colors">
-                          <td className="text-sm whitespace-nowrap font-medium">{dateShort(r.lessonDate)}</td>
-                          <td className="text-sm">{r.groupName}</td>
-                          <td>
-                            <span
-                              className="text-[11px] px-2.5 py-1 rounded-full font-medium"
-                              style={{ background: st?.bg, color: st?.color }}
-                            >
-                              {st?.label}
-                            </span>
-                          </td>
-                          <td className="text-sm opacity-50 max-w-[200px] truncate">{r.comment || '—'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Cards */}
-              <div className="sm:hidden space-y-2 mt-3">
-                {filtered.map((r, i) => {
-                  const st = ATTENDANCE_STATUS()[r.status];
-                  return (
-                    <div key={i} className="p-3 rounded-xl bg-base-200/40 hover:bg-base-200/60 transition-colors">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">{r.groupName}</span>
-                        <span
-                          className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                          style={{ background: st?.bg, color: st?.color }}
-                        >
-                          {st?.label}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs opacity-40">{dateShort(r.lessonDate)}</span>
-                        {r.comment && (
-                          <span className="text-xs opacity-40 truncate max-w-[150px]">{r.comment}</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* FE-PARENT-PAGINATION */}
-          {pageCount > 1 && (
-            <div className="flex items-center justify-between px-1 py-3 mt-2 border-t border-base-200">
-              <span className="text-xs text-base-content/50">{t('common.page', { page, total: pageCount })}</span>
-              <div className="join">
-                <button className="join-item btn btn-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>«</button>
-                <button className="join-item btn btn-xs" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>»</button>
-              </div>
-            </div>
-          )}
+      {/* ══ История ══ */}
+      <div className="k-card overflow-hidden">
+        <div className="flex items-center gap-2.5 p-4 sm:p-5 pb-3">
+          <IconTile icon={CalendarCheck} hue="green" size={34} />
+          <h3 className="text-[15.5px] font-extrabold" style={{ color: C.text }}>{t('att.history')}</h3>
         </div>
+
+        {filtered.length === 0 ? (
+          <EmptyState icon={CalendarCheck} hue="green" title={t('att.emptyTitle')} text={t('att.emptyMsg')} />
+        ) : (
+          <div className="pb-2">
+            {filtered.map((r, i) => {
+              const st = statuses[r.status];
+              return (
+                <div key={i} className="flex items-center gap-3 px-4 sm:px-5 py-2.5">
+                  <span
+                    className="w-9 h-9 rounded-lg grid place-items-center shrink-0"
+                    style={{ background: st?.bg }}
+                  >
+                    <span className="w-2 h-2 rounded-full" style={{ background: st?.color }} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13.5px] font-bold truncate" style={{ color: C.text }}>{r.groupName}</span>
+                      <span
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0"
+                        style={{ background: st?.bg, color: st?.color }}
+                      >
+                        {st?.label}
+                      </span>
+                    </div>
+                    {r.comment && (
+                      <p className="text-[12px] font-semibold mt-0.5 truncate" style={{ color: C.muted }}>{r.comment}</p>
+                    )}
+                  </div>
+                  <span className="text-[11.5px] font-semibold whitespace-nowrap" style={{ color: C.muted }}>
+                    {dateShort(r.lessonDate)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* FE-PARENT-PAGINATION */}
+        {pageCount > 1 && (
+          <div className="flex items-center justify-between px-4 sm:px-5 py-3" style={{ borderTop: `1px solid ${C.line}` }}>
+            <span className="text-[12px] font-semibold" style={{ color: C.muted }}>
+              {t('common.page', { page, total: pageCount })}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                className="k-press-sm w-8 h-8 rounded-lg grid place-items-center disabled:opacity-30"
+                style={{ background: C.bg, color: C.text }}
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+                aria-label="prev"
+              >
+                <ChevronLeft size={16} strokeWidth={2.6} />
+              </button>
+              <button
+                className="k-press-sm w-8 h-8 rounded-lg grid place-items-center disabled:opacity-30"
+                style={{ background: C.bg, color: C.text }}
+                disabled={page >= pageCount}
+                onClick={() => setPage((p) => p + 1)}
+                aria-label="next"
+              >
+                <ChevronRight size={16} strokeWidth={2.6} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

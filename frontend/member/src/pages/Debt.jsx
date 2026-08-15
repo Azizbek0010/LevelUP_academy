@@ -1,140 +1,199 @@
+import { useEffect, useState } from 'react';
+import { Wallet, Star, Clock3, Sparkles, CheckCircle2, XCircle } from 'lucide-react';
 import { useParentOverview } from '../queries.js';
 import { useChild } from '../child-context.jsx';
-import { money, fmt } from '../format.js';
-import PageHeader from '../components/PageHeader.jsx';
-import { SkeletonKpis } from '../components/Skeleton.jsx';
-import { EmptyState, ErrorState, ProgressBar } from '../components/ui.jsx';
-import Icon from '../components/Icons.jsx';
+import { money, fmt, dateShort } from '../format.js';
+import {
+  C, HUES, IconTile, PageHeader, EmptyState, ErrorState, Skeleton, CountUp,
+} from '../student/components/ui.jsx';
 import { useI18n } from '../i18n.jsx';
+
+function useNow(active) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!active) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  return now;
+}
+
+function pad(n) {
+  return String(n).padStart(2, '0');
+}
+
+function TimeBox({ value, label, accent }) {
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <span
+        className="k-num w-14 sm:w-16 text-[22px] font-extrabold py-2 rounded-xl text-center"
+        style={accent
+          ? { background: `${C.lime}1c`, color: C.limeDk }
+          : { background: C.bg, color: C.text }}
+      >
+        {value}
+      </span>
+      <span className="text-[10.5px] font-bold" style={{ color: C.muted }}>{label}</span>
+    </div>
+  );
+}
 
 export default function Debt() {
   const { t } = useI18n();
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
 
-  if (!selectedChild) return <EmptyState icon="user-circle" title={t('dash.noChildTitle')} />;
+  if (!selectedChild) {
+    return (
+      <div className="k-card">
+        <EmptyState icon={Wallet} hue="coral" title={t('dash.noChildTitle')} text={t('dash.noChildMsg')} />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
       <>
-        <PageHeader title={t('debt.title')} />
-        <SkeletonKpis count={2} className="grid-cols-1 lg:grid-cols-2" />
+        <PageHeader title={t('debt.title')} subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`} />
+        <Skeleton h={220} count={1} />
+        <div className="grid grid-cols-2 gap-4 mt-4"><Skeleton h={140} /><Skeleton h={140} /></div>
       </>
     );
   }
 
-  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
+  if (error) {
+    return (
+      <div className="k-card">
+        <ErrorState message={error.message} onRetry={refetch} />
+      </div>
+    );
+  }
 
   const d = data?.data;
   if (!d) return null;
 
   const totalDebt = Number(d.totalDebt) || 0;
   const coins = d.coins || 0;
+  const inv = d.currentInvoice;
+  const paid = Number(inv?.paidAmount) || 0;
+  const invTotal = Number(inv?.totalAmount) || 0;
+  const progress = invTotal > 0 ? Math.round((paid / invTotal) * 100) : 0;
+
+  // Счётчик до следующего платежа: реального due_date на бэке пока нет
+  // (mock добавляет его в api.js), поэтому блок появляется только при наличии даты.
+  const dueDate = inv?.dueDate ? new Date(inv.dueDate) : null;
+  const active = Boolean(dueDate && totalDebt > 0);
+  const now = useNow(active);
+
+  const diff = dueDate && active ? Math.max(0, dueDate.getTime() - now) : null;
+  const days = diff == null ? 0 : Math.floor(diff / 86400000);
+  const hours = diff == null ? 0 : Math.floor((diff % 86400000) / 3600000);
+  const minutes = diff == null ? 0 : Math.floor((diff % 3600000) / 60000);
+  const seconds = diff == null ? 0 : Math.floor((diff % 60000) / 1000);
 
   return (
     <>
-      <PageHeader
-        title={t('debt.title')}
-        subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
-      />
+      <PageHeader title={t('debt.title')} subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`} />
 
-      <div className="grid lg:grid-cols-2 gap-4 mb-6">
-        {/* Debt Card */}
-        <div className="card bg-base-100 overflow-hidden relative hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-          <div
-            className="absolute top-0 right-0 w-32 h-32 rounded-full -translate-y-1/3 translate-x-1/3 blur-2xl"
-            style={{ background: totalDebt > 0 ? 'rgba(239,68,68,.06)' : 'rgba(34,197,94,.06)' }}
-          />
-          <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full translate-y-1/3 -translate-x-1/4 blur-xl"
-            style={{ background: totalDebt > 0 ? 'rgba(239,68,68,.04)' : 'rgba(34,197,94,.04)' }}
-          />
-          <div className="card-body relative z-10">
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ background: totalDebt > 0 ? 'rgba(239,68,68,.1)' : 'rgba(34,197,94,.1)' }}
+      <div className="grid lg:grid-cols-2 gap-4 mb-4">
+        {/* ══ Задолженность ══ */}
+        <div
+          className="k-card p-5 flex flex-col"
+          style={{
+            background: totalDebt > 0
+              ? 'linear-gradient(135deg, #FFF7F4 0%, #FFFFFF 100%)'
+              : 'linear-gradient(135deg, #F2F9F0 0%, #FFFFFF 100%)',
+          }}
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <IconTile icon={totalDebt > 0 ? Wallet : CheckCircle2} hue={totalDebt > 0 ? 'coral' : 'green'} size={42} />
+            <span className="text-[13px] font-bold" style={{ color: C.muted }}>{t('debt.total')}</span>
+            {totalDebt > 0 && (
+              <span
+                className="text-[10px] font-bold px-2 py-0.5 rounded-md ml-auto"
+                style={{ background: `${C.coral}1c`, color: C.coral }}
               >
-                <Icon name="wallet" className="w-6 h-6" style={{ color: totalDebt > 0 ? '#ef4444' : '#22c55e' }} />
-              </div>
-              <div>
-                <span className="text-sm font-medium opacity-60">{t('debt.total')}</span>
-                {totalDebt > 0 && (
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-error animate-pulse" />
-                    <span className="text-[10px] text-error font-medium">{t('debt.attention')}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <p className={`text-3xl font-extrabold ${totalDebt > 0 ? 'text-error' : 'text-success'}`}>
-              {money(d.totalDebt)}
-            </p>
-            {totalDebt > 0 && d.currentInvoice?.totalAmount > 0 && (
-              <div className="mt-4">
-                <div className="flex justify-between text-[11px] opacity-40 mb-1">
-                  <span>{t('debt.paid', { sum: money(d.currentInvoice.paidAmount) })}</span>
-                  <span>{t('debt.pending', { sum: money(d.currentInvoice.totalAmount - d.currentInvoice.paidAmount) })}</span>
-                </div>
-                <ProgressBar
-                  value={(d.currentInvoice.paidAmount / d.currentInvoice.totalAmount) * 100}
-                  color="#ef4444"
-                  height={6}
-                />
-              </div>
+                {t('debt.attention')}
+              </span>
             )}
           </div>
+          <p
+            className="k-num text-[32px] font-extrabold leading-none"
+            style={{ color: totalDebt > 0 ? C.coral : C.lime }}
+          >
+            {money(d.totalDebt)}
+          </p>
+
+          {inv && invTotal > 0 && (
+            <div className="mt-4">
+              <div className="flex justify-between text-[11.5px] font-semibold mb-1.5" style={{ color: C.muted }}>
+                <span>{t('debt.paid', { sum: money(paid) })}</span>
+                <span>{t('debt.pending', { sum: money(Math.max(0, invTotal - paid)) })}</span>
+              </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: C.line }}>
+                <div
+                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{
+                    width: `${Math.min(100, progress)}%`,
+                    background: progress >= 100 ? C.lime : C.coral,
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Coins Card */}
-        <div className="card bg-base-100 overflow-hidden relative hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-          <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-primary/5 -translate-y-1/3 translate-x-1/3 blur-2xl" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-primary/3 translate-y-1/3 -translate-x-1/4 blur-xl" />
-          <div className="card-body relative z-10">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10">
-                <Icon name="star" className="w-6 h-6 text-primary" />
-              </div>
-              <span className="text-sm font-medium opacity-60">{t('debt.coins')}</span>
-            </div>
-            <p className="text-3xl font-extrabold text-primary">{fmt(coins)}</p>
-            <p className="text-[11px] opacity-30 mt-2 flex items-center gap-1">
-              <Icon name="sparkles" className="w-3 h-3" />
-              {t('debt.coinsSub')}
-            </p>
+        {/* ══ Коины ══ */}
+        <div className="k-card p-5 flex flex-col relative overflow-hidden">
+          <span className="absolute -right-6 -top-8 w-28 h-28 rounded-full opacity-60" style={{ background: `${HUES.amber}14` }} aria-hidden="true" />
+          <div className="flex items-center gap-3 mb-3 relative">
+            <IconTile icon={Star} hue="amber" size={42} />
+            <span className="text-[13px] font-bold" style={{ color: C.muted }}>{t('debt.coins')}</span>
           </div>
+          <p className="k-num text-[32px] font-extrabold leading-none flex items-center gap-2" style={{ color: HUES.amber }}>
+            <CountUp value={coins} />
+          </p>
+          <p className="text-[12px] font-semibold mt-3 flex items-center gap-1.5" style={{ color: C.muted }}>
+            <Sparkles size={13} strokeWidth={2.2} />
+            {t('debt.coinsSub')}
+          </p>
         </div>
       </div>
 
-      {/* Status Card */}
-      {totalDebt > 0 ? (
-        <div className="card bg-base-100">
-          <div className="card-body text-center py-12">
-            <div className="relative inline-block mb-4">
-              <div className="w-20 h-20 rounded-2xl bg-error/10 flex items-center justify-center">
-                <Icon name="alert" className="w-10 h-10 text-error" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-error rounded-full flex items-center justify-center animate-pulse">
-                <Icon name="exclamation-circle" className="w-3 h-3 text-white" />
-              </div>
+      {/* ══ Счётчик до следующего платежа ══ */}
+      {active && dueDate && diff != null ? (
+        <div className="k-card p-5">
+          <div className="flex items-center gap-2.5 mb-4">
+            <IconTile icon={Clock3} hue="blue" size={34} />
+            <div>
+              <h3 className="text-[15.5px] font-extrabold" style={{ color: C.text }}>{t('debt.nextPayment')}</h3>
+              <p className="text-[12px] font-semibold mt-0.5" style={{ color: C.muted }}>
+                {t('debt.nextPaymentLeft')} · {t('debt.paidUntil', { date: dateShort(dueDate.toISOString()) })}
+              </p>
             </div>
-            <h3 className="text-lg font-bold mb-2">{t('debt.status.debt')}</h3>
-            <p className="text-sm text-base-content/50 max-w-sm mx-auto mb-4">
-              {t('debt.status.debtMsgStart')} <span className="font-bold text-error">{money(d.totalDebt)}</span>{t('debt.status.debtMsgEnd')}
-            </p>
-            <div className="inline-flex items-center gap-2 text-xs opacity-40">
-              <div className="w-2 h-2 rounded-full bg-error animate-pulse" />
-              {t('debt.attention')}
-            </div>
+          </div>
+          <div className="flex items-center justify-center gap-2 sm:gap-3">
+            <TimeBox value={pad(days)} label={t('debt.days')} />
+            <span className="text-[20px] font-extrabold" style={{ color: C.muted }}>:</span>
+            <TimeBox value={pad(hours)} label={t('debt.hours')} />
+            <span className="text-[20px] font-extrabold" style={{ color: C.muted }}>:</span>
+            <TimeBox value={pad(minutes)} label={t('debt.minutes')} />
+            <span className="text-[20px] font-extrabold" style={{ color: C.muted }}>:</span>
+            <TimeBox value={pad(seconds)} label={t('debt.seconds')} accent />
           </div>
         </div>
       ) : (
-        <div className="card bg-base-100">
-          <div className="card-body text-center py-12">
-            <div className="w-20 h-20 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
-              <Icon name="check-circle" className="w-10 h-10 text-success" />
-            </div>
-            <h3 className="text-lg font-bold mb-2">{t('debt.status.noDebt')}</h3>
-            <p className="text-sm text-base-content/50">{t('debt.status.noDebtMsg')}</p>
+        <div className="k-card">
+          <div className="text-center py-12">
+            <IconTile icon={totalDebt > 0 ? XCircle : CheckCircle2} hue={totalDebt > 0 ? 'coral' : 'green'} size={72} className="mx-auto" />
+            <h3 className="text-[17px] font-extrabold mt-4" style={{ color: C.text }}>
+              {totalDebt > 0 ? t('debt.status.debt') : t('debt.status.noDebt')}
+            </h3>
+            <p className="text-[13.5px] font-semibold mt-1.5 max-w-sm mx-auto" style={{ color: C.muted }}>
+              {totalDebt > 0
+                ? `${t('debt.status.debtMsgStart')} ${money(d.totalDebt)}${t('debt.status.debtMsgEnd')}`
+                : t('debt.status.noDebtMsg')}
+            </p>
           </div>
         </div>
       )}

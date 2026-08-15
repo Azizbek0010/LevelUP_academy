@@ -1,11 +1,11 @@
 import { useState } from 'react';
+import { Bell, MessageSquareText, User, Star, Wallet, Check, LogOut, Send, ChevronRight } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
-import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
-import Icon from '../components/Icons.jsx';
 import { fmt } from '../format.js';
 import { api } from '../api.js';
+import { C, HUES, IconTile, PageHeader, Panel } from '../student/components/ui.jsx';
 import { useI18n } from '../i18n.jsx';
 
 /**
@@ -26,6 +26,42 @@ function usePreference(key, defaultValue) {
     });
   };
   return [value, toggle];
+}
+
+function Toggle({ checked, onChange }) {
+  return (
+    <button
+      onClick={onChange}
+      role="switch"
+      aria-checked={checked}
+      className="k-press-sm relative w-12 h-7 rounded-full transition-colors duration-200 shrink-0"
+      style={{ background: checked ? C.lime : C.line }}
+    >
+      <span
+        className="absolute top-1 w-5 h-5 rounded-full transition-all duration-200"
+        style={{
+          left: checked ? 24 : 4,
+          background: '#fff',
+          boxShadow: '0 1px 3px rgba(18,25,14,0.25)',
+        }}
+      />
+    </button>
+  );
+}
+
+function SettingRow({ icon: Icon, hue, title, sub, children }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-3.5">
+      <div className="flex items-center gap-3 min-w-0">
+        <IconTile icon={Icon} hue={hue} size={38} />
+        <div className="min-w-0">
+          <p className="text-[13.5px] font-bold" style={{ color: C.text }}>{title}</p>
+          <p className="text-[12px] font-semibold mt-0.5" style={{ color: C.muted }}>{sub}</p>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
 }
 
 export default function Profile() {
@@ -50,165 +86,136 @@ export default function Profile() {
     <>
       <PageHeader title={t('prof.title')} subtitle={t('prof.subtitle')} />
 
-      {/* Profile Header */}
-      <div className="card bg-gradient-to-br from-sidebar to-[#1a2e12] text-white mb-6 overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full translate-y-1/3 -translate-x-1/4 blur-lg" />
-        <div className="card-body relative z-10 py-5">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Avatar name={`${user?.firstName} ${user?.lastName}`} size={64} />
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-success rounded-full border-2 border-sidebar flex items-center justify-center">
-                <Icon name="check" className="w-3 h-3 text-white" strokeWidth={2.5} />
-              </div>
-            </div>
-            <div>
-              <h2 className="text-xl font-extrabold">{user?.firstName} {user?.lastName}</h2>
-              <p className="text-sm opacity-50 flex items-center gap-1.5 mt-0.5">
-                <Icon name="user-circle" className="w-4 h-4" />
-                {t('common.role.parent')}
+      {/* ══ Профиль родителя ══ */}
+      <div
+        className="p-5 sm:p-6 mb-4 relative overflow-hidden rounded-2xl"
+        style={{ background: 'linear-gradient(135deg, #21391A 0%, #142A0F 100%)' }}
+      >
+        <span className="absolute -right-8 -top-10 w-40 h-40 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} aria-hidden="true" />
+        <span className="absolute right-20 -bottom-12 w-28 h-28 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }} aria-hidden="true" />
+        <div className="relative flex items-center gap-4">
+          <div className="relative shrink-0">
+            <Avatar name={`${user?.firstName} ${user?.lastName}`} size={64} />
+            <span
+              className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full grid place-items-center"
+              style={{ background: C.lime, border: '2px solid #142A0F' }}
+            >
+              <Check size={12} strokeWidth={3} color="#fff" />
+            </span>
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-[20px] font-extrabold text-white truncate">{user?.firstName} {user?.lastName}</h2>
+            <p className="text-[12.5px] font-semibold mt-0.5 flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.7)' }}>
+              <User size={13} strokeWidth={2.4} />
+              {t('common.role.parent')}
+            </p>
+            {user?.loginCode && (
+              <p className="text-[11.5px] font-mono mt-1" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                {t('prof.code', { code: user.loginCode })}
               </p>
-              <p className="text-xs opacity-30 mt-1 font-mono">{t('prof.code', { code: user?.loginCode })}</p>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Child Info */}
+      {/* ══ Ребёнок ══ */}
       {selectedChild && (
-        <div className="card bg-base-100 mb-6">
-          <div className="card-body">
-            <h3 className="card-title text-sm gap-2">
-              <Icon name="user" className="w-4 h-4 text-primary" />
-              {t('prof.child')}
-            </h3>
-            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-primary/10 ring-2 ring-primary/30 mt-2">
-              <div className="relative">
-                <Avatar name={`${selectedChild.firstName} ${selectedChild.lastName}`} size={42} />
-                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-base-100 flex items-center justify-center">
-                  <Icon name="check" className="w-2.5 h-2.5 text-primary-content" strokeWidth={3} />
-                </div>
-              </div>
+        <div className="mb-4">
+          <Panel icon={User} title={t('prof.child')} hue="violet">
+            <div
+              className="flex items-center gap-3 p-3.5 rounded-xl"
+              style={{ background: `${C.violet}0a`, border: `1px solid ${C.violet}26` }}
+            >
+              <Avatar name={`${selectedChild.firstName} ${selectedChild.lastName}`} size={42} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold">{selectedChild.firstName} {selectedChild.lastName}</p>
-                <p className="text-xs opacity-40 flex items-center gap-1.5 mt-0.5">
-                  <span className="flex items-center gap-0.5">
-                    <Icon name="star" className="w-3 h-3" />
-                    {t('prof.coins', { coins: fmt(selectedChild.coins) })}
+                <p className="text-[13.5px] font-bold truncate" style={{ color: C.text }}>
+                  {selectedChild.firstName} {selectedChild.lastName}
+                </p>
+                <p className="text-[12px] font-semibold mt-0.5 flex items-center gap-1.5 flex-wrap" style={{ color: C.muted }}>
+                  <span className="flex items-center gap-1">
+                    <Star size={12} strokeWidth={2.4} style={{ color: HUES.amber }} />
+                    {fmt(selectedChild.coins)}
                   </span>
-                  <span className="opacity-30">·</span>
+                  <span className="opacity-50">·</span>
                   {Number(selectedChild.totalDebt) > 0 ? (
-                    <span className="text-error flex items-center gap-0.5">
-                      <Icon name="wallet" className="w-3 h-3" />
+                    <span className="flex items-center gap-1" style={{ color: C.coral }}>
+                      <Wallet size={12} strokeWidth={2.4} />
                       {t('prof.debt')}
                     </span>
                   ) : (
-                    <span className="text-success flex items-center gap-0.5">
-                      <Icon name="check-circle" className="w-3 h-3" />
+                    <span className="flex items-center gap-1" style={{ color: C.limeDk }}>
+                      <Check size={12} strokeWidth={2.6} />
                       {t('prof.noDebt')}
                     </span>
                   )}
                 </p>
               </div>
-              <span className="text-[11px] px-2.5 py-1 rounded-full bg-primary text-primary-content font-bold flex items-center gap-1">
+              <span
+                className="text-[10.5px] font-bold px-2.5 py-1 rounded-full shrink-0"
+                style={{ background: `${C.lime}1c`, color: C.limeDk }}
+              >
                 {t('prof.active')}
               </span>
             </div>
-          </div>
+          </Panel>
         </div>
       )}
 
-      {/* Settings */}
-      <div className="card bg-base-100 mb-6">
-        <div className="card-body">
-          <h3 className="card-title text-sm gap-2">
-            <Icon name="cog" className="w-4 h-4 text-primary" />
-            {t('prof.settings')}
-          </h3>
-          <div className="space-y-3 mt-2">
-            <div className="flex items-center justify-between p-3.5 rounded-xl bg-base-200/40 hover:bg-base-200/60 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Icon name="bell" className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">{t('prof.notifications')}</p>
-                  <p className="text-xs opacity-40">{t('prof.notificationsSub')}</p>
-                </div>
-              </div>
-              <input
-                type="checkbox"
-                className="toggle toggle-sm toggle-primary"
-                checked={notifyPush}
-                onChange={toggleNotifyPush}
-              />
-            </div>
-            <div className="flex items-center justify-between p-3.5 rounded-xl bg-base-200/40 hover:bg-base-200/60 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Icon name="chat" className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">{t('prof.chatSound')}</p>
-                  <p className="text-xs opacity-40">{t('prof.chatSoundSub')}</p>
-                </div>
-              </div>
-              <input
-                type="checkbox"
-                className="toggle toggle-sm toggle-primary"
-                checked={chatSound}
-                onChange={toggleChatSound}
-              />
-            </div>
+      {/* ══ Настройки ══ */}
+      <div className="mb-4">
+        <Panel icon={Bell} title={t('prof.settings')} hue="blue">
+          <div className="divide-y" style={{ borderColor: C.line }}>
+            <SettingRow icon={Bell} hue="blue" title={t('prof.notifications')} sub={t('prof.notificationsSub')}>
+              <Toggle checked={notifyPush} onChange={toggleNotifyPush} />
+            </SettingRow>
+            <SettingRow icon={MessageSquareText} hue="teal" title={t('prof.chatSound')} sub={t('prof.chatSoundSub')}>
+              <Toggle checked={chatSound} onChange={toggleChatSound} />
+            </SettingRow>
           </div>
-        </div>
+        </Panel>
       </div>
 
-      {/* TG-FRONT: привязка Telegram-бота */}
-      <div className="card bg-base-100 mb-6">
-        <div className="card-body">
-          <h3 className="card-title text-sm gap-2">
-            <Icon name="chat" className="w-4 h-4 text-primary" />
-            {t('prof.telegram')}
-          </h3>
-          <p className="text-xs opacity-40 mt-1 mb-2">
-            {t('prof.telegramDesc')}
-          </p>
-          {tg.status !== 'ready' && (
+      {/* ══ Telegram ══ */}
+      <div className="mb-4">
+        <Panel icon={MessageSquareText} title={t('prof.telegram')} hue="violet">
+          <p className="text-[12.5px] font-semibold mb-3" style={{ color: C.muted }}>{t('prof.telegramDesc')}</p>
+          {tg.status !== 'ready' ? (
             <button
-              className="btn btn-primary btn-sm rounded-xl gap-2 w-fit"
+              className="k-press inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13.5px] font-bold"
+              style={{ background: HUES.violet, color: '#fff', boxShadow: `0 4px 12px ${HUES.violet}3d` }}
               onClick={onBindTelegram}
               disabled={tg.status === 'loading'}
             >
-              {tg.status === 'loading' ? <span className="loading loading-spinner loading-xs" /> : <Icon name="chat" className="w-4 h-4" />}
-              {t('prof.bind')}
+              <Send size={15} strokeWidth={2.4} />
+              {tg.status === 'loading' ? t('common.loading') : t('prof.bind')}
             </button>
-          )}
-          {tg.status === 'error' && (
-            <p className="text-xs text-error mt-2">{tg.error}</p>
-          )}
-          {tg.status === 'ready' && (
+          ) : (
             <a
               href={tg.deepLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-primary btn-sm rounded-xl gap-2 w-fit"
+              className="k-press inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13.5px] font-bold"
+              style={{ background: HUES.violet, color: '#fff', boxShadow: `0 4px 12px ${HUES.violet}3d` }}
             >
-              <Icon name="chevron-right" className="w-4 h-4" />
-              {t('prof.openTg')}
+              {t('prof.openTg')} <ChevronRight size={15} strokeWidth={2.6} />
             </a>
           )}
-        </div>
+          {tg.status === 'error' && (
+            <p className="text-[12.5px] font-bold mt-3" style={{ color: C.coral }}>{tg.error}</p>
+          )}
+        </Panel>
       </div>
 
-      {/* Logout */}
-      <div className="card bg-base-100">
-        <div className="card-body">
-          <button className="btn btn-outline btn-error w-full rounded-xl gap-2" onClick={logout}>
-            <Icon name="logout" className="w-4 h-4" />
-            {t('prof.logout')}
-          </button>
-        </div>
+      {/* ══ Выход ══ */}
+      <div className="k-card">
+        <button
+          className="k-press w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[13.5px] font-bold"
+          style={{ background: `${C.coral}14`, color: C.coral }}
+          onClick={logout}
+        >
+          <LogOut size={16} strokeWidth={2.4} />
+          {t('prof.logout')}
+        </button>
       </div>
     </>
   );

@@ -1,17 +1,17 @@
 import { useState } from 'react';
+import { GraduationCap, BookOpen, FileCheck2, BarChart3, Trophy, ChevronRight } from 'lucide-react';
 import { useGradesPage } from '../queries.js';
 import { useChild } from '../child-context.jsx';
 import { dateShort, gradePercent } from '../format.js';
-import PageHeader from '../components/PageHeader.jsx';
-import { SkeletonTable } from '../components/Skeleton.jsx';
-import { EmptyState, ErrorState, ProgressBar } from '../components/ui.jsx';
-import Icon from '../components/Icons.jsx';
+import {
+  C, HUES, IconTile, PageHeader, Tabs, EmptyState, ErrorState, Skeleton, RowSkeleton,
+} from '../student/components/ui.jsx';
 import GradeDetail from '../components/GradeDetail.jsx';
 import { useI18n } from '../i18n.jsx';
 
 const TABS = [
-  { key: 'homework', label: 'gr.tab.hw', icon: 'document-text' },
-  { key: 'tests', label: 'gr.tab.tests', icon: 'academic' },
+  { key: 'homework', label: 'gr.tab.hw', icon: BookOpen },
+  { key: 'tests', label: 'gr.tab.tests', icon: FileCheck2 },
 ];
 const PAGE_SIZE = 15;
 
@@ -34,18 +34,32 @@ export default function Grades() {
     setPage(1);
   };
 
-  if (!selectedChild) return <EmptyState icon="user-circle" title={t('dash.noChildTitle')} />;
+  if (!selectedChild) {
+    return (
+      <div className="k-card">
+        <EmptyState icon={GraduationCap} hue="violet" title={t('dash.noChildTitle')} text={t('dash.noChildMsg')} />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
       <>
-        <PageHeader title={t('gr.title')} />
-        <SkeletonTable rows={5} cols={4} />
+        <PageHeader title={t('gr.title')} subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`} />
+        <Skeleton h={56} count={1} />
+        <div className="grid grid-cols-3 gap-3 my-4">{[0, 1, 2].map((i) => <Skeleton key={i} h={96} />)}</div>
+        <RowSkeleton count={5} height={62} />
       </>
     );
   }
 
-  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
+  if (error) {
+    return (
+      <div className="k-card">
+        <ErrorState message={error.message} onRetry={refetch} />
+      </div>
+    );
+  }
 
   const p = data?.data;
   if (!p) return null;
@@ -64,139 +78,119 @@ export default function Grades() {
     ? Math.max(...list.map((g) => gradePercent(g.score, g.maxScore, tab)))
     : 0;
 
+  const tabItems = TABS.map((tItem) => ({
+    ...tItem,
+    count: tItem.key === 'homework' ? hwCount : testsCount,
+  }));
+
   return (
     <>
-      <PageHeader
-        title={t('gr.title')}
-        subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
-      />
+      <PageHeader title={t('gr.title')} subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`} />
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit shadow-sm">
-        {TABS.map((tabItem) => {
-          const count = tabItem.key === 'homework' ? hwCount : testsCount;
-          return (
-            <button
-              key={tabItem.key}
-              onClick={() => onTabChange(tabItem.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                tab === tabItem.key
-                  ? 'bg-primary text-primary-content shadow-sm'
-                  : 'text-base-content/50 hover:bg-base-200'
-              }`}
-            >
-              <Icon name={tabItem.icon} className="w-4 h-4" />
-              {t(tabItem.label)}
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                tab === tabItem.key ? 'bg-primary-content/20' : 'bg-base-200'
-              }`}>
-                {count}
-              </span>
-            </button>
-          );
-        })}
+      <div className="mb-4">
+        <Tabs value={tab} onChange={onTabChange} items={tabItems} />
       </div>
 
-      {/* Stats Row */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="card bg-base-100 p-4 text-center hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-          <div className="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center mx-auto mb-2">
-            <Icon name="document-text" className="w-5 h-5 text-base-content/40" />
-          </div>
-          <p className="text-2xl font-extrabold">{p.total}</p>
-          <p className="text-[11px] opacity-40 mt-1">{t('gr.total')}</p>
+        <div className="k-card p-4 text-center">
+          <IconTile icon={BarChart3} hue="blue" size={36} className="mx-auto" />
+          <p className="k-num text-[22px] font-extrabold mt-2" style={{ color: C.text }}>{p.total}</p>
+          <p className="text-[11px] font-bold mt-0.5" style={{ color: C.muted }}>{t('gr.total')}</p>
         </div>
-        <div className="card bg-base-100 p-4 text-center hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2"
-            style={{ background: avg >= 80 ? 'rgba(34,197,94,.1)' : avg >= 60 ? 'rgba(245,158,11,.1)' : 'rgba(239,68,68,.1)' }}
-          >
-            <Icon
-              name="chart-bar"
-              className="w-5 h-5"
-              style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }}
-            />
-          </div>
+        <div className="k-card p-4 text-center">
+          <IconTile icon={Trophy} hue={avg >= 80 ? 'green' : avg >= 60 ? 'amber' : 'coral'} size={36} className="mx-auto" />
           <p
-            className="text-2xl font-extrabold"
-            style={{ color: avg >= 80 ? '#22c55e' : avg >= 60 ? '#f59e0b' : '#ef4444' }}
+            className="k-num text-[22px] font-extrabold mt-2"
+            style={{ color: avg >= 80 ? C.lime : avg >= 60 ? C.amber : C.coral }}
           >
             {avg}%
           </p>
-          <p className="text-[11px] opacity-40 mt-1">{t('gr.avg')}</p>
+          <p className="text-[11px] font-bold mt-0.5" style={{ color: C.muted }}>{t('gr.avg')}</p>
         </div>
-        <div className="card bg-base-100 p-4 text-center hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
-            <Icon name="trophy" className="w-5 h-5 text-primary" />
-          </div>
-          <p className="text-2xl font-extrabold text-primary">{best}%</p>
-          <p className="text-[11px] opacity-40 mt-1">{t('gr.best')}</p>
+        <div className="k-card p-4 text-center">
+          <IconTile icon={GraduationCap} hue="violet" size={36} className="mx-auto" />
+          <p className="k-num text-[22px] font-extrabold mt-2" style={{ color: HUES.violet }}>{best}%</p>
+          <p className="text-[11px] font-bold mt-0.5" style={{ color: C.muted }}>{t('gr.best')}</p>
         </div>
       </div>
 
-      {/* Grade List */}
-      <div className="card bg-base-100">
-        <div className="card-body">
-          {list.length === 0 ? (
-            <EmptyState
-              icon="document-text"
-              title={t('gr.emptyTitle')}
-              message={tab === 'homework' ? t('gr.emptyHw') : t('gr.emptyTests')}
-            />
-          ) : (
-            <div className="space-y-2 mt-2">
-              {list.map((g, i) => {
-                const pct = gradePercent(g.score, g.maxScore, tab);
-                const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
-                const itemId = g.id || `${tab}-${i}`;
+      {/* List */}
+      <div className="k-card overflow-hidden">
+        {list.length === 0 ? (
+          <EmptyState
+            icon={tab === 'homework' ? BookOpen : FileCheck2}
+            hue="violet"
+            title={t('gr.emptyTitle')}
+            text={tab === 'homework' ? t('gr.emptyHw') : t('gr.emptyTests')}
+          />
+        ) : (
+          <div className="pb-2">
+            {list.map((g, i) => {
+              const pct = gradePercent(g.score, g.maxScore, tab);
+              const color = pct >= 80 ? '#1F7A3D' : pct >= 60 ? C.amber : C.coral;
+              const itemId = g.id || `${tab}-${i}`;
+              return (
+                <button
+                  key={itemId}
+                  onClick={() => setDetail({ type: tab === 'homework' ? 'hw' : 'test', id: g.id, item: g })}
+                  className="k-press w-full flex items-center gap-3 px-4 sm:px-5 py-2.5 text-left"
+                >
+                  <span
+                    className="w-11 h-11 rounded-xl grid place-items-center k-num text-[13.5px] font-extrabold shrink-0"
+                    style={{ background: `${color}14`, color }}
+                  >
+                    {pct}%
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13.5px] font-bold truncate" style={{ color: C.text }}>{g.title}</p>
+                    <p className="text-[11.5px] font-semibold mt-0.5" style={{ color: C.muted }}>
+                      {tab === 'tests' ? `${pct}%` : `${g.score}/${g.maxScore}`} · {dateShort(g.gradedAt || g.finishedAt)}
+                    </p>
+                  </div>
+                  <ChevronRight size={16} strokeWidth={2.4} className="shrink-0" style={{ color: C.muted }} />
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* FE-PARENT-PAGINATION */}
+        {pageCount > 1 && (
+          <div
+            className="flex items-center justify-between px-4 sm:px-5 py-3"
+            style={{ borderTop: `1px solid ${C.line}` }}
+          >
+            <span className="text-[12px] font-semibold" style={{ color: C.muted }}>
+              {t('common.page', { page, total: pageCount })}
+            </span>
+            <div className="flex gap-2">
+              {Array.from({ length: Math.min(pageCount, 5) }).map((_, idx) => {
+                const pg = idx + 1;
                 return (
                   <button
-                    key={itemId}
-                    onClick={() => setDetail({ type: tab === 'homework' ? 'hw' : 'test', id: g.id, item: g })}
-                    className="w-full flex items-center gap-3 p-3.5 rounded-xl bg-base-200/30 hover:bg-base-200/60 hover:-translate-y-0.5 transition-all duration-200 group text-left cursor-pointer"
+                    key={pg}
+                    onClick={() => setPage(pg)}
+                    className="k-press-sm w-8 h-8 rounded-lg text-[13px] font-bold"
+                    style={{
+                      background: page === pg ? C.lime : C.bg,
+                      color: page === pg ? '#fff' : C.muted,
+                    }}
                   >
-                    <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-transform group-hover:scale-110"
-                      style={{ background: `${color}15`, color }}
-                    >
-                      {pct}%
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{g.title}</p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <ProgressBar value={pct} color={color} height={4} />
-                        <span className="text-[11px] font-mono opacity-50">
-                          {tab === 'tests' ? `${pct}%` : `${g.score}/${g.maxScore}`}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] opacity-30 whitespace-nowrap">{dateShort(g.gradedAt || g.finishedAt)}</span>
-                      <Icon name="chevron-right" className="w-4 h-4 opacity-20 group-hover:opacity-50 transition-opacity" />
-                    </div>
+                    {pg}
                   </button>
                 );
               })}
             </div>
-          )}
-
-          {/* FE-PARENT-PAGINATION */}
-          {pageCount > 1 && (
-            <div className="flex items-center justify-between px-1 py-3 mt-2 border-t border-base-200">
-              <span className="text-xs text-base-content/50">{t('common.page', { page, total: pageCount })}</span>
-              <div className="join">
-                <button className="join-item btn btn-xs" disabled={page <= 1} onClick={() => setPage((pg) => pg - 1)}>«</button>
-                <button className="join-item btn btn-xs" disabled={page >= pageCount} onClick={() => setPage((pg) => pg + 1)}>»</button>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {detail && (
         <GradeDetail
           type={detail.type}
           id={detail.id}
+          item={detail.item}
           onClose={() => setDetail(null)}
         />
       )}

@@ -1,32 +1,33 @@
 import { useState } from 'react';
+import { Bell, GraduationCap, CalendarCheck, Wallet, MessageSquareText, BellRing, ChevronDown } from 'lucide-react';
 import { useNotifications } from '../queries.js';
 import { timeAgo } from '../format.js';
-import PageHeader from '../components/PageHeader.jsx';
-import { EmptyState, ErrorState } from '../components/ui.jsx';
-import Icon from '../components/Icons.jsx';
+import {
+  C, IconTile, PageHeader, EmptyState, ErrorState, Skeleton, RowSkeleton,
+} from '../student/components/ui.jsx';
 import { useI18n } from '../i18n.jsx';
 
 const ICON_MAP = {
-  grade: 'academic',
-  attendance: 'calendar-check',
-  payment: 'wallet',
-  chat: 'chat',
-  system: 'bell',
+  grade: GraduationCap,
+  attendance: CalendarCheck,
+  payment: Wallet,
+  chat: MessageSquareText,
+  system: Bell,
 };
 
-const COLOR_MAP = {
-  grade: '#3b82f6',
-  attendance: '#f59e0b',
-  payment: '#ef4444',
-  chat: '#a855f7',
-  system: '#6b7280',
+const HUE_MAP = {
+  grade: 'blue',
+  attendance: 'amber',
+  payment: 'coral',
+  chat: 'violet',
+  system: 'lime',
 };
 
 const FILTERS = [
   { key: 'all', label: 'notif.filter.all' },
-  { key: 'grade', label: 'notif.filter.grade' },
-  { key: 'attendance', label: 'notif.filter.attendance' },
-  { key: 'payment', label: 'notif.filter.payment' },
+  { key: 'grade', label: 'notif.filter.grade', icon: GraduationCap, hue: 'blue' },
+  { key: 'attendance', label: 'notif.filter.attendance', icon: CalendarCheck, hue: 'amber' },
+  { key: 'payment', label: 'notif.filter.payment', icon: Wallet, hue: 'coral' },
 ];
 
 export default function Notifications() {
@@ -41,7 +42,9 @@ export default function Notifications() {
     return (
       <>
         <PageHeader title={t('notif.title')} />
-        <ErrorState message={error.message} onRetry={refetch} />
+        <div className="k-card">
+          <ErrorState message={error.message} onRetry={refetch} />
+        </div>
       </>
     );
   }
@@ -54,27 +57,33 @@ export default function Notifications() {
       />
 
       {/* Filter Tabs */}
-      <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit flex-wrap shadow-sm">
+      <div className="flex gap-1.5 mb-4 flex-wrap">
         {FILTERS.map((f) => {
+          const isActive = filter === f.key;
           const count = f.key === 'all' ? items.length : items.filter((n) => n.type === f.key).length;
           return (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                filter === f.key
-                  ? 'bg-primary text-primary-content shadow-sm'
-                  : 'text-base-content/50 hover:bg-base-200'
-              }`}
+              className="k-press-sm flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12.5px] font-bold transition-all"
+              style={{
+                background: isActive ? `${C.lime}1c` : C.card,
+                color: isActive ? C.limeDk : C.muted,
+                border: `1px solid ${isActive ? C.lime : C.line}`,
+              }}
             >
-              {f.key !== 'all' && (
-                <div className="w-2 h-2 rounded-full" style={{ background: COLOR_MAP[f.key] }} />
+              {f.icon && (
+                <IconTile icon={f.icon} hue={f.hue} size={18} radius={6} />
               )}
               {t(f.label)}
               {count > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                  filter === f.key ? 'bg-primary-content/20' : 'bg-base-200'
-                }`}>
+                <span
+                  className="text-[10.5px] font-bold px-1.5 py-0.5 rounded-md"
+                  style={{
+                    background: isActive ? C.lime : C.bg,
+                    color: isActive ? '#fff' : C.muted,
+                  }}
+                >
                   {count}
                 </span>
               )}
@@ -85,67 +94,71 @@ export default function Notifications() {
 
       {/* Loading */}
       {isLoading && (
-        <div className="text-center py-12">
-          <span className="loading loading-dots loading-md text-primary" />
-        </div>
+        <>
+          <Skeleton h={56} count={1} />
+          <div className="mt-4"><RowSkeleton count={4} height={70} /></div>
+        </>
       )}
 
       {/* Empty */}
       {!isLoading && filtered.length === 0 && (
-        <EmptyState icon="bell" title={t('notif.emptyTitle')} message={t('notif.emptyMsg')} />
+        <div className="k-card">
+          <EmptyState icon={Bell} hue="violet" title={t('notif.emptyTitle')} text={t('notif.emptyMsg')} />
+        </div>
       )}
 
       {/* Notification Cards */}
-      <div className="space-y-2">
-        {filtered.map((n) => {
-          const iconName = ICON_MAP[n.type] || ICON_MAP.system;
-          const color = COLOR_MAP[n.type] || COLOR_MAP.system;
-          return (
-            <div
-              key={n.id}
-              className={`card bg-base-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer ${
-                !n.read ? 'ring-1 ring-primary/20' : ''
-              }`}
-            >
-              <div className="card-body p-4">
-                <div className="flex items-start gap-3">
-                  <div className="relative">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ background: `${color}12` }}
-                    >
-                      <Icon name={iconName} className="w-5 h-5" style={{ color }} />
-                    </div>
+      {!isLoading && filtered.length > 0 && (
+        <div className="space-y-2.5">
+          {filtered.map((n) => {
+            const Icon = ICON_MAP[n.type] || ICON_MAP.system;
+            const hue = HUE_MAP[n.type] || 'lime';
+            return (
+              <div key={n.id} className="k-card k-hover p-4 flex items-start gap-3">
+                <div className="relative shrink-0">
+                  <IconTile icon={Icon} hue={hue} size={40} />
+                  {!n.read && (
+                    <span
+                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2"
+                      style={{ background: C.lime, borderColor: C.card }}
+                    />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13.5px] font-bold truncate" style={{ color: C.text }}>{n.title}</span>
                     {!n.read && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-base-100" />
+                      <span
+                        className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-md shrink-0"
+                        style={{ background: `${C.lime}1c`, color: C.limeDk }}
+                      >
+                        {t('notif.new')}
+                      </span>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-sm font-semibold">{n.title}</span>
-                    </div>
-                    <p className="text-sm opacity-60">{n.body}</p>
-                    <p className="text-[11px] opacity-30 mt-1 flex items-center gap-1">
-                      <Icon name="clock" className="w-3 h-3" />
-                      {timeAgo(n.createdAt)}
-                    </p>
-                  </div>
+                  <p className="text-[12.5px] font-semibold mt-0.5" style={{ color: C.muted }}>{n.body}</p>
+                  <p className="text-[11px] font-semibold mt-1 flex items-center gap-1" style={{ color: C.muted }}>
+                    <BellRing size={12} strokeWidth={2.2} />
+                    {timeAgo(n.createdAt)}
+                  </p>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* FE-PARENT-PAGINATION: курсорная подгрузка — лента синтезируется из 5 источников на бэке, поэтому "ещё" */}
       {!isLoading && hasMore && filter === 'all' && (
         <div className="text-center mt-4">
           <button
-            className="btn btn-sm btn-ghost"
+            className="k-press inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13.5px] font-bold"
+            style={{ background: C.bg, color: C.limeDk, border: `1px solid ${C.line}` }}
             onClick={loadMore}
             disabled={isFetchingMore}
           >
-            {isFetchingMore ? <span className="loading loading-spinner loading-xs" /> : t('notif.showMore')}
+            <ChevronDown size={15} strokeWidth={2.6} className={isFetchingMore ? 'animate-bounce' : ''} />
+            {isFetchingMore ? t('common.loading') : t('notif.showMore')}
           </button>
         </div>
       )}

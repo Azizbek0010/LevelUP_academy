@@ -1,33 +1,73 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import {
+  Home, CalendarCheck, GraduationCap, Wallet, MessageSquare, LogOut, Bell, ChevronDown, Star,
+} from 'lucide-react';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
 import { useI18n } from '../i18n.jsx';
-import Avatar from './Avatar.jsx';
-import Icon from './Icons.jsx';
+import { fmt, money } from '../format.js';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
+import { Avatar, C } from '../student/components/ui.jsx';
+
+/**
+ * Каркас кабинета родителя (2026-08-10, v2 — переведён на дизайн кабинета
+ * ученика: тёмная шапка + светлый сайдбар + нижняя навигация на мобильных).
+ * Палитра и компоненты — из student/components/ui.jsx (C, k-card, k-press),
+ * чтобы кабинеты ученика и родителя читались как одна система.
+ */
+
+const DARK_BG = 'linear-gradient(135deg, #21391A 0%, #142A0F 100%)';
+const SIDEBAR_W = 252;
 
 const NAV = [
-  { to: '/dashboard', label: 'nav.dashboard', icon: 'home' },
-  { to: '/attendance', label: 'nav.attendance', icon: 'calendar-check' },
-  { to: '/grades', label: 'nav.grades', icon: 'academic' },
-  { to: '/debt', label: 'nav.debt', icon: 'wallet' },
-  { to: '/chat', label: 'nav.chat', icon: 'chat' },
+  { to: '/dashboard', label: 'nav.dashboard', icon: Home, end: true },
+  { to: '/attendance', label: 'nav.attendance', icon: CalendarCheck },
+  { to: '/grades', label: 'nav.grades', icon: GraduationCap },
+  { to: '/debt', label: 'nav.debt', icon: Wallet },
+  { to: '/chat', label: 'nav.chat', icon: MessageSquare },
 ];
 
+/* Карточка ребёнка внизу сайдбара: вместо пустоты — настоящие числа
+   (коины + долг приходят в списке детей родителя). */
 function ChildCard({ child }) {
   const { t } = useI18n();
   if (!child) return null;
+  const debt = Number(child.totalDebt) || 0;
   return (
-    <div className="px-4 pb-3">
-      <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/5 border border-white/5">
-        <Avatar name={`${child.firstName} ${child.lastName}`} size={34} />
-        <div className="min-w-0">
-          <p className="text-sm font-semibold truncate">{child.firstName}</p>
-          <p className="text-[11px] opacity-40 flex items-center gap-1">
-            <Icon name="user" className="w-3 h-3" />
-            {t('nav.child')}
-          </p>
+    <div className="px-2.5 pb-3">
+      <div className="rounded-xl p-3.5" style={{ background: C.card }}>
+        <div className="flex items-center gap-3">
+          <Avatar name={`${child.firstName} ${child.lastName}`} size={38} />
+          <div className="min-w-0 flex-1">
+            <div className="text-[14px] font-extrabold truncate" style={{ color: C.text }}>
+              {child.firstName} {child.lastName}
+            </div>
+            <div className="text-[11px] font-bold mt-0.5" style={{ color: C.muted }}>{t('nav.child')}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-3">
+          <span
+            className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-1 rounded-lg"
+            style={{ background: `${C.lime}1c`, color: C.limeDk }}
+          >
+            <Star size={12} strokeWidth={2.6} /> {fmt(child.coins)}
+          </span>
+          {debt > 0 ? (
+            <span
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-1 rounded-lg"
+              style={{ background: '#FDE8E7', color: '#C0392B' }}
+            >
+              <Wallet size={12} strokeWidth={2.6} /> {money(debt)}
+            </span>
+          ) : (
+            <span
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-1 rounded-lg"
+              style={{ background: '#E8F6EC', color: '#1F7A3D' }}
+            >
+              <Wallet size={12} strokeWidth={2.6} /> {t('debt.noDebtShort')}
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -35,80 +75,144 @@ function ChildCard({ child }) {
 }
 
 export default function Layout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { t } = useI18n();
   const { selectedChild } = useChild();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    const onPointerDown = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfile(false);
+    };
+    const onKeyDown = (e) => { if (e.key === 'Escape') setShowProfile(false); };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
+
+  const name = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Родитель';
 
   const sidebar = (
-    <div className="flex flex-col h-full bg-sidebar text-neutral-content">
-      <div className="px-5 pt-6 pb-4">
-        <img src="/logo-white.svg" alt="LevelUp" className="h-7 w-auto" />
-      </div>
-
-      <ChildCard child={selectedChild} />
-
-      <nav className="flex-1 px-3 py-2 space-y-1">
-        {NAV.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={() => setMobileOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
-                isActive
-                  ? 'bg-primary text-primary-content font-bold shadow-lg shadow-primary/20'
-                  : 'text-neutral-content/50 hover:bg-white/5 hover:text-neutral-content'
-              }`
-            }
-          >
-            <Icon name={item.icon} className="w-5 h-5 shrink-0" />
-            <span>{t(item.label)}</span>
+    <div className="flex flex-col h-full" style={{ background: C.bg }}>
+      <nav className="shrink-0 px-1.5 py-5 space-y-1.5">
+        {NAV.map(({ to, label, icon: Icon, end }) => (
+          <NavLink key={to} to={to} end={end} onClick={() => setMobileOpen(false)} className="block">
+            {({ isActive }) => (
+              <span
+                className="k-press-sm flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-[15.5px] font-bold transition-colors"
+                style={{
+                  color: isActive ? C.limeDk : C.muted,
+                  background: isActive ? `${C.lime}1c` : 'transparent',
+                }}
+                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = C.card; e.currentTarget.style.color = C.text; } }}
+                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.muted; } }}
+              >
+                <Icon size={20} strokeWidth={isActive ? 2.4 : 2} className="shrink-0" />
+                {t(label)}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
 
-      <div className="mt-auto p-3 space-y-2 border-t border-white/5">
-        <LanguageSwitcher />
-        <NavLink
-          to="/notifications"
-          onClick={() => setMobileOpen(false)}
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
-              isActive
-                ? 'bg-primary text-primary-content font-bold shadow-lg shadow-primary/20'
-                : 'text-neutral-content/50 hover:bg-white/5 hover:text-neutral-content'
-            }`
-          }
-        >
-          <Icon name="bell" className="w-5 h-5 shrink-0" />
-          <span>{t('nav.notifications')}</span>
-        </NavLink>
-
-        <NavLink
-          to="/profile"
-          onClick={() => setMobileOpen(false)}
-          className="flex items-center gap-3 p-2 -mx-1 rounded-xl hover:bg-white/5 transition-colors group"
-        >
-          <div className="relative">
-            <Avatar name={`${user?.firstName} ${user?.lastName}`} size={36} />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-sidebar" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate">{user?.firstName} {user?.lastName}</p>
-            <p className="text-[11px] opacity-40 flex items-center gap-1">
-              {t('nav.profile')}
-              <Icon name="chevron-right" className="w-3 h-3" />
-            </p>
-          </div>
-        </NavLink>
-      </div>
+      <div className="flex-1" />
+      <ChildCard child={selectedChild} />
     </div>
   );
 
   return (
-    <div className="min-h-screen flex bg-base-200">
-      <aside className="hidden lg:flex w-64 shrink-0">{sidebar}</aside>
+    <div className="kid min-h-screen">
+      {/* ══ Тёмная шапка во всю ширину ══ */}
+      <header
+        className="fixed top-0 inset-x-0 z-50 h-20 flex items-center gap-3 px-4 sm:px-6"
+        style={{ background: DARK_BG, boxShadow: '0 1px 0 rgba(255,255,255,0.06)' }}
+      >
+        <div className="flex items-center gap-2.5 shrink-0">
+          <img src="/logo-white.svg" alt="LevelUp Academy" className="h-9 w-auto" />
+        </div>
+
+        <div className="flex-1" />
+
+        <div className="hidden md:block">
+          <LanguageSwitcher />
+        </div>
+
+        <NavLink
+          to="/notifications"
+          title={t('nav.notifications')}
+          aria-label={t('nav.notifications')}
+          className="k-press-sm relative w-10 h-10 rounded-full grid place-items-center shrink-0 transition-colors"
+          style={{ background: 'rgba(0,0,0,0.2)', color: 'rgba(255,255,255,0.75)' }}
+        >
+          <Bell size={18} strokeWidth={2.4} />
+          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-error border border-white/40" />
+        </NavLink>
+
+        <div className="relative" ref={profileRef}>
+          <button
+            type="button"
+            aria-expanded={showProfile}
+            onClick={() => setShowProfile((v) => !v)}
+            className="k-press-sm flex items-center gap-2 h-10 pl-1 pr-2 sm:pr-3 rounded-full transition-colors"
+            style={{ background: showProfile ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.2)' }}
+          >
+            <Avatar name={name} size={34} />
+            <div className="hidden sm:block leading-none pr-1 text-left">
+              <div className="text-[13px] font-extrabold truncate max-w-[120px] text-white">{name}</div>
+              <div className="text-[10px] font-bold mt-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>{t('common.role.parent').toUpperCase()}</div>
+            </div>
+            <ChevronDown size={14} strokeWidth={2.6} className={`hidden sm:block shrink-0 transition-transform ${showProfile ? 'rotate-180' : ''}`} style={{ color: 'rgba(255,255,255,0.55)' }} />
+          </button>
+
+          {showProfile && (
+            <div
+              role="menu"
+              className="k-popover animate-scale-in fixed sm:absolute left-3 right-3 top-[4.75rem] sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-64 overflow-hidden z-50"
+            >
+              <div className="flex items-center gap-3 p-4" style={{ borderBottom: `1px solid ${C.line}` }}>
+                <Avatar name={name} size={44} />
+                <div className="min-w-0">
+                  <div className="text-[14.5px] font-extrabold truncate" style={{ color: C.text }}>{name}</div>
+                  <div className="text-[12px] font-semibold mt-0.5" style={{ color: C.muted }}>{t('common.role.parent')}</div>
+                </div>
+              </div>
+              <div className="p-1.5">
+                <NavLink
+                  to="/profile"
+                  role="menuitem"
+                  onClick={() => setShowProfile(false)}
+                  className="k-press-sm w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13.5px] font-bold"
+                  style={{ color: C.text }}
+                >
+                  <ChevronDown size={16} strokeWidth={2.6} className="rotate-[-90deg]" style={{ color: C.muted }} />
+                  {t('nav.profile')}
+                </NavLink>
+                <button
+                  role="menuitem"
+                  onClick={logout}
+                  className="k-press-sm w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13.5px] font-bold"
+                  style={{ color: '#C0392B' }}
+                >
+                  <LogOut size={16} strokeWidth={2.6} /> {t('prof.logout')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* ══ Сайдбар под шапкой — светлый, как у ученика ══ */}
+      <aside
+        className="hidden lg:flex fixed top-20 bottom-0 left-0 z-40 flex-col"
+        style={{ width: SIDEBAR_W, background: C.bg }}
+      >
+        {sidebar}
+      </aside>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
@@ -117,27 +221,38 @@ export default function Layout() {
         </div>
       )}
 
-      <div className="flex-1 min-w-0 flex flex-col">
-        <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-sidebar text-white">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setMobileOpen(true)} className="btn btn-ghost btn-sm btn-circle">
-              <Icon name="bars-3" className="w-5 h-5" />
-            </button>
-            <img src="/logo-white.svg" alt="LevelUp" className="h-5 w-auto" />
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-28"><LanguageSwitcher /></div>
-            <NavLink to="/notifications" className="btn btn-ghost btn-sm btn-circle relative">
-              <Icon name="bell" className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full" />
-            </NavLink>
-          </div>
-        </div>
-
-        <main className="flex-1 p-4 lg:p-6 max-w-6xl mx-auto w-full">
+      {/* ══ Контент ══ */}
+      <main className="pt-20 lg:pl-[252px] min-h-screen">
+        <div className="animate-page-enter max-w-[1080px] mx-auto p-4 sm:p-5 lg:p-7 pb-28 lg:pb-8">
           <Outlet />
-        </main>
-      </div>
+        </div>
+      </main>
+
+      {/* ══ Нижняя навигация (мобильные) ══ */}
+      <nav
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex items-stretch h-[68px] px-2"
+        style={{ background: C.card, borderTop: `1px solid ${C.line}` }}
+      >
+        {NAV.map(({ to, label, icon: Icon, end }) => (
+          <NavLink key={to} to={to} end={end} className="flex-1 grid place-items-center">
+            {({ isActive }) => (
+              <span className="k-press-sm flex flex-col items-center gap-1">
+                <span
+                  className="w-11 h-8 rounded-xl grid place-items-center"
+                  style={isActive
+                    ? { background: C.lime, color: '#fff' }
+                    : { background: 'transparent', color: C.muted }}
+                >
+                  <Icon size={19} strokeWidth={2.6} />
+                </span>
+                <span className="text-[10px] font-extrabold" style={{ color: isActive ? C.text : C.muted }}>
+                  {t(label)}
+                </span>
+              </span>
+            )}
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }
