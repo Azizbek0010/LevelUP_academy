@@ -3,6 +3,7 @@ import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { blockIfOverdue } from '../../middlewares/paymentGate.js';
 import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
+import { requireOrgFeature } from '../../middlewares/requireOrgFeature.js';
 import homeRoutes from './home/home.routes.js';
 import shopRoutes from './shop/shop.routes.js';
 import homeworkRoutes from './homework/homework.routes.js';
@@ -26,7 +27,7 @@ const router = Router();
 router.use(authenticate, orgAccessGate);
 
 router.use('/home', authorize('student'), blockIfOverdue, homeRoutes);
-router.use('/shop', authorize('student', 'admin', 'mentor'), blockIfOverdue, shopRoutes);
+router.use('/shop', authorize('student', 'admin', 'mentor'), blockIfOverdue, requireOrgFeature('shop'), shopRoutes);
 router.use('/homework', authorize('student'), blockIfOverdue, homeworkRoutes);
 router.use('/tests', authorize('student'), blockIfOverdue, testsRoutes);
 router.use('/videos', authorize('student'), blockIfOverdue, videosRoutes);

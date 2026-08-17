@@ -124,7 +124,7 @@ export default function SuperBranches() {
                 <Link
                   key={b.id}
                   to={`/branches/${b.id}`}
-                  className={`block rounded-2xl border border-base-300 bg-base-100 hover:border-primary/40 transition-colors ${b.isArchived ? 'opacity-60' : ''}`}
+                  className={`card block border border-base-300 bg-base-100 shadow-sm hover:shadow-md hover:border-primary/40 transition-all ${b.isArchived ? 'opacity-60' : ''}`}
                 >
                   <div className="p-4 space-y-3">
                     <div className="flex items-baseline justify-between gap-3">

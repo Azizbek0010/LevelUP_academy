@@ -136,12 +136,12 @@ export async function upsertSubmission({ lessonId, studentId, fileKey, textAnswe
   return r ?? null;
 }
 
-export async function getStudentName(studentId, db = pool) {
+export async function getStudentNameAndLanguage(studentId, db = pool) {
   const { rows: [r] } = await db.query(
-    `SELECT first_name, last_name FROM users WHERE id = $1`,
+    `SELECT first_name, last_name, preferred_language FROM users WHERE id = $1`,
     [studentId],
   );
-  return r ? `${r.first_name} ${r.last_name}`.trim() : null;
+  return r ? { name: `${r.first_name} ${r.last_name}`.trim(), language: r.preferred_language } : null;
 }
 
 // ---------- Aqlli tahlil (AI-review): читает/пишет worker'ом, не HTTP-слоем ----------
@@ -154,9 +154,11 @@ export async function getSubmissionById(id, db = pool) {
   const { rows: [r] } = await db.query(
     `SELECT s.id, s.lesson_id, s.student_id, s.file_key, s.text_answer, s.review_attempts,
             l.title AS lesson_title, l.description AS lesson_description,
-            l.instruction AS lesson_instruction, l.file_key AS lesson_file_key
+            l.instruction AS lesson_instruction, l.file_key AS lesson_file_key,
+            u.preferred_language AS student_language
        FROM methodology_submissions s
        JOIN methodology_lessons l ON l.id = s.lesson_id
+       JOIN users u ON u.id = s.student_id
       WHERE s.id = $1`,
     [id],
   );

@@ -1,13 +1,26 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 11.08.2026 05:49 (UTC+5, Toshkent vaqti)
-> Statistika: 200/228 task tugallangan (87%)
+> Oxirgi yangilanish: 13.08.2026 06:02 (UTC+5, Toshkent vaqti)
+> Statistika: 209/237 task tugallangan (88%)
 
 ---
 
-## Progress: [#################...] 87%
+## Progress: [#################...] 88%
 
 ## Tugallangan vazifalar
+
+### Backend+Frontend — Shop va Telegram fича-gate (Karis, 13.08.2026) ✅ kod tayyor, migratsiya KUTMOQDA
+- [x] Umumiy: `shared/orgFeatures.js` (`isFeatureEnabledForOrg`, Redis'siz —
+- [x] Shop: gейт `student.routes.js` (`/shop`), `admin.routes.js` (`/shop`),
+- [x] Telegram: gейт `telegram.routes.js` (`POST /bind-token`),
+- [x] Frontend Telegram-UI: `frontend/staff` — Branch Manager
+- [x] `orgFeatures: {shop, telegramIntegration}` — `publicUser()`
+
+### Backend — Student paneli: XOB so'rovi (Telegram, 12.08.2026) ✅ kod tayyor, migratsiya KUTMOQDA
+- [x] XOB-1 LEADERBOARD-GROUP: `GET /api/student/leaderboard?groupId=...`
+- [x] XOB-2 VISIT-STREAK: `GET /api/student/home` ga `streak`/`longestStreak`
+- [x] XOB-3 LESSON-REVIEW: `GET /api/student/lessons/:id` submission ichiga
+- [x] XOB-4 STUDENT-LANGUAGE: `users.preferred_language` ('ru'|'uz', NULL =
 
 ### Backend — Aqlli tahlil + Ota-onalar Telegram guruhi (Karis, 09.08.2026) ✅
 - [x] AI-REVIEW: `methodology_submissions` uchun AI kod-tahlili — Groq
@@ -281,6 +294,6 @@
 
 ## Jamoa boyicha
 
-- Karis (Backend): 124 task
-- Abdulaziz (Backend): 80 task
-- Frontend jamoasi: 69 task
+- Karis (Backend): 129 task
+- Abdulaziz (Backend): 84 task
+- Frontend jamoasi: 74 task

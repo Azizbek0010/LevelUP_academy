@@ -162,7 +162,9 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* TG-FRONT: привязка Telegram-бота */}
+      {/* TG-FRONT: привязка Telegram-бота — карточки нет вообще, если Main Admin
+          не включил Telegram-интеграцию партнёру (Karis, 13.08.2026) */}
+      {user?.orgFeatures?.telegramIntegration && (
       <div className="card bg-base-100 mb-6">
         <div className="card-body">
           <h3 className="card-title text-sm gap-2">
@@ -198,6 +200,7 @@ export default function Profile() {
           )}
         </div>
       </div>
+      )}
 
       {/* Logout */}
       <div className="card bg-base-100">

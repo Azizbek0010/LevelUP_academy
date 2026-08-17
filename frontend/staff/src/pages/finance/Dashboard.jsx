@@ -38,11 +38,11 @@ export default function FinanceDashboard() {
   })).filter((b) => b.value > 0);
 
   return (
-    <div className="space-y-6 pb-8 animate-page-enter">
+    <div className="space-y-6 pb-8 animate-fade-in">
       <PageHeader title={t('dash.title')} subtitle={t('dash.subtitle')} />
 
       {/* ── KPI организации за текущий месяц ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
         <Metric
           Icon={Wallet}
           label={t('kpi.income')}
@@ -78,7 +78,7 @@ export default function FinanceDashboard() {
       </div>
 
       {/* ── Тренд по месяцам + доля филиалов ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
         <Card title={t('dash.trendChart')} subtitle={t('dash.monthlyProfit')} className="xl:col-span-2" bodyClass="p-4 h-[340px]">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>

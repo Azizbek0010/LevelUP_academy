@@ -27,50 +27,77 @@ export function LangSwitch() {
   );
 }
 
-/* ── KPI-карточка с иконкой и подписью ── */
+/* ── KPI-карточка с иконкой и подписью ──
+   Токены и структура — те же "strict"-переменные, что у Admin/SEO дашборда
+   (index.css § DASHBOARD STRICT TOKENS, components/ui.jsx KpiCard): плоская
+   белая карточка, тонкая рамка вместо цветного ring-halo, компактная 8px
+   плашка под иконку вместо круглой rounded-xl — раньше Finance выглядела
+   заметно "мультяшнее" остальных панелей (Karis, 13.08.2026: "seryozini roq
+   qil"). */
 const TONES = {
-  success: { chip: 'bg-success/15 text-success', ring: 'ring-success/30' },
-  warning: { chip: 'bg-warning/15 text-warning', ring: 'ring-warning/30' },
-  neutral: { chip: 'bg-base-content/5 text-base-content/70', ring: 'ring-base-content/15' },
-  info:    { chip: 'bg-info/15 text-info', ring: 'ring-info/30' },
+  success: { bg: 'var(--bg-success)', fg: 'var(--success)' },
+  warning: { bg: 'var(--bg-warning)', fg: 'var(--warning)' },
+  neutral: { bg: 'var(--border-faint)', fg: 'var(--text-muted)' },
+  info:    { bg: 'var(--bg-info)',    fg: 'var(--info)' },
 };
 
 export function Metric({ Icon, label, value, sub, tone = 'neutral', trend, trendLabel }) {
-  const t = TONES[tone] ?? TONES.neutral;
+  const { bg, fg } = TONES[tone] ?? TONES.neutral;
   const up = (trend ?? 0) >= 0;
   return (
-    <div className={`rounded-2xl border border-base-300 bg-base-100 p-5 ring-4 ${t.ring} transition-shadow hover:shadow-md`}>
+    <article className="
+      bg-white
+      border border-[var(--border-subtle)]
+      rounded-[var(--radius-card)]
+      p-4 md:p-5
+      shadow-[var(--shadow-card)]
+      transition-shadow duration-200
+      hover:shadow-[var(--shadow-card-hover)]
+    ">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-base-content/50 truncate">{label}</p>
-          <p className="text-[22px] font-extrabold tracking-tight mt-1.5 text-base-content">{value}</p>
-          {sub && <p className="text-[12px] text-base-content/50 mt-1 truncate">{sub}</p>}
-        </div>
-        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${t.chip}`}>
-          <Icon size={20} />
+        <span
+          className="w-10 h-10 rounded-[var(--radius-tight)] grid place-items-center shrink-0"
+          style={{ background: bg, color: fg }}
+        >
+          <Icon size={18} strokeWidth={2.2} />
         </span>
       </div>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mt-3 truncate">
+        {label}
+      </p>
+      <p className="text-2xl font-extrabold leading-none tracking-tight tabular-nums text-[var(--text)] mt-1.5">
+        {value}
+      </p>
+      {sub && <p className="text-xs text-[var(--text-muted)] mt-1 truncate">{sub}</p>}
       {trend !== undefined && (
-        <div className="mt-3 flex items-center gap-1.5 text-[12px]">
-          <span className={`inline-flex items-center gap-0.5 font-bold ${up ? 'text-success' : 'text-error'}`}>
+        <div className="mt-2.5 flex items-center gap-1.5 text-xs">
+          <span className={`inline-flex items-center gap-0.5 font-semibold ${up ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>
             {up ? '▲' : '▼'} {Math.abs(trend)}%
           </span>
-          <span className="text-base-content/40">{trendLabel}</span>
+          {trendLabel && <span className="text-[var(--text-muted)]">{trendLabel}</span>}
         </div>
       )}
-    </div>
+    </article>
   );
 }
 
-/* ── Карточка с заголовком ── */
+/* ── Карточка с заголовком — тот же DashboardPanel-паттерн, что у Admin/SEO ── */
 export function Card({ title, subtitle, action, children, bodyClass = 'p-4', className = '' }) {
   return (
-    <section className={`rounded-2xl border border-base-300 bg-base-100 shadow-[0_1px_2px_rgba(29,36,23,0.04)] ${className}`}>
+    <section className={`
+      bg-white
+      border border-[var(--border-subtle)]
+      rounded-[var(--radius-card)]
+      shadow-[var(--shadow-card)]
+      transition-shadow duration-200
+      hover:shadow-[var(--shadow-card-hover)]
+      ${className}
+    `}>
       {(title || action) && (
-        <header className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 pb-2">
+        <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[var(--border-faint)]">
           <div>
-            <h3 className="text-[15px] font-bold text-base-content">{title}</h3>
-            {subtitle && <p className="text-[12px] text-base-content/50 mt-0.5">{subtitle}</p>}
+            <h3 className="text-sm font-semibold text-[var(--text)]">{title}</h3>
+            {subtitle && <p className="text-xs text-[var(--text-muted)] mt-0.5">{subtitle}</p>}
           </div>
           {action}
         </header>

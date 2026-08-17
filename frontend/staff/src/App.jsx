@@ -6,6 +6,7 @@ import Layout from './components/Layout.jsx';
 import Login from './pages/Login.jsx';
 import { LangProvider } from './pages/finance/_i18n.jsx';
 import RoleGuard from './components/RoleGuard.jsx';
+import FeatureGuard from './components/FeatureGuard.jsx';
 import Splash from './components/Splash.jsx';
 // Lazy-loaded pages
 const SuperDashboard = lazy(() => import('./pages/super/Dashboard.jsx'));
@@ -160,7 +161,11 @@ export default function App() {
           {/* deep-link на конкретного студента+сумму — Abduloh, автоподстановка суммы из группы */}
           <Route path="/payments/:studentId/:amount?" element={<SW><AdminPayments /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
-          <Route path="/shop" element={<SW><AdminShop /></SW>} />
+          {/* Karis (13.08.2026): Shop — управляемая Main Admin'ом фича, прямая
+              ссылка тоже не должна открываться, если он её не включил */}
+          <Route element={<FeatureGuard feature="shop" />}>
+            <Route path="/shop" element={<SW><AdminShop /></SW>} />
+          </Route>
           <Route path="/schedule" element={<SW><AdminSchedule /></SW>} />
         </Route>
         {/* Расходы — общий путь для админа и branch manager (RoleView разбирает) */}
@@ -197,7 +202,9 @@ export default function App() {
           <Route path="/reminders" element={<SW><SuperReminders /></SW>} />
           <Route path="/audit" element={<SW><SuperAudit /></SW>} />
           <Route path="/methodics" element={<SW><SuperTrainingTypes /></SW>} />
-          <Route path="/shop-catalog" element={<SW><SuperShopCatalog /></SW>} />
+          <Route element={<FeatureGuard feature="shop" />}>
+            <Route path="/shop-catalog" element={<SW><SuperShopCatalog /></SW>} />
+          </Route>
         <Route path="/discipline" element={<SW><SuperDiscipline /></SW>} />
         </Route>
 

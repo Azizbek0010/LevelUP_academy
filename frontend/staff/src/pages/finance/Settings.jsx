@@ -103,7 +103,7 @@ export default function FinanceSettings() {
       </Card>
 
       {/* ═══ Личные данные ═══ */}
-      <form onSubmit={handleSave} className="card bg-base-100 rounded-2xl border border-base-300 p-6 shadow-[0_1px_2px_rgba(29,36,23,0.04)]">
+      <form onSubmit={handleSave} className="card bg-base-100 border border-base-300 shadow-sm p-6">
         <h2 className="text-[15px] font-extrabold text-base-content">{t('settings.personal')}</h2>
         <p className="text-[12px] text-base-content/50 mt-0.5 mb-5">{t('settings.personalSub')}</p>
 

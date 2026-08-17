@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
+import { requireOrgFeature } from '../../middlewares/requireOrgFeature.js';
 import { validate } from '../../middlewares/validate.js';
 import {
   idParam,
@@ -50,7 +51,7 @@ router.use(authenticate, orgAccessGate, authorize('admin', 'branch_manager'));
 
 router.use('/payments', paymentsRoutes);
 router.use('/reports', reportsRoutes);
-router.use('/shop', shopAdminRoutes);
+router.use('/shop', requireOrgFeature('shop'), shopAdminRoutes);
 router.use('/rooms', roomsRoutes);
 
 /**
@@ -405,7 +406,7 @@ router.get('/students', validate({ query: listStudentsQuery }), ctrl.listStudent
 router.get('/students/:id', validate({ params: idParam }), ctrl.studentDetail);
 router.get('/students/:id/attendance', validate({ params: idParam, query: studentAttendanceQuery }), ctrl.studentAttendance);
 router.get('/students/:id/telegram', validate({ params: idParam }), ctrl.studentTelegramStatus);
-router.post('/students/:id/telegram/message', validate({ params: idParam, body: sendStudentTelegramMessageSchema }), ctrl.sendStudentTelegramMessage);
+router.post('/students/:id/telegram/message', requireOrgFeature('telegram_integration'), validate({ params: idParam, body: sendStudentTelegramMessageSchema }), ctrl.sendStudentTelegramMessage);
 router.post('/students/:id/qr-token', validate({ params: idParam }), ctrl.createStudentQrToken);
 router.post('/students/:id/qr-token/regenerate', validate({ params: idParam }), ctrl.regenerateStudentQrToken);
 router.patch('/students/:id', validate({ params: idParam, body: updateStudentSchema }), ctrl.updateStudent);

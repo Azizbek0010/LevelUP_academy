@@ -43,6 +43,13 @@ function RoleGuard({ role, children }) {
   return user?.role === role ? children : <Navigate to="/" replace />;
 }
 
+/** Karis (13.08.2026): та же идея, что RoleGuard, но по org_feature_flags —
+ * прямая ссылка на /shop тоже не должна открываться, если фича выключена. */
+function FeatureGuard({ feature, children }) {
+  const { user } = useAuth();
+  return user?.orgFeatures?.[feature] ? children : <Navigate to="/student" replace />;
+}
+
 function ParentLayout() {
   return (
     <ChildProvider>
@@ -118,7 +125,7 @@ export default function App() {
             <Route path="/tests/:testId" element={<StudentTestTake />} />
             <Route path="/homework" element={<StudentHomework />} />
             <Route path="/videos" element={<StudentVideos />} />
-            <Route path="/shop" element={<StudentShop />} />
+            <Route path="/shop" element={<FeatureGuard feature="shop"><StudentShop /></FeatureGuard>} />
             <Route path="/leaderboard" element={<StudentLeaderboard />} />
           </Route>
         </Route>

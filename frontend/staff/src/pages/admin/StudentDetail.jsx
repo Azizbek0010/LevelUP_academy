@@ -66,7 +66,8 @@ const soon = () => alert('Эта функция ещё в разработке')
 export default function AdminStudentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const tgEnabled = Boolean(user?.orgFeatures?.telegramIntegration);
   const { data, isLoading, error, refetch } = useAdminStudentDetail(id);
 
   const [editing, setEditing] = useState(false);
@@ -281,16 +282,18 @@ export default function AdminStudentDetail() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-200/60">
-                <span className="text-[11px] font-semibold text-base-content/50 uppercase">Telegram</span>
-                {telegram?.student?.linked ? (
-                  <button onClick={() => setShowTgMessage(true)} className="flex items-center gap-1.5 text-[12px] font-bold text-primary hover:underline">
-                    <Send size={12} /> {telegram.student.username ? `@${telegram.student.username}` : 'Написать'}
-                  </button>
-                ) : (
-                  <span className="text-[12px] text-base-content/40 italic">Не подключён</span>
-                )}
-              </div>
+              {tgEnabled && (
+                <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-200/60">
+                  <span className="text-[11px] font-semibold text-base-content/50 uppercase">Telegram</span>
+                  {telegram?.student?.linked ? (
+                    <button onClick={() => setShowTgMessage(true)} className="flex items-center gap-1.5 text-[12px] font-bold text-primary hover:underline">
+                      <Send size={12} /> {telegram.student.username ? `@${telegram.student.username}` : 'Написать'}
+                    </button>
+                  ) : (
+                    <span className="text-[12px] text-base-content/40 italic">Не подключён</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Действия */}

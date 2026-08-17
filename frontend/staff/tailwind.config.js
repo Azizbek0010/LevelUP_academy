@@ -43,8 +43,13 @@ export default {
           success: '#15803d',
           warning: '#b45309',
           error: '#dc2626',
-          '--rounded-box': '1rem',
-          '--rounded-btn': '0.6rem',
+          // Тот же ход, что в main-admin/tailwind.config.js (11.08.2026,
+          // "острее углы = серьёзнее продукт") — там применили, здесь забыли:
+          // все .card/.btn/.badge панели Admin/SEO/Mentor/Methodist/Branch
+          // Manager/Finance наследуют этот токен разом (Karis, 13.08.2026).
+          '--rounded-box': '0.5rem',
+          '--rounded-btn': '0.375rem',
+          '--rounded-badge': '0.25rem',
         },
       },
     ],

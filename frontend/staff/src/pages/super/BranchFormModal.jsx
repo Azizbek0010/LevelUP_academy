@@ -180,7 +180,7 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
     <div className="modal modal-open">
       {/* Две колонки: слева поля, справа карта. В одну колонку карта уезжала
           за нижний край и до кнопок приходилось прокручивать форму. */}
-      <div className={`modal-box rounded-2xl border border-base-200 ${confirmArchive ? 'max-w-md' : 'max-w-6xl'}`}>
+      <div className={`modal-box border border-base-200 ${confirmArchive ? 'max-w-md' : 'max-w-6xl'}`}>
         {confirmArchive ? (
           <>
             <h3 className="font-bold text-base">

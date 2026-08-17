@@ -116,7 +116,22 @@ export async function pollLogin(req, res, next) {
       return;
     }
 
+    // Удаляем nonce ТОЛЬКО после успешной выдачи сессии — иначе сбой здесь
+    // (напр. Redis/БД недоступны) стирает nonce впустую, и следующий опрос
+    // видит "unknown" вместо настоящей ошибки (см. login-nonce.service.js).
     const session = await loginByUserId(result.userId, ['student', 'parent']);
+
+    // Вход одобрен ботом раньше, чем мы узнали организацию (nonce публичный,
+    // до этой строки req.user нет) — поэтому фича-гейт здесь, а не в роуте
+    // (requireOrgFeature на bind-token его уже не пускал бы новую привязку,
+    // но старая привязка могла остаться от момента, когда фича была включена).
+    // publicUser() (auth.service.js) уже посчитал orgFeatures — второй запрос
+    // к БД тут был бы дублем той же самой строки.
+    await loginNonceService.consume(nonce);
+    if (!session.user.orgFeatures.telegramIntegration) {
+      throw new AppError(403, 'Telegram integration is not enabled for your organization');
+    }
+
     res.json({ success: true, data: { status: 'approved', ...session } });
   } catch (err) {
     next(err);
