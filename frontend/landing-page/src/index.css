@@ -555,6 +555,65 @@ h1, h2, h3, h4, .display {
   color: var(--text-muted);
 }
 
+/* Info-card — left-aligned variant of .feature, icon as a soft-tint badge
+   instead of a solid fill. Used on pages that present facts/contacts as a
+   scannable list rather than a persuasive pitch (e.g. Founder.jsx). */
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  text-align: left;
+  transition: transform 0.18s, box-shadow 0.18s;
+  position: relative;
+}
+
+.info-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--card-shadow);
+}
+
+.info-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(198, 255, 52, 0.3);
+  color: var(--accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.info-card h3 {
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+
+.info-card p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.info-card__value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.info-card__value:hover {
+  text-decoration: underline;
+}
+
+.info-card__note {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 11px;
+}
+
 /* ---------- Roles ---------- */
 .roles {
   display: flex;

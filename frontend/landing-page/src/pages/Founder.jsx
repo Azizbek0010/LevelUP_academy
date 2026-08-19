@@ -5,8 +5,7 @@ import Icon from '../components/Icon.jsx';
 import { breadcrumb, useSeo, SITE_URL } from '../lib/seo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
-// Личные контакты — только реальные значения, заполняются по мере подтверждения.
-// null → кнопка не рендерится, вместо выдуманной ссылки.
+// Личные контакты — только реальные значения, подтверждённые владельцем.
 const TELEGRAM_URL = 'https://t.me/Azizbek2603';
 const EMAIL = 'amangeldiev.azizbek.010@gmail.com';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/azizbek-amangeldiev-6045a342b';
@@ -16,12 +15,23 @@ const LINKEDIN_URL = 'https://www.linkedin.com/in/azizbek-amangeldiev-6045a342b'
  * wewatch.uz/team/<slug>: отдельный URL с именем + фото + био, который поисковик
  * может процитировать при запросе по имени. About.jsx даёт факт «есть такой
  * основатель», эта страница даёт содержание для карточки/AI Overview по имени.
+ *
+ * Карточки контактов/стека — .info-card (левое выравнивание, мягкая
+ * icon-badge), а не общий .feature (центрированный, залитая иконка):
+ * сознательно другой паттерн для «список фактов», подсмотренный на
+ * tezcode.dev/ru/aloqa, а не переиспользование питчевых карточек с About.
  */
 export default function Founder() {
   const t = useT();
   const lang = useLang();
   const lp = useLocalizePath();
   const s = t.founder;
+
+  const contacts = [
+    { icon: 'send', label: s.contactTelegramLabel, value: '@Azizbek2603', href: TELEGRAM_URL, note: s.contactTelegramNote },
+    { icon: 'mail', label: s.contactEmailLabel, value: EMAIL, href: `mailto:${EMAIL}` },
+    { icon: 'linkedin', label: s.contactLinkedinLabel, value: 'in/azizbek-amangeldiev', href: LINKEDIN_URL },
+  ];
 
   const jsonLd = useMemo(
     () => [
@@ -63,31 +73,12 @@ export default function Founder() {
             </p>
             <p className="hero__lead">{s.lead}</p>
 
-            <div className="tag-row" style={{ justifyContent: 'flex-start', marginBottom: 26 }}>
+            <div className="tag-row" style={{ justifyContent: 'flex-start' }}>
               {s.tags.map((tag) => (
                 <span className="tag" key={tag}>
                   {tag}
                 </span>
               ))}
-            </div>
-
-            <div className="hero__actions">
-              {TELEGRAM_URL && (
-                <a href={TELEGRAM_URL} target="_blank" rel="noreferrer" className="btn btn--dark">
-                  <Icon name="send" size={17} />
-                  {s.contactTelegram}
-                </a>
-              )}
-              {EMAIL && (
-                <a href={`mailto:${EMAIL}`} className="btn btn--outline">
-                  <Icon name="mail" size={17} />
-                  {s.contactEmail}
-                </a>
-              )}
-              <a href={LINKEDIN_URL} target="_blank" rel="noreferrer" className="btn btn--outline">
-                <Icon name="linkedin" size={17} />
-                LinkedIn
-              </a>
             </div>
           </div>
 
@@ -120,10 +111,40 @@ export default function Founder() {
 
       <section className="section section--white">
         <div className="container">
+          <div className="section__head">
+            <h2>{s.contactsHead}</h2>
+            <p>{s.contactsLead}</p>
+          </div>
+          <div className="cards-3">
+            {contacts.map((c) => (
+              <a
+                className="info-card"
+                key={c.label}
+                href={c.href}
+                target={c.href.startsWith('http') ? '_blank' : undefined}
+                rel={c.href.startsWith('http') ? 'noreferrer' : undefined}
+                style={{ display: 'block' }}
+              >
+                {c.note && (
+                  <span className="badge badge--lime info-card__note">{c.note}</span>
+                )}
+                <div className="info-card__icon">
+                  <Icon name={c.icon} />
+                </div>
+                <h3>{c.label}</h3>
+                <p className="info-card__value">{c.value}</p>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container">
           <div className="cards-3">
             {s.highlights.map((item) => (
-              <article className="feature" key={item.title}>
-                <div className="feature__icon">
+              <article className="info-card" key={item.title}>
+                <div className="info-card__icon">
                   <Icon name={item.icon} />
                 </div>
                 <h3>{item.title}</h3>
@@ -134,7 +155,7 @@ export default function Founder() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section section--white">
         <div className="container">
           <div className="section__head">
             <h2>{s.stackHead}</h2>
@@ -142,9 +163,12 @@ export default function Founder() {
           </div>
           <div className="cards-3">
             {s.stackGroups.map((group) => (
-              <article className="feature" key={group.label}>
+              <article className="info-card" key={group.label}>
+                <div className="info-card__icon">
+                  <Icon name={group.icon} />
+                </div>
                 <h3>{group.label}</h3>
-                <div className="tag-row" style={{ marginTop: 10 }}>
+                <div className="tag-row" style={{ justifyContent: 'flex-start', marginTop: 10 }}>
                   {group.items.map((item) => (
                     <span className="tag" key={item}>
                       {item}
@@ -157,7 +181,7 @@ export default function Founder() {
         </div>
       </section>
 
-      <section className="section section--white">
+      <section className="section">
         <div className="container">
           <div className="section__head">
             <h2>{s.bioHead}</h2>
@@ -168,18 +192,18 @@ export default function Founder() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section section--white">
         <div className="container">
           <div className="section__head">
             <h2>{s.linksHead}</h2>
           </div>
-          <ul className="checklist" style={{ maxWidth: 520, margin: '0 auto' }}>
+          <div className="hero__actions" style={{ justifyContent: 'center' }}>
             {s.links.map((link) => (
-              <li key={link.path}>
-                <Link to={lp(link.path)}>{link.label}</Link>
-              </li>
+              <Link to={lp(link.path)} className="btn btn--outline" key={link.path}>
+                {link.label}
+              </Link>
             ))}
-          </ul>
+          </div>
         </div>
       </section>
 
