@@ -7,8 +7,8 @@ import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 // Личные контакты — только реальные значения, заполняются по мере подтверждения.
 // null → кнопка не рендерится, вместо выдуманной ссылки.
-const TELEGRAM_URL = null; // 'https://t.me/<username>'
-const EMAIL = null; // '<address>@...'
+const TELEGRAM_URL = 'https://t.me/Azizbek2603';
+const EMAIL = 'amangeldiev.azizbek.010@gmail.com';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/azizbek-amangeldiev-6045a342b';
 
 /**
@@ -91,7 +91,7 @@ export default function Founder() {
             </div>
           </div>
 
-          <div className="dash" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="dash" style={{ padding: 0, overflow: 'hidden', position: 'relative' }}>
             <img
               src="/team/azizbek-amangeldiev.png"
               alt={s.h1}
@@ -99,6 +99,21 @@ export default function Founder() {
               height={520}
               style={{ width: '100%', height: 420, objectFit: 'cover', display: 'block' }}
             />
+            <span
+              className="badge"
+              style={{
+                position: 'absolute',
+                left: 16,
+                bottom: 16,
+                background: 'rgba(20, 24, 16, 0.72)',
+                color: '#fff',
+                border: 'none',
+                backdropFilter: 'blur(4px)',
+              }}
+            >
+              <Icon name="pin" size={15} />
+              {s.location}
+            </span>
           </div>
         </div>
       </section>
@@ -122,6 +137,29 @@ export default function Founder() {
       <section className="section">
         <div className="container">
           <div className="section__head">
+            <h2>{s.stackHead}</h2>
+            <p>{s.stackLead}</p>
+          </div>
+          <div className="cards-3">
+            {s.stackGroups.map((group) => (
+              <article className="feature" key={group.label}>
+                <h3>{group.label}</h3>
+                <div className="tag-row" style={{ marginTop: 10 }}>
+                  {group.items.map((item) => (
+                    <span className="tag" key={item}>
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section section--white">
+        <div className="container">
+          <div className="section__head">
             <h2>{s.bioHead}</h2>
           </div>
           <p className="pricing-note" style={{ maxWidth: 760, margin: '0 auto' }}>
@@ -130,7 +168,7 @@ export default function Founder() {
         </div>
       </section>
 
-      <section className="section section--white">
+      <section className="section">
         <div className="container">
           <div className="section__head">
             <h2>{s.linksHead}</h2>
