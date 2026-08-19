@@ -16,6 +16,7 @@ import BlogArticle from './pages/BlogArticle.jsx';
 import Gamification from './pages/Gamification.jsx';
 import Faq from './pages/Faq.jsx';
 import About from './pages/About.jsx';
+import Founder from './pages/Founder.jsx';
 import Contacts from './pages/Contacts.jsx';
 import NotFound from './pages/NotFound.jsx';
 import { trackPageView } from './lib/analytics.js';
@@ -43,6 +44,7 @@ export const PAGES = [
   { path: '/landing/gamification', element: <Gamification /> },
   { path: '/landing/faq', element: <Faq /> },
   { path: '/landing/about', element: <About /> },
+  { path: '/landing/team/azizbek-amangeldiev', element: <Founder /> },
   { path: '/landing/contacts', element: <Contacts /> },
 ];
 
