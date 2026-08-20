@@ -23,6 +23,48 @@ export async function listBranchUsers({ branchId, role, status, page, limit, off
   return { items, total, page, limit };
 }
 
+const FINANCE_ROLES = new Set(['main_admin', 'seo', 'admin', 'branch_manager', 'finance_manager']);
+
+function directoryScope(user) {
+  if (user.role === 'main_admin') return {};
+  if (user.role === 'seo' || user.role === 'methodist') {
+    return { organizationId: user.organizationId };
+  }
+  if (user.role === 'mentor') {
+    return { organizationId: user.organizationId, branchId: user.branchId, mentorId: user.id };
+  }
+  return { organizationId: user.organizationId, branchId: user.branchId };
+}
+
+function protectDirectoryItem(item, requesterRole) {
+  if (FINANCE_ROLES.has(requesterRole)) return item;
+  const { billed, paid, invoice_debt, overdue, total_debt, ...safe } = item;
+  return safe;
+}
+
+export async function listDirectory({ requester, role, status, search, page, limit, offset }) {
+  const scope = directoryScope(requester);
+  const args = { ...scope, role, status, search, limit, offset };
+  const [items, total] = await Promise.all([
+    repo.findDirectory(args),
+    repo.countDirectory(args),
+  ]);
+  return {
+    items: items.map((item) => protectDirectoryItem(item, requester.role)),
+    total,
+    page,
+    limit,
+    capabilities: {
+      canSeeFinance: FINANCE_ROLES.has(requester.role),
+      scope: requester.role === 'main_admin'
+        ? 'platform'
+        : requester.role === 'seo' || requester.role === 'methodist'
+          ? 'organization'
+          : requester.role === 'mentor' ? 'assigned_students' : 'branch',
+    },
+  };
+}
+
 /**
  * Обновление собственного профиля.
  *

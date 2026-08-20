@@ -66,18 +66,17 @@ export function ProgressBar({ value = 0, color = '#40833B', height = 6 }) {
 
 export function StatCard({ icon, label, value, sub, color, className = '' }) {
   return (
-    <div className={`card bg-base-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 ${className}`}>
+    <div className={`card bg-base-100 ${className}`}>
       <div className="card-body p-4">
         <div className="flex items-center gap-3">
           <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: `${color}15` }}
+            className="w-9 h-9 rounded border border-base-300 flex items-center justify-center shrink-0 bg-base-200/40"
           >
-            <Icon name={icon} className="w-5 h-5" style={{ color }} />
+            <Icon name={icon} className="w-[18px] h-[18px] text-base-content/60" />
           </div>
           <div className="min-w-0">
             <p className="text-xs text-base-content/50 truncate">{label}</p>
-            <p className="text-lg font-extrabold tracking-tight leading-tight">{value}</p>
+            <p className="text-lg font-semibold tracking-tight leading-tight tabular-nums" style={{ color }}>{value}</p>
             {sub && <p className="text-[11px] text-base-content/40 mt-0.5">{sub}</p>}
           </div>
         </div>

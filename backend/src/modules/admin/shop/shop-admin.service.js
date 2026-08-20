@@ -7,37 +7,21 @@ import * as repo from './shop-admin.repository.js';
 // ==================== каталог (SEO, вся организация) ====================
 
 export async function listItemsForOrg(organizationId, branchId) {
-  return repo.findItemsByOrg(organizationId, branchId);
+  return repo.findCatalogByOrg(organizationId);
 }
 
 export async function createItemForOrg(organizationId, body) {
-  const branch = await repo.findBranchInOrg(body.branchId, organizationId);
-  if (!branch) throw new AppError(404, 'Branch not found in your organization');
-  return insertItem({
-    branchId: body.branchId,
-    name: body.name,
-    imageKey: body.imageKey,
-    coinPrice: body.coinPrice,
-    stock: body.stock ?? 0,
-  });
+  return withTransaction((client) => repo.createCatalogForAllBranches(organizationId, body, client));
 }
 
 export async function updateItemForOrg(organizationId, itemId, patch) {
-  const item = await repo.findItemBranchOrg(itemId);
-  if (!item || item.organization_id !== organizationId) {
-    throw new AppError(404, 'Item not found in your organization');
-  }
-  const updated = await patchItem(itemId, item.branch_id, patch);
+  const updated = await withTransaction((client) => repo.updateCatalogForOrg(organizationId, itemId, patch, client));
   if (!updated) throw new AppError(404, 'Item not found');
   return updated;
 }
 
 export async function setItemArchivedForOrg(organizationId, itemId, archived) {
-  const item = await repo.findItemBranchOrg(itemId);
-  if (!item || item.organization_id !== organizationId) {
-    throw new AppError(404, 'Item not found in your organization');
-  }
-  const updated = await repo.setItemArchived(itemId, item.branch_id, archived);
+  const updated = await withTransaction((client) => repo.archiveCatalogForOrg(organizationId, itemId, archived, client));
   if (!updated) throw new AppError(404, 'Item not found');
   return updated;
 }
@@ -45,7 +29,12 @@ export async function setItemArchivedForOrg(organizationId, itemId, archived) {
 // ==================== инвентарь и заказы (admin/branch_manager, свой филиал) ====================
 
 export async function listItemsForBranch(branchId) {
+  await repo.syncCatalogForBranch(branchId);
   return repo.findItemsByBranch(branchId);
+}
+
+export async function createItemForBranch(branchId, body) {
+  return insertItem({ branchId, ...body });
 }
 
 /** Пополнение остатка — единственное поле, которое может трогать филиал (цену/название держит SEO). */

@@ -343,6 +343,12 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
   if (path === '/telegram/bind-token') {
     return { data: { token: 'mock-bind-token', expiresIn: 300, deepLink: 'https://t.me/levelup_academy_bot?start=mock-bind-token' } };
   }
+  if (path === '/telegram/status') {
+    return { data: { configured: true, linked: false, username: null, firstName: null, linkedAt: null } };
+  }
+  if (path === '/telegram/unlink') {
+    return { data: { unlinked: true } };
+  }
 
   // NOTIFICATIONS — FE-PARENT-PAGINATION: курсор `before` через query-string
   if (path.startsWith('/parent/notifications')) {
@@ -490,9 +496,13 @@ export const api = {
   chatMessages: (token, roomKey) =>
     request(`/chat/${encodeURIComponent(roomKey)}/messages`, { token }),
   chatThreads: (token) => request('/chat/my-threads', { token }),
+  chatMarkRead: (token, roomKey) =>
+    request(`/chat/${encodeURIComponent(roomKey)}/read`, { method: 'POST', token }),
 
   // TG-FRONT
   telegramBindToken: (token) => request('/telegram/bind-token', { method: 'POST', token }),
+  telegramStatus: (token) => request('/telegram/status', { token }),
+  telegramUnlink: (token) => request('/telegram/unlink', { method: 'DELETE', token }),
 
   notifications: (token, before) =>
     request(`/parent/notifications${before ? `?before=${encodeURIComponent(before)}` : ''}`, { token }),

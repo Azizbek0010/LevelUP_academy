@@ -10,7 +10,7 @@ import { AppError } from '../../../utils/AppError.js';
 /** Сырые поля группы, нужные фичам домена (branch_id — для homework/tests/attendance). */
 export async function getGroupOrThrow(groupId, db = pool) {
   const { rows: [group] } = await db.query(
-    `SELECT id, branch_id, mentor_id, name, subject, monthly_price, is_archived
+    `SELECT id, branch_id, mentor_id, name, subject, monthly_price, is_archived, schedule
        FROM groups
       WHERE id = $1 AND deleted_at IS NULL`,
     [groupId],

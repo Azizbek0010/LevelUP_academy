@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Home, BookOpen, ShoppingBag, Trophy, LogOut, Send, Bell, BellOff, Star, ChevronDown,
-  CalendarClock,
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { Avatar, C, StreakFlame, CountUp, LevelBar, levelFromCoins, EmptyState, Modal } from './ui.jsx';
@@ -36,12 +35,14 @@ const LESSON_PATHS = ['/study', '/lessons', '/tests', '/homework', '/videos'];
 
 /* Меню строится из словаря: подписи пунктов живут в i18n (nav.*),
    маршруты и иконки — здесь. */
-function buildNav(t) {
+function buildNav(t, orgFeatures) {
   return {
     main: [{ to: '/student', label: t.nav.home, icon: Home, end: true }],
     lessons: { to: '/study', label: t.nav.study, icon: BookOpen },
+    // Karis (13.08.2026): Shop — управляемая Main Admin'ом фича, партнёру
+    // может быть не включена — тогда пункта в меню нет вообще.
     rest: [
-      { to: '/shop', label: t.nav.shop, icon: ShoppingBag },
+      ...(orgFeatures?.shop ? [{ to: '/shop', label: t.nav.shop, icon: ShoppingBag }] : []),
       { to: '/leaderboard', label: t.nav.rating, icon: Trophy },
     ],
   };
@@ -85,42 +86,12 @@ function Counter({ icon: Icon, value, fill, title }) {
   );
 }
 
-/* K-PAY: месячный платёж — до 5-го числа. СУММУ долга ребёнку НЕ показываем
-   (пугает и отвлекает) — только сколько дней осталось. ≤5 дней = янтарь,
-   остальное время = зелёный: ребёнку остаётся лишь напомнить родителям. */
-function daysUntilPayment() {
-  const now = new Date();
-  const due = new Date(now.getFullYear(), now.getMonth(), 5, 23, 59, 59);
-  if (now > due) due.setMonth(due.getMonth() + 1);
-  return Math.ceil((due - now) / 86_400_000);
-}
-
-function DebtChip({ days }) {
-  const { t } = useI18n();
-  const near = days <= 5;
-  const soft = near
-    ? { bg: `${C.warn}24`, line: `${C.warn}4d`, icon: `${C.warn}40`, fg: '#F0C96B' }
-    : { bg: `${C.lime}24`, line: `${C.lime}4d`, icon: `${C.lime}40`, fg: '#BDE8A6' };
-  return (
-    <span
-      className="inline-flex items-center gap-2 h-10 pl-1.5 pr-3.5 rounded-full shrink-0"
-      title={t.header.debtTitle}
-      style={{ background: soft.bg, border: `1px solid ${soft.line}` }}
-    >
-      <span className="w-7 h-7 rounded-full grid place-items-center shrink-0" style={{ background: soft.icon }}>
-        <CalendarClock size={14} strokeWidth={2.4} color={soft.fg} />
-      </span>
-      <span className="k-num text-[14px] font-bold" style={{ color: soft.fg }}>
-        {days} {t.header.days(days)}
-      </span>
-    </span>
-  );
-}
-
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const { lang, setLanguage, t } = useI18n();
-  const nav = buildNav(t);
+  const [hasAnnouncements, setHasAnnouncements] = useState(false);
+  const nav = buildNav(t, user?.orgFeatures);
+  if (hasAnnouncements) nav.rest.unshift({ to: '/student/announcements', label: 'Anonslar', icon: Bell });
   const location = useLocation();
   const stats = useHeaderStats();
   const streak = useDailyStreak();
@@ -132,6 +103,12 @@ export default function Layout() {
   const [showProfile, setShowProfile] = useState(false);
   const notifRef = useRef(null);
   const profileRef = useRef(null);
+
+  useEffect(() => {
+    let alive = true;
+    api.announcements().then((r) => { if (alive) setHasAnnouncements((r.announcements || []).length > 0); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     const onPointerDown = (e) => {
@@ -169,7 +146,7 @@ export default function Layout() {
 
   const loadTgStatus = async () => {
     try {
-      const res = await api.telegramStatus();
+      const res = await api.telegramStatus(token);
       setTg(res.data);
     } catch {
       // Статус — украшение: не смогли прочитать, показываем кнопку как есть.
@@ -185,7 +162,7 @@ export default function Layout() {
     setTgBusy(true);
     setTgError('');
     try {
-      const res = await api.telegramBindToken();
+      const res = await api.telegramBindToken(token);
       window.open(res.data.deepLink, '_blank', 'noopener,noreferrer');
       // Бот подтверждает привязку не мгновенно — перечитываем через паузу,
       // чтобы кнопка сама переключилась на «привязан», без перезагрузки страницы.
@@ -213,7 +190,7 @@ export default function Layout() {
     setTgBusy(true);
     setTgError('');
     try {
-      await api.telegramUnlink();
+      await api.telegramUnlink(token);
       await loadTgStatus();
       closeTgModal();
     } catch {
@@ -244,10 +221,6 @@ export default function Layout() {
           <div className="hidden sm:block">
             <StreakFlame days={streak} />
           </div>
-          {/* Оплата — ВСЕГДА на виду, но без суммы: только сколько дней осталось
-             до месячного платежа (зелёный, янтарь за 5 дней). На телефоне чип
-             вместо монет, на десктопе — рядом. */}
-          <DebtChip days={daysUntilPayment()} />
           <div className="hidden sm:block">
             <Counter icon={Star} fill={C.lime} value={stats ? stats.coins : '···'} title={t.header.coins} />
           </div>
@@ -322,8 +295,9 @@ export default function Layout() {
                       аккаунта, и место ей рядом с выходом, а не под меню разделов.
                       Скрыт целиком, когда сервер отвечает configured: false —
                       предлагать действие, которое заведомо вернёт ошибку, хуже,
-                      чем не предлагать вовсе. */}
-                  {tg?.configured !== false && (
+                      чем не предлагать вовсе. Плюс (Karis, 13.08.2026) — Main
+                      Admin мог не включить Telegram-интеграцию партнёру вообще. */}
+                  {tg?.configured !== false && user?.orgFeatures?.telegramIntegration && (
                     <>
                       <button
                         role="menuitem"

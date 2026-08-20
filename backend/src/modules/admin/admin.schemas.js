@@ -119,8 +119,7 @@ export const updateMentorSchema = z
     firstName: name(),
     lastName: name(),
     phone,
-    grade: z.enum(['junior', 'middle', 'senior']).nullable(),
-  })
+  }).strict()
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
 
@@ -234,7 +233,23 @@ export const createGroupFeedbackSchema = z.object({
 // ---------- объявления ----------
 // Без groupId — рассылка всем активным студентам/родителям филиала.
 export const createAnnouncementSchema = z.object({
-  title: z.string().trim().min(1).max(160),
-  message: z.string().trim().min(1).max(2000),
-  groupId: z.string().uuid('Invalid groupId').optional(),
+  title: z.string().trim().min(1).max(200),
+  body: z.string().trim().min(1).max(4000),
+  targetType: z.enum(['all-students', 'all-parents', 'all-families']).default('all-families'),
+  expiresAt: z.string().datetime(),
+  imageUrl: z.string().url().max(1000).nullable().optional(),
+  imageKey: z.string().max(600).nullable().optional(),
+});
+export const improveAnnouncementSchema = z.object({
+  title: z.string().trim().max(200).default(''),
+  body: z.string().trim().max(4000).default(''),
+  targetType: z.enum(['all-students', 'all-parents', 'all-families']).default('all-families'),
+  expiresAt: z.string().datetime(),
+  details: z.object({
+    eventDateTime: z.string().max(80).optional().default(''),
+    location: z.string().max(300).optional().default(''),
+    mapUrl: z.string().max(500).optional().default(''),
+    contact: z.string().max(200).optional().default(''),
+    extra: z.string().max(1000).optional().default(''),
+  }).optional().default({}),
 });

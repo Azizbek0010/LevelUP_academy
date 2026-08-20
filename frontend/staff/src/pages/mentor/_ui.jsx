@@ -65,7 +65,7 @@ export function SearchInput({ value, onChange, placeholder = 'Qidirish...', clas
 export function EmptyState({ icon: Icon = Inbox, title, hint, action }) {
   return (
     <div className="flex flex-col items-center justify-center text-center px-6 py-14">
-      <span className="w-14 h-14 rounded-2xl bg-base-200 text-base-content/35 grid place-items-center mb-4">
+      <span className="w-14 h-14 rounded-lg bg-base-200 text-base-content/35 grid place-items-center mb-4">
         <Icon size={26} />
       </span>
       <p className="text-sm font-semibold text-base-content/70">{title}</p>
@@ -102,7 +102,7 @@ export function GroupSelect({ groups, value, onChange, label = "Guruh" }) {
 /* ── Карточка-панель ──────────────────────────────────────────────────── */
 export function Panel({ title, icon: Icon, action, children, bodyClass = 'p-4' }) {
   return (
-    <section className="card bg-base-100">
+    <section className="card bg-base-100 border border-base-200/60 shadow-sm">
       {title && (
         <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-base-200">
           <h2 className="text-sm font-bold flex items-center gap-2 text-base-content/80">
@@ -214,12 +214,12 @@ export function Kpi({ Icon, title, value, unit, tone = 'neutral', trend, trendLa
 
   if (to) {
     return (
-      <Link to={to} className="card bg-base-100 card-hover-premium hover:border-primary/40 block">
+      <Link to={to} className="card bg-base-100 border border-base-200/60 shadow-sm card-hover-premium hover:border-primary/40 block">
         {body}
       </Link>
     );
   }
-  return <div className="card bg-base-100">{body}</div>;
+  return <div className="card bg-base-100 border border-base-200/60 shadow-sm">{body}</div>;
 }
 
 /* ── Скелет строки списка ─────────────────────────────────────────────── */

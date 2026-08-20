@@ -3,6 +3,7 @@ import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
 import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
+import { requireOrgFeature } from '../../middlewares/requireOrgFeature.js';
 import {
   listExpensesQuery,
   listIncomeQuery,
@@ -216,7 +217,7 @@ router.get('/telegram/status', ctrl.telegramStatus);
  *       403: { $ref: '#/components/responses/Forbidden' }
  *       503: { description: Telegram is not configured on this server }
  */
-router.post('/telegram/bind-token', ctrl.createTelegramBindToken);
+router.post('/telegram/bind-token', requireOrgFeature('telegram_integration'), ctrl.createTelegramBindToken);
 
 /**
  * @openapi

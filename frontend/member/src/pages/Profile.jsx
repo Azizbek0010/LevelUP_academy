@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
 import PageHeader from '../components/PageHeader.jsx';
@@ -33,14 +33,42 @@ export default function Profile() {
   const [notifyPush, toggleNotifyPush] = usePreference('pref_notify_push', true);
   const [chatSound, toggleChatSound] = usePreference('pref_chat_sound', false);
 
-  const [tg, setTg] = useState({ status: 'idle', deepLink: null, error: null });
+  const [tg, setTg] = useState({ status: 'loading', data: null, deepLink: null, error: null });
+  const [confirmUnlink, setConfirmUnlink] = useState(false);
+
+  const loadTelegramStatus = async () => {
+    try {
+      const res = await api.telegramStatus(token);
+      setTg((current) => ({ ...current, status: 'idle', data: res.data, error: null }));
+    } catch (err) {
+      setTg((current) => ({ ...current, status: 'error', error: err.message || 'Не удалось проверить Telegram' }));
+    }
+  };
+
+  useEffect(() => {
+    if (user?.orgFeatures?.telegramIntegration) loadTelegramStatus();
+  }, [token, user?.orgFeatures?.telegramIntegration]);
+
   const onBindTelegram = async () => {
-    setTg({ status: 'loading', deepLink: null, error: null });
+    setTg((current) => ({ ...current, status: 'loading', deepLink: null, error: null }));
     try {
       const res = await api.telegramBindToken(token);
-      setTg({ status: 'ready', deepLink: res.data.deepLink, error: null });
+      setTg((current) => ({ ...current, status: 'ready', deepLink: res.data.deepLink, error: null }));
+      window.open(res.data.deepLink, '_blank', 'noopener,noreferrer');
+      setTimeout(loadTelegramStatus, 4000);
     } catch (err) {
-      setTg({ status: 'error', deepLink: null, error: err.message || 'Не удалось получить ссылку' });
+      setTg((current) => ({ ...current, status: 'error', deepLink: null, error: err.message || 'Не удалось получить ссылку' }));
+    }
+  };
+
+  const onUnlinkTelegram = async () => {
+    setTg((current) => ({ ...current, status: 'loading', error: null }));
+    try {
+      await api.telegramUnlink(token);
+      setConfirmUnlink(false);
+      await loadTelegramStatus();
+    } catch (err) {
+      setTg((current) => ({ ...current, status: 'error', error: err.message || 'Не удалось отвязать Telegram' }));
     }
   };
 
@@ -48,11 +76,8 @@ export default function Profile() {
     <>
       <PageHeader title="Профиль" subtitle="Настройки аккаунта" />
 
-      {/* Profile Header */}
-      <div className="card bg-gradient-to-br from-sidebar to-[#1a2e12] text-white mb-6 overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full translate-y-1/3 -translate-x-1/4 blur-lg" />
-        <div className="card-body relative z-10 py-5">
+      <div className="card bg-base-100 mb-6 border-l-4 border-l-primary">
+        <div className="card-body py-5">
           <div className="flex items-center gap-4">
             <div className="relative">
               <Avatar name={`${user?.firstName} ${user?.lastName}`} size={64} />
@@ -61,12 +86,12 @@ export default function Profile() {
               </div>
             </div>
             <div>
-              <h2 className="text-xl font-extrabold">{user?.firstName} {user?.lastName}</h2>
-              <p className="text-sm opacity-50 flex items-center gap-1.5 mt-0.5">
+              <h2 className="text-xl font-semibold">{user?.firstName} {user?.lastName}</h2>
+              <p className="text-sm text-base-content/55 flex items-center gap-1.5 mt-0.5">
                 <Icon name="user-circle" className="w-4 h-4" />
                 Родитель
               </p>
-              <p className="text-xs opacity-30 mt-1 font-mono">Код: {user?.loginCode}</p>
+              <p className="text-xs text-base-content/40 mt-1 font-mono">Код: {user?.loginCode}</p>
             </div>
           </div>
         </div>
@@ -80,7 +105,7 @@ export default function Profile() {
               <Icon name="user" className="w-4 h-4 text-primary" />
               Ребёнок
             </h3>
-            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-primary/10 ring-2 ring-primary/30 mt-2">
+            <div className="flex items-center gap-3 p-3.5 rounded border border-base-300 bg-base-200/30 mt-2">
               <div className="relative">
                 <Avatar name={`${selectedChild.firstName} ${selectedChild.lastName}`} size={42} />
                 <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-base-100 flex items-center justify-center">
@@ -162,7 +187,9 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* TG-FRONT: привязка Telegram-бота */}
+      {/* TG-FRONT: привязка Telegram-бота — карточки нет вообще, если Main Admin
+          не включил Telegram-интеграцию партнёру (Karis, 13.08.2026) */}
+      {user?.orgFeatures?.telegramIntegration && (
       <div className="card bg-base-100 mb-6">
         <div className="card-body">
           <h3 className="card-title text-sm gap-2">
@@ -170,9 +197,37 @@ export default function Profile() {
             Telegram
           </h3>
           <p className="text-xs opacity-40 mt-1 mb-2">
-            Привяжите Telegram, чтобы получать напоминания об оплате и объявления от центра.
+            Привяжите Telegram, чтобы получать напоминания и входить в кабинет родителя без пароля.
           </p>
-          {tg.status !== 'ready' && (
+          {tg.status === 'loading' && !tg.data && (
+            <span className="loading loading-spinner loading-sm" />
+          )}
+          {tg.data?.linked ? (
+            <div className="rounded-xl bg-base-200/50 p-4 mt-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center">
+                  <Icon name="chat" className="w-5 h-5 text-info" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold truncate">
+                    {tg.data.username ? `@${tg.data.username}` : tg.data.firstName || 'Telegram подключён'}
+                  </p>
+                  <p className="text-xs text-success font-semibold">Подключён · вход через Telegram активен</p>
+                </div>
+              </div>
+              {confirmUnlink ? (
+                <div className="mt-4 rounded-xl bg-error/10 p-3">
+                  <p className="text-xs text-error mb-3">После отвязки уведомления и вход через Telegram перестанут работать.</p>
+                  <div className="flex gap-2">
+                    <button className="btn btn-error btn-sm flex-1 rounded-xl" onClick={onUnlinkTelegram} disabled={tg.status === 'loading'}>Да, отвязать</button>
+                    <button className="btn btn-ghost btn-sm flex-1 rounded-xl" onClick={() => setConfirmUnlink(false)}>Отмена</button>
+                  </div>
+                </div>
+              ) : (
+                <button className="btn btn-outline btn-error btn-sm rounded-xl mt-4" onClick={() => setConfirmUnlink(true)}>Отвязать Telegram</button>
+              )}
+            </div>
+          ) : tg.status !== 'loading' && tg.status !== 'ready' && (
             <button
               className="btn btn-primary btn-sm rounded-xl gap-2 w-fit"
               onClick={onBindTelegram}
@@ -185,7 +240,7 @@ export default function Profile() {
           {tg.status === 'error' && (
             <p className="text-xs text-error mt-2">{tg.error}</p>
           )}
-          {tg.status === 'ready' && (
+          {tg.status === 'ready' && !tg.data?.linked && (
             <a
               href={tg.deepLink}
               target="_blank"
@@ -198,6 +253,7 @@ export default function Profile() {
           )}
         </div>
       </div>
+      )}
 
       {/* Logout */}
       <div className="card bg-base-100">

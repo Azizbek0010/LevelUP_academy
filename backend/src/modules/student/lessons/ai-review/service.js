@@ -3,8 +3,9 @@ import { extractSubmission } from './extractor.js';
 import { reviewCode } from './groq.client.js';
 import * as repo from '../lessons.repository.js';
 
-// В БД нет поля с языком студента (i18n кабинета — только localStorage на
-// фронте, см. member/src/i18n/index.jsx). RU — дефолт того же модуля.
+// XOB (12.08): язык студента теперь есть в БД (users.preferred_language,
+// миграция add-student-preferred-language) — используем его; пока студент
+// ничего не выбрал (или ещё не подтянул фронт) — тот же дефолт, что раньше.
 const DEFAULT_LANG = 'ru';
 
 function deterministicTestsReview(lang) {
@@ -50,6 +51,7 @@ export async function processSubmission(submissionId) {
     return;
   }
 
+  const lang = submission.student_language || DEFAULT_LANG;
   const attempts = (submission.review_attempts ?? 0) + 1;
   await repo.saveReview(submissionId, { review: null, reviewSource: null, reviewStatus: 'processing', reviewAttempts: attempts });
 
@@ -63,16 +65,16 @@ export async function processSubmission(submissionId) {
   // "что-то было, но не прочиталось" (файл/ссылка), 'tests' — "нечего читать".
   if (!bundle) {
     const review = reviewSource === 'unreadable'
-      ? { score: null, praise: null, growth_area: null, tips: [], summary: DEFAULT_LANG === 'uz'
+      ? { score: null, praise: null, growth_area: null, tips: [], summary: lang === 'uz'
         ? "Kodni o'qib bo'lmadi. Matn yuboring yoki GitHub'ni public qiling — mentoring ham tekshiradi."
         : 'Не удалось прочитать код. Пришлите текстом или откройте GitHub-репозиторий — работу также проверит ментор.' }
-      : deterministicTestsReview(DEFAULT_LANG);
+      : deterministicTestsReview(lang);
     await repo.saveReview(submissionId, { review, reviewSource, reviewStatus: 'done', reviewAttempts: attempts });
     return;
   }
 
   try {
-    const review = await reviewCode(bundle, DEFAULT_LANG, taskDescription);
+    const review = await reviewCode(bundle, lang, taskDescription);
     await repo.saveReview(submissionId, { review, reviewSource, reviewStatus: 'done', reviewAttempts: attempts });
   } catch (err) {
     logger.error({ err, submissionId, attempts }, 'ai-review: Groq call failed');

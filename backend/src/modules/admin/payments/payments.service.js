@@ -4,7 +4,19 @@ import { AppError } from '../../../utils/AppError.js';
 import { parsePagination, buildPageMeta } from '../../../utils/pagination.js';
 import { buildObjectKey, getUploadUrl as getS3UploadUrl } from '../../../config/s3.js';
 import { notificationQueue } from '../../../queues/notification.queue.js';
+import { logger } from '../../../config/logger.js';
 import * as repo from './payments.repository.js';
+
+async function enqueuePaymentNotification(data) {
+  try {
+    await notificationQueue.add('payment.received', data);
+  } catch (err) {
+    // The payment is already committed at this point. A temporary Redis/queue
+    // failure must not make the cashier think that the payment was rejected
+    // and submit the same money a second time.
+    logger.error({ err, invoiceId: data.invoiceId }, 'Failed to enqueue payment notification');
+  }
+}
 
 function mapInvoice(i) {
   return {
@@ -90,7 +102,9 @@ export async function createAdHocPayment(scope, actorId, body) {
   });
 
   // уведомление — строго ПОСЛЕ commit, иначе можно уведомить об оплате, которая откатилась
-  await notificationQueue.add('payment.received', {
+  // Notification transport is best-effort. Redis being unavailable must not
+  // keep the cashier modal spinning after the PostgreSQL transaction committed.
+  void enqueuePaymentNotification({
     studentId,
     invoiceId: invoice.id,
     amount: totalAmount,
@@ -123,9 +137,8 @@ export async function payInvoice(scope, actorId, invoiceId, body) {
 
     const remaining = Number(invoice.total_amount) - Number(invoice.paid_amount);
     const partsSum = parts.reduce((sum, p) => sum + p.amount, 0);
-    if (partsSum > remaining + 0.005) {
-      throw new AppError(422, `Parts sum (${partsSum}) exceeds remaining balance (${remaining})`);
-    }
+    const appliedAmount = Math.min(partsSum, remaining);
+    const creditAmount = Math.max(partsSum - remaining, 0);
 
     const txRows = await recordParts(client, {
       branchId: scope.branchId,
@@ -133,26 +146,33 @@ export async function payInvoice(scope, actorId, invoiceId, body) {
       parts,
       processedBy: actorId,
     });
-    const updatedInvoice = await repo.applyInvoicePayment(invoiceId, partsSum, client);
-    await repo.decrementDebt(invoice.student_id, partsSum, client);
+    const updatedInvoice = await repo.applyInvoicePayment(invoiceId, appliedAmount, client);
+    await repo.decrementDebt(invoice.student_id, appliedAmount, client);
+    if (creditAmount > 0) await repo.addPaymentBalance(invoice.student_id, creditAmount, client);
 
     return {
       invoice: updatedInvoice,
       transactions: txRows,
       studentId: invoice.student_id,
       amount: partsSum,
+      creditAmount,
       methods: parts.map((p) => p.method),
     };
   });
 
-  await notificationQueue.add('payment.received', {
+  // Return the successful payment immediately; Telegram/Redis runs in background.
+  void enqueuePaymentNotification({
     studentId: result.studentId,
     invoiceId: result.invoice.id,
     amount: result.amount,
     methods: result.methods,
   });
 
-  return { invoice: mapInvoice(result.invoice), transactions: result.transactions.map(mapTransaction) };
+  return {
+    invoice: mapInvoice(result.invoice),
+    transactions: result.transactions.map(mapTransaction),
+    creditAmount: result.creditAmount,
+  };
 }
 
 // ==================== ВОЗВРАТ / АННУЛИРОВАНИЕ ====================
@@ -233,6 +253,8 @@ export async function listInvoices(branchId, query) {
       source: i.source,
       student: `${i.student_first} ${i.student_last}`,
       group: i.group_name,
+      acceptedBy: [i.collector_first, i.collector_last].filter(Boolean).join(' ') || null,
+      acceptedAt: i.payment_accepted_at,
       createdAt: i.created_at,
     })),
     meta: buildPageMeta(total, page, limit),

@@ -15,6 +15,30 @@ export function SkeletonKpis({ count = 4, className = 'grid-cols-2 lg:grid-cols-
   );
 }
 
+export function SkeletonKpisStrict({ count = 6 }) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className={`
+          animate-scale-in stagger-${i + 1}
+          bg-white
+          border border-[var(--border-subtle)]
+          rounded-[var(--radius-card)]
+          p-4 md:p-5
+          shadow-[var(--shadow-card)]
+        `}>
+          <div className="flex items-center justify-between">
+            <div className="skeleton w-10 h-10 rounded-[var(--radius-tight)]" />
+          </div>
+          <div className="skeleton h-3 w-20 mt-3" />
+          <div className="skeleton h-8 w-24 mt-1" />
+          <div className="skeleton h-3 w-16 mt-1" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function SkeletonTable({ rows = 5, cols = 5 }) {
   return (
     <div className="card" style={{ background: 'var(--surface)' }}><div className="card-body">

@@ -56,10 +56,12 @@ function useMediaQuery(query) {
  */
 const superNav = [
   { to: '/',           label: 'Дашборд',    labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/people',     label: 'Люди и клиенты', Icon: HiOutlineUserGroup },
   { type: 'super-branches' },
   { to: '/admins',     label: 'Сотрудники', labelKey: 'nav.admins', Icon: HiOutlineUsers },
   // Финансы владельца центра — вся организация (доход/расход/зарплаты/отчёты)
   { to: '/finance',    label: 'Финансы',    labelKey: 'nav.finance', Icon: HiOutlineCurrencyDollar },
+  { to: '/org-expenses', label: 'Расходы', Icon: HiOutlineReceiptPercent },
   {
     type: 'group',
     key: 'analytics',
@@ -98,7 +100,9 @@ const superNav = [
 ];
 
 const adminNav = [
+  { to: '/announcements', label: 'Anonslar', labelKey: 'nav.announcements', Icon: HiOutlinePresentationChartLine },
   { to: '/',          label: 'Дашборд',     labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/people',    label: 'Клиентская база', Icon: HiOutlineUserGroup },
   { to: '/students',  label: 'Студенты',    labelKey: 'nav.students', Icon: HiOutlineAcademicCap },
   { to: '/groups',    label: 'Группы',      labelKey: 'nav.groups', Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Менторы',     labelKey: 'nav.mentors', Icon: HiOutlineUserCircle },
@@ -119,10 +123,13 @@ const adminNav = [
  * филиалом), плюс собственный обзорный блок (Filial/Daromad/Hisobotlar).
  */
 const branchManagerNav = [
+  { to: '/announcements', label: 'Anonslar', labelKey: 'nav.announcements', Icon: HiOutlinePresentationChartLine },
   { to: '/',          label: 'Boshqaruv',  labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/people',    label: 'Mijozlar bazasi', Icon: HiOutlineUserGroup },
   { to: '/students',  label: 'Studentlar', labelKey: 'nav.students', Icon: HiOutlineAcademicCap },
   { to: '/groups',    label: 'Guruhlar',   labelKey: 'nav.groups', Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Mentorlar',  labelKey: 'nav.mentors', Icon: HiOutlineUserCircle },
+  { to: '/chat',      label: 'Chat',        labelKey: 'nav.chat', Icon: HiOutlineChatBubbleLeftRight },
   { to: '/shop',      label: 'Do\'kon',    Icon: HiOutlineGift },
   { to: '/schedule',  label: 'Jadval',     Icon: HiOutlineCalendarDays },
   { to: '/branch',    label: 'Filial',     labelKey: 'nav.branch', Icon: HiOutlineBuildingOffice2 },
@@ -130,6 +137,10 @@ const branchManagerNav = [
   { to: '/income',    label: 'Daromad',    labelKey: 'nav.income', Icon: HiOutlineWallet },
   { to: '/expenses',  label: 'Xarajatlar', labelKey: 'nav.expenses', Icon: HiOutlineReceiptPercent },
   { to: '/reports',   label: 'Hisobotlar', labelKey: 'nav.reports', Icon: HiOutlineChartBar },
+];
+
+const employeeNav = [
+  { to: '/chat', label: 'Chat', labelKey: 'nav.chat', Icon: HiOutlineChatBubbleLeftRight },
 ];
 
 /**
@@ -144,12 +155,14 @@ const branchManagerNav = [
  */
 const mentorNav = [
   { to: '/',     label: 'Дашборд',  labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/people', label: 'Мои ученики', Icon: HiOutlineUserGroup },
   { type: 'mentor-groups' },
   { to: '/chat', label: 'Чат', labelKey: 'nav.chat', Icon: HiOutlineChatBubbleLeftRight },
 ];
 
 const methodistNav = [
   { to: '/',                   label: 'Дашборд',      labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/people',             label: 'База участников', Icon: HiOutlineUserGroup },
   { to: '/methodist/types',    label: 'Типы обучения', labelKey: 'nav.methodistTypes', Icon: HiOutlineBookOpen },
   { to: '/methodist/analytics',label: 'Аналитика',    labelKey: 'nav.analytics', Icon: HiOutlineArrowTrendingUp },
 ];
@@ -162,6 +175,7 @@ const methodistNav = [
  */
 const financeManagerNav = [
   { to: '/',          label: 'Boshqaruv',   labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
+  { to: '/people',    label: 'Mijozlar bazasi', Icon: HiOutlineUserGroup },
   { to: '/finance',   label: 'Hisobot',     labelKey: 'nav.report', Icon: HiOutlinePresentationChartLine },
   { to: '/finance/income',    label: 'Daromad',   labelKey: 'nav.income', Icon: HiOutlineWallet },
   { to: '/finance/expenses',  label: 'Xarajatlar', labelKey: 'nav.expenses', Icon: HiOutlineReceiptPercent },
@@ -170,11 +184,27 @@ const financeManagerNav = [
   { to: '/finance/settings',  label: 'Sozlamalar', labelKey: 'nav.settings', Icon: HiOutlineCog },
 ];
 
+// Пункты, скрываемые целиком, если Main Admin не включил фичу партнёру
+// (Karis, 13.08.2026: не только спрятать в sidebar, но и route guard ниже
+// не пускает по прямой ссылке — см. FeatureGuard).
+const FEATURE_GATED_PATHS = { '/shop': 'shop', '/shop-catalog': 'shop' };
+
+function filterNavByFeatures(nav, orgFeatures) {
+  const allowed = (to) => {
+    const key = FEATURE_GATED_PATHS[to];
+    return !key || Boolean(orgFeatures?.[key]);
+  };
+  return nav
+    .filter((item) => allowed(item.to))
+    .map((item) => (item.items ? { ...item, items: item.items.filter((sub) => allowed(sub.to)) } : item));
+}
+
 const ROLE_NAV = {
   seo: superNav,
   admin: adminNav,
   branch_manager: branchManagerNav,
   finance_manager: financeManagerNav,
+  employee: employeeNav,
   mentor: mentorNav,
   methodist: methodistNav,
 };
@@ -184,6 +214,7 @@ const ROLE_TITLE = {
   admin: 'Администратор',
   branch_manager: 'Branch Manager',
   finance_manager: 'Finance Manager',
+  employee: 'Сотрудник',
   mentor: 'Ментор',
   methodist: 'Методист',
 };
@@ -193,6 +224,7 @@ const ROLE_COLORS = {
   admin: '#3b82f6',
   branch_manager: '#0ea5e9',
   finance_manager: '#0d9488',
+  employee: '#64748b',
   mentor: '#3b82f6',
   methodist: '#f59e0b',
 };
@@ -465,8 +497,8 @@ function Sidebar({
   hoverProps = {},    // обработчики наведения — только у десктопного экземпляра
   overlaying = false, // раскрыт наведением поверх контента
 }) {
-  const nav = ROLE_NAV[role] || [];
   const { user } = useAuth();
+  const nav = filterNavByFeatures(ROLE_NAV[role] || [], user?.orgFeatures);
   const location = useLocation();
   const { t } = useT();
 
@@ -668,7 +700,7 @@ function Notifications() {
   const ref = useRef(null);
 
   // Чат есть только у ментора и админа; у остальных ролей эндпоинт ответит 403.
-  const hasChat = user?.role === 'mentor' || user?.role === 'admin';
+  const hasChat = ['mentor', 'admin', 'branch_manager', 'employee'].includes(user?.role);
   const { data } = useChatContacts({ enabled: hasChat });
   const contacts = data?.data ?? [];
 

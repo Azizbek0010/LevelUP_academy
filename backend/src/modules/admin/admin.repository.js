@@ -129,19 +129,49 @@ export function softDeleteExpense(id, branchId, client = pool) {
 
 /** Создание user (student ИЛИ parent) с логин-кодом. Бросает 23505 при конфликте. */
 export function insertCodeUser(
-  { orgId, branchId, role, firstName, lastName, phone, loginCode, passwordHash },
+  { orgId, branchId, role, firstName, lastName, phone, loginCode, passwordHash, passwordEncrypted },
   client = pool,
 ) {
   // parent — уровень организации, но заводится в филиале, храним branch_id для скоупа админа
   return client
     .query(
       `INSERT INTO users
-         (organization_id, branch_id, role, first_name, last_name, phone, login_code, password_hash)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         (organization_id, branch_id, role, first_name, last_name, phone, login_code, password_hash, password_encrypted)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id, role, first_name, last_name, phone, login_code`,
-      [orgId, branchId, role, firstName, lastName, phone, loginCode, passwordHash],
+      [orgId, branchId, role, firstName, lastName, phone, loginCode, passwordHash, passwordEncrypted ?? null],
     )
     .then((r) => r.rows[0]);
+}
+
+/** Родитель конкретного студента, в своём филиале — логин-код + обратимый пароль для QR-модалки. */
+export function findStudentParentInBranch(studentId, branchId, client = pool) {
+  return client
+    .query(
+      `SELECT p.id, p.login_code, p.password_encrypted
+         FROM student_profiles sp
+         JOIN users p ON p.id = sp.parent_id
+        WHERE sp.user_id = $1 AND sp.branch_id = $2 AND p.role = 'parent' AND p.deleted_at IS NULL`,
+      [studentId, branchId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function setParentPassword(parentId, passwordHash, client = pool) {
+  return client
+    .query(
+      `UPDATE users SET password_hash = $2, updated_at = now()
+        WHERE id = $1 AND role = 'parent' AND deleted_at IS NULL RETURNING id`,
+      [parentId, passwordHash],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/** Обратимо-зашифрованная копия пароля родителя — только для admin-просмотра. */
+export function setParentPasswordEncrypted(parentId, passwordEncrypted, client = pool) {
+  return client
+    .query(`UPDATE users SET password_encrypted = $2, updated_at = now() WHERE id = $1`, [parentId, passwordEncrypted])
+    .then(() => undefined);
 }
 
 export function insertStudentProfile(
@@ -651,11 +681,15 @@ export function listGroupsForSchedule(branchId, client = pool) {
   return client
     .query(
       `SELECT g.id, g.name, g.subject, g.schedule, g.room_id, r.name AS room_name,
-              g.mentor_id, m.first_name AS mentor_first, m.last_name AS mentor_last
+              g.mentor_id, m.first_name AS mentor_first, m.last_name AS mentor_last,
+              g.created_at,
+              count(gs.student_id)::int AS student_count
          FROM groups g
          JOIN users m ON m.id = g.mentor_id
          LEFT JOIN rooms r ON r.id = g.room_id
+         LEFT JOIN group_students gs ON gs.group_id = g.id AND gs.left_at IS NULL
         WHERE g.branch_id = $1 AND g.deleted_at IS NULL AND g.is_archived = false
+        GROUP BY g.id, r.name, m.first_name, m.last_name
         ORDER BY g.created_at`,
       [branchId],
     )

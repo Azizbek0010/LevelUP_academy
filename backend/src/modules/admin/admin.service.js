@@ -1,12 +1,14 @@
 import argon2 from 'argon2';
-import { withTransaction } from '../../config/db.js';
+import { withTransaction, pool } from '../../config/db.js';
 import { AppError } from '../../utils/AppError.js';
 import { parsePagination, buildPageMeta } from '../../utils/pagination.js';
 import { genLoginCode, genNumericPassword } from '../auth/credentials.js';
 import { encryptPassword, decryptPassword } from '../../utils/credentialCrypto.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
 import { getOrCreateQrToken, regenerateQrToken } from '../auth/qr-login.service.js';
+import { isFeatureEnabledForOrg } from '../../shared/orgFeatures.js';
 import * as repo from './admin.repository.js';
+import { createProratedInvoice } from '../billing/billing.service.js';
 import * as roomsRepo from './rooms/rooms.repository.js';
 
 // Reuse: davomat и ДЗ живут в общих таблицах (attendance / homework), админская
@@ -16,6 +18,38 @@ import * as attendanceRepo from '../mentor/attendance/attendance.repository.js';
 import * as homeworkRepo from '../homework/homework.repository.js';
 import { emitTo } from '../../sockets/io.js';
 import { attendanceRoom } from '../../sockets/attendance.js';
+import { GroupBindTokenService } from '../telegram/group-bind-token.service.js';
+import { sendToGroupParentChat } from '../telegram/groupNotify.js';
+import { redis } from '../../config/redis.js';
+import { env } from '../../config/env.js';
+
+const groupBindTokens = new GroupBindTokenService({ redis });
+const attendanceCorrectionTimers = new Map();
+const ATTENDANCE_NOTIFY_DELAY_MS = 2 * 60 * 1000;
+const ATTENDANCE_STATUS_LABELS = {
+  present: '✅ keldi',
+  late: '✅ kechikib keldi',
+  absent: '❌ kelmadi',
+  excused: '❌ sababli kelmadi',
+};
+
+function scheduleAttendanceCorrectionNotify(branchId, groupId, lessonDate) {
+  const key = `${groupId}:${lessonDate}`;
+  clearTimeout(attendanceCorrectionTimers.get(key));
+  const timer = setTimeout(async () => {
+    attendanceCorrectionTimers.delete(key);
+    try {
+      const finalRows = await getGroupAttendance(branchId, groupId, lessonDate);
+      const lines = finalRows.map((r) =>
+        `${ATTENDANCE_STATUS_LABELS[r.status] || '❌ belgilanmagan'} — ${r.studentName}`).join('\n');
+      await sendToGroupParentChat(groupId, `<b>📋 Davomat o'zgartirildi — ${lessonDate}</b>\n\n${lines}`);
+    } catch {
+      // Attendance stays saved even when Telegram is temporarily unavailable.
+    }
+  }, ATTENDANCE_NOTIFY_DELAY_MS);
+  timer.unref?.();
+  attendanceCorrectionTimers.set(key, timer);
+}
 
 const hash = (pwd) => argon2.hash(pwd, { type: argon2.argon2id });
 
@@ -131,11 +165,23 @@ export async function createStudent(scope, body) {
     if (group.is_archived) throw new AppError(409, 'Group is archived');
   }
 
+  // Main Admin включает "кабинет родителя" организации отдельным тумблером
+  // (parent_panel, см. auth.service.js:assertOrgAccessible). Karis 20.08.2026:
+  // когда фича включена, родитель заводится ВСЕГДА вместе со студентом —
+  // это не опциональная галочка админа, а обязательная часть формы (телефон
+  // родителя всё равно нужен для QR/уведомлений). Когда фича выключена,
+  // родителя не заводим вообще, даже если body.parent зачем-то пришёл —
+  // otish iloji bolmasin: не просто прячем вход, физически не создаём.
+  const parentPanelEnabled = await isFeatureEnabledForOrg(orgId, 'parent_panel');
+  if (parentPanelEnabled && !body.parent) {
+    throw new AppError(400, 'Parent name and phone are required — parent panel is enabled for your organization');
+  }
+
   return withTransaction(async (client) => {
     let parentOut;
     let parentId = null;
 
-    if (body.parent) {
+    if (parentPanelEnabled && body.parent) {
       const parentPassword = genNumericPassword(6);
       const parentUser = await insertCodeUserWithCode(client, {
         orgId,
@@ -145,6 +191,7 @@ export async function createStudent(scope, body) {
         lastName: body.parent.lastName,
         phone: body.parent.phone,
         passwordHash: await hash(parentPassword),
+        passwordEncrypted: encryptPassword(parentPassword),
       });
       parentId = parentUser.id;
       parentOut = {
@@ -238,7 +285,9 @@ export async function studentDetail(branchId, id) {
     frozenAt: s.frozen_at,
     frozenReason: s.frozen_reason,
     hasParent: Boolean(s.parent_id),
-    parent: s.parent_id ? { firstName: s.parent_first, lastName: s.parent_last, phone: s.parent_phone } : null,
+    parent: s.parent_id
+      ? { id: s.parent_id, firstName: s.parent_first, lastName: s.parent_last, phone: s.parent_phone }
+      : null,
     gender: s.gender,
     address: s.address,
     school: s.school,
@@ -316,6 +365,48 @@ export async function getStudentCredentials(branchId, id) {
     catch { password = null; } // JWT_ACCESS_SECRET сменился — старые записи не расшифровать, не 500
   }
   return { loginCode: row.login_code, password };
+}
+
+/** Родитель студента, проверенный на принадлежность филиалу admin'а — общий
+ * помощник для всех parent-credential эндпоинтов ниже. */
+async function resolveStudentParent(branchId, studentId) {
+  const row = await repo.findStudentParentInBranch(studentId, branchId);
+  if (!row) throw new AppError(404, 'Parent not found for this student in your branch');
+  return row;
+}
+
+/** Admin перевыдаёт пароль родителю — тот же принцип, что и у студента (нет forgot-password). */
+export async function regenerateParentPassword(branchId, studentId) {
+  const parent = await resolveStudentParent(branchId, studentId);
+  const password = genNumericPassword(6);
+  await repo.setParentPassword(parent.id, await hash(password));
+  await repo.setParentPasswordEncrypted(parent.id, encryptPassword(password));
+  return { id: parent.id, password };
+}
+
+/** Логин+пароль родителя для QR-модалки — расшифровываем на сервере, наружу
+ * password_encrypted как есть никогда не отдаём. */
+export async function getParentCredentials(branchId, studentId) {
+  const parent = await resolveStudentParent(branchId, studentId);
+  let password = null;
+  if (parent.password_encrypted) {
+    try { password = decryptPassword(parent.password_encrypted); }
+    catch { password = null; } // JWT_ACCESS_SECRET сменился — старые записи не расшифровать, не 500
+  }
+  return { loginCode: parent.login_code, password };
+}
+
+export async function createParentQrToken(branchId, studentId) {
+  const parent = await resolveStudentParent(branchId, studentId);
+  const token = await getOrCreateQrToken(parent.id);
+  return { token };
+}
+
+/** Перевыпуск — старый QR (сфотканный/переданный) сразу перестаёт работать. */
+export async function regenerateParentQrToken(branchId, studentId) {
+  const parent = await resolveStudentParent(branchId, studentId);
+  const token = await regenerateQrToken(parent.id);
+  return { token };
 }
 
 /** Логин-код/пароль/QR всех активных студентов группы — раздаточный PDF для admin/branch_manager. */
@@ -405,8 +496,7 @@ export async function setMentorFrozen(branchId, id, frozen) {
  * при падении второго запроса ментор остался бы с новым именем и старым
  * уровнем, и понять это по ответу было бы нельзя.
  */
-export async function updateMentor(branchId, id, body, adminId) {
-  const { grade, ...userFields } = body;
+export async function updateMentor(branchId, id, body) {
 
   try {
     await withTransaction(async (client) => {
@@ -416,12 +506,7 @@ export async function updateMentor(branchId, id, body, adminId) {
       const mentor = await repo.findMentorInBranch(id, branchId, client);
       if (!mentor) throw new AppError(404, 'Mentor not found in your branch');
 
-      if (Object.keys(userFields).length > 0) {
-        await repo.updateMentor(id, branchId, userFields, client);
-      }
-      if (grade !== undefined) {
-        await repo.upsertMentorGrade(id, grade, adminId, client);
-      }
+      await repo.updateMentor(id, branchId, body, client);
     });
   } catch (err) {
     if (err.code === '23505' && err.constraint === 'uq_users_phone') {
@@ -528,6 +613,8 @@ export async function schedule(branchId) {
       schedule: g.schedule ?? [],
       roomId: g.room_id,
       roomName: g.room_name,
+      studentCount: Number(g.student_count),
+      createdAt: g.created_at,
       mentor: { id: g.mentor_id, name: `${g.mentor_first} ${g.mentor_last}` },
     })),
   };
@@ -685,7 +772,12 @@ export async function addGroupStudent(branchId, groupId, studentId) {
   const student = await repo.findStudentInBranch(studentId, branchId);
   if (!student) throw new AppError(404, 'Student not found in your branch');
   await repo.addStudentToGroupRaw({ groupId, studentId });
-  return { groupId, studentId };
+  const invoice = await createProratedInvoice({ branchId, groupId, studentId });
+  return { groupId, studentId, invoice: invoice ? {
+    id: invoice.id, amount: Number(invoice.total_amount), paidAmount: Number(invoice.paid_amount),
+    lessonsInMonth: invoice.lessons_in_month, billableLessons: invoice.billable_lessons,
+    paymentDate: invoice.payment_date, dueDate: invoice.due_date,
+  } : null };
 }
 
 export async function removeGroupStudent(branchId, groupId, studentId) {
@@ -811,7 +903,35 @@ export async function markGroupAttendance(branchId, groupId, adminId, { lessonDa
     records: records.map((r) => ({ student_id: r.studentId, status: r.status ?? null })),
   });
 
+  // Autosave calls this endpoint repeatedly. Send one final roster two minutes
+  // after the last Admin/Branch Manager edit instead of one message per student.
+  scheduleAttendanceCorrectionNotify(branchId, groupId, lessonDate);
+
   return result;
+}
+
+export async function groupTelegramStatus(branchId, groupId) {
+  await requireGroup(branchId, groupId);
+  const { rows: [row] } = await pool.query(
+    'SELECT parent_tg_chat_id, parent_tg_bound_at, parent_tg_title FROM groups WHERE id = $1', [groupId],
+  );
+  return { configured: Boolean(env.TELEGRAM_BOT_USERNAME), linked: Boolean(row?.parent_tg_chat_id),
+    title: row?.parent_tg_title ?? null, boundAt: row?.parent_tg_bound_at ?? null };
+}
+
+export async function createGroupTelegramBindToken(branchId, groupId) {
+  await requireGroup(branchId, groupId);
+  if (!env.TELEGRAM_BOT_USERNAME) throw new AppError(503, 'Telegram is not configured on this server');
+  return { ...(await groupBindTokens.create(groupId)), botUsername: env.TELEGRAM_BOT_USERNAME };
+}
+
+export async function unlinkGroupTelegram(branchId, groupId) {
+  await requireGroup(branchId, groupId);
+  const { rowCount } = await pool.query(
+    `UPDATE groups SET parent_tg_chat_id = NULL, parent_tg_bound_at = NULL, parent_tg_title = NULL
+      WHERE id = $1 AND branch_id = $2`, [groupId, branchId],
+  );
+  return { unlinked: rowCount > 0 };
 }
 
 // -------- ДЗ --------

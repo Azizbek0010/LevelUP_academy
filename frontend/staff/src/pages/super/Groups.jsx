@@ -74,9 +74,30 @@ export default function SuperGroups() {
   const totalRevenue = allGroups.reduce((s, g) => s + Number(g.monthlyPrice ?? g.monthly_price ?? 0), 0);
 
   const formatSchedule = (g) => {
-    const days = g.lessonDays ?? g.lesson_days ?? [];
-    if (!days.length) return '—';
-    return days.map((d) => DAY_LABEL[d] ?? d).join(', ');
+    const schedule = g.schedule ?? g.lessonDays ?? g.lesson_days ?? [];
+    if (!Array.isArray(schedule) || !schedule.length) return '—';
+
+    // Старые записи хранят только коды дней, новые — объекты
+    // { day, start, end }. Никогда не отдаём объект прямо в JSX.
+    if (schedule.every((item) => typeof item === 'string')) {
+      return schedule.map((day) => DAY_LABEL[day] ?? day).join(', ');
+    }
+
+    const slots = schedule.map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const day = item.day ?? item.dayCode ?? item.weekday;
+      const start = item.start ?? item.startTime ?? item.start_time;
+      const end = item.end ?? item.endTime ?? item.end_time;
+      const time = start ? `${start}${end ? `–${end}` : ''}` : '';
+      return { day: DAY_LABEL[day] ?? day ?? '—', time };
+    }).filter(Boolean);
+
+    if (!slots.length) return '—';
+    const sameTime = slots.every((slot) => slot.time === slots[0].time);
+    if (sameTime) {
+      return `${slots.map((slot) => slot.day).join(', ')}${slots[0].time ? ` · ${slots[0].time}` : ''}`;
+    }
+    return slots.map((slot) => `${slot.day}${slot.time ? ` ${slot.time}` : ''}`).join(' · ');
   };
 
   const formatPrice = (g) => {
@@ -93,7 +114,7 @@ export default function SuperGroups() {
         <Metric size="sm" Icon={Layers} tone="primary" label="Всего" value={allGroups.length} />
         <Metric size="sm" Icon={Layers} tone="success" label="Активных" value={activeCount} />
         <Metric size="sm" Icon={Users} tone="info" label="Студентов" value={totalStudents} />
-        <Metric size="sm" Icon={Banknote} tone="warning" label="Оборот/мес" value={money(totalRevenue)} />
+        <Metric size="sm" Icon={Banknote} tone="warning" label="Сумма абонементов/мес" value={money(totalRevenue)} />
       </div>
 
       {/* Filters */}

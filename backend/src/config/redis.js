@@ -3,7 +3,10 @@ import { env } from './env.js';
 import { logger } from './logger.js';
 
 function createClient(name, options = {}) {
-  const client = new Redis(env.REDIS_URL, { lazyConnect: false, ...options });
+  const testOptions = env.NODE_ENV === 'test'
+    ? { retryStrategy: () => null, connectTimeout: 500, enableOfflineQueue: false }
+    : {};
+  const client = new Redis(env.REDIS_URL, { lazyConnect: false, ...testOptions, ...options });
   client.on('error', (err) => logger.error({ err, client: name }, 'Redis error'));
   return client;
 }

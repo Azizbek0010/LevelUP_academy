@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import { validate } from '../../../middlewares/validate.js';
 import * as ctrl from './home.controller.js';
+import { setLanguageSchema } from './home.schemas.js';
 
 const router = Router();
 
@@ -46,6 +48,24 @@ const router = Router();
  *                     upcomingHomework:
  *                       type: array
  *                       items: { $ref: '#/components/schemas/Homework' }
+ *                     topicStats:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           topicId: { type: string, format: uuid }
+ *                           name: { type: string }
+ *                           pct: { type: number }
+ *                     review:
+ *                       type: object
+ *                       nullable: true
+ *                       description: Latest AI code-review (Aqlli tahlil), if any
+ *                     streak:
+ *                       type: integer
+ *                       description: Consecutive attended lesson-dates ending at the most recent one
+ *                     longestStreak:
+ *                       type: integer
+ *                       description: Longest such streak on record
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       402:
  *         description: Payment overdue — access is blocked until paid
@@ -55,5 +75,29 @@ const router = Router();
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
 router.get('/', ctrl.getDashboard);
+
+/**
+ * @openapi
+ * /api/student/home/language:
+ *   patch:
+ *     tags: [Student]
+ *     summary: Save the student's cabinet language on the backend (XOB, 12.08.2026)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [language]
+ *             properties:
+ *               language: { type: string, enum: [ru, uz] }
+ *     responses:
+ *       200:
+ *         description: Saved
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.patch('/language', validate({ body: setLanguageSchema }), ctrl.patchLanguage);
 
 export default router;

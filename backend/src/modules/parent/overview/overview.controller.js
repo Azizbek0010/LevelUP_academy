@@ -26,3 +26,18 @@ export const getChildGrades = asyncHandler(async (req, res) => {
   const data = await service.getChildGrades(req.user.id, req.params.childId, type, page, limit);
   res.json({ success: true, data });
 });
+
+export const getChildGroupRating = asyncHandler(async (req, res) => {
+  const data = await service.getChildGroupRating(req.user.id, req.params.childId);
+  res.json({ success: true, data });
+});
+
+export const getHomeworkDetail = asyncHandler(async (req, res) => {
+  const data = await service.getHomeworkDetail(req.user.id, req.params.homeworkId);
+  res.json({ success: true, data });
+});
+
+export const getTestDetail = asyncHandler(async (req, res) => {
+  const data = await service.getTestDetail(req.user.id, req.params.testId);
+  res.json({ success: true, data });
+});

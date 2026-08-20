@@ -42,7 +42,7 @@ export default function FinanceIncome() {
       <PageHeader title={t('income.title')} subtitle={t('income.subtitle')}>
       </PageHeader>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
         <Metric
           Icon={Wallet}
           label={t('kpi.income')}

@@ -10,7 +10,7 @@ export function findUserByLogin(login, client = pool) {
   return client
     .query(
       `SELECT id, role, organization_id, branch_id, status, password_hash,
-              email, phone, first_name, last_name
+              email, phone, first_name, last_name, preferred_language
          FROM users
         WHERE (email = $1 OR login_code = $1) AND deleted_at IS NULL`,
       [login],
@@ -61,7 +61,7 @@ export function findUserByPhone(phone, client = pool) {
 export function findUserById(id, client = pool) {
   return client
     .query(
-      `SELECT id, role, organization_id, branch_id, status, first_name, last_name
+      `SELECT id, role, organization_id, branch_id, status, first_name, last_name, preferred_language
          FROM users
         WHERE id = $1 AND deleted_at IS NULL`,
       [id],

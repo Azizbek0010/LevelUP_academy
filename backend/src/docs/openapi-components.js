@@ -324,7 +324,7 @@ export const components = {
       description:
         'Student-bucket tiers (model changed 2026-07-16). Branches are free — the old ' +
         'baseFirstBranch/perExtraBranch/perStudent fields NO LONGER EXIST. ' +
-        'Price is a flat fee decided by the active student count. Source: config/plans.js.',
+        'Price is a flat fee decided by the total active account count (students, parents and staff). Source: config/plans.js.',
       properties: {
         tiers: {
           type: 'array',

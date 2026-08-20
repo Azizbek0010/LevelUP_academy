@@ -4,7 +4,7 @@ import {
   ArrowLeft, UserPlus, X, Users, KeyRound, Phone,
   CalendarDays, Check, Minus, Clock, CreditCard,
   BookOpen, Plus, Star, MessageSquare, Send, Loader2,
-  ChevronLeft, ChevronRight, Pencil, Archive, ArchiveRestore, Download,
+  ChevronLeft, ChevronRight, Pencil, Archive, ArchiveRestore, Download, DoorOpen,
 } from 'lucide-react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth.jsx';
@@ -948,6 +948,28 @@ export default function AdminGroupDetail() {
   const [adding, setAdding] = useState(false);
   const [pick, setPick] = useState('');
   const [editForm, setEditForm] = useState(null);
+  const [tgStatus, setTgStatus] = useState(null);
+  const [tgBind, setTgBind] = useState(null);
+  const [tgBusy, setTgBusy] = useState(false);
+  const tgEnabled = Boolean(user?.orgFeatures?.telegramIntegration);
+
+  const loadTelegram = useCallback(async () => {
+    if (user?.role !== 'branch_manager' || !tgEnabled) return;
+    try { const r = await api.adminGroupTelegramStatus(token, id); setTgStatus(r?.data || r); } catch { setTgStatus(null); }
+  }, [id, token, tgEnabled, user?.role]);
+  useEffect(() => { loadTelegram(); }, [loadTelegram]);
+
+  const createTelegramCode = async () => {
+    setTgBusy(true);
+    try { const r = await api.adminGroupTelegramBindToken(token, id); setTgBind(r?.data || r); } catch (e) { alert(e.message); }
+    finally { setTgBusy(false); }
+  };
+  const unlinkTelegram = async () => {
+    if (!confirm('Отвязать родительскую Telegram-группу?')) return;
+    setTgBusy(true);
+    try { await api.adminGroupTelegramUnlink(token, id); setTgBind(null); await loadTelegram(); } catch (e) { alert(e.message); }
+    finally { setTgBusy(false); }
+  };
 
   // Данные для модалки «Изменить группу» (переиспользуем GroupFormModal из Groups.jsx)
   const { data: mentorsData } = useAdminMentors();
@@ -1117,11 +1139,41 @@ export default function AdminGroupDetail() {
         <div className="flex items-center gap-x-8 gap-y-3 flex-wrap">
           <Meta Icon={Users} label="Ученики" value={students.length} />
           {group.subject && <Meta Icon={BookOpen} label="Направление" value={group.subject} />}
+          <Meta Icon={DoorOpen} label="Кабинет" value={group.roomName || group.room || 'Не назначен'} />
           {scheduleText(group) && <Meta Icon={CalendarDays} label="Расписание" value={scheduleText(group)} />}
           {group.monthlyPrice > 0 && <Meta Icon={CreditCard} label="Оплата/мес" value={money(group.monthlyPrice)} />}
           {totalDebt > 0 && <Meta Icon={Clock} label="Общий долг" value={money(totalDebt)} />}
         </div>
       </div>
+
+      {user?.role === 'branch_manager' && tgEnabled && (
+        <div className="card bg-base-100 border border-base-300 p-4 animate-fade-in">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <div className="flex items-center gap-2 font-extrabold"><Send size={17} className="text-info" /> Telegram-группа родителей</div>
+              <p className="text-xs text-base-content/50 mt-1">
+                {tgStatus?.linked ? `Подключена: ${tgStatus.title || 'группа Telegram'}` : 'Подключите отдельную группу родителей именно к этой учебной группе.'}
+              </p>
+            </div>
+            {tgStatus?.linked ? (
+              <button className="btn btn-error btn-outline btn-sm" disabled={tgBusy} onClick={unlinkTelegram}>Отвязать</button>
+            ) : (
+              <button className="btn btn-primary btn-sm" disabled={tgBusy} onClick={createTelegramCode}>Получить код</button>
+            )}
+          </div>
+          {tgBind?.token && (
+            <div className="mt-3 rounded-xl bg-base-200 p-3 text-sm">
+              <ol className="list-decimal ml-5 space-y-1 text-base-content/70">
+                <li>Создайте группу родителей и добавьте бота <a className="link link-primary" target="_blank" rel="noreferrer" href={`https://t.me/${String(tgBind.botUsername).replace('@', '')}`}>@{String(tgBind.botUsername).replace('@', '')}</a>.</li>
+                <li>Отправьте в этой Telegram-группе команду:</li>
+              </ol>
+              <button className="mt-2 w-full rounded-lg bg-base-100 border border-base-300 px-3 py-2 font-mono font-bold text-left" onClick={() => navigator.clipboard.writeText(`/bindgroup ${tgBind.token}`)}>
+                /bindgroup {tgBind.token} <span className="float-right text-xs font-sans text-primary">копировать</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2 p-1 rounded-[14px] bg-base-100 border border-base-300 animate-fade-in stagger-2">

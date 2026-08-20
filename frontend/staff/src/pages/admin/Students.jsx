@@ -105,7 +105,11 @@ function StudentCard({ s, onNavigate }) {
 
 /* ═══════════════ Main Students ═══════════════ */
 export default function AdminStudents() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  // Main Admin включает/выключает "кабинет родителя" всей организации
+  // (parent_panel) — когда включён, backend требует данные родителя при
+  // создании студента (см. admin.service.js:createStudent), форма — тоже.
+  const parentPanelEnabled = Boolean(user?.orgFeatures?.parentPanel);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState('table'); // 'card' | 'table' — референс marsit.uz показывает плотную таблицу
@@ -136,6 +140,9 @@ export default function AdminStudents() {
   })();
 
   const hasParent = form && form.parentName.trim() && form.parentPhone;
+  // Пока фича выключена у партнёра — не шлём parent вообще, backend всё равно
+  // проигнорирует, но так честнее показывать, что реально уйдёт на сервер.
+  const parentPayloadReady = parentPanelEnabled && hasParent;
 
   const create = async () => {
     setBusy(true); setErr('');
@@ -146,7 +153,7 @@ export default function AdminStudents() {
         phone: form.phone,
         birthDate: form.birthDate || undefined,
         groupId: form.groupId || undefined,
-        parent: hasParent
+        parent: parentPayloadReady
           ? { ...splitName(form.parentName), phone: form.parentPhone }
           : undefined,
         gender: form.gender || undefined,
@@ -389,22 +396,28 @@ export default function AdminStudents() {
                       </div>
                     </div>
 
-                    {/* Телефон родителя — реально уходит на backend как parent{firstName,lastName,phone},
-                        но здесь всегда на виду, а не за чекбоксом (как у референса) */}
-                    <div>
-                      <Lbl>Имя родителя</Lbl>
-                      <input className="input input-bordered input-sm w-full" value={form.parentName} onChange={(e) => setForm({ ...form, parentName: e.target.value })} />
-                    </div>
-                    <div className="grid grid-cols-[3fr_2fr] gap-3">
-                      <div>
-                        <Lbl>Телефон родителя</Lbl>
-                        <PhoneInput className="input input-bordered input-sm w-full" value={form.parentPhone} onChange={(v) => setForm({ ...form, parentPhone: v })} />
-                      </div>
-                      <div>
-                        <Lbl>Кому принадлежит</Lbl>
-                        <input className="input input-bordered input-sm w-full" placeholder="Родителю" value={form.parentPhoneOwner} onChange={(e) => setForm({ ...form, parentPhoneOwner: e.target.value })} />
-                      </div>
-                    </div>
+                    {/* Телефон родителя — реально уходит на backend как parent{firstName,lastName,phone}.
+                        Секция видна, только если Main Admin включил "кабинет родителя" партнёру
+                        (parent_panel) — иначе backend создание родителя всё равно отклонит. Когда
+                        включена — поля обязательны, не опциональны (Karis, 20.08.2026). */}
+                    {parentPanelEnabled && (
+                      <>
+                        <div>
+                          <Lbl>Имя родителя *</Lbl>
+                          <input className="input input-bordered input-sm w-full" value={form.parentName} onChange={(e) => setForm({ ...form, parentName: e.target.value })} />
+                        </div>
+                        <div className="grid grid-cols-[3fr_2fr] gap-3">
+                          <div>
+                            <Lbl>Телефон родителя *</Lbl>
+                            <PhoneInput className="input input-bordered input-sm w-full" value={form.parentPhone} onChange={(v) => setForm({ ...form, parentPhone: v })} />
+                          </div>
+                          <div>
+                            <Lbl>Кому принадлежит</Lbl>
+                            <input className="input input-bordered input-sm w-full" placeholder="Родителю" value={form.parentPhoneOwner} onChange={(e) => setForm({ ...form, parentPhoneOwner: e.target.value })} />
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     {/* Доп. телефон — визуальное поле по референсу, backend хранит только один номер родителя */}
                     <div className="grid grid-cols-[3fr_2fr] gap-3">
@@ -488,8 +501,8 @@ export default function AdminStudents() {
                 onClick={create}
                 disabled={
                   busy || !form.firstName || !form.lastName || !form.phone ||
-                  // родитель — всё или ничего: если хоть одно поле тронуто, второе обязательно
-                  ((form.parentName.trim() || form.parentPhone) && !(form.parentName.trim() && form.parentPhone))
+                  // фича включена у партнёра — оба поля родителя обязательны, не опциональны
+                  (parentPanelEnabled && !(form.parentName.trim() && form.parentPhone))
                 }
               >
                 {busy && <span className="loading loading-spinner loading-xs" />} Создать

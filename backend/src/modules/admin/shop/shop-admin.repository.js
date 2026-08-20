@@ -3,7 +3,8 @@ import { pool } from '../../../config/db.js';
 /** Все товары филиала для управления (без фильтра по остатку/архиву — в отличие от student-стороны). */
 export async function findItemsByBranch(branchId) {
   const { rows } = await pool.query(
-    `SELECT id, name, image_key, coin_price, stock, is_archived, created_at
+    `SELECT id, name, image_key, coin_price, stock, is_archived, created_at,
+            catalog_item_id, (catalog_item_id IS NOT NULL) AS is_global
        FROM shop_items
       WHERE branch_id = $1 AND deleted_at IS NULL
       ORDER BY created_at DESC`,
@@ -30,6 +31,98 @@ export async function findItemsByOrg(organizationId, branchId = null) {
     params,
   );
   return rows;
+}
+
+export async function findCatalogByOrg(organizationId) {
+  const { rows } = await pool.query(
+    `SELECT c.id, c.name, c.image_key, c.coin_price, c.is_archived, c.created_at,
+            count(i.id)::int AS branch_count, COALESCE(sum(i.stock), 0)::int AS total_stock
+       FROM shop_catalog_items c
+       LEFT JOIN shop_items i ON i.catalog_item_id = c.id AND i.deleted_at IS NULL
+      WHERE c.organization_id = $1
+      GROUP BY c.id
+      ORDER BY c.created_at DESC`,
+    [organizationId],
+  );
+  return rows;
+}
+
+export async function createCatalogForAllBranches(organizationId, body, client) {
+  const { rows: [catalog] } = await client.query(
+    `INSERT INTO shop_catalog_items (organization_id, name, image_key, coin_price)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, name, image_key, coin_price, is_archived, created_at`,
+    [organizationId, body.name, body.imageKey ?? null, body.coinPrice],
+  );
+  await client.query(
+    `INSERT INTO shop_items (branch_id, catalog_item_id, name, image_key, coin_price, stock)
+     SELECT b.id, $2, $3, $4, $5, 0
+       FROM branches b
+      WHERE b.organization_id = $1 AND b.deleted_at IS NULL`,
+    [organizationId, catalog.id, body.name, body.imageKey ?? null, body.coinPrice],
+  );
+  return catalog;
+}
+
+export async function updateCatalogForOrg(organizationId, catalogId, patch, client) {
+  const sets = [];
+  const values = [];
+  let n = 1;
+  if (patch.name !== undefined) { sets.push(`name = $${n++}`); values.push(patch.name); }
+  if (patch.imageKey !== undefined) { sets.push(`image_key = $${n++}`); values.push(patch.imageKey); }
+  if (patch.coinPrice !== undefined) { sets.push(`coin_price = $${n++}`); values.push(patch.coinPrice); }
+  sets.push('updated_at = now()');
+  values.push(catalogId, organizationId);
+  const { rows: [catalog] } = await client.query(
+    `UPDATE shop_catalog_items SET ${sets.join(', ')}
+      WHERE id = $${n} AND organization_id = $${n + 1}
+      RETURNING id, name, image_key, coin_price, is_archived, created_at`, values,
+  );
+  if (!catalog) return null;
+  await client.query(
+    `UPDATE shop_items SET name = $2, image_key = $3, coin_price = $4
+      WHERE catalog_item_id = $1 AND deleted_at IS NULL`,
+    [catalog.id, catalog.name, catalog.image_key, catalog.coin_price],
+  );
+  return catalog;
+}
+
+export async function archiveCatalogForOrg(organizationId, catalogId, archived, client) {
+  const { rows: [catalog] } = await client.query(
+    `UPDATE shop_catalog_items SET is_archived = $3, updated_at = now()
+      WHERE id = $1 AND organization_id = $2
+      RETURNING id, name, image_key, coin_price, is_archived, created_at`,
+    [catalogId, organizationId, archived],
+  );
+  if (!catalog) return null;
+  await client.query(
+    `UPDATE shop_items SET is_archived = $2 WHERE catalog_item_id = $1 AND deleted_at IS NULL`,
+    [catalogId, archived],
+  );
+  return catalog;
+}
+
+export async function addCatalogToBranch(organizationId, branchId, client = pool) {
+  await client.query(
+    `INSERT INTO shop_items (branch_id, catalog_item_id, name, image_key, coin_price, stock, is_archived)
+     SELECT $2, c.id, c.name, c.image_key, c.coin_price, 0, c.is_archived
+       FROM shop_catalog_items c
+      WHERE c.organization_id = $1
+     ON CONFLICT (branch_id, catalog_item_id) WHERE catalog_item_id IS NOT NULL AND deleted_at IS NULL DO NOTHING`,
+    [organizationId, branchId],
+  );
+}
+
+export async function syncCatalogForBranch(branchId, client = pool) {
+  await client.query(
+    `INSERT INTO shop_items (branch_id, catalog_item_id, name, image_key, coin_price, stock, is_archived)
+     SELECT b.id, c.id, c.name, c.image_key, c.coin_price, 0, c.is_archived
+       FROM branches b
+       JOIN shop_catalog_items c ON c.organization_id = b.organization_id
+      WHERE b.id = $1 AND b.deleted_at IS NULL
+     ON CONFLICT (branch_id, catalog_item_id) WHERE catalog_item_id IS NOT NULL AND deleted_at IS NULL DO NOTHING`,
+    [branchId],
+  );
 }
 
 /** branch_id + organization_id товара — чтобы SEO мог проверить владение перед правкой. */

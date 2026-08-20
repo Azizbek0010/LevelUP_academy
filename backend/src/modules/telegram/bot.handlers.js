@@ -2,8 +2,10 @@ import { messages } from './messages.js';
 import { TelegramBindTokenService } from './bind-token.service.js';
 import { TelegramLoginNonceService } from './login-nonce.service.js';
 import { BranchBindTokenService } from './branch-bind-token.service.js';
+import { GroupBindTokenService } from './group-bind-token.service.js';
 import { LOGIN_PAYLOAD_PREFIX } from './constants.js';
 import { resolveUser, coinsCommand, ratingCommand, homeCommand } from './bot.commands.js';
+import { isFeatureEnabledForOrg } from '../../shared/orgFeatures.js';
 
 export function registerTelegramBotHandlers({ bot, pool, redis, logger, language = 'ru' }) {
   if (!bot) return;
@@ -12,6 +14,7 @@ export function registerTelegramBotHandlers({ bot, pool, redis, logger, language
   const bindTokens = new TelegramBindTokenService({ redis, botUsername: 'unused-for-consume-only' });
   const loginNonces = new TelegramLoginNonceService({ redis, botUsername: 'unused-for-approve-only' });
   const branchBindTokens = new BranchBindTokenService({ redis });
+  const groupBindTokens = new GroupBindTokenService({ redis });
 
   /**
    * Что именно пришло от Telegram. Без этого молчание бота неотличимо от
@@ -61,10 +64,14 @@ export function registerTelegramBotHandlers({ bot, pool, redis, logger, language
           await ctx.reply(t.loginNotLinked);
           return;
         }
+        // XOB (12.08): до входа личность неизвестна — эти строки остаются на
+        // языке бота по умолчанию. С этой точки студент уже определён —
+        // дальше отвечаем на ЕГО языке, а не на глобальном TELEGRAM_BOT_LANG.
+        const tUser = messages(user.preferredLanguage || language);
         // Родителю эти цифры не подходят: у него нет своих коинов и рейтинга,
         // а данные ребёнка требуют выбора, какого именно.
         if (user.role !== 'student') {
-          await ctx.reply(t.onlyForStudents);
+          await ctx.reply(tUser.onlyForStudents);
           return;
         }
 
@@ -123,6 +130,23 @@ export function registerTelegramBotHandlers({ bot, pool, redis, logger, language
       }
       logger?.error({ err, branchId, chatId }, 'Branch Telegram group bind failed');
       await ctx.reply(t.genericError);
+    }
+  });
+
+  bot.command('bindgroup', async (ctx) => {
+    if (!['group', 'supergroup'].includes(ctx.chat?.type)) return ctx.reply(t.branchBindNotGroup);
+    const groupId = await groupBindTokens.consume(String(ctx.match || '').trim());
+    if (!groupId) return ctx.reply(t.branchBindTokenInvalid);
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE groups SET parent_tg_chat_id = $1, parent_tg_bound_at = now(), parent_tg_title = $2
+          WHERE id = $3 AND deleted_at IS NULL`, [ctx.chat.id, ctx.chat.title || null, groupId],
+      );
+      return ctx.reply(rowCount ? t.branchBindSuccess : t.branchBindTokenInvalid);
+    } catch (err) {
+      if (err?.code === '23505') return ctx.reply(t.branchBindAlreadyLinked);
+      logger?.error({ err, groupId }, 'Group Telegram bind failed');
+      return ctx.reply(t.genericError);
     }
   });
 
@@ -199,8 +223,16 @@ async function handleBind({ ctx, pool, bindTokens, logger, messages: t, token })
   }
 
   try {
-    const role = await resolveTelegramRole(pool, userId);
-    if (!role) {
+    const target = await resolveTelegramRole(pool, userId);
+    if (!target) {
+      await ctx.reply(t.tokenInvalid);
+      return;
+    }
+    const { role, organizationId } = target;
+
+    // Гонка: токен выпущен, пока фича была включена, но Main Admin выключил
+    // её партнёру до того, как студент дописал привязку в боте.
+    if (!(await isFeatureEnabledForOrg(organizationId, 'telegram_integration'))) {
       await ctx.reply(t.tokenInvalid);
       return;
     }
@@ -225,12 +257,13 @@ async function handleBind({ ctx, pool, bindTokens, logger, messages: t, token })
 
 async function resolveTelegramRole(pool, userId) {
   const { rows } = await pool.query(
-    `SELECT role FROM users WHERE id = $1 AND deleted_at IS NULL AND status = 'active'`,
+    `SELECT role, organization_id FROM users WHERE id = $1 AND deleted_at IS NULL AND status = 'active'`,
     [userId],
   );
 
-  const role = rows[0]?.role;
-  return role === 'student' || role === 'parent' ? role : null;
+  const row = rows[0];
+  if (!row || (row.role !== 'student' && row.role !== 'parent')) return null;
+  return { role: row.role, organizationId: row.organization_id };
 }
 
 async function replyDuplicateBinding({ pool, ctx, userId, chatId, messages: t }) {

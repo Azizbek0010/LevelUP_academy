@@ -1,17 +1,14 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useAuth } from '../auth.jsx';
 import { useChild } from '../child-context.jsx';
-import { useChatMessages } from '../queries.js';
+import { useChatMessages, useChatThreads } from '../queries.js';
 import { getSocket, useSocketConnected } from '../socket.js';
 import Avatar from '../components/Avatar.jsx';
-import { EmptyState, ErrorState } from '../components/ui.jsx';
+import { EmptyState } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
-import { mockChatSend } from '../api.js';
+import { api } from '../api.js';
 
-const ROOMS = [
-  { key: 'global', label: 'Общий чат', icon: 'globe', desc: 'Чат для всех родителей и сотрудников', color: '#3b82f6' },
-  { key: 'mentors', label: 'Учителя', icon: 'academic', desc: 'Личные сообщения с преподавателями', color: '#a855f7' },
-];
+const ROOM_INFO = { label: 'Преподаватели', icon: 'academic', desc: 'Личные сообщения с преподавателями ребёнка', color: '#40833B' };
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
@@ -37,18 +34,6 @@ const ROLE_STYLES = {
   parent: { bg: 'rgba(34,197,94,.12)', text: '#22c55e', label: 'Родитель', icon: 'user' },
   seo: { bg: 'rgba(245,158,11,.12)', text: '#f59e0b', label: 'SEO', icon: 'cog' },
 };
-
-function TypingIndicator() {
-  return (
-    <div className="flex items-center gap-1 px-3 py-2">
-      <div className="flex gap-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-base-content/30 animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="w-1.5 h-1.5 rounded-full bg-base-content/30 animate-bounce" style={{ animationDelay: '150ms' }} />
-        <span className="w-1.5 h-1.5 rounded-full bg-base-content/30 animate-bounce" style={{ animationDelay: '300ms' }} />
-      </div>
-    </div>
-  );
-}
 
 function MessageBubble({ m, mine, groupStart, groupEnd, showSender }) {
   const role = ROLE_STYLES[m.sender_role] || ROLE_STYLES.parent;
@@ -112,26 +97,38 @@ export default function Chat() {
   const { selectedChild } = useChild();
   const connected = useSocketConnected(token);
 
-  const [activeRoom, setActiveRoom] = useState('global');
   const [activeStaffId, setActiveStaffId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [atBottom, setAtBottom] = useState(true);
   const bottomRef = useRef(null);
   const boxRef = useRef(null);
   const socketRef = useRef(null);
   const textareaRef = useRef(null);
 
-  const roomKey = activeRoom === 'mentors' ? `parent:${user?.id}` : 'global';
-  const roomInfo = ROOMS.find((r) => r.key === activeRoom);
+  const { data: threadsData, isLoading: threadsLoading, refetch: refetchThreads } = useChatThreads();
+  const threads = threadsData?.data || [];
+  const activeThread = threads.find((thread) => thread.id === activeStaffId) || null;
+  const roomKey = activeStaffId && user?.id ? `dm:${activeStaffId}:${user.id}` : null;
+  const roomInfo = ROOM_INFO;
   const { data, isLoading, error, refetch } = useChatMessages(roomKey);
+
+  useEffect(() => {
+    if (!activeStaffId && threads[0]?.id) setActiveStaffId(threads[0].id);
+  }, [activeStaffId, threads]);
 
   useEffect(() => {
     if (data?.data?.messages) {
       setMessages(data.data.messages);
     }
   }, [data]);
+
+  useEffect(() => {
+    if (!roomKey || !token) return;
+    api.chatMarkRead(token, roomKey).then(() => refetchThreads()).catch(() => {});
+  }, [roomKey, token, refetchThreads]);
 
   useEffect(() => {
     if (!token) return;
@@ -143,14 +140,17 @@ export default function Chat() {
   useEffect(() => {
     if (!socketRef.current || !roomKey) return;
     const s = socketRef.current;
-    const event = activeRoom === 'global' ? 'chat:global:message' : 'chat:dm:message';
+    const event = 'chat:dm:message';
     const handler = (msg) => {
-      if (activeRoom !== 'global' && msg.room_key !== roomKey) return;
+      if (msg.room_key !== roomKey) return;
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+      if (msg.sender_id !== user?.id) {
+        api.chatMarkRead(token, roomKey).then(() => refetchThreads()).catch(() => {});
+      }
     };
     s.on(event, handler);
     return () => s.off(event, handler);
-  }, [activeRoom, roomKey]);
+  }, [roomKey, token, user?.id, refetchThreads]);
 
   useEffect(() => {
     if (atBottom) {
@@ -198,28 +198,20 @@ export default function Chat() {
     if (!text || !socketRef.current || sending) return;
 
     setSending(true);
+    setSendError('');
 
-    if (activeRoom === 'global') {
-      socketRef.current.emit('chat:global:send', { body: text }, (res) => {
+    if (activeStaffId) {
+      socketRef.current.emit('chat:dm:reply', { staffId: activeStaffId, body: text }, (res) => {
         setSending(false);
         if (res?.ok) {
           setInput('');
           setAtBottom(true);
           if (textareaRef.current) textareaRef.current.style.height = 'auto';
-        }
+        } else setSendError(res?.error || 'Сообщение не отправлено. Попробуйте ещё раз.');
       });
-    } else {
-      socketRef.current.emit('chat:parent:send', { body: text }, (res) => {
-        setSending(false);
-        if (res?.ok) {
-          setInput('');
-          setAtBottom(true);
-          if (textareaRef.current) textareaRef.current.style.height = 'auto';
-        }
-      });
-    }
+    } else setSending(false);
     textareaRef.current?.focus();
-  }, [input, sending, activeRoom]);
+  }, [input, sending, activeStaffId]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -238,7 +230,7 @@ export default function Chat() {
   }, [input]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] lg:h-[calc(100vh-3rem)] -m-4 lg:-m-6">
+    <div className="parent-chat-page flex min-h-0 flex-col overflow-hidden">
       {/* Header */}
       <div className="shrink-0 bg-base-100 border-b border-base-200/60 px-4 py-3">
         <div className="flex items-center gap-3">
@@ -249,8 +241,12 @@ export default function Chat() {
             <Icon name={roomInfo?.icon} className="w-5 h-5" style={{ color: roomInfo?.color }} />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-bold truncate">{roomInfo?.label}</h1>
-            <p className="text-xs opacity-40 truncate">{roomInfo?.desc}</p>
+            <h1 className="text-base font-bold truncate">
+              {activeThread ? `${activeThread.first_name || ''} ${activeThread.last_name || ''}`.trim() : roomInfo.label}
+            </h1>
+            <p className="text-xs opacity-40 truncate">
+              {activeThread ? `Преподаватель${selectedChild?.first_name ? ` · ${selectedChild.first_name}` : ''}` : roomInfo.desc}
+            </p>
           </div>
           <div className="flex items-center gap-1.5">
             <div className={`w-2 h-2 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
@@ -259,22 +255,27 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Room Tabs */}
-      <div className="shrink-0 flex gap-2 px-4 py-2.5 bg-base-100/50 border-b border-base-200/40">
-        {ROOMS.map((r) => {
-          const isActive = activeRoom === r.key;
+      {/* Mentor contacts */}
+      <div className="shrink-0 flex gap-2 overflow-x-auto px-4 py-2.5 bg-base-100/50 border-b border-base-200/40">
+        {threadsLoading && <div className="skeleton h-9 w-40 rounded-xl" />}
+        {!threadsLoading && threads.length === 0 && (
+          <span className="py-2 text-xs text-base-content/50">У ребёнка пока нет назначенного преподавателя</span>
+        )}
+        {threads.map((r) => {
+          const isActive = activeStaffId === r.id;
           return (
             <button
-              key={r.key}
-              onClick={() => { setActiveRoom(r.key); setMessages([]); setAtBottom(true); }}
+              key={r.id}
+              onClick={() => { setActiveStaffId(r.id); setMessages([]); setSendError(''); setAtBottom(true); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? 'bg-primary text-primary-content shadow-md shadow-primary/20'
                   : 'bg-base-200/40 text-base-content/50 hover:bg-base-200/70 hover:text-base-content/70'
               }`}
             >
-              <Icon name={r.icon} className="w-4 h-4" />
-              <span className="hidden sm:inline">{r.label}</span>
+              <Avatar name={`${r.first_name || ''} ${r.last_name || ''}`} size={24} />
+              <span>{r.first_name} {r.last_name}</span>
+              {r.unread_count > 0 && <span className="badge badge-sm">{r.unread_count > 99 ? '99+' : r.unread_count}</span>}
             </button>
           );
         })}
@@ -289,7 +290,12 @@ export default function Chat() {
       )}
 
       {/* Messages */}
-      <div ref={boxRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 bg-base-200/15" aria-live="polite">
+      <div
+        ref={boxRef}
+        onScroll={onScroll}
+        className={`min-h-0 flex-1 px-3 sm:px-5 py-4 bg-base-200/15 ${rows.length > 0 ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
+        aria-live="polite"
+      >
         {isLoading && rows.length === 0 && (
           <div className="space-y-4 py-4">
             {[0, 1, 2, 3].map((i) => (
@@ -300,12 +306,12 @@ export default function Chat() {
           </div>
         )}
 
-        {!isLoading && rows.length === 0 && (
+        {!isLoading && activeStaffId && rows.length === 0 && (
           <div className="h-full grid place-items-center">
             <EmptyState
               icon="chat"
               title="Пока нет сообщений"
-              message={activeRoom === 'global' ? 'Начните общение первым' : 'Напишите преподавателю first'}
+              message="Напишите преподавателю — сообщение сразу появится у него в чате"
             />
           </div>
         )}
@@ -341,17 +347,19 @@ export default function Chat() {
 
       {/* Input */}
       <div className="shrink-0 border-t border-base-200/60 bg-base-100 px-3 pt-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
+        {sendError && <p className="mb-2 text-xs font-medium text-error">{sendError}</p>}
         <div className="flex items-end gap-2.5">
           <div className="flex-1 min-w-0 relative">
             <textarea
               ref={textareaRef}
               rows={1}
               className="textarea textarea-bordered w-full resize-none min-h-[2.75rem] max-h-32 text-sm leading-relaxed py-2.5 pr-10 rounded-2xl bg-base-200/30 border-base-200/60 focus:border-primary focus:bg-base-100 transition-colors"
-              placeholder={activeRoom === 'global' ? 'Напишите сообщение...' : 'Напишите учителю...'}
+              placeholder={activeStaffId ? 'Напишите преподавателю...' : 'Преподаватель не назначен'}
               value={input}
               maxLength={4000}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              disabled={!activeStaffId || !connected}
             />
           </div>
           <button
@@ -361,7 +369,7 @@ export default function Chat() {
                 : 'btn-disabled'
             }`}
             onClick={handleSend}
-            disabled={!input.trim() || sending}
+            disabled={!input.trim() || sending || !activeStaffId || !connected}
             aria-label="Отправить"
           >
             {sending ? (

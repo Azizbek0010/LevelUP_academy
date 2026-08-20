@@ -179,7 +179,7 @@ export default {
       },
       {
         q: 'How much does it cost?',
-        a: 'The first week is free, with no card and no commitment. After that the price depends only on the number of active students — from free for up to 30 students.',
+        a: 'The first week is free, with no card and no commitment. After that the price depends on all active accounts in the organization — students, parents and staff.',
       },
       {
         q: 'What roles does the system have?',
@@ -498,25 +498,25 @@ export default {
   pricing: {
     badge: 'Pricing',
     h1: 'A fair price for order in your center',
-    lead: 'A fixed price based on the number of active students — branches are included without limit. No per-branch surcharges and no hidden percentages.',
+    lead: 'A fixed price based on all active accounts in the organization — students, parents and staff. Branches are included without limit.',
     positioning:
       'We are not the cheapest CRM, and we are not trying to be. The price is the quality: secure payments, daily backups and a launch within a week. Reliability is not something you should have to pay for twice.',
 
-    plansHead: 'Plans — by number of students',
+    plansHead: 'Plans — by number of active accounts',
     plansLead:
-      'Pick a plan by how many active students you have. Outgrow it and you simply move to the next one; your history stays.',
+      'Every active account counts: students, parents, SEO, admins, mentors, methodists, branch managers and finance managers.',
     free: 'Free',
     negotiable: 'On request',
     per: 'UZS/mo',
     popular: 'Popular',
     cardCta: 'Request a demo',
     plans: [
-      { id: 'free', name: 'Free', amount: 0, range: '0–30 students' },
-      { id: 'start', name: 'Start', amount: 199000, range: '31–100 students' },
-      { id: 'standard', name: 'Standard', amount: 349000, range: '101–300 students', popular: true },
-      { id: 'pro', name: 'Pro', amount: 599000, range: '301–600 students' },
-      { id: 'business', name: 'Business', amount: 799000, range: '601–1000 students' },
-      { id: 'network', name: 'Network', amount: null, range: '1000+ students' },
+      { id: 'free', name: 'Free', amount: 0, range: '0–30 active accounts' },
+      { id: 'start', name: 'Start', amount: 199000, range: '31–100 active accounts' },
+      { id: 'standard', name: 'Standard', amount: 349000, range: '101–300 active accounts', popular: true },
+      { id: 'pro', name: 'Pro', amount: 599000, range: '301–600 active accounts' },
+      { id: 'business', name: 'Business', amount: 799000, range: '601–1,000 active accounts' },
+      { id: 'network', name: 'Network', amount: null, range: '1,000+ active accounts' },
     ],
     perksHead: 'Included in every plan',
     perks: [
@@ -569,11 +569,11 @@ export default {
     faq: [
       {
         q: 'How much does LevelUp Academy cost?',
-        a: 'The price is fixed and depends only on the number of active students: Free (up to 30) — free of charge, Start (31–100) — 199,000 UZS/mo, Standard (101–300) — 349,000, Pro (301–600) — 599,000, Business (601–1000) — 799,000. Above 1000 students the price is agreed individually.',
+        a: 'The price depends on all active accounts in the organization: students, parents and staff. Free (up to 30) is free, Start (31–100) is 199,000 UZS/mo, Standard (101–300) is 349,000, Pro (301–600) is 599,000 and Business (601–1,000) is 799,000. Above 1,000 accounts the price is agreed individually.',
       },
       {
         q: 'Does the number of branches affect the price?',
-        a: 'No. Branches are included without limit on every plan — you pay for active students, not for each branch.',
+        a: 'No. Branches are included without limit on every plan. Billing is based on all active accounts in the organization, not on the number of branches.',
       },
       {
         q: 'Is there a free trial?',
@@ -678,7 +678,7 @@ export default {
       },
       {
         q: 'How much does it cost for a language school?',
-        a: 'The price is fixed by number of active students, and branches are included without limit. The first week is free, no card required. Details are on the pricing page.',
+        a: 'The price is fixed by the total number of active accounts, and branches are included without limit. The first week is free, no card required. Details are on the pricing page.',
       },
     ],
 
@@ -767,7 +767,7 @@ export default {
       },
       {
         q: 'How much does it cost for courses?',
-        a: 'The price is fixed by number of active students, and branches are included without limit. The first week is free, no card required. Details are on the pricing page.',
+        a: 'The price is fixed by the total number of active accounts, and branches are included without limit. The first week is free, no card required. Details are on the pricing page.',
       },
     ],
 
@@ -906,7 +906,7 @@ export default {
       },
       {
         q: 'How much does replacing Excel with a CRM cost?',
-        a: 'Up to 30 students it is free, after that a fixed price by number of active students, with branches included without limit. The first week is free, no card required. Details are on the pricing page.',
+        a: 'Up to 30 active accounts it is free; after that all active student, parent and staff accounts count. Branches are included without limit.',
       },
     ],
 
@@ -1220,7 +1220,7 @@ export default {
       {
         icon: 'building',
         title: 'A network of branches',
-        text: 'Branches are unlimited on every plan; you pay only for active students. The owner sees revenue, debt and attendance across the whole network.',
+        text: 'Branches are unlimited on every plan; billing is based on all active accounts in the organization. The owner sees revenue, debt and attendance across the whole network.',
       },
     ],
 
@@ -1279,7 +1279,7 @@ export default {
       after: 'Umai CRM',
       rows: [
         { task: 'Free trial', before: 'first week, no card', after: '7 days, no card' },
-        { task: 'What the price depends on', before: 'number of active students', after: 'feature set; unlimited students' },
+        { task: 'What the price depends on', before: 'total active account count', after: 'feature set; unlimited students' },
         { task: 'Top plan', before: '799,000 UZS/mo (601–1,000 students)', after: '2,250,000 UZS/mo — the AI plan (annual billing)' },
         { task: 'Onboarding and setup', before: 'included, live in 7 days', after: '3,750,000 UZS one-off; free on a 12-month payment' },
         { task: 'Expert hour', before: 'included in support', after: '375,000 UZS' },
@@ -1350,7 +1350,7 @@ export default {
       },
       {
         q: 'Is it true that LevelUp Academy’s price grows with student count?',
-        a: 'Yes, and that is deliberate: a small center should not pay like a network. Up to 30 students is free; 31–100 is 199,000; 101–300 is 349,000; 301–600 is 599,000; 601–1,000 is 799,000 UZS per month. Branches are unlimited on every plan.',
+        a: 'Yes. Every active student, parent and staff account counts. Up to 30 accounts is free; 31–100 is 199,000; 101–300 is 349,000; 301–600 is 599,000; 601–1,000 is 799,000 UZS per month. Branches are unlimited on every plan.',
       },
     ],
 
@@ -1505,6 +1505,7 @@ export default {
       { label: 'What it is', value: 'SaaS platform for running an education center' },
       { label: 'Founded', value: '2026' },
       { label: 'Team', value: '6 people' },
+      { label: 'Founder', value: 'Azizbek Amangeldiev' },
       { label: 'Country', value: 'Uzbekistan' },
       { label: 'Languages', value: "русский, o'zbekcha, English" },
       {
@@ -1515,6 +1516,7 @@ export default {
       { label: 'Email', value: 'info@levelup-academy.uz' },
       { label: 'Telegram', value: '@levelupacademycrm' },
       { label: 'Instagram', value: '@levelup_academy_uz' },
+      { label: "Founder's LinkedIn", value: 'linkedin.com/in/azizbek-amangeldiev-6045a342b' },
     ],
 
     sameHead: 'We are often confused with others',

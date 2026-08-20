@@ -21,7 +21,7 @@ const LEADERBOARD_LIMIT = 10;
 /** Кто владеет этим чатом. null — чат не привязан или аккаунт неактивен. */
 export async function resolveUser(pool, chatId) {
   const { rows } = await pool.query(
-    `SELECT u.id, u.role, u.first_name, u.last_name, u.branch_id, u.status
+    `SELECT u.id, u.role, u.first_name, u.last_name, u.branch_id, u.status, u.preferred_language
        FROM telegram_accounts ta
        JOIN users u ON u.id = ta.user_id
       WHERE ta.tg_chat_id = $1
@@ -30,7 +30,13 @@ export async function resolveUser(pool, chatId) {
   );
   const user = rows[0];
   if (!user || user.status !== 'active') return null;
-  return { id: user.id, role: user.role, firstName: user.first_name, branchId: user.branch_id };
+  return {
+    id: user.id,
+    role: user.role,
+    firstName: user.first_name,
+    branchId: user.branch_id,
+    preferredLanguage: user.preferred_language,
+  };
 }
 
 const num = (v) => Number(v || 0).toLocaleString('ru-RU').replace(/ /g, ' ');
