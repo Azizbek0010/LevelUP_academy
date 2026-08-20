@@ -1525,6 +1525,7 @@ export default {
 
     linksHead: "Keyin nimani ko'rish mumkin",
     links: [
+      { label: 'Asoschisi — Azizbek Amangeldiev', path: '/landing/team/azizbek-amangeldiev' },
       { label: 'Tizim imkoniyatlari', path: '/landing/features' },
       { label: 'Tariflar va narxlar', path: '/landing/pricing' },
       { label: 'Rollar va huquqlar', path: '/landing/roles' },
@@ -1534,6 +1535,53 @@ export default {
     ctaTitle: "Tizimni ichidan ko'rmoqchimisiz?",
     ctaText:
       "Ariza qoldiring — LevelUp Academy'ni markazingiz stsenariysida ko'rsatamiz va birinchi haftani bepul ulaymiz.",
+  },
+
+  founder: {
+    badge: 'Asoschisi',
+    h1: 'Azizbek Amangeldiev',
+    subName: 'Азизбек Амангелдиев',
+    location: "Toshkent, O'zbekiston",
+    lead: "LevelUp Academy'ning asoschisi — O'zbekiston o'quv markazlari uchun SaaS CRM. Mahsulot va backend bilan shug'ullanadi: tizim arxitekturasi, autentifikatsiya, to'lovlar va ko'p filiallilik.",
+    tags: ['Full-stack', 'Product', 'SaaS'],
+    contactsHead: "Men bilan qanday bog'lanish mumkin",
+    contactsLead: "Eng tez Telegram'da javob beraman — odatda kun davomida.",
+    contactTelegramLabel: 'Telegram',
+    contactTelegramNote: 'Eng tezkor',
+    contactEmailLabel: 'Email',
+    contactLinkedinLabel: 'LinkedIn',
+    stackHead: 'Mahsulot nimada qurilgan',
+    stackLead: "LevelUp Academy'ning haqiqiy texnologik steki — serverdan deploygacha.",
+    stackGroups: [
+      { label: 'Backend', icon: 'lock', items: ['Node.js', 'Express', 'PostgreSQL', 'Redis', 'BullMQ', 'Socket.io'] },
+      { label: 'Frontend', icon: 'grid', items: ['React 18', 'Vite', 'Tailwind CSS', 'DaisyUI', 'TanStack Query', 'Redux Toolkit'] },
+      { label: 'Infratuzilma', icon: 'building', items: ['Render', 'Vercel', 'MinIO / S3', 'Telegram Bot (grammY)'] },
+    ],
+    highlights: [
+      {
+        icon: 'rocket',
+        title: 'Mahsulot va backend',
+        text: "Tizim arxitekturasi, autentifikatsiya, to'lovlar va ko'p filiallilik — g'oyadan prodakshengacha.",
+      },
+      {
+        icon: 'calendar',
+        title: '2026-yildan beri',
+        text: "LevelUp Academy'ni O'zbekistonda asos soldi — hozir mahsulotni olti kishilik jamoa ishlatadi.",
+      },
+      {
+        icon: 'building',
+        title: "Toshkent, O'zbekiston",
+        text: "O'quv markazlari uchun SaaS quradi — har kuni foydalaniladigan tizim.",
+      },
+    ],
+    bioHead: 'Azizbek Amangeldiev kim',
+    bioText:
+      "Azizbek Amangeldiev (Азизбек Амангелдиев) — 2026-yilda tashkil etilgan LevelUp Academy'ning asoschisi, O'zbekiston o'quv markazlari uchun SaaS-platforma. Mahsulot va backend uchun javobgar: tizim arxitekturasi, autentifikatsiya, to'lovlar va ko'p filiallilik. Toshkentda yashaydi va ishlaydi.",
+    linksHead: "Keyin nimani ko'rish mumkin",
+    links: [
+      { label: 'Kompaniya haqida', path: '/landing/about' },
+      { label: 'Tizim imkoniyatlari', path: '/landing/features' },
+    ],
   },
 
   notFound: {
@@ -1618,6 +1666,11 @@ export default {
       title: "Kompaniya haqida — LevelUp Academy CRM ishlab chiquvchisi",
       description:
         "LevelUp Academy — O'zbekistondagi o'quv markazlari uchun CRM: kompaniya 2026-yilda tashkil etilgan, jamoa 6 kishi. Biz kimmiz, tizim qanday ishlaydi va biz nima emasmiz.",
+    },
+    founder: {
+      title: 'Azizbek Amangeldiev — LevelUp Academy asoschisi',
+      description:
+        "Azizbek Amangeldiev (Азизбек Амангелдиев) — 2026-yilda asos solingan LevelUp Academy'ning asoschisi, O'zbekiston o'quv markazlari uchun SaaS CRM.",
     },
     notFound: {
       title: "Sahifa topilmadi — LevelUp Academy",

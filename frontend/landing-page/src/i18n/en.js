@@ -1523,6 +1523,7 @@ export default {
 
     linksHead: 'Where to go next',
     links: [
+      { label: 'Founder — Azizbek Amangeldiev', path: '/landing/team/azizbek-amangeldiev' },
       { label: 'What the system does', path: '/landing/features' },
       { label: 'Pricing', path: '/landing/pricing' },
       { label: 'Roles and access', path: '/landing/roles' },
@@ -1532,6 +1533,53 @@ export default {
     ctaTitle: 'Want to see the system from the inside?',
     ctaText:
       'Send a request — we will walk through LevelUp Academy on your center’s workflow and set up the first week free.',
+  },
+
+  founder: {
+    badge: 'Founder',
+    h1: 'Azizbek Amangeldiev',
+    subName: 'Азизбек Амангелдиев',
+    location: 'Tashkent, Uzbekistan',
+    lead: 'Founder of LevelUp Academy — a SaaS CRM for education centers in Uzbekistan. Focused on product and backend: system architecture, authentication, payments and multi-branch support.',
+    tags: ['Full-stack', 'Product', 'SaaS'],
+    contactsHead: 'How to reach me',
+    contactsLead: 'I respond fastest on Telegram — usually within the day.',
+    contactTelegramLabel: 'Telegram',
+    contactTelegramNote: 'Fastest',
+    contactEmailLabel: 'Email',
+    contactLinkedinLabel: 'LinkedIn',
+    stackHead: 'What the product is built on',
+    stackLead: "LevelUp Academy's real technology stack — from the server to deployment.",
+    stackGroups: [
+      { label: 'Backend', icon: 'lock', items: ['Node.js', 'Express', 'PostgreSQL', 'Redis', 'BullMQ', 'Socket.io'] },
+      { label: 'Frontend', icon: 'grid', items: ['React 18', 'Vite', 'Tailwind CSS', 'DaisyUI', 'TanStack Query', 'Redux Toolkit'] },
+      { label: 'Infrastructure', icon: 'building', items: ['Render', 'Vercel', 'MinIO / S3', 'Telegram Bot (grammY)'] },
+    ],
+    highlights: [
+      {
+        icon: 'rocket',
+        title: 'Product & backend',
+        text: 'System architecture, authentication, payments and multi-branch support — from idea to production.',
+      },
+      {
+        icon: 'calendar',
+        title: 'Since 2026',
+        text: 'Founded LevelUp Academy in Uzbekistan — now used by a team of six.',
+      },
+      {
+        icon: 'building',
+        title: 'Tashkent, Uzbekistan',
+        text: 'Builds SaaS for education centers — software people use every day.',
+      },
+    ],
+    bioHead: 'Who is Azizbek Amangeldiev',
+    bioText:
+      'Azizbek Amangeldiev (Азизбек Амангелдиев) is the founder of LevelUp Academy, a SaaS platform for education centers in Uzbekistan founded in 2026. He works on product and backend: system architecture, authentication, payments and multi-branch support. Based in Tashkent, Uzbekistan.',
+    linksHead: 'What to check next',
+    links: [
+      { label: 'About the company', path: '/landing/about' },
+      { label: 'Product features', path: '/landing/features' },
+    ],
   },
 
   notFound: {
@@ -1616,6 +1664,11 @@ export default {
       title: 'About us — the team behind LevelUp Academy',
       description:
         'LevelUp Academy is student management software from Uzbekistan: founded in 2026, a team of six. Who we are, how the system is built and what we are not.',
+    },
+    founder: {
+      title: 'Azizbek Amangeldiev — Founder of LevelUp Academy',
+      description:
+        'Azizbek Amangeldiev (Азизбек Амангелдиев) is the founder of LevelUp Academy, a SaaS CRM for education centers in Uzbekistan founded in 2026.',
     },
     notFound: {
       title: 'Page not found — LevelUp Academy',
