@@ -76,6 +76,9 @@ export async function dashboard(branchId) {
       revenue: revenueMonth,
       expenses: expensesMonth,
       profit: revenueMonth - expensesMonth,
+      newStudents: Number(d.new_students_month),
+      droppedStudents: Number(d.dropped_students_month),
+      netStudents: Number(d.new_students_month) - Number(d.dropped_students_month),
     },
   };
 }
@@ -439,13 +442,60 @@ export async function groupCredentials(branchId, groupId) {
   };
 }
 
-/** Мягкое удаление ученика + выход из всех групп. */
-export async function deleteStudent(branchId, id) {
+/** Мягкое удаление ученика + выход из всех групп. Причина — необязательная. */
+export async function deleteStudent(branchId, id, reason) {
   return withTransaction(async (client) => {
-    const row = await repo.softDeleteStudent(id, branchId, client);
+    const row = await repo.softDeleteStudent(id, branchId, reason, client);
     if (!row) throw new AppError(404, 'Student not found in your branch');
     await repo.leaveAllGroups(id, client);
   });
+}
+
+const PERIOD_DAYS = { '7d': 7, '30d': 30, '90d': 90 };
+const MONTHLY_MONTHS_BACK = 12;
+
+/** Динамика прихода/оттока учеников филиала — «в этом месяце пришло N, ушло M,
+ * чистый прирост N-M», тот же приём, что у super.service.js:studentsStats, только
+ * по одному филиалу (Admin видит только свой) и с обеими сериями сразу. */
+export async function studentsStats(branchId, period = '30d') {
+  const isMonthly = period === '12m';
+  const from = isMonthly
+    ? new Date(new Date().getFullYear(), new Date().getMonth() - (MONTHLY_MONTHS_BACK - 1), 1)
+    : new Date(Date.now() - (PERIOD_DAYS[period] ?? 30) * 24 * 60 * 60 * 1000);
+
+  const [newSeries, droppedSeries] = await Promise.all([
+    isMonthly ? repo.newStudentsSeriesMonthly(branchId, from) : repo.newStudentsSeriesDaily(branchId, from),
+    isMonthly ? repo.droppedStudentsSeriesMonthly(branchId, from) : repo.droppedStudentsSeriesDaily(branchId, from),
+  ]);
+
+  const totalNew = newSeries.reduce((s, r) => s + Number(r.cnt), 0);
+  const totalDropped = droppedSeries.reduce((s, r) => s + Number(r.cnt), 0);
+
+  // Обе серии сводим по одной оси дат — точки, где было только одно из двух событий,
+  // не должны выпасть молча (например, месяц без единого оттока).
+  const byKey = new Map();
+  for (const r of newSeries) {
+    const key = String(r.month ?? r.day);
+    byKey.set(key, { date: key, newCount: Number(r.cnt), droppedCount: 0 });
+  }
+  for (const r of droppedSeries) {
+    const key = String(r.month ?? r.day);
+    const point = byKey.get(key) ?? { date: key, newCount: 0, droppedCount: 0 };
+    point.droppedCount = Number(r.cnt);
+    byKey.set(key, point);
+  }
+  const series = [...byKey.values()]
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .map((p) => ({ ...p, net: p.newCount - p.droppedCount }));
+
+  return {
+    period,
+    branchId,
+    totalNew,
+    totalDropped,
+    net: totalNew - totalDropped,
+    series,
+  };
 }
 
 // ==================== МЕНТОРЫ ====================

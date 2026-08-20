@@ -13,6 +13,8 @@ import {
   createStudentSchema,
   updateStudentSchema,
   freezeStudentSchema,
+  deleteStudentSchema,
+  studentsStatsQuery,
   listStudentsQuery,
   createMentorSchema,
   freezeMentorSchema,
@@ -337,6 +339,7 @@ router.delete('/expenses/:id', validate({ params: idParam }), ctrl.deleteExpense
  */
 router.post('/students', validate({ body: createStudentSchema }), ctrl.createStudent);
 router.get('/students', validate({ query: listStudentsQuery }), ctrl.listStudents);
+router.get('/students/stats', validate({ query: studentsStatsQuery }), ctrl.studentsStats);
 
 /**
  * @openapi
@@ -510,7 +513,7 @@ router.get('/students/:id/parent/credentials', validate({ params: idParam }), ct
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.delete('/students/:id', validate({ params: idParam }), ctrl.deleteStudent);
+router.delete('/students/:id', validate({ params: idParam, body: deleteStudentSchema }), ctrl.deleteStudent);
 
 /**
  * @openapi

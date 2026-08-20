@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import {
   Wallet, TriangleAlert, Receipt, TrendingUp, Users, GraduationCap, Clock,
   Building2, CalendarDays, Sparkles, ChevronRight, CreditCard, Coins,
+  UserPlus, UserMinus,
 } from 'lucide-react';
 import { fmt, money, dateShort } from '../../format.js';
 import { useAdminDashboard, useAdminInvoices } from '../../queries.js';
@@ -129,6 +130,21 @@ export default function AdminDashboard() {
           <StatRow Icon={TrendingUp} label="Доход" value={money(m.revenue)} accent />
           <StatRow Icon={Receipt} label="Расход" value={money(m.expenses)} />
           <StatRow Icon={Sparkles} label="Прибыль" value={money(m.profit)} accent={m.profit > 0} danger={m.profit < 0} />
+        </div>
+      </Panel>
+
+      {/* Приход/отток учеников за этот месяц: пришло, ушло (архивировано), чистый прирост */}
+      <Panel title="Ученики за этот месяц" icon={Users} bodyClass="p-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <StatRow Icon={UserPlus} label="Пришло" value={fmt(m.newStudents)} accent to="/students" />
+          <StatRow Icon={UserMinus} label="Ушло (архив)" value={fmt(m.droppedStudents)} danger={m.droppedStudents > 0} />
+          <StatRow
+            Icon={Sparkles}
+            label="Чистый прирост"
+            value={m.netStudents > 0 ? `+${fmt(m.netStudents)}` : fmt(m.netStudents)}
+            accent={m.netStudents > 0}
+            danger={m.netStudents < 0}
+          />
         </div>
       </Panel>
     </div>
