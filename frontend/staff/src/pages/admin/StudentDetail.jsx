@@ -17,7 +17,7 @@ import {
 // нерабочей ссылкой.
 const MEMBER_URL = import.meta.env.VITE_MEMBER_URL || 'https://member.levelup-academy.uz';
 import { useAuth } from '../../auth.jsx';
-import { useAdminStudentDetail, useAdminGroups, useAdminGroupDetail, useAdminInvoices, useAdminStudentAttendance, useAdminStudentTelegram, useAdminStudentCredentials, useInvalidate } from '../../queries.js';
+import { useAdminStudentDetail, useAdminGroups, useAdminGroupDetail, useAdminInvoices, useAdminStudentAttendance, useAdminStudentTelegram, useAdminStudentCredentials, useAdminParentCredentials, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import { Avatar, RowSkeleton, Modal } from '../mentor/_ui.jsx';
@@ -78,6 +78,7 @@ export default function AdminStudentDetail() {
   const [actionModal, setActionModal] = useState(null); // null | 'freeze' | 'archive'
   const [actionReason, setActionReason] = useState('');
   const [showCreds, setShowCreds] = useState(false);
+  const [showParentCreds, setShowParentCreds] = useState(false);
   const [showTopUp, setShowTopUp] = useState(false);
   const [showAddGroup, setShowAddGroup] = useState(false);
 
@@ -116,6 +117,26 @@ export default function AdminStudentDetail() {
       .catch(() => { if (!cancelled) setQrError(true); });
     return () => { cancelled = true; };
   }, [showCreds, id, token]);
+
+  const { data: parentCredsRaw, isLoading: parentCredsLoading } = useAdminParentCredentials(id, showParentCreds);
+  const parentCreds = parentCredsRaw?.data || parentCredsRaw;
+  const [parentQrImage, setParentQrImage] = useState(null);
+  const [parentQrError, setParentQrError] = useState(false);
+
+  // Тот же постоянный QR-токен, что у студента, только на users.id родителя.
+  useEffect(() => {
+    if (!showParentCreds) { setParentQrImage(null); setParentQrError(false); return; }
+    let cancelled = false;
+    api.adminCreateParentQrToken(token, id)
+      .then((res) => {
+        const r = res?.data || res;
+        const url = `${MEMBER_URL}/qr-login?token=${encodeURIComponent(r.token)}`;
+        return QRCode.toDataURL(url, { width: 220, margin: 1, color: { dark: '#1D2417', light: '#ffffff' } });
+      })
+      .then((dataUrl) => { if (!cancelled) setParentQrImage(dataUrl); })
+      .catch(() => { if (!cancelled) setParentQrError(true); });
+    return () => { cancelled = true; };
+  }, [showParentCreds, id, token]);
   const invalidate = useInvalidate();
   const invoices = (invoicesRaw?.data?.invoices || invoicesRaw?.invoices || []).slice().sort(
     (a, b) => new Date(b.periodMonth || b.createdAt) - new Date(a.periodMonth || a.createdAt)
@@ -187,6 +208,17 @@ export default function AdminStudentDetail() {
       invalidate(['admin-student-credentials', id]);
     } catch (e) { alert(e.message || 'Ошибка'); }
     finally { setBusy(false); }
+  };
+  const [parentBusy, setParentBusy] = useState(false);
+  const handleRegenParent = async () => {
+    setParentBusy(true);
+    try {
+      const res = await api.adminRegenParentPassword(token, id);
+      const r = res?.data || res;
+      alert(`Новый пароль родителя: ${r.password || 'сгенерирован'}`);
+      invalidate(['admin-parent-credentials', id]);
+    } catch (e) { alert(e.message || 'Ошибка'); }
+    finally { setParentBusy(false); }
   };
 
   /* ─── Loading / Error / Not found ─── */
@@ -274,9 +306,18 @@ export default function AdminStudentDetail() {
               <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-200/60">
                 <span className="text-[11px] font-semibold text-base-content/50 uppercase">Родитель</span>
                 {student.parent ? (
-                  <span className="text-[13px] font-bold text-base-content">
-                    {[student.parent.firstName, student.parent.lastName].filter(Boolean).join(' ')} · {formatPhone(student.parent.phone)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-bold text-base-content">
+                      {[student.parent.firstName, student.parent.lastName].filter(Boolean).join(' ')} · {formatPhone(student.parent.phone)}
+                    </span>
+                    <button
+                      className="w-6 h-6 rounded-[6px] border border-base-300 flex items-center justify-center hover:border-primary hover:text-primary transition-colors shrink-0"
+                      onClick={() => setShowParentCreds(true)}
+                      title="Логин и пароль родителя"
+                    >
+                      <QrCode size={12} />
+                    </button>
+                  </div>
                 ) : (
                   <span className="text-[12px] text-base-content/40 italic">Не указан</span>
                 )}
@@ -535,6 +576,58 @@ export default function AdminStudentDetail() {
             <p className="text-[11px] text-base-content/45 text-center">
               Студент сканирует камерой телефона — входит в кабинет сразу, без набора логина и пароля.
               Код постоянный, работает при каждом сканировании — как студенческий бейдж.
+            </p>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ═══ Модалка логин/пароль родителя ═══ */}
+      <Modal isOpen={showParentCreds} onClose={() => setShowParentCreds(false)} title="Данные для входа — Родитель">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-200/60">
+            <div>
+              <div className="text-[10px] font-bold text-base-content/45 uppercase">Логин-код</div>
+              <div className="text-[15px] font-mono font-extrabold text-base-content">
+                {parentCredsLoading ? '…' : parentCreds?.loginCode || '—'}
+              </div>
+            </div>
+            {parentCreds?.loginCode && (
+              <button onClick={() => copyToClipboard(parentCreds.loginCode, 'plc')} className="btn btn-ghost btn-sm">
+                {copied === 'plc' ? <Check size={14} /> : <Copy size={14} />}
+              </button>
+            )}
+          </div>
+          <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-200/60">
+            <div>
+              <div className="text-[10px] font-bold text-base-content/45 uppercase">Пароль</div>
+              <div className="text-[15px] font-mono font-extrabold text-base-content">
+                {parentCredsLoading ? '…' : parentCreds?.password || '— недоступен, нажмите «Новый пароль»'}
+              </div>
+            </div>
+            {parentCreds?.password && (
+              <button onClick={() => copyToClipboard(parentCreds.password, 'ppw')} className="btn btn-ghost btn-sm">
+                {copied === 'ppw' ? <Check size={14} /> : <Copy size={14} />}
+              </button>
+            )}
+          </div>
+
+          <button onClick={handleRegenParent} disabled={parentBusy} className="btn btn-sm btn-ghost bg-base-200/60 gap-1.5 text-[12px] w-full">
+            {parentBusy ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />} Новый пароль родителя
+          </button>
+
+          <div className="flex flex-col items-center gap-2 pt-1">
+            {parentQrImage ? (
+              <img src={parentQrImage} alt="QR для входа родителя" width={180} height={180} className="rounded-[10px] border border-base-300" />
+            ) : parentQrError ? (
+              <p className="text-[11px] text-error text-center">Не удалось сгенерировать QR — попробуйте открыть модалку заново</p>
+            ) : (
+              <div className="w-[180px] h-[180px] rounded-[10px] border border-base-300 grid place-items-center bg-base-200/60">
+                <span className="loading loading-spinner loading-sm text-primary" />
+              </div>
+            )}
+            <p className="text-[11px] text-base-content/45 text-center">
+              Родитель сканирует камерой телефона — входит в кабинет сразу, без набора логина и пароля.
+              Код постоянный, работает при каждом сканировании.
             </p>
           </div>
         </div>

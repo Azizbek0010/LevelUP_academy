@@ -2485,6 +2485,10 @@ export const api = {
   adminDeleteMentor: (token, id) => request(`/admin/mentors/${id}`, { method: 'DELETE', token }),
   adminRegenStudentPassword: (token, id) => request(`/admin/students/${id}/regenerate-password`, { method: 'POST', token }),
   adminStudentCredentials: (token, id) => request(`/admin/students/${id}/credentials`, { token }),
+  adminCreateParentQrToken: (token, id) => request(`/admin/students/${id}/parent/qr-token`, { method: 'POST', token }),
+  adminRegenerateParentQrToken: (token, id) => request(`/admin/students/${id}/parent/qr-token/regenerate`, { method: 'POST', token }),
+  adminRegenParentPassword: (token, id) => request(`/admin/students/${id}/parent/regenerate-password`, { method: 'POST', token }),
+  adminParentCredentials: (token, id) => request(`/admin/students/${id}/parent/credentials`, { token }),
 
   // -------- ADMIN/Branch Manager: Shop (остаток + заказы своего филиала; каталог — у SEO) --------
   adminShopItems: (token) => request('/admin/shop/items', { token }),

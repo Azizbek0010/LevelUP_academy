@@ -409,6 +409,8 @@ router.get('/students/:id/telegram', validate({ params: idParam }), ctrl.student
 router.post('/students/:id/telegram/message', requireOrgFeature('telegram_integration'), validate({ params: idParam, body: sendStudentTelegramMessageSchema }), ctrl.sendStudentTelegramMessage);
 router.post('/students/:id/qr-token', validate({ params: idParam }), ctrl.createStudentQrToken);
 router.post('/students/:id/qr-token/regenerate', validate({ params: idParam }), ctrl.regenerateStudentQrToken);
+router.post('/students/:id/parent/qr-token', validate({ params: idParam }), ctrl.createParentQrToken);
+router.post('/students/:id/parent/qr-token/regenerate', validate({ params: idParam }), ctrl.regenerateParentQrToken);
 router.patch('/students/:id', validate({ params: idParam, body: updateStudentSchema }), ctrl.updateStudent);
 
 /**
@@ -484,6 +486,8 @@ router.post('/students/:id/freeze', validate({ params: idParam, body: freezeStud
  */
 router.post('/students/:id/regenerate-password', validate({ params: idParam }), ctrl.regenerateStudentPassword);
 router.get('/students/:id/credentials', validate({ params: idParam }), ctrl.getStudentCredentials);
+router.post('/students/:id/parent/regenerate-password', validate({ params: idParam }), ctrl.regenerateParentPassword);
+router.get('/students/:id/parent/credentials', validate({ params: idParam }), ctrl.getParentCredentials);
 
 /**
  * @openapi

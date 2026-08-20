@@ -68,6 +68,22 @@ export const getStudentCredentials = asyncHandler(async (req, res) => {
   res.json(await service.getStudentCredentials(branchId(req), req.params.id));
 });
 
+export const regenerateParentPassword = asyncHandler(async (req, res) => {
+  res.json(await service.regenerateParentPassword(branchId(req), req.params.id));
+});
+
+export const getParentCredentials = asyncHandler(async (req, res) => {
+  res.json(await service.getParentCredentials(branchId(req), req.params.id));
+});
+
+export const createParentQrToken = asyncHandler(async (req, res) => {
+  res.json(await service.createParentQrToken(branchId(req), req.params.id));
+});
+
+export const regenerateParentQrToken = asyncHandler(async (req, res) => {
+  res.json(await service.regenerateParentQrToken(branchId(req), req.params.id));
+});
+
 export const deleteStudent = asyncHandler(async (req, res) => {
   await service.deleteStudent(branchId(req), req.params.id);
   res.status(204).end();

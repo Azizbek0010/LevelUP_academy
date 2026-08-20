@@ -72,12 +72,13 @@ function generateRefreshToken() {
  */
 async function publicUser(u) {
   const orgId = u.organization_id ?? null;
-  const [shop, telegramIntegration] = orgId
+  const [shop, telegramIntegration, parentPanel] = orgId
     ? await Promise.all([
         isFeatureEnabledForOrg(orgId, 'shop'),
         isFeatureEnabledForOrg(orgId, 'telegram_integration'),
+        isFeatureEnabledForOrg(orgId, 'parent_panel'),
       ])
-    : [false, false];
+    : [false, false, false];
 
   return {
     id: u.id,
@@ -87,7 +88,7 @@ async function publicUser(u) {
     firstName: u.first_name,
     lastName: u.last_name,
     preferredLanguage: u.preferred_language ?? null,
-    orgFeatures: { shop, telegramIntegration },
+    orgFeatures: { shop, telegramIntegration, parentPanel },
   };
 }
 

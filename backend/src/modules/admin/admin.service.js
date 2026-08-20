@@ -6,6 +6,7 @@ import { genLoginCode, genNumericPassword } from '../auth/credentials.js';
 import { encryptPassword, decryptPassword } from '../../utils/credentialCrypto.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
 import { getOrCreateQrToken, regenerateQrToken } from '../auth/qr-login.service.js';
+import { isFeatureEnabledForOrg } from '../../shared/orgFeatures.js';
 import * as repo from './admin.repository.js';
 import * as roomsRepo from './rooms/rooms.repository.js';
 
@@ -131,11 +132,23 @@ export async function createStudent(scope, body) {
     if (group.is_archived) throw new AppError(409, 'Group is archived');
   }
 
+  // Main Admin включает "кабинет родителя" организации отдельным тумблером
+  // (parent_panel, см. auth.service.js:assertOrgAccessible). Karis 20.08.2026:
+  // когда фича включена, родитель заводится ВСЕГДА вместе со студентом —
+  // это не опциональная галочка админа, а обязательная часть формы (телефон
+  // родителя всё равно нужен для QR/уведомлений). Когда фича выключена,
+  // родителя не заводим вообще, даже если body.parent зачем-то пришёл —
+  // otish iloji bolmasin: не просто прячем вход, физически не создаём.
+  const parentPanelEnabled = await isFeatureEnabledForOrg(orgId, 'parent_panel');
+  if (parentPanelEnabled && !body.parent) {
+    throw new AppError(400, 'Parent name and phone are required — parent panel is enabled for your organization');
+  }
+
   return withTransaction(async (client) => {
     let parentOut;
     let parentId = null;
 
-    if (body.parent) {
+    if (parentPanelEnabled && body.parent) {
       const parentPassword = genNumericPassword(6);
       const parentUser = await insertCodeUserWithCode(client, {
         orgId,
@@ -145,6 +158,7 @@ export async function createStudent(scope, body) {
         lastName: body.parent.lastName,
         phone: body.parent.phone,
         passwordHash: await hash(parentPassword),
+        passwordEncrypted: encryptPassword(parentPassword),
       });
       parentId = parentUser.id;
       parentOut = {
@@ -238,7 +252,9 @@ export async function studentDetail(branchId, id) {
     frozenAt: s.frozen_at,
     frozenReason: s.frozen_reason,
     hasParent: Boolean(s.parent_id),
-    parent: s.parent_id ? { firstName: s.parent_first, lastName: s.parent_last, phone: s.parent_phone } : null,
+    parent: s.parent_id
+      ? { id: s.parent_id, firstName: s.parent_first, lastName: s.parent_last, phone: s.parent_phone }
+      : null,
     gender: s.gender,
     address: s.address,
     school: s.school,
@@ -316,6 +332,48 @@ export async function getStudentCredentials(branchId, id) {
     catch { password = null; } // JWT_ACCESS_SECRET сменился — старые записи не расшифровать, не 500
   }
   return { loginCode: row.login_code, password };
+}
+
+/** Родитель студента, проверенный на принадлежность филиалу admin'а — общий
+ * помощник для всех parent-credential эндпоинтов ниже. */
+async function resolveStudentParent(branchId, studentId) {
+  const row = await repo.findStudentParentInBranch(studentId, branchId);
+  if (!row) throw new AppError(404, 'Parent not found for this student in your branch');
+  return row;
+}
+
+/** Admin перевыдаёт пароль родителю — тот же принцип, что и у студента (нет forgot-password). */
+export async function regenerateParentPassword(branchId, studentId) {
+  const parent = await resolveStudentParent(branchId, studentId);
+  const password = genNumericPassword(6);
+  await repo.setParentPassword(parent.id, await hash(password));
+  await repo.setParentPasswordEncrypted(parent.id, encryptPassword(password));
+  return { id: parent.id, password };
+}
+
+/** Логин+пароль родителя для QR-модалки — расшифровываем на сервере, наружу
+ * password_encrypted как есть никогда не отдаём. */
+export async function getParentCredentials(branchId, studentId) {
+  const parent = await resolveStudentParent(branchId, studentId);
+  let password = null;
+  if (parent.password_encrypted) {
+    try { password = decryptPassword(parent.password_encrypted); }
+    catch { password = null; } // JWT_ACCESS_SECRET сменился — старые записи не расшифровать, не 500
+  }
+  return { loginCode: parent.login_code, password };
+}
+
+export async function createParentQrToken(branchId, studentId) {
+  const parent = await resolveStudentParent(branchId, studentId);
+  const token = await getOrCreateQrToken(parent.id);
+  return { token };
+}
+
+/** Перевыпуск — старый QR (сфотканный/переданный) сразу перестаёт работать. */
+export async function regenerateParentQrToken(branchId, studentId) {
+  const parent = await resolveStudentParent(branchId, studentId);
+  const token = await regenerateQrToken(parent.id);
+  return { token };
 }
 
 /** Логин-код/пароль/QR всех активных студентов группы — раздаточный PDF для admin/branch_manager. */

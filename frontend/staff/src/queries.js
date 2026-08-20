@@ -168,6 +168,11 @@ export function useAdminStudentCredentials(id, enabled) {
   return useAuthedQuery(['admin-student-credentials', id], () => api.adminStudentCredentials(token, id), { enabled: !!id && enabled });
 }
 
+export function useAdminParentCredentials(id, enabled) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-parent-credentials', id], () => api.adminParentCredentials(token, id), { enabled: !!id && enabled });
+}
+
 export function useAdminGroups(qs = '') {
   const { token } = useAuth();
   return useAuthedQuery(['admin-groups', qs], () => api.adminGroups(token, qs));
