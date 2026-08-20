@@ -85,6 +85,14 @@ export const freezeStudentSchema = z.object({
   reason: z.string().trim().max(500).optional(),
 });
 
+export const deleteStudentSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
+});
+
+export const studentsStatsQuery = z.object({
+  period: z.enum(['7d', '30d', '90d', '12m']).optional(),
+});
+
 export const listStudentsQuery = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),

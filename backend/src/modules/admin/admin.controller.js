@@ -89,8 +89,12 @@ export const regenerateParentQrToken = asyncHandler(async (req, res) => {
 });
 
 export const deleteStudent = asyncHandler(async (req, res) => {
-  await service.deleteStudent(branchId(req), req.params.id);
+  await service.deleteStudent(branchId(req), req.params.id, req.body?.reason);
   res.status(204).end();
+});
+
+export const studentsStats = asyncHandler(async (req, res) => {
+  res.json(await service.studentsStats(branchId(req), req.query.period));
 });
 
 // ---------- менторы ----------

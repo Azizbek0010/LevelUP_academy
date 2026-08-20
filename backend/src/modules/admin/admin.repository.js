@@ -30,7 +30,13 @@ export function branchDashboard(branchId, client = pool) {
          (SELECT count(*) FROM groups g
             WHERE g.branch_id = $1 AND g.is_archived = false AND g.deleted_at IS NULL) AS groups,
          (SELECT count(*) FROM invoices i
-            WHERE i.branch_id = $1 AND i.status = 'overdue' AND i.deleted_at IS NULL) AS overdue_invoices`,
+            WHERE i.branch_id = $1 AND i.status = 'overdue' AND i.deleted_at IS NULL) AS overdue_invoices,
+         (SELECT count(*) FROM users u
+            WHERE u.branch_id = $1 AND u.role = 'student'
+              AND u.created_at >= date_trunc('month', now())) AS new_students_month,
+         (SELECT count(*) FROM users u
+            WHERE u.branch_id = $1 AND u.role = 'student' AND u.status = 'dropped'
+              AND u.deleted_at IS NOT NULL AND u.deleted_at >= date_trunc('month', now())) AS dropped_students_month`,
       [branchId],
     )
     .then((r) => r.rows[0]);
@@ -402,16 +408,78 @@ export function findStudentCredentials(id, branchId, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
-/** Мягкое удаление: deleted_at + статус dropped (email/код/телефон освобождаются). */
-export function softDeleteStudent(id, branchId, client = pool) {
+/** Мягкое удаление: deleted_at + статус dropped (email/код/телефон освобождаются).
+ * Причина (dropped_reason) — необязательная, тот же принцип, что и frozen_reason. */
+export async function softDeleteStudent(id, branchId, reason, client = pool) {
+  const { rows: [row] } = await client.query(
+    `UPDATE users SET deleted_at = now(), status = 'dropped', updated_at = now()
+      WHERE id = $1 AND branch_id = $2 AND role = 'student' AND deleted_at IS NULL
+      RETURNING id`,
+    [id, branchId],
+  );
+  if (!row) return null;
+  await client.query(
+    `UPDATE student_profiles SET dropped_reason = $2, updated_at = now() WHERE user_id = $1`,
+    [id, reason || null],
+  );
+  return row;
+}
+
+/** Динамика прихода/оттока учеников филиала по месяцам — «в этом месяце пришло N,
+ * ушло M, чистый прирост N-M» (тот же приём, что у super.repository.js:newStudentsSeriesMonthly,
+ * только по одному филиалу и с обеими сериями). */
+export function newStudentsSeriesMonthly(branchId, fromDate, client = pool) {
   return client
     .query(
-      `UPDATE users SET deleted_at = now(), status = 'dropped', updated_at = now()
-        WHERE id = $1 AND branch_id = $2 AND role = 'student' AND deleted_at IS NULL
-        RETURNING id`,
-      [id, branchId],
+      `SELECT date_trunc('month', u.created_at)::date AS month, count(*)::int AS cnt
+         FROM users u
+        WHERE u.branch_id = $1 AND u.role = 'student' AND u.created_at >= $2
+        GROUP BY month
+        ORDER BY month`,
+      [branchId, fromDate],
     )
-    .then((r) => r.rows[0] ?? null);
+    .then((r) => r.rows);
+}
+
+export function droppedStudentsSeriesMonthly(branchId, fromDate, client = pool) {
+  return client
+    .query(
+      `SELECT date_trunc('month', u.deleted_at)::date AS month, count(*)::int AS cnt
+         FROM users u
+        WHERE u.branch_id = $1 AND u.role = 'student' AND u.status = 'dropped'
+          AND u.deleted_at IS NOT NULL AND u.deleted_at >= $2
+        GROUP BY month
+        ORDER BY month`,
+      [branchId, fromDate],
+    )
+    .then((r) => r.rows);
+}
+
+export function newStudentsSeriesDaily(branchId, fromDate, client = pool) {
+  return client
+    .query(
+      `SELECT date_trunc('day', u.created_at)::date AS day, count(*)::int AS cnt
+         FROM users u
+        WHERE u.branch_id = $1 AND u.role = 'student' AND u.created_at >= $2
+        GROUP BY day
+        ORDER BY day`,
+      [branchId, fromDate],
+    )
+    .then((r) => r.rows);
+}
+
+export function droppedStudentsSeriesDaily(branchId, fromDate, client = pool) {
+  return client
+    .query(
+      `SELECT date_trunc('day', u.deleted_at)::date AS day, count(*)::int AS cnt
+         FROM users u
+        WHERE u.branch_id = $1 AND u.role = 'student' AND u.status = 'dropped'
+          AND u.deleted_at IS NOT NULL AND u.deleted_at >= $2
+        GROUP BY day
+        ORDER BY day`,
+      [branchId, fromDate],
+    )
+    .then((r) => r.rows);
 }
 
 export function leaveAllGroups(studentId, client = pool) {
