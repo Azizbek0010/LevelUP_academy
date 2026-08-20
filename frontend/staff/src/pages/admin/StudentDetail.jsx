@@ -88,7 +88,17 @@ export default function AdminStudentDetail() {
   const primaryGroup = groups[0];
 
   const { data: groupDetailRaw } = useAdminGroupDetail(primaryGroup?.id);
-  const groupDetail = groupDetailRaw?.data || groupDetailRaw || {};
+  const groupDetailPayload = groupDetailRaw?.data || groupDetailRaw || {};
+  const groupDetail = groupDetailPayload.group || groupDetailPayload;
+  const groupSchedule = groupDetail.schedule || primaryGroup?.schedule || [];
+  const groupStartTime = groupDetail.startTime
+    || groupDetail.start_time
+    || groupSchedule[0]?.start
+    || primaryGroup?.startTime
+    || null;
+  const groupDays = groupDetail.days?.length
+    ? groupDetail.days
+    : groupSchedule.map((item) => item.day).filter(Boolean);
   const { data: groupsListRaw } = useAdminGroups();
   const groupOptions = (groupsListRaw?.data?.groups || groupsListRaw?.groups || []).filter((g) => !g.isArchived);
   const { data: invoicesRaw, refetch: refetchInvoices } = useAdminInvoices(`?studentId=${id}`);
@@ -142,7 +152,10 @@ export default function AdminStudentDetail() {
     (a, b) => new Date(b.periodMonth || b.createdAt) - new Date(a.periodMonth || a.createdAt)
   );
   const currentMonthKey = monthInputValue(new Date());
-  const currentInvoice = invoices.find((inv) => monthInputValue(inv.periodMonth) === currentMonthKey);
+  const currentInvoice = invoices.find((inv) =>
+    monthInputValue(inv.periodMonth) === currentMonthKey
+    && ['pending', 'partially_paid', 'overdue'].includes(inv.status)
+  ) || invoices.find((inv) => monthInputValue(inv.periodMonth) === currentMonthKey);
 
   const copyToClipboard = (text, field) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -262,9 +275,9 @@ export default function AdminStudentDetail() {
         <ArrowLeft size={16} /> К ученикам
       </Link>
 
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(320px,380px)_minmax(0,1fr)_300px] gap-4 items-start">
         {/* ══════════════ КОЛОНКА 1 — карточка студента ══════════════ */}
-        <div className="space-y-4 w-full shrink-0" style={{ maxWidth: 380 }}>
+        <div className="space-y-4 w-full min-w-0 xl:col-start-1 xl:row-start-1 xl:row-span-3">
           <div className="card bg-base-100 p-5">
             <div className="flex items-start justify-between gap-2">
               <h1 className="text-[19px] font-extrabold text-base-content leading-tight">{fullName(student)}</h1>
@@ -390,22 +403,11 @@ export default function AdminStudentDetail() {
             </div>
           </div>
 
-          {/* Статистика */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="card bg-base-100 p-4 text-center">
-              <div className="text-[18px] font-extrabold text-base-content tabular-nums">{student.coinBalance ?? 0}</div>
-              <div className="text-[10px] font-semibold text-base-content/45 uppercase mt-0.5 flex items-center justify-center gap-1"><Coins size={11} /> Коины</div>
-            </div>
-            <div className="card bg-base-100 p-4 text-center">
-              <div className={`text-[18px] font-extrabold tabular-nums ${student.totalDebt > 0 ? 'text-red-500' : 'text-base-content'}`}>{formatMoney(student.totalDebt)}</div>
-              <div className="text-[10px] font-semibold text-base-content/45 uppercase mt-0.5">Долг</div>
-            </div>
-          </div>
         </div>
 
         {/* ══════════════ КОЛОНКА 2 — группа + платежи ══════════════ */}
-        <div className="space-y-4 w-full flex-1 min-w-0">
-          <div className="card bg-base-100 p-5">
+        <div className="space-y-4 w-full min-w-0 xl:contents xl:[&>*]:!mt-0">
+          <div className="card bg-base-100 p-5 xl:col-start-2 xl:row-start-1">
             {primaryGroup ? (
               <>
                 <div className="flex items-center justify-between mb-3">
@@ -424,7 +426,7 @@ export default function AdminStudentDetail() {
                   <div className="p-3 rounded-[10px] bg-base-200/60">
                     <div className="text-[10px] font-bold text-base-content/45 uppercase">Время занятий</div>
                     <div className="text-[13px] font-bold text-base-content mt-0.5">
-                      {groupDetail.startTime ? `${groupDetail.startTime} · ${(groupDetail.days || []).map((d) => DAY_LABELS[d] || d).join('/')}` : '—'}
+                      {groupStartTime ? `${groupStartTime} · ${groupDays.map((d) => DAY_LABELS[d] || d).join('/')}` : '—'}
                     </div>
                   </div>
                   <div className="p-3 rounded-[10px] bg-base-200/60">
@@ -441,13 +443,12 @@ export default function AdminStudentDetail() {
             )}
           </div>
 
-          {attendanceDays.length > 0 && (
-            <div className="card bg-base-100 p-5">
+          <div className="card bg-base-100 p-5 xl:col-start-2 xl:col-span-2 xl:row-start-2">
               <div className="flex items-center gap-2 mb-3">
                 <CalendarDays size={15} className="text-primary" />
                 <h3 className="text-[13px] font-bold text-base-content">Посещаемость</h3>
               </div>
-              <div className="flex gap-1.5 overflow-x-auto pb-1">
+              {attendanceDays.length > 0 ? <div className="flex gap-1.5 overflow-x-auto pb-1">
                 {attendanceDays.map((d) => {
                   const c = ATTENDANCE_COLORS[d.status] || ATTENDANCE_COLORS.absent;
                   return (
@@ -462,12 +463,18 @@ export default function AdminStudentDetail() {
                     </div>
                   );
                 })}
-              </div>
+              </div> : (
+                <div className="min-h-16 rounded-[10px] bg-base-200/45 flex items-center justify-center text-center px-4">
+                  <div>
+                    <p className="text-[13px] font-semibold text-base-content/55">Пока нет данных</p>
+                    <p className="text-[11px] text-base-content/35 mt-0.5">Посещаемость появится после первого отмеченного занятия</p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
 
-          <div className="card bg-base-100 p-5">
-            <div className="flex items-center gap-2 mb-4">
+          <div className="card bg-base-100 p-5 h-full min-h-0 max-h-[420px] xl:max-h-[280px] overflow-hidden flex flex-col xl:col-start-2 xl:col-span-2 xl:row-start-3 self-stretch">
+            <div className="flex items-center gap-2 mb-4 shrink-0">
               <CreditCard size={15} className="text-primary" />
               <h3 className="text-[13px] font-bold text-base-content">История платежей</h3>
               <span className="text-[11px] text-base-content/45 ml-auto">{invoices.length}</span>
@@ -478,13 +485,16 @@ export default function AdminStudentDetail() {
                 <p className="text-[13px] text-base-content/45">Нет платежей</p>
               </div>
             ) : (
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-h-0 overflow-y-auto overscroll-contain pr-1">
                 {invoices.map((inv) => {
                   const st = INVOICE_STATUS[inv.status] || INVOICE_STATUS.pending;
                   return (
                     <div key={inv.id} className="flex items-center justify-between p-2.5 rounded-[10px] hover:bg-base-200/60 transition-colors">
                       <div className="min-w-0">
                         <div className="text-[13px] font-bold text-base-content capitalize">{monthLabel(inv.periodMonth)}</div>
+                        <div className="text-[10px] font-semibold text-base-content/45 mt-0.5">
+                          Принял: {inv.acceptedBy || '—'}
+                        </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <span className="text-[13px] font-bold text-base-content tabular-nums">{formatMoney(inv.paidAmount)}</span>
@@ -499,7 +509,7 @@ export default function AdminStudentDetail() {
         </div>
 
         {/* ══════════════ КОЛОНКА 3 — текущий месяц ══════════════ */}
-        <div className="space-y-4 w-full shrink-0" style={{ maxWidth: 300 }}>
+        <div className="space-y-4 w-full min-w-0 xl:col-start-3 xl:row-start-1">
           <div className="card bg-base-100 p-5">
             <div className="text-[13px] font-extrabold text-base-content capitalize">{monthLabel(new Date())}</div>
             <div className="flex items-baseline justify-between mt-2">
@@ -513,7 +523,18 @@ export default function AdminStudentDetail() {
             </div>
           </div>
 
-          <div className="card bg-base-100 p-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="card bg-base-100 p-4 text-center">
+              <div className="text-[18px] font-extrabold text-base-content tabular-nums">{student.coinBalance ?? 0}</div>
+              <div className="text-[10px] font-semibold text-base-content/45 uppercase mt-0.5 flex items-center justify-center gap-1"><Coins size={11} /> Коины</div>
+            </div>
+            <div className="card bg-base-100 p-4 text-center">
+              <div className={`text-[18px] font-extrabold tabular-nums ${student.totalDebt > 0 ? 'text-red-500' : 'text-base-content'}`}>{formatMoney(student.totalDebt)}</div>
+              <div className="text-[10px] font-semibold text-base-content/45 uppercase mt-0.5">Долг</div>
+            </div>
+          </div>
+
+          <div className="hidden">
             <div className="flex items-center gap-2 mb-3">
               <Wallet size={15} className="text-primary" />
               <h3 className="text-[13px] font-bold text-base-content">Счета</h3>
@@ -521,7 +542,7 @@ export default function AdminStudentDetail() {
             {invoices.length === 0 ? (
               <p className="text-[12px] text-base-content/40 text-center py-4">Пока пусто</p>
             ) : (
-              <div className="space-y-2 max-h-[420px] overflow-y-auto">
+              <div className="space-y-2 max-h-[720px] overflow-y-auto overscroll-contain pr-1">
                 {invoices.map((inv) => (
                   <div key={inv.id} className="p-2.5 rounded-[10px] bg-base-200/60">
                     <div className="flex items-center justify-between">
@@ -647,6 +668,7 @@ export default function AdminStudentDetail() {
         onClose={() => setShowTopUp(false)}
         student={student}
         primaryGroup={primaryGroup}
+        currentInvoice={currentInvoice}
         token={token}
         onDone={() => { setShowTopUp(false); refetch(); refetchInvoices(); }}
       />
@@ -740,7 +762,7 @@ export default function AdminStudentDetail() {
 }
 
 /* ═══════════════ Модалка пополнения счёта ═══════════════ */
-function TopUpModal({ isOpen, onClose, student, primaryGroup, token, onDone }) {
+function TopUpModal({ isOpen, onClose, student, primaryGroup, currentInvoice, token, onDone }) {
   const [amount, setAmount] = useState('');
   const [month, setMonth] = useState(monthInputValue(new Date()));
   const [method, setMethod] = useState('cash');
@@ -754,43 +776,71 @@ function TopUpModal({ isOpen, onClose, student, primaryGroup, token, onDone }) {
   const presets = primaryGroup?.monthlyPrice ? [primaryGroup.monthlyPrice] : [];
 
   const submit = async () => {
-    if (!amount || Number(amount) <= 0) { setErr('Укажите сумму'); return; }
+    const numericAmount = Number(String(amount).replace(',', '.'));
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) { setErr('Укажите корректную сумму'); return; }
     setBusy(true); setErr('');
     try {
-      await api.adminCreatePayment(token, {
-        studentId: student.id,
-        groupId: primaryGroup?.id,
-        periodMonth: `${month}-01`,
-        totalAmount: Number(amount),
-        parts: [{ method, amount: Number(amount) }],
-        comment: comment || undefined,
-      });
+      const hasOpenInvoice = currentInvoice
+        && ['pending', 'partially_paid', 'overdue'].includes(currentInvoice.status);
+      if (hasOpenInvoice) {
+        await api.adminPayInvoice(token, currentInvoice.id, {
+          parts: [{ method, amount: numericAmount }],
+        });
+      } else {
+        await api.adminCreatePayment(token, {
+          studentId: student.id,
+          groupId: primaryGroup?.id,
+          periodMonth: `${month}-01`,
+          totalAmount: numericAmount,
+          parts: [{ method, amount: numericAmount }],
+          comment: comment || undefined,
+        });
+      }
       setAmount(''); setComment('');
       onDone();
-    } catch (e) { setErr(e.message || 'Ошибка'); }
+    } catch (e) {
+      // The first request may have committed while the browser was still
+      // waiting on an older backend/Redis response. Treat an already-paid
+      // invoice as an idempotent success and refresh instead of trapping the
+      // cashier in a stale modal.
+      if (String(e.message).toLowerCase().includes('invoice is already paid')) {
+        setAmount(''); setComment('');
+        onDone();
+      } else {
+        setErr(e.message || 'Ошибка');
+      }
+    }
     finally { setBusy(false); }
   };
 
   return (
     <dialog className="modal modal-open">
-      <div className="modal-box card bg-base-100 border border-base-300 max-w-lg p-0">
-        <div className="px-6 pt-6 pb-4 border-b border-base-200">
+      <div className="modal-box card bg-base-100 border border-base-300 max-w-lg p-0 max-h-[calc(100dvh-2rem)] overflow-hidden !flex flex-col">
+        <div className="px-6 pt-6 pb-4 border-b border-base-200 shrink-0">
           <h3 className="font-extrabold text-lg text-base-content">Пополнить счёт</h3>
           <p className="text-[12px] text-base-content/45 mt-0.5">{fullName(student)} {primaryGroup ? `· ${primaryGroup.name}` : ''}</p>
         </div>
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-6 py-5 space-y-4 overflow-y-auto min-h-0 overscroll-contain">
           {err && <div className="alert alert-error py-2 text-sm">{err}</div>}
           <div>
             <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">Сумма *</label>
-            {/* type="text" + фильтр цифр вместо type="number" — убирает нативные стрелки-спиннер */}
             <input
               className="input input-bordered w-full"
               type="text"
-              inputMode="numeric"
-              placeholder="Сумма пополнения"
+              inputMode="decimal"
+              placeholder="Например: 4.63"
               value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
+              onChange={(e) => {
+                const next = e.target.value.replace(',', '.');
+                if (/^\d*(?:\.\d{0,2})?$/.test(next)) setAmount(next);
+              }}
             />
+            {currentInvoice && ['pending', 'partially_paid', 'overdue'].includes(currentInvoice.status) && (
+              <p className="text-[11px] text-base-content/50 mt-1.5">
+                Остаток по текущему счёту: {formatMoney(Number(currentInvoice.totalAmount) - Number(currentInvoice.paidAmount))}.
+                Переплата сохранится на балансе.
+              </p>
+            )}
             {presets.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {presets.map((p) => (
@@ -821,9 +871,9 @@ function TopUpModal({ isOpen, onClose, student, primaryGroup, token, onDone }) {
             <textarea className="textarea textarea-bordered w-full" rows={2} placeholder="Комментарий (необязательно)" value={comment} onChange={(e) => setComment(e.target.value)} />
           </div>
         </div>
-        <div className="modal-action px-6 pb-6 pt-2">
-          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>Отмена</button>
-          <button className="btn btn-primary gap-1.5" onClick={submit} disabled={busy || !amount}>
+        <div className="modal-action px-6 py-4 mt-0 border-t border-base-200 shrink-0 bg-base-100">
+          <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>Отмена</button>
+          <button type="button" className="btn btn-primary gap-1.5" onClick={submit} disabled={busy || !amount}>
             {busy && <span className="loading loading-spinner loading-xs" />} Сохранить
           </button>
         </div>

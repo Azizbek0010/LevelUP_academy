@@ -19,38 +19,13 @@ const STATUS_COLORS = {
   frozen: { bg: '#E8543E15', text: '#E8543E', label: 'Заморожен' },
 };
 
+const GRADE_LABELS = { junior: 'Junior', middle: 'Middle', senior: 'Senior' };
+
 /* ═══════════════ Stat Card ═══════════════ */
 /* Грейд ментора. Меняется только отсюда: сам ментор в своём профиле видит его
    как read-only — PATCH /api/users/me это поле не принимает. */
-const GRADES = [
-  { value: '', label: 'Не задан', color: 'var(--text-muted)' },
-  { value: 'junior', label: 'Junior', color: '#2563eb' },
-  { value: 'middle', label: 'Middle', color: '#b45309' },
-  { value: 'senior', label: 'Senior', color: '#15803d' },
-];
-
-function GradePicker({ value, onChange, busy }) {
-  const current = GRADES.find((g) => g.value === (value || '')) || GRADES[0];
-  return (
-    <label className="flex items-center gap-1.5" title="Уровень ментора">
-      <Award size={11} style={{ color: current.color }} />
-      <select
-        className="h-7 pl-1.5 pr-6 rounded-[8px] text-[11px] font-bold bg-base-100 border border-base-300 outline-none cursor-pointer disabled:opacity-50"
-        style={{ color: current.color }}
-        value={value || ''}
-        disabled={busy}
-        onChange={(e) => onChange(e.target.value || null)}
-      >
-        {GRADES.map((g) => (
-          <option key={g.value} value={g.value}>{g.label}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 /* ═══════════════ Mentor Card ═══════════════ */
-function MentorCard({ m, onEdit, onGrade, gradeBusy }) {
+function MentorCard({ m, onEdit, canMessage }) {
   const navigate = useNavigate();
   const status = STATUS_COLORS[m.status] || STATUS_COLORS.active;
 
@@ -101,22 +76,20 @@ function MentorCard({ m, onEdit, onGrade, gradeBusy }) {
 
           {/* Action buttons */}
           <div className="flex items-center gap-1 mt-3 flex-wrap">
-            <GradePicker
-              value={m.grade}
-              busy={gradeBusy === m.id}
-              onChange={(grade) => onGrade(m, grade)}
-            />
+            <span className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold bg-base-200 text-base-content/65" title="Грейд назначает SEO">
+              <Award size={11} /> {GRADE_LABELS[m.grade] || 'Не задан'}
+            </span>
             <button className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold text-base-content/70 bg-base-100 border border-base-300 hover:border-primary/40 hover:bg-primary/10 transition-all"
               onClick={() => onEdit(m)}>
               <Pencil size={11} /> Изменить
             </button>
-            <button
+            {canMessage && <button
               className="h-7 w-7 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-primary/10 hover:text-primary transition-all"
               title="Написать в чат"
-              onClick={() => navigate('/chat')}
+              onClick={() => navigate(`/chat?with=${m.id}`)}
             >
               <MessageCircle size={13} />
-            </button>
+            </button>}
           </div>
         </div>
       </div>
@@ -126,7 +99,7 @@ function MentorCard({ m, onEdit, onGrade, gradeBusy }) {
 
 /* ═══════════════ Main Mentors ═══════════════ */
 export default function AdminMentors() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { data, isLoading, error, refetch } = useAdminMentors();
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -162,20 +135,6 @@ export default function AdminMentors() {
       refetch();
     } catch (e) { setErr(e.message || 'Ошибка'); }
     finally { setBusy(false); }
-  };
-
-  const [gradeBusy, setGradeBusy] = useState(null);
-
-  const setGrade = async (m, grade) => {
-    setGradeBusy(m.id);
-    try {
-      await api.adminUpdateMentor(token, m.id, { grade });
-      refetch();
-    } catch (e) {
-      alert(e.message || 'Не удалось изменить уровень');
-    } finally {
-      setGradeBusy(null);
-    }
   };
 
   const edit = (m) => setForm({ id: m.id, firstName: m.firstName || m.first_name || '', lastName: m.lastName || m.last_name || '', phone: m.phone || '', email: m.email || '' });
@@ -216,8 +175,7 @@ export default function AdminMentors() {
               key={m.id}
               m={m}
               onEdit={edit}
-              onGrade={setGrade}
-              gradeBusy={gradeBusy}
+              canMessage={user?.role === 'admin'}
             />
           ))}
         </div>

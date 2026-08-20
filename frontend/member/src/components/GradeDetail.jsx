@@ -196,7 +196,10 @@ function TestDetail({ data }) {
 
 export default function GradeDetail({ type, id, onClose }) {
   const isHomework = type === 'hw';
-  const { data, isLoading, error } = isHomework ? useHomeworkDetail(id) : useTestDetail(id);
+  const homeworkQuery = useHomeworkDetail(isHomework ? id : null);
+  const testQuery = useTestDetail(isHomework ? null : id);
+  const { data: response, isLoading, error } = isHomework ? homeworkQuery : testQuery;
+  const data = response?.data;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

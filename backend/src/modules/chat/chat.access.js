@@ -36,7 +36,7 @@ export function isUuid(value) {
 }
 
 /** Роли, которым вообще разрешена личная переписка с родителем. */
-export const DM_STAFF_ROLES = new Set(['mentor', 'admin', 'seo']);
+export const DM_STAFF_ROLES = new Set(['mentor', 'admin', 'seo', 'branch_manager', 'employee']);
 
 /** Ключ комнаты личного диалога. Порядок фиксирован: staff, затем parent. */
 export function dmRoom(staffId, parentId) {
@@ -79,7 +79,7 @@ export async function canStaffChatParent(user, parentId, db = pool) {
     return rows.length > 0;
   }
 
-  if (user.role === 'admin') {
+  if (user.role === 'admin' || user.role === 'branch_manager') {
     if (!user.branchId) return false;
     const { rows } = await db.query(
       `SELECT 1
@@ -141,7 +141,17 @@ export async function canStaffChatStudent(user, studentId, db = pool) {
   // (решение 2026-07-21): работа с учеником — забота ментора, админ общается со
   // взрослой стороной. Поэтому прямой диалог админ↔ученик запрещён на уровне
   // права, а не только скрыт из списка контактов.
-  if (user.role === 'admin') return false;
+  if (!['mentor', 'admin', 'branch_manager'].includes(user.role)) return false;
+
+  if (user.role === 'admin' || user.role === 'branch_manager') {
+    if (!user.branchId) return false;
+    const { rows } = await db.query(
+      `SELECT 1 FROM student_profiles
+        WHERE user_id = $1 AND branch_id = $2 LIMIT 1`,
+      [studentId, user.branchId],
+    );
+    return rows.length > 0;
+  }
 
   if (!user.organizationId) return false;
   const { rows } = await db.query(
@@ -155,12 +165,32 @@ export async function canStaffChatStudent(user, studentId, db = pool) {
   return rows.length > 0;
 }
 
+/** Staff chat matrix inside one branch. */
+export async function canStaffChatStaff(user, peerId, db = pool) {
+  if (!user || !DM_STAFF_ROLES.has(user.role) || !user.branchId || !isUuid(peerId)) return false;
+  const allowed = {
+    mentor: ['admin', 'branch_manager', 'employee'],
+    admin: ['mentor'],
+    branch_manager: ['mentor'],
+    employee: ['mentor'],
+  }[user.role] ?? [];
+  if (allowed.length === 0) return false;
+  const { rows } = await db.query(
+    `SELECT 1 FROM users
+      WHERE id = $1 AND role = ANY($2::user_role[]) AND branch_id = $3
+        AND status = 'active' AND deleted_at IS NULL LIMIT 1`,
+    [peerId, allowed, user.branchId],
+  );
+  return rows.length > 0;
+}
+
 /**
  * Собеседник может быть родителем ИЛИ учеником — проверяем оба варианта.
  * Вызывающему не нужно заранее знать, кто перед ним: снаружи это просто
  * «человек, которому пишут».
  */
 export async function canStaffChatPeer(user, peerId, db = pool) {
+  if (await canStaffChatStaff(user, peerId, db)) return true;
   if (await canStaffChatParent(user, peerId, db)) return true;
   return canStaffChatStudent(user, peerId, db);
 }
@@ -188,9 +218,44 @@ export async function assertDmAccess(user, roomKey, db = pool) {
     return parsed;
   }
 
+  if (user.id === peerId && await canStaffChatStaff(user, staffId, db)) return parsed;
   if (user.id !== staffId) throw new AppError(403, 'No access to this room');
   await assertStaffCanChatPeer(user, peerId, db);
   return parsed;
+}
+
+/** Staff peers allowed by the same branch-scoped matrix as canStaffChatStaff. */
+export async function listStaffPeerContacts(user, db = pool) {
+  if (!DM_STAFF_ROLES.has(user.role) || !user.branchId) return [];
+  const peerRoles = {
+    mentor: ['admin', 'branch_manager', 'employee'],
+    admin: ['mentor'],
+    branch_manager: ['mentor'],
+    employee: ['mentor'],
+  }[user.role] ?? [];
+  if (peerRoles.length === 0) return [];
+  const { rows } = await db.query(
+    `WITH peers AS (
+       SELECT id, first_name, last_name, avatar_key, role AS staff_role,
+              CASE WHEN $3::text = 'mentor' THEN 'dm:' || id::text || ':' || $1::text
+                   ELSE 'dm:' || $1::text || ':' || id::text END AS room_key
+         FROM users
+        WHERE role = ANY($2::user_role[]) AND branch_id = $4 AND status = 'active' AND deleted_at IS NULL
+     ), last_msg AS (
+       SELECT DISTINCT ON (room_key) room_key, body, created_at
+         FROM chat_messages WHERE deleted_at IS NULL ORDER BY room_key, created_at DESC
+     ), unread AS (
+       SELECT room_key, count(*)::int unread_count FROM chat_messages
+        WHERE deleted_at IS NULL AND read_at IS NULL AND sender_id <> $1::uuid GROUP BY room_key
+     )
+     SELECT p.*, lm.body AS last_message, lm.created_at AS last_message_at,
+            COALESCE(un.unread_count, 0) AS unread_count
+       FROM peers p LEFT JOIN last_msg lm ON lm.room_key = p.room_key
+       LEFT JOIN unread un ON un.room_key = p.room_key
+      ORDER BY lm.created_at DESC NULLS LAST, p.first_name`,
+    [user.id, peerRoles, user.role, user.branchId],
+  );
+  return rows;
 }
 
 /**
@@ -217,7 +282,7 @@ export async function listStaffStudentContacts(user, db = pool) {
                  JOIN groups g         ON g.id = gs.group_id AND g.deleted_at IS NULL`;
     scopeWhere = 'g.mentor_id = $2';
     scopeParam = user.id;
-  } else if (user.role === 'admin') {
+  } else if (user.role === 'admin' || user.role === 'branch_manager') {
     if (!user.branchId) return [];
     scopeJoin = '';
     scopeWhere = 'sp.branch_id = $2';
@@ -285,7 +350,7 @@ export async function listStaffContacts(user, db = pool) {
                  JOIN groups g         ON g.id = gs.group_id AND g.deleted_at IS NULL`;
     scopeWhere = 'g.mentor_id = $2';
     scopeParam = user.id;
-  } else if (user.role === 'admin') {
+  } else if (user.role === 'admin' || user.role === 'branch_manager') {
     if (!user.branchId) return [];
     scopeJoin = '';
     scopeWhere = 'sp.branch_id = $2';
@@ -360,17 +425,34 @@ export async function listStaffContacts(user, db = pool) {
 }
 
 /**
- * Мои диалоги со стороны родителя/студента — список staff, с которыми уже
- * есть переписка. В отличие от listStaffContacts (сотрудник видит ВСЕХ, с кем
- * вправе заговорить первым), родитель/студент сам диалог начать не может
- * (см. requireRoomAccess/assertDmAccess) — поэтому список строится не от
- * права на переписку, а от уже существующих сообщений в `dm:<staffId>:<me>`.
+ * Доступные диалоги родителя/студента: действующие наставники активных групп
+ * плюс сотрудники из уже существующей переписки. Поэтому родитель может
+ * написать наставнику первым, а прежний диалог не исчезнет из истории.
  */
 export async function listMyThreads(user, db = pool) {
   if (user.role !== 'parent' && user.role !== 'student') return [];
 
   const { rows } = await db.query(
-    `WITH last_msg AS (
+    `WITH existing_staff AS (
+        SELECT DISTINCT split_part(m.room_key, ':', 2)::uuid AS staff_id
+          FROM chat_messages m
+         WHERE m.deleted_at IS NULL
+           AND m.room_key LIKE 'dm:%:' || $1::text
+     ),
+     eligible_mentors AS (
+        SELECT DISTINCT g.mentor_id AS staff_id
+          FROM student_profiles sp
+          JOIN group_students gs ON gs.student_id = sp.user_id AND gs.left_at IS NULL
+          JOIN groups g ON g.id = gs.group_id AND g.deleted_at IS NULL
+         WHERE ($2::text = 'parent' AND sp.parent_id = $1::uuid)
+            OR ($2::text = 'student' AND sp.user_id = $1::uuid)
+     ),
+     visible_staff AS (
+        SELECT staff_id FROM existing_staff
+        UNION
+        SELECT staff_id FROM eligible_mentors
+     ),
+     last_msg AS (
         SELECT DISTINCT ON (m.room_key)
                m.room_key, m.body, m.created_at
           FROM chat_messages m
@@ -387,20 +469,21 @@ export async function listMyThreads(user, db = pool) {
            AND m.room_key LIKE 'dm:%:' || $1::text
          GROUP BY m.room_key
      )
-     SELECT split_part(lm.room_key, ':', 2)::uuid AS id,
+     SELECT vs.staff_id AS id,
             u.first_name,
             u.last_name,
             u.avatar_key,
             u.role                        AS staff_role,
-            lm.room_key,
+            ('dm:' || vs.staff_id::text || ':' || $1::text) AS room_key,
             lm.body                       AS last_message,
             lm.created_at                 AS last_message_at,
             COALESCE(un.unread_count, 0)  AS unread_count
-       FROM last_msg lm
-       JOIN users u ON u.id = split_part(lm.room_key, ':', 2)::uuid AND u.deleted_at IS NULL
-       LEFT JOIN unread un ON un.room_key = lm.room_key
+       FROM visible_staff vs
+       JOIN users u ON u.id = vs.staff_id AND u.deleted_at IS NULL AND u.status = 'active'
+       LEFT JOIN last_msg lm ON lm.room_key = 'dm:' || vs.staff_id::text || ':' || $1::text
+       LEFT JOIN unread un ON un.room_key = 'dm:' || vs.staff_id::text || ':' || $1::text
       ORDER BY lm.created_at DESC`,
-    [user.id],
+    [user.id, user.role],
   );
 
   return rows;

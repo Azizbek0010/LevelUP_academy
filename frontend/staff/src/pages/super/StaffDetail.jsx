@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -52,6 +52,8 @@ function dateTime(iso) {
 export default function StaffDetail() {
   const { role, id } = useParams();
   const { token } = useAuth();
+  const [gradeBusy, setGradeBusy] = useState(false);
+  const [branchBusy, setBranchBusy] = useState(false);
 
   const admins = useSuperAdmins();
   const mentors = useSuperMentors();
@@ -124,6 +126,34 @@ export default function StaffDetail() {
   const lastViolation = items[0] ?? null;
   const fullName = `${person.firstName} ${person.lastName}`;
 
+  const changeGrade = async (grade) => {
+    setGradeBusy(true);
+    try {
+      await api.superUpdateMentorGrade(token, person.id, grade || null);
+      await mentors.refetch();
+    } catch (err) {
+      alert(err.message || 'Не удалось изменить грейд');
+    } finally {
+      setGradeBusy(false);
+    }
+  };
+
+  const changeMentorBranch = async (branchId) => {
+    if (!branchId || branchId === person.branchId) return;
+    const next = (branches.data?.branches ?? []).find((b) => b.id === branchId);
+    if (!window.confirm(`${fullName} mentorini “${next?.name || 'boshqa filial'}”ga o‘tkazasizmi? Eski filialdagi guruhlardan mentor avtomatik ajratiladi.`)) return;
+    setBranchBusy(true);
+    try {
+      const result = await api.superUpdateMentorBranch(token, person.id, branchId);
+      await mentors.refetch();
+      if (result.mentor?.detachedGroups) alert(`${result.mentor.detachedGroups} ta eski guruh mentorsiz qoldi. Ularga yangi mentor biriktiring.`);
+    } catch (err) {
+      alert(err.message || 'Mentor filialini o‘zgartirib bo‘lmadi');
+    } finally {
+      setBranchBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <PageHead
@@ -132,13 +162,30 @@ export default function StaffDetail() {
         title={fullName}
         subtitle={ROLE_LABELS[role] ?? role}
       >
-        {role === 'mentor' && person.grade && GRADE_META[person.grade] && (
-          <span
-            className="badge badge-outline badge-sm gap-1.5 font-semibold"
-            style={{ borderColor: GRADE_META[person.grade].color, color: GRADE_META[person.grade].color }}
-          >
-            <Award size={11} /> {GRADE_META[person.grade].label}
-          </span>
+        {role === 'mentor' && (
+          <label className="flex items-center gap-1.5">
+            <Building2 size={13} className="text-base-content/50" />
+            <select className="select select-bordered select-xs font-semibold" value={person.branchId || ''} disabled={branchBusy} onChange={(e) => changeMentorBranch(e.target.value)} title="Mentor filialini o‘zgartirish">
+              {(branches.data?.branches ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </label>
+        )}
+        {role === 'mentor' && (
+          <label className="flex items-center gap-1.5">
+            <Award size={12} className="text-base-content/50" />
+            <select
+              className="select select-bordered select-xs font-semibold"
+              value={person.grade || ''}
+              disabled={gradeBusy}
+              onChange={(e) => changeGrade(e.target.value)}
+              title="Изменить грейд ментора"
+            >
+              <option value="">Не задан</option>
+              {Object.entries(GRADE_META).map(([value, meta]) => (
+                <option key={value} value={value}>{meta.label}</option>
+              ))}
+            </select>
+          </label>
         )}
         {lastViolation && (
           <span className="badge badge-ghost badge-sm gap-1.5">

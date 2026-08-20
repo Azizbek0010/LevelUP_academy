@@ -3,10 +3,9 @@ import { redisConnection } from '../../config/redis.js';
 import { pool } from '../../config/db.js';
 import { logger } from '../../config/logger.js';
 import { notificationQueue } from '../notification.queue.js';
+import { chargeCurrentMonth } from '../../modules/billing/billing.service.js';
 
 const QUEUE_NAME = 'billing';
-const DUE_DAY_OFFSET = '4 days'; // 1-е число + 4 дня = 5-е число (дедлайн оплаты)
-
 const billingQueue = new Queue(QUEUE_NAME, { connection: redisConnection });
 
 /**
@@ -30,35 +29,7 @@ export async function scheduleBillingCron() {
 }
 
 async function chargeMonth() {
-  const { rows: charged } = await pool.query(
-    `WITH period AS (
-       SELECT date_trunc('month', CURRENT_DATE)::date AS period_month,
-              (date_trunc('month', CURRENT_DATE) + INTERVAL '${DUE_DAY_OFFSET}')::date AS due_date
-     ),
-     targets AS (
-       SELECT DISTINCT u.id AS student_id, g.id AS group_id, g.branch_id, g.monthly_price
-         FROM group_students gs
-         JOIN groups g ON g.id = gs.group_id
-         JOIN users u ON u.id = gs.student_id
-        WHERE gs.left_at IS NULL
-          AND g.deleted_at IS NULL AND g.is_archived = false
-          AND u.deleted_at IS NULL AND u.status = 'active'
-          AND g.monthly_price > 0
-     ),
-     ins AS (
-       INSERT INTO invoices
-         (branch_id, student_id, group_id, type, status, total_amount, paid_amount, due_date, period_month, source)
-       SELECT t.branch_id, t.student_id, t.group_id, 'full', 'pending', t.monthly_price, 0, p.due_date, p.period_month, 'auto'
-         FROM targets t, period p
-       ON CONFLICT (student_id, group_id, period_month) WHERE source = 'auto' DO NOTHING
-       RETURNING id, student_id, total_amount, due_date
-     )
-     UPDATE student_profiles sp
-        SET total_debt = total_debt + ins.total_amount, updated_at = now()
-       FROM ins
-      WHERE sp.user_id = ins.student_id
-      RETURNING ins.id AS invoice_id, ins.student_id, ins.total_amount, ins.due_date`,
-  );
+  const charged = await chargeCurrentMonth();
 
   for (const row of charged) {
     try {

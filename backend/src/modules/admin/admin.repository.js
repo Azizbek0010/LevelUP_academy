@@ -681,11 +681,15 @@ export function listGroupsForSchedule(branchId, client = pool) {
   return client
     .query(
       `SELECT g.id, g.name, g.subject, g.schedule, g.room_id, r.name AS room_name,
-              g.mentor_id, m.first_name AS mentor_first, m.last_name AS mentor_last
+              g.mentor_id, m.first_name AS mentor_first, m.last_name AS mentor_last,
+              g.created_at,
+              count(gs.student_id)::int AS student_count
          FROM groups g
          JOIN users m ON m.id = g.mentor_id
          LEFT JOIN rooms r ON r.id = g.room_id
+         LEFT JOIN group_students gs ON gs.group_id = g.id AND gs.left_at IS NULL
         WHERE g.branch_id = $1 AND g.deleted_at IS NULL AND g.is_archived = false
+        GROUP BY g.id, r.name, m.first_name, m.last_name
         ORDER BY g.created_at`,
       [branchId],
     )

@@ -2,6 +2,7 @@ import { messages } from './messages.js';
 import { TelegramBindTokenService } from './bind-token.service.js';
 import { TelegramLoginNonceService } from './login-nonce.service.js';
 import { BranchBindTokenService } from './branch-bind-token.service.js';
+import { GroupBindTokenService } from './group-bind-token.service.js';
 import { LOGIN_PAYLOAD_PREFIX } from './constants.js';
 import { resolveUser, coinsCommand, ratingCommand, homeCommand } from './bot.commands.js';
 import { isFeatureEnabledForOrg } from '../../shared/orgFeatures.js';
@@ -13,6 +14,7 @@ export function registerTelegramBotHandlers({ bot, pool, redis, logger, language
   const bindTokens = new TelegramBindTokenService({ redis, botUsername: 'unused-for-consume-only' });
   const loginNonces = new TelegramLoginNonceService({ redis, botUsername: 'unused-for-approve-only' });
   const branchBindTokens = new BranchBindTokenService({ redis });
+  const groupBindTokens = new GroupBindTokenService({ redis });
 
   /**
    * Что именно пришло от Telegram. Без этого молчание бота неотличимо от
@@ -128,6 +130,23 @@ export function registerTelegramBotHandlers({ bot, pool, redis, logger, language
       }
       logger?.error({ err, branchId, chatId }, 'Branch Telegram group bind failed');
       await ctx.reply(t.genericError);
+    }
+  });
+
+  bot.command('bindgroup', async (ctx) => {
+    if (!['group', 'supergroup'].includes(ctx.chat?.type)) return ctx.reply(t.branchBindNotGroup);
+    const groupId = await groupBindTokens.consume(String(ctx.match || '').trim());
+    if (!groupId) return ctx.reply(t.branchBindTokenInvalid);
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE groups SET parent_tg_chat_id = $1, parent_tg_bound_at = now(), parent_tg_title = $2
+          WHERE id = $3 AND deleted_at IS NULL`, [ctx.chat.id, ctx.chat.title || null, groupId],
+      );
+      return ctx.reply(rowCount ? t.branchBindSuccess : t.branchBindTokenInvalid);
+    } catch (err) {
+      if (err?.code === '23505') return ctx.reply(t.branchBindAlreadyLinked);
+      logger?.error({ err, groupId }, 'Group Telegram bind failed');
+      return ctx.reply(t.genericError);
     }
   });
 

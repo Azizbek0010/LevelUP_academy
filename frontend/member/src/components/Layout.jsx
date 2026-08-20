@@ -6,130 +6,111 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icons.jsx';
 
 const NAV = [
-  { to: '/dashboard', label: 'Обзор', icon: 'home' },
-  { to: '/attendance', label: 'Посещаемость', icon: 'calendar-check' },
-  { to: '/grades', label: 'Оценки', icon: 'academic' },
-  { to: '/debt', label: 'Оплата', icon: 'wallet' },
-  { to: '/chat', label: 'Чат', icon: 'chat' },
+  { to: '/dashboard', label: 'Обзор', short: 'Обзор', icon: 'home', description: 'Главная сводка' },
+  { to: '/attendance', label: 'Посещаемость', short: 'Давомат', icon: 'calendar-check', description: 'Уроки и пропуски' },
+  { to: '/grades', label: 'Успеваемость', short: 'Оценки', icon: 'academic', description: 'Оценки и результаты' },
+  { to: '/debt', label: 'Оплата', short: 'Оплата', icon: 'wallet', description: 'Баланс и задолженность' },
+  { to: '/chat', label: 'Сообщения', short: 'Чат', icon: 'chat', description: 'Связь с преподавателем' },
 ];
-
-function ChildCard({ child }) {
-  if (!child) return null;
-  return (
-    <div className="px-4 pb-3">
-      <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/5 border border-white/5">
-        <Avatar name={`${child.firstName} ${child.lastName}`} size={34} />
-        <div className="min-w-0">
-          <p className="text-sm font-semibold truncate">{child.firstName}</p>
-          <p className="text-[11px] opacity-40 flex items-center gap-1">
-            <Icon name="user" className="w-3 h-3" />
-            Ребёнок
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function Layout() {
   const { user } = useAuth();
-  const { selectedChild } = useChild();
+  const { childList, selectedChild, selectChild } = useChild();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const sidebar = (
-    <div className="flex flex-col h-full bg-sidebar text-neutral-content">
-      <div className="px-5 pt-6 pb-4">
+    <div className="parent-sidebar-inner">
+      <div className="parent-brand">
         <img src="/logo-white.svg" alt="LevelUp" className="h-7 w-auto" />
       </div>
 
-      <ChildCard child={selectedChild} />
-
-      <nav className="flex-1 px-3 py-2 space-y-1">
+      <nav className="parent-nav">
         {NAV.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={() => setMobileOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
-                isActive
-                  ? 'bg-primary text-primary-content font-bold shadow-lg shadow-primary/20'
-                  : 'text-neutral-content/50 hover:bg-white/5 hover:text-neutral-content'
-              }`
-            }
-          >
-            <Icon name={item.icon} className="w-5 h-5 shrink-0" />
-            <span>{item.label}</span>
+          <NavLink key={item.to} to={item.to} onClick={() => setMobileOpen(false)} className={({ isActive }) => `parent-nav-link ${isActive ? 'is-active' : ''}`}>
+            <span className="parent-nav-icon"><Icon name={item.icon} className="w-[18px] h-[18px]" /></span>
+            <span className="text-sm font-medium min-w-0 truncate">{item.label}</span>
+            <Icon name="chevron-right" className="parent-nav-arrow w-4 h-4 ml-auto" />
           </NavLink>
         ))}
       </nav>
 
-      <div className="mt-auto p-3 border-t border-white/5">
-        <NavLink
-          to="/notifications"
-          onClick={() => setMobileOpen(false)}
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 mb-1 ${
-              isActive
-                ? 'bg-primary text-primary-content font-bold shadow-lg shadow-primary/20'
-                : 'text-neutral-content/50 hover:bg-white/5 hover:text-neutral-content'
-            }`
-          }
-        >
-          <Icon name="bell" className="w-5 h-5 shrink-0" />
-          <span>Уведомления</span>
+      <div className="parent-sidebar-footer">
+        <p className="parent-footer-caption">АККАУНТ</p>
+        <NavLink to="/notifications" onClick={() => setMobileOpen(false)} className={({ isActive }) => `parent-nav-link ${isActive ? 'is-active' : ''}`}>
+          <span className="parent-nav-icon"><Icon name="bell" className="w-[18px] h-[18px]" /></span>
+          <span className="text-sm font-medium">Уведомления</span>
+          <Icon name="chevron-right" className="parent-nav-arrow w-4 h-4 ml-auto" />
         </NavLink>
-
-        <NavLink
-          to="/profile"
-          onClick={() => setMobileOpen(false)}
-          className="flex items-center gap-3 p-2 -mx-1 rounded-xl hover:bg-white/5 transition-colors group"
-        >
-          <div className="relative">
-            <Avatar name={`${user?.firstName} ${user?.lastName}`} size={36} />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-sidebar" />
-          </div>
-          <div className="flex-1 min-w-0">
+        <NavLink to="/profile" onClick={() => setMobileOpen(false)} className="parent-profile-link">
+          <Avatar name={`${user?.firstName} ${user?.lastName}`} size={36} />
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold truncate">{user?.firstName} {user?.lastName}</p>
-            <p className="text-[11px] opacity-40 flex items-center gap-1">
-              Профиль
-              <Icon name="chevron-right" className="w-3 h-3" />
-            </p>
+            <p className="text-[11px] text-slate-500">Настройки профиля</p>
           </div>
+          <Icon name="chevron-right" className="w-4 h-4 opacity-50" />
         </NavLink>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen flex bg-base-200">
-      <aside className="hidden lg:flex w-64 shrink-0">{sidebar}</aside>
+    <div className="parent-shell">
+      <aside className="parent-sidebar hidden lg:block">{sidebar}</aside>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 z-50 shadow-2xl">{sidebar}</aside>
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button className="absolute inset-0 bg-slate-950/50 w-full" aria-label="Закрыть меню" onClick={() => setMobileOpen(false)} />
+          <aside className="parent-sidebar absolute inset-y-0 left-0 w-[286px] shadow-2xl">{sidebar}</aside>
         </div>
       )}
 
-      <div className="flex-1 min-w-0 flex flex-col">
-        <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-sidebar text-white">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setMobileOpen(true)} className="btn btn-ghost btn-sm btn-circle">
-              <Icon name="bars-3" className="w-5 h-5" />
-            </button>
-            <img src="/logo-white.svg" alt="LevelUp" className="h-5 w-auto" />
+      <section className="parent-workspace">
+        <header className="parent-topbar">
+          <div className="flex items-center gap-3 min-w-0">
+            <button className="parent-menu-button lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Открыть меню"><Icon name="bars-3" className="w-5 h-5" /></button>
+            <img src="/logo-white.svg" alt="LevelUp" className="h-6 w-auto lg:hidden" />
+            <div className="parent-header-divider hidden lg:block" />
+            {selectedChild && (
+              <div className="parent-header-child">
+                <Avatar name={`${selectedChild.firstName} ${selectedChild.lastName}`} size={32} />
+                <div className="min-w-0 hidden sm:block">
+                  <p className="text-[9px] uppercase tracking-[.12em] text-white/35 font-semibold">Выбранный ученик</p>
+                  <p className="text-xs font-semibold text-white/90 truncate">{selectedChild.firstName} {selectedChild.lastName}</p>
+                </div>
+                {childList.length > 1 && (
+                  <select value={selectedChild.id} onChange={(e) => selectChild(e.target.value)} aria-label="Выбрать ребёнка" className="parent-header-select hidden md:block">
+                    {childList.map((child) => <option key={child.id} value={child.id}>{child.firstName}</option>)}
+                  </select>
+                )}
+              </div>
+            )}
           </div>
-          <NavLink to="/notifications" className="btn btn-ghost btn-sm btn-circle relative">
-            <Icon name="bell" className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full" />
-          </NavLink>
-        </div>
+          <div className="parent-header-actions">
+            <NavLink to="/notifications" className="parent-header-bell" aria-label="Уведомления">
+              <Icon name="bell" className="w-[18px] h-[18px]" />
+            </NavLink>
+            <span className="parent-header-separator" />
+            <NavLink to="/profile" className="parent-header-account" aria-label="Профиль">
+              <Avatar name={`${user?.firstName} ${user?.lastName}`} size={32} />
+              <div className="hidden sm:block min-w-0">
+                <p className="text-xs font-semibold text-white/90 truncate">{user?.firstName} {user?.lastName}</p>
+                <p className="text-[10px] text-white/35">Родитель</p>
+              </div>
+              <Icon name="chevron-right" className="w-3.5 h-3.5 text-white/30 hidden sm:block" />
+            </NavLink>
+          </div>
+        </header>
 
-        <main className="flex-1 p-4 lg:p-6 max-w-6xl mx-auto w-full">
-          <Outlet />
-        </main>
-      </div>
+        <main className="parent-main"><Outlet /></main>
+
+        <nav className="parent-mobile-nav lg:hidden">
+          {NAV.map((item) => (
+            <NavLink key={item.to} to={item.to} className={({ isActive }) => `parent-mobile-link ${isActive ? 'is-active' : ''}`}>
+              <Icon name={item.icon} className="w-5 h-5" /><span>{item.short}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </section>
     </div>
   );
 }

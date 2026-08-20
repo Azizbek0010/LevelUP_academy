@@ -62,3 +62,17 @@ export const listUsers = asyncHandler(async (req, res) => {
     meta: buildPageMeta(result.total, page, limit),
   });
 });
+
+/** GET /api/users/directory — единая role-aware база людей и клиентов. */
+export const listDirectory = asyncHandler(async (req, res) => {
+  const { role, status, search } = req.query;
+  const { page, limit, offset } = parsePagination(req.query);
+  const result = await usersService.listDirectory({
+    requester: req.user, role, status, search, page, limit, offset,
+  });
+  res.json({
+    success: true,
+    data: result.items,
+    meta: { ...buildPageMeta(result.total, page, limit), ...result.capabilities },
+  });
+});

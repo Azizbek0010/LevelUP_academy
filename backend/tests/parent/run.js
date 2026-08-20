@@ -19,7 +19,7 @@ import { scenario, printSummary, assert, assertEqual, expectAppError } from './l
 
 async function main() {
   const ctx = await setupFixtures();
-  const { branchId, parentId, otherParentId, mentorId, childId, outsiderChildId, groupId } = ctx;
+  const { branchId, parentId, otherParentId, mentorId, childId, outsiderChildId, groupId, hwId, testId } = ctx;
 
   // Give the child some coins so the leaderboard rank is populated.
   await changeCoins({
@@ -70,7 +70,7 @@ async function main() {
 
     assertEqual(data.grades.tests.length, 1, 'one finished test expected');
     assertEqual(data.grades.tests[0].score, 100, 'test score should match');
-    assertEqual(data.grades.tests[0].maxScore, 2, 'test maxScore = question count');
+    assertEqual(data.grades.tests[0].maxScore, 100, 'test score is stored as percent');
   });
 
   // =======================================================================
@@ -94,11 +94,29 @@ async function main() {
     );
   });
 
+  await scenario(5, 'group rating and grade details are scoped and fully shaped', async () => {
+    const rating = await overviewService.getChildGroupRating(parentId, childId);
+    assertEqual(rating.groupId, groupId, 'rating should use the child active group');
+    assert(rating.students.some((student) => student.childId === childId), 'rating should contain the child');
+
+    const homework = await overviewService.getHomeworkDetail(parentId, hwId);
+    assertEqual(homework.id, hwId, 'homework detail id should match');
+    assertEqual(homework.score, 88, 'homework detail score should match');
+
+    const test = await overviewService.getTestDetail(parentId, testId);
+    assertEqual(test.id, testId, 'test detail id should match');
+    assertEqual(test.totalQuestions, 2, 'test detail should expose question count');
+    assertEqual(test.correctCount, 2, 'fixture answers should both be correct');
+
+    await expectAppError(() => overviewService.getHomeworkDetail(otherParentId, hwId), 403);
+    await expectAppError(() => overviewService.getTestDetail(otherParentId, testId), 403);
+  });
+
   // =======================================================================
   // 5. Notifications feed — grades/attendance/payments, scoped to own children
   // =======================================================================
-  await scenario(5, 'notifications feed merges grade/attendance/payment events, sorted desc, scoped to own children', async () => {
-    const items = await notificationsService.listForParent(parentId);
+  await scenario(6, 'notifications feed merges grade/attendance/payment events, sorted desc, scoped to own children', async () => {
+    const { items } = await notificationsService.listForParent(parentId);
 
     assert(items.length >= 5, `expected at least 5 events, got ${items.length}`);
 
@@ -128,7 +146,7 @@ async function main() {
     const sorted = [...dates].sort((a, b) => b - a);
     assertEqual(JSON.stringify(dates), JSON.stringify(sorted), 'feed should be sorted by createdAt desc');
 
-    const otherItems = await notificationsService.listForParent(otherParentId);
+    const { items: otherItems } = await notificationsService.listForParent(otherParentId);
     assert(
       otherItems.every((n) => !n.body.includes('Kid Test')),
       'other parent\'s feed should never mention this parent\'s child',

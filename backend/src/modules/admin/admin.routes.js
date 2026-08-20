@@ -22,6 +22,7 @@ import {
   addGroupStudentSchema,
   listGroupsQuery,
   createAnnouncementSchema,
+  improveAnnouncementSchema,
   groupAttendanceQuery,
   markGroupAttendanceSchema,
   createGroupHomeworkSchema,
@@ -812,6 +813,9 @@ router.get('/training-types', ctrl.listTrainingTypes);
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.get('/groups/:id', validate({ params: idParam }), ctrl.groupDetail);
+router.get('/groups/:id/telegram', requireOrgFeature('telegram_integration'), validate({ params: idParam }), ctrl.groupTelegramStatus);
+router.post('/groups/:id/telegram/bind-token', requireOrgFeature('telegram_integration'), validate({ params: idParam }), ctrl.createGroupTelegramBindToken);
+router.delete('/groups/:id/telegram', requireOrgFeature('telegram_integration'), validate({ params: idParam }), ctrl.unlinkGroupTelegram);
 router.patch('/groups/:id', validate({ params: idParam, body: updateGroupSchema }), ctrl.updateGroup);
 
 /**
@@ -1187,7 +1191,10 @@ router.post(
  *       404: { $ref: '#/components/responses/NotFound' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
+router.get('/announcements', ctrl.listAnnouncements);
+router.get('/announcements/image-upload-url', ctrl.announcementImageUploadUrl);
+router.post('/announcements/improve', validate({ body: improveAnnouncementSchema }), ctrl.improveAnnouncement);
+router.post('/announcements', authorize('branch_manager'), validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
 
 // ==================== ДИСЦИПЛИНА ====================
 

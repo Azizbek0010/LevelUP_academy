@@ -2,7 +2,7 @@ import { requireMentorGroup } from '../shared/groupAccess.js';
 import { emitTo } from '../../../sockets/io.js';
 import { attendanceRoom } from '../../../sockets/attendance.js';
 import { AppError } from '../../../utils/AppError.js';
-import { sendToBranchGroup } from '../../telegram/branchNotify.js';
+import { sendToGroupParentChat } from '../../telegram/groupNotify.js';
 import { logger } from '../../../config/logger.js';
 import * as repo from './attendance.repository.js';
 
@@ -64,7 +64,7 @@ export async function markAttendance({ mentorId, groupId, lessonDate, records })
   // журнал автосохраняется на каждый клик (UI без кнопки «Сохранить», см.
   // MP-ATTEND), поэтому markAttendance зовётся много раз за один урок — слать
   // сообщение на каждый вызов означало бы десяток сообщений родителям за урок.
-  scheduleParentNotify({ groupId, branchId: group.branch_id, groupName: group.name, lessonDate });
+  scheduleParentNotify({ groupId, groupName: group.name, lessonDate, schedule: group.schedule });
 
   return saved;
 }
@@ -78,22 +78,26 @@ export async function markAttendance({ mentorId, groupId, lessonDate, records })
 const NOTIFY_DEBOUNCE_MS = 3 * 60 * 1000;
 const pendingNotifyTimers = new Map();
 
-function scheduleParentNotify({ groupId, branchId, groupName, lessonDate }) {
+function scheduleParentNotify({ groupId, groupName, lessonDate, schedule }) {
   const key = `${groupId}:${lessonDate}`;
   clearTimeout(pendingNotifyTimers.get(key));
 
+  const localDay = new Date(`${lessonDate}T12:00:00+05:00`).toLocaleDateString('en-US', { weekday: 'short', timeZone: TZ }).toLowerCase();
+  const lesson = (Array.isArray(schedule) ? schedule : []).find((s) => String(s.day).slice(0, 3).toLowerCase() === localDay);
+  const endAt = lesson?.end ? new Date(`${lessonDate}T${lesson.end}:00+05:00`).getTime() : 0;
+  const delay = Math.max(NOTIFY_DEBOUNCE_MS, endAt - Date.now());
   const timer = setTimeout(() => {
     pendingNotifyTimers.delete(key);
-    notifyParentGroup({ groupId, branchId, groupName, lessonDate }).catch(
+    notifyParentGroup({ groupId, groupName, lessonDate }).catch(
       (err) => logger.error({ err, groupId, lessonDate }, 'attendance: parent group notify failed'),
     );
-  }, NOTIFY_DEBOUNCE_MS);
+  }, delay);
   timer.unref?.(); // не держит процесс живым ради самого таймера
 
   pendingNotifyTimers.set(key, timer);
 }
 
-async function notifyParentGroup({ groupId, branchId, groupName, lessonDate }) {
+async function notifyParentGroup({ groupId, groupName, lessonDate }) {
   const records = await repo.findByGroupAndDate(groupId, lessonDate);
   if (records.length === 0) return;
 
@@ -102,7 +106,7 @@ async function notifyParentGroup({ groupId, branchId, groupName, lessonDate }) {
     .join('\n');
 
   const text = `<b>📋 Davomat — ${groupName}</b>\n${lessonDate}\n\n${lines}`;
-  await sendToBranchGroup(branchId, text);
+  await sendToGroupParentChat(groupId, text);
 }
 
 /** Чтение davomat группы: точная дата либо диапазон дат. */

@@ -58,7 +58,7 @@ export function useChatMessages(roomKey) {
   });
 }
 
-/** AB-VERIFY: диалоги родителя/студента со staff (не может начать сам — только отвечать). */
+/** Доступные преподаватели и существующие диалоги родителя/студента. */
 export function useChatThreads() {
   const { token } = useAuth();
   return useAuthedQuery(['chat-threads'], () => api.chatThreads(token));

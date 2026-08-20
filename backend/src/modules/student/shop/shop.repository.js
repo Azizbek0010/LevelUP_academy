@@ -2,6 +2,15 @@ import { pool } from '../../../config/db.js';
 
 /** Активные товары с наличием на складе для филиала студента. */
 export async function findActiveItemsByBranch(branchId) {
+  await pool.query(
+    `INSERT INTO shop_items (branch_id, catalog_item_id, name, image_key, coin_price, stock, is_archived)
+     SELECT b.id, c.id, c.name, c.image_key, c.coin_price, 0, c.is_archived
+       FROM branches b
+       JOIN shop_catalog_items c ON c.organization_id = b.organization_id
+      WHERE b.id = $1 AND b.deleted_at IS NULL
+     ON CONFLICT (branch_id, catalog_item_id) WHERE catalog_item_id IS NOT NULL AND deleted_at IS NULL DO NOTHING`,
+    [branchId],
+  );
   const { rows } = await pool.query(
     `SELECT id, name, image_key, coin_price, stock
        FROM shop_items

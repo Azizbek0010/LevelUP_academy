@@ -354,6 +354,16 @@ export function useMe() {
   return useAuthedQuery(['me'], () => api.me(token));
 }
 
+export function useSuperEmployees() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-employees'], () => api.superEmployees(token));
+}
+
+export function usePeopleDirectory(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['people-directory', qs], () => api.peopleDirectory(token, qs));
+}
+
 // K-DISC-FRONT: own discipline (mentor/methodist self-view, read-only)
 export function useMyPenalties() {
   const { token } = useAuth();
@@ -370,13 +380,21 @@ export function useMyDisciplineRules() {
 // запрашивать контакты за них — гарантированный 403 в консоли на каждой странице.
 export function useChatContacts(options = {}) {
   const { token } = useAuth();
-  return useAuthedQuery(['chat-contacts'], () => api.chatContacts(token), options);
+  return useAuthedQuery(['chat-contacts'], () => api.chatContacts(token), {
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+    ...options,
+  });
 }
 
 export function useChatHistory(roomKey) {
   const { token } = useAuth();
   return useAuthedQuery(['chat-history', roomKey], () => api.chatHistory(token, roomKey), {
     enabled: !!roomKey,
+    refetchInterval: roomKey ? 3000 : false,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
 }
 

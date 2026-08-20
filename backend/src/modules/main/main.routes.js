@@ -245,7 +245,7 @@ router.get('/dashboard', ctrl.dashboard);
  *     tags: [Main Admin]
  *     summary: Platform revenue detail — our income (sum of partner bills) + per-partner billing
  *     description: >
- *       Our monthly income = sum of each partner's computed bill (by student count).
+ *       Our monthly income = sum of each partner's computed bill (by total active account count).
  *       Read-only over money tables — writes nothing.
  *     security: [{ bearerAuth: [] }]
  *     responses:
