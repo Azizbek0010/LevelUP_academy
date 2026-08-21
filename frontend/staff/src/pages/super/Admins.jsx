@@ -5,10 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   Plus, Edit2, ShieldAlert, KeyRound, Copy, Check, AlertTriangle,
-  MoreVertical, ChevronDown,
+  MoreVertical, ChevronDown, Users, UserCheck, Building2,
 } from 'lucide-react';
 import { dateShort } from '../../format.js';
-import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches, useSuperBranchManagers, useInvalidate } from '../../queries.js';
+import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches, useSuperBranchManagers, useSuperEmployees, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
@@ -56,6 +56,13 @@ const adminEditSchema = z.object({
   monthlySalary: monthlySalaryField,
 });
 
+const employeeCreateSchema = adminCreateSchema.extend({
+  jobTitle: z.string().trim().min(2, 'Укажите должность').max(120),
+});
+const employeeEditSchema = adminEditSchema.extend({
+  jobTitle: z.string().trim().min(2, 'Укажите должность').max(120),
+});
+
 const methodistCreateSchema = z.object({
   firstName: z.string().trim().min(1, 'Имя обязательно').max(80),
   lastName:  z.string().trim().min(1, 'Фамилия обязательна').max(80),
@@ -72,9 +79,10 @@ const methodistEditSchema = z.object({
 
 // admin и branch_manager заводятся/правятся одинаково (firstName/lastName/email/branchId/phone) —
 // у обоих ровно один филиал, в отличие от methodist (вся организация, без филиала).
-const needsBranch = (role) => role === 'admin' || role === 'branch_manager';
+const needsBranch = (role) => role === 'admin' || role === 'branch_manager' || role === 'employee' || role === 'mentor';
 
 function schemaFor(role, mode) {
+  if (role === 'employee') return mode === 'create' ? employeeCreateSchema : employeeEditSchema;
   if (needsBranch(role)) return mode === 'create' ? adminCreateSchema : adminEditSchema;
   return mode === 'create' ? methodistCreateSchema : methodistEditSchema;
 }
@@ -89,10 +97,11 @@ const STATUS_META = {
 // дисциплины, брать их для роли было бы путаницей («красный» ментор ≠
 // проблема). primary/info/neutral свободны на этой странице.
 const ROLE_META = {
-  admin:            { label: 'Администратор', tone: 'primary' },
-  mentor:           { label: 'Ментор',        tone: 'info' },
-  methodist:        { label: 'Методист',      tone: 'neutral' },
-  branch_manager:   { label: 'Филиал менежери', tone: 'info' },
+  admin:            { label: 'Администратор', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  mentor:           { label: 'Ментор', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  methodist:        { label: 'Методист', cls: 'bg-violet-50 text-violet-700 border-violet-200' },
+  branch_manager:   { label: 'Branch Manager', cls: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+  employee:         { label: 'Другой сотрудник', cls: 'bg-slate-50 text-slate-700 border-slate-200' },
 };
 
 // винительный падеж для «Создать/Редактировать ...» — ROLE_META.label в именительном
@@ -100,11 +109,13 @@ const ROLE_ACCUSATIVE = {
   admin: 'администратора',
   methodist: 'методиста',
   branch_manager: 'branch-менеджера',
+  employee: 'сотрудника',
+  mentor: 'ментора',
 };
 
 function RoleBadge({ role }) {
-  const m = ROLE_META[role] ?? { label: role, tone: 'neutral' };
-  return <StatusBadge tone={m.tone}>{m.label}</StatusBadge>;
+  const m = ROLE_META[role] ?? { label: role, cls: 'bg-base-200 text-base-content/70 border-base-300' };
+  return <span className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold leading-none ${m.cls}`}>{m.label}</span>;
 }
 
 // ─── Показ сгенерированного пароля (один раз) ────────────────
@@ -221,6 +232,8 @@ function AddStaffButton({ onPick, disabled }) {
           <DropdownItem onClick={() => { onPick('admin'); close(); }}>Администратора</DropdownItem>
           <DropdownItem onClick={() => { onPick('methodist'); close(); }}>Методиста</DropdownItem>
           <DropdownItem onClick={() => { onPick('branch_manager'); close(); }}>Branch-менеджера</DropdownItem>
+          <DropdownItem onClick={() => { onPick('employee'); close(); }}>Другого сотрудника</DropdownItem>
+          <DropdownItem onClick={() => { onPick('mentor'); close(); }}>Ментора</DropdownItem>
         </>
       )}
     </Dropdown>
@@ -236,9 +249,11 @@ export default function SuperAdmins() {
   const mentors = useSuperMentors();
   const methodists = useSuperMethodists();
   const branchManagers = useSuperBranchManagers();
+  const employees = useSuperEmployees();
   const branchesQ = useSuperBranches();
 
   const [q, setQ] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [err, setErr] = useState('');
   const [formModal, setFormModal] = useState(null); // { role: 'admin'|'methodist', mode: 'create'|'edit', id }
   const [busy, setBusy] = useState(false);
@@ -256,26 +271,28 @@ export default function SuperAdmins() {
     ...(mentors.data?.mentors ?? []).map((u) => ({ ...u, role: 'mentor' })),
     ...(methodists.data?.methodists ?? []).map((u) => ({ ...u, role: 'methodist' })),
     ...(branchManagers.data?.managers ?? []).map((u) => ({ ...u, role: 'branch_manager' })),
-  ], [admins.data, mentors.data, methodists.data, branchManagers.data]);
+    ...(employees.data?.employees ?? []).map((u) => ({ ...u, role: 'employee' })),
+  ], [admins.data, mentors.data, methodists.data, branchManagers.data, employees.data]);
 
   const rows = useMemo(() => {
     const query = q.trim().toLowerCase();
-    const filtered = !query ? allRows : allRows.filter((r) => {
+    const byRole = roleFilter === 'all' ? allRows : allRows.filter((r) => r.role === roleFilter);
+    const filtered = !query ? byRole : byRole.filter((r) => {
       const full = `${r.firstName} ${r.lastName}`.toLowerCase();
       return full.includes(query)
         || (r.email || '').toLowerCase().includes(query)
         || (r.branchName || '').toLowerCase().includes(query);
     });
     return [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }, [allRows, q]);
+  }, [allRows, q, roleFilter]);
 
-  const loading = admins.isLoading || mentors.isLoading || methodists.isLoading || branchManagers.isLoading;
-  const loadError = [admins.error, mentors.error, methodists.error, branchManagers.error].find((e) => e && e.status !== 401);
+  const loading = admins.isLoading || mentors.isLoading || methodists.isLoading || branchManagers.isLoading || employees.isLoading;
+  const loadError = [admins.error, mentors.error, methodists.error, branchManagers.error, employees.error].find((e) => e && e.status !== 401);
   const showErr = err || loadError?.message || '';
 
   const openCreate = (role) => {
     setErr('');
-    if (needsBranch(role)) reset({ firstName: '', lastName: '', email: '', branchId: activeBranches?.[0]?.id || '', phone: '' });
+    if (needsBranch(role)) reset({ firstName: '', lastName: '', email: '', branchId: activeBranches?.[0]?.id || '', phone: '', jobTitle: '' });
     else reset({ firstName: '', lastName: '', email: '', phone: '' });
     setFormModal({ role, mode: 'create', id: null });
   };
@@ -289,6 +306,7 @@ export default function SuperAdmins() {
         branchId: row.branchId || '',
         phone: row.phone || '',
         monthlySalary: row.monthlySalary ?? '',
+        jobTitle: row.jobTitle || '',
       });
     } else {
       reset({
@@ -305,7 +323,14 @@ export default function SuperAdmins() {
     setErr('');
     setBusy(true);
     try {
-      if (formModal.role === 'admin') {
+      if (formModal.role === 'mentor') {
+        const { mentor } = await api.superCreateMentor(token, {
+          firstName: formData.firstName.trim(), lastName: formData.lastName.trim(), email: formData.email.trim(),
+          branchId: formData.branchId, phone: formData.phone.trim() || undefined,
+        });
+        setTempPassword({ email: mentor.email, password: mentor.password });
+        invalidate('super-mentors', 'super-dashboard');
+      } else if (formModal.role === 'admin') {
         if (formModal.mode === 'create') {
           const { admin } = await api.superCreateAdmin(token, {
             firstName: formData.firstName.trim(),
@@ -325,6 +350,20 @@ export default function SuperAdmins() {
           });
         }
         invalidate('super-admins', 'super-dashboard');
+      } else if (formModal.role === 'employee') {
+        if (formModal.mode === 'create') {
+          const { employee } = await api.superCreateEmployee(token, {
+            firstName: formData.firstName.trim(), lastName: formData.lastName.trim(), email: formData.email.trim(),
+            branchId: formData.branchId, phone: formData.phone.trim() || undefined, jobTitle: formData.jobTitle.trim(),
+          });
+          setTempPassword({ email: employee.email, password: employee.tempPassword });
+        } else {
+          await api.superUpdateEmployee(token, formModal.id, {
+            firstName: formData.firstName.trim(), lastName: formData.lastName.trim(), branchId: formData.branchId,
+            phone: formData.phone.trim() || undefined, jobTitle: formData.jobTitle.trim(), monthlySalary: formData.monthlySalary,
+          });
+        }
+        invalidate('super-employees');
       } else if (formModal.role === 'branch_manager') {
         if (formModal.mode === 'create') {
           const { manager } = await api.superCreateBranchManager(token, {
@@ -378,6 +417,9 @@ export default function SuperAdmins() {
         if (row.status === 'frozen') await api.superUnfreezeAdmin(token, row.id);
         else await api.superFreezeAdmin(token, row.id);
         invalidate('super-admins', 'super-dashboard');
+      } else if (row.role === 'employee') {
+        await api.superFreezeEmployee(token, row.id, row.status !== 'frozen');
+        invalidate('super-employees');
       } else if (row.role === 'branch_manager') {
         if (row.status === 'frozen') await api.superUnfreezeBranchManager(token, row.id);
         else await api.superFreezeBranchManager(token, row.id);
@@ -399,6 +441,9 @@ export default function SuperAdmins() {
       if (row.role === 'admin') {
         const { admin } = await api.superResetAdminPassword(token, row.id);
         setTempPassword({ email: row.email, password: admin.tempPassword });
+      } else if (row.role === 'employee') {
+        const { employee } = await api.superResetEmployeePassword(token, row.id);
+        setTempPassword({ email: row.email, password: employee.tempPassword });
       } else if (row.role === 'branch_manager') {
         const { manager } = await api.superResetBranchManagerPassword(token, row.id);
         setTempPassword({ email: row.email, password: manager.tempPassword });
@@ -414,31 +459,52 @@ export default function SuperAdmins() {
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <PageHeader title="Сотрудники" subtitle="Администраторы, менторы и методисты организации" />
-        <button
-          className="btn btn-ghost btn-sm text-warning"
-          onClick={() => alert('Финанс-менеджер: скоро')
-          }
-        >
-          Финанс-менеджер
-        </button>
+    <div className="space-y-6 pb-8">
+      <div className="relative z-[60]">
+        <PageHeader title="Команда" subtitle="Сотрудники всех филиалов в одном месте">
+          <AddStaffButton onPick={openCreate} disabled={!branches.length} />
+        </PageHeader>
       </div>
 
-      <Card className="p-5 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Card className="p-4 flex flex-row items-center gap-3">
+          <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary grid place-items-center"><Users size={19} /></span>
+          <div><div className="text-2xl font-extrabold tabular-nums">{allRows.length}</div><div className="text-xs text-base-content/50">Всего сотрудников</div></div>
+        </Card>
+        <Card className="p-4 flex flex-row items-center gap-3">
+          <span className="w-10 h-10 rounded-xl bg-success/10 text-success grid place-items-center"><UserCheck size={19} /></span>
+          <div><div className="text-2xl font-extrabold tabular-nums">{allRows.filter((r) => r.status === 'active').length}</div><div className="text-xs text-base-content/50">Активные аккаунты</div></div>
+        </Card>
+        <Card className="p-4 flex flex-row items-center gap-3">
+          <span className="w-10 h-10 rounded-xl bg-info/10 text-info grid place-items-center"><Building2 size={19} /></span>
+          <div><div className="text-2xl font-extrabold tabular-nums">{activeBranches.length}</div><div className="text-xs text-base-content/50">Активные филиалы</div></div>
+        </Card>
+      </div>
+
+      <Card className="overflow-hidden">
+          <div className="p-4 md:p-5 border-b border-base-300 space-y-3">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <SearchInput
               value={q}
               onChange={setQ}
               placeholder="Поиск по имени, email, филиалу…"
-              className="w-full max-w-xs"
+              className="w-full lg:max-w-md bg-base-100"
             />
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-3">
               <span className="text-xs text-base-content/45">
                 Показано {rows.length} из {allRows.length}
               </span>
-              <AddStaffButton onPick={openCreate} disabled={!branches.length} />
+            </div>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {[
+                ['all', 'Все'], ['admin', 'Администраторы'], ['mentor', 'Менторы'],
+                ['methodist', 'Методисты'], ['branch_manager', 'Branch Managers'], ['employee', 'Другие'],
+              ].map(([value, label]) => (
+                <button key={value} onClick={() => setRoleFilter(value)} className={`btn btn-sm whitespace-nowrap ${roleFilter === value ? 'btn-primary' : 'btn-ghost bg-base-200/70'}`}>
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -452,9 +518,9 @@ export default function SuperAdmins() {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="table">
+              <table className="table table-pin-rows">
                 <thead>
-                  <tr>
+                  <tr className="bg-base-200/60 text-[11px] uppercase tracking-wider text-base-content/55">
                     <th>ФИО</th><th>Роль</th><th>Email</th><th>Телефон</th>
                     <th>Филиал</th><th>Создан</th><th>Статус</th><th className="w-10"></th>
                   </tr>
@@ -466,20 +532,20 @@ export default function SuperAdmins() {
                     return (
                       <tr
                         key={`${row.role}-${row.id}`}
-                        className={`cursor-pointer hover:bg-base-200/50 ${dimmed ? 'opacity-60' : ''}`}
-                        onClick={() => navigate(`/admins/${row.role}/${row.id}`)}
+                        className={`cursor-pointer border-b border-base-200 hover:bg-primary/[0.035] transition-colors ${dimmed ? 'opacity-60' : ''}`}
+                        onClick={() => row.role !== 'employee' && navigate(`/admins/${row.role}/${row.id}`)}
                       >
                         <td>
                           <div className="flex items-center gap-2.5">
                             <Avatar name={`${row.firstName} ${row.lastName}`} size="md" />
-                            <span className="font-semibold">{row.firstName} {row.lastName}</span>
+                            <span className="font-bold whitespace-nowrap">{row.firstName} {row.lastName}</span>
                           </div>
                         </td>
-                        <td><RoleBadge role={row.role} /></td>
-                        <td className="text-sm font-mono">{row.email}</td>
-                        <td className="text-sm font-mono">{row.phone || '—'}</td>
-                        <td className="font-medium">{row.branchName || '—'}</td>
-                        <td className="text-sm tabular-nums">{dateShort(row.createdAt)}</td>
+                        <td><RoleBadge role={row.role} />{row.jobTitle && <div className="text-xs text-base-content/45 mt-1">{row.jobTitle}</div>}</td>
+                        <td className="text-sm max-w-[230px] truncate">{row.email}</td>
+                        <td className="text-sm whitespace-nowrap">{row.phone || '—'}</td>
+                        <td className="font-semibold whitespace-nowrap">{row.branchName || '—'}</td>
+                        <td className="text-sm tabular-nums whitespace-nowrap">{dateShort(row.createdAt)}</td>
                         <td><StatusBadge tone={s.tone}>{s.label}</StatusBadge></td>
                         <td className="text-right">
                           <StaffActionsMenu
@@ -549,6 +615,13 @@ export default function SuperAdmins() {
                     {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                   {errors.branchId && <span className="text-xs text-error mt-1">{errors.branchId.message}</span>}
+                </label>
+              )}
+              {formModal.role === 'employee' && (
+                <label className="form-control w-full">
+                  <span className="label-text mb-1">Должность *</span>
+                  <input {...register('jobTitle')} placeholder="Например: уборщица, охранник, завхоз" className={`input input-bordered w-full ${errors.jobTitle ? 'input-error' : ''}`} />
+                  {errors.jobTitle && <span className="text-xs text-error mt-1">{errors.jobTitle.message}</span>}
                 </label>
               )}
               <label className="form-control w-full">

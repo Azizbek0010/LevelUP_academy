@@ -1763,6 +1763,17 @@ if (path === '/branch-manager/reports') {
         });
         if (changed) localStorage.setItem('mock_admin_invoices', JSON.stringify(invoices));
       }
+      const mockCollector = JSON.parse(localStorage.getItem('mock_user') || 'null');
+      const mockCollectorName = [mockCollector?.firstName, mockCollector?.lastName].filter(Boolean).join(' ') || 'Demo Admin';
+      let collectorChanged = false;
+      invoices = invoices.map((inv) => {
+        if (Number(inv.paidAmount || 0) > 0 && !inv.acceptedBy) {
+          collectorChanged = true;
+          return { ...inv, acceptedBy: mockCollectorName };
+        }
+        return inv;
+      });
+      if (collectorChanged) localStorage.setItem('mock_admin_invoices', JSON.stringify(invoices));
       // Filter by status if query param present
       if (queryParams.status && queryParams.status !== 'all') {
         invoices = invoices.filter((inv) => inv.status === queryParams.status);
@@ -1784,6 +1795,8 @@ if (path === '/branch-manager/reports') {
       invoices[idx].status = invoices[idx].paidAmount >= invoices[idx].amount ? 'paid' : 'partially_paid';
       invoices[idx].paidAt = new Date().toISOString();
       invoices[idx].paymentMethod = body.parts?.[0]?.method || body.method || 'cash';
+      const mockCollector = JSON.parse(localStorage.getItem('mock_user') || 'null');
+      invoices[idx].acceptedBy = [mockCollector?.firstName, mockCollector?.lastName].filter(Boolean).join(' ') || 'Demo Admin';
       localStorage.setItem('mock_admin_invoices', JSON.stringify(invoices));
       return { invoice: invoices[idx] };
     }
@@ -1823,6 +1836,10 @@ if (path === '/branch-manager/reports') {
         dueDate: new Date().toISOString(),
         paidAt: new Date().toISOString(),
         paymentMethod: body.parts?.[0]?.method || 'cash',
+        acceptedBy: (() => {
+          const mockCollector = JSON.parse(localStorage.getItem('mock_user') || 'null');
+          return [mockCollector?.firstName, mockCollector?.lastName].filter(Boolean).join(' ') || 'Demo Admin';
+        })(),
       };
       invoices.unshift(newInv);
       localStorage.setItem('mock_admin_invoices', JSON.stringify(invoices));
@@ -2368,6 +2385,7 @@ export const api = {
   // пароль меняется через forgot-password с кодом на почту.
   me: (token) => request('/users/me', { token }),
   updateMe: (token, body) => request('/users/me', { method: 'PATCH', token, body }),
+  peopleDirectory: (token, qs = '') => request(`/users/directory${qs ? `?${qs}` : ''}`, { token }),
 
   // -------- PROFILE: смена пароля --------
   changePassword: (token, body) => request('/auth/change-password', { method: 'POST', token, body }),
@@ -2450,6 +2468,10 @@ export const api = {
   adminUpdateSettings: (token, body) => request('/admin/settings', { method: 'PATCH', token, body }),
   adminExpenses: (token, qs = '') => request(`/admin/expenses${qs}`, { token }),
   adminCreateExpense: (token, body) => request('/admin/expenses', { method: 'POST', token, body }),
+  superCreateExpense: (token, body) => request('/super/expenses', { method: 'POST', token, body }),
+  superExpenses: (token, branchId = '') => request(`/super/expenses${branchId ? `?branchId=${encodeURIComponent(branchId)}` : ''}`, { token }),
+  superUpdateExpense: (token, id, body) => request(`/super/expenses/${id}`, { method: 'PATCH', token, body }),
+  superDeleteExpense: (token, id) => request(`/super/expenses/${id}`, { method: 'DELETE', token }),
   adminDeleteExpense: (token, id) => request(`/admin/expenses/${id}`, { method: 'DELETE', token }),
   adminUpdateExpense: (token, id, body) => request(`/admin/expenses/${id}`, { method: 'PATCH', token, body }),
   adminStudents: (token, qs = '') => request(`/admin/students${qs}`, { token }),
@@ -2468,6 +2490,9 @@ export const api = {
   adminGroups: (token, qs = '') => request(`/admin/groups${qs}`, { token }),
   adminCreateGroup: (token, body) => request('/admin/groups', { method: 'POST', token, body }),
   adminGroupDetail: (token, id) => request(`/admin/groups/${id}`, { token }),
+  adminGroupTelegramStatus: (token, id) => request(`/admin/groups/${id}/telegram`, { token }),
+  adminGroupTelegramBindToken: (token, id) => request(`/admin/groups/${id}/telegram/bind-token`, { method: 'POST', token }),
+  adminGroupTelegramUnlink: (token, id) => request(`/admin/groups/${id}/telegram`, { method: 'DELETE', token }),
   adminUpdateGroup: (token, id, body) => request(`/admin/groups/${id}`, { method: 'PATCH', token, body }),
   adminArchiveGroup: (token, id, reason) => request(`/admin/groups/${id}/archive`, { method: 'POST', token, body: reason ? { reason } : undefined }),
   adminUnarchiveGroup: (token, id) => request(`/admin/groups/${id}/unarchive`, { method: 'POST', token }),
@@ -2485,9 +2510,14 @@ export const api = {
   adminDeleteMentor: (token, id) => request(`/admin/mentors/${id}`, { method: 'DELETE', token }),
   adminRegenStudentPassword: (token, id) => request(`/admin/students/${id}/regenerate-password`, { method: 'POST', token }),
   adminStudentCredentials: (token, id) => request(`/admin/students/${id}/credentials`, { token }),
+  adminCreateParentQrToken: (token, id) => request(`/admin/students/${id}/parent/qr-token`, { method: 'POST', token }),
+  adminRegenerateParentQrToken: (token, id) => request(`/admin/students/${id}/parent/qr-token/regenerate`, { method: 'POST', token }),
+  adminRegenParentPassword: (token, id) => request(`/admin/students/${id}/parent/regenerate-password`, { method: 'POST', token }),
+  adminParentCredentials: (token, id) => request(`/admin/students/${id}/parent/credentials`, { token }),
 
   // -------- ADMIN/Branch Manager: Shop (остаток + заказы своего филиала; каталог — у SEO) --------
   adminShopItems: (token) => request('/admin/shop/items', { token }),
+  adminCreateShopItem: (token, body) => request('/admin/shop/items', { method: 'POST', token, body }),
   adminRestockShopItem: (token, id, stock) => request(`/admin/shop/items/${id}/stock`, { method: 'PATCH', token, body: { stock } }),
   adminShopOrders: (token, qs = '') => request(`/admin/shop/orders${qs}`, { token }),
   adminFulfillShopOrder: (token, id) => request(`/admin/shop/orders/${id}/fulfill`, { method: 'POST', token }),
@@ -2553,6 +2583,11 @@ export const api = {
   superArchiveBranch: (token, id) => request(`/super/branches/${id}/archive`, { method: 'POST', token }),
   superUnarchiveBranch: (token, id) => request(`/super/branches/${id}/unarchive`, { method: 'POST', token }),
   superAdmins: (token) => request('/super/admins', { token }),
+  superEmployees: (token) => request('/super/employees', { token }),
+  superCreateEmployee: (token, body) => request('/super/employees', { method: 'POST', token, body }),
+  superUpdateEmployee: (token, id, body) => request(`/super/employees/${id}`, { method: 'PATCH', token, body }),
+  superFreezeEmployee: (token, id, frozen) => request(`/super/employees/${id}/freeze`, { method: 'PATCH', token, body: { frozen } }),
+  superResetEmployeePassword: (token, id) => request(`/super/employees/${id}/reset-password`, { method: 'POST', token }),
   superCreateAdmin: (token, body) => request('/super/admins', { method: 'POST', token, body }),
   superUpdateAdmin: (token, id, body) => request(`/super/admins/${id}`, { method: 'PATCH', token, body }),
   superFreezeAdmin: (token, id) => request(`/super/admins/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
@@ -2574,6 +2609,8 @@ export const api = {
   superMethodists: (token) => request('/super/methodists', { token }),
   // Только чтение — для выбора цели во «Взыскании». CRUD ментора у Admin филиала.
   superMentors: (token) => request('/super/mentors', { token }),
+  superCreateMentor: (token, body) => request('/super/mentors', { method: 'POST', token, body }),
+  superUpdateMentorGrade: (token, id, grade) => request(`/super/mentors/${id}/grade`, { method: 'PATCH', token, body: { grade } }),
   superCreateMethodist: (token, body) => request('/super/methodists', { method: 'POST', token, body }),
   superUpdateMethodist: (token, id, body) => request(`/super/methodists/${id}`, { method: 'PATCH', token, body }),
   superFreezeMethodist: (token, id) => request(`/super/methodists/${id}/freeze`, { method: 'PATCH', token, body: { frozen: true } }),
@@ -2619,7 +2656,14 @@ export const api = {
   // -------- SUPER ADMIN: Announcements --------
   superAnnouncements: (token) => request('/super/announcements', { token }),
   superCreateAnnouncement: (token, body) => request('/super/announcements', { method: 'POST', token, body }),
+  superImproveAnnouncement: (token, body) => request('/super/announcements/improve', { method: 'POST', token, body }),
+  superAnnouncementImageUploadUrl: (token, filename, contentType) => request(`/super/announcements/image-upload-url?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(contentType)}`, { token }),
   superDeleteAnnouncement: (token, id) => request(`/super/announcements/${id}`, { method: 'DELETE', token }),
+  superUpdateMentorBranch: (token, id, branchId) => request(`/super/mentors/${id}/branch`, { method: 'PATCH', token, body: { branchId } }),
+  branchAnnouncements: (token) => request('/admin/announcements', { token }),
+  branchCreateAnnouncement: (token, body) => request('/admin/announcements', { method: 'POST', token, body }),
+  branchImproveAnnouncement: (token, body) => request('/admin/announcements/improve', { method: 'POST', token, body }),
+  branchAnnouncementImageUploadUrl: (token, filename, contentType) => request(`/admin/announcements/image-upload-url?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(contentType)}`, { token }),
 
   // -------- SUPER ADMIN: анонсы от LevelUp Academy (Main Admin), read-only --------
   superPlatformAnnouncements: (token) => request('/super/platform-announcements', { token }),

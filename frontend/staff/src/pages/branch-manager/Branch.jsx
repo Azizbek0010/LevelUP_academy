@@ -182,7 +182,6 @@ export default function BranchManagerBranch() {
       </Panel>
 
       {/* ── Telegram: ota-onalar guruhi ── */}
-      <TelegramGroupCard />
 
       {/* ── Kontaktlar ── */}
       <Panel title="Kontaktlar" icon={MapPin} bodyClass="p-5">

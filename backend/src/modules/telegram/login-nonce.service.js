@@ -6,6 +6,17 @@ import {
   loginNonceKey,
 } from './constants.js';
 
+const localLoginNonces = new Map();
+
+function localGet(nonce) {
+  const item = localLoginNonces.get(nonce);
+  if (!item || item.expiresAt <= Date.now()) {
+    localLoginNonces.delete(nonce);
+    return null;
+  }
+  return item;
+}
+
 /**
  * Вход через Telegram: браузер и бот встречаются на одном одноразовом nonce.
  *
@@ -49,8 +60,16 @@ export class TelegramLoginNonceService {
    */
   async approve(nonce, userId) {
     if (!nonce || !userId) return false;
-    const res = await this.redis.set(loginNonceKey(nonce), userId, 'KEEPTTL', 'XX');
-    return res === 'OK';
+    try {
+      const res = await this.redis.set(loginNonceKey(nonce), userId, 'KEEPTTL', 'XX');
+      return res === 'OK';
+    } catch (error) {
+      if (process.env.NODE_ENV === 'production') throw error;
+      const item = localGet(nonce);
+      if (!item) return false;
+      item.value = userId;
+      return true;
+    }
   }
 
   /**
@@ -63,7 +82,13 @@ export class TelegramLoginNonceService {
    */
   async claim(nonce) {
     if (!nonce) return { status: 'unknown' };
-    const value = await this.redis.get(loginNonceKey(nonce));
+    let value;
+    try {
+      value = await this.redis.get(loginNonceKey(nonce));
+    } catch (error) {
+      if (process.env.NODE_ENV === 'production') throw error;
+      value = localGet(nonce)?.value ?? null;
+    }
     if (value === null) return { status: 'unknown' }; // не выдавали или уже истёк
     if (value === LOGIN_PENDING) return { status: 'pending' };
     return { status: 'approved', userId: value };
@@ -71,20 +96,34 @@ export class TelegramLoginNonceService {
 
   /** Одноразовость: зовётся ПОСЛЕ успешной выдачи сессии, не до. */
   async consume(nonce) {
-    await this.redis.del(loginNonceKey(nonce));
+    try {
+      await this.redis.del(loginNonceKey(nonce));
+    } catch (error) {
+      if (process.env.NODE_ENV === 'production') throw error;
+    }
+    localLoginNonces.delete(nonce);
   }
 
   async #createUniqueNonce() {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const nonce = crypto.randomBytes(LOGIN_NONCE_BYTES).toString('base64url');
-      const ok = await this.redis.set(
-        loginNonceKey(nonce),
-        LOGIN_PENDING,
-        'EX',
-        this.ttlSeconds,
-        'NX',
-      );
-      if (ok === 'OK') return nonce;
+      try {
+        const ok = await this.redis.set(
+          loginNonceKey(nonce),
+          LOGIN_PENDING,
+          'EX',
+          this.ttlSeconds,
+          'NX',
+        );
+        if (ok === 'OK') return nonce;
+      } catch (error) {
+        if (process.env.NODE_ENV === 'production') throw error;
+        localLoginNonces.set(nonce, {
+          value: LOGIN_PENDING,
+          expiresAt: Date.now() + this.ttlSeconds * 1000,
+        });
+        return nonce;
+      }
     }
     throw new Error('Failed to allocate a unique Telegram login nonce');
   }

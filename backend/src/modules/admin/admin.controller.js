@@ -1,8 +1,12 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './admin.service.js';
+import * as announcementService from '../super/super.service.js';
+import { improveAnnouncement as improveAnnouncementText } from '../super/announcement-ai.service.js';
+import { buildObjectKey, getUploadUrl } from '../../config/s3.js';
 
 // authorize('admin') жёстко проставляет req.scope = { organizationId, branchId } из токена
 const branchId = (req) => req.scope.branchId;
+const orgId = (req) => req.scope.organizationId;
 
 // ---------- дашборд ----------
 export const dashboard = asyncHandler(async (req, res) => {
@@ -68,9 +72,29 @@ export const getStudentCredentials = asyncHandler(async (req, res) => {
   res.json(await service.getStudentCredentials(branchId(req), req.params.id));
 });
 
+export const regenerateParentPassword = asyncHandler(async (req, res) => {
+  res.json(await service.regenerateParentPassword(branchId(req), req.params.id));
+});
+
+export const getParentCredentials = asyncHandler(async (req, res) => {
+  res.json(await service.getParentCredentials(branchId(req), req.params.id));
+});
+
+export const createParentQrToken = asyncHandler(async (req, res) => {
+  res.json(await service.createParentQrToken(branchId(req), req.params.id));
+});
+
+export const regenerateParentQrToken = asyncHandler(async (req, res) => {
+  res.json(await service.regenerateParentQrToken(branchId(req), req.params.id));
+});
+
 export const deleteStudent = asyncHandler(async (req, res) => {
-  await service.deleteStudent(branchId(req), req.params.id);
+  await service.deleteStudent(branchId(req), req.params.id, req.body?.reason);
   res.status(204).end();
+});
+
+export const studentsStats = asyncHandler(async (req, res) => {
+  res.json(await service.studentsStats(branchId(req), req.query.period));
 });
 
 // ---------- менторы ----------
@@ -140,6 +164,16 @@ export const groupDetail = asyncHandler(async (req, res) => {
   res.json({ group: await service.groupDetail(branchId(req), req.params.id) });
 });
 
+export const groupTelegramStatus = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await service.groupTelegramStatus(branchId(req), req.params.id) });
+});
+export const createGroupTelegramBindToken = asyncHandler(async (req, res) => {
+  res.status(201).json({ success: true, data: await service.createGroupTelegramBindToken(branchId(req), req.params.id) });
+});
+export const unlinkGroupTelegram = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await service.unlinkGroupTelegram(branchId(req), req.params.id) });
+});
+
 export const groupCredentials = asyncHandler(async (req, res) => {
   res.json(await service.groupCredentials(branchId(req), req.params.id));
 });
@@ -194,5 +228,23 @@ export const createGroupFeedback = asyncHandler(async (req, res) => {
 
 // ---------- объявления ----------
 export const createAnnouncement = asyncHandler(async (req, res) => {
-  res.status(201).json(await service.createAnnouncement(branchId(req), req.body));
+  const announcement = await announcementService.createAnnouncement(orgId(req), req.user.id, {
+    ...req.body,
+    branchId: branchId(req),
+  });
+  res.status(201).json({ announcement });
+});
+
+export const listAnnouncements = asyncHandler(async (req, res) => {
+  res.json(await announcementService.listAnnouncements(orgId(req), branchId(req)));
+});
+export const improveAnnouncement = asyncHandler(async (req, res) => {
+  res.json({ suggestion: await improveAnnouncementText(orgId(req), { ...req.body, branchId: branchId(req) }) });
+});
+export const announcementImageUploadUrl = asyncHandler(async (req, res) => {
+  const filename = String(req.query.filename || 'image').replace(/[^a-zA-Z0-9._-]/g, '_');
+  const contentType = String(req.query.contentType || '');
+  if (!contentType.startsWith('image/')) return res.status(422).json({ message: 'Only image files are allowed' });
+  const imageKey = buildObjectKey(`announcements/${orgId(req)}`, filename);
+  res.json({ uploadUrl: await getUploadUrl(imageKey, contentType), imageKey });
 });

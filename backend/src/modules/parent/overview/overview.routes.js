@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import { validate } from '../../../middlewares/validate.js';
 import * as ctrl from './overview.controller.js';
-import { childIdParamSchema, pageQuerySchema, gradesQuerySchema } from './overview.schemas.js';
+import {
+  childIdParamSchema,
+  homeworkIdParamSchema,
+  testIdParamSchema,
+  pageQuerySchema,
+  gradesQuerySchema,
+} from './overview.schemas.js';
 
 const router = Router();
 
@@ -137,6 +143,24 @@ router.get(
   '/children/:childId/grades',
   validate({ params: childIdParamSchema, query: gradesQuerySchema }),
   ctrl.getChildGrades,
+);
+
+router.get(
+  '/children/:childId/group-rating',
+  validate({ params: childIdParamSchema }),
+  ctrl.getChildGroupRating,
+);
+
+router.get(
+  '/homework/:homeworkId',
+  validate({ params: homeworkIdParamSchema }),
+  ctrl.getHomeworkDetail,
+);
+
+router.get(
+  '/tests/:testId',
+  validate({ params: testIdParamSchema }),
+  ctrl.getTestDetail,
 );
 
 export default router;

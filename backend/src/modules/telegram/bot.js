@@ -39,7 +39,7 @@ if (bot) {
   // если у партнёра русскоязычная аудитория.
   registerTelegramBotHandlers({ bot, pool, redis, logger, language: env.TELEGRAM_BOT_LANG || 'uz' });
 
-  if (!usesWebhook) {
+  if (!usesWebhook && env.NODE_ENV !== 'test') {
     // Fire-and-forget: не блокируем импорт модуля.
     bot.start().catch((err) => logger.error({ err }, 'Telegram bot polling failed'));
     logger.info('Telegram bot: long-polling (нет PUBLIC_API_URL/TELEGRAM_WEBHOOK_SECRET)');

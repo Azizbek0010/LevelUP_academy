@@ -446,6 +446,7 @@ export const api = {
 
   // -------- STUDENT: Home --------
   home: () => request('/student/home'),
+  announcements: () => request('/student/announcements'),
 
   // -------- STUDENT: Tests --------
   tests: () => request('/student/tests'),

@@ -41,6 +41,15 @@ export function decrementDebt(studentId, amount, client) {
   );
 }
 
+export function addPaymentBalance(studentId, amount, client) {
+  return client.query(
+    `INSERT INTO student_payment_accounts (student_id, balance) VALUES ($1, $2)
+     ON CONFLICT (student_id) DO UPDATE
+       SET balance = student_payment_accounts.balance + EXCLUDED.balance, updated_at = now()`,
+    [studentId, amount],
+  );
+}
+
 // ==================== ИНВОЙСЫ ====================
 
 /** Разовый платёж вне графика — invoice создаётся уже полностью оплаченным. */
@@ -116,10 +125,20 @@ export function listInvoices({ branchId, status, studentId, limit, offset }, cli
       `SELECT i.id, i.type, i.status, i.total_amount, i.paid_amount, i.due_date, i.period_month,
               i.source, i.created_at,
               u.first_name AS student_first, u.last_name AS student_last,
-              g.name AS group_name
+              g.name AS group_name,
+              collector.first_name AS collector_first, collector.last_name AS collector_last,
+              latest_tx.created_at AS payment_accepted_at
          FROM invoices i
          JOIN users u ON u.id = i.student_id
     LEFT JOIN groups g ON g.id = i.group_id
+    LEFT JOIN LATERAL (
+               SELECT t.processed_by, t.created_at
+                 FROM transactions t
+                WHERE t.invoice_id = i.id AND t.status = 'completed'
+                ORDER BY t.created_at DESC
+                LIMIT 1
+              ) latest_tx ON true
+    LEFT JOIN users collector ON collector.id = COALESCE(latest_tx.processed_by, i.created_by)
         WHERE i.branch_id = $1 AND i.deleted_at IS NULL
           AND ($2::invoice_status IS NULL OR i.status = $2)
           AND ($3::uuid IS NULL OR i.student_id = $3)

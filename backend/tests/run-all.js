@@ -25,6 +25,7 @@ const run = (name) =>
   new Promise((resolve) => {
     const child = spawn(process.execPath, [join(HERE, name, 'run.js')], {
       stdio: 'inherit',
+      env: { ...process.env, NODE_ENV: 'test' },
     });
     child.on('close', (code) => resolve({ name, ok: code === 0 }));
   });

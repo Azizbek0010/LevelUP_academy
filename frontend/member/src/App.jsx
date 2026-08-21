@@ -27,6 +27,7 @@ import StudentLessonDetail from './student/pages/LessonDetail.jsx';
 import LessonsHub from './student/pages/LessonsHub.jsx';
 import StudentShop from './student/pages/Shop.jsx';
 import StudentLeaderboard from './student/pages/Leaderboard.jsx';
+import StudentAnnouncements from './student/pages/Announcements.jsx';
 
 function Protected({ children }) {
   const { token } = useAuth();
@@ -127,6 +128,7 @@ export default function App() {
             <Route path="/videos" element={<StudentVideos />} />
             <Route path="/shop" element={<FeatureGuard feature="shop"><StudentShop /></FeatureGuard>} />
             <Route path="/leaderboard" element={<StudentLeaderboard />} />
+            <Route path="/student/announcements" element={<StudentAnnouncements />} />
           </Route>
         </Route>
 

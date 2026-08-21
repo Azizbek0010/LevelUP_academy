@@ -11,6 +11,7 @@ import testsRoutes from './tests/tests.routes.js';
 import videosRoutes from './videos/videos.routes.js';
 import leaderboardRoutes from './leaderboard/leaderboard.routes.js';
 import lessonsRoutes from './lessons/lessons.routes.js';
+import announcementsRoutes from './announcements/announcements.routes.js';
 
 /**
  * Агрегатор student-домена — монтируется main-агентом в app.js.
@@ -33,5 +34,6 @@ router.use('/tests', authorize('student'), blockIfOverdue, testsRoutes);
 router.use('/videos', authorize('student'), blockIfOverdue, videosRoutes);
 router.use('/leaderboard', authorize('student'), blockIfOverdue, leaderboardRoutes);
 router.use('/lessons', authorize('student'), blockIfOverdue, lessonsRoutes);
+router.use('/announcements', authorize('student'), blockIfOverdue, announcementsRoutes);
 
 export default router;

@@ -37,8 +37,8 @@ export function listBranches(orgId, client = pool) {
               (SELECT count(*) FROM groups g
                  WHERE g.branch_id = b.id AND g.deleted_at IS NULL) AS groups,
               -- деньги филиала: сколько получено с учеников и сколько потрачено
-              (SELECT COALESCE(SUM(i.paid_amount), 0) FROM invoices i
-                 WHERE i.branch_id = b.id) AS revenue,
+              (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t
+                 WHERE t.branch_id = b.id AND t.status = 'completed') AS revenue,
               (SELECT COALESCE(SUM(e.amount), 0) FROM expenses e
                  WHERE e.branch_id = b.id AND e.deleted_at IS NULL) AS expenses,
               (SELECT COALESCE(SUM(sp.total_debt), 0) FROM student_profiles sp
@@ -60,6 +60,83 @@ export function findBranchInOrg(branchId, orgId, client = pool) {
       [branchId, orgId],
     )
     .then((r) => r.rows[0] ?? null);
+}
+
+export function findExpenseInOrg(expenseId, orgId, client = pool) {
+  return client
+    .query(
+      `SELECT e.id, e.branch_id
+         FROM expenses e
+        WHERE e.id = $1 AND e.organization_id = $2 AND e.deleted_at IS NULL`,
+      [expenseId, orgId],
+    )
+    .then((result) => result.rows[0] ?? null);
+}
+
+export function insertOrgExpense({ orgId, branchId, category, amount, spentAt, note, createdBy }, client = pool) {
+  return client.query(
+    `INSERT INTO expenses (organization_id, branch_id, category, amount, spent_at, note, created_by)
+     VALUES ($1, $2, $3, $4, COALESCE($5::date, CURRENT_DATE), $6, $7)
+     RETURNING id, branch_id, category, amount, spent_at, note, created_at`,
+    [orgId, branchId, category, amount, spentAt ?? null, note ?? null, createdBy],
+  ).then((result) => result.rows[0]);
+}
+
+export function listOrgExpenses({ orgId, branchId, organizationOnly, from, to, limit, offset }, client = pool) {
+  return client.query(
+    `SELECT e.id, e.branch_id, b.name AS branch_name, e.category, e.amount, e.spent_at, e.note,
+            e.created_at, u.first_name AS created_by_first, u.last_name AS created_by_last
+       FROM expenses e
+       LEFT JOIN branches b ON b.id = e.branch_id
+       JOIN users u ON u.id = e.created_by
+      WHERE e.organization_id = $1 AND e.deleted_at IS NULL
+        AND ($2::uuid IS NULL OR e.branch_id = $2)
+        AND ($3::boolean = false OR e.branch_id IS NULL)
+        AND ($4::date IS NULL OR e.spent_at >= $4)
+        AND ($5::date IS NULL OR e.spent_at <= $5)
+      ORDER BY e.spent_at DESC, e.created_at DESC
+      LIMIT $6 OFFSET $7`,
+    [orgId, branchId ?? null, organizationOnly, from ?? null, to ?? null, limit, offset],
+  ).then((result) => result.rows);
+}
+
+export function countOrgExpenses({ orgId, branchId, organizationOnly, from, to }, client = pool) {
+  return client.query(
+    `SELECT count(*)::int AS n FROM expenses e
+      WHERE e.organization_id = $1 AND e.deleted_at IS NULL
+        AND ($2::uuid IS NULL OR e.branch_id = $2)
+        AND ($3::boolean = false OR e.branch_id IS NULL)
+        AND ($4::date IS NULL OR e.spent_at >= $4)
+        AND ($5::date IS NULL OR e.spent_at <= $5)`,
+    [orgId, branchId ?? null, organizationOnly, from ?? null, to ?? null],
+  ).then((result) => result.rows[0].n);
+}
+
+export function updateOrgExpense(id, orgId, fields, client = pool) {
+  const cols = [];
+  const vals = [];
+  let i = 1;
+  for (const [key, col] of [['category', 'category'], ['amount', 'amount'], ['note', 'note'], ['spentAt', 'spent_at']]) {
+    if (fields[key] !== undefined) {
+      cols.push(`${col} = $${i++}`);
+      vals.push(fields[key]);
+    }
+  }
+  vals.push(id, orgId);
+  return client.query(
+    `UPDATE expenses SET ${cols.join(', ')}, updated_at = now()
+      WHERE id = $${i++} AND organization_id = $${i} AND deleted_at IS NULL
+      RETURNING id, branch_id, category, amount, spent_at, note, created_at`,
+    vals,
+  ).then((result) => result.rows[0] ?? null);
+}
+
+export function softDeleteOrgExpense(id, orgId, client = pool) {
+  return client.query(
+    `UPDATE expenses SET deleted_at = now(), updated_at = now()
+      WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL RETURNING id`,
+    [id, orgId],
+  ).then((result) => result.rows[0] ?? null);
 }
 
 const BRANCH_RETURN = 'id, name, address, phone, is_main, is_archived, lat, lng, created_at';
@@ -294,9 +371,10 @@ export function orgTotals(orgId, branchId = null, client = pool) {
          (SELECT count(*) FROM users
             WHERE organization_id = $1 AND role = 'mentor' AND deleted_at IS NULL
               AND ($2::uuid IS NULL OR branch_id = $2)) AS mentors,
-         (SELECT COALESCE(SUM(i.paid_amount), 0) FROM invoices i
-            JOIN branches b ON b.id = i.branch_id
-           WHERE b.organization_id = $1 AND ($2::uuid IS NULL OR b.id = $2)) AS revenue,
+         (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t
+            JOIN branches b ON b.id = t.branch_id
+           WHERE b.organization_id = $1 AND t.status = 'completed'
+             AND ($2::uuid IS NULL OR b.id = $2)) AS revenue,
          (SELECT COALESCE(SUM(sp.total_debt), 0) FROM student_profiles sp
             JOIN branches b ON b.id = sp.branch_id
            WHERE b.organization_id = $1 AND ($2::uuid IS NULL OR b.id = $2)) AS outstanding_debt`,
@@ -306,7 +384,7 @@ export function orgTotals(orgId, branchId = null, client = pool) {
 }
 
 /** Разбивка по филиалам: студенты, выручка, долг (для дашборда/обзора). */
-export function branchBreakdown(orgId, client = pool) {
+export function branchBreakdown(orgId, fromDate = null, client = pool) {
   return client
     .query(
       `SELECT b.id, b.name, b.is_main, b.is_archived,
@@ -315,14 +393,15 @@ export function branchBreakdown(orgId, client = pool) {
                    AND u.status = 'active' AND u.deleted_at IS NULL) AS students,
               (SELECT count(*) FROM users u
                  WHERE u.branch_id = b.id AND u.role = 'admin' AND u.deleted_at IS NULL) AS admins,
-              (SELECT COALESCE(SUM(i.paid_amount), 0) FROM invoices i
-                 WHERE i.branch_id = b.id) AS revenue,
+              (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t
+                 WHERE t.branch_id = b.id AND t.status = 'completed'
+                   AND ($2::timestamptz IS NULL OR t.created_at >= $2)) AS revenue,
               (SELECT COALESCE(SUM(sp.total_debt), 0) FROM student_profiles sp
                  WHERE sp.branch_id = b.id) AS debt
          FROM branches b
         WHERE b.organization_id = $1 AND b.deleted_at IS NULL
         ORDER BY b.is_main DESC, b.created_at DESC`,
-      [orgId],
+      [orgId, fromDate],
     )
     .then((r) => r.rows);
 }
@@ -405,6 +484,88 @@ export function listMethodists(orgId, client = pool) {
       [orgId],
     )
     .then((r) => r.rows);
+}
+
+export function updateMentorGrade(orgId, mentorId, grade, setBy, client = pool) {
+  return client.query(
+    `INSERT INTO mentor_profiles (user_id, grade, grade_set_by, grade_set_at)
+     SELECT u.id, $3::mentor_grade, $4,
+            CASE WHEN $3::mentor_grade IS NULL THEN NULL ELSE now() END
+       FROM users u
+      WHERE u.id = $2 AND u.organization_id = $1 AND u.role = 'mentor' AND u.deleted_at IS NULL
+     ON CONFLICT (user_id) DO UPDATE
+       SET grade = EXCLUDED.grade,
+           grade_set_by = EXCLUDED.grade_set_by,
+           grade_set_at = EXCLUDED.grade_set_at
+     RETURNING user_id, grade, grade_set_at`,
+    [orgId, mentorId, grade, setBy],
+  ).then((r) => r.rows[0] ?? null);
+}
+
+export function moveMentorToBranch(orgId, mentorId, branchId, client = pool) {
+  return client.query(
+    `UPDATE users SET branch_id = $3, updated_at = now()
+      WHERE id = $2 AND organization_id = $1 AND role = 'mentor' AND deleted_at IS NULL
+      RETURNING id, branch_id`,
+    [orgId, mentorId, branchId],
+  ).then((r) => r.rows[0] ?? null);
+}
+
+export function detachMentorOldBranchGroups(mentorId, newBranchId, client = pool) {
+  return client.query(
+    `UPDATE groups SET mentor_id = NULL, updated_at = now()
+      WHERE mentor_id = $1 AND branch_id <> $2 AND deleted_at IS NULL
+      RETURNING id`,
+    [mentorId, newBranchId],
+  ).then((r) => r.rows);
+}
+
+export function insertEmployee({ orgId, branchId, firstName, lastName, email, phone, jobTitle, passwordHash }, client = pool) {
+  return client.query(
+    `INSERT INTO users (organization_id, branch_id, role, first_name, last_name, email, phone, job_title, password_hash)
+     VALUES ($1, $2, 'employee', $3, $4, $5, $6, $7, $8)
+     RETURNING id, branch_id, first_name, last_name, email, phone, job_title, status, created_at`,
+    [orgId, branchId, firstName, lastName, email, phone ?? null, jobTitle, passwordHash],
+  ).then((r) => r.rows[0]);
+}
+
+export function listEmployees(orgId, client = pool) {
+  return client.query(
+    `SELECT u.id, u.branch_id, u.first_name, u.last_name, u.email, u.phone, u.job_title,
+            u.monthly_salary, u.status, u.created_at, b.name AS branch_name
+       FROM users u JOIN branches b ON b.id = u.branch_id
+      WHERE u.organization_id = $1 AND u.role = 'employee' AND u.deleted_at IS NULL
+      ORDER BY u.created_at DESC`, [orgId],
+  ).then((r) => r.rows);
+}
+
+export function updateEmployee(id, orgId, fields, client = pool) {
+  const cols = []; const vals = []; let i = 1;
+  for (const [key, col] of [['firstName','first_name'],['lastName','last_name'],['branchId','branch_id'],['phone','phone'],['jobTitle','job_title'],['monthlySalary','monthly_salary']]) {
+    if (fields[key] !== undefined) { cols.push(`${col} = $${i++}`); vals.push(fields[key]); }
+  }
+  vals.push(id, orgId);
+  return client.query(
+    `UPDATE users SET ${cols.join(', ')}, updated_at = now()
+      WHERE id = $${i++} AND organization_id = $${i} AND role = 'employee' AND deleted_at IS NULL
+      RETURNING id, branch_id, first_name, last_name, email, phone, job_title, monthly_salary, status, created_at`, vals,
+  ).then((r) => r.rows[0] ?? null);
+}
+
+export function setEmployeeStatus(id, orgId, status, client = pool) {
+  return client.query(
+    `UPDATE users SET status = $3, updated_at = now() WHERE id = $1 AND organization_id = $2 AND role = 'employee' AND deleted_at IS NULL
+     RETURNING id, branch_id, first_name, last_name, email, phone, job_title, monthly_salary, status, created_at`,
+    [id, orgId, status],
+  ).then((r) => r.rows[0] ?? null);
+}
+
+export function setEmployeePasswordHash(id, orgId, passwordHash, client = pool) {
+  return client.query(
+    `UPDATE users SET password_hash = $3, updated_at = now() WHERE id = $1 AND organization_id = $2 AND role = 'employee' AND deleted_at IS NULL
+     RETURNING id, branch_id, first_name, last_name, email, phone, job_title, status, created_at`,
+    [id, orgId, passwordHash],
+  ).then((r) => r.rows[0] ?? null);
 }
 
 // ---------- branch managers ----------
@@ -811,64 +972,82 @@ export function groupStudentsOrg(groupId, client = pool) {
 // ---------- объявления организации (Super Announcements) ----------
 
 /** Сколько адресатов у объявления по типу аудитории (в пределах орг). */
-export function countAnnouncementRecipients(orgId, targetType, client = pool) {
+export function countAnnouncementRecipients(orgId, targetType, branchId = null, client = pool) {
   const roleByTarget = {
     'all-staff': ['admin', 'mentor', 'methodist'],
     'all-admins': ['admin'],
     'all-mentors': ['mentor'],
     'all-parents': ['parent'],
     'all-students': ['student'],
+    'all-families': ['student', 'parent'],
   };
   const roles = roleByTarget[targetType] ?? [];
   return client
     .query(
       `SELECT count(*)::int AS n FROM users
         WHERE organization_id = $1 AND role = ANY($2)
-          AND status = 'active' AND deleted_at IS NULL`,
-      [orgId, roles],
+          AND status = 'active' AND deleted_at IS NULL
+          AND ($3::uuid IS NULL OR branch_id = $3)`,
+      [orgId, roles, branchId],
     )
     .then((r) => r.rows[0].n);
 }
 
 /** id активных студентов орг — адресаты Telegram-доставки для parent/student рассылок. */
-export function orgActiveStudentIds(orgId, client = pool) {
+export function orgActiveStudentIds(orgId, branchId = null, client = pool) {
   return client
     .query(
       `SELECT id FROM users
         WHERE organization_id = $1 AND role = 'student'
-          AND status = 'active' AND deleted_at IS NULL`,
-      [orgId],
+          AND status = 'active' AND deleted_at IS NULL
+          AND ($2::uuid IS NULL OR branch_id = $2)`,
+      [orgId, branchId],
     )
     .then((r) => r.rows.map((row) => row.id));
 }
 
 export function insertAnnouncement(
-  { orgId, senderId, title, body, targetType, recipientCount },
+  { orgId, senderId, title, body, targetType, recipientCount, branchId = null, expiresAt, imageUrl = null, imageKey = null },
   client = pool,
 ) {
   return client
     .query(
       `INSERT INTO org_announcements
-         (organization_id, sender_id, title, body, target_type, recipient_count)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, title, body, target_type, recipient_count, created_at`,
-      [orgId, senderId, title, body, targetType, recipientCount],
+         (organization_id, sender_id, title, body, target_type, recipient_count, branch_id, expires_at, image_url, image_key)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, title, body, target_type, recipient_count, branch_id, expires_at, image_url, image_key, created_at`,
+      [orgId, senderId, title, body, targetType, recipientCount, branchId, expiresAt, imageUrl, imageKey],
     )
     .then((r) => r.rows[0]);
 }
 
-export function listAnnouncements(orgId, client = pool) {
+export function listAnnouncements(orgId, branchId = null, client = pool) {
   return client
     .query(
-      `SELECT a.id, a.title, a.body, a.target_type, a.recipient_count, a.created_at,
-              (s.first_name || ' ' || s.last_name) AS sender_name
+      `SELECT a.id, a.title, a.body, a.target_type, a.recipient_count, a.branch_id, a.expires_at, a.image_url, a.image_key, a.created_at,
+              (s.first_name || ' ' || s.last_name) AS sender_name, s.role AS sender_role,
+              b.name AS branch_name
          FROM org_announcements a
          LEFT JOIN users s ON s.id = a.sender_id
+         LEFT JOIN branches b ON b.id = a.branch_id
         WHERE a.organization_id = $1 AND a.deleted_at IS NULL
+          AND ($2::uuid IS NULL OR a.branch_id IS NULL OR a.branch_id = $2)
         ORDER BY a.created_at DESC`,
-      [orgId],
+      [orgId, branchId],
     )
     .then((r) => r.rows);
+}
+
+export function organizationGroupIds(orgId, branchId = null, client = pool) {
+  return client.query(
+    `SELECT g.id
+       FROM groups g
+       JOIN branches b ON b.id = g.branch_id
+      WHERE b.organization_id = $1
+        AND b.deleted_at IS NULL AND g.deleted_at IS NULL
+        AND ($2::uuid IS NULL OR g.branch_id = $2)`,
+    [orgId, branchId],
+  ).then((r) => r.rows.map((row) => row.id));
 }
 
 export function softDeleteAnnouncement(id, orgId, client = pool) {

@@ -13,6 +13,8 @@ import {
   createStudentSchema,
   updateStudentSchema,
   freezeStudentSchema,
+  deleteStudentSchema,
+  studentsStatsQuery,
   listStudentsQuery,
   createMentorSchema,
   freezeMentorSchema,
@@ -22,6 +24,7 @@ import {
   addGroupStudentSchema,
   listGroupsQuery,
   createAnnouncementSchema,
+  improveAnnouncementSchema,
   groupAttendanceQuery,
   markGroupAttendanceSchema,
   createGroupHomeworkSchema,
@@ -336,6 +339,7 @@ router.delete('/expenses/:id', validate({ params: idParam }), ctrl.deleteExpense
  */
 router.post('/students', validate({ body: createStudentSchema }), ctrl.createStudent);
 router.get('/students', validate({ query: listStudentsQuery }), ctrl.listStudents);
+router.get('/students/stats', validate({ query: studentsStatsQuery }), ctrl.studentsStats);
 
 /**
  * @openapi
@@ -409,6 +413,8 @@ router.get('/students/:id/telegram', validate({ params: idParam }), ctrl.student
 router.post('/students/:id/telegram/message', requireOrgFeature('telegram_integration'), validate({ params: idParam, body: sendStudentTelegramMessageSchema }), ctrl.sendStudentTelegramMessage);
 router.post('/students/:id/qr-token', validate({ params: idParam }), ctrl.createStudentQrToken);
 router.post('/students/:id/qr-token/regenerate', validate({ params: idParam }), ctrl.regenerateStudentQrToken);
+router.post('/students/:id/parent/qr-token', validate({ params: idParam }), ctrl.createParentQrToken);
+router.post('/students/:id/parent/qr-token/regenerate', validate({ params: idParam }), ctrl.regenerateParentQrToken);
 router.patch('/students/:id', validate({ params: idParam, body: updateStudentSchema }), ctrl.updateStudent);
 
 /**
@@ -484,6 +490,8 @@ router.post('/students/:id/freeze', validate({ params: idParam, body: freezeStud
  */
 router.post('/students/:id/regenerate-password', validate({ params: idParam }), ctrl.regenerateStudentPassword);
 router.get('/students/:id/credentials', validate({ params: idParam }), ctrl.getStudentCredentials);
+router.post('/students/:id/parent/regenerate-password', validate({ params: idParam }), ctrl.regenerateParentPassword);
+router.get('/students/:id/parent/credentials', validate({ params: idParam }), ctrl.getParentCredentials);
 
 /**
  * @openapi
@@ -505,7 +513,7 @@ router.get('/students/:id/credentials', validate({ params: idParam }), ctrl.getS
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.delete('/students/:id', validate({ params: idParam }), ctrl.deleteStudent);
+router.delete('/students/:id', validate({ params: idParam, body: deleteStudentSchema }), ctrl.deleteStudent);
 
 /**
  * @openapi
@@ -808,6 +816,9 @@ router.get('/training-types', ctrl.listTrainingTypes);
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.get('/groups/:id', validate({ params: idParam }), ctrl.groupDetail);
+router.get('/groups/:id/telegram', requireOrgFeature('telegram_integration'), validate({ params: idParam }), ctrl.groupTelegramStatus);
+router.post('/groups/:id/telegram/bind-token', requireOrgFeature('telegram_integration'), validate({ params: idParam }), ctrl.createGroupTelegramBindToken);
+router.delete('/groups/:id/telegram', requireOrgFeature('telegram_integration'), validate({ params: idParam }), ctrl.unlinkGroupTelegram);
 router.patch('/groups/:id', validate({ params: idParam, body: updateGroupSchema }), ctrl.updateGroup);
 
 /**
@@ -1183,7 +1194,10 @@ router.post(
  *       404: { $ref: '#/components/responses/NotFound' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
+router.get('/announcements', ctrl.listAnnouncements);
+router.get('/announcements/image-upload-url', ctrl.announcementImageUploadUrl);
+router.post('/announcements/improve', validate({ body: improveAnnouncementSchema }), ctrl.improveAnnouncement);
+router.post('/announcements', authorize('branch_manager'), validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
 
 // ==================== ДИСЦИПЛИНА ====================
 

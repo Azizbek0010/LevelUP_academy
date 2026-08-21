@@ -1,5 +1,7 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './super.service.js';
+import { improveAnnouncement as improveAnnouncementText } from './announcement-ai.service.js';
+import { buildObjectKey, getUploadUrl } from '../../config/s3.js';
 import * as shopService from '../admin/shop/shop-admin.service.js';
 
 // req.scope.organizationId проставляет authorize('seo') — своя организация
@@ -26,6 +28,34 @@ function audit(req, { action, entityType, entityId, entityLabel, meta }) {
 
 export const dashboard = asyncHandler(async (req, res) => {
   res.json(await service.dashboard(orgId(req)));
+});
+
+export const createExpense = asyncHandler(async (req, res) => {
+  const expense = await service.createExpense(orgId(req), req.user.id, req.body);
+  audit(req, {
+    action: 'expense.created',
+    entityType: 'expense',
+    entityId: expense.id,
+    entityLabel: expense.category,
+    meta: { branchId: req.body.branchId, amount: expense.amount },
+  });
+  res.status(201).json({ expense });
+});
+
+export const listExpenses = asyncHandler(async (req, res) => {
+  res.json(await service.listExpenses(orgId(req), req.query));
+});
+
+export const updateExpense = asyncHandler(async (req, res) => {
+  const expense = await service.updateExpense(orgId(req), req.params.id, req.body);
+  audit(req, { action: 'expense.updated', entityType: 'expense', entityId: expense.id, entityLabel: expense.category });
+  res.json({ expense });
+});
+
+export const deleteExpense = asyncHandler(async (req, res) => {
+  await service.deleteExpense(orgId(req), req.params.id);
+  audit(req, { action: 'expense.deleted', entityType: 'expense', entityId: req.params.id });
+  res.status(204).end();
 });
 
 // --- организация (профиль партнёра, Settings) ---
@@ -190,6 +220,44 @@ export const createAdmin = asyncHandler(async (req, res) => {
 export const listAdmins = asyncHandler(async (req, res) => {
   res.json({ admins: await service.listAdmins(orgId(req)) });
 });
+export const improveAnnouncement = asyncHandler(async (req, res) => {
+  res.json({ suggestion: await improveAnnouncementText(orgId(req), req.body) });
+});
+export const announcementImageUploadUrl = asyncHandler(async (req, res) => {
+  const filename = String(req.query.filename || 'image').replace(/[^a-zA-Z0-9._-]/g, '_');
+  const contentType = String(req.query.contentType || '');
+  if (!contentType.startsWith('image/')) return res.status(422).json({ message: 'Only image files are allowed' });
+  const imageKey = buildObjectKey(`announcements/${orgId(req)}`, filename);
+  res.json({ uploadUrl: await getUploadUrl(imageKey, contentType), imageKey });
+});
+
+export const createEmployee = asyncHandler(async (req, res) => {
+  const employee = await service.createEmployee(orgId(req), req.body);
+  await audit(req, { action: 'employee.create', entityType: 'employee', entityId: employee.id, entityLabel: `${employee.firstName} ${employee.lastName}` });
+  res.status(201).json({ employee });
+});
+
+export const listEmployees = asyncHandler(async (req, res) => {
+  res.json({ employees: await service.listEmployees(orgId(req)) });
+});
+
+export const updateEmployee = asyncHandler(async (req, res) => {
+  const employee = await service.updateEmployee(orgId(req), req.params.id, req.body);
+  await audit(req, { action: 'employee.update', entityType: 'employee', entityId: employee.id, entityLabel: `${employee.firstName} ${employee.lastName}` });
+  res.json({ employee });
+});
+
+export const freezeEmployee = asyncHandler(async (req, res) => {
+  const employee = await service.setEmployeeFrozen(orgId(req), req.params.id, req.body.frozen);
+  await audit(req, { action: req.body.frozen ? 'employee.freeze' : 'employee.unfreeze', entityType: 'employee', entityId: employee.id });
+  res.json({ employee });
+});
+
+export const resetEmployeePassword = asyncHandler(async (req, res) => {
+  const employee = await service.resetEmployeePassword(orgId(req), req.params.id);
+  await audit(req, { action: 'employee.reset_password', entityType: 'employee', entityId: employee.id });
+  res.json({ employee });
+});
 
 export const updateAdmin = asyncHandler(async (req, res) => {
   const admin = await service.updateAdmin(orgId(req), req.params.id, req.body);
@@ -244,6 +312,24 @@ export const listMethodists = asyncHandler(async (req, res) => {
 // --- менторы (только чтение — заводит их Admin филиала) ---
 export const listMentors = asyncHandler(async (req, res) => {
   res.json({ mentors: await service.listMentors(orgId(req)) });
+});
+
+export const createMentor = asyncHandler(async (req, res) => {
+  const mentor = await service.createMentor(orgId(req), req.body);
+  await audit(req, { action: 'mentor.create', entityType: 'mentor', entityId: mentor.id, entityLabel: `${mentor.firstName} ${mentor.lastName}` });
+  res.status(201).json({ mentor });
+});
+
+export const updateMentorGrade = asyncHandler(async (req, res) => {
+  const mentor = await service.updateMentorGrade(orgId(req), req.params.id, req.body.grade, req.user.id);
+  await audit(req, { action: 'mentor.grade_update', entityType: 'mentor', entityId: mentor.id, meta: { grade: mentor.grade } });
+  res.json({ mentor });
+});
+
+export const updateMentorBranch = asyncHandler(async (req, res) => {
+  const result = await service.updateMentorBranch(orgId(req), req.params.id, req.body.branchId);
+  await audit(req, { action: 'mentor.branch.change', entityType: 'mentor', entityId: req.params.id, meta: result });
+  res.json({ mentor: result });
 });
 
 export const updateMethodist = asyncHandler(async (req, res) => {

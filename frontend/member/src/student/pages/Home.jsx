@@ -161,6 +161,21 @@ export default function Home() {
 
   return (
     <>
+      {data?.payment?.currentInvoice && (
+        <div className="k-card p-4 mb-4 flex flex-col sm:flex-row sm:items-center gap-3" style={{ borderLeft: '4px solid #f59e0b' }}>
+          <Wallet size={22} style={{ color: '#d97706' }} />
+          <div className="flex-1">
+            <div className="font-extrabold" style={{ color: C.text }}>
+              {lang === 'uz' ? "O‘qish uchun to‘lov" : 'Оплата за обучение'}
+            </div>
+            <div className="text-sm" style={{ color: C.muted }}>
+              {lang === 'uz'
+                ? `${data.payment.currentInvoice.billableLessons ?? '—'} ta dars uchun ${Math.round(data.payment.currentInvoice.remainingAmount).toLocaleString('uz-UZ')} so‘m. 5-sanagacha to‘lang.`
+                : `${data.payment.currentInvoice.billableLessons ?? '—'} занятий: ${Math.round(data.payment.currentInvoice.remainingAmount).toLocaleString('ru-RU')} сум. Оплатите до 5-го числа.`}
+            </div>
+          </div>
+        </div>
+      )}
       {/* ══ Герой: цветной баннер — уровень, место в рейтинге, стрик ══ */}
       <div
         className="p-5 sm:p-6 mb-4 relative overflow-hidden rounded-2xl"

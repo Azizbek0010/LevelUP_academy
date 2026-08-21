@@ -54,6 +54,8 @@ export async function getCurrentInvoice(childId) {
 export async function getGroups(childId) {
   const { rows } = await pool.query(
     `SELECT g.id, g.name, g.subject,
+            (SELECT count(*)::int FROM group_students members
+              WHERE members.group_id = g.id AND members.left_at IS NULL) AS student_count,
             m.first_name AS mentor_first_name, m.last_name AS mentor_last_name
        FROM group_students gs
        JOIN groups g ON g.id = gs.group_id AND g.deleted_at IS NULL
@@ -67,6 +69,7 @@ export async function getGroups(childId) {
     name: r.name,
     subject: r.subject,
     mentorName: `${r.mentor_first_name} ${r.mentor_last_name}`,
+    studentCount: r.student_count,
   }));
 }
 
@@ -133,7 +136,7 @@ export async function getAttendancePage(childId, page, limit) {
 /** Последние оценённые ДЗ ребёнка. */
 export async function getRecentHomeworkGrades(childId, limit) {
   const { rows } = await pool.query(
-    `SELECT hw.title, hw.max_score, s.score, s.graded_at
+    `SELECT hw.id, hw.title, hw.max_score, s.score, s.graded_at
        FROM homework_submissions s
        JOIN homework hw ON hw.id = s.homework_id
       WHERE s.student_id = $1 AND s.status = 'graded'
@@ -142,6 +145,7 @@ export async function getRecentHomeworkGrades(childId, limit) {
     [childId, limit],
   );
   return rows.map((r) => ({
+    id: r.id,
     title: r.title,
     score: r.score,
     maxScore: r.max_score,
@@ -152,8 +156,8 @@ export async function getRecentHomeworkGrades(childId, limit) {
 /** Последние завершённые тесты/экзамены ребёнка. */
 export async function getRecentTestResults(childId, limit) {
   const { rows } = await pool.query(
-    `SELECT t.title,
-            jsonb_array_length(t.questions) AS max_score,
+    `SELECT t.id, t.title,
+            100 AS max_score,
             tr.score, tr.finished_at
        FROM test_results tr
        JOIN tests t ON t.id = tr.test_id
@@ -163,6 +167,7 @@ export async function getRecentTestResults(childId, limit) {
     [childId, limit],
   );
   return rows.map((r) => ({
+    id: r.id,
     title: r.title,
     score: r.score,
     maxScore: r.max_score,
@@ -175,8 +180,8 @@ export async function getGradesPage(childId, type, page, limit) {
   const offset = (page - 1) * limit;
   if (type === 'tests') {
     const { rows } = await pool.query(
-      `SELECT t.title,
-              jsonb_array_length(t.questions) AS max_score,
+      `SELECT t.id, t.title,
+              100 AS max_score,
               tr.score, tr.finished_at, count(*) OVER() AS total
          FROM test_results tr
          JOIN tests t ON t.id = tr.test_id
@@ -187,13 +192,13 @@ export async function getGradesPage(childId, type, page, limit) {
     );
     const total = rows[0] ? Number(rows[0].total) : 0;
     const items = rows.map((r) => ({
-      title: r.title, score: r.score, maxScore: r.max_score, finishedAt: r.finished_at,
+      id: r.id, title: r.title, score: r.score, maxScore: r.max_score, finishedAt: r.finished_at,
     }));
     return { items, total, page, pageCount: Math.max(1, Math.ceil(total / limit)) };
   }
 
   const { rows } = await pool.query(
-    `SELECT hw.title, hw.max_score, s.score, s.graded_at, count(*) OVER() AS total
+    `SELECT hw.id, hw.title, hw.max_score, s.score, s.graded_at, count(*) OVER() AS total
        FROM homework_submissions s
        JOIN homework hw ON hw.id = s.homework_id
       WHERE s.student_id = $1 AND s.status = 'graded'
@@ -203,9 +208,91 @@ export async function getGradesPage(childId, type, page, limit) {
   );
   const total = rows[0] ? Number(rows[0].total) : 0;
   const items = rows.map((r) => ({
-    title: r.title, score: r.score, maxScore: r.max_score, gradedAt: r.graded_at,
+    id: r.id, title: r.title, score: r.score, maxScore: r.max_score, gradedAt: r.graded_at,
   }));
   return { items, total, page, pageCount: Math.max(1, Math.ceil(total / limit)) };
+}
+
+export async function getGroupRating(childId) {
+  const { rows: [group] } = await pool.query(
+    `SELECT g.id, g.name
+       FROM group_students own_membership
+       JOIN groups g ON g.id = own_membership.group_id AND g.deleted_at IS NULL
+      WHERE own_membership.student_id = $1 AND own_membership.left_at IS NULL
+      ORDER BY g.name
+      LIMIT 1`,
+    [childId],
+  );
+  if (!group) return null;
+
+  const { rows } = await pool.query(
+    `SELECT u.id AS child_id, u.first_name, u.last_name, sp.coin_balance AS coins,
+            COALESCE(ROUND((
+              COALESCE((SELECT AVG(hs.score::numeric / NULLIF(h.max_score, 0) * 100)
+                          FROM homework_submissions hs
+                          JOIN homework h ON h.id = hs.homework_id
+                         WHERE hs.student_id = u.id AND h.group_id = $1 AND hs.status = 'graded'), 0)
+              + COALESCE((SELECT AVG(tr.score::numeric)
+                            FROM test_results tr
+                            JOIN tests t ON t.id = tr.test_id
+                           WHERE tr.student_id = u.id AND t.group_id = $1 AND tr.finished_at IS NOT NULL), 0)
+            ) / NULLIF(
+              (CASE WHEN EXISTS (SELECT 1 FROM homework_submissions hs JOIN homework h ON h.id = hs.homework_id WHERE hs.student_id = u.id AND h.group_id = $1 AND hs.status = 'graded') THEN 1 ELSE 0 END)
+              + (CASE WHEN EXISTS (SELECT 1 FROM test_results tr JOIN tests t ON t.id = tr.test_id WHERE tr.student_id = u.id AND t.group_id = $1 AND tr.finished_at IS NOT NULL) THEN 1 ELSE 0 END), 0
+            )), 0)::int AS avg_score
+       FROM group_students gs
+       JOIN users u ON u.id = gs.student_id AND u.deleted_at IS NULL
+       JOIN student_profiles sp ON sp.user_id = u.id
+      WHERE gs.group_id = $1 AND gs.left_at IS NULL
+      ORDER BY avg_score DESC, sp.coin_balance DESC, u.first_name, u.last_name`,
+    [group.id],
+  );
+
+  return {
+    groupId: group.id,
+    groupName: group.name,
+    students: rows.map((r, index) => ({
+      childId: r.child_id,
+      firstName: r.first_name,
+      lastName: r.last_name,
+      coins: r.coins,
+      avgScore: r.avg_score,
+      rank: index + 1,
+    })),
+  };
+}
+
+export async function getHomeworkDetailForParent(parentId, homeworkId) {
+  const { rows: [row] } = await pool.query(
+    `SELECT h.id, h.title, h.description, h.max_score, g.name AS group_name,
+            hs.score, hs.graded_at
+       FROM homework_submissions hs
+       JOIN homework h ON h.id = hs.homework_id AND h.deleted_at IS NULL
+       JOIN groups g ON g.id = h.group_id AND g.deleted_at IS NULL
+       JOIN student_profiles sp ON sp.user_id = hs.student_id
+      WHERE h.id = $1 AND sp.parent_id = $2 AND hs.status = 'graded'`,
+    [homeworkId, parentId],
+  );
+  if (!row) return null;
+  return {
+    id: row.id, title: row.title, description: row.description, maxScore: row.max_score,
+    groupName: row.group_name, score: row.score, gradedAt: row.graded_at,
+    comment: null, mistakes: [],
+  };
+}
+
+export async function getTestDetailForParent(parentId, testId) {
+  const { rows: [row] } = await pool.query(
+    `SELECT t.id, t.title, t.questions, t.duration_min, g.name AS group_name,
+            tr.answers, tr.score, tr.finished_at
+       FROM test_results tr
+       JOIN tests t ON t.id = tr.test_id AND t.deleted_at IS NULL
+       JOIN groups g ON g.id = t.group_id AND g.deleted_at IS NULL
+       JOIN student_profiles sp ON sp.user_id = tr.student_id
+      WHERE t.id = $1 AND sp.parent_id = $2 AND tr.finished_at IS NOT NULL`,
+    [testId, parentId],
+  );
+  return row ?? null;
 }
 
 function mapChild(r) {

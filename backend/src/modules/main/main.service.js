@@ -22,7 +22,7 @@ export async function onboardPartner({ organizationName, domain, admin, leadId }
       throw new AppError(409, 'Domain already taken');
     }
 
-    // план pro/max убран: цена считается по факту (филиалы+ученики), не по плану
+    // план pro/max убран: цена считается по общему числу активных аккаунтов, не по плану
     const org = await repo.insertOrganization(
       { name: organizationName, domain },
       client,

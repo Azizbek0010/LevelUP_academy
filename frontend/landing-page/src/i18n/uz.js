@@ -495,25 +495,25 @@ export default {
   pricing: {
     badge: 'Tariflar',
     h1: 'Markazdagi tartib uchun halol narx',
-    lead: "Narx faol o'quvchilar soniga qarab belgilanadi — filiallar cheksiz kiradi. Har bir filial uchun qo'shimcha to'lov va yashirin foizlar yo'q.",
+    lead: "Narx tashkilotdagi barcha faol akkauntlar — o'quvchilar, ota-onalar va xodimlar soniga qarab belgilanadi. Filiallar cheksiz kiradi.",
     positioning:
       "Biz eng arzon CRM emasmiz — va bo'lishga urinmaymiz ham. Narx — bu sifat: xavfsiz to'lovlar, har kunlik zaxira nusxa va bir haftada ishga tushirish. Markazingiz ishonchliligi uchun ikki marta to'lamaysiz.",
 
-    plansHead: "Tariflar — o'quvchilar soniga qarab",
+    plansHead: "Tariflar — faol akkauntlar soniga qarab",
     plansLead:
-      "Faol o'quvchilar soniga mos tarifni tanlang. O'sib ketsangiz — keyingisiga o'tasiz, tarix saqlanadi.",
+      "Barcha faol akkauntlar hisoblanadi: o'quvchi, ota-ona, SEO, admin, mentor, metodist, filial rahbari va moliyachi.",
     free: 'Bepul',
     negotiable: 'Kelishuv asosida',
     per: "so'm/oyiga",
     popular: 'Ommabop',
     cardCta: 'Ariza qoldirish',
     plans: [
-      { id: 'free', name: 'Free', amount: 0, range: "0–30 o'quvchi" },
-      { id: 'start', name: 'Start', amount: 199000, range: "31–100 o'quvchi" },
-      { id: 'standard', name: 'Standard', amount: 349000, range: "101–300 o'quvchi", popular: true },
-      { id: 'pro', name: 'Pro', amount: 599000, range: "301–600 o'quvchi" },
-      { id: 'business', name: 'Business', amount: 799000, range: "601–1000 o'quvchi" },
-      { id: 'network', name: 'Network', amount: null, range: "1000+ o'quvchi" },
+      { id: 'free', name: 'Free', amount: 0, range: "0–30 faol akkaunt" },
+      { id: 'start', name: 'Start', amount: 199000, range: "31–100 faol akkaunt" },
+      { id: 'standard', name: 'Standard', amount: 349000, range: "101–300 faol akkaunt", popular: true },
+      { id: 'pro', name: 'Pro', amount: 599000, range: "301–600 faol akkaunt" },
+      { id: 'business', name: 'Business', amount: 799000, range: "601–1000 faol akkaunt" },
+      { id: 'network', name: 'Network', amount: null, range: "1000+ faol akkaunt" },
     ],
     perksHead: 'Har bir tarifga kiradi',
     perks: [
@@ -566,11 +566,11 @@ export default {
     faq: [
       {
         q: 'LevelUp Academy narxi qancha?',
-        a: "Narx faqat faol o'quvchilar soniga bog'liq: Free (30 tagacha) — bepul, Start (31–100) — 199 000 so'm/oyiga, Standard (101–300) — 349 000, Pro (301–600) — 599 000, Business (601–1000) — 799 000. 1000 dan ortiq o'quvchi — kelishuv asosida.",
+        a: "Narx tashkilotdagi barcha faol akkauntlar soniga bog'liq: o'quvchi, ota-ona va barcha xodimlar hisoblanadi. Free (30 tagacha) — bepul, Start (31–100) — 199 000 so'm/oyiga, Standard (101–300) — 349 000, Pro (301–600) — 599 000, Business (601–1000) — 799 000. 1000 dan ortiq akkaunt — kelishuv asosida.",
       },
       {
         q: "Filiallar soni narxga ta'sir qiladimi?",
-        a: "Yo'q. Filiallar har bir tarifga cheksiz kiradi — siz har bir filial uchun emas, faqat faol o'quvchilar soni uchun to'laysiz.",
+        a: "Yo'q. Filiallar har bir tarifga cheksiz kiradi. To'lov filial uchun emas, tashkilotdagi barcha faol akkauntlar soni uchun hisoblanadi.",
       },
       {
         q: 'Bepul davr bormi?',
@@ -675,7 +675,7 @@ export default {
       },
       {
         q: 'Til maktabi uchun narxi qancha?',
-        a: "Narx faol o'quvchilar soniga qarab, filiallar cheksiz kiradi. Birinchi hafta — bepul, kartasiz. Batafsil — tariflar sahifasida.",
+        a: "Narx barcha faol akkauntlar soniga qarab hisoblanadi, filiallar cheksiz kiradi. Birinchi hafta — bepul, kartasiz. Batafsil — tariflar sahifasida.",
       },
     ],
 
@@ -764,7 +764,7 @@ export default {
       },
       {
         q: 'Kurslar uchun narxi qancha?',
-        a: "Narx faol o'quvchilar soniga qarab, filiallar cheksiz kiradi. Birinchi hafta — bepul, kartasiz. Batafsil — tariflar sahifasida.",
+        a: "Narx barcha faol akkauntlar soniga qarab hisoblanadi, filiallar cheksiz kiradi. Birinchi hafta — bepul, kartasiz. Batafsil — tariflar sahifasida.",
       },
     ],
 
@@ -903,7 +903,7 @@ export default {
       },
       {
         q: "Excel'ni CRM'ga almashtirish qancha turadi?",
-        a: "30 o'quvchigacha — bepul, keyin narx faol o'quvchilar soniga qarab belgilanadi, filiallar cheksiz kiradi. Birinchi hafta bepul, kartasiz. Batafsil — tariflar sahifasida.",
+        a: "30 ta faol akkauntgacha — bepul, keyin o'quvchi, ota-ona va xodimlarning barcha faol akkauntlari hisoblanadi. Filiallar cheksiz kiradi.",
       },
     ],
 
@@ -1222,7 +1222,7 @@ export default {
       {
         icon: 'building',
         title: 'Filiallar tarmog\'i',
-        text: "Filiallar har qanday tarifga cheklovsiz kiradi, siz faqat faol o'quvchilar soni uchun to'laysiz. Rahbar butun tarmoq bo'yicha tushum, qarz va davomatni ko'radi.",
+        text: "Filiallar har qanday tarifga cheklovsiz kiradi, to'lov esa barcha faol akkauntlar soniga qarab hisoblanadi. Rahbar butun tarmoq bo'yicha tushum, qarz va davomatni ko'radi.",
       },
     ],
 
@@ -1281,7 +1281,7 @@ export default {
       after: 'Umai CRM',
       rows: [
         { task: "Bepul sinab ko'rish", before: 'birinchi hafta, kartasiz', after: '7 kun, kartasiz' },
-        { task: "Narx nimaga bog'liq", before: "faol o'quvchilar soniga", after: "funksiyalar to'plamiga; o'quvchilar cheklanmagan" },
+        { task: "Narx nimaga bog'liq", before: "barcha faol akkauntlar soniga", after: "funksiyalar to'plamiga; o'quvchilar cheklanmagan" },
         { task: 'Yuqori tarif', before: "799 000 so'm/oy (601–1000 o'quvchi)", after: "2 250 000 so'm/oy — AI tarifi (yillik to'lovda)" },
         { task: 'Joriy etish va sozlash', before: 'kiradi, 7 kunda ishga tushirish', after: "bir martalik 3 750 000 so'm; 12 oylik to'lovda bepul" },
         { task: 'Ekspert ish soati', before: "qo'llab-quvvatlashga kiradi", after: "375 000 so'm" },
@@ -1507,6 +1507,7 @@ export default {
       { label: 'Bu nima', value: "O'quv markazini boshqarish uchun SaaS platforma" },
       { label: 'Tashkil etilgan', value: '2026-yil' },
       { label: 'Jamoa', value: '6 kishi' },
+      { label: 'Asoschisi', value: 'Azizbek Amangeldiev' },
       { label: 'Mamlakat', value: "O'zbekiston" },
       { label: 'Tillar', value: "русский, o'zbekcha, English" },
       {
@@ -1517,6 +1518,7 @@ export default {
       { label: 'Pochta', value: 'info@levelup-academy.uz' },
       { label: 'Telegram', value: '@levelupacademycrm' },
       { label: 'Instagram', value: '@levelup_academy_uz' },
+      { label: 'Asoschining LinkedIn’i', value: 'linkedin.com/in/azizbek-amangeldiev-6045a342b' },
     ],
 
     sameHead: "Bizni ko'pincha boshqalar bilan adashtirishadi",
@@ -1525,6 +1527,7 @@ export default {
 
     linksHead: "Keyin nimani ko'rish mumkin",
     links: [
+      { label: 'Asoschisi — Azizbek Amangeldiev', path: '/landing/team/azizbek-amangeldiev' },
       { label: 'Tizim imkoniyatlari', path: '/landing/features' },
       { label: 'Tariflar va narxlar', path: '/landing/pricing' },
       { label: 'Rollar va huquqlar', path: '/landing/roles' },
@@ -1534,6 +1537,53 @@ export default {
     ctaTitle: "Tizimni ichidan ko'rmoqchimisiz?",
     ctaText:
       "Ariza qoldiring — LevelUp Academy'ni markazingiz stsenariysida ko'rsatamiz va birinchi haftani bepul ulaymiz.",
+  },
+
+  founder: {
+    badge: 'Asoschisi',
+    h1: 'Azizbek Amangeldiev',
+    subName: 'Азизбек Амангелдиев',
+    location: "Toshkent, O'zbekiston",
+    lead: "LevelUp Academy'ning asoschisi — O'zbekiston o'quv markazlari uchun SaaS CRM. Mahsulot va backend bilan shug'ullanadi: tizim arxitekturasi, autentifikatsiya, to'lovlar va ko'p filiallilik.",
+    tags: ['Full-stack', 'Product', 'SaaS'],
+    contactsHead: "Men bilan qanday bog'lanish mumkin",
+    contactsLead: "Eng tez Telegram'da javob beraman — odatda kun davomida.",
+    contactTelegramLabel: 'Telegram',
+    contactTelegramNote: 'Eng tezkor',
+    contactEmailLabel: 'Email',
+    contactLinkedinLabel: 'LinkedIn',
+    stackHead: 'Mahsulot nimada qurilgan',
+    stackLead: "LevelUp Academy'ning haqiqiy texnologik steki — serverdan deploygacha.",
+    stackGroups: [
+      { label: 'Backend', icon: 'lock', items: ['Node.js', 'Express', 'PostgreSQL', 'Redis', 'BullMQ', 'Socket.io'] },
+      { label: 'Frontend', icon: 'grid', items: ['React 18', 'Vite', 'Tailwind CSS', 'DaisyUI', 'TanStack Query', 'Redux Toolkit'] },
+      { label: 'Infratuzilma', icon: 'building', items: ['Render', 'Vercel', 'MinIO / S3', 'Telegram Bot (grammY)'] },
+    ],
+    highlights: [
+      {
+        icon: 'rocket',
+        title: 'Mahsulot va backend',
+        text: "Tizim arxitekturasi, autentifikatsiya, to'lovlar va ko'p filiallilik — g'oyadan prodakshengacha.",
+      },
+      {
+        icon: 'calendar',
+        title: '2026-yildan beri',
+        text: "LevelUp Academy'ni O'zbekistonda asos soldi — hozir mahsulotni olti kishilik jamoa ishlatadi.",
+      },
+      {
+        icon: 'building',
+        title: "Toshkent, O'zbekiston",
+        text: "O'quv markazlari uchun SaaS quradi — har kuni foydalaniladigan tizim.",
+      },
+    ],
+    bioHead: 'Azizbek Amangeldiev kim',
+    bioText:
+      "Azizbek Amangeldiev (Азизбек Амангелдиев) — 2026-yilda tashkil etilgan LevelUp Academy'ning asoschisi, O'zbekiston o'quv markazlari uchun SaaS-platforma. Mahsulot va backend uchun javobgar: tizim arxitekturasi, autentifikatsiya, to'lovlar va ko'p filiallilik. Toshkentda yashaydi va ishlaydi.",
+    linksHead: "Keyin nimani ko'rish mumkin",
+    links: [
+      { label: 'Kompaniya haqida', path: '/landing/about' },
+      { label: 'Tizim imkoniyatlari', path: '/landing/features' },
+    ],
   },
 
   notFound: {
@@ -1618,6 +1668,11 @@ export default {
       title: "Kompaniya haqida — LevelUp Academy CRM ishlab chiquvchisi",
       description:
         "LevelUp Academy — O'zbekistondagi o'quv markazlari uchun CRM: kompaniya 2026-yilda tashkil etilgan, jamoa 6 kishi. Biz kimmiz, tizim qanday ishlaydi va biz nima emasmiz.",
+    },
+    founder: {
+      title: 'Azizbek Amangeldiev — LevelUp Academy asoschisi',
+      description:
+        "Azizbek Amangeldiev (Азизбек Амангелдиев) — 2026-yilda asos solingan LevelUp Academy'ning asoschisi, O'zbekiston o'quv markazlari uchun SaaS CRM.",
     },
     notFound: {
       title: "Sahifa topilmadi — LevelUp Academy",

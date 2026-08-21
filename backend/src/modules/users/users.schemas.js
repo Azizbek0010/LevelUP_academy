@@ -11,6 +11,17 @@ export const listUsersQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
 
+export const directoryQuerySchema = z.object({
+  role: z.enum([
+    'main_admin', 'seo', 'admin', 'branch_manager', 'finance_manager',
+    'mentor', 'methodist', 'parent', 'student',
+  ]).optional(),
+  status: z.enum(['active', 'frozen', 'graduated', 'dropped', 'fired']).optional(),
+  search: z.string().trim().max(120).optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(30),
+});
+
 /**
  * Собственный профиль.
  *

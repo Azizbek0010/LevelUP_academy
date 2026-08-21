@@ -5,6 +5,7 @@ import { getStudentGroupIds } from '../../../shared/membership.js';
 import { getTopicStats, getLatestReview } from '../lessons/lessons.repository.js';
 import { isFeatureEnabledForOrg } from '../../../shared/orgFeatures.js';
 import * as homeRepo from './home.repository.js';
+import { getPaymentSummary } from '../../billing/billing.service.js';
 
 const UPCOMING_HOMEWORK_LIMIT = 5;
 
@@ -58,10 +59,11 @@ export async function getDashboard(user) {
   const studentId = user.id;
   const groupIds = await getStudentGroupIds(studentId);
 
-  const [coins, totalDebt, leaderboard, groups, homeworkList, topicStats, latestReview, attendanceHistory, preferredLanguage, shopEnabled, tgEnabled] =
+  const [coins, totalDebt, payment, leaderboard, groups, homeworkList, topicStats, latestReview, attendanceHistory, preferredLanguage, shopEnabled, tgEnabled] =
     await Promise.all([
       getBalance(studentId),
       homeRepo.getTotalDebt(studentId),
+      getPaymentSummary(studentId),
       getLeaderboard(user.branchId, 'week', { limit: 20, studentId }),
       homeRepo.getGroupsForStudent(studentId),
       listHomeworkForStudent(studentId, groupIds),
@@ -83,6 +85,7 @@ export async function getDashboard(user) {
   return {
     coins,
     totalDebt,
+    payment,
     rank: leaderboard.me,
     groups,
     upcomingHomework,

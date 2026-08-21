@@ -1,9 +1,10 @@
 import { AppError } from '../../utils/AppError.js';
 import { pool } from '../../config/db.js';
 import { emitTo } from '../../sockets/io.js';
+import { notifyDirectChatRecipient } from '../telegram/directChatNotify.js';
 import * as chatRepository from './chat.repository.js';
 import {
-  canStaffChatPeer, dmRoom, userRoom, isUuid, DM_STAFF_ROLES,
+  canStaffChatPeer, canStaffChatStaff, dmRoom, userRoom, isUuid, DM_STAFF_ROLES,
 } from './chat.access.js';
 
 const MAX_BODY_LENGTH = 4000;
@@ -49,8 +50,21 @@ export async function sendDirectMessage({ sender, peerId, body }) {
     if (!(await canStaffChatPeer(sender, peerId))) {
       throw new AppError(403, 'You may not message this person');
     }
-    staffId = sender.id;
-    otherId = peerId;
+    if (await canStaffChatStaff(sender, peerId)) {
+      const peer = await findStaff(peerId);
+      // Keep one stable room key regardless of which staff member sends first.
+      // Admin/manager/member is the first side; mentor is the second side.
+      if (sender.role === 'mentor') {
+        staffId = peer.id;
+        otherId = sender.id;
+      } else {
+        staffId = sender.id;
+        otherId = peer.id;
+      }
+    } else {
+      staffId = sender.id;
+      otherId = peerId;
+    }
   } else if (sender.role === 'parent' || sender.role === 'student') {
     // родитель/ученик → сотрудник, и только в уже разрешённый диалог:
     // право проверяется со стороны сотрудника, первым писать они не могут.
@@ -75,6 +89,12 @@ export async function sendDirectMessage({ sender, peerId, body }) {
 
   emitTo(userRoom(sender.id), 'chat:dm:message', message);
   emitTo(userRoom(sender.id === staffId ? otherId : staffId), 'chat:dm:message', message);
+
+  // A linked parent/student also receives the staff message in Telegram.
+  // Fire-and-forget keeps the persisted CRM chat independent from Telegram outages.
+  if (DM_STAFF_ROLES.has(sender.role) && otherId !== sender.id) {
+    void notifyDirectChatRecipient({ recipientId: otherId, senderId: sender.id, body: message.body });
+  }
 
   return message;
 }

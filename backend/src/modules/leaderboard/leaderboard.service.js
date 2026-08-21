@@ -27,29 +27,54 @@ const keyFor = (branchId, period) =>
 export async function getLeaderboard(branchId, period, { limit = 20, studentId = null } = {}) {
   const key = keyFor(branchId, period);
 
-  // ZSET: [member, score, member, score, ...] по убыванию
-  const flat = await redis.zrevrange(key, 0, limit - 1, 'WITHSCORES');
-  const ranked = [];
-  for (let i = 0; i < flat.length; i += 2) {
-    ranked.push({ studentId: flat[i], coins: Number(flat[i + 1]), rank: i / 2 + 1 });
+  try {
+    // ZSET: [member, score, member, score, ...] по убыванию
+    const flat = await redis.zrevrange(key, 0, limit - 1, 'WITHSCORES');
+    const ranked = [];
+    for (let i = 0; i < flat.length; i += 2) {
+      ranked.push({ studentId: flat[i], coins: Number(flat[i + 1]), rank: i / 2 + 1 });
+    }
+
+    const names = await resolveNames(ranked.map((r) => r.studentId));
+    const top = ranked.map((r) => ({ ...r, ...names[r.studentId] }));
+
+    let me = null;
+    if (studentId) {
+      const [rank, score] = await Promise.all([
+        redis.zrevrank(key, studentId),
+        redis.zscore(key, studentId),
+      ]);
+      me = rank === null ? { rank: null, coins: 0 } : { rank: rank + 1, coins: Number(score) };
+    }
+
+    return { period, top, me };
+  } catch {
+    // Redis — ускоритель, а не источник истины. Локальная разработка и временный
+    // сбой Redis не должны превращать весь кабинет ученика/родителя в HTTP 500.
+    return getLeaderboardFromDatabase(branchId, period, { limit, studentId });
   }
+}
 
-  const names = await resolveNames(ranked.map((r) => r.studentId));
-  const top = ranked.map((r) => ({ ...r, ...names[r.studentId] }));
-
-  let me = null;
-  if (studentId) {
-    const [rank, score] = await Promise.all([
-      redis.zrevrank(key, studentId),
-      redis.zscore(key, studentId),
-    ]);
-    me =
-      rank === null
-        ? { rank: null, coins: 0 }
-        : { rank: rank + 1, coins: Number(score) };
-  }
-
-  return { period, top, me };
+async function getLeaderboardFromDatabase(branchId, period, { limit, studentId }) {
+  const since = periodStart(period);
+  const { rows } = await pool.query(
+    `SELECT u.id AS "studentId", u.first_name AS "firstName", u.last_name AS "lastName",
+            u.avatar_key AS "avatarKey", COALESCE(SUM(ch.amount) FILTER (WHERE ch.amount > 0), 0)::int AS coins
+       FROM student_profiles sp
+       JOIN users u ON u.id = sp.user_id AND u.deleted_at IS NULL
+       LEFT JOIN coin_history ch ON ch.student_id = u.id AND ch.created_at >= $2
+      WHERE sp.branch_id = $1
+      GROUP BY u.id, u.first_name, u.last_name, u.avatar_key
+      ORDER BY coins DESC, u.first_name, u.last_name`,
+    [branchId, since],
+  );
+  const ranked = rows.map((row, index) => ({ ...row, rank: index + 1 }));
+  const own = studentId ? ranked.find((row) => row.studentId === studentId) : null;
+  return {
+    period,
+    top: ranked.slice(0, limit),
+    me: studentId ? (own ? { rank: own.rank, coins: own.coins } : { rank: null, coins: 0 }) : null,
+  };
 }
 
 /**

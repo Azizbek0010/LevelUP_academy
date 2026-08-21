@@ -1,13 +1,19 @@
-import { Link } from 'react-router-dom';
-import { Building2, GraduationCap, Users, Presentation, Wallet, TriangleAlert, RefreshCw, ArrowRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Building2, GraduationCap, Users, Presentation, Wallet, TriangleAlert, RefreshCw } from 'lucide-react';
 import { fmt } from '../../format.js';
 import { useSuperDashboard } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SkeletonKpis } from '../../components/Skeleton.jsx';
-import { Card, Metric } from './_ui.jsx';
+import { SkeletonKpisStrict } from '../../components/Skeleton.jsx';
+import {
+  DashboardPanel,
+  KpiCard,
+  BranchesTable,
+  AnalyticsCTA,
+} from '../../components/ui.jsx';
 
 export default function SuperDashboard() {
   const { data, isLoading, error, refetch } = useSuperDashboard();
+  const navigate = useNavigate();
 
   if (error) {
     if (error.status === 401) {
@@ -24,11 +30,11 @@ export default function SuperDashboard() {
   }
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <PageHeader title="Дашборд организации" subtitle="Обзор филиалов, студентов и дохода" />
 
       {isLoading || !data ? (
-        <SkeletonKpis count={6} className="grid-cols-2 md:grid-cols-3 lg:grid-cols-3" />
+        <SkeletonKpisStrict count={6} />
       ) : (
         <Loaded data={data} />
       )}
@@ -43,71 +49,25 @@ function Loaded({ data }) {
 
   return (
     <>
-      {/* KPI grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
-        <Metric Icon={Building2} tone="info" label="Филиалы" value={fmt(t.branches)} unit="всего" to="/branches" />
-        <Metric Icon={GraduationCap} tone="primary" label="Ученики" value={fmt(t.activeStudents)} unit="активных" to="/students" />
-        <Metric Icon={Users} tone="success" label="Админы" value={fmt(t.admins)} unit="сотрудников" to="/admins" />
-        <Metric Icon={Presentation} tone="neutral" label="Менторы" value={fmt(t.mentors)} unit="преподавателей" to="/admins" />
-        <Metric Icon={Wallet} tone="warning" label="Доход" value={fmt(t.revenue)} unit={cur} to="/stats" />
-        <Metric Icon={TriangleAlert} tone="danger" label="Долги" value={fmt(t.outstandingDebt)} unit={cur} to="/stats" />
+      {/* KPI Grid — 6 карточек с stagger */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+        <KpiCard Icon={Building2} tone="info" label="Филиалы" value={fmt(t.branches)} unit="всего" to="/branches" />
+        <KpiCard Icon={GraduationCap} tone="primary" label="Ученики" value={fmt(t.activeStudents)} unit="активных" to="/students" />
+        <KpiCard Icon={Users} tone="success" label="Админы" value={fmt(t.admins)} unit="сотрудников" to="/admins" />
+        <KpiCard Icon={Presentation} tone="neutral" label="Менторы" value={fmt(t.mentors)} unit="преподавателей" to="/admins" />
+        <KpiCard Icon={Wallet} tone="warning" label="Доход за всё время" value={fmt(t.revenue)} unit={cur} to="/stats" />
+        <KpiCard Icon={TriangleAlert} tone="danger" label="Долги" value={fmt(t.outstandingDebt)} unit={cur} to="/stats" />
       </div>
 
-      {/* Филиалы — таблица */}
-      <Card className="p-5 md:p-6 mt-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold">Филиалы</h2>
-          <Link to="/branches" className="text-sm text-primary font-medium hover:underline">Все филиалы →</Link>
-        </div>
-        {branches.length === 0 ? (
-          <p className="text-base-content/40 text-sm py-6 text-center">Филиалов пока нет</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="table table-sm tabular-nums">
-              <thead>
-                <tr>
-                  <th>Филиал</th>
-                  <th className="text-right">Ученики</th>
-                  <th className="text-right">Админы</th>
-                  <th className="text-right">Доход</th>
-                  <th className="text-right">Долг</th>
-                </tr>
-              </thead>
-              <tbody>
-                {branches.map((b) => (
-                  <tr key={b.id} className="hover">
-                    <td>
-                      <Link to={`/branches/${b.id}`} className="font-medium hover:text-primary">
-                        {b.name}
-                      </Link>
-                      <span className={`badge badge-xs ml-2 ${b.isMain ? 'badge-primary' : ''}`}>
-                        {b.isMain ? 'Главный' : b.isArchived ? 'Архив' : 'Филиал'}
-                      </span>
-                    </td>
-                    <td className="text-right">{fmt(b.students)}</td>
-                    <td className="text-right">{fmt(b.admins)}</td>
-                    <td className="text-right font-medium">{fmt(b.revenue)}</td>
-                    <td className="text-right text-error">{fmt(b.debt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+      {/* Филиалы — строгая таблица в панели */}
+      <DashboardPanel title="Филиалы" icon={Building2} bodyClass="p-0 mt-6" action={
+        <Link to="/branches" className="text-sm font-medium text-[var(--primary)] hover:underline">Все филиалы →</Link>
+      }>
+        <BranchesTable branches={branches} fmt={fmt} />
+      </DashboardPanel>
 
-      {/* Графики доходов/долгов по филиалам и разбивка по методам оплаты —
-          на «Статистике» (там же период 7/30/90 дней и экспорт CSV), здесь
-          дублировать их больше не нужно. */}
-      <Link
-        to="/stats"
-        className="block rounded-2xl border border-base-300 bg-base-100 mt-6 transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40"
-      >
-        <div className="flex items-center justify-between p-5">
-          <span className="text-sm font-semibold">Подробная аналитика — графики, период, способы оплаты</span>
-          <ArrowRight size={16} className="text-primary shrink-0" />
-        </div>
-      </Link>
+      {/* CTA → Статистика */}
+      <AnalyticsCTA onClick={() => navigate('/stats')} className="mt-6" />
     </>
   );
 }

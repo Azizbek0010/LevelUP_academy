@@ -2,45 +2,37 @@ import { Link } from 'react-router-dom';
 import {
   Wallet, TriangleAlert, Receipt, TrendingUp, Users, GraduationCap, Clock,
   Building2, CalendarDays, Sparkles, ChevronRight, CreditCard, Coins,
+  UserPlus, UserMinus,
 } from 'lucide-react';
 import { fmt, money, dateShort } from '../../format.js';
 import { useAdminDashboard, useAdminInvoices } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
-import { Kpi, Panel, Avatar, Tip } from '../mentor/_ui.jsx';
+import { Panel } from '../mentor/_ui.jsx';
 
-/* Строка показателя внутри панели. С `to` становится ссылкой — та, что ведёт
-   куда-то (студенты, группы, счета), это показывает: шеврон справа и подсветка
-   рамки на наведении. Без `to` — просто пара «подпись → число».
-
-   Раньше на дашборде было ещё три секции: приветственный баннер, сетка
-   «Быстрые действия» и лента «Последняя активность». Баннер убран как
-   декоративный; плитки быстрых действий дублировали левое меню (те же ссылки
-   на том же экране) — ровно поэтому их убрали и у ментора; лента активности
-   была захардкоженной выдумкой («Система работает стабильно», «Данные
-   обновлены») — интерфейс сообщал о событиях, которых не было. Осталось только
-   то, что стоит на реальных данных. */
+/* Компактная строка показателя: подпись + число (+ шеврон если ссылка).
+   Денсификейшн: меньше паддинги, меньше gap, меньший шрифт для подписи. */
 function StatRow({ Icon, label, value, danger, accent, to }) {
   const inner = (
     <>
-      <span className="flex items-center gap-2.5 text-[13px] text-base-content/70">
+      <span className="flex items-center gap-2 text-[12px] text-base-content/70">
         {Icon && (
-          <span className="w-7 h-7 rounded-lg grid place-items-center bg-primary/10 text-primary shrink-0">
-            <Icon size={14} />
+          <span className="w-6 h-6 rounded-lg grid place-items-center bg-primary/10 text-primary shrink-0">
+            <Icon size={12} />
           </span>
         )}
         {label}
       </span>
-      <span className="flex items-center gap-1.5 shrink-0">
-        <span className={`text-[15px] font-extrabold tabular-nums ${danger ? 'text-error' : accent ? 'text-primary' : 'text-base-content'}`}>
+      <span className="flex items-center gap-1 shrink-0">
+        <span className={`text-[14px] font-extrabold tabular-nums ${danger ? 'text-error' : accent ? 'text-primary' : 'text-base-content'}`}>
           {value}
         </span>
-        {to && <ChevronRight size={15} className="text-base-content/30" />}
+        {to && <ChevronRight size={13} className="text-base-content/30" />}
       </span>
     </>
   );
 
-  const base = 'flex items-center justify-between rounded-xl px-3.5 py-3 border transition-colors';
+  const base = 'flex items-center justify-between rounded-lg px-3 py-2 border transition-colors';
   if (to) {
     return (
       <Link to={to} className={`${base} border-base-200 hover:border-primary/40 hover:bg-primary/[0.03] group`}>
@@ -63,7 +55,7 @@ export default function AdminDashboard() {
     return (
       <div>
         <PageHeader title="Дашборд" subtitle={today} />
-        <div className="mt-6"><SkeletonKpis /></div>
+        <div className="mt-4"><SkeletonKpis /></div>
       </div>
     );
   }
@@ -72,7 +64,7 @@ export default function AdminDashboard() {
     return (
       <div>
         <PageHeader title="Дашборд" subtitle={today} />
-        <div className="alert alert-error mt-6">Ошибка загрузки: {error.message}</div>
+        <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
       </div>
     );
   }
@@ -89,42 +81,41 @@ export default function AdminDashboard() {
     .slice(0, 5);
 
   return (
-    <div className="space-y-6 pb-8 animate-page-enter">
+    <div className="space-y-4 pb-6 animate-page-enter">
       <PageHeader title="Дашборд" subtitle={`Сегодня ${today} · обзор вашего филиала`} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Операционные показатели — счётчики, а не деньги. */}
-        <Panel title="Показатели филиала" icon={Building2} bodyClass="p-4">
-          <div className="space-y-2">
-            <StatRow Icon={GraduationCap} label="Активные студенты" value={fmt(t.activeStudents)} accent to="/students" />
-            <StatRow Icon={Users} label="Группы" value={fmt(t.groups)} to="/groups" />
-            <StatRow Icon={Clock} label="Просроченные счета" value={fmt(t.overdueInvoices)} danger={t.overdueInvoices > 0} to="/payments" />
-          </div>
+      {/* Верхний ряд: две панели в гриде на lg, одна колонка на мобильных */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Операционные показатели — счётчики */}
+        <Panel title="Показатели филиала" icon={Building2} bodyClass="p-3 space-y-1.5">
+          <StatRow Icon={GraduationCap} label="Активные студенты" value={fmt(t.activeStudents)} accent to="/students" />
+          <StatRow Icon={Users} label="Группы" value={fmt(t.groups)} to="/groups" />
+          <StatRow Icon={Clock} label="Просроченные счета" value={fmt(t.overdueInvoices)} danger={t.overdueInvoices > 0} to="/payments" />
         </Panel>
 
-        {/* Oxirgi to'lovlar */}
-        <Panel title="Последние оплаты" icon={CreditCard} bodyClass="p-4">
+        {/* Последние оплаты */}
+        <Panel title="Последние оплаты" icon={CreditCard} bodyClass="p-3 space-y-1.5">
           {recentPayments.length === 0 ? (
-            <p className="text-[13px] text-base-content/45 text-center py-4">Пока нет оплат</p>
+            <p className="text-[12px] text-base-content/45 text-center py-3">Пока нет оплат</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {recentPayments.map((p) => (
                 <Link
                   key={p.id}
                   to="/payments"
-                  className="flex items-center justify-between rounded-xl px-3.5 py-3 border border-base-200 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors"
+                  className="flex items-center justify-between rounded-lg px-3 py-2 border border-base-200 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors"
                 >
-                  <span className="flex items-center gap-2.5 text-[13px] text-base-content/70">
-                    <span className="w-7 h-7 rounded-lg grid place-items-center bg-success/10 text-success shrink-0">
-                      <Coins size={14} />
+                  <span className="flex items-center gap-2 text-[12px] text-base-content/70">
+                    <span className="w-6 h-6 rounded-lg grid place-items-center bg-success/10 text-success shrink-0">
+                      <Coins size={12} />
                     </span>
-                    <span className="truncate">{p.studentName || p.student?.fullName || 'Студент'}</span>
+                    <span className="truncate max-w-[180px]">{p.studentName || p.student?.fullName || 'Студент'}</span>
                   </span>
-                  <span className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[15px] font-extrabold tabular-nums text-success">
+                  <span className="flex items-center gap-1 shrink-0">
+                    <span className="text-[14px] font-extrabold tabular-nums text-success">
                       {money(p.amount)}
                     </span>
-                    <ChevronRight size={15} className="text-base-content/30" />
+                    <ChevronRight size={13} className="text-base-content/30" />
                   </span>
                 </Link>
               ))}
@@ -133,12 +124,27 @@ export default function AdminDashboard() {
         </Panel>
       </div>
 
-      {/* Oylik qisqacha */}
-      <Panel title="За этот месяц" icon={CalendarDays} bodyClass="p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Нижняя панель: месячные финансы — компактная 3-колонка */}
+      <Panel title="За этот месяц" icon={CalendarDays} bodyClass="p-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <StatRow Icon={TrendingUp} label="Доход" value={money(m.revenue)} accent />
           <StatRow Icon={Receipt} label="Расход" value={money(m.expenses)} />
           <StatRow Icon={Sparkles} label="Прибыль" value={money(m.profit)} accent={m.profit > 0} danger={m.profit < 0} />
+        </div>
+      </Panel>
+
+      {/* Приход/отток учеников за этот месяц: пришло, ушло (архивировано), чистый прирост */}
+      <Panel title="Ученики за этот месяц" icon={Users} bodyClass="p-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <StatRow Icon={UserPlus} label="Пришло" value={fmt(m.newStudents)} accent to="/students" />
+          <StatRow Icon={UserMinus} label="Ушло (архив)" value={fmt(m.droppedStudents)} danger={m.droppedStudents > 0} />
+          <StatRow
+            Icon={Sparkles}
+            label="Чистый прирост"
+            value={m.netStudents > 0 ? `+${fmt(m.netStudents)}` : fmt(m.netStudents)}
+            accent={m.netStudents > 0}
+            danger={m.netStudents < 0}
+          />
         </div>
       </Panel>
     </div>

@@ -287,11 +287,11 @@ export function Dropdown({ trigger, children, align = 'right' }) {
   }, [open]);
 
   return (
-    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+    <div ref={ref} className="relative z-[70]" onClick={(e) => e.stopPropagation()}>
       {trigger(() => setOpen((v) => !v))}
       {open && (
         <div
-          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1 z-50 min-w-[190px] rounded-[12px] border border-base-300 bg-base-100 shadow-lg py-1.5 animate-scale-in origin-top-right`}
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-2 z-[80] min-w-[220px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-xl py-1.5 animate-scale-in origin-top-right`}
         >
           {typeof children === 'function' ? children(() => setOpen(false)) : children}
         </div>

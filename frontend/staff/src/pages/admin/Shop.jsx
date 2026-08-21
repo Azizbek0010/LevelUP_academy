@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Gift, PackagePlus, ShoppingBag, CheckCircle2, XCircle, Coins, Archive } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Gift, PackagePlus, ShoppingBag, CheckCircle2, XCircle, Coins, Archive, Plus, X } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminShopItems, useAdminShopOrders, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
@@ -14,6 +14,7 @@ const STATUS = {
 
 function ItemRow({ item, onRestock, busy }) {
   const [stock, setStock] = useState(String(item.stock));
+  useEffect(() => setStock(String(item.stock)), [item.stock]);
   const dirty = Number(stock) !== item.stock;
   return (
     <div className="card bg-base-100 p-4 flex flex-row items-center gap-4">
@@ -27,25 +28,35 @@ function ItemRow({ item, onRestock, busy }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-bold text-base-content truncate">{item.name}</span>
+          <span className={`badge badge-sm ${item.is_global ? 'badge-primary badge-outline' : 'badge-ghost'}`}>
+            {item.is_global ? 'От SEO' : 'Товар филиала'}
+          </span>
           {item.is_archived && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-base-200 text-base-content/45">
-              <Archive size={10} /> В архиве (не заводит SEO)
+              <Archive size={10} /> В архиве
             </span>
           )}
         </div>
         <div className="flex items-center gap-1 text-[11px] text-base-content/45 mt-0.5">
           <Coins size={11} className="text-warning" /> {item.coin_price} коинов
+          <span className="mx-1">·</span>
+          <span className={`font-bold ${Number(item.stock) <= 3 ? 'text-error' : 'text-success'}`}>
+            Остаток: {Number(item.stock) || 0} шт.
+          </span>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <input
-          type="number" min="0"
-          className="input input-bordered input-sm w-20 text-center"
-          value={stock}
-          onChange={(e) => setStock(e.target.value)}
-        />
+        <label className="flex flex-col gap-1">
+          <span className="text-[10px] font-semibold text-base-content/45">Новый остаток</span>
+          <input
+            type="number" min="0" step="1"
+            className="input input-bordered input-sm w-24 text-center"
+            value={stock}
+            onChange={(e) => setStock(e.target.value)}
+          />
+        </label>
         <button
-          className="btn btn-sm btn-primary gap-1"
+          className="btn btn-sm btn-primary gap-1 self-end"
           disabled={busy || !dirty || stock === '' || Number(stock) < 0}
           onClick={() => onRestock(item.id, Number(stock))}
         >
@@ -89,6 +100,8 @@ export default function AdminShop() {
   const [tab, setTab] = useState('items');
   const [busyId, setBusyId] = useState(null);
   const [err, setErr] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newItem, setNewItem] = useState({ name: '', imageKey: '', coinPrice: '', stock: '0' });
 
   const itemsQ = useAdminShopItems();
   const ordersQ = useAdminShopOrders();
@@ -103,6 +116,20 @@ export default function AdminShop() {
       await api.adminRestockShopItem(token, itemId, stock);
       invalidate(['admin-shop-items']);
     } catch (e) { setErr(e.message || 'Не удалось обновить остаток'); }
+    finally { setBusyId(null); }
+  };
+
+  const createItem = async () => {
+    setBusyId('create'); setErr('');
+    try {
+      await api.adminCreateShopItem(token, {
+        name: newItem.name.trim(), imageKey: newItem.imageKey.trim() || undefined,
+        coinPrice: Number(newItem.coinPrice), stock: Number(newItem.stock),
+      });
+      setCreateOpen(false);
+      setNewItem({ name: '', imageKey: '', coinPrice: '', stock: '0' });
+      invalidate(['admin-shop-items']);
+    } catch (e) { setErr(e.message || 'Не удалось добавить товар'); }
     finally { setBusyId(null); }
   };
 
@@ -128,7 +155,9 @@ export default function AdminShop() {
 
   return (
     <div className="space-y-6 pb-8">
-      <PageHeader title="Магазин" subtitle="Остаток товаров и заказы студентов филиала. Каталог (название/цена/фото) заводит SEO." />
+      <PageHeader title="Магазин" subtitle="Общие товары SEO и локальные товары вашего филиала.">
+        <button className="btn btn-primary btn-sm gap-1.5" onClick={() => setCreateOpen(true)}><Plus size={16} /> Новый товар</button>
+      </PageHeader>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Kpi Icon={Gift} title="Товаров" value={items.length} tone="neutral" />
@@ -169,6 +198,32 @@ export default function AdminShop() {
             ))}
           </div>
         )
+      )}
+
+      {createOpen && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div><h3 className="font-bold text-lg">Новый товар филиала</h3><p className="text-xs text-base-content/50">Будет доступен только в вашем филиале</p></div>
+              <button className="btn btn-ghost btn-sm btn-circle" onClick={() => setCreateOpen(false)}><X size={18} /></button>
+            </div>
+            <div className="space-y-3">
+              <input className="input input-bordered w-full" placeholder="Название" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
+              <input className="input input-bordered w-full" placeholder="Ссылка на фото (необязательно)" value={newItem.imageKey} onChange={(e) => setNewItem({ ...newItem, imageKey: e.target.value })} />
+              <div className="grid grid-cols-2 gap-3">
+                <input type="number" min="1" className="input input-bordered w-full" placeholder="Цена" value={newItem.coinPrice} onChange={(e) => setNewItem({ ...newItem, coinPrice: e.target.value })} />
+                <input type="number" min="0" className="input input-bordered w-full" placeholder="Остаток" value={newItem.stock} onChange={(e) => setNewItem({ ...newItem, stock: e.target.value })} />
+              </div>
+            </div>
+            <div className="modal-action">
+              <button className="btn btn-ghost btn-sm" onClick={() => setCreateOpen(false)}>Отмена</button>
+              <button className="btn btn-primary btn-sm" onClick={createItem} disabled={busyId === 'create' || !newItem.name.trim() || Number(newItem.coinPrice) <= 0 || Number(newItem.stock) < 0}>
+                {busyId === 'create' && <span className="loading loading-spinner loading-xs" />} Добавить
+              </button>
+            </div>
+          </div>
+          <button className="modal-backdrop" onClick={() => setCreateOpen(false)}>close</button>
+        </div>
       )}
     </div>
   );

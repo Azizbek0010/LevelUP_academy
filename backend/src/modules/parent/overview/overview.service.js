@@ -1,6 +1,7 @@
 import { AppError } from '../../../utils/AppError.js';
 import { getLeaderboard } from '../../leaderboard/leaderboard.service.js';
 import * as repo from './overview.repository.js';
+import { getPaymentSummary } from '../../billing/billing.service.js';
 
 const ATTENDANCE_WINDOW_DAYS = 30;
 const RECENT_LIMIT = 5;
@@ -33,6 +34,52 @@ export async function getChildGrades(parentId, childId, type, page, limit) {
   return repo.getGradesPage(childId, type, page, limit);
 }
 
+export async function getChildGroupRating(parentId, childId) {
+  await assertParentOwnsChild(parentId, childId);
+  return repo.getGroupRating(childId);
+}
+
+export async function getHomeworkDetail(parentId, homeworkId) {
+  const detail = await repo.getHomeworkDetailForParent(parentId, homeworkId);
+  if (!detail) throw new AppError(403, 'Homework result does not belong to this parent');
+  return detail;
+}
+
+export async function getTestDetail(parentId, testId) {
+  const row = await repo.getTestDetailForParent(parentId, testId);
+  if (!row) throw new AppError(403, 'Test result does not belong to this parent');
+
+  const questions = Array.isArray(row.questions) ? row.questions : [];
+  const answers = Array.isArray(row.answers) ? row.answers : [];
+  const mappedAnswers = questions.map((question, index) => {
+    const selected = answers[index];
+    const correct = question.correct;
+    return {
+      question: question.q,
+      studentAnswer: question.options?.[selected] ?? 'Нет ответа',
+      correctAnswer: question.options?.[correct] ?? '—',
+      isCorrect: selected === correct,
+    };
+  });
+  const correctAnswers = mappedAnswers.filter((answer) => answer.isCorrect);
+  const wrongAnswers = mappedAnswers.filter((answer) => !answer.isCorrect);
+
+  return {
+    id: row.id,
+    title: row.title,
+    groupName: row.group_name,
+    durationMin: row.duration_min,
+    score: correctAnswers.length,
+    maxScore: questions.length,
+    finishedAt: row.finished_at,
+    totalQuestions: questions.length,
+    correctCount: correctAnswers.length,
+    wrongCount: wrongAnswers.length,
+    correctAnswers,
+    wrongAnswers,
+  };
+}
+
 /**
  * Полный обзор одного ребёнка: коины, долг, недельный рейтинг, группы,
  * посещаемость (сводка за 30 дней + последние отметки) и оценки (ДЗ + тесты).
@@ -40,7 +87,7 @@ export async function getChildGrades(parentId, childId, type, page, limit) {
 export async function getChildOverview(parentId, childId) {
   const child = await assertParentOwnsChild(parentId, childId);
 
-  const [leaderboard, groups, attendanceSummary, recentAttendance, homeworkGrades, testResults, currentInvoice] =
+  const [leaderboard, groups, attendanceSummary, recentAttendance, homeworkGrades, testResults, payment] =
     await Promise.all([
       getLeaderboard(child.branchId, 'week', { limit: 20, studentId: childId }),
       repo.getGroups(childId),
@@ -48,7 +95,7 @@ export async function getChildOverview(parentId, childId) {
       repo.getRecentAttendance(childId, RECENT_LIMIT),
       repo.getRecentHomeworkGrades(childId, RECENT_LIMIT),
       repo.getRecentTestResults(childId, RECENT_LIMIT),
-      repo.getCurrentInvoice(childId),
+      getPaymentSummary(childId),
     ]);
 
   return {
@@ -61,7 +108,8 @@ export async function getChildOverview(parentId, childId) {
     },
     coins: child.coins,
     totalDebt: child.totalDebt,
-    currentInvoice,
+    currentInvoice: payment.currentInvoice,
+    paymentBalance: payment.balance,
     rank: leaderboard.me,
     groups,
     attendance: {

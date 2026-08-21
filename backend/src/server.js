@@ -13,6 +13,7 @@ import { dueSoonWorker, scheduleDueSoonCron } from './queues/workers/dueSoon.wor
 import { aiReviewWorker } from './queues/workers/aiReview.worker.js';
 import { dailyDigestWorker, scheduleDailyDigestCron } from './queues/workers/dailyDigest.worker.js';
 import { startReminderLogging, stopReminderLogging } from './modules/super/reminders/reminders.listener.js';
+import { chargeCurrentMonth } from './modules/billing/billing.service.js';
 
 // ioredis шлёт AUTH сам, внутри своей connect-логики — если Redis отвечает
 // ReplyError'ом (не сетевым обрывом, а протокольным отказом — 11.08.2026 это
@@ -36,6 +37,13 @@ httpServer.listen(env.PORT, () => {
   // и до открытия порта проверка пришлась бы в закрытую дверь.
   // Не await — падение регистрации бота не должно мешать API отвечать.
   initTelegramWebhook().catch((err) => logger.error({ err }, 'Telegram webhook init failed'));
+
+  // Redis-less safety net: on every API start, idempotently ensure this
+  // month's invoices exist for all active memberships. The unique index
+  // prevents duplicate charges when BullMQ also runs on the 1st.
+  chargeCurrentMonth()
+    .then((rows) => logger.info({ count: rows.length }, 'Startup billing reconciliation completed'))
+    .catch((err) => logger.error({ err }, 'Startup billing reconciliation failed'));
 });
 
 // WORKER-MERGE (11.08.2026): раньше это был отдельный процесс (worker.js,
