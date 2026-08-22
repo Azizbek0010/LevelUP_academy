@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Layers, FileQuestion, ArrowLeft, Trash2, ArrowRight, Info, X, AlertTriangle, RefreshCw, Pencil } from 'lucide-react';
 import { useTopics, useInvalidate } from '../../queries.js';
-import { api } from '../../api.js';
+import { api, uploadToPresignedUrl } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { LangProvider, useLang } from './i18n.js';
@@ -14,7 +14,32 @@ import LangSwitcher from './LangSwitcher.jsx';
 const makeSchema = (t) => z.object({
   name: z.string().trim().min(1, t('topics.name_required')).max(200),
   description: z.string().trim().max(2000).optional(),
+  videoUrl: z.string().trim().max(500).optional(),
+  coinReward: z.coerce.number().int().min(0).default(0),
 });
+
+function formatBytes(n) {
+  if (!n) return '';
+  const mb = n / 1_000_000;
+  return mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `${mb.toFixed(1)} MB`;
+}
+function formatDuration(sec) {
+  if (!sec) return '';
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+/** Длительность локального файла до загрузки — читается прямо в браузере, без обращения к серверу. */
+function readVideoDuration(file) {
+  return new Promise((resolve) => {
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => { URL.revokeObjectURL(v.src); resolve(Math.round(v.duration) || undefined); };
+    v.onerror = () => resolve(undefined);
+    v.src = URL.createObjectURL(file);
+  });
+}
 
 function DescriptionPopover({ description, children, t }) {
   const [show, setShow] = useState(false);
@@ -77,24 +102,29 @@ function TopicsView() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [confirmArchive, setConfirmArchive] = useState(null);
+  const [videoMode, setVideoMode] = useState('url');
+  const [videoUploading, setVideoUploading] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(makeSchema(t)),
-    defaultValues: { name: '', description: '' },
+    defaultValues: { name: '', description: '', videoUrl: '', coinReward: 0 },
   });
 
   const topics = data?.data || [];
+  const editingTopic = topics.find((tp) => tp.id === editingId) || null;
 
   const openCreate = () => {
     setEditingId(null);
-    reset({ name: '', description: '' });
+    reset({ name: '', description: '', videoUrl: '', coinReward: 0 });
+    setVideoMode('url');
     setErr('');
     setModalOpen(true);
   };
 
   const openEdit = (tp) => {
     setEditingId(tp.id);
-    reset({ name: tp.name, description: tp.description || '' });
+    reset({ name: tp.name, description: tp.description || '', videoUrl: tp.video_url || '', coinReward: tp.coin_reward ?? 0 });
+    setVideoMode(tp.video_file_key ? 'file' : 'url');
     setErr('');
     setModalOpen(true);
   };
@@ -102,14 +132,48 @@ function TopicsView() {
   const onSubmit = async (formData) => {
     setErr(''); setBusy(true);
     try {
+      const payload = { name: formData.name, description: formData.description, coinReward: formData.coinReward };
+      // videoUrl трогаем только в режиме "Ссылка" — иначе сохранение имени/описания
+      // могло бы случайно затереть уже загруженный видео-файл (взаимоисключающе на бэке).
+      if (videoMode === 'url') {
+        const v = (formData.videoUrl || '').trim();
+        if (editingId || v) payload.videoUrl = v;
+      }
       if (editingId) {
-        await api.methodistUpdateTopic(token, editingId, formData);
+        await api.methodistUpdateTopic(token, editingId, payload);
       } else {
-        await api.methodistCreateTopic(token, { trainingTypeId, ...formData });
+        await api.methodistCreateTopic(token, { trainingTypeId, ...payload });
       }
       invalidate('topics', trainingTypeId);
       setModalOpen(false);
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
+  };
+
+  const doVideoUpload = async (file) => {
+    if (!editingId) return;
+    setErr(''); setVideoUploading(true);
+    try {
+      const durationSec = await readVideoDuration(file);
+      const d = await api.methodistTopicVideoUploadUrl(token, editingId, file.name, file.type || 'video/mp4');
+      await uploadToPresignedUrl(d.data.uploadUrl, file);
+      await api.methodistConfirmTopicVideo(token, editingId, { fileKey: d.data.fileKey, durationSec });
+      invalidate('topics', trainingTypeId);
+    } catch (e) { setErr(e.message); } finally { setVideoUploading(false); }
+  };
+
+  const handleVideoFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await doVideoUpload(file);
+    e.target.value = '';
+  };
+
+  const clearVideoFile = async () => {
+    setErr('');
+    try {
+      await api.methodistClearTopicVideoFile(token, editingId);
+      invalidate('topics', trainingTypeId);
+    } catch (e) { setErr(e.message); }
   };
 
   const archive = async (id) => {
@@ -355,6 +419,76 @@ function TopicsView() {
                   className="mt-textarea"
                   rows={2}
                 />
+              </label>
+              <div className="space-y-2">
+                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] block">{t('topics.video_label')}</span>
+                <div className="flex gap-1.5 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setVideoMode('url')}
+                    className={`px-3 h-8 rounded-lg text-[12px] font-semibold transition-colors ${videoMode === 'url' ? 'bg-[var(--mt-accent-light)] text-[var(--mt-accent)]' : 'text-[var(--mt-text-muted)] hover:bg-[var(--mt-surface-warm)]'}`}
+                  >
+                    {t('topics.video_mode_url')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVideoMode('file')}
+                    disabled={!editingId}
+                    className={`px-3 h-8 rounded-lg text-[12px] font-semibold transition-colors disabled:opacity-40 ${videoMode === 'file' ? 'bg-[var(--mt-accent-light)] text-[var(--mt-accent)]' : 'text-[var(--mt-text-muted)] hover:bg-[var(--mt-surface-warm)]'}`}
+                  >
+                    {t('topics.video_mode_file')}
+                  </button>
+                </div>
+
+                {videoMode === 'url' ? (
+                  <input
+                    type="text"
+                    {...register('videoUrl')}
+                    placeholder={t('topics.video_url_placeholder')}
+                    className="mt-input"
+                  />
+                ) : !editingId ? (
+                  <p className="text-[12px] text-[var(--mt-text-muted)]">{t('topics.video_after_create_hint')}</p>
+                ) : editingTopic?.video_file_key ? (
+                  <div className="flex items-center justify-between gap-3 p-3 rounded-xl border border-[var(--mt-border)]">
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-semibold text-[var(--mt-text)] truncate">
+                        {editingTopic.video_file_key.split('/').pop()}
+                      </p>
+                      <p className="text-[11px] text-[var(--mt-text-muted)]">
+                        {formatBytes(editingTopic.video_size_bytes)}
+                        {editingTopic.video_duration_sec ? ` · ${formatDuration(editingTopic.video_duration_sec)}` : ''}
+                      </p>
+                    </div>
+                    <button type="button" onClick={clearVideoFile} className="btn btn-ghost btn-square btn-xs shrink-0" title={t('topics.video_remove')}>
+                      <Trash2 size={14} className="text-error" />
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      disabled={videoUploading}
+                      onChange={handleVideoFileChange}
+                      className="file-input file-input-bordered file-input-sm w-full"
+                    />
+                    <span className="text-[11px] opacity-40">
+                      {videoUploading ? <span className="loading loading-spinner loading-xs" /> : t('topics.video_upload_hint')}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <label className="form-control w-full">
+                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('topics.coin_reward_label')}</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  {...register('coinReward')}
+                  className="mt-input"
+                />
+                <span className="text-[11px] text-[var(--mt-text-muted)] mt-1 block">{t('topics.coin_reward_hint')}</span>
               </label>
               <div className="flex gap-2 pt-2">
                 <button type="button" className="mt-btn-ghost flex-1 justify-center" onClick={() => setModalOpen(false)} disabled={busy}>

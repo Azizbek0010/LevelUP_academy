@@ -17,6 +17,7 @@ const makeSchema = (t) => z.object({
   name: z.string().trim().min(1, t('types.name_required')).max(160),
   description: z.string().trim().max(1000).optional(),
   icon: z.string().trim().max(60).optional(),
+  aiReviewEnabled: z.boolean().optional(),
 });
 
 const TYPE_COLORS = ['#40833B', '#2563EB', '#D97706', '#059669', '#DC2626', '#0891B2'];
@@ -84,21 +85,21 @@ function TrainingTypesView() {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(makeSchema(t)),
-    defaultValues: { name: '', description: '', icon: '📚' },
+    defaultValues: { name: '', description: '', icon: '📚', aiReviewEnabled: false },
   });
 
   const types = data?.data || [];
 
   const openCreate = () => {
     setEditingId(null);
-    reset({ name: '', description: '', icon: '📚' });
+    reset({ name: '', description: '', icon: '📚', aiReviewEnabled: false });
     setErr('');
     setModalOpen(true);
   };
 
   const openEdit = (tt) => {
     setEditingId(tt.id);
-    reset({ name: tt.name, description: tt.description || '', icon: tt.icon || '📚' });
+    reset({ name: tt.name, description: tt.description || '', icon: tt.icon || '📚', aiReviewEnabled: Boolean(tt.ai_review_enabled) });
     setErr('');
     setModalOpen(true);
   };
@@ -350,6 +351,13 @@ function TrainingTypesView() {
                   placeholder="📚"
                   className="mt-input"
                 />
+              </label>
+              <label className="flex items-start gap-2.5 rounded-xl p-3 cursor-pointer" style={{ background: 'var(--mt-accent-light)' }}>
+                <input type="checkbox" {...register('aiReviewEnabled')} className="mt-1 shrink-0" />
+                <span>
+                  <span className="text-[13px] font-bold text-[var(--mt-text)] block">{t('types.ai_review_label')}</span>
+                  <span className="text-[11px] text-[var(--mt-text-muted)] block mt-0.5 leading-relaxed">{t('types.ai_review_hint')}</span>
+                </span>
               </label>
               <div className="flex gap-2 pt-2">
                 <button type="button" className="mt-btn-ghost flex-1 justify-center" onClick={() => setModalOpen(false)} disabled={busy}>

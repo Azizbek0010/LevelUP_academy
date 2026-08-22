@@ -19,6 +19,7 @@ import parentRoutes from './modules/parent/parent.routes.js';
 import mainRoutes from './modules/main/main.routes.js';
 import leadsRoutes from './modules/main/leads.routes.js';
 import superRoutes from './modules/super/super.routes.js';
+import financeRoutes from './modules/finance/finance.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import branchManagerRoutes from './modules/branch-manager/branch-manager.routes.js';
 import methodistRoutes from './modules/methodist/methodist.routes.js';
@@ -153,6 +154,7 @@ export function createApp() {
   app.use('/api/leads', leadsRoutes); // ПУБЛИЧНЫЙ приём заявок с лендинга (без токена)
   app.use('/api/main', mainRoutes);   // Main Admin: онбординг партнёров, дашборд платформы
   app.use('/api/super', superRoutes); // SEO: филиалы + админы своей организации
+  app.use('/api/finance', financeRoutes); // FINANCE MANAGER: доход/расход всей организации, без филиалов/админов
 app.use('/api/admin', adminRoutes); // K-ADMIN: филиал — дашборд, расходы, студенты, группы
 app.use('/api/branch-manager', branchManagerRoutes); // BRANCH MANAGER: дашборд/доход/расход/отчёты/карточка своего филиала
 app.use('/api/methodist', methodistRoutes); // METHODIST: тесты, ДЗ, аналитика

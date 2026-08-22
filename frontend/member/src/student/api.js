@@ -6,6 +6,8 @@
 // страницах кабинета показывались выдуманные имена (Алишер) вместо реальных,
 // хотя вход уже шёл через настоящий бэкенд. Теперь по конвенции как у root.
 
+import { refreshOnce } from '../api.js';
+
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
 const USE_MOCKS =
   typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS === 'true' : false;
@@ -13,7 +15,6 @@ const USE_MOCKS =
 let accessToken = null;
 let onSessionExpired = () => {};
 let onPaymentOverdue = () => {};
-let refreshPromise = null;
 
 export function setAccessToken(token) {
   accessToken = token;
@@ -113,7 +114,7 @@ const mock = {
   attempts: {}, // testId -> { endsAt }
   topics: [
     {
-      id: 'top1', name: 'Алгебра — уравнения', description: 'Линейные уравнения и их решение', videoUrl: null,
+      id: 'top1', name: 'Алгебра — уравнения', description: 'Линейные уравнения и их решение', videoUrl: null, hasVideoFile: false, videoDurationSec: null,
       lessons: [
         {
           id: 'lsn1', title: 'Проверь себя: линейные уравнения', type: 'test', description: null, coinReward: 25, videoUrl: null,
@@ -253,6 +254,8 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
             name: topic.name,
             description: topic.description,
             videoUrl: topic.videoUrl,
+            hasVideoFile: topic.hasVideoFile ?? false,
+            videoDurationSec: topic.videoDurationSec ?? null,
             lessons: topic.lessons.map((l) => {
               const attempt = mock.lessonAttempts[l.id];
               const submission = mock.lessonSubmissions[l.id];
@@ -383,16 +386,19 @@ async function rawRequest(path, { method = 'GET', body, skipAuth = false } = {})
   return data;
 }
 
-async function refreshSession() {
-  if (USE_MOCKS) return mockRequest('/auth/member/refresh');
-  if (!refreshPromise) {
-    refreshPromise = rawRequest('/auth/member/refresh', { method: 'POST', skipAuth: true }).finally(() => {
-      refreshPromise = null;
-    });
-  }
-  return refreshPromise;
-}
-
+/**
+ * Раньше здесь был свой независимый refreshSession() с собственным
+ * refreshPromise — параллельно с точно таким же в корневом api.js. На
+ * свежей загрузке /student/* оба модуля стартуют с accessToken=null (до
+ * того, как AuthProvider успевает подтянуть сессию по cookie) и оба ловят
+ * 401 почти одновременно → ДВА независимых POST /auth/member/refresh с
+ * одним и тем же ещё не провёрнутым refresh-токеном. Бэкенд видит второй
+ * как reuse (auth.service.js:refresh) и отзывает ВСЕ токены пользователя —
+ * сессия рвётся без реальной причины (см. task-protocol, 21.08.2026).
+ * Теперь оба модуля используют ОДИН singleton — refreshOnce() из корневого
+ * api.js — второй одновременный вызов просто ждёт тот же промис, а не
+ * шлёт свой запрос.
+ */
 async function request(path, opts = {}) {
   if (USE_MOCKS) return mockRequest(path, opts);
   try {
@@ -405,7 +411,7 @@ async function request(path, opts = {}) {
     }
     if (err.status !== 401 || opts.skipAuth) throw err;
     try {
-      const session = await refreshSession();
+      const session = await refreshOnce();
       accessToken = session.accessToken;
     } catch {
       accessToken = null;
@@ -450,10 +456,20 @@ export const api = {
   orders: () => request('/student/shop/orders'),
 
   // -------- STUDENT: Leaderboard --------
-  leaderboard: (period = 'week') => request(`/student/leaderboard?period=${period}`),
+  // groupId — топ своей группы вместо филиала (backend/src/modules/student/
+  // leaderboard/leaderboard.controller.js уже поддерживает, фронт просто не
+  // передавал параметр).
+  leaderboard: (period = 'week', groupId = null) =>
+    request(`/student/leaderboard?period=${period}${groupId ? `&groupId=${groupId}` : ''}`),
 
   // -------- STUDENT: Lessons (методика: темы → уроки → тест/дз) --------
   lessons: () => request('/student/lessons'),
+  // Presigned GET на видео-файл темы (Storj) — только если topic.hasVideoFile.
+  // Ссылка живёт 15 мин на бэке — запрашивать прямо перед показом плеера.
+  lessonTopicVideoUrl: (topicId) => request(`/student/lessons/topics/${topicId}/video-url`),
+  // Вызывать один раз, когда видео темы реально доиграно до конца — бэк сам
+  // идемпотентен (повторный вызов вернёт coinsAwarded: 0, не задвоит монеты).
+  markTopicVideoWatched: (topicId) => request(`/student/lessons/topics/${topicId}/watched`, { method: 'POST' }),
   lesson: (lessonId) => request(`/student/lessons/${lessonId}`),
   startLessonTest: (lessonId) => request(`/student/lessons/${lessonId}/start`, { method: 'POST' }),
   submitLessonTest: (lessonId, answers) =>

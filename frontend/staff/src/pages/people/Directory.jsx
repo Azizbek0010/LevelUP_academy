@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Search, Users, WalletCards, AlertTriangle, Building2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { usePeopleDirectory } from '../../queries.js';
+import { useAuth } from '../../auth.jsx';
 
 const ROLES = [
   ['', 'Все роли'], ['seo', 'SEO'], ['branch_manager', 'Branch Manager'],
@@ -37,6 +38,11 @@ function Summary({ people, canSeeFinance }) {
 }
 
 export default function Directory() {
+  const { user } = useAuth();
+  // Ментору /users/directory отдаёт только его самого и его учеников (см.
+  // mentorId-скоуп в users.repository.js:findDirectory) — все остальные роли
+  // фильтра всегда дают пустой список, сам выбор для ментора не нужен.
+  const showRoleFilter = user?.role !== 'mentor';
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
   const query = useMemo(() => {
@@ -61,9 +67,11 @@ export default function Directory() {
               <Search size={17} className="opacity-50" />
               <input value={search} onChange={(e) => setSearch(e.target.value)} className="grow" placeholder="Имя, телефон или email" />
             </label>
-            <select className="select select-bordered sm:w-56" value={role} onChange={(e) => setRole(e.target.value)}>
-              {ROLES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-            </select>
+            {showRoleFilter && (
+              <select className="select select-bordered sm:w-56" value={role} onChange={(e) => setRole(e.target.value)}>
+                {ROLES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            )}
           </div>
 
           {isLoading && <div className="py-12 text-center text-base-content/50">Загрузка базы…</div>}

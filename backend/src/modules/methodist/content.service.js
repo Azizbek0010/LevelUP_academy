@@ -1,5 +1,6 @@
 import { AppError } from '../../utils/AppError.js';
-import { buildObjectKey, getUploadUrl as getS3UploadUrl } from '../../config/s3.js';
+import { buildObjectKey, getUploadUrl as getS3UploadUrl, getObjectSize } from '../../config/s3.js';
+import { calcVideoCost } from '../../config/pricing.js';
 import * as repo from './content.repository.js';
 
 // ==================== ТИПЫ ОБУЧЕНИЯ ====================
@@ -53,6 +54,44 @@ export async function updateTopic(id, orgId, payload) {
 
 export async function archiveTopic(id, orgId) {
   await repo.archiveTopic(id, orgId);
+}
+
+/** Presigned S3 PUT для видео-файла темы (альтернатива вставке ссылки на YouTube). */
+export async function getTopicVideoUploadUrl(topicId, orgId, { filename, contentType }) {
+  const topic = await repo.findTopicInOrg(topicId, orgId);
+  if (!topic) throw new AppError(404, 'Topic not found');
+  const fileKey = buildObjectKey(`topics/${topicId}/video`, filename);
+  const uploadUrl = await getS3UploadUrl(fileKey, contentType);
+  return { uploadUrl, fileKey };
+}
+
+/**
+ * Регистрация видео-файла ПОСЛЕ успешной загрузки на uploadUrl. Размер —
+ * не то, что прислал клиент, а реальный (HeadObject на Storj), иначе
+ * методист мог бы занизить цифру и мы недосчитались бы стоимости.
+ */
+export async function confirmTopicVideo(topicId, orgId, { fileKey, durationSec }) {
+  const topic = await repo.findTopicInOrg(topicId, orgId);
+  if (!topic) throw new AppError(404, 'Topic not found');
+
+  const sizeBytes = await getObjectSize(fileKey);
+  const { storageCostUsdPerMonth, costPerViewUsd } = calcVideoCost(sizeBytes);
+
+  const item = await repo.setTopicVideoFile(topicId, orgId, {
+    fileKey,
+    sizeBytes,
+    durationSec,
+    storageCostUsdPerMonth,
+    costPerViewUsd,
+  });
+  if (!item) throw new AppError(404, 'Topic not found');
+  return item;
+}
+
+export async function clearTopicVideoFile(topicId, orgId) {
+  const item = await repo.clearTopicVideoFile(topicId, orgId);
+  if (!item) throw new AppError(404, 'Topic not found');
+  return item;
 }
 
 // ==================== УРОКИ ====================

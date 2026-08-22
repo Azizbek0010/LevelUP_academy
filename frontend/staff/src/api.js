@@ -2341,17 +2341,25 @@ const AUTH_PATHS = new Set([
   '/auth/forgot-password', '/auth/reset-password',
 ]);
 
-// Единый refreshPromise — параллельные 401 ждут один и тот же refresh, не долбят его по отдельности
+// Единый refreshPromise — ЛЮБОЙ триггер (bootstrap на старте приложения,
+// реактивный 401, проактивный таймер/visibilitychange в auth.jsx) идёт через
+// один и тот же промис, не долбит /refresh по отдельности. Без этого
+// bootstrap-вызов при загрузке страницы и первый же 401 от другого
+// компонента, смонтированного чуть раньше, оба уходят на сервер с ОДНИМ и
+// тем же ещё не провёрнутым refresh-токеном — сервер видит это как reuse и
+// отзывает ВСЕ токены пользователя разом (backend/src/modules/auth/
+// auth.service.js:refresh, reuse-detection), роняя сессию целиком без
+// единой реальной причины (см. task-protocol, 21.08.2026).
 let refreshPromise = null;
 let onTokenRefreshed = null;
 export function setOnTokenRefreshed(cb) { onTokenRefreshed = cb; }
 
-function refreshOnce() {
+export function refreshOnce() {
   if (!refreshPromise) {
     refreshPromise = rawRequest('/auth/staff/refresh', { method: 'POST' })
       .then((d) => {
         onTokenRefreshed?.(d);
-        return d.accessToken;
+        return d;
       })
       .catch((err) => {
         onTokenRefreshed?.(null);
@@ -2368,8 +2376,8 @@ async function request(path, opts = {}) {
     return await rawRequest(path, opts);
   } catch (err) {
     if (err.status === 401 && !AUTH_PATHS.has(path) && !opts._retried) {
-      const newToken = await refreshOnce();
-      return rawRequest(path, { ...opts, token: newToken, _retried: true });
+      const session = await refreshOnce();
+      return rawRequest(path, { ...opts, token: session.accessToken, _retried: true });
     }
     throw err;
   }
@@ -2454,7 +2462,7 @@ export const api = {
   // -------- AUTH (staff — admin/seo/mentor/methodist) --------
   loginStaff: (login, password) =>
     request('/auth/staff/login', { method: 'POST', body: { login, password } }),
-  refresh: () => request('/auth/staff/refresh', { method: 'POST' }),
+  refresh: () => refreshOnce(),
   logout: () => request('/auth/staff/logout', { method: 'POST' }),
   googleLogin: (idToken) => request('/auth/staff/google', { method: 'POST', body: { idToken } }),
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
@@ -2576,6 +2584,36 @@ export const api = {
   // больше не существует, доля филиала (share) теперь тоже приходит отсюда.
   superStats: (token, period = '30d', branchId = '') =>
     request(`/super/stats?period=${period}${branchId ? `&branchId=${branchId}` : ''}`, { token }),
+
+  // -------- FINANCE MANAGER --------
+  // Тот же контроллер/сервис, что у SEO (super.controller.js) — просто другой
+  // роут с authorize('finance_manager', 'seo') вместо authorize('seo'), чтобы
+  // не открывать Finance Manager'у филиалы/админов вместе с финансами
+  // (backend/src/modules/finance/finance.routes.js, Karis 22.08.2026).
+  financeDashboard: (token) => request('/finance/dashboard', { token }),
+  financeStats: (token, period = '30d', branchId = '') =>
+    request(`/finance/stats?period=${period}${branchId ? `&branchId=${branchId}` : ''}`, { token }),
+  financeBranches: (token) => request('/finance/branches', { token }),
+  financeIncome: (token, { branchId = '', from = '', to = '', page = 1, limit = 20 } = {}) =>
+    request(
+      `/finance/income?page=${page}&limit=${limit}${branchId ? `&branchId=${branchId}` : ''}${from ? `&from=${from}` : ''}${to ? `&to=${to}` : ''}`,
+      { token },
+    ),
+  financeSalaries: (token, { branchId = '', periodMonth = '' } = {}) =>
+    request(`/finance/salaries?${branchId ? `branchId=${branchId}&` : ''}${periodMonth ? `periodMonth=${periodMonth}` : ''}`, { token }),
+  // from/to обязательно прокидываем: бэкенд их принимает (listOrgExpensesSchema),
+  // а без них страница тянула расходы за всё время под подписью «за месяц».
+  financeExpenses: (token, { branchId = '', from = '', to = '' } = {}) => {
+    const qs = new URLSearchParams();
+    if (branchId) qs.set('branchId', branchId);
+    if (from) qs.set('from', from);
+    if (to) qs.set('to', to);
+    const q = qs.toString();
+    return request(`/finance/expenses${q ? `?${q}` : ''}`, { token });
+  },
+  financeCreateExpense: (token, body) => request('/finance/expenses', { method: 'POST', token, body }),
+  financeUpdateExpense: (token, id, body) => request(`/finance/expenses/${id}`, { method: 'PATCH', token, body }),
+  financeDeleteExpense: (token, id) => request(`/finance/expenses/${id}`, { method: 'DELETE', token }),
   superBranches: (token) => request('/super/branches', { token }),
   superBranchDetail: (token, id) => request(`/super/branches/${id}`, { token }),
   superCreateBranch: (token, body) => request('/super/branches', { method: 'POST', token, body }),
@@ -2721,6 +2759,15 @@ export const api = {
   methodistCopyLesson: (token, id, targetTopicId) => request(`/methodist/lessons/${id}/copy`, { method: 'POST', token, body: { targetTopicId } }),
   methodistLessonUploadUrl: (token, id, filename, contentType) =>
     request(`/methodist/lessons/${id}/upload-url?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(contentType)}`, { token }),
+
+  // Видео темы файлом (альтернатива videoUrl-ссылке) — стоимость хранения
+  // на Storj считается на бэке и намеренно НЕ приходит в этих ответах.
+  methodistTopicVideoUploadUrl: (token, topicId, filename, contentType) =>
+    request(`/methodist/topics/${topicId}/video/upload-url?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(contentType)}`, { token }),
+  methodistConfirmTopicVideo: (token, topicId, body) =>
+    request(`/methodist/topics/${topicId}/video`, { method: 'POST', token, body }),
+  methodistClearTopicVideoFile: (token, topicId) =>
+    request(`/methodist/topics/${topicId}/video`, { method: 'DELETE', token }),
 
   methodistQuestions: (token, lessonId) => request(`/methodist/lessons/${lessonId}/questions`, { token }),
   methodistCreateQuestion: (token, body) => request('/methodist/questions', { method: 'POST', token, body }),

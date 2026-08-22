@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
-  Home, BookOpen, ShoppingBag, Trophy, LogOut, Send, Bell, BellOff, Star, ChevronDown,
+  Home, BookOpen, ShoppingBag, Trophy, LogOut, Send, Bell, BellOff, Star, ChevronDown, MessageCircle,
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { Avatar, C, StreakFlame, CountUp, LevelBar, levelFromCoins, EmptyState, Modal } from './ui.jsx';
@@ -28,9 +28,12 @@ import { api } from '../api.js';
 const DARK_BG = 'linear-gradient(135deg, #21391A 0%, #142A0F 100%)';
 const SIDEBAR_W = 252;
 
-/* Меню — минимально (4 пункта). «Мои уроки» ведёт на ОТДЕЛЬНУЮ страницу-
-   меню (/study): разделы там разложены большими карточками, и ребёнок всегда
-   понимает, где он. Никаких раскрывающихся списков в сайдбаре. */
+/* Меню — минимально (4 пункта). «Мои уроки» ведёт сразу на темы (/lessons) —
+   раньше вело на промежуточное меню (/study, 4 карточки Уроки/Тесты/Задания/
+   Видео), но реальный, живой контент — только в methodology-дереве
+   (training_types→topics→lessons), туда и должен попадать студент сразу
+   (Karis, 21.08.2026, по живой обратной связи). /study не удалён — просто
+   больше не единственный вход. */
 const LESSON_PATHS = ['/study', '/lessons', '/tests', '/homework', '/videos'];
 
 /* Меню строится из словаря: подписи пунктов живут в i18n (nav.*),
@@ -38,10 +41,11 @@ const LESSON_PATHS = ['/study', '/lessons', '/tests', '/homework', '/videos'];
 function buildNav(t, orgFeatures) {
   return {
     main: [{ to: '/student', label: t.nav.home, icon: Home, end: true }],
-    lessons: { to: '/study', label: t.nav.study, icon: BookOpen },
+    lessons: { to: '/lessons', label: t.nav.study, icon: BookOpen },
     // Karis (13.08.2026): Shop — управляемая Main Admin'ом фича, партнёру
     // может быть не включена — тогда пункта в меню нет вообще.
     rest: [
+      { to: '/student/chat', label: t.nav.chat, icon: MessageCircle },
       ...(orgFeatures?.shop ? [{ to: '/shop', label: t.nav.shop, icon: ShoppingBag }] : []),
       { to: '/leaderboard', label: t.nav.rating, icon: Trophy },
     ],
@@ -91,7 +95,7 @@ export default function Layout() {
   const { lang, setLanguage, t } = useI18n();
   const [hasAnnouncements, setHasAnnouncements] = useState(false);
   const nav = buildNav(t, user?.orgFeatures);
-  if (hasAnnouncements) nav.rest.unshift({ to: '/student/announcements', label: 'Anonslar', icon: Bell });
+  if (hasAnnouncements) nav.rest.unshift({ to: '/student/announcements', label: t.nav.announcements, icon: Bell });
   const location = useLocation();
   const stats = useHeaderStats();
   const streak = useDailyStreak();

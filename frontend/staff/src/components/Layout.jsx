@@ -100,9 +100,7 @@ const superNav = [
 ];
 
 const adminNav = [
-  { to: '/announcements', label: 'Anonslar', labelKey: 'nav.announcements', Icon: HiOutlinePresentationChartLine },
   { to: '/',          label: 'Дашборд',     labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
-  { to: '/people',    label: 'Клиентская база', Icon: HiOutlineUserGroup },
   { to: '/students',  label: 'Студенты',    labelKey: 'nav.students', Icon: HiOutlineAcademicCap },
   { to: '/groups',    label: 'Группы',      labelKey: 'nav.groups', Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Менторы',     labelKey: 'nav.mentors', Icon: HiOutlineUserCircle },
@@ -112,6 +110,7 @@ const adminNav = [
   { to: '/payments',  label: 'Платежи',     labelKey: 'nav.payments', Icon: HiOutlineWallet },
   { to: '/expenses',  label: 'Расходы',     labelKey: 'nav.expenses', Icon: HiOutlineReceiptPercent },
   { to: '/reports',   label: 'Отчёты',      labelKey: 'nav.reports', Icon: HiOutlineChartBar },
+  { to: '/announcements', label: 'Anonslar', labelKey: 'nav.announcements', Icon: HiOutlinePresentationChartLine },
   // admin: Settings сознательно не добавлен — page/admin/Settings.jsx удалён (Abduloh),
   // пункта в adminNav быть не должно, иначе мёртвая ссылка.
 ];
@@ -129,7 +128,6 @@ const branchManagerNav = [
   { to: '/students',  label: 'Studentlar', labelKey: 'nav.students', Icon: HiOutlineAcademicCap },
   { to: '/groups',    label: 'Guruhlar',   labelKey: 'nav.groups', Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Mentorlar',  labelKey: 'nav.mentors', Icon: HiOutlineUserCircle },
-  { to: '/chat',      label: 'Chat',        labelKey: 'nav.chat', Icon: HiOutlineChatBubbleLeftRight },
   { to: '/shop',      label: 'Do\'kon',    Icon: HiOutlineGift },
   { to: '/schedule',  label: 'Jadval',     Icon: HiOutlineCalendarDays },
   { to: '/branch',    label: 'Filial',     labelKey: 'nav.branch', Icon: HiOutlineBuildingOffice2 },
@@ -699,8 +697,8 @@ function Notifications() {
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const ref = useRef(null);
 
-  // Чат есть только у ментора и админа; у остальных ролей эндпоинт ответит 403.
-  const hasChat = ['mentor', 'admin', 'branch_manager', 'employee'].includes(user?.role);
+  // Чат есть только у ментора, админа и сотрудника; у остальных ролей эндпоинт ответит 403.
+  const hasChat = ['mentor', 'admin', 'employee'].includes(user?.role);
   const { data } = useChatContacts({ enabled: hasChat });
   const contacts = data?.data ?? [];
 

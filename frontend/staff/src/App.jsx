@@ -136,7 +136,7 @@ export default function App() {
         <Route path="/" element={<SW><DashboardRedirect /></SW>} />
 
         {/* Shared paths dispatched by role */}
-        <Route path="/chat" element={<SW><RoleView views={{ mentor: MentorChat, admin: AdminChat, branch_manager: ManagerChat, employee: ManagerChat }} /></SW>} />
+        <Route path="/chat" element={<SW><RoleView views={{ mentor: MentorChat, admin: AdminChat, employee: ManagerChat }} /></SW>} />
         <Route path="/groups" element={<SW><RoleView views={{ seo: SuperGroups, admin: AdminGroups, branch_manager: AdminGroups, mentor: MentorGroups }} /></SW>} />
         {/* Карточка группы. У админа она была под RoleGuard(['admin']); теперь
             тот же путь обслуживает и ментора — RoleView так же не пускает

@@ -1,6 +1,6 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 13.08.2026 06:02 (UTC+5, Toshkent vaqti)
+> Oxirgi yangilanish: 22.08.2026 06:45 (UTC+5, Toshkent vaqti)
 > Statistika: 209/237 task tugallangan (88%)
 
 ---
@@ -8,6 +8,73 @@
 ## Progress: [#################...] 88%
 
 ## Tugallangan vazifalar
+
+### Student — Mavzu ichida video → test → uyga vazifa ketma-ketligi (Karis, 22.08.2026) ✅
+- [x] «Mening darslarim» ikki bosqichga bo'lindi: mavzular ro'yxati (`/lessons`) → mavzu ichi
+      (`/lessons/topics/:id`, yangi `TopicDetail.jsx`). Ilgari hamma mavzu bitta uzun lentada edi
+- [x] Mavzu ichida qat'iy ketma-ketlik: video → test → uyga vazifa. Oldingisi tugamaguncha
+      keyingisi ochilmaydi (qulf ikonkasi + sabab matni)
+- [x] Mavzu videosi ikki xil: YouTube havolasi (bepul, cheklovsiz) YOKI Storj'ga fayl yuklash.
+      Fayl uchun o'tkazib yuborish REAL bloklangan (seek-bar yo'q, `maxReachedTime` qaytarish,
+      strelkalar bloki). «Ko'rildi» — haqiqiy `ENDED`/`ended` hodisasi bo'yicha, foiz emas
+- [x] Yon menyu endi to'g'ridan-to'g'ri mavzularga olib boradi; bosh sahifadagi «Kunlik vazifa»
+      ham bo'sh `/tests` o'rniga real mavzuga yo'naltiradi
+
+### Metodist + Main Admin — Mavzu videosi va uning tannarxi (Karis, 22.08.2026) ✅
+- [x] Metodist mavzuga video biriktiradi: havola yoki fayl (`POST /methodist/topics/:id/video`,
+      presigned PUT → Storj). Fayl hajmi serverda o'lchanadi (HeadObject) — mijoz raqamiga
+      ishonilmaydi, aks holda hajmni pasaytirib ko'rsatish mumkin bo'lardi
+- [x] Narx avtomatik: Storj tannarxi $0.007/GB, Karis belgilagan ustama bilan $0.020/GB —
+      saqlash (oyiga) va har bir ko'rish uchun alohida (`src/config/pricing.js`)
+- [x] Pul ko'rsatkichlari FAQAT Main Admin'da (`/video-storage`) — hamkorning xodimi bo'lgan
+      metodistga infratuzilma tannarxi hech qayerda ko'rsatilmaydi (SQL RETURNING'da ham yo'q)
+
+### Backend — Tanga endi avtomatik va aniq beriladi (Karis, 22.08.2026) ✅
+- [x] Aqlli tahlil (AI) endi sdachani O'ZI yopadi va tangani O'ZI qo'yadi. Ilgari AI faqat matn
+      yozardi, ball hech qayerga tushmasdi va sdacha `submitted` holatida abadiy qotib qolardi —
+      qo'lda baholash endpointi umuman yo'q edi
+- [x] Test uchun tanga «hammasi yoki hech nima» emas, to'g'ri javoblar ulushi bo'yicha:
+      `round(coin_reward × to'g'ri / jami)` — 10 tanga va 10 savolda har to'g'ri javobga 1 tanga
+- [x] Video uchun tanga: oxirigacha ko'rilsa to'liq summa, faqat BIR marta
+      (`topic_video_views`, UNIQUE) — qayta ko'rish bilan tanga yig'ib bo'lmaydi
+
+### Finance Manager — mock rol HAQIQIY backend roliga aylandi (Karis, 22.08.2026) ✅
+- [x] Migratsiya: `chk_users_branch_scope` endi `finance_manager`ga `branch_id IS NULL` ruxsat
+      beradi — rol butun tashkilotni ko'radi (SEO/metodist kabi), bitta filialga bog'lanmaydi
+- [x] Alohida modul `/api/finance/*` (`authorize('finance_manager','seo')`) — SEO'ning
+      `super.routes.js` bloki KENGAYTIRILMADI, aks holda filiallar/adminlar/o'quvchilar ham
+      ochilib ketardi. Kontroller/servis o'sha bitta (dublikat yo'q), faqat kirish nuqtasi boshqa
+- [x] 6 sahifa mock'dan real ma'lumotga o'tdi, `pages/finance/_data.js` butunlay o'chirildi
+- [x] Xarajatlar sahifasi endi qo'shish/tahrirlash/o'chirishni ham qiladi (backend tayyor edi)
+
+### Backend + Frontend — Moliyaviy hisob-kitobdagi 10 ta xato tuzatildi (Karis, 22.08.2026) ✅
+- [x] Filial ulushi: davr daromadi BUTUN VAQT daromadiga bo'linardi — ulushlar 100% bermasdi
+      (jonli tekshiruv: 37.5% + 9.4% = 46.9% → 80% + 20% = 100%). SEO panelida ham shu xato bor edi
+- [x] Oylik dinamika: qatordagi oxirgi ikki nuqta olinardi, to'lovsiz oylar qatorda umuman
+      bo'lmaydi — «avgust iyunga» «oydan-oyga» deb ko'rsatilardi. Endi kalendar bo'yicha aniq
+- [x] O'sish foizi: bitta oy ma'lumoti bo'lsa mavjud bo'lmagan oyga nisbatan «+100%» to'qib
+      chiqarilardi → endi `null`, chunki noldan o'sish aniqlanmagan
+- [x] O'chirilgan filial: puli umumiy yakunga tushardi, lekin filiallar ro'yxatidan chiqib
+      ketardi (yakun ≠ filiallar yig'indisi). O'quvchi/admin/mentor sanoqlarida ham shunday edi
+- [x] **Oy chegarasi mahalliy vaqtda hisoblanardi** (UTC+5), `toISOString()` uni 5 soatga surib
+      yuborardi: avgustga 31-iyuldagi 6 mlrd tranzaksiya kirib ketardi. Avgust daromadi
+      7 502 030 081 → 1 502 030 081, trend ▲649% → ▼79%
+- [x] Xarajatlar sahifasida oy filtri UMUMAN yo'q edi — butun vaqt «oylik xarajat» deb
+      ko'rsatilardi (5 704 553 → 4 704 553) va oylik daromad bilan solishtirib bo'lmasdi
+- [x] `api.financeExpenses` `from`/`to` parametrlarini tashlab yuborardi, backendga yetib bormasdi
+- [x] Sozlamalar: `/users/me` snake_case qaytaradi, kod camelCase o'qirdi — ism/familiya bo'sh edi
+- [x] Tekshirildi, xato YO'Q: qaytarilgan to'lovlar (`refunded`) daromaddan to'g'ri chiqarilgan;
+      `total_debt` — haqiqiy tranzaksion balans; barcha yakunlar filiallar yig'indisiga teng
+
+### Student paneli — chat, e'lonlar va interfeys tuzatishlari (Karis, 22.08.2026) ✅
+- [x] Chat: admin ham suhbatdosh sifatida qo'shildi (backend ruxsat berardi, frontend
+      ko'rsatmasdi); to'liq ekranli yangi dizayn; ism yonida rol yozuvi (Mentor/Админ)
+- [x] E'lonlar sahifasi umumiy dizayn tizimiga o'tkazildi va i18n'ga ulandi (matn qattiq
+      o'zbekcha edi); sana buzilgan edi (`2026 M08 22`) — umumiy `fmtDateTime` ishlatildi
+- [x] Skeleton mos kelmasligi: `/leaderboard` va bosh sahifada umumiy 3-ustunli skeleton real
+      tuzilishga mos emas edi — har biriga o'z shakli yozildi
+- [x] Staff login sahifasidagi «Demo-kirish (backendsiz)» eslatmasi endi faqat mock rejimda
+      ko'rinadi — real backendda bunday akkauntlar yo'q va foydalanuvchini chalg'itardi
 
 ### Backend+Frontend — Shop va Telegram fича-gate (Karis, 13.08.2026) ✅ kod tayyor, migratsiya KUTMOQDA
 - [x] Umumiy: `shared/orgFeatures.js` (`isFeatureEnabledForOrg`, Redis'siz —

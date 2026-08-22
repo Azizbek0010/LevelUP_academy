@@ -81,13 +81,13 @@ export function archiveTrainingType(id, orgId, db = pool) {
 }
 
 // ==================== ТЕМЫ ====================
-export function insertTopic({ trainingTypeId, createdBy, name, description, videoUrl }, db = pool) {
+export function insertTopic({ trainingTypeId, createdBy, name, description, videoUrl, coinReward }, db = pool) {
   return db
     .query(
-      `INSERT INTO topics (training_type_id, created_by, name, description, video_url)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, name, description, video_url, sort_order, created_at`,
-      [trainingTypeId, createdBy, name, description ?? null, videoUrl ?? null],
+      `INSERT INTO topics (training_type_id, created_by, name, description, video_url, coin_reward)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, name, description, video_url, coin_reward, sort_order, created_at`,
+      [trainingTypeId, createdBy, name, description ?? null, videoUrl ?? null, coinReward ?? 0],
     )
     .then((r) => r.rows[0]);
 }
@@ -95,7 +95,12 @@ export function insertTopic({ trainingTypeId, createdBy, name, description, vide
 export function listTopics(trainingTypeId, db = pool) {
   return db
     .query(
-      `SELECT t.id, t.name, t.description, t.video_url, t.sort_order, t.created_at,
+      // video_storage_cost_usd/video_cost_per_view_usd намеренно НЕ выбираются —
+      // методисту (сотруднику партнёра) себестоимость нашей инфраструктуры не
+      // показывается нигде на бэке, см. src/config/pricing.js.
+      `SELECT t.id, t.name, t.description, t.video_url, t.coin_reward,
+              t.video_file_key, t.video_size_bytes, t.video_duration_sec,
+              t.sort_order, t.created_at,
               (SELECT count(*)::int FROM methodology_lessons l WHERE l.topic_id = t.id AND l.deleted_at IS NULL) AS lessons_count
          FROM topics t
         WHERE t.training_type_id = $1 AND t.deleted_at IS NULL
@@ -126,13 +131,20 @@ export function updateTopic(id, orgId, fields, db = pool) {
     ['name', 'name'],
     ['description', 'description'],
     ['videoUrl', 'video_url'],
+    ['coinReward', 'coin_reward'],
   ]) {
     if (fields[key] !== undefined) {
       cols.push(`${col} = $${i++}`);
-      vals.push(fields[key]);
+      vals.push(fields[key] === '' ? null : fields[key]);
     }
   }
   if (cols.length === 0) return null;
+  // Ссылка и файл взаимоисключающие — если задаётся непустой videoUrl,
+  // одновременно чистим файловые поля (иначе плеер не поймёт, что показывать).
+  if (fields.videoUrl !== undefined && fields.videoUrl) {
+    cols.push('video_file_key = NULL', 'video_size_bytes = NULL', 'video_duration_sec = NULL');
+    cols.push('video_storage_cost_usd = NULL', 'video_cost_per_view_usd = NULL');
+  }
   vals.push(id, orgId);
   return db
     .query(
@@ -140,8 +152,45 @@ export function updateTopic(id, orgId, fields, db = pool) {
         WHERE id = $${i++} AND training_type_id IN (
           SELECT id FROM training_types WHERE organization_id = $${i}
         ) AND deleted_at IS NULL
-        RETURNING id, name, description, video_url, sort_order`,
+        RETURNING id, name, description, video_url, coin_reward, video_file_key, video_size_bytes, video_duration_sec, sort_order`,
       vals,
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+/**
+ * Регистрирует файловое видео после успешной загрузки на Storj — вызывается
+ * ПОСЛЕ presigned PUT, sizeBytes/costs уже посчитаны в сервисе по реальному
+ * размеру с самого Storj. Чистит video_url (взаимоисключающе с файлом).
+ * RETURNING намеренно без video_storage_cost_usd/video_cost_per_view_usd —
+ * этот ответ уходит методисту, себестоимость ему не показываем.
+ */
+export function setTopicVideoFile(id, orgId, { fileKey, sizeBytes, durationSec, storageCostUsdPerMonth, costPerViewUsd }, db = pool) {
+  return db
+    .query(
+      `UPDATE topics
+          SET video_url = NULL, video_file_key = $1, video_size_bytes = $2, video_duration_sec = $3,
+              video_storage_cost_usd = $4, video_cost_per_view_usd = $5, updated_at = now()
+        WHERE id = $6 AND training_type_id IN (
+          SELECT id FROM training_types WHERE organization_id = $7
+        ) AND deleted_at IS NULL
+        RETURNING id, name, description, video_url, video_file_key, video_size_bytes, video_duration_sec, sort_order`,
+      [fileKey, sizeBytes, durationSec ?? null, storageCostUsdPerMonth, costPerViewUsd, id, orgId],
+    )
+    .then((r) => r.rows[0] ?? null);
+}
+
+export function clearTopicVideoFile(id, orgId, db = pool) {
+  return db
+    .query(
+      `UPDATE topics
+          SET video_file_key = NULL, video_size_bytes = NULL, video_duration_sec = NULL,
+              video_storage_cost_usd = NULL, video_cost_per_view_usd = NULL, updated_at = now()
+        WHERE id = $1 AND training_type_id IN (
+          SELECT id FROM training_types WHERE organization_id = $2
+        ) AND deleted_at IS NULL
+        RETURNING id, name, description, video_url, video_file_key, sort_order`,
+      [id, orgId],
     )
     .then((r) => r.rows[0] ?? null);
 }

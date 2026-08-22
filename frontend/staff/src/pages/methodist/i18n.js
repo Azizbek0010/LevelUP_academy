@@ -92,6 +92,12 @@ const translations = {
   'types.description_label': { ru: 'Описание', uz: 'Tavsif', en: 'Description' },
   'types.description_placeholder': { ru: 'Кратко о направлении...', uz: 'Yo\'nalish haqida qisqacha...', en: 'Briefly about the direction...' },
   'types.icon_label': { ru: 'Иконка (emoji)', uz: 'Belgi (emoji)', en: 'Icon (emoji)' },
+  'types.ai_review_label': { ru: 'Умный разбор (AI)', uz: 'Aqlli tahlil (AI)', en: 'Smart review (AI)' },
+  'types.ai_review_hint': {
+    ru: 'AI будет разбирать код учеников по практическим заданиям этого курса. Включайте только там, где практика — реальный читаемый код (HTML/CSS/JS), не для курсов с большим числом файлов.',
+    uz: 'AI ushbu kurs bo\'yicha o\'quvchilarning amaliy topshiriqlar kodini tahlil qiladi. Faqat amaliyot haqiqiy o\'qiladigan kod bo\'lgan joyda yoqing (HTML/CSS/JS), fayllar ko\'p bo\'lgan kurslar uchun emas.',
+    en: 'AI will review student code on practical tasks for this course. Enable only where practice is real readable code (HTML/CSS/JS), not for courses with many files.',
+  },
 
   /* ─── Topics ─── */
   'topics.breadcrumb_types': { ru: 'Типы обучения', uz: 'O\'quv turlari', en: 'Training types' },
@@ -119,6 +125,24 @@ const translations = {
   'topics.description_label': { ru: 'Описание', uz: 'Tavsif', en: 'Description' },
   'topics.description_placeholder': { ru: 'О чём эта тема...', uz: 'Bu mavzu nima haqida...', en: 'What is this topic about...' },
   'topics.description': { ru: 'Описание', uz: 'Tavsif', en: 'Description' },
+  'topics.video_label': { ru: 'Видео темы', uz: 'Mavzu videosi', en: 'Topic video' },
+  'topics.video_mode_url': { ru: 'Ссылка', uz: 'Havola', en: 'Link' },
+  'topics.video_mode_file': { ru: 'Файл', uz: 'Fayl', en: 'File' },
+  'topics.video_url_placeholder': { ru: 'Ссылка на YouTube', uz: 'YouTube havolasi', en: 'YouTube link' },
+  'topics.video_upload_hint': { ru: 'или перетащите видео сюда', uz: 'yoki videoni shu yerga tashlang', en: 'or drag and drop a video here' },
+  'topics.video_no_file': { ru: 'Видео не загружено', uz: 'Video yuklanmagan', en: 'No video uploaded' },
+  'topics.video_remove': { ru: 'Удалить видео', uz: "Videoni o'chirish", en: 'Remove video' },
+  'topics.coin_reward_label': { ru: 'Монет за просмотр видео', uz: 'Video ko\'rish uchun tanga', en: 'Coins for watching the video' },
+  'topics.coin_reward_hint': {
+    ru: 'Начисляются студенту целиком, один раз, когда видео досмотрено до конца',
+    uz: 'Video oxirigacha ko\'rilganda talabaga bir marta to\'liq beriladi',
+    en: 'Awarded once, in full, when the student watches the video to the end',
+  },
+  'topics.video_after_create_hint': {
+    ru: 'Загрузка файлом станет доступна после создания темы — сначала сохраните',
+    uz: 'Fayl yuklash mavzu yaratilgandan keyin ochiladi — avval saqlang',
+    en: 'File upload becomes available after the topic is created — save first',
+  },
 
   /* ─── Lessons ─── */
   'lessons.breadcrumb_types': { ru: 'Типы', uz: 'Turlar', en: 'Types' },

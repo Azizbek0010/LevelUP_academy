@@ -194,6 +194,9 @@ router.get('/expenses', ctrl.listExpenses);
 router.post('/expenses', validate({ body: createExpenseSchema }), ctrl.createExpense);
 router.delete('/expenses/:id', validate({ params: idParam }), ctrl.deleteExpense);
 
+// --- расход на видео-файлы тем (Storj: хранение + трафик), см. src/config/pricing.js ---
+router.get('/video-storage-costs', ctrl.videoStorageCosts);
+
 // --- баланс/P&L платформы (реальная выручка минус собственные расходы) ---
 router.get('/finance', ctrl.finance);
 
