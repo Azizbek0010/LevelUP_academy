@@ -753,15 +753,38 @@ export async function stats(orgId, period = '30d', branchId = null) {
      Считаем по уже полученному ряду по дням — лишнего запроса в базу нет. */
   const periodRevenue = series.reduce((sum, r) => sum + Number(r.revenue), 0);
 
-  // дельта месяц-к-месяцу — только для 12m, только по двум последним точкам ряда
+  /* Дельта месяц-к-месяцу (только 12m). Karis 22.08.2026 — было две ошибки:
+     1) брались две ПОСЛЕДНИЕ ТОЧКИ РЯДА, а ряд приходит из GROUP BY month и
+        месяцы без единой оплаты в нём просто отсутствуют. Если в июле не было
+        ни одной транзакции, [июнь, август] давали «август к июню», подписанное
+        как «месяц к месяцу». Теперь месяцы берутся по календарю явно.
+     2) при единственной точке prev падал в 0 и отдавался рост «+100%» — против
+        месяца, которого в данных нет вообще. Рост от нуля не определён: pct =
+        null, а не выдуманная сотня (абсолютную дельту при этом отдаём — она
+        честная). */
   let momDelta = null;
   let momDeltaPct = null;
-  if (isMonthly && series.length >= 1) {
-    const last = Number(series[series.length - 1]?.revenue ?? 0);
-    const prev = Number(series[series.length - 2]?.revenue ?? 0);
+  if (isMonthly) {
+    const monthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const now = new Date();
+    const byMonth = new Map(
+      series.map((s) => [monthKey(new Date(s.month ?? s.day)), Number(s.revenue)]),
+    );
+    const last = byMonth.get(monthKey(now)) ?? 0;
+    const prev = byMonth.get(monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1))) ?? 0;
     momDelta = last - prev;
-    momDeltaPct = prev > 0 ? Number((((last - prev) / prev) * 100).toFixed(1)) : (last > 0 ? 100 : 0);
+    momDeltaPct = prev > 0 ? Number((((last - prev) / prev) * 100).toFixed(1)) : null;
   }
+
+  /* Доля филиала считается от суммы выручки филиалов ЗА ТОТ ЖЕ ПЕРИОД.
+     Karis 22.08.2026 — раньше делили на totals.revenue, а это выручка за ВСЁ
+     ВРЕМЯ (orgTotals без даты), тогда как b.revenue приходит из
+     branchBreakdown(orgId, from), т.е. за период. Доли не складывались в 100%
+     (живая проверка: 37.5% + 9.4% = 46.9%), и чем старше организация — тем
+     сильнее занижались. Сумма по самим филиалам самосогласована по определению
+     и не ломается при ?branchId= (orgTotals сужается по филиалу, а список
+     филиалов намеренно остаётся полным — см. комментарий выше). */
+  const branchesRevenueTotal = branches.reduce((sum, b) => sum + Number(b.revenue), 0);
 
   return {
     period,
@@ -789,8 +812,10 @@ export async function stats(orgId, period = '30d', branchId = null) {
       admins: Number(b.admins),
       // доля филиала в выручке организации — раньше жила только в /super/reports;
       // Отчёты слиты в Статистику 2026-07-28 (была одна и та же выборка на двух
-      // страницах), поле переехало сюда.
-      share: revenue > 0 ? Number(((Number(b.revenue) / revenue) * 100).toFixed(1)) : 0,
+      // страницах), поле переехало сюда. Делитель — см. branchesRevenueTotal.
+      share: branchesRevenueTotal > 0
+        ? Number(((Number(b.revenue) / branchesRevenueTotal) * 100).toFixed(1))
+        : 0,
     })),
     revenueSeries: series.map((s) => ({ date: s.day ?? s.month, revenue: Number(s.revenue) })),
     paymentMethods: methods.map((m) => ({ method: m.method, amount: Number(m.amount) })),

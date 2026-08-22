@@ -1,12 +1,23 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { api, setOnTokenRefreshed } from './api.js';
 
 const AuthCtx = createContext(null);
+
+// Access-токен живёт 1 час (ACCESS_TTL в auth.service.js). Реактивный refresh
+// в api.js спасает только если за час хоть один запрос уйдёт; если вкладка
+// открыта часами без единого действия, первый же клик потом мог получить
+// 401 и словить re-login. Здесь — проактивный refresh заранее.
+const PROACTIVE_REFRESH_MS = 45 * 60 * 1000; // 45 мин — с запасом до часового TTL
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true); // пока пытаемся восстановить сессию
+  const tokenRef = useRef(null);
+
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
 
   // при загрузке пробуем восстановить сессию через refresh-cookie
   useEffect(() => {
@@ -31,6 +42,35 @@ export function AuthProvider({ children }) {
         setUser(null);
       }
     });
+  }, []);
+
+  // Проактивный refresh: таймер каждые 45 мин + сразу при возврате на вкладку
+  // (ноутбук спал/вкладка была свёрнута — setInterval в фоне мог не тикать).
+  useEffect(() => {
+    const tryRefresh = () => {
+      if (!tokenRef.current) return;
+      api
+        .refresh()
+        .then((d) => {
+          setToken(d.accessToken);
+          setUser(d.user);
+        })
+        .catch(() => {
+          setToken(null);
+          setUser(null);
+        });
+    };
+
+    const id = setInterval(tryRefresh, PROACTIVE_REFRESH_MS);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tryRefresh();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
   const login = async (email, password) => {

@@ -113,6 +113,22 @@ export const archiveTopic = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+export const getTopicVideoUploadUrl = asyncHandler(async (req, res) => {
+  const { filename, contentType } = req.query;
+  const data = await contentService.getTopicVideoUploadUrl(req.params.id, orgId(req), { filename, contentType });
+  res.json({ success: true, data });
+});
+
+export const confirmTopicVideo = asyncHandler(async (req, res) => {
+  const data = await contentService.confirmTopicVideo(req.params.id, orgId(req), req.body);
+  res.json({ success: true, data });
+});
+
+export const clearTopicVideoFile = asyncHandler(async (req, res) => {
+  const data = await contentService.clearTopicVideoFile(req.params.id, orgId(req));
+  res.json({ success: true, data });
+});
+
 export const createLesson = asyncHandler(async (req, res) => {
   const item = await contentService.createLesson(orgId(req), req.user.id, req.body);
   res.status(201).json({ success: true, data: item });

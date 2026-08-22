@@ -10,8 +10,11 @@ export default {
     study: 'Мои уроки',
     shop: 'Магазин',
     rating: 'Рейтинг',
+    chat: 'Чат',
+    announcements: 'Объявления',
     mobileHome: 'Главная',
     mobileLessons: 'Уроки',
+    mobileChat: 'Чат',
   },
 
   header: {
@@ -39,11 +42,10 @@ export default {
     tgBindError: 'Не удалось подключить, попробуйте позже',
     tgUnlinkError: 'Не удалось отключить, попробуйте позже',
     tgUnlinkSuccess: 'Telegram отключён',
-    tgBadge: 'ПОДКЛЮЧЁН',
   },
 
   langSwitch: {
-    label: 'Язык',
+    label: 'Til',
   },
 
   ui: {
@@ -68,6 +70,35 @@ export default {
       'Акулы старше деревьев — они появились раньше, чем на Земле выросли первые деревья.',
       'Твой мозг вырабатывает столько энергии, что мог бы зажечь маленькую лампочку.',
     ],
+  },
+
+  announcements: {
+    title: 'Объявления',
+    subtitle: 'Важные новости от учебного центра',
+    empty: 'Объявлений пока нет',
+    emptyText: 'Здесь появятся новости и важные сообщения от центра.',
+    center: 'Центр',
+    allBranches: 'Все филиалы',
+    expires: 'Актуально до',
+    expired: 'Истекло',
+  },
+
+  chat: {
+    title: 'Чат',
+    subtitle: 'Личные сообщения с наставником',
+    noContacts: 'Пока не с кем переписываться',
+    noContactsText: 'Наставник появится здесь, как только тебя зачислят в группу.',
+    noMessages: 'Пока нет сообщений',
+    noMessagesText: 'Напиши первым — сообщение сразу увидит наставник.',
+    placeholder: 'Напиши сообщение…',
+    placeholderNoContact: 'Выбери собеседника',
+    online: 'Онлайн',
+    offline: 'Не в сети',
+    mentor: 'Mentor',
+    admin: 'Админ',
+    sendError: 'Не удалось отправить, попробуй ещё раз',
+    today: 'Сегодня',
+    yesterday: 'Вчера',
   },
 
   home: {
@@ -100,8 +131,8 @@ export default {
     rating: 'Рейтинг',
     branch: 'Филиал',
     myGroup: 'Моя группа',
-    groupRatingSoon: 'Рейтинг по группе скоро',
-    groupRatingSoonText: 'Сейчас доступен рейтинг по филиалу — переключи вкладку.',
+    groupRatingNoGroup: 'Ты пока не в группе',
+    groupRatingNoGroupText: 'Рейтинг по группе появится, когда тебя зачислят в группу.',
     ratingEmpty: 'Рейтинг пока пуст',
     ratingEmptyText: 'Никто ещё не заработал монеты за эту неделю. Будь первым!',
     you: '· ты',
@@ -109,18 +140,15 @@ export default {
   },
   feedback: {
     title: 'Умный разбор',
-    titleSub: 'Разбор твоей последней практической работы',
-    badge: '«{lesson}»',
-    checkedAt: 'проверено {date}',
+    titleSub: 'AI-анализ твоей последней практической сдачи',
+    lessonLabel: 'По заданию «{lesson}»',
     praiseTag: 'Твоя сильная сторона',
+    praiseTitle: 'Молодец, {name}!',
+    praiseTopic: 'Тема «{topic}»',
     growTag: 'Точка роста',
+    growTopic: 'Тема «{topic}»',
     tipTitle: 'Советы',
     summaryTitle: 'Общий итог',
-    processingTitle: 'Работа анализируется',
-    processingText: 'Обычно это занимает меньше минуты — загляни чуть позже!',
-    failedTitle: 'Не получилось проанализировать',
-    failedText: 'Твою работу проверит ментор.',
-    noCodeText: 'Код не найден — работу проверит ментор.',
   },
 
   hub: {
@@ -154,12 +182,19 @@ export default {
     empty: 'Уроков пока нет',
     emptyText: 'Курс твоей группы ещё не подключён методистом — загляни позже.',
     soon: 'Уроки скоро появятся',
+    topicVideo: 'Видео к теме',
+    watchToUnlock: 'Досмотри видео до конца, чтобы открыть уроки темы',
+    lockedByVideo: 'Открыто после видео',
+    lockedByPrev: 'Открыто после предыдущего урока',
+    topicNotFound: 'Тема не найдена',
   },
 
   lessonDetail: {
     back: 'Уроки',
     test: 'Тест',
     homework: 'Домашнее задание',
+    video: 'Видео к уроку',
+    watchVideo: 'Смотреть видео',
     coins: '+{n} монет',
     testPassed: 'Тест сдан!',
     testFailed: 'Тест не сдан',

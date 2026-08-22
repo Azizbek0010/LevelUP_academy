@@ -4,7 +4,41 @@
    ────────────────────────────────────────────────────────────────────────── */
 import { money } from '../../format.js';
 import { LANGS, useLang } from './_i18n.jsx';
-import { PAYMENT_STATUS } from './_data.js';
+
+/* Последние N календарных месяцев, самый свежий — текущий. Раньше был жёсткий
+   список из 6 строк в _data.js — переставал работать в следующем месяце и не
+   имел смысла привязывать к "сейчас" вручную. from/to — границы месяца в
+   ISO, для query-параметров backend (listIncomeSchema/listSalariesSchema). */
+const LOCALE = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+
+export function monthOptions(lang = 'ru', count = 12) {
+  const now = new Date();
+  const out = [];
+  for (let i = 0; i < count; i += 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = d.toLocaleDateString(LOCALE[lang] ?? 'ru-RU', { month: 'long', year: 'numeric' });
+    out.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1) });
+  }
+  return out; // [текущий, …, i месяцев назад]
+}
+
+/**
+ * Границы месяца в UTC. Karis 22.08.2026 — было `new Date(y, m - 1, 1)`, то
+ * есть полночь по МЕСТНОМУ времени, а `.toISOString()` дальше переводил её в
+ * UTC. В Ташкенте (UTC+5) «1 августа 00:00» превращалось в `2026-07-31T19:00Z`:
+ * в август затягивался хвост 31 июля и терялись последние 5 часов 31 августа.
+ * Живая проверка: доход за август показывался как 7 502 030 081,63 вместо
+ * 1 502 030 081,63 — ровно на 6 млрд транзакции от 31 июля больше.
+ * Date.UTC берёт те же границы честно в UTC, и число сходится с месячным
+ * рядом в /stats, где месяц режется на стороне БД (date_trunc).
+ */
+export function monthRange(monthKey) {
+  const [y, m] = monthKey.split('-').map(Number);
+  const from = new Date(Date.UTC(y, m - 1, 1));
+  const to = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999)); // последний день месяца
+  return { from: from.toISOString(), to: to.toISOString() };
+}
 
 /* ── Переключатель языка RU/UZ/EN ── */
 export function LangSwitch() {
@@ -105,12 +139,6 @@ export function Card({ title, subtitle, action, children, bodyClass = 'p-4', cla
       <div className={bodyClass}>{children}</div>
     </section>
   );
-}
-
-/* ── Badge статуса платежа ── */
-export function StatusBadge({ status }) {
-  const meta = PAYMENT_STATUS[status] ?? { label: status, cls: 'badge-ghost' };
-  return <span className={`badge badge-sm ${meta.cls}`}>{meta.label}</span>;
 }
 
 /* ── Селекты филиала и месяца ── */

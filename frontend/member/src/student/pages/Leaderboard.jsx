@@ -6,7 +6,7 @@ import { api } from '../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useToast } from '../components/toast.jsx';
 import {
-  PageHeader, Skeleton, EmptyState, ErrorState, Tabs, Avatar, CountUp, C, LevelBar, levelFromCoins,
+  PageHeader, EmptyState, ErrorState, Tabs, Avatar, CountUp, C, LevelBar, levelFromCoins,
 } from '../components/ui.jsx';
 import { fmt, useI18n } from '../../i18n/index.jsx';
 
@@ -312,6 +312,41 @@ function StatsCard({ homework, myCoins, topCoins, growth, overtakeName }) {
   );
 }
 
+/* Раньше тут стоял общий <Skeleton h={64} count={5}/> — он всегда рисует
+   grid-cols-3 (рассчитан на ряд одинаковых плиток), а реальный контент этой
+   страницы — карточка уровня, подиум 3×разной высоты и вертикальный список —
+   ничего общего с сеткой не имел (тот же класс бага, что был у /study,
+   найден и исправлен 21.08.2026). Свой skeleton, повторяющий форму разделов. */
+function LeaderboardSkeleton() {
+  return (
+    <>
+      <div className="k-card p-4 sm:p-5 mb-4" style={{ borderColor: C.limeLine }}>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="animate-pulse shrink-0 w-16 h-16 rounded-2xl" style={{ background: C.line }} />
+          <div className="min-w-0 flex-1 space-y-2.5">
+            <div className="animate-pulse h-3 w-24 rounded-full" style={{ background: C.line }} />
+            <div className="animate-pulse h-5 w-36 rounded-full" style={{ background: C.line }} />
+            <div className="animate-pulse h-2.5 w-full rounded-full" style={{ background: C.line }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="k-card p-4 sm:p-5 mb-4" style={{ borderColor: C.limeLine }}>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end mb-4">
+          {[132, 158, 108].map((h, i) => (
+            <div key={i} className="animate-pulse rounded-2xl" style={{ height: h, background: C.line }} />
+          ))}
+        </div>
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="animate-pulse h-12 rounded-xl" style={{ background: C.line }} />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function Leaderboard() {
   const { user } = useAuth();
   const toast = useToast();
@@ -435,7 +470,7 @@ export default function Leaderboard() {
       {error ? (
         <ErrorState message={error.message} onRetry={load} />
       ) : !data ? (
-        <Skeleton h={64} count={5} />
+        <LeaderboardSkeleton />
       ) : top.length === 0 ? (
         <div className="k-card">
           <EmptyState

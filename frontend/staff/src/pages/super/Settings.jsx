@@ -22,6 +22,7 @@ const settingsSchema = z.object({
     .regex(domainRegex, 'Неверный формат (например, levelup.uz)')
     .or(z.literal('')),
   lessonDurationMin: z.coerce.number().int().min(10, 'Мин. 10 мин').max(600, 'Макс. 600 мин'),
+  coinsPerStudent: z.coerce.number().int().min(0, 'Не может быть отрицательным').max(1000, 'Макс. 1000'),
 });
 
 export default function SuperSettings() {
@@ -36,8 +37,8 @@ export default function SuperSettings() {
 
   const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { name: org?.name || '', domain: org?.domain || '', lessonDurationMin: org?.lessonDurationMin || 60 },
-    values: org ? { name: org.name || '', domain: org.domain || '', lessonDurationMin: org.lessonDurationMin || 60 } : undefined,
+    defaultValues: { name: org?.name || '', domain: org?.domain || '', lessonDurationMin: org?.lessonDurationMin || 60, coinsPerStudent: org?.coinsPerStudent ?? 0 },
+    values: org ? { name: org.name || '', domain: org.domain || '', lessonDurationMin: org.lessonDurationMin || 60, coinsPerStudent: org.coinsPerStudent ?? 0 } : undefined,
   });
 
   const onSubmit = async (formData) => {
@@ -48,6 +49,7 @@ export default function SuperSettings() {
         name: formData.name.trim(),
         domain: formData.domain.trim() || null,
         lessonDurationMin: formData.lessonDurationMin,
+        coinsPerStudent: formData.coinsPerStudent,
       });
       invalidate('super-organization');
       setSuccessMsg('Настройки сохранены!');
@@ -153,6 +155,20 @@ export default function SuperSettings() {
                     Используется для авторасчёта конца занятия в форме группы (Admin-панель).
                   </span>
                   {errors.lessonDurationMin && <span className="text-xs text-error mt-1">{errors.lessonDurationMin.message}</span>}
+                </label>
+                <label className="form-control w-full max-w-[220px]">
+                  <span className="label-text mb-1.5 font-medium">Коинов на ученика в месяц</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={1000}
+                    {...register('coinsPerStudent')}
+                    className={`input input-bordered w-full ${errors.coinsPerStudent ? 'input-error' : ''}`}
+                  />
+                  <span className="text-[11px] text-base-content/40 mt-1">
+                    Месячный бюджет ментора на группу = это число × учеников в группе. 0 — раздача коинов запрещена.
+                  </span>
+                  {errors.coinsPerStudent && <span className="text-xs text-error mt-1">{errors.coinsPerStudent.message}</span>}
                 </label>
                 <div className="flex justify-end pt-4">
                   <button type="submit" className="btn btn-primary" disabled={!isDirty || busy}>

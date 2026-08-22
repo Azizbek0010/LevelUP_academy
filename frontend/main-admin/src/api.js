@@ -39,17 +39,25 @@ const AUTH_PATHS = new Set([
   '/auth/forgot-password', '/auth/reset-password',
 ]);
 
-// Единый refreshPromise — параллельные 401 ждут один и тот же refresh, не долбят его по отдельности
+// Единый refreshPromise — ЛЮБОЙ триггер (bootstrap на старте приложения,
+// реактивный 401, проактивный таймер/visibilitychange в auth.jsx) идёт через
+// один и тот же промис, не долбит /refresh по отдельности. Без этого
+// bootstrap-вызов при загрузке страницы и первый же 401 от другого
+// компонента, смонтированного чуть раньше, оба уходят на сервер с ОДНИМ и
+// тем же ещё не провёрнутым refresh-токеном — сервер видит это как reuse и
+// отзывает ВСЕ токены пользователя разом (backend/src/modules/auth/
+// auth.service.js:refresh, reuse-detection), роняя сессию целиком без
+// единой реальной причины (см. task-protocol, 21.08.2026).
 let refreshPromise = null;
 let onTokenRefreshed = null;
 export function setOnTokenRefreshed(cb) { onTokenRefreshed = cb; }
 
-function refreshOnce() {
+export function refreshOnce() {
   if (!refreshPromise) {
     refreshPromise = rawRequest('/auth/main/refresh', { method: 'POST' })
       .then((d) => {
         onTokenRefreshed?.(d);
-        return d.accessToken;
+        return d;
       })
       .catch((err) => {
         onTokenRefreshed?.(null);
@@ -66,8 +74,8 @@ async function request(path, opts = {}) {
     return await rawRequest(path, opts);
   } catch (err) {
     if (err.status === 401 && !AUTH_PATHS.has(path) && !opts._retried) {
-      const newToken = await refreshOnce();
-      return rawRequest(path, { ...opts, token: newToken, _retried: true });
+      const session = await refreshOnce();
+      return rawRequest(path, { ...opts, token: session.accessToken, _retried: true });
     }
     throw err;
   }
@@ -78,7 +86,7 @@ export const api = {
   loginMain: (login, password) =>
     request('/auth/main/login', { method: 'POST', body: { login, password } }),
   // используется в auth.jsx при загрузке — восстановление сессии по refresh-cookie
-  refresh: () => request('/auth/main/refresh', { method: 'POST' }),
+  refresh: () => refreshOnce(),
   logout: () => request('/auth/main/logout', { method: 'POST' }),
   googleLogin: (idToken) => request('/auth/main/google', { method: 'POST', body: { idToken } }),
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
@@ -141,6 +149,7 @@ export const api = {
   createExpense: (token, body) => request('/main/expenses', { method: 'POST', token, body }),
   deleteExpense: (token, id) => request(`/main/expenses/${id}`, { method: 'DELETE', token }),
   finance: (token) => request('/main/finance', { token }),
+  videoStorageCosts: (token) => request('/main/video-storage-costs', { token }),
 
   // заявки SEO на подключение/отключение фичи
   featureRequests: (token, status) =>

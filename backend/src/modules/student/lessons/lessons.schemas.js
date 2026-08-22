@@ -4,6 +4,10 @@ export const lessonIdParamSchema = z.object({
   lessonId: z.string().uuid(),
 });
 
+export const topicIdParamSchema = z.object({
+  topicId: z.string().uuid(),
+});
+
 // answers: { [questionId]: string } — 'A'|'B'|'C'|'D' для choice-вопросов,
 // свободный текст для riddle/open (сверяется в lessons.service.js без учёта
 // регистра). Схема не знает тип конкретного вопроса, поэтому просто строка —

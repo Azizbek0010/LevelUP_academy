@@ -23,12 +23,25 @@ export const createTopicSchema = z.object({
   name: z.string().trim().min(1, 'Название обязательно').max(200),
   description: z.string().trim().max(2000).optional(),
   videoUrl: z.string().trim().max(500).optional(),
+  coinReward: z.coerce.number().int().min(0).default(0),
 });
 
 export const updateTopicSchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
   description: z.string().trim().max(2000).optional(),
   videoUrl: z.string().trim().max(500).optional(),
+  coinReward: z.coerce.number().int().min(0).optional(),
+});
+
+// Presigned upload для видео-файла темы (альтернатива videoUrl — см. topics.service.js)
+export const topicVideoUploadUrlQuery = z.object({
+  filename: z.string().trim().min(1).max(255),
+  contentType: z.string().trim().max(150).optional(),
+});
+
+export const confirmTopicVideoSchema = z.object({
+  fileKey: z.string().trim().min(1).max(500),
+  durationSec: z.coerce.number().int().min(0).optional(),
 });
 
 // ---------- Уроки (тест / практика) ----------

@@ -28,6 +28,13 @@ export function authorize(...allowedRoles) {
     } else if (user.role === 'methodist') {
       // Методист видит ВСЕ филиалы своей организации, но не имеет доступа к финансам
       req.scope = { organizationId: user.organizationId, branchId: null };
+    } else if (user.role === 'finance_manager') {
+      // Finance Manager — вся организация насквозь (как SEO), но узкие права:
+      // только финансовые роуты (см. super.routes.js — допущен точечно, не
+      // блоком authorize('seo')). branchId можно сузить через ?branchId=,
+      // как у SEO — фронт (Income/Expenses/Salaries) уже умеет фильтровать
+      // по одному филиалу или показывать все разом.
+      req.scope = { organizationId: user.organizationId, branchId: req.query.branchId ?? null };
     } else {
       req.scope = { organizationId: user.organizationId, branchId: user.branchId };
     }

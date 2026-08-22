@@ -435,17 +435,25 @@ export function mockChatSend(roomKey, body, user) {
 // Пути, которым нельзя подсовывать авто-refresh (иначе цикл/логин ломается)
 const AUTH_PATHS = new Set(['/auth/member/login', '/auth/member/refresh', '/auth/member/logout']);
 
-// Единый refreshPromise — параллельные 401 ждут один и тот же refresh, не долбят его по отдельности
+// Единый refreshPromise — ЛЮБОЙ триггер (bootstrap на старте приложения,
+// реактивный 401, проактивный таймер/visibilitychange в auth.jsx, дочерний
+// student/api.js) идёт через один и тот же промис, не долбит /refresh
+// по отдельности. Без этого два одновременных вызова (например, bootstrap
+// в auth.jsx и первый же 401 от компонента, смонтированного раньше, чем
+// пришёл ответ bootstrap'а) оба уходят на сервер с ОДНИМ и тем же ещё не
+// провёрнутым refresh-токеном — сервер видит это как reuse и отзывает ВСЕ
+// токены пользователя разом (backend/src/modules/auth/auth.service.js:refresh,
+// reuse-detection), роняя сессию целиком без единой реальной причины.
 let refreshPromise = null;
 let onTokenRefreshed = null;
 export function setOnTokenRefreshed(cb) { onTokenRefreshed = cb; }
 
-function refreshOnce() {
+export function refreshOnce() {
   if (!refreshPromise) {
     refreshPromise = rawRequest('/auth/member/refresh', { method: 'POST' })
       .then((d) => {
         onTokenRefreshed?.(d);
-        return d.accessToken;
+        return d;
       })
       .catch((err) => {
         onTokenRefreshed?.(null);
@@ -462,8 +470,8 @@ async function request(path, opts = {}) {
     return await rawRequest(path, opts);
   } catch (err) {
     if (err.status === 401 && !AUTH_PATHS.has(path) && !opts._retried) {
-      const newToken = await refreshOnce();
-      return rawRequest(path, { ...opts, token: newToken, _retried: true });
+      const session = await refreshOnce();
+      return rawRequest(path, { ...opts, token: session.accessToken, _retried: true });
     }
     throw err;
   }
@@ -473,7 +481,7 @@ export const api = {
   loginMember: (login, password) =>
     request('/auth/member/login', { method: 'POST', body: { login, password } }),
   qrLogin: (token) => request('/auth/member/qr-login', { method: 'POST', body: { token } }),
-  refresh: () => request('/auth/member/refresh', { method: 'POST' }),
+  refresh: () => refreshOnce(),
   logout: () => request('/auth/member/logout', { method: 'POST' }),
 
   // Вход через Telegram: сработает только у тех, кто уже привязал бота в кабинете.
