@@ -5,7 +5,15 @@
    для branch-manager компоненты: финансовый столбцовый график и бейдж статуса.
    ────────────────────────────────────────────────────────────────────────── */
 import { money } from '../../format.js';
-import { PAYMENT_STATUS } from '../finance/_data.js';
+
+/* invoice_status enum (backend/src/modules/admin/payments/payments.schemas.js) */
+const PAYMENT_STATUS = {
+  paid:            { label: "To'langan",       cls: 'badge-success' },
+  partially_paid:  { label: 'Qisman to‘langan', cls: 'badge-warning' },
+  pending:         { label: 'Kutilmoqda',       cls: 'badge-ghost' },
+  overdue:         { label: "Muddati o'tgan",  cls: 'badge-error' },
+  cancelled:       { label: 'Bekor qilingan',   cls: 'badge-neutral' },
+};
 
 /* ── Столбцовый график «Доход vs Расход» ────────────────────────────────────
    Без Recharts, на чистом CSS: несколько столбцов не требуют библиотеки.
