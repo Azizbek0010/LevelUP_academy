@@ -1,25 +1,90 @@
-import { useI18n, LANGS } from '../i18n.jsx';
+import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Globe, Check, ChevronDown } from 'lucide-react';
+
+const LANGUAGES = [
+  { code: 'uz', label: "O'zbekcha", flag: '🇺🇿', short: 'UZ' },
+  { code: 'ru', label: 'Русский', flag: '🇷🇺', short: 'RU' },
+  { code: 'en', label: 'English', flag: '🇬🇧', short: 'EN' },
+];
 
 export default function LanguageSwitcher() {
-  const { lang, setLang } = useI18n();
+  const { i18n } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const currentLang = LANGUAGES.find((l) => l.code === (i18n.language?.slice(0, 2) || 'uz')) || LANGUAGES[0];
+
+  const changeLanguage = (code) => {
+    i18n.changeLanguage(code);
+    setOpen(false);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const onClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    const onEsc = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [open]);
 
   return (
-    <div className="flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/10" role="group" aria-label="Language">
-      {LANGS.map((l) => (
-        <button
-          key={l.code}
-          type="button"
-          onClick={() => setLang(l.code)}
-          title={l.label}
-          className={`flex-1 px-2 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${
-            lang === l.code
-              ? 'bg-primary text-primary-content shadow'
-              : 'text-neutral-content/50 hover:text-neutral-content'
-          }`}
-        >
-          {l.short}
-        </button>
-      ))}
+    <div className="relative inline-block text-left" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-base-200 bg-base-100 hover:bg-base-200/60 text-base-content text-xs font-semibold transition-all shadow-sm active:scale-95"
+        aria-expanded={open}
+        aria-label="Tilni tanlash / Выбор языка"
+      >
+        <span className="text-sm">{currentLang.flag}</span>
+        <span className="tracking-wide uppercase font-bold text-[11px] text-base-content/70">
+          {currentLang.short}
+        </span>
+        <ChevronDown
+          size={13}
+          className={`text-base-content/40 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-1.5 w-40 rounded-xl overflow-hidden shadow-xl border border-base-200 bg-base-100 p-1 z-50 animate-scale-in">
+          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-base-content/40 border-b border-base-200 mb-1 flex items-center gap-1.5">
+            <Globe size={11} />
+            <span>Til / Язык</span>
+          </div>
+          <div className="space-y-0.5">
+            {LANGUAGES.map((lang) => {
+              const active = currentLang.code === lang.code;
+              return (
+                <button
+                  key={lang.code}
+                  onClick={() => changeLanguage(lang.code)}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    active
+                      ? 'bg-primary/10 text-primary font-bold'
+                      : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-sm">{lang.flag}</span>
+                    <span>{lang.label}</span>
+                  </span>
+                  {active && <Check size={14} className="text-primary shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

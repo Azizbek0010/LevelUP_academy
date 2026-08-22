@@ -10,7 +10,7 @@ export const LANGS = [
   { code: 'en', label: 'English' },
 ];
 
-const DICT = {
+export const DICT = {
   ru: {
     'nav.dashboard': 'Дашборд',
     'nav.income': 'Доходы',

@@ -14,7 +14,8 @@ import Chat from './pages/Chat.jsx';
 import Notifications from './pages/Notifications.jsx';
 import Profile from './pages/Profile.jsx';
 import { ToastProvider } from './student/components/toast.jsx';
-import { I18nProvider } from './i18n/index.jsx';
+import './i18n.js'; // i18next konfiguratsiyasi
+import { useTranslation } from 'react-i18next';
 import StudentArea from './student/StudentArea.jsx';
 import StudentLayout from './student/components/Layout.jsx';
 import StudentHome from './student/pages/Home.jsx';
@@ -30,6 +31,7 @@ import StudentShop from './student/pages/Shop.jsx';
 import StudentLeaderboard from './student/pages/Leaderboard.jsx';
 import StudentAnnouncements from './student/pages/Announcements.jsx';
 import StudentChat from './student/pages/Chat.jsx';
+import LanguageSwitcher from './components/LanguageSwitcher.jsx';
 
 function Protected({ children }) {
   const { token } = useAuth();
@@ -72,7 +74,6 @@ export default function App() {
   if (loading) return <Splash />;
 
   return (
-    <I18nProvider>
       <ErrorBoundary>
         <Routes>
           <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
@@ -141,7 +142,6 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </ErrorBoundary>
-    </I18nProvider>
+       </ErrorBoundary>
   );
 }

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import ru from './ru.js';
 import uz from './uz.js';
+import en from './en.js';
 
 /**
  * I18n кабинета ученика.
@@ -17,10 +18,11 @@ import uz from './uz.js';
 export const LANGS = [
   { code: 'ru', label: 'Русский', short: 'RU' },
   { code: 'uz', label: "O'zbekcha", short: 'UZ' },
+  { code: 'en', label: 'English', short: 'EN' },
 ];
 export const DEFAULT_LANG = 'ru';
 const KEY = 'member_lang';
-const DICTS = { ru, uz };
+const DICTS = { ru, uz, en };
 
 const I18nCtx = createContext(null);
 

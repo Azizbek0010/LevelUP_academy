@@ -4,6 +4,7 @@ import { LANGS, canonicalPath, dictOf, localizePath, useLang, useLocalizePath, u
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const close = () => setOpen(false);
   const t = useT();
   const lang = useLang();

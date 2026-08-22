@@ -3,7 +3,7 @@ import { Landmark, Coins, Percent, Receipt, Download } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
 import { Metric, Card, MonthSelect } from './_ui.jsx';
-import { useTranslation } from "react-i18next";
+import { useT } from './_i18n.jsx';
 import { BRANCHES, MONTHS, CURRENT_MONTH, monthRow, MONTH_LABEL, taxCalc } from './_data.js';
 
 const rowFor = (b, mk) => {

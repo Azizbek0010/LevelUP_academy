@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, LogOut, ChevronDown, Globe } from 'lucide-react';
+import { User as UserIcon, LogOut, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Avatar from './Avatar.jsx';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
 
 /**
  * Shared User Menu Modal component.
@@ -9,6 +11,7 @@ import Avatar from './Avatar.jsx';
  * similar to the branch-manager pattern.
  */
 export default function UserMenu({ user, role, roleTitle, onLogout, langSwitch: LangSwitch }) {
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
   const ref = useRef(null);
   const navigate = useNavigate();
@@ -66,11 +69,9 @@ export default function UserMenu({ user, role, roleTitle, onLogout, langSwitch: 
 
           <div className="p-1.5 space-y-1">
             {/* Language Switcher integrated into the menu */}
-            {LangSwitch && (
-              <div className="px-1 py-1">
-                <LangSwitch />
-              </div>
-            )}
+            <div className="px-1 py-1">
+              <LanguageSwitcher />
+            </div>
             
             <div className="border-t border-[var(--border)] my-1" />
 
@@ -82,7 +83,7 @@ export default function UserMenu({ user, role, roleTitle, onLogout, langSwitch: 
                 <span className="w-8 h-8 rounded-lg bg-base-200 grid place-items-center shrink-0 group-hover:bg-primary/10 transition-colors">
                   <UserIcon size={16} />
                 </span>
-                <span>Mening profilim</span>
+                <span>{t('common.myProfile')}</span>
               </button>
             )}
 
@@ -93,7 +94,7 @@ export default function UserMenu({ user, role, roleTitle, onLogout, langSwitch: 
               <span className="w-8 h-8 rounded-lg bg-error/10 grid place-items-center shrink-0 group-hover:bg-error/20 transition-colors">
                 <LogOut size={16} />
               </span>
-              <span>Chiqish</span>
+              <span>{t('common.logout')}</span>
             </button>
           </div>
         </div>
