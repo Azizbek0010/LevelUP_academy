@@ -6,26 +6,16 @@ import { Search, Inbox, X, ArrowRight, ArrowUpRight, ArrowDownRight } from 'luci
 /**
  * Общие кирпичики панели SEO.
  *
- * Из 15 страниц только 3 сидели на ../mentor/_ui.jsx, остальные 12 писали
- * карточки/поиск/пустоты/модалки руками — набралось 5 форм KPI-плитки,
- * 5 вариантов поиска, 7 inline-пустот, 5 сырых `modal modal-open`, 4 группы
- * фильтр-пилюль и два несовместимых Avatar (один из них — с живым багом).
- *
- * Это НЕ дубликат мент кита — сюда сознательно не тащится ../mentor/_ui.jsx,
- * потому что общий кит означает, что любая правка стиля здесь молча
- * перекрашивает админ-панель, пока там идёт чужая работа (Abduloh,
- * frontend/staff/src/pages/admin/*). Дублирование — временная цена; выход —
- * `git mv` в src/components/ui.jsx и панель-за-панелью миграция ПОСЛЕ того,
- * как чужая работа в admin/ смёржена.
- *
- * Карточка не использует DaisyUI-класс `card` — у него в index.css глобальная
- * тень (0 10px 28px), а здесь нужен вид «рамка, тень почти нулевая». Обходим
- * без правки index.css и без shadow-none на полусотне мест: свой контейнер.
+ * Card, Panel, Metric — оставлены для обратной совместимости с другими страницами super/.
+ * Новые строгие компоненты (DashboardPanel, KpiCard, BranchesTable, AnalyticsCTA)
+ * находятся в src/components/ui.jsx.
  */
 
-/* ── Карточка ────────────────────────────────────────────────────────── */
+/* ── Карточка — тот же плоский DaisyUI-паттерн, что в Main Admin
+   (card bg-base-100 border shadow-sm; радиус — токен темы --rounded-box,
+   уже выровненный с main-admin в tailwind.config.js, Karis 13.08.2026) ── */
 export function Card({ className = '', children }) {
-  return <div className={`rounded-2xl border border-base-300 bg-base-100 ${className}`}>{children}</div>;
+  return <div className={`card bg-base-100 border border-base-300 shadow-sm ${className}`}>{children}</div>;
 }
 
 /* ── Карточка с заголовком-секцией ──────────────────────────────────────
@@ -86,14 +76,8 @@ export function PageHead({ breadcrumbs, avatar, title, subtitle, children }) {
   );
 }
 
-/* ── Метрика ─────────────────────────────────────────────────────────────
-   Плитка жила в 4 формах (Dashboard.Kpi с сырым hex tint, Stats.KpiCard +
-   отдельный DeltaChip, Reminders.StatCard, Attendance.StatCard) плюс 7 копий
-   inline-«пилюли» в Groups/Students. Тон — по смыслу токена темы, не по hex.
-   `size="sm"` — та самая пилюля (узкая строка), `size="md"` (по умолчанию) —
-   полная карточка. `delta` опционален и не рендерится, если данных нет —
-   ни один эндпоинт сегодня дельту не отдаёт, постоянная дыра в карточке не
-   нужна. */
+/* ── Метрика (legacy) ────────────────────────────────────────────────────
+   Используется в других страницах super/. Новый строгий KpiCard — в components/ui.jsx. */
 const METRIC_TONES = {
   primary: 'bg-primary/10 text-primary',
   info: 'bg-info/10 text-info',
@@ -122,17 +106,17 @@ export function Metric({ Icon, tone = 'primary', label, value, unit, to, delta, 
       {deltaEl}
     </div>
   ) : (
-    <div className="p-5 md:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <span className={`w-11 h-11 rounded-xl grid place-items-center shrink-0 ${toneCls}`}>
-          <Icon size={20} strokeWidth={2.2} />
+    <div className="p-4">
+      <div className="flex items-center gap-2.5">
+        <span className={`w-8 h-8 rounded-lg grid place-items-center shrink-0 ${toneCls}`}>
+          <Icon size={16} strokeWidth={2.2} />
         </span>
-        {to && <ArrowRight size={16} className="text-base-content/25 shrink-0" />}
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
+          {label}
+        </span>
+        {to && <ArrowRight size={14} className="ml-auto text-base-content/25 shrink-0" />}
       </div>
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mt-4">
-        {label}
-      </div>
-      <div className="flex items-end justify-between gap-2 mt-1">
+      <div className="flex items-end justify-between gap-2 mt-3">
         <div className="text-3xl font-extrabold leading-none tabular-nums">{value}</div>
         {deltaEl}
       </div>
@@ -140,8 +124,10 @@ export function Metric({ Icon, tone = 'primary', label, value, unit, to, delta, 
     </div>
   );
 
-  const cls = `rounded-2xl border border-base-300 bg-base-100${
-    to ? ' block transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40' : ''
+  // Тот же плоский паттерн, что в Main Admin (card bg-base-100 border shadow-sm,
+  // радиус — токен темы) — Karis, 13.08.2026: "main admin desingiga o'hshasin".
+  const cls = `card bg-base-100 border border-base-300 shadow-sm${
+    to ? ' transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40' : ''
   }`;
 
   if (to) return <Link to={to} className={cls}>{body}</Link>;
@@ -209,7 +195,7 @@ export function StatusBadge({ tone = 'neutral', outline = false, children }) {
 export function EmptyState({ icon: Icon = Inbox, title, hint, action }) {
   return (
     <div className="flex flex-col items-center justify-center text-center px-6 py-14">
-      <span className="w-14 h-14 rounded-2xl bg-base-200 text-base-content/35 grid place-items-center mb-4">
+      <span className="w-14 h-14 rounded-lg bg-base-200 text-base-content/35 grid place-items-center mb-4">
         <Icon size={26} />
       </span>
       <p className="text-sm font-semibold text-base-content/70">{title}</p>
@@ -301,11 +287,11 @@ export function Dropdown({ trigger, children, align = 'right' }) {
   }, [open]);
 
   return (
-    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+    <div ref={ref} className="relative z-[70]" onClick={(e) => e.stopPropagation()}>
       {trigger(() => setOpen((v) => !v))}
       {open && (
         <div
-          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1 z-50 min-w-[190px] rounded-[12px] border border-base-300 bg-base-100 shadow-lg py-1.5 animate-scale-in origin-top-right`}
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-2 z-[80] min-w-[220px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-xl py-1.5 animate-scale-in origin-top-right`}
         >
           {typeof children === 'function' ? children(() => setOpen(false)) : children}
         </div>

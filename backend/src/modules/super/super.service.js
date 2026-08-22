@@ -3,10 +3,64 @@ import { AppError } from '../../utils/AppError.js';
 import { planLimits } from '../../config/plans.js';
 import { logger } from '../../config/logger.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
+import { sendToGroupParentChat } from '../telegram/groupNotify.js';
 import { genTempPassword } from '../auth/credentials.js';
 import { withTransaction } from '../../config/db.js';
 import { isOrgAccessBlocked } from '../../shared/orgAccess.js';
+import { parsePagination, buildPageMeta } from '../../utils/pagination.js';
 import * as repo from './super.repository.js';
+import { getDownloadUrl } from '../../config/s3.js';
+
+// ---------- расходы организации ----------
+
+export async function createExpense(orgId, actorId, body) {
+  if (body.branchId) {
+    const branch = await repo.findBranchInOrg(body.branchId, orgId);
+    if (!branch) throw new AppError(404, 'Branch not found in your organization');
+  }
+  return mapOrgExpense(await repo.insertOrgExpense({
+    orgId, branchId: body.branchId, category: body.category, amount: body.amount,
+    spentAt: body.spentAt, note: body.note, createdBy: actorId,
+  }));
+}
+
+export async function listExpenses(orgId, query) {
+  const organizationOnly = query.branchId === 'organization';
+  const branchId = organizationOnly ? null : query.branchId;
+  if (branchId) {
+    const branch = await repo.findBranchInOrg(branchId, orgId);
+    if (!branch) throw new AppError(404, 'Branch not found in your organization');
+  }
+  const { page, limit, offset } = parsePagination(query);
+  const filter = { orgId, branchId, organizationOnly, from: query.from, to: query.to };
+  const [rows, total] = await Promise.all([
+    repo.listOrgExpenses({ ...filter, limit, offset }), repo.countOrgExpenses(filter),
+  ]);
+  return { expenses: rows.map(mapOrgExpense), meta: buildPageMeta(total, page, limit) };
+}
+
+export async function updateExpense(orgId, expenseId, body) {
+  const expense = await repo.findExpenseInOrg(expenseId, orgId);
+  if (!expense) throw new AppError(404, 'Expense not found in your organization');
+  const row = await repo.updateOrgExpense(expenseId, orgId, body);
+  return mapOrgExpense(row);
+}
+
+export async function deleteExpense(orgId, expenseId) {
+  const expense = await repo.findExpenseInOrg(expenseId, orgId);
+  if (!expense) throw new AppError(404, 'Expense not found in your organization');
+  await repo.softDeleteOrgExpense(expenseId, orgId);
+}
+
+function mapOrgExpense(row) {
+  return {
+    id: row.id, branchId: row.branch_id, branchName: row.branch_name ?? null,
+    scope: row.branch_id ? 'branch' : 'organization', category: row.category,
+    amount: Number(row.amount), spentAt: row.spent_at, note: row.note,
+    createdBy: row.created_by_first ? `${row.created_by_first} ${row.created_by_last}` : undefined,
+    createdAt: row.created_at,
+  };
+}
 
 // ---------- филиалы ----------
 
@@ -479,7 +533,9 @@ export async function listGroups(orgId) {
       subject: g.subject,
       monthlyPrice: Number(g.monthly_price),
       schedule: g.schedule,
-      lessonDays: g.schedule,
+      lessonDays: Array.isArray(g.schedule)
+        ? g.schedule.map((slot) => (typeof slot === 'string' ? slot : slot?.day)).filter(Boolean)
+        : [],
       room: g.room,
       isArchived: g.is_archived,
       branchName: g.branch_name,
@@ -563,29 +619,56 @@ function mapAnnouncement(a) {
     recipientCount: Number(a.recipient_count),
     readCount: 0, // пометок «прочитано» в системе пока нет
     senderName: a.sender_name ?? null,
+    senderRole: a.sender_role ?? null,
+    branchId: a.branch_id ?? null,
+    branchName: a.branch_name ?? null,
+    expiresAt: a.expires_at ?? null,
+    imageUrl: a.image_url ?? null,
+    imageKey: a.image_key ?? null,
     readers: [],
     nonReaders: [],
     createdAt: a.created_at,
   };
 }
 
-export async function listAnnouncements(orgId) {
-  const rows = await repo.listAnnouncements(orgId);
-  const items = rows.map(mapAnnouncement);
+export async function listAnnouncements(orgId, branchId = null) {
+  const rows = await repo.listAnnouncements(orgId, branchId);
+  const items = await Promise.all(rows.map(async (row) => {
+    const item = mapAnnouncement(row);
+    if (item.imageKey) item.imageUrl = await getDownloadUrl(item.imageKey, 3600).catch(() => null);
+    return item;
+  }));
   return { items, announcements: items, total: items.length };
 }
 
-export async function createAnnouncement(orgId, senderId, { title, body, targetType }) {
-  const recipientCount = await repo.countAnnouncementRecipients(orgId, targetType);
-  const row = await repo.insertAnnouncement({ orgId, senderId, title, body, targetType, recipientCount });
+export async function createAnnouncement(orgId, senderId, { title, body, targetType, branchId = null, expiresAt, imageUrl = null, imageKey = null }) {
+  if (branchId && !(await repo.findBranchInOrg(branchId, orgId))) {
+    throw new AppError(404, 'Branch not found in your organization');
+  }
+  if (new Date(expiresAt).getTime() <= Date.now()) throw new AppError(422, 'Announcement end time must be in the future');
+  const recipientCount = await repo.countAnnouncementRecipients(orgId, targetType, branchId);
+  const row = await repo.insertAnnouncement({ orgId, senderId, title, body, targetType, recipientCount, branchId, expiresAt, imageUrl, imageKey });
+  const deliveryImageUrl = imageKey ? await getDownloadUrl(imageKey, 86400).catch(() => null) : imageUrl;
 
   // Telegram-доставка только для аудиторий, у которых есть привязка бота
   // (родители/студенты). Сотрудники получают объявление как внутреннюю запись.
-  if (targetType === 'all-parents' || targetType === 'all-students') {
-    const studentIds = await repo.orgActiveStudentIds(orgId);
+  if (targetType === 'all-parents' || targetType === 'all-students' || targetType === 'all-families') {
+    const studentIds = await repo.orgActiveStudentIds(orgId, branchId);
     if (studentIds.length > 0) {
-      await notificationQueue.add('announcement.created', { studentIds, title, message: body });
+      const roles = targetType === 'all-students' ? ['student']
+        : targetType === 'all-parents' ? ['parent'] : ['student', 'parent'];
+      // Redis/queue availability must never keep the create HTTP request spinning.
+      void notificationQueue.add('announcement.created', { studentIds, title, message: body, roles })
+        .catch((err) => logger.error({ err }, 'Failed to enqueue announcement notification'));
     }
+  }
+
+  // Every learning group owns its own parents Telegram chat. Announcements are
+  // broadcast to the linked group chats inside the selected branch scope.
+  if (['all-parents', 'all-students', 'all-families'].includes(targetType)) {
+    const groupIds = await repo.organizationGroupIds(orgId, branchId);
+    const telegramText = `<b>${title}</b>\n\n${body}`;
+    void Promise.allSettled(groupIds.map((id) => sendToGroupParentChat(id, telegramText, deliveryImageUrl)));
   }
 
   return mapAnnouncement(row);
@@ -657,7 +740,7 @@ export async function stats(orgId, period = '30d', branchId = null) {
 
   const [t, branches, series, methods] = await Promise.all([
     repo.orgTotals(orgId, branchId),
-    repo.branchBreakdown(orgId),
+    repo.branchBreakdown(orgId, from),
     isMonthly ? repo.revenueSeriesMonthly(orgId, from, branchId) : repo.revenueSeries(orgId, from, branchId),
     repo.revenueByMethod(orgId, from, branchId),
   ]);
@@ -670,15 +753,38 @@ export async function stats(orgId, period = '30d', branchId = null) {
      Считаем по уже полученному ряду по дням — лишнего запроса в базу нет. */
   const periodRevenue = series.reduce((sum, r) => sum + Number(r.revenue), 0);
 
-  // дельта месяц-к-месяцу — только для 12m, только по двум последним точкам ряда
+  /* Дельта месяц-к-месяцу (только 12m). Karis 22.08.2026 — было две ошибки:
+     1) брались две ПОСЛЕДНИЕ ТОЧКИ РЯДА, а ряд приходит из GROUP BY month и
+        месяцы без единой оплаты в нём просто отсутствуют. Если в июле не было
+        ни одной транзакции, [июнь, август] давали «август к июню», подписанное
+        как «месяц к месяцу». Теперь месяцы берутся по календарю явно.
+     2) при единственной точке prev падал в 0 и отдавался рост «+100%» — против
+        месяца, которого в данных нет вообще. Рост от нуля не определён: pct =
+        null, а не выдуманная сотня (абсолютную дельту при этом отдаём — она
+        честная). */
   let momDelta = null;
   let momDeltaPct = null;
-  if (isMonthly && series.length >= 1) {
-    const last = Number(series[series.length - 1]?.revenue ?? 0);
-    const prev = Number(series[series.length - 2]?.revenue ?? 0);
+  if (isMonthly) {
+    const monthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const now = new Date();
+    const byMonth = new Map(
+      series.map((s) => [monthKey(new Date(s.month ?? s.day)), Number(s.revenue)]),
+    );
+    const last = byMonth.get(monthKey(now)) ?? 0;
+    const prev = byMonth.get(monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1))) ?? 0;
     momDelta = last - prev;
-    momDeltaPct = prev > 0 ? Number((((last - prev) / prev) * 100).toFixed(1)) : (last > 0 ? 100 : 0);
+    momDeltaPct = prev > 0 ? Number((((last - prev) / prev) * 100).toFixed(1)) : null;
   }
+
+  /* Доля филиала считается от суммы выручки филиалов ЗА ТОТ ЖЕ ПЕРИОД.
+     Karis 22.08.2026 — раньше делили на totals.revenue, а это выручка за ВСЁ
+     ВРЕМЯ (orgTotals без даты), тогда как b.revenue приходит из
+     branchBreakdown(orgId, from), т.е. за период. Доли не складывались в 100%
+     (живая проверка: 37.5% + 9.4% = 46.9%), и чем старше организация — тем
+     сильнее занижались. Сумма по самим филиалам самосогласована по определению
+     и не ломается при ?branchId= (orgTotals сужается по филиалу, а список
+     филиалов намеренно остаётся полным — см. комментарий выше). */
+  const branchesRevenueTotal = branches.reduce((sum, b) => sum + Number(b.revenue), 0);
 
   return {
     period,
@@ -706,8 +812,10 @@ export async function stats(orgId, period = '30d', branchId = null) {
       admins: Number(b.admins),
       // доля филиала в выручке организации — раньше жила только в /super/reports;
       // Отчёты слиты в Статистику 2026-07-28 (была одна и та же выборка на двух
-      // страницах), поле переехало сюда.
-      share: revenue > 0 ? Number(((Number(b.revenue) / revenue) * 100).toFixed(1)) : 0,
+      // страницах), поле переехало сюда. Делитель — см. branchesRevenueTotal.
+      share: branchesRevenueTotal > 0
+        ? Number(((Number(b.revenue) / branchesRevenueTotal) * 100).toFixed(1))
+        : 0,
     })),
     revenueSeries: series.map((s) => ({ date: s.day ?? s.month, revenue: Number(s.revenue) })),
     paymentMethods: methods.map((m) => ({ method: m.method, amount: Number(m.amount) })),
@@ -839,6 +947,73 @@ export async function listBranchManagers(orgId) {
     phone: u.phone,
     createdAt: u.created_at,
   }));
+}
+
+export async function updateMentorGrade(orgId, mentorId, grade, setBy) {
+  const row = await repo.updateMentorGrade(orgId, mentorId, grade, setBy);
+  if (!row) throw new AppError(404, 'Mentor not found in your organization');
+  return { id: row.user_id, grade: row.grade, gradeSetAt: row.grade_set_at };
+}
+
+export async function updateMentorBranch(orgId, mentorId, branchId) {
+  if (!(await repo.findBranchInOrg(branchId, orgId))) throw new AppError(404, 'Branch not found in your organization');
+  return withTransaction(async (client) => {
+    const mentor = await repo.moveMentorToBranch(orgId, mentorId, branchId, client);
+    if (!mentor) throw new AppError(404, 'Mentor not found in your organization');
+    const detached = await repo.detachMentorOldBranchGroups(mentorId, branchId, client);
+    return { id: mentor.id, branchId: mentor.branch_id, detachedGroups: detached.length };
+  });
+}
+
+export async function createMentor(orgId, body) {
+  if (!(await repo.findBranchInOrg(body.branchId, orgId))) throw new AppError(404, 'Branch not found in your organization');
+  return adminService.createMentor(
+    { organizationId: orgId, branchId: body.branchId },
+    { firstName: body.firstName, lastName: body.lastName, email: body.email, phone: body.phone },
+  );
+}
+
+const mapEmployee = (u) => ({
+  id: u.id, firstName: u.first_name, lastName: u.last_name, email: u.email,
+  branchId: u.branch_id, branchName: u.branch_name, phone: u.phone, jobTitle: u.job_title,
+  monthlySalary: u.monthly_salary == null ? null : Number(u.monthly_salary), status: u.status, createdAt: u.created_at,
+});
+
+export async function createEmployee(orgId, body) {
+  if (!(await repo.findBranchInOrg(body.branchId, orgId))) throw new AppError(404, 'Branch not found in your organization');
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
+  try {
+    const employee = await repo.insertEmployee({ orgId, ...body, passwordHash });
+    return { ...mapEmployee(employee), tempPassword };
+  } catch (err) {
+    if (err.code === '23505') throw new AppError(409, 'Email already in use');
+    throw err;
+  }
+
+}
+
+export async function listEmployees(orgId) { return (await repo.listEmployees(orgId)).map(mapEmployee); }
+
+export async function updateEmployee(orgId, id, body) {
+  if (body.branchId && !(await repo.findBranchInOrg(body.branchId, orgId))) throw new AppError(404, 'Branch not found in your organization');
+  const employee = await repo.updateEmployee(id, orgId, body);
+  if (!employee) throw new AppError(404, 'Employee not found');
+  return mapEmployee(employee);
+}
+
+export async function setEmployeeFrozen(orgId, id, frozen) {
+  const employee = await repo.setEmployeeStatus(id, orgId, frozen ? 'frozen' : 'active');
+  if (!employee) throw new AppError(404, 'Employee not found');
+  return mapEmployee(employee);
+}
+
+export async function resetEmployeePassword(orgId, id) {
+  const tempPassword = genTempPassword();
+  const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
+  const employee = await repo.setEmployeePasswordHash(id, orgId, passwordHash);
+  if (!employee) throw new AppError(404, 'Employee not found');
+  return { ...mapEmployee(employee), tempPassword };
 }
 
 export async function updateBranchManager(orgId, id, fields) {

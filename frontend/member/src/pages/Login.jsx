@@ -88,8 +88,16 @@ export default function Login() {
             setTgWaiting(false);
             setError(t('login.error.tgExpired'));
           }
-        } catch {
-          // Разовый сбой сети не должен обрывать ожидание — следующий тик повторит.
+        } catch (err) {
+          // err.status есть только у настоящего ответа сервера (4xx/5xx) — значит
+          // nonce подтверждён, но вход не удался (например бэкенд недоступен из-за
+          // Redis) — nonce на сервере уже одноразово использован, повторный опрос
+          // бессмыслен. Без .status — обрыв сети/таймаут fetch, тик просто повторится.
+          if (err?.status) {
+            clearInterval(pollTimer.current);
+            setTgWaiting(false);
+            setError(err.message || 'Telegram orqali kirib bo‘lmadi — keyinroq urinib ko‘ring');
+          }
         }
       }, 2000);
     } catch (err) {

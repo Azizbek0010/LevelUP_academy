@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   User, Shield, CreditCard, Building2, GraduationCap, Wallet,
   Info, ExternalLink, GitBranch, TrendingUp,
-  Settings2, Pencil, LogOut, Megaphone, Check,
+  Settings2, Pencil, LogOut, Megaphone, Check, HardDrive,
 } from 'lucide-react';
 import { useDashboard, usePricing } from '../queries.js';
 import { useAuth } from '../auth.jsx';
@@ -395,6 +395,7 @@ export default function Settings() {
               { to: '/revenue', Icon: TrendingUp, title: 'Доход', desc: 'Наш счёт партнёрам' },
               { to: '/billing', Icon: Wallet, title: 'Тарифы', desc: 'Бакеты по числу пользователей' },
               { to: '/announcements', Icon: Megaphone, title: 'Анонсы', desc: 'Сообщения партнёрам' },
+              { to: '/video-storage', Icon: HardDrive, title: 'Хранение видео', desc: 'Расход на Storj за видео-файлы тем' },
             ].map(({ to, Icon, title, desc }) => (
               <Link
                 key={to}

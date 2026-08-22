@@ -9,6 +9,7 @@ import { sendMail } from '../../config/mailer.js';
 import { logger } from '../../config/logger.js';
 import { AppError } from '../../utils/AppError.js';
 import { isOrgAccessBlocked } from '../../shared/orgAccess.js';
+import { isFeatureEnabledForOrg } from '../../shared/orgFeatures.js';
 import * as repo from './auth.repository.js';
 import { buildOtpEmail } from './otpEmail.js';
 
@@ -63,14 +64,31 @@ function generateRefreshToken() {
   return { token, hash };
 }
 
-function publicUser(u) {
+/**
+ * `orgFeatures` (Karis, 13.08.2026): фронты держат этот объект в auth-контексте
+ * с самого логина, чтобы прятать Shop/Telegram в sidebar без отдельного
+ * похода на сервер. main_admin (без organization_id) — оба false, ему это
+ * не показывается нигде.
+ */
+async function publicUser(u) {
+  const orgId = u.organization_id ?? null;
+  const [shop, telegramIntegration, parentPanel] = orgId
+    ? await Promise.all([
+        isFeatureEnabledForOrg(orgId, 'shop'),
+        isFeatureEnabledForOrg(orgId, 'telegram_integration'),
+        isFeatureEnabledForOrg(orgId, 'parent_panel'),
+      ])
+    : [false, false, false];
+
   return {
     id: u.id,
     role: u.role,
-    organizationId: u.organization_id ?? null,
+    organizationId: orgId,
     branchId: u.branch_id ?? null,
     firstName: u.first_name,
     lastName: u.last_name,
+    preferredLanguage: u.preferred_language ?? null,
+    orgFeatures: { shop, telegramIntegration, parentPanel },
   };
 }
 
@@ -105,7 +123,7 @@ export async function login({ login, password }, allowedRoles = null) {
   }
   await assertOrgAccessible(user);
   const tokens = await issueTokens(user);
-  return { user: publicUser(user), ...tokens };
+  return { user: await publicUser(user), ...tokens };
 }
 
 /**
@@ -128,7 +146,7 @@ export async function loginByUserId(userId, allowedRoles = null) {
   await assertOrgAccessible(user);
 
   const tokens = await issueTokens(user);
-  return { user: publicUser(user), ...tokens };
+  return { user: await publicUser(user), ...tokens };
 }
 
 // ---------- вход через Google (Firebase popup → Google id-token) ----------
@@ -160,7 +178,7 @@ export async function googleLogin({ idToken, allowedRoles = null } = {}) {
   await assertOrgAccessible(user);
 
   const tokens = await issueTokens(user);
-  return { user: publicUser(user), ...tokens };
+  return { user: await publicUser(user), ...tokens };
 }
 
 export async function refresh(presentedToken, allowedRoles = null) {
@@ -198,7 +216,7 @@ export async function refresh(presentedToken, allowedRoles = null) {
     // rotation: гасим старый токен, выдаём новую пару
     await repo.revokeRefreshToken(row.id, client);
     const tokens = await issueTokens(user, client);
-    return { user: publicUser(user), ...tokens };
+    return { user: await publicUser(user), ...tokens };
   });
 }
 

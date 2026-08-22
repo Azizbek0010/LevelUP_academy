@@ -1,35 +1,38 @@
 import { Link } from 'react-router-dom';
 import {
   Wallet, TriangleAlert, Receipt, TrendingUp, Users, GraduationCap, Clock,
-  Building2, CalendarDays, Sparkles, ChevronRight, CreditCard, Coins, BellRing,
+  Building2, CalendarDays, Sparkles, ChevronRight, CreditCard, Coins,
+  UserPlus, UserMinus,
 } from 'lucide-react';
-import { fmt, money } from '../../format.js';
+import { fmt, money, dateShort } from '../../format.js';
 import { useAdminDashboard, useAdminInvoices } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
+import { SkeletonKpis } from '../../components/Skeleton.jsx';
 import { Panel } from '../mentor/_ui.jsx';
-import { useAuth } from '../../auth.jsx';
 
+/* Компактная строка показателя: подпись + число (+ шеврон если ссылка).
+   Денсификейшн: меньше паддинги, меньше gap, меньший шрифт для подписи. */
 function StatRow({ Icon, label, value, danger, accent, to }) {
   const inner = (
     <>
-      <span className="flex items-center gap-2.5 text-[13px] text-base-content/70">
+      <span className="flex items-center gap-2 text-[12px] text-base-content/70">
         {Icon && (
-          <span className="w-7 h-7 rounded-lg grid place-items-center bg-primary/10 text-primary shrink-0">
-            <Icon size={14} />
+          <span className="w-6 h-6 rounded-lg grid place-items-center bg-primary/10 text-primary shrink-0">
+            <Icon size={12} />
           </span>
         )}
         {label}
       </span>
-      <span className="flex items-center gap-1.5 shrink-0">
-        <span className={`text-[15px] font-extrabold tabular-nums ${danger ? 'text-error' : accent ? 'text-primary' : 'text-base-content'}`}>
+      <span className="flex items-center gap-1 shrink-0">
+        <span className={`text-[14px] font-extrabold tabular-nums ${danger ? 'text-error' : accent ? 'text-primary' : 'text-base-content'}`}>
           {value}
         </span>
-        {to && <ChevronRight size={15} className="text-base-content/30" />}
+        {to && <ChevronRight size={13} className="text-base-content/30" />}
       </span>
     </>
   );
 
-  const base = 'flex items-center justify-between rounded-xl px-3.5 py-3 border transition-colors';
+  const base = 'flex items-center justify-between rounded-lg px-3 py-2 border transition-colors';
   if (to) {
     return (
       <Link to={to} className={`${base} border-base-200 hover:border-primary/40 hover:bg-primary/[0.03] group`}>
@@ -43,7 +46,6 @@ function StatRow({ Icon, label, value, danger, accent, to }) {
 export default function AdminDashboard() {
   const { data, isLoading, error } = useAdminDashboard();
   const { data: invoicesData } = useAdminInvoices();
-  const { user } = useAuth();
 
   const today = new Date().toLocaleDateString('ru-RU', {
     weekday: 'long', day: 'numeric', month: 'long',
@@ -51,13 +53,9 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-[120px] rounded-2xl bg-base-200/60 mb-6"></div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="h-[250px] rounded-2xl bg-base-200/60 col-span-1 lg:col-span-2"></div>
-          <div className="h-[250px] rounded-2xl bg-base-200/60"></div>
-        </div>
-        <div className="h-[180px] rounded-2xl bg-base-200/60"></div>
+      <div>
+        <PageHeader title="Дашборд" subtitle={today} />
+        <div className="mt-4"><SkeletonKpis /></div>
       </div>
     );
   }
@@ -66,7 +64,7 @@ export default function AdminDashboard() {
     return (
       <div>
         <PageHeader title="Дашборд" subtitle={today} />
-        <div className="alert alert-error mt-6">Ошибка загрузки: {error.message}</div>
+        <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
       </div>
     );
   }
@@ -75,97 +73,80 @@ export default function AdminDashboard() {
   const t = raw.totals || {};
   const m = raw.thisMonth || {};
 
+  /* Последние оплаты — только последние 5 */
   const payRaw = invoicesData?.data || invoicesData || {};
   const allPayments = payRaw.payments || payRaw.invoices || (Array.isArray(payRaw) ? payRaw : []);
   const recentPayments = allPayments
     .filter(p => p.status === 'paid' || p.status === 'completed')
     .slice(0, 5);
 
-  const adminName = user?.firstName || user?.first_name || user?.name || 'Admin';
-
   return (
-    <div className="space-y-6 pb-8 animate-page-enter">
+    <div className="space-y-4 pb-6 animate-page-enter">
+      <PageHeader title="Дашборд" subtitle={`Сегодня ${today} · обзор вашего филиала`} />
 
+      {/* Верхний ряд: две панели в гриде на lg, одна колонка на мобильных */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Операционные показатели — счётчики */}
+        <Panel title="Показатели филиала" icon={Building2} bodyClass="p-3 space-y-1.5">
+          <StatRow Icon={GraduationCap} label="Активные студенты" value={fmt(t.activeStudents)} accent to="/students" />
+          <StatRow Icon={Users} label="Группы" value={fmt(t.groups)} to="/groups" />
+          <StatRow Icon={Clock} label="Просроченные счета" value={fmt(t.overdueInvoices)} danger={t.overdueInvoices > 0} to="/payments" />
+        </Panel>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        <div className="xl:col-span-2 space-y-5">
-          <Panel title="Показатели филиала" icon={Building2} bodyClass="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <StatRow Icon={GraduationCap} label="Активные студенты" value={fmt(t.activeStudents)} accent to="/students" />
-              <StatRow Icon={Users} label="Группы" value={fmt(t.groups)} to="/groups" />
-              <div className="sm:col-span-2">
-                <StatRow Icon={Clock} label="Просроченные счета" value={fmt(t.overdueInvoices)} danger={t.overdueInvoices > 0} to="/payments" />
-              </div>
-            </div>
-          </Panel>
-
-          <Panel title="Последние оплаты" icon={CreditCard} bodyClass="p-4">
-            {recentPayments.length === 0 ? (
-              <p className="text-[13px] text-base-content/45 text-center py-4">Пока нет оплат</p>
-            ) : (
-              <div className="space-y-2">
-                {recentPayments.map((p) => (
-                  <Link
-                    key={p.id}
-                    to="/payments"
-                    className="flex items-center justify-between rounded-xl px-3.5 py-3 border border-base-200 hover:border-primary/40 hover:bg-primary/[0.03] transition-all hover:scale-[1.01]"
-                  >
-                    <span className="flex items-center gap-2.5 text-[13px] text-base-content/70">
-                      <span className="w-8 h-8 rounded-lg grid place-items-center bg-success/10 text-success shrink-0">
-                        <Coins size={14} />
-                      </span>
-                      <span className="truncate font-medium">{p.studentName || p.student?.fullName || 'Студент'}</span>
+        {/* Последние оплаты */}
+        <Panel title="Последние оплаты" icon={CreditCard} bodyClass="p-3 space-y-1.5">
+          {recentPayments.length === 0 ? (
+            <p className="text-[12px] text-base-content/45 text-center py-3">Пока нет оплат</p>
+          ) : (
+            <div className="space-y-1.5">
+              {recentPayments.map((p) => (
+                <Link
+                  key={p.id}
+                  to="/payments"
+                  className="flex items-center justify-between rounded-lg px-3 py-2 border border-base-200 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors"
+                >
+                  <span className="flex items-center gap-2 text-[12px] text-base-content/70">
+                    <span className="w-6 h-6 rounded-lg grid place-items-center bg-success/10 text-success shrink-0">
+                      <Coins size={12} />
                     </span>
-                    <span className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[15px] font-extrabold tabular-nums text-success">
-                        +{money(p.amount)}
-                      </span>
-                      <ChevronRight size={15} className="text-base-content/30" />
+                    <span className="truncate max-w-[180px]">{p.studentName || p.student?.fullName || 'Студент'}</span>
+                  </span>
+                  <span className="flex items-center gap-1 shrink-0">
+                    <span className="text-[14px] font-extrabold tabular-nums text-success">
+                      {money(p.amount)}
                     </span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </Panel>
-        </div>
-
-        {/* Напоминания & Месячная сводка */}
-        <div className="space-y-5">
-          <Panel title="Напоминания" icon={BellRing} bodyClass="p-4">
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 p-3 bg-warning/10 rounded-xl border border-warning/20">
-                <TriangleAlert className="w-5 h-5 text-warning shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-bold text-warning-content">Просроченные платежи</h4>
-                  <p className="text-xs text-base-content/70 mt-1 leading-relaxed">
-                    В данный момент <b>{fmt(t.overdueInvoices)}</b> счетов просрочены. Контролируйте оплаты.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3 p-3 bg-info/10 rounded-xl border border-info/20">
-                <Users className="w-5 h-5 text-info shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-bold text-info-content">Активные ученики</h4>
-                  <p className="text-xs text-base-content/70 mt-1 leading-relaxed">
-                    В филиале обучается <b>{fmt(t.activeStudents)}</b> активных учеников.
-                  </p>
-                </div>
-              </div>
+                    <ChevronRight size={13} className="text-base-content/30" />
+                  </span>
+                </Link>
+              ))}
             </div>
-          </Panel>
-
-          <Panel title="За этот месяц" icon={CalendarDays} bodyClass="p-4">
-            <div className="flex flex-col gap-3">
-              <StatRow Icon={TrendingUp} label="Доход" value={money(m.revenue)} accent />
-              <StatRow Icon={Receipt} label="Расход" value={money(m.expenses)} />
-              <div className="mt-2 pt-2 border-t border-base-200">
-                <StatRow Icon={Sparkles} label="Прибыль" value={money(m.profit)} accent={m.profit > 0} danger={m.profit < 0} />
-              </div>
-            </div>
-          </Panel>
-        </div>
+          )}
+        </Panel>
       </div>
+
+      {/* Нижняя панель: месячные финансы — компактная 3-колонка */}
+      <Panel title="За этот месяц" icon={CalendarDays} bodyClass="p-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <StatRow Icon={TrendingUp} label="Доход" value={money(m.revenue)} accent />
+          <StatRow Icon={Receipt} label="Расход" value={money(m.expenses)} />
+          <StatRow Icon={Sparkles} label="Прибыль" value={money(m.profit)} accent={m.profit > 0} danger={m.profit < 0} />
+        </div>
+      </Panel>
+
+      {/* Приход/отток учеников за этот месяц: пришло, ушло (архивировано), чистый прирост */}
+      <Panel title="Ученики за этот месяц" icon={Users} bodyClass="p-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <StatRow Icon={UserPlus} label="Пришло" value={fmt(m.newStudents)} accent to="/students" />
+          <StatRow Icon={UserMinus} label="Ушло (архив)" value={fmt(m.droppedStudents)} danger={m.droppedStudents > 0} />
+          <StatRow
+            Icon={Sparkles}
+            label="Чистый прирост"
+            value={m.netStudents > 0 ? `+${fmt(m.netStudents)}` : fmt(m.netStudents)}
+            accent={m.netStudents > 0}
+            danger={m.netStudents < 0}
+          />
+        </div>
+      </Panel>
     </div>
   );
 }

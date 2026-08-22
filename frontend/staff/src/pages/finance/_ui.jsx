@@ -4,7 +4,41 @@
    ────────────────────────────────────────────────────────────────────────── */
 import { money } from '../../format.js';
 import { LANGS, useLang } from './_i18n.jsx';
-import { PAYMENT_STATUS } from './_data.js';
+
+/* Последние N календарных месяцев, самый свежий — текущий. Раньше был жёсткий
+   список из 6 строк в _data.js — переставал работать в следующем месяце и не
+   имел смысла привязывать к "сейчас" вручную. from/to — границы месяца в
+   ISO, для query-параметров backend (listIncomeSchema/listSalariesSchema). */
+const LOCALE = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+
+export function monthOptions(lang = 'ru', count = 12) {
+  const now = new Date();
+  const out = [];
+  for (let i = 0; i < count; i += 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = d.toLocaleDateString(LOCALE[lang] ?? 'ru-RU', { month: 'long', year: 'numeric' });
+    out.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1) });
+  }
+  return out; // [текущий, …, i месяцев назад]
+}
+
+/**
+ * Границы месяца в UTC. Karis 22.08.2026 — было `new Date(y, m - 1, 1)`, то
+ * есть полночь по МЕСТНОМУ времени, а `.toISOString()` дальше переводил её в
+ * UTC. В Ташкенте (UTC+5) «1 августа 00:00» превращалось в `2026-07-31T19:00Z`:
+ * в август затягивался хвост 31 июля и терялись последние 5 часов 31 августа.
+ * Живая проверка: доход за август показывался как 7 502 030 081,63 вместо
+ * 1 502 030 081,63 — ровно на 6 млрд транзакции от 31 июля больше.
+ * Date.UTC берёт те же границы честно в UTC, и число сходится с месячным
+ * рядом в /stats, где месяц режется на стороне БД (date_trunc).
+ */
+export function monthRange(monthKey) {
+  const [y, m] = monthKey.split('-').map(Number);
+  const from = new Date(Date.UTC(y, m - 1, 1));
+  const to = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999)); // последний день месяца
+  return { from: from.toISOString(), to: to.toISOString() };
+}
 
 /* ── Переключатель языка RU/UZ/EN ── */
 export function LangSwitch() {
@@ -27,50 +61,77 @@ export function LangSwitch() {
   );
 }
 
-/* ── KPI-карточка с иконкой и подписью ── */
+/* ── KPI-карточка с иконкой и подписью ──
+   Токены и структура — те же "strict"-переменные, что у Admin/SEO дашборда
+   (index.css § DASHBOARD STRICT TOKENS, components/ui.jsx KpiCard): плоская
+   белая карточка, тонкая рамка вместо цветного ring-halo, компактная 8px
+   плашка под иконку вместо круглой rounded-xl — раньше Finance выглядела
+   заметно "мультяшнее" остальных панелей (Karis, 13.08.2026: "seryozini roq
+   qil"). */
 const TONES = {
-  success: { chip: 'bg-success/15 text-success', ring: 'ring-success/30' },
-  warning: { chip: 'bg-warning/15 text-warning', ring: 'ring-warning/30' },
-  neutral: { chip: 'bg-base-content/5 text-base-content/70', ring: 'ring-base-content/15' },
-  info:    { chip: 'bg-info/15 text-info', ring: 'ring-info/30' },
+  success: { bg: 'var(--bg-success)', fg: 'var(--success)' },
+  warning: { bg: 'var(--bg-warning)', fg: 'var(--warning)' },
+  neutral: { bg: 'var(--border-faint)', fg: 'var(--text-muted)' },
+  info:    { bg: 'var(--bg-info)',    fg: 'var(--info)' },
 };
 
 export function Metric({ Icon, label, value, sub, tone = 'neutral', trend, trendLabel }) {
-  const t = TONES[tone] ?? TONES.neutral;
+  const { bg, fg } = TONES[tone] ?? TONES.neutral;
   const up = (trend ?? 0) >= 0;
   return (
-    <div className={`rounded-2xl border border-base-300 bg-base-100 p-5 ring-4 ${t.ring} transition-shadow hover:shadow-md`}>
+    <article className="
+      bg-white
+      border border-[var(--border-subtle)]
+      rounded-[var(--radius-card)]
+      p-4 md:p-5
+      shadow-[var(--shadow-card)]
+      transition-shadow duration-200
+      hover:shadow-[var(--shadow-card-hover)]
+    ">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-base-content/50 truncate">{label}</p>
-          <p className="text-[22px] font-extrabold tracking-tight mt-1.5 text-base-content">{value}</p>
-          {sub && <p className="text-[12px] text-base-content/50 mt-1 truncate">{sub}</p>}
-        </div>
-        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${t.chip}`}>
-          <Icon size={20} />
+        <span
+          className="w-10 h-10 rounded-[var(--radius-tight)] grid place-items-center shrink-0"
+          style={{ background: bg, color: fg }}
+        >
+          <Icon size={18} strokeWidth={2.2} />
         </span>
       </div>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mt-3 truncate">
+        {label}
+      </p>
+      <p className="text-2xl font-extrabold leading-none tracking-tight tabular-nums text-[var(--text)] mt-1.5">
+        {value}
+      </p>
+      {sub && <p className="text-xs text-[var(--text-muted)] mt-1 truncate">{sub}</p>}
       {trend !== undefined && (
-        <div className="mt-3 flex items-center gap-1.5 text-[12px]">
-          <span className={`inline-flex items-center gap-0.5 font-bold ${up ? 'text-success' : 'text-error'}`}>
+        <div className="mt-2.5 flex items-center gap-1.5 text-xs">
+          <span className={`inline-flex items-center gap-0.5 font-semibold ${up ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>
             {up ? '▲' : '▼'} {Math.abs(trend)}%
           </span>
-          <span className="text-base-content/40">{trendLabel}</span>
+          {trendLabel && <span className="text-[var(--text-muted)]">{trendLabel}</span>}
         </div>
       )}
-    </div>
+    </article>
   );
 }
 
-/* ── Карточка с заголовком ── */
+/* ── Карточка с заголовком — тот же DashboardPanel-паттерн, что у Admin/SEO ── */
 export function Card({ title, subtitle, action, children, bodyClass = 'p-4', className = '' }) {
   return (
-    <section className={`rounded-2xl border border-base-300 bg-base-100 shadow-[0_1px_2px_rgba(29,36,23,0.04)] ${className}`}>
+    <section className={`
+      bg-white
+      border border-[var(--border-subtle)]
+      rounded-[var(--radius-card)]
+      shadow-[var(--shadow-card)]
+      transition-shadow duration-200
+      hover:shadow-[var(--shadow-card-hover)]
+      ${className}
+    `}>
       {(title || action) && (
-        <header className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 pb-2">
+        <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[var(--border-faint)]">
           <div>
-            <h3 className="text-[15px] font-bold text-base-content">{title}</h3>
-            {subtitle && <p className="text-[12px] text-base-content/50 mt-0.5">{subtitle}</p>}
+            <h3 className="text-sm font-semibold text-[var(--text)]">{title}</h3>
+            {subtitle && <p className="text-xs text-[var(--text-muted)] mt-0.5">{subtitle}</p>}
           </div>
           {action}
         </header>
@@ -78,32 +139,6 @@ export function Card({ title, subtitle, action, children, bodyClass = 'p-4', cla
       <div className={bodyClass}>{children}</div>
     </section>
   );
-}
-
-/* ── Badge статуса платежа ── */
-export function StatusBadge({ status }) {
-  const meta = PAYMENT_STATUS[status] ?? { label: status, cls: 'badge-ghost' };
-  return <span className={`badge badge-sm ${meta.cls}`}>{meta.label}</span>;
-}
-
-/* ── Badge метода оплаты (карта / наличные / гибрид) ── */
-const METHOD_META = {
-  Karta:  { cls: 'badge-info',    icon: '💳' },
-  Naqd:   { cls: 'badge-success', icon: '💵' },
-  Hybrid: { cls: 'badge-warning', icon: '🔀' },
-};
-
-export function MethodBadge({ method, t }) {
-  const meta = METHOD_META[method] ?? { cls: 'badge-ghost', icon: '' };
-  const key = method === 'Karta' ? 'method.karta' : method === 'Naqd' ? 'method.naqd' : 'method.hybrid';
-  return <span className={`badge badge-sm gap-1 ${meta.cls}`}><span className="text-[11px]">{meta.icon}</span>{t?.(key) ?? method}</span>;
-}
-
-/* ── Badge плановости расхода ── */
-export function PlannedBadge({ planned, t }) {
-  return planned
-    ? <span className="badge badge-sm badge-ghost">{t('expenses.planned')}</span>
-    : <span className="badge badge-sm badge-error gap-1">⚠ {t('expenses.unplanned')}</span>;
 }
 
 /* ── Селекты филиала и месяца ── */

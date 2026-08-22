@@ -23,6 +23,8 @@ import {
   createQuestionsBatchSchema,
   copyLessonSchema,
   lessonUploadUrlQuery,
+  topicVideoUploadUrlQuery,
+  confirmTopicVideoSchema,
   trainingTypeIdParam,
   topicIdParam,
   lessonIdParam,
@@ -284,6 +286,116 @@ router.patch('/topics/:id', validate({ params: idParam, body: updateTopicSchema 
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.post('/topics/:id/archive', validate({ params: idParam }), ctrl.archiveTopic);
+
+/**
+ * @openapi
+ * /api/methodist/topics/{id}/video/upload-url:
+ *   get:
+ *     tags: [Methodist]
+ *     summary: Presigned S3 upload url for a topic's video FILE (alternative to a YouTube videoUrl)
+ *     description: >
+ *       Возвращает presigned PUT url + fileKey. Клиент грузит файл на uploadUrl,
+ *       затем регистрирует его через POST /topics/{id}/video { fileKey, durationSec? }.
+ *       Ссылка и файл взаимоисключающие — регистрация файла чистит videoUrl темы.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *       - in: query
+ *         name: filename
+ *         required: true
+ *         schema: { type: string, maxLength: 255 }
+ *       - in: query
+ *         name: contentType
+ *         required: false
+ *         schema: { type: string, maxLength: 150 }
+ *     responses:
+ *       200:
+ *         description: Presigned upload url
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     uploadUrl: { type: string, format: uri }
+ *                     fileKey: { type: string }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get(
+  '/topics/:id/video/upload-url',
+  validate({ params: idParam, query: topicVideoUploadUrlQuery }),
+  ctrl.getTopicVideoUploadUrl,
+);
+
+/**
+ * @openapi
+ * /api/methodist/topics/{id}/video:
+ *   post:
+ *     tags: [Methodist]
+ *     summary: Register an uploaded video file for a topic (call AFTER the presigned PUT succeeds)
+ *     description: >
+ *       Размер файла определяется на сервере (HeadObject на Storj), не по тому,
+ *       что прислал клиент. Стоимость хранения/просмотра считается тут же, но
+ *       НЕ возвращается в ответе — эта цифра видна только Main Admin.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [fileKey]
+ *             properties:
+ *               fileKey: { type: string }
+ *               durationSec: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Topic with the video file registered
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Topic' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ *   delete:
+ *     tags: [Methodist]
+ *     summary: Remove the topic's video file (does not touch videoUrl, which is already null while a file is set)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { $ref: '#/components/parameters/IdParam' }
+ *     responses:
+ *       200:
+ *         description: Topic with the video file cleared
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data: { $ref: '#/components/schemas/Topic' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
+router.post(
+  '/topics/:id/video',
+  validate({ params: idParam, body: confirmTopicVideoSchema }),
+  ctrl.confirmTopicVideo,
+);
+router.delete('/topics/:id/video', validate({ params: idParam }), ctrl.clearTopicVideoFile);
 
 /**
  * @openapi

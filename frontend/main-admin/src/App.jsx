@@ -14,6 +14,7 @@ import Revenue from './pages/Revenue.jsx';
 import Settings from './pages/Settings.jsx';
 import Announcements from './pages/Announcements.jsx';
 import Features from './pages/Features.jsx';
+import VideoStorage from './pages/VideoStorage.jsx';
 
 function BootGate({ children }) {
   const { token, loading } = useAuth();
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/revenue" element={<Revenue />} />
           <Route path="/features" element={<Features />} />
+          <Route path="/video-storage" element={<VideoStorage />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

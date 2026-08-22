@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { validate } from '../../../middlewares/validate.js';
 import { archiveGuard } from '../../../middlewares/archiveGuard.js';
 import * as ctrl from './shop-admin.controller.js';
-import { itemIdParam, orderIdParam, restockItemSchema, listOrdersQuery } from './shop-admin.schemas.js';
+import { itemIdParam, orderIdParam, restockItemSchema, listOrdersQuery, createBranchShopItemSchema } from './shop-admin.schemas.js';
 
 /**
  * K-SHOP (branch) — смонтирован в admin.routes.js под /shop, authenticate +
@@ -26,6 +26,7 @@ const router = Router();
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
 router.get('/items', ctrl.listBranchItems);
+router.post('/items', validate({ body: createBranchShopItemSchema }), ctrl.createBranchItem);
 
 /**
  * @openapi

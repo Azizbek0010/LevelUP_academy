@@ -25,6 +25,11 @@ export function useRevenue() {
   return useAuthedQuery(['revenue'], () => api.revenue(token));
 }
 
+export function useVideoStorageCosts() {
+  const { token } = useAuth();
+  return useAuthedQuery(['videoStorageCosts'], () => api.videoStorageCosts(token));
+}
+
 export function useProfile() {
   const { token } = useAuth();
   return useAuthedQuery(['profile'], () => api.getProfile(token), { select: (d) => d.profile });

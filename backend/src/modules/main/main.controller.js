@@ -79,6 +79,10 @@ export const createExpense = asyncHandler(async (req, res) => {
   res.status(201).json({ expense: await service.createExpense(req.body, req.user.id) });
 });
 
+export const videoStorageCosts = asyncHandler(async (_req, res) => {
+  res.json(await service.videoStorageCosts());
+});
+
 export const deleteExpense = asyncHandler(async (req, res) => {
   res.json(await service.deleteExpense(req.params.id));
 });

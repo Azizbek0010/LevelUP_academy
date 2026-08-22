@@ -5,7 +5,7 @@ import { validate } from '../../middlewares/validate.js';
 import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
 import * as ctrl from './users.controller.js';
 import * as discipline from '../discipline/discipline.controller.js';
-import { idParamSchema, listUsersQuerySchema, updateProfileSchema } from './users.schemas.js';
+import { directoryQuerySchema, idParamSchema, listUsersQuerySchema, updateProfileSchema } from './users.schemas.js';
 
 const router = Router();
 
@@ -108,6 +108,14 @@ router.patch('/me', validate({ body: updateProfileSchema }), ctrl.updateMe);
  */
 router.get('/me/penalties', authorize('admin', 'mentor', 'methodist'), discipline.myPenalties);
 router.get('/me/discipline-rules', authorize('admin', 'mentor', 'methodist'), discipline.listRules);
+
+// Единый каталог. Порядок важен: статический `/directory` должен идти до `/:id`.
+router.get(
+  '/directory',
+  authorize('main_admin', 'seo', 'admin', 'branch_manager', 'finance_manager', 'mentor', 'methodist'),
+  validate({ query: directoryQuerySchema }),
+  ctrl.listDirectory,
+);
 
 /**
  * @openapi

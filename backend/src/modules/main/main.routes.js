@@ -194,6 +194,9 @@ router.get('/expenses', ctrl.listExpenses);
 router.post('/expenses', validate({ body: createExpenseSchema }), ctrl.createExpense);
 router.delete('/expenses/:id', validate({ params: idParam }), ctrl.deleteExpense);
 
+// --- расход на видео-файлы тем (Storj: хранение + трафик), см. src/config/pricing.js ---
+router.get('/video-storage-costs', ctrl.videoStorageCosts);
+
 // --- баланс/P&L платформы (реальная выручка минус собственные расходы) ---
 router.get('/finance', ctrl.finance);
 
@@ -245,7 +248,7 @@ router.get('/dashboard', ctrl.dashboard);
  *     tags: [Main Admin]
  *     summary: Platform revenue detail — our income (sum of partner bills) + per-partner billing
  *     description: >
- *       Our monthly income = sum of each partner's computed bill (by student count).
+ *       Our monthly income = sum of each partner's computed bill (by total active account count).
  *       Read-only over money tables — writes nothing.
  *     security: [{ bearerAuth: [] }]
  *     responses:

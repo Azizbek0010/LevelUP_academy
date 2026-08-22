@@ -3,6 +3,7 @@ import { validate } from '../../../middlewares/validate.js';
 import * as ctrl from './lessons.controller.js';
 import {
   lessonIdParamSchema,
+  topicIdParamSchema,
   submitTestSchema,
   homeworkUploadUrlQuery,
   submitHomeworkSchema,
@@ -34,6 +35,45 @@ const router = Router();
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
 router.get('/', ctrl.listLessons);
+
+/**
+ * @openapi
+ * /api/student/lessons/topics/{topicId}/video-url:
+ *   get:
+ *     tags: [Student]
+ *     summary: Presigned GET url for a topic's video FILE (only when the topic has one — see hasVideoFile in the list)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: topicId
+ *         in: path
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: 'Short-lived streaming url' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       404: { description: Topic not found (outside student's courses) }
+ *       409: { description: 'Topic has no video file (may use a YouTube link instead)' }
+ */
+router.get('/topics/:topicId/video-url', validate({ params: topicIdParamSchema }), ctrl.getTopicVideoUrl);
+
+/**
+ * @openapi
+ * /api/student/lessons/topics/{topicId}/watched:
+ *   post:
+ *     tags: [Student]
+ *     summary: Mark the topic's video as watched to the end — awards topic.coin_reward once (idempotent)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - name: topicId
+ *         in: path
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: '{ watched: true, coinsAwarded: number } — coinsAwarded is 0 on repeat calls' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       404: { description: Topic not found (outside student's courses) }
+ */
+router.post('/topics/:topicId/watched', validate({ params: topicIdParamSchema }), ctrl.markTopicVideoWatched);
 
 /**
  * @openapi

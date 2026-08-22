@@ -1,5 +1,5 @@
 import { AppError } from '../../../utils/AppError.js';
-import { buildObjectKey, getUploadUrl as getS3UploadUrl } from '../../../config/s3.js';
+import { buildObjectKey, getUploadUrl as getS3UploadUrl, getDownloadUrl } from '../../../config/s3.js';
 import { changeCoins } from '../../coins/coins.service.js';
 import { aiReviewQueue } from '../../../queues/aiReview.queue.js';
 import { sendToBranchGroup } from '../../telegram/branchNotify.js';
@@ -42,12 +42,15 @@ export async function listForStudent(studentId) {
 
   const rows = await repo.listTopicsWithLessons(trainingTypeIds);
   const lessonIds = [...new Set(rows.filter((r) => r.lesson_id).map((r) => r.lesson_id))];
-  const [attempts, submissions] = await Promise.all([
+  const topicIds = [...new Set(rows.map((r) => r.topic_id))];
+  const [attempts, submissions, watchedTopicIds] = await Promise.all([
     repo.getAttemptsForLessons(studentId, lessonIds),
     repo.getSubmissionsForLessons(studentId, lessonIds),
+    repo.getWatchedTopicIds(studentId, topicIds),
   ]);
   const attemptByLesson = new Map(attempts.map((a) => [a.lesson_id, a]));
   const submissionByLesson = new Map(submissions.map((s) => [s.lesson_id, s]));
+  const watchedSet = new Set(watchedTopicIds);
 
   const topics = new Map();
   for (const r of rows) {
@@ -57,6 +60,10 @@ export async function listForStudent(studentId) {
         name: r.topic_name,
         description: r.topic_description,
         videoUrl: r.topic_video_url,
+        hasVideoFile: !!r.topic_video_file_key,
+        videoDurationSec: r.topic_video_duration_sec,
+        videoCoinReward: r.topic_coin_reward,
+        videoWatched: watchedSet.has(r.topic_id),
         lessons: [],
       });
     }
@@ -78,6 +85,41 @@ export async function listForStudent(studentId) {
     });
   }
   return [...topics.values()];
+}
+
+/** Presigned GET для видео-файла темы (загружен методистом на Storj, не YouTube). */
+export async function getTopicVideoStreamUrl(studentId, topicId) {
+  const trainingTypeIds = await allowedTrainingTypeIds(studentId);
+  const topic = await repo.getTopicForStudent(topicId, trainingTypeIds);
+  if (!topic) throw new AppError(404, 'Topic not found');
+  if (!topic.video_file_key) throw new AppError(409, 'This topic has no video file (it may use a YouTube link instead)');
+  return { streamUrl: await getDownloadUrl(topic.video_file_key) };
+}
+
+/**
+ * Вызывается фронтом ровно один раз, когда видео темы реально доиграно до
+ * конца (YouTube ENDED / <video> ended). Монеты — всё или ничего (не как у
+ * теста): досмотрел — получил topic.coin_reward целиком. Идемпотентно —
+ * markVideoWatched сам не даст начислить дважды при повторном просмотре.
+ */
+export async function markTopicVideoWatched(studentId, topicId) {
+  const trainingTypeIds = await allowedTrainingTypeIds(studentId);
+  const topic = await repo.getTopicForStudent(topicId, trainingTypeIds);
+  if (!topic) throw new AppError(404, 'Topic not found');
+
+  const firstTime = await repo.markVideoWatched(topicId, studentId);
+  if (firstTime && topic.coin_reward > 0) {
+    await changeCoins({
+      studentId,
+      actorId: studentId,
+      amount: topic.coin_reward,
+      operation: 'reward',
+      reason: 'Topic video watched',
+      refType: 'topic',
+      refId: topicId,
+    });
+  }
+  return { watched: true, coinsAwarded: firstTime ? topic.coin_reward : 0 };
 }
 
 async function assertAccess(studentId, lessonId) {
@@ -102,7 +144,14 @@ export async function getLessonDetail(studentId, lessonId) {
   return {
     ...shapeLesson(lesson),
     submission: submission
-      ? { status: submission.status, score: submission.score, submittedAt: submission.submitted_at }
+      ? {
+          status: submission.status,
+          score: submission.score,
+          submittedAt: submission.submitted_at,
+          // XOB (Telegram, 12.08): фронтовый SmartReview уже готов, ждёт этих двух полей.
+          review: submission.review ?? null,
+          reviewStatus: submission.review_status ?? null,
+        }
       : null,
   };
 }
@@ -150,13 +199,18 @@ export async function submitTest(studentId, lessonId, answers, branchId) {
   const finalized = await repo.finalizeAttempt(lessonId, studentId, answers, score);
   if (!finalized) throw new AppError(409, 'Already submitted');
 
-  if (score >= PASS_SCORE_THRESHOLD && lesson.coin_reward > 0) {
+  // Karis (21.08.2026): пропорционально правильным ответам, не "всё или
+  // ничего" по порогу — coin_reward делится на вопросы, за каждый верный
+  // ответ своя доля (10 монет / 10 вопросов = 1 монета за правильный ответ;
+  // 8 из 10 верных → 8 монет). round() — чтобы не дробить монеты.
+  const coins = questions.length > 0 ? Math.round((lesson.coin_reward * correctCount) / questions.length) : 0;
+  if (coins > 0) {
     await changeCoins({
       studentId,
       actorId: studentId,
-      amount: lesson.coin_reward,
+      amount: coins,
       operation: 'reward',
-      reason: 'Methodology lesson test passed',
+      reason: 'Methodology lesson test — по числу верных ответов',
       refType: 'methodology_lesson',
       refId: lessonId,
     });
@@ -175,11 +229,15 @@ export async function submitTest(studentId, lessonId, answers, branchId) {
 
 async function notifyTestResult({ branchId, studentId, topicName, lessonTitle, score }) {
   if (!branchId) return;
-  const name = await repo.getStudentName(studentId);
-  if (!name) return;
+  const student = await repo.getStudentNameAndLanguage(studentId);
+  if (!student) return;
 
+  // XOB (12.08): раньше текст был всегда на узбекском независимо от языка
+  // студента — теперь берём его preferred_language, дефолт (ещё не выбрал)
+  // остаётся узбекский, чтобы не менять поведение всем существующим студентам.
   const mark = score >= PASS_SCORE_THRESHOLD ? '✅' : '⚠️';
-  const text = `<b>📝 Test natijasi</b>\n${name} — «${topicName}» (${lessonTitle})\n${mark} ${score}%`;
+  const title = student.language === 'ru' ? 'Результат теста' : 'Test natijasi';
+  const text = `<b>📝 ${title}</b>\n${student.name} — «${topicName}» (${lessonTitle})\n${mark} ${score}%`;
   await sendToBranchGroup(branchId, text);
 }
 

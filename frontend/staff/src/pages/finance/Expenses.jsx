@@ -1,127 +1,258 @@
 import { useMemo, useState } from 'react';
-import { Receipt, PieChart as PieIcon, AlertTriangle, Search } from 'lucide-react';
+import { Receipt, PieChart as PieIcon, Plus, Pencil, Trash2 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
-import { Metric, Card, BranchSelect, MonthSelect, PlannedBadge } from './_ui.jsx';
-import { useTranslation } from "react-i18next";
-import { BRANCHES, MONTHS, CURRENT_MONTH, EXPENSES, monthRow, MONTH_LABEL } from './_data.js';
-
-const scopeTotal = (branchId, monthKey) =>
-  branchId === 'all'
-    ? BRANCHES.reduce((a, b) => a + (monthRow(b.id, monthKey)?.expenses ?? 0), 0)
-    : (monthRow(branchId, monthKey)?.expenses ?? 0);
-
-const prevMonthKey = (monthKey) => {
-  const i = MONTHS.findIndex((m) => m.key === monthKey);
-  return i > 0 ? MONTHS[i - 1].key : monthKey;
-};
+import { Metric, Card, BranchSelect, MonthSelect, monthOptions, monthRange } from './_ui.jsx';
+import { useT } from './_i18n.jsx';
+import { useAuth } from '../../auth.jsx';
+import { api } from '../../api.js';
+import { useFinanceBranches, useFinanceExpenses, useInvalidate } from '../../queries.js';
 
 const CAT_COLORS = ['#f59e0b', '#ef4444', '#0ea5e9', '#a855f7', '#22c55e', '#64748b'];
 
+/* Категория — свободный текст на бэке (createOrgExpenseSchema.category, max
+   60), не enum. Список ниже — только подсказки в datalist, не ограничение:
+   раньше 6 захардкоженных узбекских слов были единственным вариантом даже
+   в русском/английском интерфейсе. */
+function categorySuggestions(t) {
+  return [t('common.category')].filter(Boolean); // подсказки минимальны, свобода ввода важнее
+}
+
+function ExpenseForm({ initial, branches, onSubmit, onCancel, t }) {
+  const [form, setForm] = useState(() => ({
+    branchId: initial?.branchId ?? '',
+    category: initial?.category ?? '',
+    amount: initial?.amount ?? '',
+    spentAt: initial?.spentAt ? initial.spentAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    note: initial?.note ?? '',
+  }));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setErr(''); setBusy(true);
+    try {
+      await onSubmit({
+        branchId: form.branchId || null,
+        category: form.category.trim(),
+        amount: Number(form.amount),
+        spentAt: form.spentAt,
+        note: form.note.trim() || undefined,
+      });
+    } catch (e2) { setErr(e2.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      {err && <div className="alert alert-error text-xs py-2">{err}</div>}
+      <div className="grid grid-cols-2 gap-3">
+        <label className="form-control">
+          <span className="text-[11px] font-semibold text-base-content/50 mb-1">{t('common.branch')}</span>
+          <select
+            className="select select-bordered select-sm"
+            value={form.branchId}
+            onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
+          >
+            <option value="">{t('expenses.orgWide')}</option>
+            {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </label>
+        <label className="form-control">
+          <span className="text-[11px] font-semibold text-base-content/50 mb-1">{t('common.date')}</span>
+          <input
+            type="date"
+            required
+            className="input input-bordered input-sm"
+            value={form.spentAt}
+            onChange={(e) => setForm((f) => ({ ...f, spentAt: e.target.value }))}
+          />
+        </label>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="form-control">
+          <span className="text-[11px] font-semibold text-base-content/50 mb-1">{t('common.category')}</span>
+          <input
+            type="text"
+            required
+            maxLength={60}
+            placeholder={t('expenses.categoryPlaceholder')}
+            list="expense-categories"
+            className="input input-bordered input-sm"
+            value={form.category}
+            onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+          />
+          <datalist id="expense-categories">
+            {categorySuggestions(t).map((c) => <option key={c} value={c} />)}
+          </datalist>
+        </label>
+        <label className="form-control">
+          <span className="text-[11px] font-semibold text-base-content/50 mb-1">{t('common.amount')}</span>
+          <input
+            type="number"
+            required
+            min="1"
+            step="1"
+            className="input input-bordered input-sm"
+            value={form.amount}
+            onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+          />
+        </label>
+      </div>
+      <label className="form-control">
+        <span className="text-[11px] font-semibold text-base-content/50 mb-1">{t('common.note')}</span>
+        <input
+          type="text"
+          maxLength={1000}
+          className="input input-bordered input-sm"
+          value={form.note}
+          onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+        />
+      </label>
+      <div className="flex justify-end gap-2 pt-1">
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel} disabled={busy}>{t('common.cancel')}</button>
+        <button type="submit" className="btn btn-primary btn-sm" disabled={busy}>
+          {busy && <span className="loading loading-spinner loading-xs" />} {t('common.save')}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function FinanceExpenses() {
-  const { t } = useT();
+  const { t, lang } = useT();
+  const { token } = useAuth();
+  const invalidate = useInvalidate();
   const [branchId, setBranchId] = useState('all');
-  const [monthKey, setMonthKey] = useState(CURRENT_MONTH);
-  const [search, setSearch] = useState('');
-  const [planned, setPlanned] = useState('all');
+  const months = monthOptions(lang);
+  const [monthKey, setMonthKey] = useState(months[0].key);
+  const [modal, setModal] = useState(null); // null | 'create' | expense object
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const total = scopeTotal(branchId, monthKey);
-  const prevTotal = scopeTotal(branchId, prevMonthKey(monthKey));
-  const trend = prevTotal ? Math.round(((total - prevTotal) / prevTotal) * 100) : 0;
+  const { data: branches } = useFinanceBranches();
+  /* Расход тоже режется по месяцу (Karis 22.08.2026). Раньше params был без
+     дат: страница тянула расходы за ВСЁ ВРЕМЯ, но подписывала итог как
+     «расход за месяц» — в списке висел июльский расход рядом с августовским.
+     Хуже того, доход на соседней странице месячный, и сравнивать их (или
+     считать прибыль) было нельзя: разные периоды. */
+  const { from, to } = monthRange(monthKey);
+  const params = { branchId: branchId === 'all' ? '' : branchId, from, to };
+  const { data, isLoading } = useFinanceExpenses(params);
+  const rows = data?.expenses ?? [];
+  const total = rows.reduce((a, e) => a + e.amount, 0);
 
-  const detail = branchId !== 'all' && monthKey === CURRENT_MONTH ? EXPENSES[branchId] : null;
-
-  // Неплановые расходы текущего месяца по выбранному филиалу
-  const unplannedTotal = detail ? detail.filter((e) => e.planned === false).reduce((a, e) => a + e.amount, 0) : null;
-
-  // Фильтрация: поиск по примечанию/категории + фильтр плановости
-  const filteredDetail = useMemo(() => {
-    if (!detail) return [];
-    const q = search.trim().toLowerCase();
-    return detail.filter((e) => {
-      if (planned === 'planned' && e.planned !== true) return false;
-      if (planned === 'unplanned' && e.planned !== false) return false;
-      if (!q) return true;
-      return `${e.category} ${e.note}`.toLowerCase().includes(q);
-    });
-  }, [detail, search, planned]);
-
-  // Разбивка по категориям из детальных транзакций текущего месяца
   const catBreakdown = useMemo(() => {
-    if (!detail) return [];
     const map = new Map();
-    detail.forEach((e) => map.set(e.category, (map.get(e.category) ?? 0) + e.amount));
+    rows.forEach((e) => map.set(e.category, (map.get(e.category) ?? 0) + e.amount));
     return [...map.entries()].map(([name, value]) => ({ name, value }));
-  }, [detail]);
+  }, [rows]);
 
-  const rows = useMemo(() => {
-    if (branchId === 'all') {
-      return BRANCHES.map((b) => ({ key: b.id, label: b.name, value: monthRow(b.id, monthKey)?.expenses ?? 0 }));
+  const branchRows = useMemo(() => {
+    if (branchId !== 'all') return [];
+    const map = new Map();
+    for (const e of rows) {
+      const key = e.branchId ?? '__org__';
+      const label = e.branchId ? e.branchName : t('expenses.orgWide');
+      map.set(key, { key, label, value: (map.get(key)?.value ?? 0) + e.amount });
     }
-    return MONTHS.map((m) => ({ key: m.key, label: m.label, value: monthRow(branchId, m.key)?.expenses ?? 0 }));
-  }, [branchId, monthKey]);
+    return [...map.values()];
+  }, [rows, branchId, t]);
 
-  const label = branchId === 'all' ? t('common.allBranches') : BRANCHES.find((b) => b.id === branchId).name;
+  const label = branchId === 'all' ? t('common.allBranches') : (branches ?? []).find((b) => b.id === branchId)?.name ?? '';
+
+  const refresh = () => invalidate(['finance-expenses', params]);
+
+  const createExpense = async (body) => { await api.financeCreateExpense(token, body); refresh(); setModal(null); };
+  const updateExpense = async (body) => { await api.financeUpdateExpense(token, modal.id, body); refresh(); setModal(null); };
+  const deleteExpense = async (id) => { await api.financeDeleteExpense(token, id); refresh(); setConfirmDelete(null); };
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader title={t('expenses.title')} subtitle={t('expenses.subtitle')}>
+        <button className="btn btn-primary btn-sm gap-2" onClick={() => setModal('create')}>
+          <Plus size={14} /> {t('expenses.add')}
+        </button>
       </PageHeader>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
         <Metric
           Icon={Receipt}
           label={t('kpi.expenses')}
           value={money(total)}
-          sub={`${label} · ${MONTH_LABEL[monthKey]}`}
+          sub={`${label} · ${months.find((m) => m.key === monthKey)?.label}`}
           tone="warning"
-          trend={trend}
-          trendLabel={t('common.vsPrev')}
         />
-        {unplannedTotal !== null && (
-          <Metric
-            Icon={AlertTriangle}
-            label={t('expenses.unplannedKpi')}
-            value={money(unplannedTotal)}
-            sub={t('expenses.unplannedSub')}
-            tone="info"
-          />
-        )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
         <Card
-          title={t('expenses.title')}
+          title={branchId === 'all' ? t('common.branch') : t('expenses.title')}
           action={
             <div className="flex items-center gap-2">
-              <BranchSelect value={branchId} onChange={setBranchId} allLabel={t('common.allBranches')} branches={BRANCHES} />
-              <MonthSelect value={monthKey} onChange={setMonthKey} months={MONTHS} />
+              <BranchSelect value={branchId} onChange={setBranchId} allLabel={t('common.allBranches')} branches={branches ?? []} />
+              <MonthSelect value={monthKey} onChange={setMonthKey} months={months} />
             </div>
           }
           className="xl:col-span-2"
           bodyClass="p-0"
         >
+          {branchId === 'all' && (
+            <div className="overflow-x-auto border-b border-base-200">
+              <table className="table table-sm">
+                <tbody>
+                  {branchRows.map((r) => (
+                    <tr key={r.key} className="text-sm">
+                      <td className="font-medium">{r.label}</td>
+                      <td className="text-right tabular-nums text-warning font-semibold">{money(r.value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="table table-sm">
               <thead>
                 <tr className="text-[12px] uppercase tracking-wider text-base-content/50">
-                  <th>{branchId === 'all' ? t('common.branch') : t('common.month')}</th>
+                  <th>{t('common.date')}</th>
+                  {branchId === 'all' && <th>{t('common.branch')}</th>}
+                  <th>{t('common.category')}</th>
+                  <th>{t('common.note')}</th>
                   <th className="text-right">{t('common.amount')}</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
-                  <tr key={r.key} className="text-sm">
-                    <td className="font-medium">{r.label}</td>
-                    <td className="text-right tabular-nums text-warning font-semibold">{money(r.value)}</td>
+                {isLoading ? (
+                  <tr><td colSpan={6} className="text-center py-6 text-base-content/50">{t('common.loading')}</td></tr>
+                ) : rows.length === 0 ? (
+                  <tr><td colSpan={6} className="text-center py-6 text-base-content/50">{t('common.noData')}</td></tr>
+                ) : rows.map((e) => (
+                  <tr key={e.id} className="text-sm">
+                    <td className="tabular-nums whitespace-nowrap">{new Date(e.spentAt).toLocaleDateString()}</td>
+                    {branchId === 'all' && <td className="text-base-content/70">{e.branchName ?? t('expenses.orgWide')}</td>}
+                    <td><span className="badge badge-sm badge-outline">{e.category}</span></td>
+                    <td className="text-base-content/70">{e.note}</td>
+                    <td className="text-right tabular-nums font-semibold text-warning">{money(e.amount)}</td>
+                    <td>
+                      <div className="flex gap-1 justify-end">
+                        <button className="btn btn-ghost btn-square btn-xs" onClick={() => setModal(e)}><Pencil size={13} /></button>
+                        <button className="btn btn-ghost btn-square btn-xs" onClick={() => setConfirmDelete(e.id)}><Trash2 size={13} className="text-error" /></button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
-                <tr className="border-t border-base-300 bg-base-200/50 font-bold text-sm">
-                  <td>{t('common.total')}</td>
-                  <td className="text-right tabular-nums">{money(total)}</td>
-                </tr>
               </tbody>
+              {rows.length > 0 && (
+                <tfoot>
+                  <tr className="border-t border-base-300 bg-base-200/50 font-bold text-sm">
+                    <td colSpan={branchId === 'all' ? 4 : 3}>{t('common.total')}</td>
+                    <td className="text-right tabular-nums">{money(total)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </Card>
@@ -131,9 +262,7 @@ export default function FinanceExpenses() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={catBreakdown} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={3}>
-                  {catBreakdown.map((_, i) => (
-                    <Cell key={i} fill={CAT_COLORS[i % CAT_COLORS.length]} />
-                  ))}
+                  {catBreakdown.map((_, i) => <Cell key={i} fill={CAT_COLORS[i % CAT_COLORS.length]} />)}
                 </Pie>
                 <Tooltip formatter={(v) => money(v)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -150,55 +279,33 @@ export default function FinanceExpenses() {
         </Card>
       </div>
 
-      {detail && (
-        <Card
-          title={`${t('expenses.title')} · ${label} · ${MONTH_LABEL[monthKey]}`}
-          action={
-            <div className="flex items-center gap-2">
-              <label className="input input-bordered input-sm flex items-center gap-2">
-                <Search size={14} className="text-base-content/40" />
-                <input
-                  type="text"
-                  placeholder={t('common.search')}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-40"
-                />
-              </label>
-              <select className="select select-bordered select-sm" value={planned} onChange={(e) => setPlanned(e.target.value)}>
-                <option value="all">{t('expenses.allExpenses')}</option>
-                <option value="planned">{t('expenses.planned')}</option>
-                <option value="unplanned">{t('expenses.unplanned')}</option>
-              </select>
-            </div>
-          }
-          bodyClass="p-0"
-        >
-          <div className="overflow-x-auto">
-            <table className="table table-sm">
-              <thead>
-                <tr className="text-[12px] uppercase tracking-wider text-base-content/50">
-                  <th>{t('common.date')}</th>
-                  <th>{t('common.category')}</th>
-                  <th>{t('common.note')}</th>
-                  <th>{t('common.filter')}</th>
-                  <th className="text-right">{t('common.amount')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDetail.map((e) => (
-                  <tr key={e.id} className="text-sm">
-                    <td className="tabular-nums whitespace-nowrap">{e.date}</td>
-                    <td><span className="badge badge-sm badge-outline">{e.category}</span></td>
-                    <td className="text-base-content/70">{e.note}</td>
-                    <td><PlannedBadge planned={e.planned} t={t} /></td>
-                    <td className="text-right tabular-nums font-semibold text-warning">{money(e.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {modal && (
+        <dialog className="modal modal-open">
+          <div className="modal-backdrop" onClick={() => setModal(null)} />
+          <div className="modal-box max-w-md">
+            <h3 className="font-bold text-base mb-4">{modal === 'create' ? t('expenses.add') : t('expenses.edit')}</h3>
+            <ExpenseForm
+              initial={modal === 'create' ? null : modal}
+              branches={branches ?? []}
+              onSubmit={modal === 'create' ? createExpense : updateExpense}
+              onCancel={() => setModal(null)}
+              t={t}
+            />
           </div>
-        </Card>
+        </dialog>
+      )}
+
+      {confirmDelete && (
+        <dialog className="modal modal-open">
+          <div className="modal-backdrop" onClick={() => setConfirmDelete(null)} />
+          <div className="modal-box max-w-sm">
+            <p className="text-sm mb-4">{t('common.confirmDelete')}</p>
+            <div className="flex justify-end gap-2">
+              <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDelete(null)}>{t('common.cancel')}</button>
+              <button className="btn btn-error btn-sm" onClick={() => deleteExpense(confirmDelete)}>{t('common.delete')}</button>
+            </div>
+          </div>
+        </dialog>
       )}
     </div>
   );

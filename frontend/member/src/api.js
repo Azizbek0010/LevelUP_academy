@@ -343,6 +343,12 @@ async function mockRequest(path, { method = 'GET', body } = {}) {
   if (path === '/telegram/bind-token') {
     return { data: { token: 'mock-bind-token', expiresIn: 300, deepLink: 'https://t.me/levelup_academy_bot?start=mock-bind-token' } };
   }
+  if (path === '/telegram/status') {
+    return { data: { configured: true, linked: false, username: null, firstName: null, linkedAt: null } };
+  }
+  if (path === '/telegram/unlink') {
+    return { data: { unlinked: true } };
+  }
 
   // NOTIFICATIONS — FE-PARENT-PAGINATION: курсор `before` через query-string
   if (path.startsWith('/parent/notifications')) {
@@ -429,17 +435,25 @@ export function mockChatSend(roomKey, body, user) {
 // Пути, которым нельзя подсовывать авто-refresh (иначе цикл/логин ломается)
 const AUTH_PATHS = new Set(['/auth/member/login', '/auth/member/refresh', '/auth/member/logout']);
 
-// Единый refreshPromise — параллельные 401 ждут один и тот же refresh, не долбят его по отдельности
+// Единый refreshPromise — ЛЮБОЙ триггер (bootstrap на старте приложения,
+// реактивный 401, проактивный таймер/visibilitychange в auth.jsx, дочерний
+// student/api.js) идёт через один и тот же промис, не долбит /refresh
+// по отдельности. Без этого два одновременных вызова (например, bootstrap
+// в auth.jsx и первый же 401 от компонента, смонтированного раньше, чем
+// пришёл ответ bootstrap'а) оба уходят на сервер с ОДНИМ и тем же ещё не
+// провёрнутым refresh-токеном — сервер видит это как reuse и отзывает ВСЕ
+// токены пользователя разом (backend/src/modules/auth/auth.service.js:refresh,
+// reuse-detection), роняя сессию целиком без единой реальной причины.
 let refreshPromise = null;
 let onTokenRefreshed = null;
 export function setOnTokenRefreshed(cb) { onTokenRefreshed = cb; }
 
-function refreshOnce() {
+export function refreshOnce() {
   if (!refreshPromise) {
     refreshPromise = rawRequest('/auth/member/refresh', { method: 'POST' })
       .then((d) => {
         onTokenRefreshed?.(d);
-        return d.accessToken;
+        return d;
       })
       .catch((err) => {
         onTokenRefreshed?.(null);
@@ -456,8 +470,8 @@ async function request(path, opts = {}) {
     return await rawRequest(path, opts);
   } catch (err) {
     if (err.status === 401 && !AUTH_PATHS.has(path) && !opts._retried) {
-      const newToken = await refreshOnce();
-      return rawRequest(path, { ...opts, token: newToken, _retried: true });
+      const session = await refreshOnce();
+      return rawRequest(path, { ...opts, token: session.accessToken, _retried: true });
     }
     throw err;
   }
@@ -467,7 +481,7 @@ export const api = {
   loginMember: (login, password) =>
     request('/auth/member/login', { method: 'POST', body: { login, password } }),
   qrLogin: (token) => request('/auth/member/qr-login', { method: 'POST', body: { token } }),
-  refresh: () => request('/auth/member/refresh', { method: 'POST' }),
+  refresh: () => refreshOnce(),
   logout: () => request('/auth/member/logout', { method: 'POST' }),
 
   // Вход через Telegram: сработает только у тех, кто уже привязал бота в кабинете.
@@ -490,9 +504,13 @@ export const api = {
   chatMessages: (token, roomKey) =>
     request(`/chat/${encodeURIComponent(roomKey)}/messages`, { token }),
   chatThreads: (token) => request('/chat/my-threads', { token }),
+  chatMarkRead: (token, roomKey) =>
+    request(`/chat/${encodeURIComponent(roomKey)}/read`, { method: 'POST', token }),
 
   // TG-FRONT
   telegramBindToken: (token) => request('/telegram/bind-token', { method: 'POST', token }),
+  telegramStatus: (token) => request('/telegram/status', { token }),
+  telegramUnlink: (token) => request('/telegram/unlink', { method: 'DELETE', token }),
 
   notifications: (token, before) =>
     request(`/parent/notifications${before ? `?before=${encodeURIComponent(before)}` : ''}`, { token }),

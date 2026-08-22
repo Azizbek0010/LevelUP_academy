@@ -3,6 +3,7 @@ import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
 import { orgAccessGate } from '../../middlewares/orgAccessGate.js';
+import { requireOrgFeature } from '../../middlewares/requireOrgFeature.js';
 import {
   createBranchSchema,
   createAdminSchema,
@@ -15,6 +16,7 @@ import {
   freezeMethodistSchema,
   updateOrganizationSchema,
   createAnnouncementSchema,
+  improveAnnouncementSchema,
   statsQuery,
   createBranchManagerSchema,
   updateBranchManagerSchema,
@@ -27,6 +29,14 @@ import {
   setShopItemArchivedSchema,
   listShopItemsQuery,
   createFeatureRequestSchema,
+  createOrgExpenseSchema,
+  listOrgExpensesSchema,
+  updateOrgExpenseSchema,
+  createEmployeeSchema,
+  updateEmployeeSchema,
+  createOrgMentorSchema,
+  updateMentorGradeSchema,
+  updateMentorBranchSchema,
 } from './super.schemas.js';
 import * as ctrl from './super.controller.js';
 import * as discipline from '../discipline/discipline.controller.js';
@@ -41,6 +51,12 @@ const router = Router();
 
 // вся панель — только SEO (владелец организации-партнёра); scope = своя org
 router.use(authenticate, orgAccessGate, authorize('seo'));
+
+// SEO может внести расход в любой филиал своей организации.
+router.post('/expenses', validate({ body: createOrgExpenseSchema }), ctrl.createExpense);
+router.get('/expenses', validate({ query: listOrgExpensesSchema }), ctrl.listExpenses);
+router.patch('/expenses/:id', validate({ params: idParam, body: updateOrgExpenseSchema }), ctrl.updateExpense);
+router.delete('/expenses/:id', validate({ params: idParam }), ctrl.deleteExpense);
 
 /**
  * @openapi
@@ -435,6 +451,8 @@ router.get('/attendance', ctrl.attendance);
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
 router.get('/announcements', ctrl.listAnnouncements);
+router.get('/announcements/image-upload-url', ctrl.announcementImageUploadUrl);
+router.post('/announcements/improve', validate({ body: improveAnnouncementSchema }), ctrl.improveAnnouncement);
 router.post('/announcements', validate({ body: createAnnouncementSchema }), ctrl.createAnnouncement);
 
 /**
@@ -871,6 +889,12 @@ router.post('/branches/:id/unarchive', validate({ params: idParam }), ctrl.unarc
 router.post('/admins', validate({ body: createAdminSchema }), ctrl.createAdmin);
 router.get('/admins', ctrl.listAdmins);
 
+router.post('/employees', validate({ body: createEmployeeSchema }), ctrl.createEmployee);
+router.get('/employees', ctrl.listEmployees);
+router.patch('/employees/:id', validate({ params: idParam, body: updateEmployeeSchema }), ctrl.updateEmployee);
+router.patch('/employees/:id/freeze', validate({ params: idParam, body: freezeSchema }), ctrl.freezeEmployee);
+router.post('/employees/:id/reset-password', validate({ params: idParam }), ctrl.resetEmployeePassword);
+
 /**
  * @openapi
  * /api/super/admins/{id}:
@@ -1087,6 +1111,9 @@ router.delete('/branch-managers/:id', validate({ params: idParam }), ctrl.delete
  *       403: { $ref: '#/components/responses/Forbidden' }
  */
 router.get('/mentors', ctrl.listMentors);
+router.post('/mentors', validate({ body: createOrgMentorSchema }), ctrl.createMentor);
+router.patch('/mentors/:id/grade', validate({ params: idParam, body: updateMentorGradeSchema }), ctrl.updateMentorGrade);
+router.patch('/mentors/:id/branch', validate({ params: idParam, body: updateMentorBranchSchema }), ctrl.updateMentorBranch);
 
 /**
  * @openapi
@@ -1286,12 +1313,8 @@ router.post('/discipline-rules', validate({ body: createRuleSchema }), disciplin
  * /api/super/shop/items:
  *   get:
  *     tags: [SEO]
- *     summary: List shop catalog items across the organization (optional ?branchId= to narrow)
+ *     summary: List global shop catalog items of the organization
  *     security: [{ bearerAuth: [] }]
- *     parameters:
- *       - name: branchId
- *         in: query
- *         schema: { type: string, format: uuid }
  *     responses:
  *       200: { description: Items }
  *       401: { $ref: '#/components/responses/Unauthorized' }
@@ -1299,7 +1322,7 @@ router.post('/discipline-rules', validate({ body: createRuleSchema }), disciplin
  *       422: { $ref: '#/components/responses/ValidationError' }
  *   post:
  *     tags: [SEO]
- *     summary: Create a shop item in one of the organization's branches
+ *     summary: Create a global shop item in every organization branch
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
@@ -1307,13 +1330,11 @@ router.post('/discipline-rules', validate({ body: createRuleSchema }), disciplin
  *         application/json:
  *           schema:
  *             type: object
- *             required: [branchId, name, coinPrice]
+ *             required: [name, coinPrice]
  *             properties:
- *               branchId: { type: string, format: uuid }
  *               name: { type: string, minLength: 1, maxLength: 160 }
  *               imageKey: { type: string, maxLength: 512 }
  *               coinPrice: { type: integer, minimum: 1 }
- *               stock: { type: integer, minimum: 0 }
  *     responses:
  *       201: { description: Item created }
  *       401: { $ref: '#/components/responses/Unauthorized' }
@@ -1325,15 +1346,15 @@ router.post('/discipline-rules', validate({ body: createRuleSchema }), disciplin
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.get('/shop/items', validate({ query: listShopItemsQuery }), ctrl.listShopItems);
-router.post('/shop/items', validate({ body: createShopItemSchema }), ctrl.createShopItem);
+router.get('/shop/items', requireOrgFeature('shop'), validate({ query: listShopItemsQuery }), ctrl.listShopItems);
+router.post('/shop/items', requireOrgFeature('shop'), validate({ body: createShopItemSchema }), ctrl.createShopItem);
 
 /**
  * @openapi
  * /api/super/shop/items/{id}:
  *   patch:
  *     tags: [SEO]
- *     summary: Update a shop item's catalog fields (name/image/price/stock)
+ *     summary: Update a global shop item's name/image/price in every branch
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - { $ref: '#/components/parameters/IdParam' }
@@ -1347,7 +1368,6 @@ router.post('/shop/items', validate({ body: createShopItemSchema }), ctrl.create
  *               name: { type: string, minLength: 1, maxLength: 160 }
  *               imageKey: { type: string, maxLength: 512 }
  *               coinPrice: { type: integer, minimum: 1 }
- *               stock: { type: integer, minimum: 0 }
  *     responses:
  *       200: { description: Updated item }
  *       401: { $ref: '#/components/responses/Unauthorized' }
@@ -1359,7 +1379,7 @@ router.post('/shop/items', validate({ body: createShopItemSchema }), ctrl.create
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.patch('/shop/items/:id', validate({ params: idParam, body: updateShopItemSchema }), ctrl.updateShopItem);
+router.patch('/shop/items/:id', requireOrgFeature('shop'), validate({ params: idParam, body: updateShopItemSchema }), ctrl.updateShopItem);
 
 /**
  * @openapi
@@ -1389,7 +1409,7 @@ router.patch('/shop/items/:id', validate({ params: idParam, body: updateShopItem
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.patch('/shop/items/:id/archive', validate({ params: idParam, body: setShopItemArchivedSchema }), ctrl.setShopItemArchived);
+router.patch('/shop/items/:id/archive', requireOrgFeature('shop'), validate({ params: idParam, body: setShopItemArchivedSchema }), ctrl.setShopItemArchived);
 
 /**
  * @openapi

@@ -104,6 +104,25 @@ const paths = {
       <path d="M12 17.2h.01" />
     </>
   ),
+  mail: (
+    <>
+      <rect x="2.5" y="5" width="19" height="14" rx="2.2" />
+      <path d="M3.5 6.7l8.5 6.3 8.5-6.3" />
+    </>
+  ),
+  linkedin: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="4" />
+      <path d="M8 10.3V17M8 7.3h.01" />
+      <path d="M12 17v-4.3a2.2 2.2 0 0 1 4.3 0V17M12 12.7V17" />
+    </>
+  ),
+  pin: (
+    <>
+      <path d="M12 21.5S19 15 19 10a7 7 0 0 0-14 0c0 5 7 11.5 7 11.5z" />
+      <circle cx="12" cy="10" r="2.4" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 20 }) {

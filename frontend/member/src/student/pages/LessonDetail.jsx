@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, ClipboardCheck, BookOpen, Check, Clock, Star, Link2,
+  ArrowLeft, ClipboardCheck, BookOpen, Check, Clock, Star, Link2, PlayCircle, ExternalLink,
 } from 'lucide-react';
 import { api, uploadToPresignedUrl } from '../api.js';
 import { useToast } from '../components/toast.jsx';
@@ -11,6 +11,62 @@ import {
 import { fmt, useI18n } from '../../i18n/index.jsx';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
+
+/** youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID → embed-ссылка
+ * для iframe. Не-YouTube ссылки не подделываем под embed — для них просто
+ * даём переход по ссылке (см. рендер ниже). */
+function toYoutubeEmbed(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname === 'youtu.be') return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+    if (u.hostname.endsWith('youtube.com')) {
+      if (u.pathname === '/watch') return `https://www.youtube.com/embed/${u.searchParams.get('v')}`;
+      if (u.pathname.startsWith('/embed/')) return url;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/** Видео урока/темы — methodology_lessons.video_url и topics.video_url
+ * существовали в базе и приходили с бэка, но фронт их нигде не показывал
+ * (найдено и добавлено 21.08.2026, запрос пользователя). */
+function LessonVideo({ url }) {
+  const { t } = useI18n();
+  const embed = toYoutubeEmbed(url);
+  return (
+    <div className="k-card k-pop-in overflow-hidden mb-4" style={{ borderColor: C.limeLine }}>
+      <div className="flex items-center gap-2 px-4 pt-3.5 pb-2">
+        <PlayCircle size={16} strokeWidth={2.4} color={C.violet} />
+        <span className="text-[12px] font-extrabold uppercase tracking-[0.08em]" style={{ color: C.violet }}>
+          {t.lessonDetail.video}
+        </span>
+      </div>
+      {embed ? (
+        <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+          <iframe
+            src={embed}
+            title="video"
+            className="absolute inset-0 w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      ) : (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="k-press flex items-center justify-center gap-2 mx-4 mb-4 py-3 rounded-2xl text-[14px] font-extrabold"
+          style={{ background: C.limeSoft, color: C.limeDk }}
+        >
+          {t.lessonDetail.watchVideo} <ExternalLink size={15} strokeWidth={2.6} />
+        </a>
+      )}
+    </div>
+  );
+}
 
 /* Прохождение теста внутри урока: intro → taking → done.
    Без таймера — у методических уроков нет duration_min, попытка одна на
@@ -368,6 +424,8 @@ export default function LessonDetail() {
           )}
         </div>
       </div>
+
+      {lesson.videoUrl && <LessonVideo url={lesson.videoUrl} />}
 
       {isTest ? (
         <TestSection

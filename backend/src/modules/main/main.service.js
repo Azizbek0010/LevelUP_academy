@@ -22,7 +22,7 @@ export async function onboardPartner({ organizationName, domain, admin, leadId }
       throw new AppError(409, 'Domain already taken');
     }
 
-    // план pro/max убран: цена считается по факту (филиалы+ученики), не по плану
+    // план pro/max убран: цена считается по общему числу активных аккаунтов, не по плану
     const org = await repo.insertOrganization(
       { name: organizationName, domain },
       client,
@@ -358,6 +358,20 @@ export async function deleteExpense(id) {
   const row = await repo.softDeleteExpense(id);
   if (!row) throw new AppError(404, 'Expense not found');
   return row;
+}
+
+/**
+ * Темы с видео-файлом на Storj + суммарный текущий расход. costPerViewUsd —
+ * цена ОДНОГО просмотра, не входит в totalStorageCostUsdPerMonth (это только
+ * хранение) — сколько раз посмотрят, заранее не известно (см. pricing.js).
+ */
+export async function videoStorageCosts() {
+  const items = await repo.listVideoStorageCosts();
+  const totalStorageCostUsdPerMonth = Number(
+    items.reduce((sum, r) => sum + Number(r.video_storage_cost_usd ?? 0), 0).toFixed(4),
+  );
+  const totalSizeBytes = items.reduce((sum, r) => sum + Number(r.video_size_bytes ?? 0), 0);
+  return { items, totals: { totalStorageCostUsdPerMonth, totalSizeBytes, count: items.length } };
 }
 
 function currentMonthKey(date = new Date()) {

@@ -4,26 +4,37 @@ import { useChild } from '../child-context.jsx';
 import { dateShort, ATTENDANCE_STATUS } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
-import { EmptyState, ErrorState, ProgressRing } from '../components/ui.jsx';
+import { EmptyState, ErrorState } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
-import { useI18n } from '../i18n.jsx';
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 100;
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+function calendarDays(monthKey) {
+  const [year, month] = monthKey.split('-').map(Number);
+  const first = new Date(year, month - 1, 1);
+  const days = new Date(year, month, 0).getDate();
+  const leading = (first.getDay() + 6) % 7;
+  return [
+    ...Array.from({ length: leading }, () => null),
+    ...Array.from({ length: days }, (_, index) => index + 1),
+  ];
+}
 
 const FILTERS = [
-  { key: 'all', label: 'att.filter.all' },
-  { key: 'present', label: 'att.filter.present' },
-  { key: 'absent', label: 'att.filter.absent' },
-  { key: 'late', label: 'att.filter.late' },
-  { key: 'excused', label: 'att.filter.excused' },
+  { key: 'all', label: 'Все' },
+  { key: 'present', label: 'Присутствовал' },
+  { key: 'absent', label: 'Отсутствовал' },
+  { key: 'late', label: 'Опоздал' },
+  { key: 'excused', label: 'По уважит.' },
 ];
 
 export default function Attendance() {
-  const { t } = useI18n();
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [monthKey, setMonthKey] = useState(() => new Date().toISOString().slice(0, 7));
 
   // FE-PARENT-PAGINATION: overview.attendance.recent ограничен последними 5 —
   // полная история постранично идёт отдельным запросом
@@ -34,12 +45,12 @@ export default function Attendance() {
     refetch: refetchPage,
   } = useAttendancePage(selectedChild?.id, page, PAGE_SIZE);
 
-  if (!selectedChild) return <EmptyState icon="user-circle" title={t('dash.noChildTitle')} />;
+  if (!selectedChild) return <EmptyState icon="user-circle" title="Выберите ребёнка" />;
 
   if (isLoading || isPageLoading) {
     return (
       <>
-        <PageHeader title={t('att.title')} />
+        <PageHeader title="Посещаемость" />
         <SkeletonTable rows={6} cols={4} />
       </>
     );
@@ -53,11 +64,21 @@ export default function Attendance() {
 
   const records = pageData?.data?.items || [];
   const pageCount = pageData?.data?.pageCount || 1;
-  const summary = d.attendance?.summary || {};
-  const total = summary.total || 1;
-  const pct = Math.round(((summary.present || 0) / total) * 100);
-
   const filtered = filter === 'all' ? records : records.filter((r) => r.status === filter);
+  const monthlyRecords = records.filter((record) => String(record.lessonDate).slice(0, 7) === monthKey);
+  const monthlySummary = monthlyRecords.reduce((acc, record) => {
+    acc[record.status] = (acc[record.status] || 0) + 1;
+    return acc;
+  }, { present: 0, absent: 0, late: 0, excused: 0 });
+  const recordsByDay = monthlyRecords.reduce((acc, record) => {
+    const day = Number(String(record.lessonDate).slice(8, 10));
+    (acc[day] ||= []).push(record);
+    return acc;
+  }, {});
+  const [calendarYear, calendarMonth] = monthKey.split('-').map(Number);
+  const monthLabel = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' })
+    .format(new Date(calendarYear, calendarMonth - 1, 1));
+  const todayKey = new Date().toISOString().slice(0, 10);
 
   const onFilterChange = (next) => {
     setFilter(next);
@@ -67,77 +88,46 @@ export default function Attendance() {
   return (
     <>
       <PageHeader
-        title={t('att.title')}
+        title="Посещаемость"
         subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
       />
 
-      {/* Summary Card */}
-      <div className="card bg-base-100 mb-6">
-        <div className="card-body">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <div className="relative">
-              <ProgressRing value={pct} size={96} stroke={8} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-extrabold">{pct}%</span>
-                <span className="text-[9px] opacity-40">{t('att.presentLabel')}</span>
-              </div>
-            </div>
-            <div className="flex-1 w-full">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {['present', 'absent', 'late', 'excused'].map((s) => {
-                  const st = ATTENDANCE_STATUS()[s];
-                  const count = summary[s] || 0;
-                  const isActive = filter === s;
-                  return (
-                    <button
-                      key={s}
-                      onClick={() => onFilterChange(filter === s ? 'all' : s)}
-                      className={`p-3 rounded-xl text-center transition-all duration-200 border-2 ${
-                        isActive
-                          ? 'shadow-md scale-[1.02]'
-                          : 'border-transparent hover:bg-base-200/60 hover:-translate-y-0.5'
-                      }`}
-                      style={isActive ? {
-                        borderColor: st?.color,
-                        background: st?.bg,
-                      } : {}}
-                    >
-                      <p className="text-xl font-extrabold" style={{ color: st?.color }}>{count}</p>
-                      <p className="text-[10px] opacity-50 mt-0.5">{st?.label}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+      <section className="parent-calendar card bg-base-100 mb-6">
+        <div className="parent-calendar-toolbar">
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            {['present', 'absent', 'late', 'excused'].map((status) => {
+              const item = ATTENDANCE_STATUS[status];
+              return <button key={status} onClick={() => onFilterChange(filter === status ? 'all' : status)} className={`parent-calendar-stat ${filter === status ? 'is-active' : ''}`}><i style={{ background: item.color }} /><strong>{monthlySummary[status]}</strong><span>{item.label}</span></button>;
+            })}
+          </div>
+          <label className="parent-month-control">
+            <Icon name="calendar" className="w-4 h-4" />
+            <input type="month" value={monthKey} onChange={(event) => setMonthKey(event.target.value)} aria-label="Выбрать месяц" />
+          </label>
+        </div>
+        <div className="parent-calendar-body">
+          <div className="parent-calendar-weekdays">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
+          <h2 className="parent-calendar-month">{monthLabel}</h2>
+          <div className="parent-calendar-grid">
+            {calendarDays(monthKey).map((day, index) => {
+              if (!day) return <div key={`empty-${index}`} />;
+              const dateKey = `${monthKey}-${String(day).padStart(2, '0')}`;
+              const dayRecords = recordsByDay[day] || [];
+              return (
+                <div key={day} className={`parent-calendar-day ${dateKey === todayKey ? 'is-today' : ''}`}>
+                  <span>{day}</span>
+                  <div className="parent-calendar-dots">
+                    {[...new Set(dayRecords.map((record) => record.status))].map((status) => <i key={status} title={ATTENDANCE_STATUS[status]?.label} style={{ background: ATTENDANCE_STATUS[status]?.color }} />)}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Filter Pills */}
-      <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl flex-wrap shadow-sm">
-        {FILTERS.map((f) => {
-          const isActive = filter === f.key;
-          const statusData = ATTENDANCE_STATUS()[f.key];
-          return (
-            <button
-              key={f.key}
-              onClick={() => onFilterChange(f.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                isActive
-                  ? 'bg-primary text-primary-content shadow-sm'
-                  : 'text-base-content/50 hover:bg-base-200'
-              }`}
-            >
-              {f.key !== 'all' && (
-                <div className="w-2 h-2 rounded-full" style={{ background: statusData?.color }} />
-              )}
-              {f.label && t(f.label)}
-              {f.key !== 'all' && (
-                <span className="opacity-60">{summary[f.key] || 0}</span>
-              )}
-            </button>
-          );
-        })}
+      <div className="parent-history-filters">
+        {FILTERS.map((item) => <button key={item.key} onClick={() => onFilterChange(item.key)} className={filter === item.key ? 'is-active' : ''}>{item.label}</button>)}
       </div>
 
       {/* History Table */}
@@ -145,10 +135,10 @@ export default function Attendance() {
         <div className="card-body">
           <h3 className="card-title text-sm gap-2">
             <Icon name="clock" className="w-4 h-4 text-primary" />
-            {t('att.history')}
+            История посещений
           </h3>
           {filtered.length === 0 ? (
-            <EmptyState icon="calendar" title={t('att.emptyTitle')} message={t('att.emptyMsg')} />
+            <EmptyState icon="calendar" title="Нет записей" message="Посещаемость ещё не отмечена" />
           ) : (
             <>
               {/* Desktop Table */}
@@ -156,15 +146,15 @@ export default function Attendance() {
                 <table className="table table-sm">
                   <thead>
                     <tr>
-                      <th>{t('att.colDate')}</th>
-                      <th>{t('att.colGroup')}</th>
-                      <th>{t('att.colStatus')}</th>
-                      <th>{t('att.colComment')}</th>
+                      <th>Дата</th>
+                      <th>Группа</th>
+                      <th>Статус</th>
+                      <th>Комментарий</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.map((r, i) => {
-                      const st = ATTENDANCE_STATUS()[r.status];
+                      const st = ATTENDANCE_STATUS[r.status];
                       return (
                         <tr key={i} className="hover:bg-base-200/50 transition-colors">
                           <td className="text-sm whitespace-nowrap font-medium">{dateShort(r.lessonDate)}</td>
@@ -188,7 +178,7 @@ export default function Attendance() {
               {/* Mobile Cards */}
               <div className="sm:hidden space-y-2 mt-3">
                 {filtered.map((r, i) => {
-                  const st = ATTENDANCE_STATUS()[r.status];
+                  const st = ATTENDANCE_STATUS[r.status];
                   return (
                     <div key={i} className="p-3 rounded-xl bg-base-200/40 hover:bg-base-200/60 transition-colors">
                       <div className="flex items-center justify-between mb-1">
@@ -216,7 +206,7 @@ export default function Attendance() {
           {/* FE-PARENT-PAGINATION */}
           {pageCount > 1 && (
             <div className="flex items-center justify-between px-1 py-3 mt-2 border-t border-base-200">
-              <span className="text-xs text-base-content/50">{t('common.page', { page, total: pageCount })}</span>
+              <span className="text-xs text-base-content/50">Страница {page} из {pageCount}</span>
               <div className="join">
                 <button className="join-item btn btn-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>«</button>
                 <button className="join-item btn btn-xs" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>»</button>

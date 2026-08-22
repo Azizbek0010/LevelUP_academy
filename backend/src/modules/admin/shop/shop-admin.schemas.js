@@ -25,6 +25,13 @@ export const restockItemSchema = z.object({
   stock: z.coerce.number().int().min(0),
 });
 
+export const createBranchShopItemSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  imageKey: z.string().trim().max(512).optional(),
+  coinPrice: z.coerce.number().int().positive(),
+  stock: z.coerce.number().int().min(0).default(0),
+});
+
 export const listOrdersQuery = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),

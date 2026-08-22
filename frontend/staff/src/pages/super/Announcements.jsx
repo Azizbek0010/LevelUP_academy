@@ -1,378 +1,95 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Plus, Trash2, ChevronDown, ChevronRight,
-  Megaphone, Users, Shield, GraduationCap, Clock, Sparkles,
-} from 'lucide-react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Megaphone, Plus, Trash2, Building2, Globe2, Clock3, UserRound, Sparkles } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
-import { api } from '../../api.js';
+import { api, uploadToPresignedUrl } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { SkeletonList } from '../../components/Skeleton.jsx';
-import { Card, EmptyState, Modal, ConfirmDialog } from './_ui.jsx';
 
-// ---- Constants ----
-
-const TARGET_LABELS = {
-  'all-staff':    'Все сотрудники',
-  'all-admins':   'Все администраторы',
-  'all-mentors':  'Все менторы',
+const targets = {
+  'all-students': 'O‘quvchilar',
+  'all-families': 'O‘quvchilar va ota-onalar',
+  'all-parents': 'Ota-onalar',
+  'all-staff': 'Barcha xodimlar',
+  'all-admins': 'Adminlar',
+  'all-mentors': 'Mentorlar',
 };
-
-const ROLE_LABEL = {
-  seo: 'SEO',
-  admin:      'Администратор',
-  mentor:     'Ментор',
-  methodist:  'Методист',
-  student:    'Студент',
-  parent:     'Родитель',
+const roles = { seo: 'SEO', branch_manager: 'Manager', admin: 'Admin', mentor: 'Mentor' };
+const defaultExpiry = () => {
+  const d = new Date(Date.now() + 86400000);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
 };
+const emptyDetails = () => ({ eventDateTime: '', location: '', mapUrl: '', contact: '', extra: '' });
 
-// ---- Helpers ----
-
-function timeAgo(iso) {
-  if (!iso) return '—';
-  const diff = Date.now() - new Date(iso).getTime();
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return `${s}с назад`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}м назад`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}ч назад`;
-  const d = Math.floor(h / 24);
-  return `${d}д назад`;
-}
-
-function targetIcon(targetType) {
-  if (targetType === 'all-admins') return <Shield size={14} className="text-info" />;
-  if (targetType === 'all-mentors') return <GraduationCap size={14} className="text-success" />;
-  return <Users size={14} className="text-primary" />;
-}
-
-function onlineTone(readCount, total) {
-  if (total === 0) return 'progress-ghost';
-  const pct = readCount / total;
-  if (pct >= 0.8) return 'progress-success';
-  if (pct >= 0.4) return 'progress-warning';
-  return 'progress-error';
-}
-
-// ---- Query ----
-
-function useAnnouncementsQuery() {
-  const { token, logout } = useAuth();
-  const q = useQuery({
-    queryKey: ['super-announcements'],
-    queryFn: () => api.superAnnouncements(token),
-    enabled: !!token,
-  });
-  useEffect(() => {
-    if (q.error?.status === 401) logout();
-  }, [q.error, logout]);
-  return q;
-}
-
-// ---- От LevelUp Academy (read-only, от Main Admin) ----
-
-function usePlatformAnnouncements() {
-  const { token, logout } = useAuth();
-  const q = useQuery({
-    queryKey: ['super-platform-announcements'],
-    queryFn: () => api.superPlatformAnnouncements(token),
-    enabled: !!token,
-  });
-  useEffect(() => {
-    if (q.error?.status === 401) logout();
-  }, [q.error, logout]);
-  return q;
-}
-
-function PlatformAnnouncements() {
-  const { data, isLoading, error } = usePlatformAnnouncements();
-  const items = data?.items ?? data?.announcements ?? [];
-
-  if (isLoading || (error && error.status !== 401) || items.length === 0) return null;
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm font-bold text-base-content/70">
-        <Sparkles size={15} className="text-warning" /> От LevelUp Academy
-      </div>
-      <div className="space-y-2">
-        {items.map((item) => (
-          <Card key={item.id} className="p-4 border-warning/20 bg-warning/5">
-            <div className="flex items-center justify-between gap-3 mb-1">
-              <h3 className="font-bold text-sm">{item.title}</h3>
-              <span className="text-xs text-base-content/40 flex items-center gap-1 shrink-0">
-                <Clock size={11} /> {timeAgo(item.createdAt ?? item.created_at)}
-              </span>
-            </div>
-            <p className="text-sm text-base-content/60">{item.body}</p>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ---- Main Component ----
-
-export default function SuperAnnouncements() {
-  const { token } = useAuth();
+export default function Announcements() {
+  const { token, user } = useAuth();
   const qc = useQueryClient();
-
-  const { data, isLoading, error } = useAnnouncementsQuery();
-  const items = data?.items ?? data?.announcements ?? [];
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [expanded, setExpanded] = useState({});
-
-  const [form, setForm] = useState({ title: '', body: '', targetType: 'all-staff' });
-  const [formError, setFormError] = useState('');
-
-  const createMutation = useMutation({
-    mutationFn: (payload) => api.superCreateAnnouncement(token, payload),
-    onSuccess: () => {
-      setModalOpen(false);
-      setForm({ title: '', body: '', targetType: 'all-staff' });
-      setFormError('');
-      qc.invalidateQueries({ queryKey: ['super-announcements'] });
+  const isSeo = user?.role === 'seo';
+  const canCreate = isSeo || user?.role === 'branch_manager';
+  const [open, setOpen] = useState(false);
+  const [suggestion, setSuggestion] = useState(null);
+  const [form, setForm] = useState({ title: '', body: '', targetType: 'all-families', scope: 'all', branchId: '', expiresAt: defaultExpiry(), details: emptyDetails(), imageUrl: '', imageKey: '' });
+  const [imageUploading, setImageUploading] = useState(false);
+  const key = ['announcements', user?.role];
+  const list = useQuery({ queryKey: key, queryFn: () => isSeo ? api.superAnnouncements(token) : api.branchAnnouncements(token), enabled: !!token });
+  const branches = useQuery({ queryKey: ['super-branches'], queryFn: () => api.superBranches(token), enabled: !!token && isSeo });
+  const items = list.data?.items ?? list.data?.announcements ?? [];
+  const branchItems = branches.data?.branches ?? branches.data?.items ?? [];
+  const create = useMutation({
+    mutationFn: () => {
+      const payload = { title: form.title, body: form.body, targetType: form.targetType, expiresAt: new Date(form.expiresAt).toISOString(), imageUrl: form.imageUrl || null, imageKey: form.imageKey || null };
+      if (isSeo) payload.branchId = form.scope === 'branch' ? form.branchId : null;
+      return isSeo ? api.superCreateAnnouncement(token, payload) : api.branchCreateAnnouncement(token, payload);
     },
-    onError: (e) => setFormError(e.message),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: key }); setOpen(false); setForm({ title: '', body: '', targetType: 'all-families', scope: 'all', branchId: '', expiresAt: defaultExpiry(), details: emptyDetails(), imageUrl: '', imageKey: '' }); setSuggestion(null); },
   });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => api.superDeleteAnnouncement(token, id),
-    onSuccess: () => {
-      setDeleteTarget(null);
-      qc.invalidateQueries({ queryKey: ['super-announcements'] });
+  const remove = useMutation({ mutationFn: (id) => api.superDeleteAnnouncement(token, id), onSuccess: () => qc.invalidateQueries({ queryKey: key }) });
+  const improve = useMutation({
+    mutationFn: () => {
+      const payload = { title: form.title, body: form.body, targetType: form.targetType, expiresAt: new Date(form.expiresAt).toISOString(), details: form.details };
+      if (isSeo) payload.branchId = form.scope === 'branch' ? form.branchId : null;
+      return isSeo ? api.superImproveAnnouncement(token, payload) : api.branchImproveAnnouncement(token, payload);
     },
+    onSuccess: (data) => setSuggestion(data.suggestion),
   });
+  const submit = (e) => { e.preventDefault(); if (form.title.trim() && form.body.trim() && (!isSeo || form.scope === 'all' || form.branchId)) create.mutate(); };
 
-  const handleCreate = (e) => {
-    e.preventDefault();
-    setFormError('');
-    if (!form.title.trim()) { setFormError('Введите заголовок'); return; }
-    if (!form.body.trim()) { setFormError('Введите текст анонса'); return; }
-    createMutation.mutate(form);
-  };
-
-  const toggleExpand = (id) => {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  return (
-    <div className="space-y-6">
-      <PageHeader title="Анонсы" subtitle="Сообщения для сотрудников организации">
-        <button className="btn btn-primary btn-sm gap-1.5" onClick={() => setModalOpen(true)}>
-          <Plus size={16} /> Новый анонс
-        </button>
-      </PageHeader>
-
-      <PlatformAnnouncements />
-
-      {/* Content */}
-      {isLoading ? (
-        <SkeletonList rows={4} />
-      ) : error && error.status !== 401 ? (
-        <div className="alert alert-error text-sm"><span>{error.message}</span></div>
-      ) : items.length === 0 ? (
-        <Card>
-          <EmptyState icon={Megaphone} title="Анонсов пока нет" hint="Создайте первый!" />
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {items.map((item) => {
-            const readCount = item.readCount ?? item.read_count ?? 0;
-            const recipientCount = item.recipientCount ?? item.recipient_count ?? 0;
-            const senderName = item.senderName ?? item.sender_name ?? '—';
-            const targetType = item.targetType ?? item.target_type ?? 'all-staff';
-            const targetLabel = TARGET_LABELS[targetType] ?? targetType;
-            const createdAt = item.createdAt ?? item.created_at;
-            const isExpanded = !!expanded[item.id];
-            const readers = item.readers ?? [];
-            const nonReaders = item.nonReaders ?? item.non_readers ?? [];
-
-            return (
-              <Card key={item.id} className="p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        {targetIcon(targetType)}
-                        <span className="badge badge-outline badge-sm">{targetLabel}</span>
-                        <span className="text-xs text-base-content/40 flex items-center gap-1">
-                          <Clock size={11} /> {timeAgo(createdAt)}
-                        </span>
-                      </div>
-                      <h3 className="font-bold text-base">{item.title}</h3>
-                      <p className="text-sm text-base-content/60 mt-1 line-clamp-2">{item.body}</p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        className="btn btn-ghost btn-xs"
-                        onClick={() => toggleExpand(item.id)}
-                        title="Подробнее"
-                      >
-                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-xs text-error"
-                        onClick={() => setDeleteTarget(item)}
-                        title="Удалить"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Read progress */}
-                  {recipientCount > 0 && (
-                    <div className="mt-3">
-                      <div className="flex justify-between text-xs text-base-content/50 mb-1">
-                        <span>Прочитано</span>
-                        <span>{readCount} / {recipientCount}</span>
-                      </div>
-                      <progress
-                        className={`progress w-full h-1.5 ${onlineTone(readCount, recipientCount)}`}
-                        value={readCount}
-                        max={recipientCount}
-                      />
-                    </div>
-                  )}
-
-                  <div className="text-xs text-base-content/40 mt-1">
-                    Отправил: <span className="font-medium text-base-content/60">{senderName}</span>
-                  </div>
-
-                  {/* Expanded readers list */}
-                  {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-base-200">
-                      <p className="text-sm text-base-content/70 mb-3">{item.body}</p>
-                      {(readers.length > 0 || nonReaders.length > 0) && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {readers.length > 0 && (
-                            <div>
-                              <div className="text-xs font-semibold text-success mb-2">
-                                Прочитали ({readers.length})
-                              </div>
-                              <div className="space-y-1">
-                                {readers.map((r, i) => (
-                                  <div key={i} className="flex items-center gap-2 text-xs">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
-                                    <span>{r.name ?? r}</span>
-                                    {r.role && (
-                                      <span className="text-base-content/40">{ROLE_LABEL[r.role] ?? r.role}</span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {nonReaders.length > 0 && (
-                            <div>
-                              <div className="text-xs font-semibold text-error mb-2">
-                                Не прочитали ({nonReaders.length})
-                              </div>
-                              <div className="space-y-1">
-                                {nonReaders.map((r, i) => (
-                                  <div key={i} className="flex items-center gap-2 text-xs">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-error shrink-0" />
-                                    <span>{r.name ?? r}</span>
-                                    {r.role && (
-                                      <span className="text-base-content/40">{ROLE_LABEL[r.role] ?? r.role}</span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Create modal */}
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => { setModalOpen(false); setFormError(''); }}
-        title="Новый анонс"
-        className="max-w-md border border-base-300"
-      >
-        <form onSubmit={handleCreate} className="space-y-4">
-              <div className="form-control">
-                <label className="label"><span className="label-text">Заголовок</span></label>
-                <input
-                  type="text"
-                  className="input input-bordered input-sm"
-                  placeholder="Важное объявление"
-                  value={form.title}
-                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                />
-              </div>
-              <div className="form-control">
-                <label className="label"><span className="label-text">Текст</span></label>
-                <textarea
-                  className="textarea textarea-bordered textarea-sm resize-none"
-                  rows={4}
-                  placeholder="Текст анонса..."
-                  value={form.body}
-                  onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-                />
-              </div>
-              <div className="form-control">
-                <label className="label"><span className="label-text">Получатели</span></label>
-                <select
-                  className="select select-bordered select-sm"
-                  value={form.targetType}
-                  onChange={(e) => setForm((f) => ({ ...f, targetType: e.target.value }))}
-                >
-                  <option value="all-staff">Все сотрудники</option>
-                  <option value="all-admins">Все администраторы</option>
-                  <option value="all-mentors">Все менторы</option>
-                </select>
-              </div>
-
-              {formError && (
-                <div className="alert alert-error text-xs py-2">
-                  <span>{formError}</span>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => { setModalOpen(false); setFormError(''); }}
-                  disabled={createMutation.isPending}
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm"
-                  disabled={createMutation.isPending}
-                >
-                  {createMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Отправить'}
-                </button>
-              </div>
-            </form>
-      </Modal>
-
-      {/* Delete confirm modal */}
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        title="Удалить анонс?"
-        text={<>Вы уверены, что хотите удалить анонс <strong>«{deleteTarget?.title}»</strong>?</>}
-        onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
-        pending={deleteMutation.isPending}
-        error={deleteMutation.error}
-      />
+  return <div className="space-y-6">
+    <PageHeader title="Anonslar" subtitle="Filiallar bo‘yicha e’lonlar tarixi va Telegram tarqatmalari" />
+    <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5">
+      <div><div className="font-semibold text-slate-900">{items.length} ta anons</div><div className="text-sm text-slate-500">Admin faqat kuzatadi. Muallif va yaratilgan vaqt saqlanadi.</div></div>
+      {canCreate && <button onClick={() => setOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800"><Plus size={17}/> Anons yaratish</button>}
     </div>
-  );
+
+    {list.isLoading ? <div className="py-16 text-center text-slate-500">Yuklanmoqda...</div> : list.isError ? <div className="rounded-xl bg-red-50 p-4 text-red-700">Anonslarni yuklab bo‘lmadi</div> : items.length === 0 ?
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center"><Megaphone className="mx-auto mb-3 text-slate-400"/><div className="font-semibold">Hozircha anons yo‘q</div></div> :
+      <div className="space-y-3">{items.map((a) => <article key={a.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700"><Megaphone size={21}/></div><div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3"><div><h3 className="text-base font-bold text-slate-900">{a.title}</h3><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{a.body}</p></div>{isSeo && <button title="O‘chirish" onClick={() => remove.mutate(a.id)} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={17}/></button>}</div>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1.5"><UserRound size={14}/>{a.senderName || 'Noma’lum'} · {roles[a.senderRole] || a.senderRole || '—'}</span>
+            <span className="inline-flex items-center gap-1.5">{a.branchId ? <Building2 size={14}/> : <Globe2 size={14}/>} {a.branchName || 'Barcha filiallar'}</span>
+            <span>{targets[a.targetType] || a.targetType}</span>
+            <span className="inline-flex items-center gap-1.5"><Clock3 size={14}/>{new Intl.DateTimeFormat('uz-UZ', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(a.createdAt))}</span>
+            {a.expiresAt && <span className="text-amber-700">Tugaydi: {new Intl.DateTimeFormat('uz-UZ', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(a.expiresAt))}</span>}
+          </div>
+        </div></div>
+      </article>)}</div>}
+
+    {open && <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/45 p-3 sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}><div className="flex min-h-full items-start justify-center sm:items-center"><form onSubmit={submit} className="my-2 w-full max-w-xl max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain rounded-2xl bg-white p-5 shadow-2xl sm:my-0 sm:max-h-[calc(100dvh-3rem)] sm:p-6">
+      <h2 className="text-xl font-bold text-slate-900">Yangi anons</h2>
+      {isSeo ? <div className="mt-5"><div className="mb-2 text-sm font-semibold text-slate-700">Bugun qaysi filiallarga xabar berasiz?</div><div className="grid grid-cols-2 gap-2"><button type="button" onClick={() => setForm({...form, scope:'all', branchId:''})} className={`rounded-xl border p-3 text-sm ${form.scope==='all'?'border-emerald-600 bg-emerald-50 text-emerald-800':'border-slate-200'}`}>Barcha filiallar</button><button type="button" onClick={() => setForm({...form, scope:'branch'})} className={`rounded-xl border p-3 text-sm ${form.scope==='branch'?'border-emerald-600 bg-emerald-50 text-emerald-800':'border-slate-200'}`}>Bitta aniq filial</button></div>{form.scope==='branch' && <select value={form.branchId} onChange={(e)=>setForm({...form,branchId:e.target.value})} className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2.5" required><option value="">Filialni tanlang</option>{branchItems.map((b)=><option key={b.id} value={b.id}>{b.name}</option>)}</select>}</div> : <div className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">Anons faqat sizning filialingizga yuboriladi.</div>}
+      <label className="mt-4 block text-sm font-semibold text-slate-700">Kim uchun?</label><select value={form.targetType} onChange={(e)=>setForm({...form,targetType:e.target.value})} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5"><option value="all-families">O‘quvchilar va ota-onalar</option><option value="all-students">Faqat o‘quvchilar</option><option value="all-parents">Faqat ota-onalar</option>{isSeo && <><option value="all-staff">Barcha xodimlar</option><option value="all-admins">Adminlar</option><option value="all-mentors">Mentorlar</option></>}</select>
+      <label className="mt-4 block text-sm font-semibold text-slate-700">Sarlavha</label><input value={form.title} onChange={(e)=>setForm({...form,title:e.target.value})} maxLength={200} required className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5"/>
+      <label className="mt-4 block text-sm font-semibold text-slate-700">Xabar</label><textarea value={form.body} onChange={(e)=>setForm({...form,body:e.target.value})} maxLength={4000} rows={6} required className="mt-1 w-full resize-none rounded-xl border border-slate-300 px-3 py-2.5"/>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold text-slate-700">Rasm linki <span className="font-normal text-slate-400">— ixtiyoriy</span><input type="url" value={form.imageUrl} onChange={(e)=>setForm({...form,imageUrl:e.target.value,imageKey:''})} placeholder="https://..." className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 font-normal"/></label><label className="text-sm font-semibold text-slate-700">Yoki rasm fayli <span className="font-normal text-slate-400">— ixtiyoriy</span><input type="file" accept="image/*" disabled={imageUploading} onChange={async(e)=>{const file=e.target.files?.[0];if(!file)return;setImageUploading(true);try{const data=isSeo?await api.superAnnouncementImageUploadUrl(token,file.name,file.type):await api.branchAnnouncementImageUploadUrl(token,file.name,file.type);await uploadToPresignedUrl(data.uploadUrl,file);setForm({...form,imageKey:data.imageKey,imageUrl:''});}catch(err){alert(err.message||'Rasm yuklanmadi');}finally{setImageUploading(false);}}} className="mt-1 block w-full text-xs font-normal"/>{imageUploading && <span className="mt-1 block text-xs text-emerald-700">Rasm yuklanmoqda...</span>}{form.imageKey && <span className="mt-1 block text-xs text-emerald-700">Rasm yuklandi ✓</span>}</label></div>
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4"><div className="font-semibold text-slate-800">AI uchun aniq ma’lumotlar <span className="font-normal text-slate-400">(ixtiyoriy)</span></div><p className="mt-1 text-xs text-slate-500">Faqat bilganingizni kiriting. Bu maydonlarning hech biri majburiy emas.</p><div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Tadbir sana va vaqti <span className="font-normal text-slate-400">— ixtiyoriy</span><input type="datetime-local" value={form.details.eventDateTime} onChange={(e)=>setForm({...form,details:{...form.details,eventDateTime:e.target.value}})} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal"/></label><label className="text-xs font-semibold text-slate-600">Joylashuv <span className="font-normal text-slate-400">— ixtiyoriy</span><input value={form.details.location} onChange={(e)=>setForm({...form,details:{...form.details,location:e.target.value}})} placeholder="Manzil yoki maydon nomi" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal"/></label><label className="text-xs font-semibold text-slate-600">Xarita havolasi <span className="font-normal text-slate-400">— ixtiyoriy</span><input type="url" value={form.details.mapUrl} onChange={(e)=>setForm({...form,details:{...form.details,mapUrl:e.target.value}})} placeholder="https://..." className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal"/></label><label className="text-xs font-semibold text-slate-600">Aloqa <span className="font-normal text-slate-400">— ixtiyoriy</span><input value={form.details.contact} onChange={(e)=>setForm({...form,details:{...form.details,contact:e.target.value}})} placeholder="Telefon yoki mas’ul shaxs" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal"/></label></div><label className="mt-3 block text-xs font-semibold text-slate-600">Qo‘shimcha shartlar <span className="font-normal text-slate-400">— ixtiyoriy</span><textarea value={form.details.extra} onChange={(e)=>setForm({...form,details:{...form.details,extra:e.target.value}})} placeholder="Kiyim, kimlar qatnashadi, nimalar olib kelish kerak..." rows={2} className="mt-1 w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal"/></label></div>
+      <button type="button" disabled={improve.isPending || (!form.title.trim() && !form.body.trim()) || (isSeo && form.scope === 'branch' && !form.branchId)} onClick={() => improve.mutate()} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-emerald-600 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 disabled:opacity-50"><Sparkles size={16}/>{improve.isPending ? 'AI yaxshilamoqda...' : 'AI bilan yaxshilash'}</button>
+      {improve.error && <p className="mt-2 text-sm text-red-600">{improve.error.message}</p>}
+      {suggestion && <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"><div className="flex items-center gap-2 font-bold text-emerald-900"><Sparkles size={16}/> AI taklifi</div>{suggestion.questions?.length > 0 && <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3"><div className="text-sm font-bold text-amber-900">Aniqlashtirish kerak:</div><ul className="mt-1 list-disc pl-5 text-sm text-amber-800">{suggestion.questions.map((x,i)=><li key={i}>{x}</li>)}</ul><p className="mt-2 text-xs text-amber-700">Yuqoridagi maydonlarni to‘ldirib, AI tugmasini yana bosing.</p></div>}<div className="mt-3 text-sm font-bold text-slate-900">{suggestion.title}</div><div className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap text-sm leading-6 text-slate-700">{suggestion.body}</div>{suggestion.changes?.length > 0 && <ul className="mt-3 list-disc pl-5 text-xs text-slate-500">{suggestion.changes.map((x,i)=><li key={i}>{x}</li>)}</ul>}<div className="mt-4 flex gap-2"><button type="button" onClick={() => { setForm({...form,title:suggestion.title,body:suggestion.body}); setSuggestion(null); }} className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white">Taklifni qo‘llash</button><button type="button" onClick={() => setSuggestion(null)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">Rad etish</button></div></div>}
+      <label className="mt-4 block text-sm font-semibold text-slate-700">Qachon tugaydi?</label><input type="datetime-local" value={form.expiresAt} onChange={(e)=>setForm({...form,expiresAt:e.target.value})} required className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5"/>
+      {create.error && <p className="mt-3 text-sm text-red-600">{create.error.message}</p>}
+      <div className="mt-6 flex justify-end gap-2"><button type="button" onClick={()=>setOpen(false)} className="rounded-xl border border-slate-300 px-4 py-2.5">Bekor qilish</button><button disabled={create.isPending} className="rounded-xl bg-emerald-700 px-5 py-2.5 font-semibold text-white disabled:opacity-60">{create.isPending?'Yuborilmoqda...':'Yaratish va yuborish'}</button></div>
+    </form></div></div>}
+  </div>;
 }

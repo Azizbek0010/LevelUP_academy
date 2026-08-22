@@ -34,8 +34,8 @@ const HANDLERS = {
     const chatIds = await resolveChatIds(studentId, ['student']);
     await sendToAll(chatIds, `📚 Дедлайн завтра: «${title}» до ${deadline}`);
   },
-  'announcement.created': async ({ studentIds, title, message }) => {
-    const chatIds = await resolveChatIdsForMany(studentIds, ['student', 'parent']);
+  'announcement.created': async ({ studentIds, title, message, roles = ['student', 'parent'] }) => {
+    const chatIds = await resolveChatIdsForMany(studentIds, roles);
     await sendToAll(chatIds, `📢 ${title}\n\n${message}`);
   },
   // admin/branch_manager пишет одному студенту (или его родителю) напрямую со StudentDetail

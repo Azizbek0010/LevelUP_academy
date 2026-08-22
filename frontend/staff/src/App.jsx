@@ -6,6 +6,7 @@ import Layout from './components/Layout.jsx';
 import Login from './pages/Login.jsx';
 import { LangProvider } from './pages/finance/_i18n.jsx';
 import RoleGuard from './components/RoleGuard.jsx';
+import FeatureGuard from './components/FeatureGuard.jsx';
 import Splash from './components/Splash.jsx';
 // Lazy-loaded pages
 const SuperDashboard = lazy(() => import('./pages/super/Dashboard.jsx'));
@@ -26,9 +27,11 @@ const SuperDiscipline = lazy(() => import('./pages/super/Discipline.jsx'));
 const SuperAttendance = lazy(() => import('./pages/super/Attendance.jsx'));
 const SuperFeatures = lazy(() => import('./pages/super/Features.jsx'));
 const SuperBilling = lazy(() => import('./pages/super/Billing.jsx'));
+const SuperExpenses = lazy(() => import('./pages/super/Expenses.jsx'));
 
 const BranchManagerDashboard = lazy(() => import('./pages/branch-manager/Dashboard.jsx'));
 const BranchManagerIncome = lazy(() => import('./pages/branch-manager/Income.jsx'));
+const BranchManagerExpenses = lazy(() => import('./pages/branch-manager/Expenses.jsx'));
 const BranchManagerReports = lazy(() => import('./pages/branch-manager/Reports.jsx'));
 const BranchManagerBranch = lazy(() => import('./pages/branch-manager/Branch.jsx'));
 
@@ -37,7 +40,6 @@ const FinanceIncome = lazy(() => import('./pages/finance/Income.jsx'));
 const FinanceExpenses = lazy(() => import('./pages/finance/Expenses.jsx'));
 const FinanceSalaries = lazy(() => import('./pages/finance/Salaries.jsx'));
 const FinanceReports = lazy(() => import('./pages/finance/Reports.jsx'));
-const FinanceTax = lazy(() => import('./pages/finance/Tax.jsx'));
 const FinanceSettings = lazy(() => import('./pages/finance/Settings.jsx'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
@@ -49,12 +51,14 @@ const AdminPayments = lazy(() => import('./pages/admin/Payments.jsx'));
 const AdminExpenses = lazy(() => import('./pages/admin/Expenses.jsx'));
 const AdminReports = lazy(() => import('./pages/admin/Reports.jsx'));
 const AdminMentors = lazy(() => import('./pages/admin/Mentors.jsx'));
-const AdminMentorDetail = lazy(() => import('./pages/admin/MentorDetail.jsx'));
+const AdminShop = lazy(() => import('./pages/admin/Shop.jsx'));
+const AdminSchedule = lazy(() => import('./pages/admin/Schedule.jsx'));
 const AdminChat = lazy(() => import('./pages/admin/Chat.jsx'));
 const AdminProfile = lazy(() => import('./pages/admin/Profile.jsx'));
 
 const MentorDashboard = lazy(() => import('./pages/mentor/Dashboard.jsx'));
 const MentorChat = lazy(() => import('./pages/mentor/Chat.jsx'));
+const ManagerChat = lazy(() => import('./pages/branch-manager/Chat.jsx'));
 const MentorGroups = lazy(() => import('./pages/mentor/Groups.jsx'));
 const MentorGroupWorkspace = lazy(() => import('./pages/mentor/group/GroupWorkspace.jsx'));
 const MentorProfile = lazy(() => import('./pages/mentor/Profile.jsx'));
@@ -68,6 +72,7 @@ const Topics = lazy(() => import('./pages/methodist/Topics.jsx'));
 const Lessons = lazy(() => import('./pages/methodist/Lessons.jsx'));
 const LessonEditor = lazy(() => import('./pages/methodist/LessonEditor.jsx'));
 const MethodistAnalytics = lazy(() => import('./pages/methodist/Analytics.jsx'));
+const PeopleDirectory = lazy(() => import('./pages/people/Directory.jsx'));
 
 function Protected({ children }) {
   const { token, loading } = useAuth();
@@ -85,6 +90,12 @@ function DashboardRedirect() {
   if (role === 'finance_manager') return <FinanceDashboard />;
   if (role === 'mentor') return <MentorDashboard />;
   if (role === 'methodist') return <MethodistDashboard />;
+  if (role === 'employee') return (
+    <div className="max-w-2xl mx-auto mt-16 card bg-base-100 p-8 text-center">
+      <h1 className="text-2xl font-bold">Учётная запись сотрудника</h1>
+      <p className="text-base-content/60 mt-2">Для вашей должности отдельная рабочая панель не назначена.</p>
+    </div>
+  );
   return <AdminDashboard />;
 }
 
@@ -125,7 +136,7 @@ export default function App() {
         <Route path="/" element={<SW><DashboardRedirect /></SW>} />
 
         {/* Shared paths dispatched by role */}
-        <Route path="/chat" element={<SW><RoleView views={{ mentor: MentorChat, admin: AdminChat, branch_manager: AdminChat }} /></SW>} />
+        <Route path="/chat" element={<SW><RoleView views={{ mentor: MentorChat, admin: AdminChat, employee: ManagerChat }} /></SW>} />
         <Route path="/groups" element={<SW><RoleView views={{ seo: SuperGroups, admin: AdminGroups, branch_manager: AdminGroups, mentor: MentorGroups }} /></SW>} />
         {/* Карточка группы. У админа она была под RoleGuard(['admin']); теперь
             тот же путь обслуживает и ментора — RoleView так же не пускает
@@ -142,6 +153,9 @@ export default function App() {
         <Route path="/tests" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="testlar" /> }} /></SW>} />
         <Route path="/coins" element={<SW><RoleView views={{ mentor: () => <MentorLegacyRedirect tab="koinlar" /> }} /></SW>} />
         <Route path="/students" element={<SW><RoleView views={{ admin: AdminStudents, branch_manager: AdminStudents, seo: SuperStudents, mentor: MentorStudents }} /></SW>} />
+        <Route element={<RoleGuard allow={['seo', 'admin', 'branch_manager', 'finance_manager', 'mentor', 'methodist']} />}>
+          <Route path="/people" element={<SW><PeopleDirectory /></SW>} />
+        </Route>
 
         {/* Admin routes */}
         {/* Карточка ученика: у админа своя, у ментора — статистика по его
@@ -159,17 +173,18 @@ export default function App() {
           {/* deep-link на конкретного студента+сумму — Abduloh, автоподстановка суммы из группы */}
           <Route path="/payments/:studentId/:amount?" element={<SW><AdminPayments /></SW>} />
           <Route path="/mentors" element={<SW><AdminMentors /></SW>} />
-          <Route path="/mentors/:id" element={<SW><AdminMentorDetail /></SW>} />
-          {/* Магазин и Расписание убраны из UI 11.08.2026 (Karis): пункты меню
-              удалены, маршруты закомментированы до востребования. */}
-          {/* <Route path="/shop" element={<SW><AdminShop /></SW>} /> */}
-          {/* <Route path="/schedule" element={<SW><AdminSchedule /></SW>} /> */}
+          {/* Karis (13.08.2026): Shop — управляемая Main Admin'ом фича, прямая
+              ссылка тоже не должна открываться, если он её не включил */}
+          <Route element={<FeatureGuard feature="shop" />}>
+            <Route path="/shop" element={<SW><AdminShop /></SW>} />
+          </Route>
+          <Route path="/schedule" element={<SW><AdminSchedule /></SW>} />
         </Route>
-        {/* Расходы — с 11.08.2026 только у branch manager (Karis); у админа
-            раздел убран из UI. С 12.08.2026 (Abduloh) страница переведена на
-            admin/Expenses (полный CRUD), branch-manager больше не ограничен
-            read-only: add/edit/delete доступны как у админа. */}
-        <Route path="/expenses" element={<SW><RoleView views={{ branch_manager: AdminExpenses }} /></SW>} />
+        {/* Расходы — общий путь для админа и branch manager (RoleView разбирает) */}
+        <Route path="/expenses" element={<SW><RoleView views={{ admin: AdminExpenses, branch_manager: BranchManagerExpenses }} /></SW>} />
+        <Route element={<RoleGuard allow={['seo', 'admin', 'branch_manager']} />}>
+          <Route path="/announcements" element={<SW><SuperAnnouncements /></SW>} />
+        </Route>
 
         {/* Branch Manager: свой обзорный дашборд + разделы, специфичные для роли */}
         <Route element={<RoleGuard allow={['branch_manager']} />}>
@@ -177,16 +192,14 @@ export default function App() {
           <Route path="/branch" element={<SW><BranchManagerBranch /></SW>} />
         </Route>
 
-        {/* Finance Manager routes — static demo (backend rol hali yo'q).
-            'superadmin' роль переименована в 'seo' 07.08.2026 — здесь
-            заменено, иначе SEO не смог бы открыть /finance из своего меню. */}
+        {/* Finance Manager routes. Роль уже поддерживается backend-login,
+            но финансовые страницы пока используют автономные данные панели. */}
         <Route element={<RoleGuard allow={['finance_manager', 'seo']} />}>
           <Route path="/finance" element={<SW><FinanceDashboard /></SW>} />
           <Route path="/finance/income" element={<SW><FinanceIncome /></SW>} />
           <Route path="/finance/expenses" element={<SW><FinanceExpenses /></SW>} />
           <Route path="/finance/salaries" element={<SW><FinanceSalaries /></SW>} />
           <Route path="/finance/reports" element={<SW><FinanceReports /></SW>} />
-          <Route path="/finance/tax" element={<SW><FinanceTax /></SW>} />
           <Route path="/finance/settings" element={<SW><FinanceSettings /></SW>} />
         </Route>
 
@@ -197,13 +210,15 @@ export default function App() {
           <Route path="/admins" element={<SW><SuperAdmins /></SW>} />
           <Route path="/admins/:role/:id" element={<SW><SuperStaffDetail /></SW>} />
           <Route path="/stats" element={<SW><SuperStats /></SW>} />
-          <Route path="/announcements" element={<SW><SuperAnnouncements /></SW>} />
           <Route path="/features" element={<SW><SuperFeatures /></SW>} />
           <Route path="/billing" element={<SW><SuperBilling /></SW>} />
+          <Route path="/org-expenses" element={<SW><SuperExpenses /></SW>} />
           <Route path="/reminders" element={<SW><SuperReminders /></SW>} />
           <Route path="/audit" element={<SW><SuperAudit /></SW>} />
           <Route path="/methodics" element={<SW><SuperTrainingTypes /></SW>} />
-          <Route path="/shop-catalog" element={<SW><SuperShopCatalog /></SW>} />
+          <Route element={<FeatureGuard feature="shop" />}>
+            <Route path="/shop-catalog" element={<SW><SuperShopCatalog /></SW>} />
+          </Route>
         <Route path="/discipline" element={<SW><SuperDiscipline /></SW>} />
         </Route>
 

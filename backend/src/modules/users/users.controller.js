@@ -1,12 +1,26 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { parsePagination, buildPageMeta } from '../../utils/pagination.js';
 import { AppError } from '../../utils/AppError.js';
+import { isFeatureEnabledForOrg } from '../../shared/orgFeatures.js';
 import * as usersService from './users.service.js';
 
-/** GET /api/users/me — текущий пользователь. */
+/**
+ * GET /api/users/me — текущий пользователь + `orgFeatures` (Karis, 13.08.2026):
+ * staff-фронт (admin/seo/branch-manager/mentor/methodist) дёргает этот
+ * эндпоинт на каждую загрузку — удобная точка, чтобы прятать Shop/Telegram
+ * в sidebar, не заводя отдельный роут. Только свой профиль — чужие через
+ * GET /:id этого не получают.
+ */
 export const getMe = asyncHandler(async (req, res) => {
   const user = await usersService.getById(req.user.id);
-  res.json({ success: true, data: user });
+  const orgId = req.user.organizationId;
+  const [shop, telegramIntegration] = orgId
+    ? await Promise.all([
+        isFeatureEnabledForOrg(orgId, 'shop'),
+        isFeatureEnabledForOrg(orgId, 'telegram_integration'),
+      ])
+    : [false, false];
+  res.json({ success: true, data: { ...user, orgFeatures: { shop, telegramIntegration } } });
 });
 
 /** PATCH /api/users/me — обновить свой профиль (роль решает, доступна ли карточка ментора). */
@@ -46,5 +60,19 @@ export const listUsers = asyncHandler(async (req, res) => {
     success: true,
     data: result.items,
     meta: buildPageMeta(result.total, page, limit),
+  });
+});
+
+/** GET /api/users/directory — единая role-aware база людей и клиентов. */
+export const listDirectory = asyncHandler(async (req, res) => {
+  const { role, status, search } = req.query;
+  const { page, limit, offset } = parsePagination(req.query);
+  const result = await usersService.listDirectory({
+    requester: req.user, role, status, search, page, limit, offset,
+  });
+  res.json({
+    success: true,
+    data: result.items,
+    meta: { ...buildPageMeta(result.total, page, limit), ...result.capabilities },
   });
 });

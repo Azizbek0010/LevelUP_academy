@@ -838,3 +838,64 @@ html {
 .mt-fade-in {
   animation: mt-fade 0.3s ease-out both;
 }
+
+/* === DASHBOARD STRICT TOKENS (Admin + SEO shared) === */
+:root {
+  --border-hairline: rgba(29, 36, 23, 0.06);
+  --border-faint: rgba(29, 36, 23, 0.04);
+  --border-subtle: rgba(29, 36, 23, 0.08);
+  --surface-0: #ffffff;
+  --surface-1: #fafbf8;
+  --radius-tight: 4px;
+  --radius-card: 8px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 3px rgba(29,36,23,.04), 0 1px 2px rgba(29,36,23,.03);
+  --shadow-card-hover: 0 4px 12px rgba(29,36,23,.06), 0 2px 4px rgba(29,36,23,.04);
+  --ease-snappy: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-smooth: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-instant: 80ms;
+  --dur-fast: 140ms;
+  --dur-normal: 200ms;
+  --dur-slow: 300ms;
+  --stagger-base: 40ms;
+  --bg-primary: rgba(64, 131, 59, 0.08);
+  --bg-success: rgba(21, 128, 61, 0.08);
+  --bg-warning: rgba(180, 83, 9, 0.08);
+  --bg-danger: rgba(220, 38, 38, 0.08);
+  --bg-info: rgba(37, 99, 235, 0.08);
+}
+
+/* Entrance animations */
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-scale-in { animation: scale-in var(--dur-normal) var(--ease-snappy) both; }
+.animate-slide-up { animation: slide-up var(--dur-normal) var(--ease-snappy) both; }
+.animate-fade-in { animation: fade-in var(--dur-normal) var(--ease-snappy) both; }
+
+/* Stagger delays */
+.stagger-1 { animation-delay: calc(1 * var(--stagger-base)); }
+.stagger-2 { animation-delay: calc(2 * var(--stagger-base)); }
+.stagger-3 { animation-delay: calc(3 * var(--stagger-base)); }
+.stagger-4 { animation-delay: calc(4 * var(--stagger-base)); }
+.stagger-5 { animation-delay: calc(5 * var(--stagger-base)); }
+.stagger-6 { animation-delay: calc(6 * var(--stagger-base)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scale-in, .animate-slide-up, .animate-fade-in,
+  .kpi-card, .branches-table tbody tr, .analytics-cta {
+    animation: none !important;
+    transition: none !important;
+  }
+  .kpi-card:active { transform: none !important; }
+}

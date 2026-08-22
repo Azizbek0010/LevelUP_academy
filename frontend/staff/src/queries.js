@@ -14,19 +14,52 @@ function useAuthedQuery(queryKey, queryFn, opts = {}) {
 
 // -------- SUPER ADMIN --------
 export function useSuperDashboard() {
-  const { token } = useAuth();
-  return useAuthedQuery(['super-dashboard'], () => api.superDashboard(token));
+  const { token, user } = useAuth();
+  // Finance Manager видит те же данные (super.controller.js), но через свой
+  // роут (/finance/*, authorize('finance_manager','seo')) — /super/* у него
+  // 403 на всё остальное. Один и тот же хук для обеих ролей, чтобы не
+  // дублировать Dashboard.jsx/Reports.jsx под каждую роль отдельно.
+  const isFinance = user?.role === 'finance_manager';
+  return useAuthedQuery(['super-dashboard', isFinance], () =>
+    isFinance ? api.financeDashboard(token) : api.superDashboard(token));
 }
 
 /** Статистика организации за период: 7d / 30d / 90d / 12m, опционально по одному филиалу. */
 export function useSuperStats(period = '30d', branchId = '') {
-  const { token } = useAuth();
-  return useAuthedQuery(['super-stats', period, branchId], () => api.superStats(token, period, branchId));
+  const { token, user } = useAuth();
+  const isFinance = user?.role === 'finance_manager';
+  return useAuthedQuery(['super-stats', period, branchId, isFinance], () =>
+    isFinance ? api.financeStats(token, period, branchId) : api.superStats(token, period, branchId));
 }
 
 export function useSuperBranches() {
   const { token } = useAuth();
   return useAuthedQuery(['super-branches'], () => api.superBranches(token));
+}
+
+// -------- FINANCE MANAGER --------
+/** id/name/isMain своей организации — для селекторов на страницах Finance. */
+export function useFinanceBranches() {
+  const { token } = useAuth();
+  return useAuthedQuery(['finance-branches'], () => api.financeBranches(token), { select: (d) => d.branches });
+}
+
+/** params=null — не запрашивать вовсе (например, «предыдущего месяца» не существует). */
+export function useFinanceIncome(params) {
+  const { token } = useAuth();
+  return useAuthedQuery(['finance-income', params], () => api.financeIncome(token, params), {
+    enabled: !!token && params !== null,
+  });
+}
+
+export function useFinanceSalaries(params) {
+  const { token } = useAuth();
+  return useAuthedQuery(['finance-salaries', params], () => api.financeSalaries(token, params));
+}
+
+export function useFinanceExpenses(params) {
+  const { token } = useAuth();
+  return useAuthedQuery(['finance-expenses', params], () => api.financeExpenses(token, params));
 }
 
 export function useSuperBranchDetail(id) {
@@ -166,6 +199,11 @@ export function useAdminStudentTelegram(id) {
 export function useAdminStudentCredentials(id, enabled) {
   const { token } = useAuth();
   return useAuthedQuery(['admin-student-credentials', id], () => api.adminStudentCredentials(token, id), { enabled: !!id && enabled });
+}
+
+export function useAdminParentCredentials(id, enabled) {
+  const { token } = useAuth();
+  return useAuthedQuery(['admin-parent-credentials', id], () => api.adminParentCredentials(token, id), { enabled: !!id && enabled });
 }
 
 export function useAdminGroups(qs = '') {
@@ -358,6 +396,16 @@ export function useMe() {
   return useAuthedQuery(['me'], () => api.me(token));
 }
 
+export function useSuperEmployees() {
+  const { token } = useAuth();
+  return useAuthedQuery(['super-employees'], () => api.superEmployees(token));
+}
+
+export function usePeopleDirectory(qs = '') {
+  const { token } = useAuth();
+  return useAuthedQuery(['people-directory', qs], () => api.peopleDirectory(token, qs));
+}
+
 // K-DISC-FRONT: own discipline (mentor/methodist self-view, read-only)
 export function useMyPenalties() {
   const { token } = useAuth();
@@ -374,13 +422,21 @@ export function useMyDisciplineRules() {
 // запрашивать контакты за них — гарантированный 403 в консоли на каждой странице.
 export function useChatContacts(options = {}) {
   const { token } = useAuth();
-  return useAuthedQuery(['chat-contacts'], () => api.chatContacts(token), options);
+  return useAuthedQuery(['chat-contacts'], () => api.chatContacts(token), {
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+    ...options,
+  });
 }
 
 export function useChatHistory(roomKey) {
   const { token } = useAuth();
   return useAuthedQuery(['chat-history', roomKey], () => api.chatHistory(token, roomKey), {
     enabled: !!roomKey,
+    refetchInterval: roomKey ? 3000 : false,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
 }
 

@@ -51,9 +51,26 @@ const COPY = {
     composerIdle: "Выберите собеседника слева для начала переписки",
     privacyTitle: "Эту переписку видите только вы и собеседник.",
   },
+  manager: {
+    searchPlaceholder: 'Поиск ментора...',
+    emptyTitle: 'Пока нет менторов',
+    emptyHint: 'Менторы вашего филиала появятся здесь автоматически.',
+    pickTitle: 'Выберите ментора',
+    pickHint: 'Выберите ментора из списка слева, чтобы открыть переписку.',
+    composerIdle: 'Выберите ментора слева для начала переписки',
+    privacyTitle: 'Эту переписку видите только вы и выбранный ментор.',
+  },
 };
 
 const fullName = (c) => `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim();
+const PEER_LABELS = {
+  admin: 'Администратор',
+  branch_manager: 'Менеджер филиала',
+  employee: 'Сотрудник',
+  mentor: 'Ментор',
+  parent: 'Родитель',
+  student: 'Ученик',
+};
 
 function formatTime(iso) {
   if (!iso) return '';
@@ -364,27 +381,36 @@ export default function StaffChat({ variant = 'mentor' }) {
   };
 
   const filtered = contacts.filter((c) => {
-    if (variant === 'admin' && c.peer_type === 'student') return false;
-    if (variant === 'admin' && c.peer_type === 'parent') return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return fullName(c).toLowerCase().includes(q)
       || (c.child_names ?? '').toLowerCase().includes(q);
   });
 
-  /* Группировка по типу для отрисовки секций: Менторы → Родители → Ученики.
-     В режиме ментора секции не нужны — там только родители и ученики. */
+  /* Staff contacts are always visible in their own section even when a dialog
+     has never been started. Family contacts follow below. */
   const groupedSections = useMemo(() => {
-    if (variant !== 'admin') return [{ label: null, items: filtered }];
-    const order = ['mentor', 'parent', 'student'];
-    const labels = { mentor: 'Менторы', parent: 'Родители', student: 'Ученики' };
+    const order = variant === 'admin'
+      ? ['mentor', 'parent', 'student']
+      : variant === 'manager'
+        ? ['mentor']
+        : ['admin', 'branch_manager', 'employee', 'parent', 'student'];
+    const labels = {
+      admin: 'Администраторы',
+      branch_manager: 'Менеджеры филиала',
+      employee: 'Сотрудники',
+      mentor: 'Менторы',
+      parent: 'Родители',
+      student: 'Ученики',
+    };
     const groups = new Map(order.map((t) => [t, []]));
     filtered.forEach((c) => {
       const bucket = groups.get(c.peer_type);
       if (bucket) bucket.push(c);
     });
+    const alwaysVisible = variant === 'mentor' ? new Set(['admin']) : new Set();
     return order
-      .filter((t) => groups.get(t).length > 0)
+      .filter((t) => groups.get(t).length > 0 || alwaysVisible.has(t))
       .map((t) => ({ label: labels[t], items: groups.get(t) }));
   }, [filtered, variant]);
 
@@ -527,6 +553,11 @@ export default function StaffChat({ variant = 'mentor' }) {
                         </span>
                       </div>
                     )}
+                    {section.items.length === 0 && section.label === 'Администраторы' && (
+                      <div className="px-4 py-3 text-xs text-base-content/45 border-b border-base-200/60">
+                        В этом филиале администратор не назначен
+                      </div>
+                    )}
                     <ul>
                       {section.items.map((c) => {
                         const active = activeId === c.id;
@@ -555,14 +586,14 @@ export default function StaffChat({ variant = 'mentor' }) {
                                 <div className="flex items-center gap-1.5 mt-0.5">
                                   <span
                                     className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
-                                      c.peer_type === 'mentor'
+                                      ['admin', 'branch_manager', 'employee', 'mentor'].includes(c.peer_type)
                                         ? 'bg-accent/10 text-accent'
                                         : c.peer_type === 'student'
                                           ? 'bg-primary/10 text-primary'
                                           : 'bg-base-200 text-base-content/55'
                                     }`}
                                   >
-                                    {c.peer_type === 'mentor' ? 'Ментор' : c.peer_type === 'student' ? 'Ученик' : 'Родитель'}
+                                    {PEER_LABELS[c.peer_type] || 'Собеседник'}
                                   </span>
                                   {c.child_names && (
                                     <span className="text-[11px] text-base-content/45 truncate">

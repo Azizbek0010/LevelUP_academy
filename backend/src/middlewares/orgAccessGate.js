@@ -39,7 +39,16 @@ export async function orgAccessGate(req, _res, next) {
 
 async function getOrgAccessRow(orgId) {
   const cached = await redis.get(cacheKey(orgId)).catch(() => null);
-  if (cached) return JSON.parse(cached);
+  // Redis may be unavailable in local development. Some failed/replayed
+  // ioredis commands can resolve with a non-cache diagnostic value; never let
+  // malformed cache data turn every protected API route into HTTP 500.
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch {
+      // Treat an invalid cache entry as a miss and use PostgreSQL below.
+    }
+  }
 
   const { rows } = await pool.query(
     `SELECT status, access_until FROM organizations WHERE id = $1 AND deleted_at IS NULL`,

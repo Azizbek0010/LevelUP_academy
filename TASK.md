@@ -1,8 +1,148 @@
+## ✅ Frontend/staff — дизайн выровнен по эталону Main Admin (13.08.2026, Karis)
+
+> "har bir pageni... main admin desingi dashboard design ga o'hshasin full".
+> Разница оказалась не в компонентах, а в ТЕМЕ: `main-admin/tailwind.config.js`
+> ещё 11.08 уменьшил радиус скруглений DaisyUI ("острее углы = серьёзнее
+> продукт"), а `frontend/staff/tailwind.config.js` — общий для Admin/SEO/
+> Mentor/Methodist/Branch Manager/Finance — так и остался на старом мягком
+> `--rounded-box: 1rem`. Один токен правится → эффект сразу на ВСЕХ страницах,
+> использующих `.card`/`.btn`/`.badge`/`.modal-box` (подавляющее большинство).
+>
+> - [x] `tailwind.config.js`: `--rounded-box` 1rem→0.5rem, `--rounded-btn`
+>       0.6rem→0.375rem, добавлен `--rounded-badge: 0.25rem` (как в main-admin).
+> - [x] Три общих UI-кита донастроены под тот же паттерн Main Admin (`card
+>       bg-base-100 border border-base-200/60 shadow-sm`, иконка-чип `w-8 h-8
+>       rounded-lg`, подпись capslock 11px, значение `text-3xl font-extrabold
+>       tabular-nums`) — везде убраны хардкод-переопределения `rounded-2xl`,
+>       которые сам токен не ловит:
+>       `pages/super/_ui.jsx` (Card/Panel/Metric/EmptyState — держит Дисциплину,
+>       Объявления, Фичи, StaffDetail, BranchDetail и другие SEO-страницы),
+>       `pages/mentor/_ui.jsx` (Panel/Kpi/EmptyState — держит Students/Groups/
+>       Mentors/Payments/Dashboard/Reports по комментарию в файле),
+>       `pages/finance/_ui.jsx` (см. блок выше, 13.08 раньше этой сессии).
+> - [x] Точечно: `finance/Settings.jsx`, `super/Branches.jsx` (плитки филиалов),
+>       `super/BranchFormModal.jsx` (модалка) — убраны локальные `rounded-2xl`.
+> - [x] Живьём проверено (SEO): Дашборд, Филиалы, Дисциплина, Финансы — единый
+>       плоский стиль, без ошибок в консоли.
+> - ⚠️ **Не 100% страниц.** Methodist сознательно НЕ трогал — у него отдельная
+>       задокументированная "Content Studio" айдентика (index.css, лайм-акцент)
+>       — не путать с недосмотром. Чат-пузыри/попап-меню (StaffChat, дропдауны)
+>       тоже не трогал — они намеренно круглее карточек, это отдельный паттерн,
+>       не "дашборд". Остальные мелкие изолированные `rounded-2xl` (иконки-
+>       декорации, demo-блок на Login) — не системные, специально не искал все
+>       до единого ради самого "full" — если где-то ещё бросится в глаза,
+>       скажи, дочищу точечно.
+
 # LevelUp Academy — MASTER TASK LIST
 
 > Bu fayl — barcha vazifalarning yagona manbaidir. `done.md` avtomatik yangilanadi (`scripts/update-done.py`).
 > Statistika qo'lda YOZILMAYDI — real raqamlar faqat `done.md` da.
 > V1 SCOPE: naqd + karta (full/split). Click/Payme/UzCard/Humo — FAQAT v3. Nasiya/рассрочка — V1 DA YO'Q (qaror 2026-07-05, tasdiqlangan 2026-07-07).
+
+## ✅ Shop/TG gate — qayta tekshirildi va JONLI tasdiqlandi (13.08.2026, Karis so'rovi)
+
+> Ikkita migratsiya ishga tushirildi (`npm run migrate`, Neon) — bulardan biri
+> **prodda login'ni butunlay buzib turgan edi** (`preferred_language` ustuni
+> yo'q edi, XOB-4 committidan beri). Login endi ishlaydi.
+>
+> Qayta o'qishda topilgan va tuzatilgan xatolar:
+> 1. **Real bag**: `Branch.jsx` `TelegramGroupCard` — `useState` shartli
+>    `return null`dan KEYIN chaqirilardi (Rules of Hooks buzilishi) — React
+>    "Rendered more/fewer hooks" bilan qulagan bo'lardi. Barcha hook'lar
+>    return'dan oldinga ko'chirildi.
+> 2. **Ortiqcha DB so'rov**: `telegram.controller.js` `pollLogin` —
+>    `isFeatureEnabledForOrg` ni yana chaqirardi, holbuki `loginByUserId`
+>    (`publicUser()`) buni ALLAQACHON hisoblagan (`session.user.orgFeatures`).
+>    Olib tashlandi.
+>
+> **Jonli tekshirildi (brauzer + to'g'ridan-to'g'ri DB, Karis test org'i,
+> keyin asl holatiga qaytarildi):**
+> - `requireOrgFeature` middleware: OFF → 403, ON → o'tkazadi (to'g'ridan-to'g'ri).
+> - Branch Manager sidebar: Shop OFF → "Do'kon" yo'q, `/shop`ga to'g'ridan-to'g'ri
+>   kirish → redirect `/`ga. Shop ON (DB orqali) → "Do'kon" paydo bo'ldi,
+>   `/shop` ochildi (bo'sh katalog, kutilganidek).
+> - Main Admin → Партнёр → Финансы → **haqiqiy UI tumbler bosildi** (skript
+>   emas) — `shop` `org_feature_flags`da `true` bo'lib yozildi, brauzerda
+>   yashil ko'rindi. To'liq zanjir ishlaydi: tumbler → PATCH → DB → gate → UI.
+> - `/features` katalogida "Магазин коинов (Shop)" va "Telegram-интеграция"
+>   ikkalasi ham ko'rinadi (seed-migratsiya ishladi).
+
+## Backend+Frontend — Shop va Telegram fича-gate (Karis, 13.08.2026) ✅ kod tayyor, migratsiya KUTMOQDA
+
+> So'rov: Main Admin Shop va Telegram-integratsiyani partnyorlarga alohida
+> yoqib/o'chira olishi kerak (xuddi shu mexanizm — `org_feature_flags` +
+> `platform_addon_prices` + SEO so'rov-inbox — allaqachon AI-review uchun
+> ishlagan, endi shu ikkisiga ham qo'shildi). O'chirilgan bo'lsa — sidebar'da
+> ko'rinmasin VA to'g'ridan-to'g'ri link bilan ham ochilmasin (backend ham
+> 403 qaytaradi, front ham yashiradi).
+>
+> **Migratsiya `1786578520188_seed-shop-telegram-feature-keys.js` — ATAYLAB
+> ishga tushirilmadi** (o'sha CLAUDE.md qoidasi: faqat localhost yoki Karis
+> ruxsati bilan). `npm run migrate` qilinmaguncha `shop`/`telegram_integration`
+> `platform_addon_prices` katalogida ko'rinmaydi va Main Admin ularni hali
+> tumbler qila olmaydi — kod tayyor, birgina shu qadam qolgan.
+
+- [x] Umumiy: `shared/orgFeatures.js` (`isFeatureEnabledForOrg`, Redis'siz —
+      Upstash kvotasi ustiga yana bir gейт qo'ymaslik uchun), middleware
+      `requireOrgFeature(key)` — rout-daraxtga osiladi, 403 qaytaradi.
+- [x] Shop: gейт `student.routes.js` (`/shop`), `admin.routes.js` (`/shop`),
+      `super.routes.js` (4 ta `/shop/items*` rout alohida-alohida, chunki
+      sub-router emas). Sidebar: `frontend/staff` — `Layout.jsx`
+      `filterNavByFeatures()` (admin/seo/branch_manager), route guard —
+      yangi `FeatureGuard.jsx` (`App.jsx` `/shop`, `/shop-catalog`).
+      `frontend/member` (student) — `student/components/Layout.jsx`
+      `buildNav()`, route guard — `App.jsx` ichidagi lokal `FeatureGuard`.
+- [x] Telegram: gейт `telegram.routes.js` (`POST /bind-token`),
+      `branch-manager.routes.js` (`POST /telegram/bind-token`),
+      `admin.routes.js` (`POST /students/:id/telegram/message`). Login
+      (`/telegram/login/*`) — PUBLIC rout, org faqat `loginByUserId`dan KEYIN
+      ma'lum bo'ladi, shuning uchun gейт `telegram.controller.js`
+      `pollLogin()` ichida (session chiqqandan keyin, lekin consume'dan
+      oldin). Bot tomonidan yangi bind (`bot.handlers.js` `handleBind`) —
+      race uchun qo'shimcha tekshiruv (token band bo'lgan payt fича yoqiq
+      edi, lekin bot bilan gaplashguncha o'chirilgan bo'lishi mumkin).
+      `getStatus`/`unlink` — ATAYLAB gейtланмаган (o'chirilgan holda ham
+      eski bog'lanishni ko'rish/uzish imkoni qolsin — xavfsizlik klapani).
+- [x] Frontend Telegram-UI: `frontend/staff` — Branch Manager
+      `TelegramGroupCard` (`Branch.jsx`, butunlay yashirin), Admin
+      `StudentDetail.jsx` "Написать в Telegram" bloki. `frontend/member` —
+      student sidebar TG-bind bloki (`student/components/Layout.jsx`),
+      Parent `Profile.jsx` TG-karta butunlay.
+      ⚠️ **Login sahifasidagi "Telegram orqali kirish" tugmasi — ГЕЙТЛАНМАДИ.**
+      Bu login'gacha, foydalanuvchi (demak — organizatsiya) hali noma'lum;
+      qaysi orgга tekshirish kerakligini frontend oldindan bila olmaydi.
+      Amalda himoyalangan — backend `pollLogin` o'chirilgan bo'lsa 403
+      qaytaradi (endi haqiqiy xato ko'rinadi, "muddati tugadi" emas — pastga
+      qara).
+- [x] `orgFeatures: {shop, telegramIntegration}` — `publicUser()`
+      (`auth.service.js`, barcha login/refresh javoblarida), `GET
+      /api/users/me` (staff-front shu orqali biladi), `GET /api/student/home`.
+
+## 🐛 TG-LOGIN BUG (topildi va tuzatildi 13.08.2026 shu sessiyada)
+
+> Karis: "student tg orqali kirish ishlamayapti". Sabab ikkita, ikkalasi ham
+> tuzatildi:
+>
+> 1. **`telegram.controller.js` `pollLogin()`** — nonce'ni `loginByUserId()`
+>    MUVAFFAQIYATLI bo'lishidan OLDIN o'chirar edi (`login-nonce.service.js`
+>    `claim()`). `loginByUserId` xato bersa (Redis o'chgan, org-gate va h.k.)
+>    — xato haqiqiy edi, lekin nonce allaqachon o'chgan, keyingi opros
+>    "unknown" ko'rsatardi. Tuzatildi: `claim()` endi FAQAT o'qiydi,
+>    yangi `consume()` faqat sessiya muvaffaqiyatli chiqqandan KEYIN chaqiriladi.
+> 2. **`frontend/member/src/pages/Login.jsx`** `onTelegramLogin` — real xatoni
+>    (masalan 403/500, `err.status` bor) tarmoq uzilishi bilan bir xil `catch
+>    {}`ga solib, jim yutib yuborardi, keyingi tikda "muddati tugadi" degan
+>    umumiy xabar chiqardi. Tuzatildi: `err.status` bo'lsa — haqiqiy xabar
+>    ko'rsatiladi, bo'lmasa (tarmoq uzilishi) — opros davom etadi.
+>
+> ⚠️ **Karis'ning o'z test-akkaunti (`demostud`) uchun TEKSHIRILDI — bu ikkisi
+> sabab emas edi.** `org_feature_flags` (`student_panel`/`parent_panel`) —
+> `true`, `telegram_accounts` — bog'langan, org — `active`, `access_until`
+> kelajakda. To'g'ridan-to'g'ri probe qilindi: xuddi shu `SET...NX` buyrug'i
+> (nonce yaratish nima ishlatadi) jonli Redis'da **`Command timed out`**
+> qaytardi — demak asosiy sabab hozircha ham 🔴 yuqoridagi Upstash kvotasi
+> (pastga qara), kod bagi emas. Kvota tiklanmaguncha TG-login (yangi
+> bind ham) baribir ishlamaydi — bu Claude to'lay olmaydigan narsa.
 
 ## 🔴 SHOSHILINCH — Upstash Redis limit tugagan (11.08.2026 topildi)
 
@@ -28,6 +168,57 @@ bilan pushlandi (Karis ruxsati bilan), Render qayta deploy qildi, prod
 tekshirildi — `HTTP 200`. ⚠️ Bu Redis'ni "tuzatmaydi" — faqat Redis
 o'chganda API'ning butunlay yiqilib tushishini to'xtatadi (leaderboard/OTP/
 navbatlar baribir ishlamaydi, kvota tugagunicha yoki ko'tarilgunicha).
+
+## Backend — Student paneli: XOB so'rovi (Telegram, 12.08.2026) ✅ kod tayyor, migratsiya KUTMOQDA
+
+> Manba: XOB → Karis, Telegram shaxsiy chat, 2026-08-12T10:50. Kodlandi 13.08.2026
+> (Karis so'rovi bilan, shu sessiyada). **4 tasi ham backendda yozildi**, lekin
+> to'liq jonli tekshiruv 2 ta sababdan BLOKLANGAN — kod emas, muhit:
+> (1) yangi migratsiya `1786574763938_add-student-preferred-language.js`
+> `.env`dagi `DATABASE_URL` to'g'ridan-to'g'ri Neon (prod)ga qarayotgani uchun
+> ATAYLAB ishga tushirilmadi (CLAUDE.md qoidasi: migratsiya faqat localhost'da,
+> yoki Karis ruxsati bilan qo'lda) — shu ustun yo'qligi sababli `npm test`da
+> auth-suite'ning bir qismi `column "preferred_language" does not exist` beradi;
+> (2) yuqoridagi 🔴 Upstash kvota muammosi hali yechilmagan — leaderboard/shop/
+> payments suite'lari "Command timed out"/"max requests limit" bilan yiqiladi,
+> bularning hech biri shu ishga aloqador emas (mentor/homework/tests/videos —
+> Redisga tegmaydigan hamma narsa — yashil). **Karis: migratsiyani ishga
+> tushirish kerak** (`npm run migrate`, Neon'ga) — shundan keyin bu blok ham
+> yopiladi.
+
+- [x] XOB-1 LEADERBOARD-GROUP: `GET /api/student/leaderboard?groupId=...`
+      — Redisga qo'shimcha yuk bermaslik uchun (Upstash kvotasi tugagan holda)
+      ZSET orqali emas, `coin_history`dan to'g'ridan-to'g'ri SQL bilan
+      hisoblanadi (guruh a'zolari + shu davrdagi ijobiy coin'lar yig'indisi).
+      403, agar talaba shu guruhga a'zo bo'lmasa. Javob formati filial-
+      leaderboard bilan bir xil (`{period, top, me}` — XOB `items` deb yozgan
+      edi, lekin bordagi field nomi haqiqatda `top`, shunga moslandi).
+      Fayllar: `leaderboard.schemas.js`, `leaderboard.controller.js`,
+      `leaderboard/leaderboard.service.js` (`getGroupLeaderboard`).
+- [x] XOB-2 VISIT-STREAK: `GET /api/student/home` ga `streak`/`longestStreak`
+      — `attendance`dan hisoblanadi (kun = "borilgan", agar o'sha kunning
+      BARCHA yozuvlari 'present' bo'lsa — bir necha guruhli talabalar uchun).
+      `home.repository.js` (`getAttendanceHistory`), `home.service.js`
+      (`computeAttendanceStreaks`).
+- [x] XOB-3 LESSON-REVIEW: `GET /api/student/lessons/:id` submission ichiga
+      `review` + `reviewStatus` — ma'lumot DB'da allaqachon bor edi, faqat
+      qaytarilmagan edi. `lessons.service.js` (`getLessonDetail`).
+- [x] XOB-4 STUDENT-LANGUAGE: `users.preferred_language` ('ru'|'uz', NULL =
+      hali tanlanmagan) — yangi migratsiya. `GET /student/home` va barcha
+      login javoblarida (`publicUser`, `auth.service.js`) qaytariladi;
+      talaba o'zi yozishi uchun **yangi endpoint** `PATCH /student/home/language`
+      qo'shildi (XOB spekada yo'q edi, lekin maydon hech qachon to'lmasligi
+      uchun kerak edi). Ishlatildi: `ai-review/service.js` (DEFAULT_LANG
+      o'rniga `submission.student_language`), `notifyTestResult`
+      (`lessons.service.js` — sarlavha ru/uz, hali tanlamagan uchun eski
+      xulq-atvor — uz — saqlanadi), Telegram-bot `/home /coins /rating`
+      buyruqlari (`bot.handlers.js` — `dataCommand` ichida `messages()`
+      endi global emas, foydalanuvchi tilida). ⚠️ `/start /help /bindbranch
+      /stop` — hali aniqlanmagan foydalanuvchi, global til qoladi (boshqacha
+      imkoni yo'q). `coinsCommand`/`ratingCommand`/`homeCommand`
+      (`bot.commands.js`) matni — alohida, `messages()`ga bog'liq emas, hali
+      100% qattiq uzbekcha qoladi — buni tarjima qilish XOB so'ragan doiradan
+      tashqarida (katta, alohida ish).
 
 ## Backend — Main Admin: tarif/fича-flag/to'lov/xarajat/anons (Karis, 11.08.2026)
 
@@ -1075,6 +1266,15 @@ qatorga tegilgan).
       Docker'da tekshirilgan, hali hech qanday bazaga qo'llanmagan (prod ham, local ham).
       Qo'llashda: barcha joriy SEO/Super Admin foydalanuvchilari qayta login qilishi kerak
       (JWT'dagi eski role qiymati bilan `authorize('seo')` endi mos kelmaydi).
+
+- [x] ROLE-FINANCE ✅ **YOPILDI 22.08.2026 (Karis)** — rol endi mock emas, HAQIQIY backend roli:
+      migratsiya `1787090000000_finance-manager-org-wide.js` (butun tashkilot, `branch_id IS NULL`),
+      alohida modul `backend/src/modules/finance/` → `/api/finance/*`, huquq
+      `authorize('finance_manager','seo')`. SEO bloki (`super.routes.js`) ATAYLAB kengaytirilmadi —
+      aks holda filiallar/adminlar/o'quvchilar ham ochilib ketardi. 6 sahifa real ma'lumotga
+      o'tdi, `pages/finance/_data.js` butunlay o'chirildi. Scope savoliga javob: BUTUN TASHKILOT
+      (SEO darajasida). Tafsilot va topilgan 10 ta hisob-kitob xatosi — `done.md`, 22.08.2026.
+      Quyida dastlabki topshiriq matni tarix uchun saqlanadi:
 
 - [ ] ROLE-FINANCE 🔄 EGASI (frontend, jamoa): **Shohjahon, Aziz, Alish** (Karis
       tayinladi, 2026-08-04). Yangi rol — **Finance Manager** (Finans menejeri). Karis

@@ -1,118 +1,78 @@
-import { useMemo, useState } from 'react';
-import { Wallet, TrendingUp, Search, CreditCard } from 'lucide-react';
+import { useState } from 'react';
+import { Wallet, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
-import { Metric, Card, StatusBadge, MethodBadge, BranchSelect, MonthSelect } from './_ui.jsx';
-import { useTranslation } from "react-i18next";
-import { BRANCHES, MONTHS, CURRENT_MONTH, INCOME, monthRow, MONTH_LABEL } from './_data.js';
-
-const scopeTotal = (branchId, monthKey) =>
-  branchId === 'all'
-    ? BRANCHES.reduce((a, b) => a + (monthRow(b.id, monthKey)?.income ?? 0), 0)
-    : (monthRow(branchId, monthKey)?.income ?? 0);
-
-const prevMonthKey = (monthKey) => {
-  const i = MONTHS.findIndex((m) => m.key === monthKey);
-  return i > 0 ? MONTHS[i - 1].key : monthKey;
-};
+import { Metric, Card, BranchSelect, MonthSelect, monthOptions, monthRange } from './_ui.jsx';
+import { useT } from './_i18n.jsx';
+import { useFinanceBranches, useFinanceIncome } from '../../queries.js';
 
 export default function FinanceIncome() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [branchId, setBranchId] = useState('all');
-  const [monthKey, setMonthKey] = useState(CURRENT_MONTH);
-  const [search, setSearch] = useState('');
-  const [method, setMethod] = useState('all');
+  const months = monthOptions(lang);
+  const [monthKey, setMonthKey] = useState(months[0].key);
+  const [page, setPage] = useState(1);
 
-  const total = scopeTotal(branchId, monthKey);
-  const prevTotal = scopeTotal(branchId, prevMonthKey(monthKey));
-  const trend = prevTotal ? Math.round(((total - prevTotal) / prevTotal) * 100) : 0;
+  const { data: branches } = useFinanceBranches();
+  const { from, to } = monthRange(monthKey);
+  const prevMonthKey = months[months.findIndex((m) => m.key === monthKey) + 1]?.key;
+  const prevRange = prevMonthKey ? monthRange(prevMonthKey) : null;
 
-  // Детальные платежи видны только по конкретному филиалу за текущий месяц
-  const detail = branchId !== 'all' && monthKey === CURRENT_MONTH ? INCOME[branchId] : null;
+  const params = { branchId: branchId === 'all' ? '' : branchId, from, to, page, limit: 20 };
+  const { data, isLoading } = useFinanceIncome(params);
+  // Предыдущий месяц — только для тренда, детальный список не нужен (limit=1
+  // с точки зрения бэка не экономит much, но лишние 19 строк каждый раз
+  // качать ради одного числа не нужно).
+  const { data: prevData } = useFinanceIncome(
+    prevRange ? { branchId: params.branchId, from: prevRange.from, to: prevRange.to, page: 1, limit: 1 } : null,
+  );
 
-  // Разбивка по методам оплаты (текущий месяц)
-  const methodBreakdown = useMemo(() => {
-    if (!detail) return [];
-    const map = new Map();
-    detail.forEach((p) => map.set(p.method, (map.get(p.method) ?? 0) + p.amount));
-    return ['Karta', 'Naqd', 'Hybrid']
-      .map((m) => ({ method: m, value: map.get(m) ?? 0, count: detail.filter((p) => p.method === m).length }))
-      .filter((r) => r.count > 0);
-  }, [detail]);
+  const total = data?.total ?? 0;
+  const prevTotal = prevData?.total ?? null;
+  // Рост от нуля/от "нет данных за прошлый месяц" не определён — не выдумываем 0%.
+  const trend = prevTotal ? Math.round(((total - prevTotal) / prevTotal) * 100) : null;
 
-  // Фильтрация: поиск по ученику/группе + фильтр метода оплаты
-  const filteredDetail = useMemo(() => {
-    if (!detail) return [];
-    const q = search.trim().toLowerCase();
-    return detail.filter((p) => {
-      if (method !== 'all' && p.method !== method) return false;
-      if (!q) return true;
-      return `${p.student} ${p.group}`.toLowerCase().includes(q);
-    });
-  }, [detail, search, method]);
+  const label = branchId === 'all'
+    ? t('common.allBranches')
+    : (branches ?? []).find((b) => b.id === branchId)?.name ?? '';
 
-  const rows = useMemo(() => {
-    if (branchId === 'all') {
-      return BRANCHES.map((b) => ({ key: b.id, label: b.name, value: monthRow(b.id, monthKey)?.income ?? 0 }));
-    }
-    return MONTHS.map((m) => ({ key: m.key, label: m.label, value: monthRow(branchId, m.key)?.income ?? 0 }));
-  }, [branchId, monthKey]);
-
-  const label = branchId === 'all' ? t('common.allBranches') : BRANCHES.find((b) => b.id === branchId).name;
+  const rows = data?.income ?? [];
+  const meta = data?.meta ?? { page: 1, totalPages: 1, total: 0 };
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title={t('income.title')} subtitle={t('income.subtitle')}>
-      </PageHeader>
+      <PageHeader title={t('income.title')} subtitle={t('income.subtitle')} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
         <Metric
           Icon={Wallet}
           label={t('kpi.income')}
           value={money(total)}
-          sub={`${label} · ${MONTH_LABEL[monthKey]}`}
+          sub={`${label} · ${months.find((m) => m.key === monthKey)?.label}`}
           tone="success"
-          trend={trend}
+          trend={trend ?? undefined}
           trendLabel={t('common.vsPrev')}
         />
         <Metric
           Icon={TrendingUp}
           label={t('common.total')}
-          value={`${rows.length}`}
-          sub={branchId === 'all' ? t('common.branch') : t('common.month')}
+          value={`${meta.total}`}
+          sub={t('income.tableTitle')}
           tone="info"
         />
       </div>
-
-      {detail && methodBreakdown.length > 0 && (
-        <Card
-          title={t('income.byMethod')}
-          subtitle={`${label} · ${MONTH_LABEL[monthKey]}`}
-          bodyClass="p-4"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {methodBreakdown.map((r) => (
-              <div key={r.method} className="flex items-center gap-3 rounded-xl border border-base-300 bg-base-200/40 px-4 py-3">
-                <span className="grid h-9 w-9 place-items-center rounded-lg bg-base-content/5">
-                  <CreditCard size={18} className="text-base-content/60" />
-                </span>
-                <div className="min-w-0">
-                  <MethodBadge method={r.method} t={t} />
-                  <p className="mt-1 text-[16px] font-extrabold tabular-nums">{money(r.value)}</p>
-                </div>
-                <span className="ml-auto text-[12px] text-base-content/40">{r.count} {t('common.total').toLowerCase()}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
 
       <Card
         title={t('income.tableTitle')}
         action={
           <div className="flex items-center gap-2">
-            <BranchSelect value={branchId} onChange={setBranchId} allLabel={t('common.allBranches')} branches={BRANCHES} />
-            <MonthSelect value={monthKey} onChange={setMonthKey} months={MONTHS} />
+            <BranchSelect
+              value={branchId}
+              onChange={(v) => { setBranchId(v); setPage(1); }}
+              allLabel={t('common.allBranches')}
+              branches={branches ?? []}
+            />
+            <MonthSelect value={monthKey} onChange={(v) => { setMonthKey(v); setPage(1); }} months={months} />
           </div>
         }
         bodyClass="p-0"
@@ -121,79 +81,54 @@ export default function FinanceIncome() {
           <table className="table table-sm">
             <thead>
               <tr className="text-[12px] uppercase tracking-wider text-base-content/50">
-                <th>{branchId === 'all' ? t('common.branch') : t('common.month')}</th>
+                <th>{t('common.date')}</th>
+                {branchId === 'all' && <th>{t('common.branch')}</th>}
+                <th>{t('income.student')}</th>
+                <th>{t('income.group')}</th>
+                <th>{t('common.method')}</th>
                 <th className="text-right">{t('common.amount')}</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.key} className="text-sm">
-                  <td className="font-medium">{r.label}</td>
-                  <td className="text-right tabular-nums text-success font-semibold">{money(r.value)}</td>
+              {isLoading ? (
+                <tr><td colSpan={6} className="text-center py-6 text-base-content/50">{t('common.loading')}</td></tr>
+              ) : rows.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-6 text-base-content/50">{t('common.noData')}</td></tr>
+              ) : rows.map((r) => (
+                <tr key={r.id} className="text-sm">
+                  <td className="tabular-nums whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString()}</td>
+                  {branchId === 'all' && <td className="text-base-content/70">{r.branchName}</td>}
+                  <td className="font-medium">{r.studentName ?? '—'}</td>
+                  <td className="text-base-content/70">{r.groupName ?? '—'}</td>
+                  <td>{r.method}</td>
+                  <td className="text-right tabular-nums font-semibold text-success">{money(r.amount)}</td>
                 </tr>
               ))}
-              <tr className="border-t border-base-300 bg-base-200/50 font-bold text-sm">
-                <td>{t('common.total')}</td>
-                <td className="text-right tabular-nums">{money(total)}</td>
-              </tr>
             </tbody>
+            {rows.length > 0 && (
+              <tfoot>
+                <tr className="border-t border-base-300 bg-base-200/50 font-bold text-sm">
+                  <td colSpan={branchId === 'all' ? 5 : 4}>{t('common.total')}</td>
+                  <td className="text-right tabular-nums">{money(total)}</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
-      </Card>
-
-      {detail && (
-        <Card
-          title={`${t('income.tableTitle')} · ${label} · ${MONTH_LABEL[monthKey]}`}
-          action={
-            <div className="flex items-center gap-2">
-              <label className="input input-bordered input-sm flex items-center gap-2">
-                <Search size={14} className="text-base-content/40" />
-                <input
-                  type="text"
-                  placeholder={t('common.search')}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-40"
-                />
-              </label>
-              <select className="select select-bordered select-sm" value={method} onChange={(e) => setMethod(e.target.value)}>
-                <option value="all">{t('common.method')} · {t('common.all')}</option>
-                {['Karta', 'Naqd', 'Hybrid'].map((m) => (
-                  <option key={m} value={m}>{t(m === 'Karta' ? 'method.karta' : m === 'Naqd' ? 'method.naqd' : 'method.hybrid')}</option>
-                ))}
-              </select>
+        {meta.totalPages > 1 && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-base-200">
+            <span className="text-xs text-base-content/50">{t('common.page')} {meta.page} / {meta.totalPages}</span>
+            <div className="flex gap-1.5">
+              <button className="btn btn-ghost btn-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                <ChevronLeft size={14} />
+              </button>
+              <button className="btn btn-ghost btn-xs" disabled={page >= meta.totalPages} onClick={() => setPage((p) => p + 1)}>
+                <ChevronRight size={14} />
+              </button>
             </div>
-          }
-          bodyClass="p-0"
-        >
-          <div className="overflow-x-auto">
-            <table className="table table-sm">
-              <thead>
-                <tr className="text-[12px] uppercase tracking-wider text-base-content/50">
-                  <th>{t('common.date')}</th>
-                  <th>{t('income.student')}</th>
-                  <th>{t('income.group')}</th>
-                  <th>{t('common.method')}</th>
-                  <th>{t('common.status')}</th>
-                  <th className="text-right">{t('common.amount')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDetail.map((p) => (
-                  <tr key={p.id} className="text-sm">
-                    <td className="tabular-nums whitespace-nowrap">{p.date}</td>
-                    <td className="font-medium">{p.student}</td>
-                    <td className="text-base-content/70">{p.group}</td>
-                    <td><MethodBadge method={p.method} t={t} /></td>
-                    <td><StatusBadge status={p.status} /></td>
-                    <td className="text-right tabular-nums font-semibold">{money(p.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
-        </Card>
-      )}
+        )}
+      </Card>
     </div>
   );
 }

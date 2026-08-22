@@ -5,6 +5,62 @@ const email = z.string().trim().toLowerCase().email('Invalid email');
 // :id в пути
 export const idParam = z.object({ id: z.string().uuid('Invalid id') });
 
+export const createEmployeeSchema = z.object({
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  email,
+  branchId: z.string().uuid('Invalid branchId'),
+  jobTitle: z.string().trim().min(2).max(120),
+  phone: z.string().trim().max(30).optional(),
+});
+
+export const createOrgMentorSchema = z.object({
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  email,
+  branchId: z.string().uuid('Invalid branchId'),
+  phone: z.string().trim().max(30).optional(),
+});
+
+export const updateEmployeeSchema = z.object({
+  firstName: z.string().trim().min(1).max(80).optional(),
+  lastName: z.string().trim().min(1).max(80).optional(),
+  branchId: z.string().uuid('Invalid branchId').optional(),
+  jobTitle: z.string().trim().min(2).max(120).optional(),
+  phone: z.string().trim().max(30).optional(),
+  monthlySalary: z.coerce.number().min(0).max(1_000_000_000_000).optional(),
+}).refine((v) => Object.keys(v).length > 0, { message: 'At least one field is required' });
+
+// SEO создаёт расход на уровне организации, поэтому филиал указывается
+// явно и затем проверяется по organization_id в service.
+export const createOrgExpenseSchema = z.object({
+  // null = expense for the whole learning center, UUID = one concrete branch
+  branchId: z.string().uuid('Invalid branchId').nullable(),
+  category: z.string().trim().min(1).max(60),
+  amount: z.coerce.number().positive().max(9_999_999_999),
+  spentAt: z.coerce.date().optional(),
+  note: z.string().trim().max(1000).optional(),
+});
+
+export const listOrgExpensesSchema = z.object({
+  // omitted = all scopes, "organization" = only center-wide expenses
+  branchId: z.union([z.string().uuid('Invalid branchId'), z.literal('organization')]).optional(),
+  page: z.string().optional(),
+  limit: z.string().optional(),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+});
+
+export const updateOrgExpenseSchema = z
+  .object({
+    category: z.string().trim().min(1).max(60),
+    amount: z.coerce.number().positive().max(9_999_999_999),
+    spentAt: z.coerce.date(),
+    note: z.string().trim().max(1000),
+  })
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, { message: 'At least one field is required' });
+
 // цена абонемента методики — та же граница, что и у monthlyPrice группы в admin.schemas.js
 export const setTrainingTypePriceSchema = z.object({
   price: z.coerce.number().nonnegative().max(9_999_999_999),
@@ -83,6 +139,14 @@ export const updateAdminSchema = z
 // заморозка / разморозка админа
 export const freezeSchema = z.object({ frozen: z.boolean() });
 
+export const updateMentorGradeSchema = z.object({
+  grade: z.enum(['junior', 'middle', 'senior']).nullable(),
+});
+
+export const updateMentorBranchSchema = z.object({
+  branchId: z.string().uuid('Invalid branchId'),
+});
+
 // SEO создаёт филиал в своей организации
 export const createBranchSchema = z.object({
   name: z.string().trim().min(2, 'Too short').max(120),
@@ -132,7 +196,26 @@ export const freezeMethodistSchema = z.object({ frozen: z.boolean() });
 export const createAnnouncementSchema = z.object({
   title: z.string().trim().min(1).max(200),
   body: z.string().trim().min(1).max(4000),
-  targetType: z.enum(['all-staff', 'all-admins', 'all-mentors', 'all-parents', 'all-students']),
+  targetType: z.enum(['all-staff', 'all-admins', 'all-mentors', 'all-parents', 'all-students', 'all-families']),
+  branchId: z.string().uuid().nullable().optional(),
+  expiresAt: z.string().datetime(),
+  imageUrl: z.string().url().max(1000).nullable().optional(),
+  imageKey: z.string().max(600).nullable().optional(),
+});
+
+export const improveAnnouncementSchema = z.object({
+  title: z.string().trim().max(200).default(''),
+  body: z.string().trim().max(4000).default(''),
+  targetType: z.enum(['all-staff', 'all-admins', 'all-mentors', 'all-parents', 'all-students', 'all-families']),
+  branchId: z.string().uuid().nullable().optional(),
+  expiresAt: z.string().datetime(),
+  details: z.object({
+    eventDateTime: z.string().max(80).optional().default(''),
+    location: z.string().max(300).optional().default(''),
+    mapUrl: z.string().max(500).optional().default(''),
+    contact: z.string().max(200).optional().default(''),
+    extra: z.string().max(1000).optional().default(''),
+  }).optional().default({}),
 });
 
 // ---------- статистика: период ----------
@@ -187,11 +270,9 @@ export const reassignBranchManagersSchema = z.object({
 
 // ---------- shop-каталог (SEO заводит товары/цену/фото — филиал только пополняет остаток) ----------
 export const createShopItemSchema = z.object({
-  branchId: z.string().uuid('Invalid branchId'),
   name: z.string().trim().min(1).max(160),
   imageKey: z.string().trim().max(512).optional(),
   coinPrice: z.coerce.number().int().positive(),
-  stock: z.coerce.number().int().min(0).optional(),
 });
 
 export const updateShopItemSchema = z
@@ -199,7 +280,6 @@ export const updateShopItemSchema = z
     name: z.string().trim().min(1).max(160),
     imageKey: z.string().trim().max(512),
     coinPrice: z.coerce.number().int().positive(),
-    stock: z.coerce.number().int().min(0),
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
@@ -208,9 +288,7 @@ export const setShopItemArchivedSchema = z.object({
   archived: z.boolean(),
 });
 
-export const listShopItemsQuery = z.object({
-  branchId: z.string().uuid('Invalid branchId').optional(),
-});
+export const listShopItemsQuery = z.object({});
 
 // SEO не переключает фичи сам — только просит Main Admin подключить/отключить.
 export const createFeatureRequestSchema = z.object({

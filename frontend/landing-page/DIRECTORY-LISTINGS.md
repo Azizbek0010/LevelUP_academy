@@ -28,13 +28,14 @@
 | Одна строка (EN) | All-in-one CRM for education centers: student records, payments & debts, attendance, tests, gamification and Telegram notifications |
 | Ключевые модули | Платежи и сплит-инвойсы, davomat (посещаемость), тесты с серверным таймером, домашние задания, коины/геймификация, realtime-чаты, видеоуроки, отчёты, Telegram-бот, мультифилиальность |
 | Роли/кабинеты | SEO-роль (бывш. Super Admin), Admin, Ментор, Методист, Родитель, Ученик — 6 кабинетов, RBAC на сервере |
-| Цена | До 30 учеников — бесплатно; далее от 199 000 сум/мес, фикс по числу учеников, филиалы безлимитно |
+| Цена | До 30 активных аккаунтов — бесплатно; далее от 199 000 сум/мес. Считаются ученики, родители и сотрудники; филиалы безлимитно |
 | Триал | Первая неделя бесплатно |
 | Ниши посадочных страниц | `/landing/for-language-school`, `/landing/for-courses`, `/landing/crm-vs-excel` |
 | Логотип | `frontend/landing-page/public/logo.png` (растровый, есть готовый) |
 | Год основания | **2026** (от владельца, 03.08) |
 | Размер команды | **6 человек** (от владельца, 03.08) |
-| Соцсети (`sameAs`) | Telegram `t.me/levelupacademycrm`, Instagram `instagram.com/levelup_academy_uz`. LinkedIn нет |
+| Основатель | **Azizbek Amangeldiev** (от владельца, 20.08) — `linkedin.com/in/azizbek-amangeldi` |
+| Соцсети (`sameAs`) | Telegram `t.me/levelupacademycrm`, Instagram `instagram.com/levelup_academy_uz`, LinkedIn (личный профиль основателя) `linkedin.com/in/azizbek-amangeldi` |
 | 🚫 Отсутствуют (не выдумывать) | Юр. адрес офиса и телефон компании — офиса нет (владелец, 03.08). Блокирует Yandex Бизнес и 2GIS |
 
 ---
@@ -66,7 +67,7 @@
   - Real-time chat and presence
   - Telegram bot notifications
   - Multi-branch support with role-based access (SEO-role/Admin/Mentor/Methodist/Parent/Student)
-- **Pricing model:** Freemium — free up to 30 students, then tiered pricing from 199,000 UZS/month
+- **Pricing model:** Freemium — free up to 30 active accounts, then tiered pricing from 199,000 UZS/month; students, parents and staff all count
 
 ### SaaSHub
 - **One-liner:** `CRM for education centers — students, payments, attendance, tests, gamification`
@@ -134,10 +135,10 @@
 
 ### 3. Q&A — вставить как есть
 
-- **Is there a free plan?** Yes — free for up to 30 active students, with no time limit.
-  Paid plans start at 199,000 UZS/month for 31–100 students.
+- **Is there a free plan?** Yes — free for up to 30 active accounts, with no time limit.
+  Paid plans start at 199,000 UZS/month for 31–100 active accounts.
 - **Does the price depend on the number of branches?** No. Branches are unlimited on every
-  plan; the price depends only on the number of active students.
+  plan; the price depends on the total number of active student, parent and staff accounts.
 - **Is there a mobile app?** No. The system runs in the phone browser, and notifications
   are delivered through Telegram.
 - **What happens when a student pays late?** The student's access is blocked automatically
@@ -169,8 +170,8 @@
   > геймификация (коины, магазин наград, лидерборды), realtime-чаты и Telegram-бот для
   > родителей. Семь ролей с проверкой прав на сервере, мультифилиальность с первого дня.
   > Разработана в Узбекистане, интерфейс сайта на русском, узбекском и английском.
-  > До 30 учеников — бесплатно, далее от 199 000 сум в месяц, филиалы безлимитно.
-- **Цена:** от 0 (до 30 учеников); платные тарифы от 199 000 сум/мес
+  > До 30 активных аккаунтов — бесплатно, далее от 199 000 сум в месяц, филиалы безлимитно.
+- **Цена:** от 0 (до 30 активных аккаунтов); платные тарифы от 199 000 сум/мес
 - ⚠️ **Валюта:** если в форме нет UZS — цену **не проставлять** (та же ошибка, что чуть не
   ушла на SaaSHub: 199 000 без валюты читается как доллары). Оставить ссылку на страницу
   тарифов.

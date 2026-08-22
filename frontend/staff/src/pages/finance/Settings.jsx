@@ -1,19 +1,23 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   Finance Manager — Настройки профиля. Статичный демо-раздел (backend-роль ещё
-   не заведена), поэтому редактирование хранится локально в localStorage и не
-   уходит на сервер. Стили — DaisyUI в тон остальных страниц панели.
+   Finance Manager — Настройки профиля. Раньше это был статичный демо-раздел:
+   имя/email из auth, всё остальное (включая "город") — выдуманный PROFILE из
+   _data.js, редактирование уходило только в localStorage и никогда не
+   долетало до сервера ("Сохранено!" был обманом). 22.08.2026 (Karis) —
+   подключено к настоящему GET/PATCH /api/users/me, тому же, что уже
+   используют Admin/Mentor/Methodist (см. pages/admin/Profile.jsx). Телефон
+   показываем как есть (реальное поле), но не даём редактировать — бэкенд
+   (updateProfileSchema) его не принимает; "город" убран целиком, это была
+   несуществующая колонка.
    ────────────────────────────────────────────────────────────────────────── */
 import { useEffect, useState } from 'react';
-import { User, Mail, Phone, MapPin, Save, BadgeCheck, Globe, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Phone, Save, BadgeCheck, Globe, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { useAuth } from '../../auth.jsx';
+import { api } from '../../api.js';
+import { useMe, useInvalidate } from '../../queries.js';
 import { Card, LangSwitch } from './_ui.jsx';
-import { useTranslation } from "react-i18next";
-import { PROFILE } from './_data.js';
+import { useT } from './_i18n.jsx';
 
-const STORAGE_KEY = 'finance_profile';
-
-/* ── Поле формы с иконкой слева ── */
 function Field({ label, icon: Icon, value, onChange, readOnly }) {
   return (
     <div>
@@ -24,7 +28,7 @@ function Field({ label, icon: Icon, value, onChange, readOnly }) {
         <Icon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50" />
         <input
           type="text"
-          value={value}
+          value={value ?? ''}
           readOnly={readOnly}
           onChange={(e) => onChange?.(e.target.value)}
           className={`w-full h-10 pl-9 pr-3 rounded-[10px] border border-base-300 bg-base-100 text-base-content text-[13px] outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary ${
@@ -38,36 +42,47 @@ function Field({ label, icon: Icon, value, onChange, readOnly }) {
 
 export default function FinanceSettings() {
   const { t } = useT();
-  const { user } = useAuth();
-  const [form, setForm] = useState(() => {
-    /* Имя/фамилия/email — из авторизации (как в шапке), остальное из PROFILE+localStorage */
-    let stored = {};
-    try {
-      stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    } catch {
-      stored = {};
-    }
-    return {
-      ...PROFILE,
-      ...stored,
-      firstName: user?.firstName ?? stored.firstName ?? PROFILE.firstName,
-      lastName: user?.lastName ?? stored.lastName ?? PROFILE.lastName,
-      email: user?.email ?? stored.email ?? PROFILE.email,
-    };
-  });
+  const { token, user, patchUser } = useAuth();
+  const invalidate = useInvalidate();
+  const { data: meData, isLoading } = useMe();
+  const me = meData?.data ?? null;
+
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '' });
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState('');
 
-  /* Демо-режим: храним правки локально между перезагрузками страницы */
+  // Форму заполняем, когда реально приехали данные — на первом рендере me
+  // ещё null, инициализировать useState-ом сразу значило бы навсегда
+  // оставить пустые поля (та же ошибка, что уже была поймана в admin/Profile.jsx).
+  /* GET /users/me отдаёт СЫРУЮ строку БД (first_name/last_name), а PATCH
+     /users/me ждёт camelCase (firstName/lastName, updateProfileSchema) —
+     асимметрия эндпоинта. Читали camelCase, поэтому имя и фамилия оставались
+     пустыми, а email заполнялся (у него имя поля совпадает). Karis 22.08.2026.
+     Читаем оба варианта, чтобы не сломаться, если ответ причешут. */
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
-  }, [form]);
+    if (!me) return;
+    setForm({
+      firstName: me.firstName ?? me.first_name ?? '',
+      lastName: me.lastName ?? me.last_name ?? '',
+      email: me.email ?? '',
+    });
+  }, [me]);
 
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k, v) => { setForm((f) => ({ ...f, [k]: v })); setErr(''); };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    if (!form.firstName.trim() || !form.lastName.trim()) { setErr(t('settings.firstName') + '/' + t('settings.lastName')); return; }
+    setSaving(true); setErr('');
+    try {
+      const patch = { firstName: form.firstName.trim(), lastName: form.lastName.trim(), email: form.email.trim() };
+      await api.updateMe(token, patch);
+      invalidate(['me']);
+      patchUser(patch); // в шапке живут имя/email — обновить сразу, не дожидаясь рефетча
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e2) { setErr(e2.message); } finally { setSaving(false); }
   };
 
   const initials = ((form.firstName?.[0] ?? '') + (form.lastName?.[0] ?? '')).toUpperCase() || 'FM';
@@ -76,7 +91,6 @@ export default function FinanceSettings() {
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
 
-      {/* ═══ Профиль ═══ */}
       <Card bodyClass="p-5">
         <div className="flex items-center gap-5">
           <div
@@ -86,27 +100,29 @@ export default function FinanceSettings() {
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-extrabold text-base-content">{form.firstName} {form.lastName}</h2>
+            <h2 className="text-xl font-extrabold text-base-content">
+              {isLoading ? <span className="skeleton inline-block h-5 w-36 align-middle" /> : `${form.firstName} ${form.lastName}`}
+            </h2>
             <p className="text-sm mt-0.5 text-base-content/70">{form.email}</p>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-teal-500/10 text-teal-600">
                 <BadgeCheck size={12} />
-                {form.role}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-base-content/5 text-base-content/60">
-                <MapPin size={12} />
-                {form.city}
+                Finance Manager
               </span>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* ═══ Личные данные ═══ */}
-      <form onSubmit={handleSave} className="card bg-base-100 rounded-2xl border border-base-300 p-6 shadow-[0_1px_2px_rgba(29,36,23,0.04)]">
+      <form onSubmit={handleSave} className="card bg-base-100 border border-base-300 shadow-sm p-6">
         <h2 className="text-[15px] font-extrabold text-base-content">{t('settings.personal')}</h2>
         <p className="text-[12px] text-base-content/50 mt-0.5 mb-5">{t('settings.personalSub')}</p>
 
+        {err && (
+          <div className="px-4 py-3 mb-5 rounded-[12px] text-[13px] font-medium bg-error/10 text-error border border-error/20">
+            {err}
+          </div>
+        )}
         {saved && (
           <div className="flex items-center gap-2.5 px-4 py-3 mb-5 rounded-[12px] text-[13px] font-medium bg-success/10 text-success border border-success/20 animate-slide-up">
             <CheckCircle2 size={15} />
@@ -117,23 +133,21 @@ export default function FinanceSettings() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label={t('settings.firstName')} icon={User} value={form.firstName} onChange={(v) => set('firstName', v)} />
           <Field label={t('settings.lastName')} icon={User} value={form.lastName} onChange={(v) => set('lastName', v)} />
-          <Field label={t('settings.phone')} icon={Phone} value={form.phone} onChange={(v) => set('phone', v)} />
-          <Field label={t('settings.city')} icon={MapPin} value={form.city} onChange={(v) => set('city', v)} />
-          <div className="sm:col-span-2">
-            <Field label={t('settings.email')} icon={Mail} value={form.email} readOnly />
-            <span className="text-[10px] text-base-content/40 mt-1">{t('settings.local')}</span>
-          </div>
+          <Field label={t('settings.email')} icon={Mail} value={form.email} onChange={(v) => set('email', v)} />
+          {/* Телефон — реальное поле (GET /users/me), но PATCH его не принимает
+              (backend/src/modules/users/users.schemas.js: updateProfileSchema),
+              поэтому read-only, а не выдуманное сохранение как раньше. */}
+          <Field label={t('settings.phone')} icon={Phone} value={me?.phone} readOnly />
         </div>
 
         <div className="flex justify-end mt-6">
-          <button type="submit" className="btn btn-primary btn-sm gap-2">
-            <Save size={14} />
+          <button type="submit" className="btn btn-primary btn-sm gap-2" disabled={saving || isLoading}>
+            {saving ? <span className="loading loading-spinner loading-xs" /> : <Save size={14} />}
             {t('settings.save')}
           </button>
         </div>
       </form>
 
-      {/* ═══ Язык интерфейса ═══ */}
       <Card title={t('settings.lang')} subtitle={t('settings.langSub')} bodyClass="p-5">
         <div className="flex items-center gap-4">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -143,7 +157,6 @@ export default function FinanceSettings() {
         </div>
       </Card>
 
-      {/* ═══ Безопасность ═══ */}
       <Card title={t('settings.security')} subtitle={t('settings.securitySub')} bodyClass="p-5">
         <div className="flex items-center gap-4">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-warning/10 text-warning">

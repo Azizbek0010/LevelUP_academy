@@ -1,7 +1,7 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { AppError } from '../../utils/AppError.js';
 import * as chatService from './chat.service.js';
-import { listStaffContacts, listStaffStudentContacts, listMyThreads } from './chat.access.js';
+import { listStaffContacts, listStaffStudentContacts, listStaffPeerContacts, listMyThreads } from './chat.access.js';
 
 /**
  * GET /api/chat/contacts — все, кому сотрудник вправе писать: родители и сами
@@ -16,17 +16,17 @@ export const getContacts = asyncHandler(async (req, res) => {
   // Админ филиала — только родители (решение 2026-07-21): прямого диалога
   // админ↔ученик нет (см. canStaffChatStudent), поэтому и в список учеников
   // не добавляем. Ментор по-прежнему видит и учеников, и родителей.
-  // Branch_manager — та же линия, что и admin: только родители.
-  const includeStudents =
-    req.user.role !== 'admin' && req.user.role !== 'branch_manager';
-  const [parents, students] = await Promise.all([
-    listStaffContacts(req.user),
-    includeStudents ? listStaffStudentContacts(req.user) : Promise.resolve([]),
+  const includeFamily = ['mentor', 'admin', 'seo'].includes(req.user.role);
+  const [parents, students, staffPeers] = await Promise.all([
+    includeFamily ? listStaffContacts(req.user) : Promise.resolve([]),
+    includeFamily ? listStaffStudentContacts(req.user) : Promise.resolve([]),
+    listStaffPeerContacts(req.user),
   ]);
 
   const data = [
     ...parents.map((c) => ({ ...c, peer_type: 'parent' })),
     ...students.map((c) => ({ ...c, peer_type: 'student' })),
+    ...staffPeers.map((c) => ({ ...c, peer_type: c.staff_role })),
   ].sort((a, b) => {
     if (a.last_message_at && b.last_message_at) {
       return new Date(b.last_message_at) - new Date(a.last_message_at);

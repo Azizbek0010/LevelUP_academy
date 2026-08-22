@@ -438,11 +438,11 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
             </div>
           </div>
 
-          {/* Тарифы — бакеты по числу активных учеников. Здесь стояла старая
+          {/* Тарифы — бакеты по общему числу активных аккаунтов. Здесь стояла старая
               формула (база + доп. филиал + за ученика): бэкенд этих полей не
               отдаёт, и все три строки печатали пустое значение. */}
           <div className="rounded-md bg-base-200/50 p-4 space-y-2">
-            <div className="text-xs font-semibold text-base-content/60 uppercase mb-1">Тарифы по числу учеников</div>
+            <div className="text-xs font-semibold text-base-content/60 uppercase mb-1">Тарифы по числу активных аккаунтов</div>
             {(pricing.tiers ?? []).map((t) => (
               <div key={t.id} className="flex justify-between text-sm">
                 <span>{t.label} <span className="text-base-content/45">· {tierRange(t)}</span></span>

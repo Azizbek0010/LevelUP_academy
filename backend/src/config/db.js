@@ -35,6 +35,14 @@ export const pool = new pg.Pool({
   max: 20,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: env.DB_CONNECT_TIMEOUT_MS,
+  // Managed PostgreSQL can silently drop a long-lived TCP connection. Keep
+  // sockets alive and recycle clients before a stale one reaches a login.
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10_000,
+  maxLifetimeSeconds: 300,
+  // A dead remote connection must fail quickly instead of keeping every login
+  // request open until the whole pool is exhausted.
+  query_timeout: 30_000,
 });
 
 pool.on('error', (err) => {

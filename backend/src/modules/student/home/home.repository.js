@@ -9,6 +9,31 @@ export async function getTotalDebt(studentId) {
   return row?.total_debt ?? 0;
 }
 
+/** Язык кабинета студента (для AI-review/уведомлений/тг-бота), null пока не выбран. */
+export async function getPreferredLanguage(studentId) {
+  const { rows: [row] } = await pool.query(
+    `SELECT preferred_language FROM users WHERE id = $1`,
+    [studentId],
+  );
+  return row?.preferred_language ?? null;
+}
+
+export async function setPreferredLanguage(studentId, language) {
+  await pool.query(`UPDATE users SET preferred_language = $2 WHERE id = $1`, [studentId, language]);
+}
+
+/** Даты и статусы посещений студента, старые -> новые (для расчёта серии). */
+export async function getAttendanceHistory(studentId) {
+  const { rows } = await pool.query(
+    `SELECT lesson_date AS "lessonDate", status
+       FROM attendance
+      WHERE student_id = $1
+      ORDER BY lesson_date ASC`,
+    [studentId],
+  );
+  return rows;
+}
+
 /** Группы студента (активное членство) с ФИО ментора. */
 export async function getGroupsForStudent(studentId) {
   const { rows } = await pool.query(

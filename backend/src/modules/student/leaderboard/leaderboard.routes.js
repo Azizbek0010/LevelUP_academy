@@ -20,6 +20,10 @@ const router = Router();
  *       - name: period
  *         in: query
  *         schema: { type: string, enum: [week, month], default: week }
+ *       - name: groupId
+ *         in: query
+ *         description: Own group's leaderboard instead of the branch-wide one (403 if not a member)
+ *         schema: { type: string, format: uuid }
  *     responses:
  *       200:
  *         description: Leaderboard

@@ -88,8 +88,11 @@ export default function SuperFeatures() {
   const [busyKey, setBusyKey] = useState(null);
   const [err, setErr] = useState('');
 
-  const items = catalog?.items ?? catalog ?? [];
-  const requestList = requests?.items ?? requests ?? [];
+  // Бэкенд отдаёт { catalog: [...] } и { requests: [...] } (super.controller.js
+  // getFeatureCatalog/listOwnFeatureRequests) — не { items }, отсюда и был баг
+  // "items.map is not a function" (fallback ловил весь объект-обёртку целиком).
+  const items = catalog?.catalog ?? [];
+  const requestList = requests?.requests ?? [];
   const pendingByKey = new Map(
     requestList.filter((r) => r.status === 'pending').map((r) => [r.feature_key, r]),
   );

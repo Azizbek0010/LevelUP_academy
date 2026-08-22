@@ -29,6 +29,7 @@ export default function Debt() {
   if (!d) return null;
 
   const totalDebt = Number(d.totalDebt) || 0;
+  const paymentBalance = Number(d.paymentBalance) || 0;
   const coins = d.coins || 0;
 
   return (
@@ -38,7 +39,7 @@ export default function Debt() {
         subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
       />
 
-      <div className="grid lg:grid-cols-2 gap-4 mb-6">
+      <div className="grid lg:grid-cols-3 gap-4 mb-6">
         {/* Debt Card */}
         <div className="card bg-base-100 overflow-hidden relative hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
           <div
@@ -85,6 +86,14 @@ export default function Debt() {
           </div>
         </div>
 
+        <div className="card bg-base-100">
+          <div className="card-body">
+            <span className="text-sm font-medium opacity-60">Баланс оплаты</span>
+            <p className="text-3xl font-extrabold text-success">{money(paymentBalance)}</p>
+            <p className="text-[11px] opacity-40 mt-2">Остаток автоматически перейдёт на следующий месяц</p>
+          </div>
+        </div>
+
         {/* Coins Card */}
         <div className="card bg-base-100 overflow-hidden relative hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
           <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-primary/5 -translate-y-1/3 translate-x-1/3 blur-2xl" />
@@ -104,6 +113,21 @@ export default function Debt() {
           </div>
         </div>
       </div>
+
+      {d.currentInvoice && (
+        <div className="card bg-base-100 mb-6">
+          <div className="card-body">
+            <h3 className="font-bold">Расчёт текущей оплаты</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm mt-2">
+              <div><span className="opacity-50">Цена за месяц</span><p className="font-bold">{money(d.currentInvoice.monthlyPrice)}</p></div>
+              <div><span className="opacity-50">Занятий в месяце</span><p className="font-bold">{d.currentInvoice.lessonsInMonth ?? '—'}</p></div>
+              <div><span className="opacity-50">К оплате занятий</span><p className="font-bold">{d.currentInvoice.billableLessons ?? '—'}</p></div>
+              <div><span className="opacity-50">Оплатить до</span><p className="font-bold">{d.currentInvoice.paymentDate ?? d.currentInvoice.dueDate}</p></div>
+            </div>
+            <p className="text-xs opacity-50 mt-3">После 5-го числа при неоплаченном счёте кабинет ученика будет временно заблокирован.</p>
+          </div>
+        </div>
+      )}
 
       {/* Status Card */}
       {totalDebt > 0 ? (

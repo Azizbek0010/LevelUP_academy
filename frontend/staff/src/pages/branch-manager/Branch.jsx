@@ -35,17 +35,26 @@ function InfoRow({ Icon, label, value, href }) {
   );
 }
 
-/** Привязка группы родителей к Telegram-боту. Бот добавляется в группу
- * вручную (Branch Manager делает это самостоятельно — нельзя добавить бота
- * автоматически извне), затем код отправляется в группу командой
- * /bindbranch <код>. */
+/** Ota-onalar guruhini Telegram-botga ulash. Bot guruhga QO'LDA qo'shiladi
+ * (Branch Manager o'zi qiladi — botni tashqaridan avtomatik qo'shib bo'lmaydi),
+ * so'ng kod guruhning o'ziga /bindbranch <kod> buyrug'i sifatida yuboriladi. */
 function TelegramGroupCard() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  // Karis (13.08.2026): Main Admin не включил Telegram-интеграцию партнёру —
+  // карточки не должно быть вообще, не только кнопки внутри неё.
+  const tgEnabled = Boolean(user?.orgFeatures?.telegramIntegration);
+  // Все хуки — ДО любого условного return (Rules of Hooks): иначе когда
+  // tgEnabled переключится между рендерами (напр. user только что загрузился),
+  // React увидит другое число вызванных хуков и упадёт с "Rendered more/fewer
+  // hooks than during the previous render". Хук ниже не умеет condition-fetch —
+  // вызываем всегда, просто не рендерим карточку с его данными, пока выключено.
   const { data: status, isLoading, refetch } = useBranchManagerTelegramStatus();
   const [issuing, setIssuing] = useState(false);
   const [code, setCode] = useState(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
+
+  if (!tgEnabled) return null;
 
   async function issueCode() {
     setIssuing(true);
@@ -54,14 +63,14 @@ function TelegramGroupCard() {
       const res = await api.branchManagerTelegramBindToken(token);
       setCode(res.data);
     } catch (err) {
-      setError(err.message || 'Произошла ошибка');
+      setError(err.message || 'Xatolik yuz berdi');
     } finally {
       setIssuing(false);
     }
   }
 
   async function unlink() {
-    if (!window.confirm('Вы действительно хотите отключить группу?')) return;
+    if (!window.confirm("Guruh bilan ulanishni uzmoqchimisiz?")) return;
     await api.branchManagerTelegramUnlink(token);
     setCode(null);
     refetch();
@@ -78,13 +87,13 @@ function TelegramGroupCard() {
 
   if (status?.linked) {
     return (
-      <Panel title="Группа родителей (Telegram)" icon={Send} bodyClass="p-5">
+      <Panel title="Ota-onalar guruhi (Telegram)" icon={Send} bodyClass="p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 text-success font-semibold">
-            <Check size={18} /> Группа подключена
+            <Check size={18} /> Guruh ulangan
           </div>
           <button type="button" className="btn btn-sm btn-ghost text-error" onClick={unlink}>
-            Отключить
+            Uzish
           </button>
         </div>
       </Panel>
@@ -92,15 +101,15 @@ function TelegramGroupCard() {
   }
 
   return (
-    <Panel title="Группа родителей (Telegram)" icon={Send} bodyClass="p-5">
+    <Panel title="Ota-onalar guruhi (Telegram)" icon={Send} bodyClass="p-5">
       {!code ? (
         <>
           <p className="text-sm text-base-content/60 mb-3">
-            Сообщения о посещаемости и успеваемости будут автоматически отправляться в эту группу.
-            Сначала добавьте бота в группу, затем получите код для подключения.
+            Davomat va o'zlashtirish haqida xabarlar shu guruhga avtomatik ketadi.
+            Avval botni guruhga qo'shing, keyin ulash kodini oling.
           </p>
           <button type="button" className="btn btn-primary btn-sm" onClick={issueCode} disabled={issuing}>
-            {issuing ? 'Загрузка...' : 'Получить код подключения'}
+            {issuing ? 'Yuklanmoqda...' : 'Ulash kodini olish'}
           </button>
           {error && <p className="text-error text-sm mt-2">{error}</p>}
         </>
@@ -108,9 +117,9 @@ function TelegramGroupCard() {
         <div className="space-y-3">
           <ol className="text-sm text-base-content/70 list-decimal list-inside space-y-1">
             <li>
-              Добавьте бота в группу: <b>@{code.botUsername}</b>
+              Guruhga botni qo'shing: <b>@{code.botUsername}</b>
             </li>
-            <li>Отправьте следующую команду в саму группу:</li>
+            <li>Guruhning o'ziga quyidagi buyruqni yuboring:</li>
           </ol>
           <div className="flex items-center gap-2 bg-base-200 rounded-lg px-3 py-2 font-mono text-sm">
             <span className="flex-1 select-all">/bindbranch {code.token}</span>
@@ -118,7 +127,7 @@ function TelegramGroupCard() {
               {copied ? <Check size={14} /> : <Copy size={14} />}
             </button>
           </div>
-          <p className="text-xs text-base-content/45">Код действителен {Math.round(code.expiresIn / 60)} минут.</p>
+          <p className="text-xs text-base-content/45">Kod {Math.round(code.expiresIn / 60)} daqiqa amal qiladi.</p>
         </div>
       )}
     </Panel>
@@ -126,54 +135,20 @@ function TelegramGroupCard() {
 }
 
 export default function BranchManagerBranch() {
-  const { data: rawBranch, isLoading, error } = useBranchManagerInfo();
-  const branch = rawBranch?.branch || rawBranch;
+  const { data: branch, isLoading, error } = useBranchManagerInfo();
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6 pb-8 animate-page-enter">
-        <PageHeader title="Филиал" subtitle="Загрузка данных..." />
-        <div className="rounded-2xl bg-base-200/60 animate-pulse h-64" />
-        <div className="rounded-2xl bg-base-200/60 animate-pulse h-32" />
-        <div className="rounded-2xl bg-base-200/60 animate-pulse h-48" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-8 text-center">
-        <div className="inline-flex flex-col items-center gap-3 text-error">
-          <span className="text-4xl">⚠</span>
-          <span className="text-lg font-semibold">Произошла ошибка при загрузке данных</span>
-          <button
-            className="btn btn-sm btn-error btn-outline mt-2"
-            onClick={() => window.location.reload()}
-          >
-            Попробовать снова
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!branch) {
-    return (
-      <div className="p-8 text-center text-base-content/45">
-        <Building2 size={48} className="mx-auto mb-3 opacity-30" />
-        <p className="text-lg font-semibold">Данные филиала не найдены</p>
-      </div>
-    );
-  }
+  if (isLoading) return <div className="p-8 text-center text-base-content/45">Yuklanmoqda...</div>;
+  if (error) return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
+  if (!branch) return <div className="p-8 text-center text-base-content/45">Ma'lumot topilmadi</div>;
 
   const s = branch.stats;
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title="Филиал" subtitle={`${branch.name} · расположение и статистика`} />
+      <PageHeader title="Filial" subtitle={`${branch.name} · joylashuv va statistika`} />
 
-      {/* ── Основная карточка ── */}
-      <Panel title="О филиале" icon={Building2} bodyClass="p-5">
+      {/* ── Bosh karta ── */}
+      <Panel title="Filial haqida" icon={Building2} bodyClass="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="w-12 h-12 rounded-2xl grid place-items-center bg-primary/15 text-primary">
@@ -181,24 +156,24 @@ export default function BranchManagerBranch() {
             </span>
             <h3 className="text-lg font-extrabold text-base-content">{branch.name}</h3>
           </div>
-          {branch.isMain && <span className="badge badge-primary badge-lg">Главный филиал</span>}
+          {branch.isMain && <span className="badge badge-primary badge-lg">Asosiy filial</span>}
         </div>
 
         <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
           <div className="rounded-xl border border-base-200 p-4">
-            <dt className="text-[11px] text-base-content/45">Студенты</dt>
+            <dt className="text-[11px] text-base-content/45">Talabalar</dt>
             <dd className="text-2xl font-extrabold tabular-nums mt-1">{fmt(s.students)}</dd>
           </div>
           <div className="rounded-xl border border-base-200 p-4">
-            <dt className="text-[11px] text-base-content/45">Группы</dt>
+            <dt className="text-[11px] text-base-content/45">Guruhlar</dt>
             <dd className="text-2xl font-extrabold tabular-nums mt-1">{fmt(s.groups)}</dd>
           </div>
           <div className="rounded-xl border border-base-200 p-4">
-            <dt className="text-[11px] text-base-content/45">Менторы</dt>
-            <dd className="text-2xl font-extrabold tabular-nums mt-1">{fmt(s.staff || s.mentors || 0)}</dd>
+            <dt className="text-[11px] text-base-content/45">Mentorlar</dt>
+            <dd className="text-2xl font-extrabold tabular-nums mt-1">{fmt(s.mentors)}</dd>
           </div>
           <div className="rounded-xl border border-base-200 p-4">
-            <dt className="text-[11px] text-base-content/45">Задолженность</dt>
+            <dt className="text-[11px] text-base-content/45">Qarzdorlik</dt>
             <dd className={`text-2xl font-extrabold tabular-nums mt-1 ${s.debt > 0 ? 'text-error' : ''}`}>
               {money(s.debt)}
             </dd>
@@ -206,30 +181,29 @@ export default function BranchManagerBranch() {
         </dl>
       </Panel>
 
-      {/* ── Telegram: группа родителей ── */}
-      <TelegramGroupCard />
+      {/* ── Telegram: ota-onalar guruhi ── */}
 
-      {/* ── Контакты ── */}
-      <Panel title="Контакты" icon={MapPin} bodyClass="p-5">
+      {/* ── Kontaktlar ── */}
+      <Panel title="Kontaktlar" icon={MapPin} bodyClass="p-5">
         <div className="space-y-1">
-          <InfoRow Icon={MapPin} label="Адрес" value={branch.address} />
-          <InfoRow Icon={Phone} label="Телефон" value={branch.phone} href={branch.phone ? `tel:${branch.phone.replace(/\s/g, '')}` : undefined} />
+          <InfoRow Icon={MapPin} label="Manzil" value={branch.address} />
+          <InfoRow Icon={Phone} label="Telefon" value={branch.phone} href={branch.phone ? `tel:${branch.phone.replace(/\s/g, '')}` : undefined} />
         </div>
       </Panel>
 
-      {/* ── Финансы ── */}
-      <Panel title="Финансы (итого)" icon={Building2} bodyClass="p-5">
+      {/* ── Moliya ── */}
+      <Panel title="Moliya (jami)" icon={Building2} bodyClass="p-5">
         <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <dt className="text-[11px] text-base-content/45">Доход</dt>
+            <dt className="text-[11px] text-base-content/45">Daromad</dt>
             <dd className="text-xl font-extrabold tabular-nums mt-1 text-success">{money(s.revenue)}</dd>
           </div>
           <div>
-            <dt className="text-[11px] text-base-content/45">Расход</dt>
+            <dt className="text-[11px] text-base-content/45">Xarajat</dt>
             <dd className="text-xl font-extrabold tabular-nums mt-1">{money(s.expenses)}</dd>
           </div>
           <div>
-            <dt className="text-[11px] text-base-content/45">Прибыль</dt>
+            <dt className="text-[11px] text-base-content/45">Foyda</dt>
             <dd className={`text-xl font-extrabold tabular-nums mt-1 ${s.profit >= 0 ? 'text-success' : 'text-error'}`}>
               {money(s.profit)}
             </dd>

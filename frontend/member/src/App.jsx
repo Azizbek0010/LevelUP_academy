@@ -23,10 +23,13 @@ import StudentTestTake from './student/pages/TestTake.jsx';
 import StudentHomework from './student/pages/Homework.jsx';
 import StudentVideos from './student/pages/Videos.jsx';
 import StudentLessons from './student/pages/Lessons.jsx';
+import StudentTopicDetail from './student/pages/TopicDetail.jsx';
 import StudentLessonDetail from './student/pages/LessonDetail.jsx';
 import LessonsHub from './student/pages/LessonsHub.jsx';
 import StudentShop from './student/pages/Shop.jsx';
 import StudentLeaderboard from './student/pages/Leaderboard.jsx';
+import StudentAnnouncements from './student/pages/Announcements.jsx';
+import StudentChat from './student/pages/Chat.jsx';
 
 function Protected({ children }) {
   const { token } = useAuth();
@@ -41,6 +44,13 @@ function Protected({ children }) {
 function RoleGuard({ role, children }) {
   const { user } = useAuth();
   return user?.role === role ? children : <Navigate to="/" replace />;
+}
+
+/** Karis (13.08.2026): та же идея, что RoleGuard, но по org_feature_flags —
+ * прямая ссылка на /shop тоже не должна открываться, если фича выключена. */
+function FeatureGuard({ feature, children }) {
+  const { user } = useAuth();
+  return user?.orgFeatures?.[feature] ? children : <Navigate to="/student" replace />;
 }
 
 function ParentLayout() {
@@ -113,14 +123,20 @@ export default function App() {
             <Route path="/student" element={<StudentHome />} />
             <Route path="/study" element={<LessonsHub />} />
             <Route path="/lessons" element={<StudentLessons />} />
+            <Route path="/lessons/topics/:topicId" element={<StudentTopicDetail />} />
             <Route path="/lessons/:id" element={<StudentLessonDetail />} />
             <Route path="/tests" element={<StudentTests />} />
             <Route path="/tests/:testId" element={<StudentTestTake />} />
             <Route path="/homework" element={<StudentHomework />} />
             <Route path="/videos" element={<StudentVideos />} />
-            <Route path="/shop" element={<StudentShop />} />
+            <Route path="/shop" element={<FeatureGuard feature="shop"><StudentShop /></FeatureGuard>} />
             <Route path="/leaderboard" element={<StudentLeaderboard />} />
+            <Route path="/student/announcements" element={<StudentAnnouncements />} />
           </Route>
+          {/* Чат — БЕЗ StudentLayout (запрос пользователя 21.08.2026: "chat
+              to'liq ochilgan bo'lsin... full ekranga ochilsin, card bo'lmasin").
+              Вне сайдбара/шапки — сам экран на весь вьюпорт, свой back. */}
+          <Route path="/student/chat" element={<StudentChat />} />
         </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

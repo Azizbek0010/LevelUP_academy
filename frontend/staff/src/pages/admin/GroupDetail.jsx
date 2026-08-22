@@ -4,7 +4,7 @@ import {
   ArrowLeft, UserPlus, X, Users, KeyRound, Phone,
   CalendarDays, Check, Minus, Clock, CreditCard,
   BookOpen, Plus, Star, MessageSquare, Send, Loader2,
-  ChevronLeft, ChevronRight, Pencil, Archive, ArchiveRestore, Download,
+  ChevronLeft, ChevronRight, Pencil, Archive, ArchiveRestore, Download, DoorOpen,
 } from 'lucide-react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth.jsx';
@@ -19,8 +19,6 @@ import { money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { Avatar, RowSkeleton, EmptyState, Modal } from '../mentor/_ui.jsx';
 import { GroupFormModal } from './Groups.jsx';
-import ExportDialog from '../../components/ExportDialog.jsx';
-import { buildAttendanceExport } from '../../utils/exportUtils.js';
 
 /* ─── helpers ─── */
 const fullName = (s) => s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
@@ -108,7 +106,6 @@ function AttendanceTab({ groupId, token }) {
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
   const hoverTimerRef = useRef(null);
   const [slideDir, setSlideDir] = useState(null); // 'left' | 'right' for nav transition
-  const [showExport, setShowExport] = useState(false);
 
   const showPopup = useCallback((s, e) => {
     clearTimeout(hoverTimerRef.current);
@@ -157,16 +154,6 @@ function AttendanceTab({ groupId, token }) {
     if (!lessonWeekdays) return all;
     return all.filter((d) => lessonWeekdays.has(new Date(year, month, d).getDay()));
   }, [daysInMonth, lessonWeekdays, year, month]);
-
-  // Export data for the attendance calendar (Excel via ExportDialog)
-  const exportData = useMemo(
-    () => buildAttendanceExport(students, DAYS, attendanceMap, year, month),
-    [students, DAYS, attendanceMap, year, month]
-  );
-  const exportFileName = useMemo(() => {
-    const base = String(group?.name || 'group').replace(/[^\w\u0400-\u04FF-]+/g, '_').slice(0, 40);
-    return `attendance_${base}_${year}-${String(month + 1).padStart(2, '0')}`;
-  }, [group?.name, year, month]);
 
   // Paginate into chunks of 15
   const CHUNK_SIZE = 15;
@@ -424,26 +411,15 @@ function AttendanceTab({ groupId, token }) {
             Исправлено админом
           </li>
         </ul>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="flex items-center gap-1.5 text-xs text-base-content/45">
-            {saveState === 'saving' && <><Loader2 size={13} className="animate-spin" /> Сохранение...</>}
-            {saveState === 'saved' && <>Сохранено</>}
-            {saveState === 'error' && (
-              <button onClick={flush} className="text-red-500 hover:underline">
-                Не сохранено — повторить
-              </button>
-            )}
-          </span>
-          <button
-            onClick={() => setShowExport(true)}
-            disabled={students.length === 0}
-            className="btn btn-sm btn-ghost gap-1.5 text-xs text-base-content/60 hover:text-base-content disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            title="Экспорт посещаемости (Excel)"
-          >
-            <Download size={14} />
-            Экспорт
-          </button>
-        </div>
+        <span className="flex items-center gap-1.5 text-xs text-base-content/45">
+          {saveState === 'saving' && <><Loader2 size={13} className="animate-spin" /> Сохранение...</>}
+          {saveState === 'saved' && <>Сохранено</>}
+          {saveState === 'error' && (
+            <button onClick={flush} className="text-red-500 hover:underline">
+              Не сохранено — повторить
+            </button>
+          )}
+        </span>
       </div>
 
       {/* ── Page navigation (15 days per page) with smooth slide ── */}
@@ -494,12 +470,11 @@ function AttendanceTab({ groupId, token }) {
                   return (
                     <th
                       key={d}
-                      /* Токены темы, а не inline var(): --green/--surface/--text-muted
-                         дублировали primary/base-100/base-content своими же
-                         значениями (см. UI-DS в TASK.md). */
-                      className={`sticky top-0 z-10 w-[68px] min-w-[68px] px-1.5 py-2.5 text-center border-l border-base-300 ${
-                        isToday ? 'bg-primary/10 text-primary' : 'bg-base-100 text-base-content/60'
-                      }`}
+                      className="sticky top-0 z-10 w-[68px] min-w-[68px] px-1.5 py-2.5 text-center border-l border-base-300"
+                      style={{
+                        background: isToday ? 'var(--green-bg)' : 'var(--surface)',
+                        color: isToday ? 'var(--green)' : 'var(--text-muted)',
+                      }}
                     >
                       <div className="text-[11px] font-bold tabular-nums leading-tight">
                         {pad(d)}.{pad(month + 1)}
@@ -644,16 +619,6 @@ function AttendanceTab({ groupId, token }) {
           </div>
         );
       })()}
-
-      {/* ── Export attendance modal ── */}
-      <ExportDialog
-        open={showExport}
-        onClose={() => setShowExport(false)}
-        data={exportData.data}
-        columns={exportData.columns}
-        filename={exportFileName}
-        title="Экспорт посещаемости"
-      />
     </div>
   );
 }
@@ -967,83 +932,11 @@ function FeedbackTab({ groupId, token, canManage = true }) {
   );
 }
 
-/* ═══════════════ Schedule Tab ═══════════════ */
-/* Read-only недельное расписание группы (Karis, 11.08.2026). Раньше расписание
-   было отдельной страницей /schedule в сайдбаре — теперь это таб внутри
-   карточки группы. Редактирование остаётся в модалке «Изменить группу»
-   (GroupFormModal), здесь только просмотр. */
-const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-
-function ScheduleTab({ group }) {
-  let sched = group?.schedule;
-  if (typeof sched === 'string') { try { sched = JSON.parse(sched); } catch { sched = []; } }
-  if (!Array.isArray(sched)) sched = [];
-  const byDay = {};
-  sched.forEach((s) => { byDay[String(s.day).toLowerCase()] = s; });
-
-  const active = DAY_ORDER.filter((d) => byDay[d]);
-  const fallbackStart = group.startTime || sched[0]?.start;
-  const fallbackEnd = group.endTime || sched[0]?.end;
-
-  if (active.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Clock size={26} className="text-base-content/25 mb-2" />
-        <div className="text-[13px] font-semibold text-base-content/60">Расписание не задано</div>
-        <div className="text-[12px] text-base-content/40 mt-1">Дни и время задаются в «Изменить группу»</div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div className="text-[13px] font-bold text-base-content">Недельное расписание</div>
-        {fallbackStart && (
-          <div className="text-[12px] font-semibold text-base-content/45">
-            Основное время: {fallbackStart}{fallbackEnd ? `–${fallbackEnd}` : ''}
-          </div>
-        )}
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-        {DAY_ORDER.map((d) => {
-          const s = byDay[d];
-          const dayStart = s?.start || fallbackStart;
-          const dayEnd = s?.end || fallbackEnd;
-          return (
-            <div
-              key={d}
-              className={`rounded-[12px] border p-3 flex flex-col items-center gap-1 transition-all ${
-                s ? 'bg-primary/5 border-primary/25' : 'bg-base-200/40 border-base-300/50'
-              }`}
-            >
-              <span className={`text-[11px] font-bold uppercase tracking-wider ${s ? 'text-primary' : 'text-base-content/35'}`}>
-                {DAY_LABEL[d]}
-              </span>
-              {s ? (
-                <span className="text-[12px] font-extrabold text-base-content tabular-nums">
-                  {dayStart}{dayEnd && dayEnd !== dayStart ? `–${dayEnd}` : ''}
-                </span>
-              ) : (
-                <span className="text-[12px] text-base-content/30">—</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-4 text-[11px] text-base-content/40">
-        Изменить расписание можно в модалке «Изменить группу» (шапка страницы).
-      </div>
-    </div>
-  );
-}
-
 /* ═══════════════ Main GroupDetail ═══════════════ */
 const TABS = [
   { key: 'attendance', label: 'Посещаемость', icon: CalendarDays },
   { key: 'homework', label: 'Домашние задания', icon: BookOpen },
   { key: 'feedback', label: 'Отзывы', icon: MessageSquare },
-  { key: 'schedule', label: 'Расписание', icon: Clock },
 ];
 
 export default function AdminGroupDetail() {
@@ -1055,7 +948,28 @@ export default function AdminGroupDetail() {
   const [adding, setAdding] = useState(false);
   const [pick, setPick] = useState('');
   const [editForm, setEditForm] = useState(null);
-  const [showGroupExport, setShowGroupExport] = useState(false);
+  const [tgStatus, setTgStatus] = useState(null);
+  const [tgBind, setTgBind] = useState(null);
+  const [tgBusy, setTgBusy] = useState(false);
+  const tgEnabled = Boolean(user?.orgFeatures?.telegramIntegration);
+
+  const loadTelegram = useCallback(async () => {
+    if (user?.role !== 'branch_manager' || !tgEnabled) return;
+    try { const r = await api.adminGroupTelegramStatus(token, id); setTgStatus(r?.data || r); } catch { setTgStatus(null); }
+  }, [id, token, tgEnabled, user?.role]);
+  useEffect(() => { loadTelegram(); }, [loadTelegram]);
+
+  const createTelegramCode = async () => {
+    setTgBusy(true);
+    try { const r = await api.adminGroupTelegramBindToken(token, id); setTgBind(r?.data || r); } catch (e) { alert(e.message); }
+    finally { setTgBusy(false); }
+  };
+  const unlinkTelegram = async () => {
+    if (!confirm('Отвязать родительскую Telegram-группу?')) return;
+    setTgBusy(true);
+    try { await api.adminGroupTelegramUnlink(token, id); setTgBind(null); await loadTelegram(); } catch (e) { alert(e.message); }
+    finally { setTgBusy(false); }
+  };
 
   // Данные для модалки «Изменить группу» (переиспользуем GroupFormModal из Groups.jsx)
   const { data: mentorsData } = useAdminMentors();
@@ -1214,14 +1128,6 @@ export default function AdminGroupDetail() {
           {credsBusy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
           Пароли группы
         </button>
-        <button
-          className="btn btn-ghost btn-sm gap-1.5"
-          onClick={() => setShowGroupExport(true)}
-          disabled={students.length === 0}
-          title="Экспорт учеников группы"
-        >
-          <Download size={14} /> Экспорт учеников
-        </button>
       </PageHeader>
 
       {/* Мета-строка группы. Раньше здесь была почти пустая карточка с двумя
@@ -1233,11 +1139,41 @@ export default function AdminGroupDetail() {
         <div className="flex items-center gap-x-8 gap-y-3 flex-wrap">
           <Meta Icon={Users} label="Ученики" value={students.length} />
           {group.subject && <Meta Icon={BookOpen} label="Направление" value={group.subject} />}
+          <Meta Icon={DoorOpen} label="Кабинет" value={group.roomName || group.room || 'Не назначен'} />
           {scheduleText(group) && <Meta Icon={CalendarDays} label="Расписание" value={scheduleText(group)} />}
           {group.monthlyPrice > 0 && <Meta Icon={CreditCard} label="Оплата/мес" value={money(group.monthlyPrice)} />}
           {totalDebt > 0 && <Meta Icon={Clock} label="Общий долг" value={money(totalDebt)} />}
         </div>
       </div>
+
+      {user?.role === 'branch_manager' && tgEnabled && (
+        <div className="card bg-base-100 border border-base-300 p-4 animate-fade-in">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <div className="flex items-center gap-2 font-extrabold"><Send size={17} className="text-info" /> Telegram-группа родителей</div>
+              <p className="text-xs text-base-content/50 mt-1">
+                {tgStatus?.linked ? `Подключена: ${tgStatus.title || 'группа Telegram'}` : 'Подключите отдельную группу родителей именно к этой учебной группе.'}
+              </p>
+            </div>
+            {tgStatus?.linked ? (
+              <button className="btn btn-error btn-outline btn-sm" disabled={tgBusy} onClick={unlinkTelegram}>Отвязать</button>
+            ) : (
+              <button className="btn btn-primary btn-sm" disabled={tgBusy} onClick={createTelegramCode}>Получить код</button>
+            )}
+          </div>
+          {tgBind?.token && (
+            <div className="mt-3 rounded-xl bg-base-200 p-3 text-sm">
+              <ol className="list-decimal ml-5 space-y-1 text-base-content/70">
+                <li>Создайте группу родителей и добавьте бота <a className="link link-primary" target="_blank" rel="noreferrer" href={`https://t.me/${String(tgBind.botUsername).replace('@', '')}`}>@{String(tgBind.botUsername).replace('@', '')}</a>.</li>
+                <li>Отправьте в этой Telegram-группе команду:</li>
+              </ol>
+              <button className="mt-2 w-full rounded-lg bg-base-100 border border-base-300 px-3 py-2 font-mono font-bold text-left" onClick={() => navigator.clipboard.writeText(`/bindgroup ${tgBind.token}`)}>
+                /bindgroup {tgBind.token} <span className="float-right text-xs font-sans text-primary">копировать</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2 p-1 rounded-[14px] bg-base-100 border border-base-300 animate-fade-in stagger-2">
@@ -1262,7 +1198,6 @@ export default function AdminGroupDetail() {
         {activeTab === 'attendance' && <AttendanceTab groupId={id} token={token} />}
         {activeTab === 'homework' && <HomeworkTab groupId={id} token={token} canManage={user?.role !== 'branch_manager'} />}
         {activeTab === 'feedback' && <FeedbackTab groupId={id} token={token} canManage={user?.role !== 'branch_manager'} />}
-        {activeTab === 'schedule' && <ScheduleTab group={group} />}
       </div>
 
       {/* Add Student Modal */}
@@ -1292,14 +1227,6 @@ export default function AdminGroupDetail() {
         token={token}
         groups={allGroups}
         subjectOptions={subjectOptions}
-      />
-
-      {/* ── Export students modal ── */}
-      <ExportDialog
-        open={showGroupExport}
-        onClose={() => setShowGroupExport(false)}
-        pageKey="groupStudents"
-        data={students}
       />
     </div>
   );
