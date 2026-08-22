@@ -543,3 +543,164 @@ export function SurpriseCard() {
     </button>
   );
 }
+
+export function TestTimer({ remaining, endsAt, lowThreshold = 60 }) {
+  const { t } = useI18n();
+  const low = remaining !== null && remaining < lowThreshold;
+  return (
+    <div
+      className="sticky top-4 z-10 mb-5 flex items-center justify-between gap-4 rounded-2xl px-5 py-3.5"
+      style={{ background: C.ink, color: '#fff', boxShadow: '0 10px 24px rgba(60,40,10,0.18)' }}
+    >
+      <div className="flex items-center gap-2.5 min-w-0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 6v6l4 2" />
+        </svg>
+        <b className="truncate">{t.testTake.timerLabel}</b>
+      </div>
+      <div className="k-num text-2xl tabular-nums" style={{ color: low ? C.coral : C.lime }}>
+        {remaining !== null ? (
+          <>
+            {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}
+          </>
+        ) : '—'}
+      </div>
+    </div>
+  );
+}
+
+export function QuestionProgress({ current, total, answered, onJump }) {
+  const { t } = useI18n();
+  return (
+    <div className="k-card mb-4 p-4">
+      <div className="flex items-center justify-between gap-4 mb-3">
+        <span className="text-sm font-bold" style={{ color: C.muted }}>
+          {t.testTake.questionProgress}: <b className="k-num" style={{ color: C.text }}>{current}/{total}</b>
+        </span>
+        <span className="text-sm font-bold" style={{ color: C.muted }}>
+          {t.testTake.answered}: <b className="k-num" style={{ color: C.text }}>{answered}/{total}</b>
+        </span>
+      </div>
+      <div className="flex gap-1.5 flex-wrap" role="list" aria-label={t.testTake.questionList}>
+        {Array.from({ length: total }, (_, i) => {
+          const isCurrent = i === current - 1;
+          const isAnswered = answered > i;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onJump?.(i)}
+              className={`k-press-sm w-8 h-8 rounded-lg font-bold text-[12px] transition-colors ${isCurrent ? 'ring-2' : ''}`}
+              style={{
+                background: isCurrent
+                  ? C.lime
+                  : isAnswered
+                  ? C.limeSoft
+                  : C.bg,
+                color: isCurrent
+                  ? '#fff'
+                  : isAnswered
+                  ? C.limeDk
+                  : C.muted,
+                border: isCurrent ? `2px solid ${C.lime}` : 'none',
+              }}
+              aria-current={isCurrent ? 'true' : 'false'}
+              aria-label={`${t.testTake.question} ${i + 1} ${isAnswered ? t.testTake.answeredShort : ''}`}
+            >
+              {i + 1}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function ExitConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmText, cancelText, loading }) {
+  const { t } = useI18n();
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[70] grid place-items-center p-4" role="dialog" aria-modal="true">
+      <button
+        className="absolute inset-0 cursor-default"
+        style={{ background: 'rgba(18,25,14,0.4)', backdropFilter: 'blur(3px)' }}
+        onClick={onClose}
+        aria-label={t.ui.close}
+        tabIndex={-1}
+      />
+      <div
+        className="relative w-full max-w-md p-6 k-pop-in"
+        style={{
+          background: C.card,
+          border: `1px solid ${C.limeLine}`,
+          borderRadius: 16,
+          boxShadow: '0 1px 2px rgba(18,25,14,0.04), 0 6px 16px rgba(18,25,14,0.06)',
+        }}
+      >
+        <h3 className="text-[19px] font-extrabold leading-tight mb-4" style={{ color: C.text }}>{title}</h3>
+        <p className="text-[14px] leading-relaxed mb-6" style={{ color: C.muted }}>{message}</p>
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="k-press-sm flex-1 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40"
+            style={{ background: C.card, color: C.text, border: `1px solid ${C.line}` }}
+          >
+            {cancelText ?? t.ui.cancel}
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="k-press-sm flex-1 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40"
+            style={{ background: '#C0392B', color: '#fff' }}
+          >
+            {loading ? t.ui.loading : (confirmText ?? t.ui.confirm)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ResumeTestBanner({ onResume, onRestart, testTitle }) {
+  const { t } = useI18n();
+  return (
+    <div className="k-card p-5 mb-5" style={{ background: C.limeSoft, border: `1px solid ${C.limeLine}` }}>
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl grid place-items-center shrink-0" style={{ background: `${C.lime}20`, color: C.limeDk }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M1 4v16" />
+          <path d="M23 4v16" />
+          <path d="M1 12h22" />
+          <path d="M10 16a6 6 0 0 1 4 0" />
+          <path d="M14 8a6 6 0 0 0 -4 0" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-[15px] font-extrabold" style={{ color: C.text }}>{t.testTake.resumeFound}</h3>
+          <p className="text-[13px] font-semibold mt-1" style={{ color: C.muted }}>
+            {t.testTake.resumeMessage(testTitle)}
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={onRestart}
+            className="k-press-sm px-4 py-2 rounded-xl text-[13px] font-extrabold"
+            style={{ background: C.card, color: C.text, border: `1px solid ${C.line}` }}
+          >
+            {t.testTake.restart}
+          </button>
+          <button
+            onClick={onResume}
+            className="k-press-sm px-4 py-2 rounded-xl text-[13px] font-extrabold"
+            style={{ background: C.lime, color: '#fff' }}
+          >
+            {t.testTake.continue}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

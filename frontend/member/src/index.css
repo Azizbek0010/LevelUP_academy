@@ -706,3 +706,85 @@ main > * {
 /* Курсор «тяни карту» в полноэкранном режиме */
 .k-map-grab { cursor: grab; touch-action: none; }
 .k-map-grab:active { cursor: grabbing; }
+
+/* ═══════════════════════════════════════════════════════════════
+   TEST SECURITY — anti-cheat styles
+   ═══════════════════════════════════════════════════════════════ */
+.test-content {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+.test-content ::selection {
+  background: transparent;
+}
+.test-content * {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+/* Hide scrollbar during test for cleaner look */
+.test-mode ::-webkit-scrollbar {
+  display: none;
+}
+.test-mode {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Modal overlay for tab switch warning */
+.test-tab-warning-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(18, 25, 14, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fade-in 0.2s ease-out;
+}
+.test-tab-warning-box {
+  background: #fff;
+  border: 1px solid #D7E7C2;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(18, 25, 14, 0.18), 0 4px 12px rgba(18, 25, 14, 0.10);
+}
+.test-tab-warning-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(95, 163, 60, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.test-tab-warning-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1C231A;
+  margin-bottom: 8px;
+}
+.test-tab-warning-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #707F68;
+  margin-bottom: 24px;
+}
+.test-tab-warning-timer {
+  font-size: 32px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #5FA33C;
+  margin-bottom: 24px;
+}
