@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  HeadObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'node:crypto';
@@ -53,6 +54,16 @@ export async function getObjectBuffer(key) {
   const chunks = [];
   for await (const chunk of Body) chunks.push(chunk);
   return Buffer.concat(chunks);
+}
+
+/**
+ * Реальный размер объекта — с самого Storj, не то, что прислал клиент.
+ * Единственный потребитель: content.service.js считает стоимость видео-файла
+ * темы по этой цифре, а не по клиентскому значению, которое можно занизить.
+ */
+export async function getObjectSize(key) {
+  const { ContentLength } = await s3.send(new HeadObjectCommand({ Bucket: env.S3_BUCKET, Key: key }));
+  return ContentLength;
 }
 
 export async function deleteObject(key) {

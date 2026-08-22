@@ -1267,6 +1267,15 @@ qatorga tegilgan).
       Qo'llashda: barcha joriy SEO/Super Admin foydalanuvchilari qayta login qilishi kerak
       (JWT'dagi eski role qiymati bilan `authorize('seo')` endi mos kelmaydi).
 
+- [x] ROLE-FINANCE ✅ **YOPILDI 22.08.2026 (Karis)** — rol endi mock emas, HAQIQIY backend roli:
+      migratsiya `1787090000000_finance-manager-org-wide.js` (butun tashkilot, `branch_id IS NULL`),
+      alohida modul `backend/src/modules/finance/` → `/api/finance/*`, huquq
+      `authorize('finance_manager','seo')`. SEO bloki (`super.routes.js`) ATAYLAB kengaytirilmadi —
+      aks holda filiallar/adminlar/o'quvchilar ham ochilib ketardi. 6 sahifa real ma'lumotga
+      o'tdi, `pages/finance/_data.js` butunlay o'chirildi. Scope savoliga javob: BUTUN TASHKILOT
+      (SEO darajasida). Tafsilot va topilgan 10 ta hisob-kitob xatosi — `done.md`, 22.08.2026.
+      Quyida dastlabki topshiriq matni tarix uchun saqlanadi:
+
 - [ ] ROLE-FINANCE 🔄 EGASI (frontend, jamoa): **Shohjahon, Aziz, Alish** (Karis
       tayinladi, 2026-08-04). Yangi rol — **Finance Manager** (Finans menejeri). Karis
       ta'rifi: daromad, rashod, xodimlar oyligi va boshqa BARCHA xarajatlarni kuzatadi.

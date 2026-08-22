@@ -30,7 +30,9 @@ export async function listTopicsWithLessons(trainingTypeIds, db = pool) {
   if (trainingTypeIds.length === 0) return [];
   const { rows } = await db.query(
     `SELECT t.id AS topic_id, t.training_type_id, t.name AS topic_name, t.description AS topic_description,
-            t.video_url AS topic_video_url, t.sort_order AS topic_sort_order,
+            t.video_url AS topic_video_url, t.video_file_key AS topic_video_file_key,
+            t.video_duration_sec AS topic_video_duration_sec, t.coin_reward AS topic_coin_reward,
+            t.sort_order AS topic_sort_order,
             l.id AS lesson_id, l.title, l.lesson_type, l.description, l.instruction,
             l.coin_reward, l.video_url, l.file_key, l.sort_order AS lesson_sort_order
        FROM topics t
@@ -40,6 +42,44 @@ export async function listTopicsWithLessons(trainingTypeIds, db = pool) {
     [trainingTypeIds],
   );
   return rows;
+}
+
+/** Тема (для видео-файла и начисления монет за просмотр) — только если входит
+    в допустимые training_type_id студента. */
+export async function getTopicForStudent(topicId, trainingTypeIds, db = pool) {
+  const { rows: [topic] } = await db.query(
+    `SELECT id, video_file_key, coin_reward
+       FROM topics
+      WHERE id = $1 AND training_type_id = ANY($2) AND deleted_at IS NULL`,
+    [topicId, trainingTypeIds],
+  );
+  return topic ?? null;
+}
+
+/** id тем, чьё видео студент уже досмотрел (для честного бейджа при
+    перезагрузке страницы — без этого гейт видео сбрасывался бы каждый раз,
+    хотя монеты за него уже начислены). */
+export async function getWatchedTopicIds(studentId, topicIds, db = pool) {
+  if (topicIds.length === 0) return [];
+  const { rows } = await db.query(
+    `SELECT topic_id FROM topic_video_views WHERE student_id = $1 AND topic_id = ANY($2)`,
+    [studentId, topicIds],
+  );
+  return rows.map((r) => r.topic_id);
+}
+
+/** Идемпотентная фиксация просмотра — ON CONFLICT DO NOTHING: если строка уже
+    была (студент пересматривает), INSERT ничего не вернёт — монеты не
+    задваиваются (та же защита, что у finalizeAiGrade/gradeSubmission). */
+export async function markVideoWatched(topicId, studentId, db = pool) {
+  const { rows: [r] } = await db.query(
+    `INSERT INTO topic_video_views (topic_id, student_id)
+     VALUES ($1, $2)
+     ON CONFLICT (topic_id, student_id) DO NOTHING
+     RETURNING id`,
+    [topicId, studentId],
+  );
+  return !!r; // true — первый просмотр (только что зафиксирован), false — уже было
 }
 
 /** Урок — только если его тема входит в допустимые training_type_id студента. */
@@ -155,6 +195,7 @@ export async function getSubmissionById(id, db = pool) {
     `SELECT s.id, s.lesson_id, s.student_id, s.file_key, s.text_answer, s.review_attempts,
             l.title AS lesson_title, l.description AS lesson_description,
             l.instruction AS lesson_instruction, l.file_key AS lesson_file_key,
+            l.coin_reward AS lesson_coin_reward,
             u.preferred_language AS student_language
        FROM methodology_submissions s
        JOIN methodology_lessons l ON l.id = s.lesson_id
@@ -179,6 +220,25 @@ export async function saveReview(id, { review, reviewSource, reviewStatus, revie
       WHERE id = $1`,
     [id, review ? JSON.stringify(review) : null, reviewSource, reviewStatus, reviewAttempts, score],
   );
+}
+
+/**
+ * Закрывает сдачу как оценённую ИИ — score уже в БД (saveReview выше), тут
+ * только смена статуса, чтобы percent/лидерборд её увидели. graded_by
+ * остаётся NULL (колонка nullable) — оценил не человек, coin_history сам
+ * несёт причину "AI". WHERE status <> 'graded' — та же идемпотентная защита
+ * от гонки/повторного запуска воркера, что у mentor/homework grading —
+ * если сдача уже закрыта, вернёт null и монеты повторно не начислятся.
+ */
+export async function finalizeAiGrade({ submissionId, score }, db = pool) {
+  const { rows: [r] } = await db.query(
+    `UPDATE methodology_submissions
+        SET status = 'graded', graded_at = now(), score = $2
+      WHERE id = $1 AND status <> 'graded'
+      RETURNING id, lesson_id, student_id, score`,
+    [submissionId, score],
+  );
+  return r ?? null;
 }
 
 /** Последняя готовая (done) AI-оценка студента — для GET /student/home. */

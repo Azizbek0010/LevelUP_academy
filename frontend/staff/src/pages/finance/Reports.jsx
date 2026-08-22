@@ -6,7 +6,13 @@ import { useSuperStats } from '../../queries.js';
 import { Metric, Card, compactMoney } from './_ui.jsx';
 import { useT } from './_i18n.jsx';
 
-const METHOD_LABEL = { cash: 'Наличные', card: 'Карта', click: 'Click', payme: 'Payme' };
+// Полный enum payment_method (backend) — раньше тут было 4 из 9 значений,
+// остальные пять (transfer/humo/uzcard/uzum/bank_transfer) показывались
+// сырым ключом вместо подписи.
+const METHOD_LABEL = {
+  cash: 'Наличные', card: 'Карта', transfer: 'Перевод', bank_transfer: 'Банковский перевод',
+  humo: 'Humo', uzcard: 'Uzcard', uzum: 'Uzum', payme: 'Payme', click: 'Click',
+};
 
 export default function FinanceReports() {
   const { t } = useT();

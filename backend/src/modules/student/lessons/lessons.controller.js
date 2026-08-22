@@ -7,6 +7,18 @@ export const listLessons = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+/** GET /lessons/topics/:topicId/video-url — только для тем с файловым видео. */
+export const getTopicVideoUrl = asyncHandler(async (req, res) => {
+  const data = await service.getTopicVideoStreamUrl(req.user.id, req.params.topicId);
+  res.json({ success: true, data });
+});
+
+/** POST /lessons/topics/:topicId/watched — вызывать один раз при реальном ENDED. */
+export const markTopicVideoWatched = asyncHandler(async (req, res) => {
+  const data = await service.markTopicVideoWatched(req.user.id, req.params.topicId);
+  res.json({ success: true, data });
+});
+
 /** GET /lessons/:lessonId */
 export const getLesson = asyncHandler(async (req, res) => {
   const data = await service.getLessonDetail(req.user.id, req.params.lessonId);

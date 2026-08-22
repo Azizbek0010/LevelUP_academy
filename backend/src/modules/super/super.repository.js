@@ -361,23 +361,39 @@ export function orgTotals(orgId, branchId = null, client = pool) {
          (SELECT count(*) FROM branches
             WHERE organization_id = $1 AND deleted_at IS NULL
               AND ($2::uuid IS NULL OR id = $2)) AS branches,
-         (SELECT count(*) FROM users
-            WHERE organization_id = $1 AND role = 'student'
-              AND status = 'active' AND deleted_at IS NULL
-              AND ($2::uuid IS NULL OR branch_id = $2)) AS active_students,
-         (SELECT count(*) FROM users
-            WHERE organization_id = $1 AND role = 'admin' AND deleted_at IS NULL
-              AND ($2::uuid IS NULL OR branch_id = $2)) AS admins,
-         (SELECT count(*) FROM users
-            WHERE organization_id = $1 AND role = 'mentor' AND deleted_at IS NULL
-              AND ($2::uuid IS NULL OR branch_id = $2)) AS mentors,
+         -- EXISTS-проверка филиала — та же причина, что у выручки ниже: люди
+         -- считались по users.branch_id без оглядки на то, жив ли сам филиал,
+         -- поэтому итог мог быть больше суммы по филиалам из branchBreakdown.
+         (SELECT count(*) FROM users u
+            WHERE u.organization_id = $1 AND u.role = 'student'
+              AND u.status = 'active' AND u.deleted_at IS NULL
+              AND EXISTS (SELECT 1 FROM branches b WHERE b.id = u.branch_id AND b.deleted_at IS NULL)
+              AND ($2::uuid IS NULL OR u.branch_id = $2)) AS active_students,
+         (SELECT count(*) FROM users u
+            WHERE u.organization_id = $1 AND u.role = 'admin' AND u.deleted_at IS NULL
+              AND EXISTS (SELECT 1 FROM branches b WHERE b.id = u.branch_id AND b.deleted_at IS NULL)
+              AND ($2::uuid IS NULL OR u.branch_id = $2)) AS admins,
+         (SELECT count(*) FROM users u
+            WHERE u.organization_id = $1 AND u.role = 'mentor' AND u.deleted_at IS NULL
+              AND EXISTS (SELECT 1 FROM branches b WHERE b.id = u.branch_id AND b.deleted_at IS NULL)
+              AND ($2::uuid IS NULL OR u.branch_id = $2)) AS mentors,
+         -- Karis 22.08.2026: b.deleted_at IS NULL добавлено в выручку и долг.
+         -- Без него удалённый филиал ВЫПАДАЛ из счётчика branches и из
+         -- branchBreakdown (там фильтр есть), но его деньги ПРОДОЛЖАЛИ падать
+         -- в общий итог. Итог переставал сходиться с разбивкой по филиалам:
+         -- доли не давали 100%, а avgRevenue = выручка(с удалёнными) /
+         -- число филиалов(без удалённых) завышался. Сейчас удалённых филиалов
+         -- нет, поэтому вживую не проявлялось — сработало бы при первом же
+         -- удалении. Скоуп «текущее состояние организации» везде одинаковый.
          (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t
             JOIN branches b ON b.id = t.branch_id
            WHERE b.organization_id = $1 AND t.status = 'completed'
+             AND b.deleted_at IS NULL
              AND ($2::uuid IS NULL OR b.id = $2)) AS revenue,
          (SELECT COALESCE(SUM(sp.total_debt), 0) FROM student_profiles sp
             JOIN branches b ON b.id = sp.branch_id
-           WHERE b.organization_id = $1 AND ($2::uuid IS NULL OR b.id = $2)) AS outstanding_debt`,
+           WHERE b.organization_id = $1 AND b.deleted_at IS NULL
+             AND ($2::uuid IS NULL OR b.id = $2)) AS outstanding_debt`,
       [orgId, branchId],
     )
     .then((r) => r.rows[0]);

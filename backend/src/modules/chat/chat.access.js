@@ -36,7 +36,7 @@ export function isUuid(value) {
 }
 
 /** Роли, которым вообще разрешена личная переписка с родителем. */
-export const DM_STAFF_ROLES = new Set(['mentor', 'admin', 'seo', 'branch_manager', 'employee']);
+export const DM_STAFF_ROLES = new Set(['mentor', 'admin', 'seo', 'employee']);
 
 /** Ключ комнаты личного диалога. Порядок фиксирован: staff, затем parent. */
 export function dmRoom(staffId, parentId) {
@@ -79,7 +79,7 @@ export async function canStaffChatParent(user, parentId, db = pool) {
     return rows.length > 0;
   }
 
-  if (user.role === 'admin' || user.role === 'branch_manager') {
+  if (user.role === 'admin') {
     if (!user.branchId) return false;
     const { rows } = await db.query(
       `SELECT 1
@@ -137,13 +137,14 @@ export async function canStaffChatStudent(user, studentId, db = pool) {
     return rows.length > 0;
   }
 
-  // Админ филиала переписывается ТОЛЬКО с родителями, не с самими учениками
-  // (решение 2026-07-21): работа с учеником — забота ментора, админ общается со
-  // взрослой стороной. Поэтому прямой диалог админ↔ученик запрещён на уровне
-  // права, а не только скрыт из списка контактов.
-  if (!['mentor', 'admin', 'branch_manager'].includes(user.role)) return false;
+  // Решение 2026-07-21 запрещало админу писать напрямую ученику (только
+  // родителю) — код ниже это уже не отражает (админ разрешён по филиалу) и
+  // явно отдаёт его в listMyThreads (запрос пользователя 21.08.2026:
+  // "chat fa admin ni ham qoshish kerak"). Оставлен только реальный список
+  // разрешённых ролей, без противоречащего коду комментария.
+  if (!['mentor', 'admin'].includes(user.role)) return false;
 
-  if (user.role === 'admin' || user.role === 'branch_manager') {
+  if (user.role === 'admin') {
     if (!user.branchId) return false;
     const { rows } = await db.query(
       `SELECT 1 FROM student_profiles
@@ -169,9 +170,8 @@ export async function canStaffChatStudent(user, studentId, db = pool) {
 export async function canStaffChatStaff(user, peerId, db = pool) {
   if (!user || !DM_STAFF_ROLES.has(user.role) || !user.branchId || !isUuid(peerId)) return false;
   const allowed = {
-    mentor: ['admin', 'branch_manager', 'employee'],
+    mentor: ['admin', 'employee'],
     admin: ['mentor'],
-    branch_manager: ['mentor'],
     employee: ['mentor'],
   }[user.role] ?? [];
   if (allowed.length === 0) return false;
@@ -228,9 +228,8 @@ export async function assertDmAccess(user, roomKey, db = pool) {
 export async function listStaffPeerContacts(user, db = pool) {
   if (!DM_STAFF_ROLES.has(user.role) || !user.branchId) return [];
   const peerRoles = {
-    mentor: ['admin', 'branch_manager', 'employee'],
+    mentor: ['admin', 'employee'],
     admin: ['mentor'],
-    branch_manager: ['mentor'],
     employee: ['mentor'],
   }[user.role] ?? [];
   if (peerRoles.length === 0) return [];
@@ -282,7 +281,7 @@ export async function listStaffStudentContacts(user, db = pool) {
                  JOIN groups g         ON g.id = gs.group_id AND g.deleted_at IS NULL`;
     scopeWhere = 'g.mentor_id = $2';
     scopeParam = user.id;
-  } else if (user.role === 'admin' || user.role === 'branch_manager') {
+  } else if (user.role === 'admin') {
     if (!user.branchId) return [];
     scopeJoin = '';
     scopeWhere = 'sp.branch_id = $2';
@@ -350,7 +349,7 @@ export async function listStaffContacts(user, db = pool) {
                  JOIN groups g         ON g.id = gs.group_id AND g.deleted_at IS NULL`;
     scopeWhere = 'g.mentor_id = $2';
     scopeParam = user.id;
-  } else if (user.role === 'admin' || user.role === 'branch_manager') {
+  } else if (user.role === 'admin') {
     if (!user.branchId) return [];
     scopeJoin = '';
     scopeWhere = 'sp.branch_id = $2';
@@ -426,20 +425,27 @@ export async function listStaffContacts(user, db = pool) {
 
 /**
  * Доступные диалоги родителя/студента: действующие наставники активных групп
- * плюс сотрудники из уже существующей переписки. Поэтому родитель может
- * написать наставнику первым, а прежний диалог не исчезнет из истории.
+ * + админ(ы) филиала — тот же принцип, что уже соблюдался в обратную сторону
+ * (listStaffContacts/listStaffStudentContacts у сотрудника всегда строго по
+ * текущей группе/филиалу, без истории), просто в две ветки вместо одной,
+ * зеркаля canStaffChatStudent/canStaffChatParent (там admin по филиалу —
+ * тоже отдельная, разрешённая ветка, не только у mentor).
+ *
+ * Раньше сюда же подмешивались "прежние" собеседники — любой, с кем в
+ * chat_messages уже была переписка, даже если ментор сменился/группа
+ * закрылась. Список показывал контакт, а sendDirectMessage (та же проверка
+ * canStaffChatPeer, что и здесь) реально отправлять ему запрещал — родитель/
+ * ученик видел рабочую кнопку и получал "You may not message this person"
+ * (запрос пользователя 21.08.2026: "student faqat oz o'qituvchisiga
+ * yozolsin... har student oz ustoziga"). История сообщений при этом никуда
+ * не делась — она читается по room_key напрямую (GET /chat/:roomKey/messages),
+ * этот список только про то, КОМУ можно написать сейчас.
  */
 export async function listMyThreads(user, db = pool) {
   if (user.role !== 'parent' && user.role !== 'student') return [];
 
   const { rows } = await db.query(
-    `WITH existing_staff AS (
-        SELECT DISTINCT split_part(m.room_key, ':', 2)::uuid AS staff_id
-          FROM chat_messages m
-         WHERE m.deleted_at IS NULL
-           AND m.room_key LIKE 'dm:%:' || $1::text
-     ),
-     eligible_mentors AS (
+    `WITH eligible_mentors AS (
         SELECT DISTINCT g.mentor_id AS staff_id
           FROM student_profiles sp
           JOIN group_students gs ON gs.student_id = sp.user_id AND gs.left_at IS NULL
@@ -447,10 +453,18 @@ export async function listMyThreads(user, db = pool) {
          WHERE ($2::text = 'parent' AND sp.parent_id = $1::uuid)
             OR ($2::text = 'student' AND sp.user_id = $1::uuid)
      ),
+     eligible_admins AS (
+        SELECT DISTINCT au.id AS staff_id
+          FROM student_profiles sp
+          JOIN users au ON au.branch_id = sp.branch_id AND au.role = 'admin'
+                        AND au.deleted_at IS NULL AND au.status = 'active'
+         WHERE ($2::text = 'parent' AND sp.parent_id = $1::uuid)
+            OR ($2::text = 'student' AND sp.user_id = $1::uuid)
+     ),
      visible_staff AS (
-        SELECT staff_id FROM existing_staff
-        UNION
         SELECT staff_id FROM eligible_mentors
+        UNION
+        SELECT staff_id FROM eligible_admins
      ),
      last_msg AS (
         SELECT DISTINCT ON (m.room_key)

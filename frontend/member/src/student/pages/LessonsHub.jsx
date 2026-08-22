@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { BookOpen, ClipboardCheck, FileText, Video, ArrowRight, ChevronRight } from 'lucide-react';
 import { api } from '../api.js';
 import { useToast } from '../components/toast.jsx';
-import { PageHeader, IconTile, Button, Skeleton, C } from '../components/ui.jsx';
+import { PageHeader, IconTile, Button, C } from '../components/ui.jsx';
 import { deadlineLabel } from '../format.js';
 import { fmt, useI18n } from '../../i18n/index.jsx';
 
@@ -54,9 +54,13 @@ export default function LessonsHub() {
         hue="violet"
       />
 
-      {/* Что дальше — крупная зелёная карточка-действие */}
+      {/* Что дальше — крупная зелёная карточка-действие.
+          Не используем <Skeleton/>: он всегда рендерится в grid-cols-3
+          (рассчитан на ряд из нескольких плиток), а тут одна карточка на всю
+          ширину — с count={1} она занимала только 1/3 колонки на sm+ вместо
+          полной ширины настоящей карточки (баг найден 21.08.2026). */}
       {!data ? (
-        <Skeleton h={92} count={1} />
+        <div className="animate-pulse mb-4" style={{ height: 92, background: C.line, borderRadius: 16 }} />
       ) : (
         <Link
           to={continueTo}

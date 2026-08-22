@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
-import { api } from '../api.js';
+import { api, USING_MOCKS } from '../api.js';
 
 function GoogleIcon() {
   return (
@@ -313,7 +313,13 @@ export default function Login() {
             {mode === 'login'
               ? <LoginForm onForgot={() => setMode('forgot')} />
               : <ForgotForm onBack={() => setMode('login')} />}
-            {mode === 'login' && (
+            {/* Эти аккаунты — только в mock-режиме (localStorage, без бэкенда):
+                Finance Manager/Branch Manager backend-ролью ещё не стали
+                (см. комментарии в api.js). Раньше подсказка висела всегда,
+                включая локальную разработку с VITE_USE_MOCKS=false (реальный
+                бэкенд) — там этих аккаунтов в БД нет и никогда не будет,
+                попытка входа честно давала "Неверный email или пароль". */}
+            {mode === 'login' && USING_MOCKS && (
               <div className="mt-4 rounded-xl border border-dashed border-base-300 bg-base-200/50 p-3 text-[11px] leading-relaxed text-base-content/50 animate-fade-in">
                 <p className="font-semibold uppercase tracking-wider text-base-content/40 mb-1">Демо-доступ (без бэкенда)</p>
                 <p><b>Finance Manager:</b> finance.manager@gmail.com · pass123</p>

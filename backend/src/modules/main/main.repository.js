@@ -622,3 +622,26 @@ export function updateProfile(id, fields, client = pool) {
 /* Запросы по staff_penalties отсюда убраны: платформа не читает дисциплину
  * сотрудников партнёров. Эти данные принадлежат организации и доступны её
  * SEO через /api/super/penalties. */
+
+/**
+ * Karis 21.08.2026: темы с видео-файлом (методист загрузил вместо ссылки
+ * на YouTube) и их расчётная стоимость (src/config/pricing.js) — платформа
+ * платит Storj за хранение и трафик, партнёру эта цифра не показывается
+ * нигде (см. content.repository.js методиста — там этих колонок нет
+ * в SELECT вообще).
+ */
+export function listVideoStorageCosts(client = pool) {
+  return client
+    .query(
+      `SELECT t.id AS topic_id, t.name AS topic_name, tt.name AS training_type_name,
+              o.id AS organization_id, o.name AS organization_name,
+              t.video_size_bytes, t.video_duration_sec,
+              t.video_storage_cost_usd, t.video_cost_per_view_usd, t.created_at
+         FROM topics t
+         JOIN training_types tt ON tt.id = t.training_type_id
+         JOIN organizations o ON o.id = tt.organization_id
+        WHERE t.video_file_key IS NOT NULL AND t.deleted_at IS NULL
+        ORDER BY t.video_storage_cost_usd DESC NULLS LAST`,
+    )
+    .then((r) => r.rows);
+}

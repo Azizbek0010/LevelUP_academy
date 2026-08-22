@@ -360,6 +360,20 @@ export async function deleteExpense(id) {
   return row;
 }
 
+/**
+ * Темы с видео-файлом на Storj + суммарный текущий расход. costPerViewUsd —
+ * цена ОДНОГО просмотра, не входит в totalStorageCostUsdPerMonth (это только
+ * хранение) — сколько раз посмотрят, заранее не известно (см. pricing.js).
+ */
+export async function videoStorageCosts() {
+  const items = await repo.listVideoStorageCosts();
+  const totalStorageCostUsdPerMonth = Number(
+    items.reduce((sum, r) => sum + Number(r.video_storage_cost_usd ?? 0), 0).toFixed(4),
+  );
+  const totalSizeBytes = items.reduce((sum, r) => sum + Number(r.video_size_bytes ?? 0), 0);
+  return { items, totals: { totalStorageCostUsdPerMonth, totalSizeBytes, count: items.length } };
+}
+
 function currentMonthKey(date = new Date()) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }

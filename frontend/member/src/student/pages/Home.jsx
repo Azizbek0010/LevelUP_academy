@@ -2,25 +2,20 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Star, Trophy, Wallet, ChevronRight, ClipboardCheck, BookOpen,
-  Video, Users, Award, GraduationCap, TrendingUp, ArrowRight, ShoppingBag,
+  Users, Award, GraduationCap, TrendingUp, ArrowRight,
 } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useToast } from '../components/toast.jsx';
 import { fmt, useI18n } from '../../i18n/index.jsx';
 import {
-  IconTile, Ring, Button, Pill, Tabs, Skeleton, RowSkeleton, EmptyState, ErrorState, Avatar, C,
+  IconTile, Ring, Button, Pill, Tabs, RowSkeleton, EmptyState, ErrorState, Avatar, C,
   CountUp, ConfettiBurst, SurpriseCard, LevelBar, levelFromCoins,
 } from '../components/ui.jsx';
 import { useDailyStreak } from '../useDailyStreak.js';
 import { deadlineLabel } from '../format.js';
-import FeedbackDemo from '../components/FeedbackDemo.jsx';
-
-/* ⚠️ MAKET — «Aqlli tahlil» demo-bloki. Faqat dev/mock rejimida ko'rinadi —
-   import.meta.env.DEV false (prod-build) yoki VITE_USE_MOCKS=false bo'lsa
-   (prod-env) avtomatik o'chadi, mock ma'lumotlar prod'ga tushib qolmaydi.
-   Backend tayyor bo'lgach: blok va importni butunlay olib tashlang. */
-const MAKET_FEEDBACK = import.meta.env.DEV || import.meta.env.VITE_USE_MOCKS === 'true';
+import SmartReview from '../components/SmartReview.jsx';
+import { isLessonCompleted } from './TopicDetail.jsx';
 
 /**
  * Главная кабинета ученика (2026-08-01, v3).
@@ -35,21 +30,6 @@ const MAKET_FEEDBACK = import.meta.env.DEV || import.meta.env.VITE_USE_MOCKS ===
  * визит-стрик (локально, useDailyStreak, подписан "на этом устройстве"),
  * место в рейтинге и группы — из /student/home, раньше не показывались.
  */
-
-function TaskTile({ icon, hue, title, meta, to, done, delay = 0 }) {
-  const inner = (
-    <div className="k-card k-hover k-pop-in p-3.5 flex items-center gap-3 h-full" style={{ animationDelay: `${delay}ms` }}>
-      <IconTile icon={icon} hue={hue} size={38} />
-      <div className="min-w-0 flex-1">
-        <div className="text-[13.5px] font-bold truncate" style={{ color: done ? C.muted : C.text }}>{title}</div>
-        {/* Подпись плитки — зелёная (фирменный цвет), когда дело живое */}
-        <div className="text-[12px] font-semibold mt-0.5 truncate" style={{ color: done ? C.muted : C.limeDk }}>{meta}</div>
-      </div>
-      <ChevronRight size={16} strokeWidth={2.4} style={{ color: C.muted }} className="shrink-0" />
-    </div>
-  );
-  return to ? <Link to={to} className="block h-full">{inner}</Link> : inner;
-}
 
 /* Крупная рекомендованная задача — единственный визуальный фокус секции
    "что делать сегодня", вместо сетки одинаковых плиток. */
@@ -79,6 +59,19 @@ function FeaturedTask({ icon, hue, eyebrow, title, meta, cta, to }) {
 }
 const HUES_TEXT = { lime: C.limeDk, violet: C.violet, blue: C.blue, coral: C.coral, amber: C.amber, teal: C.teal, pink: C.pink };
 
+/* Skeleton под реальную форму секции ("Задача дня" + "Мои группы") — общий
+   <Skeleton/> всегда рисует 3 колонки в ряд, а тут теперь одна широкая
+   карточка-задача и карточка-список групп (после удаления плиточного ряда
+   21.08.2026 — тот же класс бага, что уже чинили на /study и /leaderboard). */
+function HomeSkeleton() {
+  return (
+    <>
+      <div className="animate-pulse" style={{ height: 108, background: C.line, borderRadius: 16 }} />
+      <div className="animate-pulse mt-4" style={{ height: 140, background: C.line, borderRadius: 16 }} />
+    </>
+  );
+}
+
 /* Компактная статистика в герое — три числа рядом, все настоящие. */
 function StatChip({ icon: Icon, label, children }) {
   return (
@@ -105,6 +98,46 @@ function badgesFrom(data, streak, t) {
   return list;
 }
 
+/* Топ-5 строк рейтинга — общие и для филиала, и для группы (одинаковая форма
+   ответа /student/leaderboard, отличается только groupId в запросе). */
+function RatingRows({ rows, userId, t }) {
+  return (
+    <>
+      {rows.slice(0, 5).map((r, i) => {
+        const me = r.studentId === userId;
+        const medal = [C.lime, '#FFB300', C.blue][i];
+        return (
+          <div
+            key={r.studentId ?? i}
+            className="flex items-center gap-3 px-4 sm:px-5 py-2.5"
+            style={me ? { background: C.limeSoft } : undefined}
+          >
+            <span
+              className="w-7 h-7 rounded-lg grid place-items-center k-num text-[13px] shrink-0"
+              style={medal
+                ? { background: medal, color: medal === '#FFB300' ? '#4A3400' : '#fff' }
+                : { background: C.bg, color: C.muted }}
+            >
+              {r.rank ?? i + 1}
+            </span>
+            <Avatar name={`${r.firstName ?? ''} ${r.lastName ?? ''}`} size={32} />
+            <div className="min-w-0 flex-1">
+              <div className="text-[14px] font-bold truncate" style={{ color: C.text }}>
+                {r.firstName} {r.lastName}
+                {me && <span className="ml-1.5" style={{ color: C.limeDk }}>{t.home.you}</span>}
+              </div>
+            </div>
+            <span className="k-num text-[14.5px] flex items-center gap-1.5 shrink-0" style={{ color: C.text }}>
+              <CountUp value={Number(r.coins) || 0} />
+              <Star size={13} strokeWidth={2.2} color={C.lime} />
+            </span>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 export default function Home() {
   const { user } = useAuth();
   const { lang, t } = useI18n();
@@ -116,7 +149,19 @@ export default function Home() {
   const [reloadKey, setReloadKey] = useState(0);
   const [board, setBoard] = useState('branch');
   const [rows, setRows] = useState(null);
+  const [groupRows, setGroupRows] = useState(null);
   const [celebrate, setCelebrate] = useState(0);
+  const [topics, setTopics] = useState(null);
+
+  /* «Задача дня» без ДЗ раньше вела на /tests — отдельный, почти всегда
+     пустой групповой модуль (реальный контент — в methodology-дереве,
+     /lessons). Ищем тему, где реально есть что сделать: видео не досмотрено
+     или урок не начат — запрос пользователя 21.08.2026. */
+  useEffect(() => {
+    let cancelled = false;
+    api.lessons().then((d) => { if (!cancelled) setTopics(d.data); }).catch(() => { if (!cancelled) setTopics([]); });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,6 +191,22 @@ export default function Home() {
     return () => { cancelled = true; };
   }, []);
 
+  /* Рейтинг по группе — тот же /student/leaderboard, но с groupId (backend уже
+     поддерживал, фронт просто не запрашивал). Грузим лениво: только когда
+     вкладка «Моя группа» открыта и известна своя группа (data.groups из
+     /student/home). Если групп несколько — берём первую, отдельного
+     переключателя группы в этом виджете нет. */
+  const myGroupId = data?.groups?.[0]?.id ?? null;
+  useEffect(() => {
+    if (board !== 'group' || !myGroupId) return;
+    let cancelled = false;
+    setGroupRows(null);
+    api.leaderboard('week', myGroupId)
+      .then((d) => { if (!cancelled) setGroupRows(Array.isArray(d.data?.top) ? d.data.top : []); })
+      .catch(() => { if (!cancelled) setGroupRows([]); });
+    return () => { cancelled = true; };
+  }, [board, myGroupId]);
+
   // Стрик — новый личный рекорд этого устройства → короткий залп конфетти,
   // не назойливо (только на 3/7/14/30, не каждый день подряд).
   useEffect(() => {
@@ -158,12 +219,21 @@ export default function Home() {
   const rank = data?.rank?.rank ?? null;
   const groups = data?.groups ?? [];
 
+  // Первая тема (по порядку), где реально есть незавершённое дело — видео не
+  // досмотрено или урок ещё не начат. Всё пройдено — ведём на первую тему
+  // (curgan bo'lsa ham, есть куда вести), пустой список — на /lessons целиком.
+  const neededTopic = (topics ?? []).find((tp) => {
+    const videoUnwatched = (tp.videoUrl || tp.hasVideoFile) && !tp.videoWatched;
+    return videoUnwatched || tp.lessons.some((l) => !isLessonCompleted(l));
+  }) ?? topics?.[0] ?? null;
+  const testTo = neededTopic ? `/lessons/topics/${neededTopic.id}` : '/lessons';
+
   /* Рекомендованная задача — единственный крупный акцент секции.
      Долг НЕ показываем ребёнку крупно: он живёт тихим чипом в шапке.
      Приоритет: ближайшее ДЗ → тест. */
   const featured = hw
     ? { icon: BookOpen, hue: 'violet', eyebrow: t.home.homework, title: hw.title, meta: fmt(t.home.dueLabel, { date: deadlineLabel(hw.deadline, lang) }), cta: t.home.submit, to: '/homework' }
-    : { icon: ClipboardCheck, hue: 'violet', eyebrow: t.home.taskOfDay, title: t.home.passTest, meta: t.home.passTestMeta, cta: t.home.go, to: '/tests' };
+    : { icon: ClipboardCheck, hue: 'violet', eyebrow: t.home.taskOfDay, title: t.home.passTest, meta: t.home.passTestMeta, cta: t.home.go, to: testTo };
 
   return (
     <>
@@ -221,33 +291,13 @@ export default function Home() {
       </div>
 
       {loading ? (
-        <Skeleton h={108} count={3} />
+        <HomeSkeleton />
       ) : error ? (
         <div className="k-card"><ErrorState message={error} onRetry={() => setReloadKey((k) => k + 1)} /></div>
       ) : (
         <>
           {/* ══ Рекомендовано — крупный акцент вместо сетки одинаковых плиток ══ */}
           <FeaturedTask {...featured} />
-
-          {/* ══ Остальное сегодня — компактный ряд, всегда 3 плитки ══ */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-            {featured.to !== '/tests' && (
-              <TaskTile icon={ClipboardCheck} hue="violet" title={t.home.tests} meta={t.home.testsMeta} to="/tests" delay={0} />
-            )}
-            {featured.to !== '/homework' && (
-              <TaskTile
-                icon={BookOpen}
-                hue="violet"
-                title={hw ? hw.title : t.home.noHomework}
-                meta={hw ? fmt(t.home.dueLabel, { date: deadlineLabel(hw.deadline, lang) }) : t.home.allDone}
-                to="/homework"
-                done={!hw}
-                delay={40}
-              />
-            )}
-            <TaskTile icon={Video} hue="violet" title={t.home.videos} meta={t.home.videosMeta} to="/videos" delay={80} />
-            <TaskTile icon={ShoppingBag} hue="lime" title={t.home.shop} meta={t.home.shopMeta} to="/shop" delay={120} />
-          </div>
 
           {/* ══ Мои группы — реальные данные, раньше нигде не показывались ══ */}
           {groups.length > 0 && (
@@ -297,15 +347,14 @@ export default function Home() {
             </div>
             <LevelBar level={level} progress={progress} hue="lime" size="lg" />
           </div>
+
+          {/* ══ Умный разбор — реальный AI-отзыв (Groq) по последней проверенной
+               практической сдаче, /student/home → data.review. Внутри этого же
+               блока (не снаружи, как было у мок-версии): теперь зависит от
+               настоящей загрузки, а не рисуется независимо от неё. ══ */}
+          <SmartReview review={data?.review} />
         </>
       )}
-
-      {/* ══ Aqlli tahlil — MAKET (demo): backend hali ulanmagan, ma'lumotlar mock.
-           /student/home ga bog'liq EMAS — shuning uchun SurpriseCard kabi yuklanish
-           ternary'sidan tashqarida, hero va asosiy topshiriqlardan pastda turadi:
-           demo hech qachon yo'qolmaydi (API xato bo'lsa ham) va birinchi ekran
-           maqtov bloki bilan to'lib ketmaydi. ══ */}
-      {MAKET_FEEDBACK && <FeedbackDemo />}
 
       {/* ══ Факт дня — не зависит от /student/home, поэтому показываем
            сразу, не дожидаясь его загрузки (иначе внизу пустая яма,
@@ -328,14 +377,27 @@ export default function Home() {
         </div>
 
         {board === 'group' ? (
-          /* Групповой разрез бэкенд пока не отдаёт — говорим прямо,
-             а не показываем филиальный топ под видом группового */
-          <EmptyState
-            icon={Users}
-            hue="blue"
-            title={t.home.groupRatingSoon}
-            text={t.home.groupRatingSoonText}
-          />
+          !myGroupId ? (
+            <EmptyState
+              icon={Users}
+              hue="blue"
+              title={t.home.groupRatingNoGroup}
+              text={t.home.groupRatingNoGroupText}
+            />
+          ) : groupRows === null ? (
+            <div className="px-4 sm:px-5 pb-5"><RowSkeleton count={3} height={52} /></div>
+          ) : groupRows.length === 0 ? (
+            <EmptyState
+              icon={Trophy}
+              hue="amber"
+              title={t.home.ratingEmpty}
+              text={t.home.ratingEmptyText}
+            />
+          ) : (
+            <div className="pb-2">
+              <RatingRows rows={groupRows} userId={user?.id} t={t} />
+            </div>
+          )
         ) : rows === null ? (
           <div className="px-4 sm:px-5 pb-5"><RowSkeleton count={3} height={52} /></div>
         ) : rows.length === 0 ? (
@@ -347,37 +409,7 @@ export default function Home() {
           />
         ) : (
           <div className="pb-2">
-            {rows.slice(0, 5).map((r, i) => {
-              const me = r.studentId === user?.id;
-              const medal = [C.lime, '#FFB300', C.blue][i];
-              return (
-                <div
-                  key={r.studentId ?? i}
-                  className="flex items-center gap-3 px-4 sm:px-5 py-2.5"
-                  style={me ? { background: C.limeSoft } : undefined}
-                >
-                  <span
-                    className="w-7 h-7 rounded-lg grid place-items-center k-num text-[13px] shrink-0"
-                    style={medal
-                      ? { background: medal, color: medal === '#FFB300' ? '#4A3400' : '#fff' }
-                      : { background: C.bg, color: C.muted }}
-                  >
-                    {r.rank ?? i + 1}
-                  </span>
-                  <Avatar name={`${r.firstName ?? ''} ${r.lastName ?? ''}`} size={32} />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[14px] font-bold truncate" style={{ color: C.text }}>
-                      {r.firstName} {r.lastName}
-                      {me && <span className="ml-1.5" style={{ color: C.limeDk }}>{t.home.you}</span>}
-                    </div>
-                  </div>
-                  <span className="k-num text-[14.5px] flex items-center gap-1.5 shrink-0" style={{ color: C.text }}>
-                    <CountUp value={Number(r.coins) || 0} />
-                    <Star size={13} strokeWidth={2.2} color={C.lime} />
-                  </span>
-                </div>
-              );
-            })}
+            <RatingRows rows={rows} userId={user?.id} t={t} />
             <Link
               to="/leaderboard"
               className="flex items-center justify-center gap-1.5 py-3 text-[13.5px] font-bold"
