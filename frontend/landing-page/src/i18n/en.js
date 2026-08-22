@@ -1545,7 +1545,7 @@ export default {
     lead: 'Founder of LevelUp Academy — a SaaS CRM for education centers in Uzbekistan. Focused on product and backend: system architecture, authentication, payments and multi-branch support.',
     tags: ['Full-stack', 'Product', 'SaaS'],
     contactsHead: 'How to reach me',
-    contactsLead: "I respond fastest on Telegram — usually within the day.",
+    contactsLead: 'I respond fastest on Telegram — usually within the day.',
     contactTelegramLabel: 'Telegram',
     contactTelegramNote: 'Fastest',
     contactEmailLabel: 'Email',
