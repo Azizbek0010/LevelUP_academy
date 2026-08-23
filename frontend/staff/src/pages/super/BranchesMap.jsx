@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { MapPin, X, ArrowRight, GraduationCap, Wallet } from 'lucide-react';
 import { loadYMapsScript, YANDEX_KEY, TASHKENT } from '../../components/YMapPicker.jsx';
 import { fmt, money } from '../../format.js';
@@ -23,6 +24,7 @@ function pinElement(color) {
 }
 
 export default function BranchesMap({ branches }) {
+  const { t } = useTranslation();
   const containerRef = useRef(null);
   const wrapRef = useRef(null);
   const mapRef = useRef(null);
@@ -102,7 +104,7 @@ export default function BranchesMap({ branches }) {
 
         <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-lg bg-base-100/90 backdrop-blur border border-base-300 px-2.5 py-1.5 text-xs font-medium text-base-content/60 shadow-sm">
           <MapPin size={13} className="text-primary" />
-          {withPoint.length} {withPoint.length === 1 ? 'филиал на карте' : 'филиалов на карте'}
+          {withPoint.length} {withPoint.length === 1 ? t('super.branchesMap.branchOnMapSingular') : t('super.branchesMap.branchOnMapPlural')}
         </div>
 
         {selected && (
@@ -113,12 +115,12 @@ export default function BranchesMap({ branches }) {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-bold text-sm truncate">{selected.name}</div>
-                  <div className="text-xs text-base-content/50 truncate">{selected.address || 'адрес не указан'}</div>
+                  <div className="text-xs text-base-content/50 truncate">{selected.address || t('super.branchesMap.addressNotSpecified')}</div>
                 </div>
                 <button
                   className="w-6 h-6 rounded-md grid place-items-center text-base-content/40 hover:bg-base-200 hover:text-base-content shrink-0"
                   onClick={() => setSelected(null)}
-                  aria-label="Закрыть"
+                  aria-label={t('super.branchesMap.close')}
                 >
                   <X size={14} />
                 </button>
@@ -131,14 +133,14 @@ export default function BranchesMap({ branches }) {
                 <span className="flex items-center gap-1.5">
                   <Wallet size={14} className="text-base-content/40" />
                   <span className={`font-semibold tabular-nums ${selected.debt > 0 ? 'text-error' : ''}`}>{money(selected.debt)}</span>
-                  <span className="text-base-content/40 text-xs">долг</span>
+                  <span className="text-base-content/40 text-xs">{t('super.branchesMap.debt')}</span>
                 </span>
               </div>
               <Link
                 to={`/branches/${selected.id}`}
                 className="mt-3 flex items-center justify-center gap-1.5 btn btn-primary btn-xs w-full"
               >
-                Открыть филиал <ArrowRight size={12} />
+                {t('super.branchesMap.openBranch')} <ArrowRight size={12} />
               </Link>
             </div>
           </div>
