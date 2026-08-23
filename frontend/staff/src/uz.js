@@ -104,6 +104,28 @@ const uz = {
   'common.accountMenu': 'Hisob menyusi',
   'common.yesterday': 'Kecha',
 
+  // mentor/*
+  'mentor.noGroupsTitle': 'Sizda hali guruhlar yo‘q',
+  'mentor.noGroupsHint': 'Guruh biriktirilganda, u chapdagi ro‘yxatda paydo bo‘ladi.',
+  'mentor.groupNotFoundTitle': 'Guruh topilmadi',
+  'mentor.groupNotFoundHint': 'Ehtimol, u arxivda yoki olib tashlangan.',
+  'mentor.toHome': 'Bosh sahifaga',
+  'mentor.back': 'Orqaga',
+  'mentor.archived': 'Arxivda',
+  'mentor.direction': 'Yo‘nalish',
+  'mentor.subject': 'Fan',
+  'mentor.lessonTime': 'Dars vaqti',
+  'mentor.students': 'O‘quvchilar',
+  'mentor.totalCoins': 'Jami tangalar',
+  'mentor.groupSections': 'Guruh bo‘limlari',
+  'mentor.tab.attendance': 'Davomat',
+  'mentor.tab.tests': 'Testlar',
+  'mentor.tab.stats': 'Statistika',
+  'mentor.search': 'Qidirish...',
+  'mentor.selectGroup': 'Guruh',
+  'mentor.chooseGroup': 'Guruhni tanlang',
+  'mentor.close': 'Yopish',
+
   // people/Directory.jsx
   'people.title': 'Odamlar va mijozlar',
   'people.subtitle': "Rolingizga qarab kirish huquqi bilan xodimlar, ota-onalar va o'quvchilarning yagona bazasi",

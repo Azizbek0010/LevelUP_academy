@@ -104,6 +104,28 @@ const en = {
   'common.accountMenu': 'Account menu',
   'common.yesterday': 'Yesterday',
 
+  // mentor/*
+  'mentor.noGroupsTitle': 'You don’t have any groups yet',
+  'mentor.noGroupsHint': 'Once a group is assigned, it will appear in the list on the left.',
+  'mentor.groupNotFoundTitle': 'Group not found',
+  'mentor.groupNotFoundHint': 'It may be archived or removed.',
+  'mentor.toHome': 'Go home',
+  'mentor.back': 'Back',
+  'mentor.archived': 'Archived',
+  'mentor.direction': 'Direction',
+  'mentor.subject': 'Subject',
+  'mentor.lessonTime': 'Lesson time',
+  'mentor.students': 'Students',
+  'mentor.totalCoins': 'Total coins',
+  'mentor.groupSections': 'Group sections',
+  'mentor.tab.attendance': 'Attendance',
+  'mentor.tab.tests': 'Tests',
+  'mentor.tab.stats': 'Statistics',
+  'mentor.search': 'Search...',
+  'mentor.selectGroup': 'Group',
+  'mentor.chooseGroup': 'Choose a group',
+  'mentor.close': 'Close',
+
   // people/Directory.jsx
   'people.title': 'People & clients',
   'people.subtitle': 'A single directory of staff, parents and students, scoped to your role',

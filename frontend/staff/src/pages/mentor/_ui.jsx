@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Search, Inbox, X, ArrowRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Общие кирпичики панели ментора.
@@ -40,7 +41,9 @@ export function Avatar({ name, size = 'md', onPrimary = false }) {
 }
 
 /* ── Поиск ────────────────────────────────────────────────────────────── */
-export function SearchInput({ value, onChange, placeholder = 'Qidirish...', className = '' }) {
+export function SearchInput({ value, onChange, placeholder, className = '' }) {
+  const { t } = useTranslation();
+  const finalPlaceholder = placeholder ?? t('mentor.search');
   return (
     <div className={`relative ${className}`}>
       <Search
@@ -51,8 +54,8 @@ export function SearchInput({ value, onChange, placeholder = 'Qidirish...', clas
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        aria-label={placeholder}
+        placeholder={finalPlaceholder}
+        aria-label={finalPlaceholder}
         // text-base до sm — иначе iOS Safari зумит страницу при фокусе
         // в поле со шрифтом мельче 16px и обратно уже не отпускает.
         className="input input-bordered input-sm w-full pl-9 rounded-lg text-base sm:text-sm"
@@ -77,18 +80,19 @@ export function EmptyState({ icon: Icon = Inbox, title, hint, action }) {
 
 /* ── Выбор группы ──────────────────────────────────────────────────────
    Один и тот же селект был скопирован в Тесты и Коины с разной разметкой. */
-export function GroupSelect({ groups, value, onChange, label = "Guruh" }) {
+export function GroupSelect({ groups, value, onChange, label }) {
+  const { t } = useTranslation();
   return (
     <label className="form-control w-full max-w-xs">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-        {label}
+        {label ?? t('mentor.selectGroup')}
       </span>
       <select
         className="select select-bordered select-sm rounded-lg"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >
-        <option value="">Guruhni tanlang</option>
+        <option value="">{t('mentor.chooseGroup')}</option>
         {groups.map((g) => (
           <option key={g.id} value={g.id}>
             {g.name}{g.subject ? ` — ${g.subject}` : ''}
@@ -130,6 +134,7 @@ export function Panel({ title, icon: Icon, action, children, bodyClass = 'p-4' }
    tomonida blur yoq»). Портал прямо в body убирает эту зависимость целиком —
    не нужно искать, у какого именно предка transform. */
 export function Modal({ isOpen, onClose, title, children, actions }) {
+  const { t } = useTranslation();
   const ref = useRef(null);
   useEffect(() => {
     const el = ref.current;
@@ -146,7 +151,7 @@ export function Modal({ isOpen, onClose, title, children, actions }) {
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-lg grid place-items-center text-[var(--text-muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors"
-            aria-label="Yopish"
+            aria-label={t('mentor.close')}
           >
             <X size={16} />
           </button>

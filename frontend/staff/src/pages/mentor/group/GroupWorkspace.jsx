@@ -3,6 +3,7 @@ import { useParams, useSearchParams, Link } from 'react-router-dom';
 import {
   CalendarDays, FileText, Coins, Users, Clock, BookOpen, ArrowLeft, BarChart3,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { useMentorGroups, useMentorGroupStudents } from '../../../queries.js';
 import { EmptyState } from '../_ui.jsx';
@@ -27,11 +28,11 @@ const StatsTab = lazy(() => import('./StatsTab.jsx'));
    там же, где ментор отмечает присутствие, и видно «сегодня» и «всего».
    Отдельный экран ради того же действия заставлял переключаться туда-сюда
    во время урока. История операций по ученику осталась в его карточке. */
-const TABS = [
-  { key: 'davomat', label: 'Посещаемость', Icon: CalendarDays, Component: AttendanceTab },
-  { key: 'testlar', label: 'Тесты', Icon: FileText, Component: TestsTab },
+const TAB_DEFS = [
+  { key: 'davomat', labelKey: 'mentor.tab.attendance', Icon: CalendarDays, Component: AttendanceTab },
+  { key: 'testlar', labelKey: 'mentor.tab.tests', Icon: FileText, Component: TestsTab },
   // Сравнение учеников между собой: кто тянет, кто отстаёт
-  { key: 'statistika', label: 'Статистика', Icon: BarChart3, Component: StatsTab },
+  { key: 'statistika', labelKey: 'mentor.tab.stats', Icon: BarChart3, Component: StatsTab },
 ];
 
 function getLessonTime(g) {
@@ -55,6 +56,8 @@ function Meta({ Icon, label, value }) {
 }
 
 export default function GroupWorkspace() {
+  const { t } = useTranslation();
+  const TABS = TAB_DEFS.map((tab) => ({ ...tab, label: t(tab.labelKey) }));
   const { id: groupId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -86,9 +89,9 @@ export default function GroupWorkspace() {
       <div className="card bg-base-100">
         <EmptyState
           icon={BookOpen}
-          title="Группа не найдена"
-          hint="Возможно, она в архиве или была отобрана."
-          action={<Link to="/" className="btn btn-sm btn-primary">На главную</Link>}
+          title={t('mentor.groupNotFoundTitle')}
+          hint={t('mentor.groupNotFoundHint')}
+          action={<Link to="/" className="btn btn-sm btn-primary">{t('mentor.toHome')}</Link>}
         />
       </div>
     );
@@ -106,7 +109,7 @@ export default function GroupWorkspace() {
           <Link
             to="/"
             className="btn btn-ghost btn-sm btn-circle lg:hidden shrink-0"
-            aria-label="Назад"
+            aria-label={t('mentor.back')}
           >
             <ArrowLeft size={17} />
           </Link>
@@ -115,20 +118,20 @@ export default function GroupWorkspace() {
               {group?.name || <span className="skeleton inline-block h-7 w-40 align-middle" />}
             </h1>
             {group?.is_archived && (
-              <span className="badge badge-ghost badge-sm mt-1">В архиве</span>
+              <span className="badge badge-ghost badge-sm mt-1">{t('mentor.archived')}</span>
             )}
           </div>
 
           <div className="flex items-center gap-6 flex-wrap">
-            <Meta Icon={BookOpen} label="Направление" value={group?.subject || 'Предмет'} />
-            <Meta Icon={Clock} label="Время урока" value={getLessonTime(group) || '—'} />
-            <Meta Icon={Users} label="Ученики" value={students.length || 0} />
-            <Meta Icon={Coins} label="Всего коинов" value={totalCoins} />
+            <Meta Icon={BookOpen} label={t('mentor.direction')} value={group?.subject || t('mentor.subject')} />
+            <Meta Icon={Clock} label={t('mentor.lessonTime')} value={getLessonTime(group) || '—'} />
+            <Meta Icon={Users} label={t('mentor.students')} value={students.length || 0} />
+            <Meta Icon={Coins} label={t('mentor.totalCoins')} value={totalCoins} />
           </div>
         </div>
 
         {/* ── Вкладки ── */}
-          <nav className="flex gap-1 mt-4 -mb-3" aria-label="Разделы группы">
+          <nav className="flex gap-1 mt-4 -mb-3" aria-label={t('mentor.groupSections')}>
           {TABS.map(({ key, label, Icon }) => {
             const active = key === activeKey;
             return (

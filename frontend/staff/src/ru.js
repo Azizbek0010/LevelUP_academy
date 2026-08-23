@@ -104,6 +104,28 @@ const ru = {
   'common.accountMenu': 'Меню аккаунта',
   'common.yesterday': 'Вчера',
 
+  // mentor/*
+  'mentor.noGroupsTitle': 'У вас пока нет групп',
+  'mentor.noGroupsHint': 'Когда группа будет назначена, она появится в списке слева.',
+  'mentor.groupNotFoundTitle': 'Группа не найдена',
+  'mentor.groupNotFoundHint': 'Возможно, она в архиве или была отобрана.',
+  'mentor.toHome': 'На главную',
+  'mentor.back': 'Назад',
+  'mentor.archived': 'В архиве',
+  'mentor.direction': 'Направление',
+  'mentor.subject': 'Предмет',
+  'mentor.lessonTime': 'Время урока',
+  'mentor.students': 'Ученики',
+  'mentor.totalCoins': 'Всего коинов',
+  'mentor.groupSections': 'Разделы группы',
+  'mentor.tab.attendance': 'Посещаемость',
+  'mentor.tab.tests': 'Тесты',
+  'mentor.tab.stats': 'Статистика',
+  'mentor.search': 'Поиск...',
+  'mentor.selectGroup': 'Группа',
+  'mentor.chooseGroup': 'Выберите группу',
+  'mentor.close': 'Закрыть',
+
   // people/Directory.jsx
   'people.title': 'Люди и клиенты',
   'people.subtitle': 'Единая база сотрудников, родителей и учеников с доступом по вашей роли',
