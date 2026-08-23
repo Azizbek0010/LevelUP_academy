@@ -4,6 +4,7 @@ import {
   Trophy, AlertTriangle, Users, ArrowUpDown, ChevronRight, BarChart3,
 } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 import { useMentorGroupStats } from '../../../queries.js';
 import Avatar from '../../../components/Avatar.jsx';
 import { EmptyState } from '../_ui.jsx';
@@ -26,12 +27,12 @@ const BAND_COLOR = {
   top: '#008300',
 };
 
-const BAND_LABEL = {
-  weak: 'Слабый',
-  mid: 'Средний',
-  good: 'Хороший',
-  top: 'Отличный',
-};
+const bandLabel = (t) => ({
+  weak: t('mentor.stats.bandWeak'),
+  mid: t('mentor.stats.bandMid'),
+  good: t('mentor.stats.bandGood'),
+  top: t('mentor.stats.bandTop'),
+});
 
 const scoreColor = (v) => {
   if (v === null || v === undefined) return '#c3c2b7';
@@ -47,6 +48,8 @@ const scoreColor = (v) => {
    библиотеки. Столбцы растут от общей базовой линии, верх скруглён,
    между ними — зазор фоном, а не обводка. */
 function Distribution({ distribution, total }) {
+  const { t } = useTranslation();
+  const BAND_LABEL = bandLabel(t);
   const max = Math.max(...distribution.map((d) => d.count), 1);
 
   return (
@@ -63,7 +66,7 @@ function Distribution({ distribution, total }) {
                 {d.percent}%
               </div>
               <div className="text-[11px] text-base-content/45 mb-1.5">
-                {d.count} ta
+                {t('mentor.stats.studentsCount', { count: d.count })}
               </div>
               {/* Ширина ограничена: столбец во всю колонку читается как
                   заливка фона, а не как марка данных. */}
@@ -74,7 +77,7 @@ function Distribution({ distribution, total }) {
                   background: d.count > 0 ? color : 'var(--border)',
                   opacity: d.count > 0 ? 1 : 0.5,
                 }}
-                title={`${BAND_LABEL[d.key]}: ${d.count} ученик(ов)`}
+                title={t('mentor.stats.bandTitle', { band: BAND_LABEL[d.key], count: d.count })}
               />
             </div>
           );
@@ -94,7 +97,7 @@ function Distribution({ distribution, total }) {
       </div>
 
       <p className="text-[11px] text-base-content/40 mt-3">
-        Общий балл — посещаемость, домашние задания и тесты (среднее). Всего {total} ученик(ов).
+        {t('mentor.stats.overallNote', { total })}
       </p>
     </div>
   );
@@ -117,14 +120,14 @@ function Bar({ value }) {
   );
 }
 
-const SORTS = [
-  { key: 'overall', label: 'Общий балл' },
-  { key: 'attendanceRate', label: 'Посещаемость' },
-  { key: 'homeworkRate', label: 'Домашние задания' },
-  { key: 'testAvg', label: 'Тесты' },
-];
-
 export default function StatsTab({ groupId }) {
+  const { t } = useTranslation();
+  const SORTS = [
+    { key: 'overall', label: t('mentor.stats.overall') },
+    { key: 'attendanceRate', label: t('mentor.stats.attendance') },
+    { key: 'homeworkRate', label: t('mentor.stats.homework') },
+    { key: 'testAvg', label: t('mentor.stats.tests') },
+  ];
   const { data, isLoading } = useMentorGroupStats(groupId);
   const stats = data?.data ?? null;
   const [sortKey, setSortKey] = useState('overall');
@@ -139,7 +142,7 @@ export default function StatsTab({ groupId }) {
   }
 
   if (!stats || stats.students.length === 0) {
-    return <EmptyState icon={Users} title="В группе нет учеников" />;
+    return <EmptyState icon={Users} title={t('mentor.stats.noStudentsInGroup')} />;
   }
 
   const { summary, distribution, students } = stats;
@@ -165,10 +168,10 @@ export default function StatsTab({ groupId }) {
       {/* ── Средние по группе ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Общий балл', value: summary.overall },
-          { label: 'Посещаемость', value: summary.attendanceRate },
-          { label: 'Домашние задания', value: summary.homeworkRate },
-          { label: 'Тесты', value: summary.testAvg },
+          { label: t('mentor.stats.overall'), value: summary.overall },
+          { label: t('mentor.stats.attendance'), value: summary.attendanceRate },
+          { label: t('mentor.stats.homework'), value: summary.homeworkRate },
+          { label: t('mentor.stats.tests'), value: summary.testAvg },
         ].map((m) => (
           <div key={m.label} className="rounded-xl border border-base-200 px-4 py-3">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
@@ -185,7 +188,7 @@ export default function StatsTab({ groupId }) {
       {/* ── Распределение ── */}
       <div className="rounded-xl border border-base-200 p-4">
         <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
-          <BarChart3 size={15} className="text-primary" /> Распределение успеваемости
+          <BarChart3 size={15} className="text-primary" /> {t('mentor.stats.distribution')}
         </h3>
         <Distribution distribution={distribution} total={summary.students} />
       </div>
@@ -195,7 +198,7 @@ export default function StatsTab({ groupId }) {
         <div className="rounded-xl border border-base-200 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-2.5 bg-success/5 border-b border-base-200">
             <Trophy size={14} className="text-success" />
-            <span className="text-sm font-bold">Лучшие по успеваемости</span>
+            <span className="text-sm font-bold">{t('mentor.stats.topStudents')}</span>
           </div>
           <ul className="divide-y divide-base-200">
             {best.map((s, i) => (
@@ -219,11 +222,11 @@ export default function StatsTab({ groupId }) {
         <div className="rounded-xl border border-base-200 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-2.5 bg-error/5 border-b border-base-200">
             <AlertTriangle size={14} className="text-error" />
-            <span className="text-sm font-bold">Требуют внимания</span>
+            <span className="text-sm font-bold">{t('mentor.stats.needsAttention')}</span>
           </div>
           {risk.length === 0 ? (
             <p className="px-4 py-6 text-sm text-base-content/45 text-center">
-              Нет учеников с баллом ниже 60%
+              {t('mentor.stats.noRiskStudents')}
             </p>
           ) : (
             <ul className="divide-y divide-base-200">
@@ -238,7 +241,7 @@ export default function StatsTab({ groupId }) {
                       {s.firstName} {s.lastName}
                     </Link>
                     <div className="text-[11px] text-base-content/45">
-                      {s.homeworkDone}/{s.homeworkTotal} заданий · посещаемость {s.attendanceRate ?? '—'}%
+                      {t('mentor.stats.tasksAttendance', { done: s.homeworkDone, total: s.homeworkTotal, rate: s.attendanceRate ?? '—' })}
                     </div>
                   </div>
                   <span className="text-sm font-bold" style={{ color: scoreColor(s.overall) }}>
@@ -255,7 +258,7 @@ export default function StatsTab({ groupId }) {
       <div className="rounded-xl border border-base-200 overflow-hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-base-200 flex-wrap">
           <h3 className="text-sm font-bold flex items-center gap-2">
-            <Users size={15} className="text-primary" /> Все ученики
+            <Users size={15} className="text-primary" /> {t('mentor.stats.allStudents')}
           </h3>
           <label className="flex items-center gap-1.5 text-xs text-base-content/50">
             <ArrowUpDown size={13} />
@@ -276,11 +279,11 @@ export default function StatsTab({ groupId }) {
             <thead>
               <tr>
                 <th className="w-8">#</th>
-                <th>Ученик</th>
-                <th className="min-w-[130px]">Посещаемость</th>
-                <th className="min-w-[130px]">Домашние задания</th>
-                <th className="min-w-[130px]">Тесты</th>
-                <th className="min-w-[130px]">Общий</th>
+                <th>{t('mentor.stats.colStudent')}</th>
+                <th className="min-w-[130px]">{t('mentor.stats.colAttendance')}</th>
+                <th className="min-w-[130px]">{t('mentor.stats.colHomework')}</th>
+                <th className="min-w-[130px]">{t('mentor.stats.colTests')}</th>
+                <th className="min-w-[130px]">{t('mentor.stats.colOverall')}</th>
                 <th className="w-8" />
               </tr>
             </thead>
@@ -296,7 +299,7 @@ export default function StatsTab({ groupId }) {
                           {s.firstName} {s.lastName}
                         </span>
                         {s.status !== 'active' && (
-                          <span className="block text-[10px] text-warning font-medium">Заморожен</span>
+                          <span className="block text-[10px] text-warning font-medium">{t('mentor.stats.frozen')}</span>
                         )}
                       </span>
                     </Link>
@@ -305,13 +308,13 @@ export default function StatsTab({ groupId }) {
                   <td>
                     <Bar value={s.homeworkRate} />
                     <div className="text-[10px] text-base-content/40 mt-0.5 tabular-nums">
-                      {s.homeworkDone}/{s.homeworkTotal} сдано
+                      {t('mentor.stats.doneCount', { done: s.homeworkDone, total: s.homeworkTotal })}
                     </div>
                   </td>
                   <td>
                     <Bar value={s.testAvg} />
                     <div className="text-[10px] text-base-content/40 mt-0.5 tabular-nums">
-                      {s.testsTaken}/{s.testsTotal} пройдено
+                      {t('mentor.stats.takenCount', { taken: s.testsTaken, total: s.testsTotal })}
                     </div>
                   </td>
                   <td><Bar value={s.overall} /></td>

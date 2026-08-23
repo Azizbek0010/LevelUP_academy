@@ -4,6 +4,7 @@ import {
   Users, AlertCircle,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { useMentorGroupStudents, useMentorCoinHistory } from '../../../queries.js';
 import { useAuth } from '../../../auth.jsx';
@@ -21,6 +22,7 @@ import { Avatar, SearchInput, EmptyState, Panel, RowSkeleton } from '../_ui.jsx'
 const QUICK_AMOUNTS = [5, 10, 25, 50];
 
 export default function CoinsTab({ groupId }) {
+  const { t, i18n } = useTranslation();
   const { token } = useAuth();
   const qc = useQueryClient();
 
@@ -67,15 +69,16 @@ export default function CoinsTab({ groupId }) {
     } catch (err) {
       // Было alert() — модальное окно браузера посреди работы. Ошибка остаётся
       // в форме, рядом с полем, которое её вызвало.
-      setError(err.message || 'Произошла ошибка');
+      setError(err.message || t('mentor.coins.genericError'));
     } finally {
       setSaving(false);
     }
   };
 
+  const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
   const formatDate = (iso) =>
     iso
-      ? new Date(iso).toLocaleDateString('ru-RU', {
+      ? new Date(iso).toLocaleDateString(LOCALE_OF[i18n.language] || 'ru-RU', {
           day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
         })
       : '';
@@ -85,7 +88,7 @@ export default function CoinsTab({ groupId }) {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
         {/* ── Ученики ── */}
         <div className="lg:col-span-2">
-          <Panel title="Ученики" icon={Users} bodyClass="p-3">
+          <Panel title={t('mentor.coins.students')} icon={Users} bodyClass="p-3">
             <SearchInput value={search} onChange={setSearch} className="mb-3" />
 
             {rosterLoading ? (
@@ -93,7 +96,7 @@ export default function CoinsTab({ groupId }) {
             ) : filteredStudents.length === 0 ? (
               <EmptyState
                 icon={Users}
-                title={search ? 'Никто не найден' : 'В группе нет учеников'}
+                title={search ? t('mentor.coins.nobodyFound') : t('mentor.coins.noStudentsInGroup')}
               />
             ) : (
               <ul className="space-y-1">
@@ -130,13 +133,13 @@ export default function CoinsTab({ groupId }) {
             <div className="card bg-base-100">
               <EmptyState
                 icon={CoinsIcon}
-                title="Выберите ученика"
-                hint="Выберите ученика в списке слева для начисления или списания коинов."
+                title={t('mentor.coins.selectStudentTitle')}
+                hint={t('mentor.coins.selectStudentHint')}
               />
             </div>
           ) : (
             <>
-              <Panel title="Операция с коинами" icon={CoinsIcon} bodyClass="p-4">
+              <Panel title={t('mentor.coins.operation')} icon={CoinsIcon} bodyClass="p-4">
                 <div className="flex items-center gap-3 mb-4">
                   <Avatar name={`${selectedStudent.firstName} ${selectedStudent.lastName}`} size="lg" />
                   <div className="min-w-0">
@@ -144,7 +147,7 @@ export default function CoinsTab({ groupId }) {
                       {selectedStudent.firstName} {selectedStudent.lastName}
                     </h3>
                     <p className="text-sm text-base-content/50">
-                      Balans:{' '}
+                      {t('mentor.coins.balance')}:{' '}
                       <b className="text-base-content tabular-nums">
                         {selectedStudent.coinBalance ?? 0}
                       </b>{' '}
@@ -153,14 +156,14 @@ export default function CoinsTab({ groupId }) {
                   </div>
                 </div>
 
-                  <div role="radiogroup" aria-label="Тип операции" className="flex gap-2 mb-4">
+                  <div role="radiogroup" aria-label={t('mentor.coins.operationType')} className="flex gap-2 mb-4">
                   <button
                     role="radio"
                     aria-checked={!isDeduct}
                     onClick={() => setOperation('grant')}
                     className={`flex-1 btn btn-sm gap-1.5 ${!isDeduct ? 'btn-success text-white' : 'btn-outline'}`}
                   >
-                    <Plus size={14} /> Начислить
+                    <Plus size={14} /> {t('mentor.coins.grant')}
                   </button>
                   <button
                     role="radio"
@@ -168,7 +171,7 @@ export default function CoinsTab({ groupId }) {
                     onClick={() => setOperation('deduct')}
                     className={`flex-1 btn btn-sm gap-1.5 ${isDeduct ? 'btn-error text-white' : 'btn-outline'}`}
                   >
-                    <Minus size={14} /> Списать
+                    <Minus size={14} /> {t('mentor.coins.deduct')}
                   </button>
                 </div>
 
@@ -187,7 +190,7 @@ export default function CoinsTab({ groupId }) {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <label className="form-control">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-                      Сумма
+                      {t('mentor.coins.amount')}
                     </span>
                     <input
                       type="number"
@@ -200,12 +203,12 @@ export default function CoinsTab({ groupId }) {
                   </label>
                   <label className="form-control sm:col-span-2">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-                      Причина <span className="text-error">*</span>
+                      {t('mentor.coins.reason')} <span className="text-error">*</span>
                     </span>
                     <input
                       type="text"
                       className="input input-bordered input-sm"
-                      placeholder="За что?"
+                      placeholder={t('mentor.coins.reasonPlaceholder')}
                       value={coinReason}
                       maxLength={200}
                       onChange={(e) => setCoinReason(e.target.value)}
@@ -230,16 +233,16 @@ export default function CoinsTab({ groupId }) {
                     {saving
                       ? <span className="loading loading-spinner loading-xs" />
                       : isDeduct ? <Minus size={14} /> : <Plus size={14} />}
-                    {isDeduct ? 'Списать' : 'Начислить'}
+                    {isDeduct ? t('mentor.coins.deduct') : t('mentor.coins.grant')}
                   </button>
                 </div>
               </Panel>
 
-              <Panel title="История операций" icon={History} bodyClass="p-4">
+              <Panel title={t('mentor.coins.history')} icon={History} bodyClass="p-4">
                 {historyLoading ? (
                   <RowSkeleton count={3} height="h-11" />
                 ) : coinHistory.length === 0 ? (
-                  <EmptyState icon={History} title="Пока нет операций" />
+                  <EmptyState icon={History} title={t('mentor.coins.noOperations')} />
                 ) : (
                   <ul className="divide-y divide-base-200">
                     {coinHistory.map((h, i) => {
