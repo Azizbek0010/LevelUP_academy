@@ -6,8 +6,10 @@ import { useAuth } from '../../auth.jsx';
 import { getSocket } from '../../socket.js';
 import { Avatar, SearchInput, EmptyState } from './_ui.jsx';
 import { Send, MessageSquare, ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Chat() {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const { data: me } = useMe();
   const invalidate = useInvalidate();
@@ -105,13 +107,13 @@ export default function Chat() {
         w-full sm:w-80 flex-shrink-0 flex-col glass-card border-0 sm:border border-[var(--border)] sm:rounded-2xl h-full
       `}>
         <div className="p-4 border-b border-[var(--border)] bg-[var(--surface)]/50 shrink-0">
-          <h2 className="text-lg font-bold mb-4 text-[var(--text)]">Hamkasblar</h2>
-          <SearchInput value={search} onChange={setSearch} placeholder="Qidirish..." />
+          <h2 className="text-lg font-bold mb-4 text-[var(--text)]">{t('mentor.chat.colleagues')}</h2>
+          <SearchInput value={search} onChange={setSearch} />
         </div>
         <div className="flex-1 overflow-y-auto">
           {filteredMentors.length === 0 ? (
             <div className="p-6 text-center text-sm text-[var(--text-muted)]">
-              {search ? 'Topilmadi' : "Mentorlar yo'q"}
+              {search ? t('mentor.chat.notFound') : t('mentor.chat.noMentors')}
             </div>
           ) : (
             filteredMentors.map(m => {
@@ -180,7 +182,7 @@ export default function Chat() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-[var(--text)] truncate text-sm sm:text-base">{selectedContact.name}</h3>
                 <div className="text-xs text-[var(--text-muted)]">
-                  {selectedContact.online ? 'Online' : 'Offline'}
+                  {selectedContact.online ? t('mentor.chat.online') : t('mentor.chat.offline')}
                 </div>
               </div>
             </div>
@@ -189,7 +191,7 @@ export default function Chat() {
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--bg)]/30">
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
-                  <EmptyState icon={MessageSquare} title="Xabarlar yo'q" hint="Birinchi bo'lib xabar yuboring" />
+                  <EmptyState icon={MessageSquare} title={t('mentor.chat.noMessagesTitle')} hint={t('mentor.chat.noMessagesHint')} />
                 </div>
               ) : (
                 messages.map((msg, i) => {
@@ -225,7 +227,7 @@ export default function Chat() {
                     send(e);
                   }
                 }}
-                placeholder="Xabar yozing..." 
+                placeholder={t('mentor.chat.placeholder')}
                 className="flex-1 textarea textarea-bordered min-h-[44px] h-[44px] max-h-[120px] rounded-2xl bg-[var(--bg)] border-[var(--border)] text-[var(--text)] py-3 leading-tight resize-none focus:outline-none"
                 rows={1}
               />
@@ -240,7 +242,7 @@ export default function Chat() {
           </>
         ) : (
           <div className="h-full flex items-center justify-center">
-            <EmptyState icon={MessageSquare} title="Suhbatdoshni tanlang" hint="Chap paneldan hamkasbni tanlang" />
+            <EmptyState icon={MessageSquare} title={t('mentor.chat.selectContactTitle')} hint={t('mentor.chat.selectContactHint')} />
           </div>
         )}
       </div>
