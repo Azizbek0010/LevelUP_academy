@@ -1994,6 +1994,29 @@ const en = {
   'super.attendance.colTotal': 'Total',
   'super.attendance.colPresence': 'Presence',
   'super.attendance.colPercent': 'Percent',
+
+  /* ─── super/Reminders.jsx ─── */
+  'super.reminders.statusSent': 'Sent',
+  'super.reminders.statusFailed': 'Failed',
+  'super.reminders.statusPending': 'Queued',
+  'super.reminders.title': 'Reminders',
+  'super.reminders.subtitle': 'Automatic notifications for students and parents',
+  'super.reminders.tabRules': 'Rules',
+  'super.reminders.tabHistory': 'History',
+  'super.reminders.rulesComingSoonTitle': 'Automatic rules coming soon',
+  'super.reminders.rulesComingSoonHint': 'Trigger, template, and schedule configuration will arrive in the next update.',
+  'super.reminders.total': 'Total',
+  'super.reminders.filterAll': 'All',
+  'super.reminders.noneFound': 'No entries found',
+  'super.reminders.colStudent': 'Student',
+  'super.reminders.colParent': 'Parent',
+  'super.reminders.colMessage': 'Message',
+  'super.reminders.colStatus': 'Status',
+  'super.reminders.colSent': 'Sent',
+  'super.reminders.colActions': 'Actions',
+  'super.reminders.resend': 'Resend',
+  'super.reminders.delete': 'Delete',
+  'super.reminders.noText': 'No text',
 };
 
 export default en;

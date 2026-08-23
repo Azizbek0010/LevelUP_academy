@@ -1994,6 +1994,29 @@ const ru = {
   'super.attendance.colTotal': 'Всего',
   'super.attendance.colPresence': 'Присутствие',
   'super.attendance.colPercent': 'Процент',
+
+  /* ─── super/Reminders.jsx ─── */
+  'super.reminders.statusSent': 'Отправлено',
+  'super.reminders.statusFailed': 'Ошибка',
+  'super.reminders.statusPending': 'В очереди',
+  'super.reminders.title': 'Напоминания',
+  'super.reminders.subtitle': 'Автоматические уведомления студентам и родителям',
+  'super.reminders.tabRules': 'Правила',
+  'super.reminders.tabHistory': 'История',
+  'super.reminders.rulesComingSoonTitle': 'Автоматические правила скоро',
+  'super.reminders.rulesComingSoonHint': 'Настройка триггеров, шаблонов и расписаний появится в следующем обновлении.',
+  'super.reminders.total': 'Всего',
+  'super.reminders.filterAll': 'Все',
+  'super.reminders.noneFound': 'Записей не найдено',
+  'super.reminders.colStudent': 'Студент',
+  'super.reminders.colParent': 'Родитель',
+  'super.reminders.colMessage': 'Сообщение',
+  'super.reminders.colStatus': 'Статус',
+  'super.reminders.colSent': 'Отправлено',
+  'super.reminders.colActions': 'Действия',
+  'super.reminders.resend': 'Переотправить',
+  'super.reminders.delete': 'Удалить',
+  'super.reminders.noText': 'Нет текста',
 };
 
 export default ru;

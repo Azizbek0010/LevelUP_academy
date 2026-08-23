@@ -1987,6 +1987,29 @@ const uz = {
   'super.attendance.colTotal': 'Jami',
   'super.attendance.colPresence': 'Davomat',
   'super.attendance.colPercent': 'Foiz',
+
+  /* ─── super/Reminders.jsx ─── */
+  'super.reminders.statusSent': 'Yuborildi',
+  'super.reminders.statusFailed': 'Xatolik',
+  'super.reminders.statusPending': 'Navbatda',
+  'super.reminders.title': 'Eslatmalar',
+  'super.reminders.subtitle': 'O\'quvchi va ota-onalarga avtomatik bildirishnomalar',
+  'super.reminders.tabRules': 'Qoidalar',
+  'super.reminders.tabHistory': 'Tarix',
+  'super.reminders.rulesComingSoonTitle': 'Avtomatik qoidalar tez orada',
+  'super.reminders.rulesComingSoonHint': 'Trigger, shablon va jadval sozlamalari keyingi yangilanishda paydo bo\'ladi.',
+  'super.reminders.total': 'Jami',
+  'super.reminders.filterAll': 'Barchasi',
+  'super.reminders.noneFound': 'Yozuvlar topilmadi',
+  'super.reminders.colStudent': 'O\'quvchi',
+  'super.reminders.colParent': 'Ota-ona',
+  'super.reminders.colMessage': 'Xabar',
+  'super.reminders.colStatus': 'Holat',
+  'super.reminders.colSent': 'Yuborilgan',
+  'super.reminders.colActions': 'Amallar',
+  'super.reminders.resend': 'Qayta yuborish',
+  'super.reminders.delete': 'O\'chirish',
+  'super.reminders.noText': 'Matn yo\'q',
 };
 
 export default uz;
