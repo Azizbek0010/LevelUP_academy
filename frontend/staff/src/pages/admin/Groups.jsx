@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Plus, Archive, ArchiveRestore, ChevronRight, Users, User, FolderOpen, LayoutGrid, List, Download, Clock, Pencil, CalendarDays, KeyRound, UserPlus, Copy, Check, BellRing } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminGroups, useAdminMentors, useAdminSettings, useAdminTrainingTypes } from '../../queries.js';
@@ -11,7 +12,10 @@ import { Avatar, EmptyState, Kpi, RowSkeleton, SearchInput, Tip, Modal } from '.
 const isArchived = (g) => g.isArchived ?? g.is_archived ?? false;
 const MAX_STUDENTS = 15;
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-const DAY_LABEL = { mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс' };
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+const dayLabelsFor = (locale) => Object.fromEntries(
+  DAYS.map((key, i) => [key, new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: 'short' })]),
+);
 
 const PRESETS = [
   { label: '1-3-5', days: ['mon', 'wed', 'fri'] },
@@ -63,10 +67,10 @@ function isSlotFree(day, start, durationMin, busy) {
 
 /* ─── Task 4: автоподсчёт даты окончания модуля (превью) ─── */
 const DAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-const MODULES = [
-  { label: '1 месяц', value: 1 },
-  { label: '3 месяца', value: 3 },
-  { label: '6 месяцев', value: 6 },
+const modulesFor = (t) => [
+  { label: t('admin.groups.module1'), value: 1 },
+  { label: t('admin.groups.module3'), value: 3 },
+  { label: t('admin.groups.module6'), value: 6 },
 ];
 
 /** Ближайшая дата урока (если день = сегодня и время ещё не прошло — сегодня, иначе следующая неделя) */
@@ -91,12 +95,13 @@ function addMonths(date, n) {
   return d;
 }
 
-function fmtDate(d) {
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+function fmtDate(d, locale = 'ru-RU') {
+  return d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 /* ═══════════════ Group Card ═══════════════ */
 function GroupCard({ g, onEdit, onArchive, onOpen, isExpanded, students = [] }) {
+  const { t } = useTranslation();
   const archived = isArchived(g);
   const studentsCount = Number(g.students ?? g.studentsCount ?? g.students_count ?? 0);
   const mentorName = g.mentor?.name || g.mentorName || null;
@@ -118,7 +123,7 @@ function GroupCard({ g, onEdit, onArchive, onOpen, isExpanded, students = [] }) 
               <ChevronRight size={14} className={`shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'opacity-0 group-hover:opacity-100 transition-opacity'}`} />
             </h3>
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider mt-0.5 ${archived ? 'bg-base-200 text-base-content/45' : 'bg-success/10 text-success'}`}>
-              {archived ? 'Архив' : 'Активна'}
+              {archived ? t('admin.groups.archived') : t('admin.groups.active')}
             </span>
           </div>
         </div>
@@ -129,7 +134,7 @@ function GroupCard({ g, onEdit, onArchive, onOpen, isExpanded, students = [] }) 
             <button
               className="w-7 h-7 rounded-lg flex items-center justify-center text-base-content/45 hover:text-primary hover:bg-primary/10 transition-all opacity-0 group-hover:opacity-100"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(g); }}
-              title="Изменить группу"
+              title={t('admin.groups.editGroupTooltip')}
             >
               <Pencil size={13} />
             </button>
@@ -138,7 +143,7 @@ function GroupCard({ g, onEdit, onArchive, onOpen, isExpanded, students = [] }) 
             <button
               className="w-7 h-7 rounded-lg flex items-center justify-center text-base-content/45 hover:text-warning hover:bg-warning/10 transition-all opacity-0 group-hover:opacity-100"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onArchive(g); }}
-              title="Архивировать"
+              title={t('admin.groups.archiveTooltip')}
             >
               <Archive size={13} />
             </button>
@@ -147,7 +152,7 @@ function GroupCard({ g, onEdit, onArchive, onOpen, isExpanded, students = [] }) 
             <button
               className="w-7 h-7 rounded-lg flex items-center justify-center text-base-content/45 hover:text-success hover:bg-success/10 transition-all opacity-0 group-hover:opacity-100"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onArchive(g); }}
-              title="Восстановить из архива"
+              title={t('admin.groups.restoreTooltip')}
             >
               <ArchiveRestore size={13} />
             </button>
@@ -164,7 +169,7 @@ function GroupCard({ g, onEdit, onArchive, onOpen, isExpanded, students = [] }) 
         )}
         <span className="flex items-center gap-1.5 text-base-content/70 shrink-0">
           <Users size={12} className="text-base-content/45" />
-          {studentsCount}/{MAX_STUDENTS} студентов
+          {t('admin.groups.studentsOfMax', { count: studentsCount, max: MAX_STUDENTS })}
         </span>
         {g.startTime && (
           <span className="flex items-center gap-1.5 text-base-content/70 shrink-0">
@@ -203,13 +208,13 @@ function GroupCard({ g, onEdit, onArchive, onOpen, isExpanded, students = [] }) 
                     </div>
                   </div>
                   {s.status === 'frozen' && (
-                    <span className="badge badge-warning badge-xs">Заморожен</span>
+                    <span className="badge badge-warning badge-xs">{t('status.frozen')}</span>
                   )}
                 </div>
               ))
             ) : (
               <div className="text-center py-4 text-base-content/45 text-sm">
-                Студентов пока нет
+                {t('admin.groups.noStudentsYet')}
               </div>
             )}
           </div>
@@ -222,6 +227,10 @@ function GroupCard({ g, onEdit, onArchive, onOpen, isExpanded, students = [] }) 
 /* ═══════════════ Group Form Modal ═══════════════ */
 /* Экспортируется: переиспользуется в GroupDetail.jsx (кнопка «Редактировать»). */
 export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, initial, onSave, token, groups, trainingTypes = [] }) {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const DAY_LABEL = dayLabelsFor(locale);
+  const MODULES = modulesFor(t);
   const isEdit = Boolean(initial?.id);
   const [form, setForm] = useState(initial ?? emptyForm);
   const [busy, setBusy] = useState(false);
@@ -279,7 +288,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
             if (s.start && s.end) (busy[day] = busy[day] || []).push({ start: s.start, end: s.end });
           });
         });
-        if (failed && Object.keys(busy).length === 0) setSlotsError('Не удалось загрузить расписание ментора');
+        if (failed && Object.keys(busy).length === 0) setSlotsError(t('admin.groups.scheduleLoadFailed'));
         setBusySlots(busy);
       })
       .finally(() => { if (!cancelled) setSlotsLoading(false); });
@@ -337,13 +346,13 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
 
   const submit = async () => {
     setErr('');
-    if (!form.name.trim()) return setErr('Введите название группы');
-    if (!form.trainingTypeId) return setErr('Выберите направление');
-    if (!form.mentorId) return setErr('Выберите ментора — это обязательное поле');
-    if (!form.days || form.days.length === 0) return setErr('Выберите хотя бы один день занятий');
-    if (!form.startTime) return setErr('Укажите время начала занятий');
+    if (!form.name.trim()) return setErr(t('admin.groups.enterGroupName'));
+    if (!form.trainingTypeId) return setErr(t('admin.groups.selectDirection'));
+    if (!form.mentorId) return setErr(t('admin.groups.selectMentorRequired'));
+    if (!form.days || form.days.length === 0) return setErr(t('admin.groups.selectAtLeastOneDay'));
+    if (!form.startTime) return setErr(t('admin.groups.specifyStartTime'));
     if (!isEdit && !slotsLoading && freeSlots && freeSlots.length === 0 && Object.keys(busySlots).length > 0) {
-      return setErr('У ментора нет свободного времени в выбранные дни — измените дни или ментора');
+      return setErr(t('admin.groups.noFreeSlots'));
     }
 
     // transform for backend — send only what schema expects. subject/monthlyPrice
@@ -380,7 +389,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
       }
       onClose();
     } catch (e) {
-      setErr(e.message || 'Ошибка');
+      setErr(e.message || t('admin.groups.genericError'));
     } finally {
       setBusy(false);
     }
@@ -391,15 +400,15 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
       isOpen={open}
       onClose={onClose}
       boxClass="max-w-md p-6 max-h-[92vh] overflow-y-auto"
-      title={creds ? 'Ученик создан' : (isEdit ? 'Изменить группу' : 'Новая группа')}
+      title={creds ? t('admin.groups.studentCreatedTitle') : (isEdit ? t('admin.groups.editGroupTitle') : t('admin.groups.newGroupTitle'))}
       actions={creds ? (
-        <button className="btn btn-primary rounded-lg w-full" onClick={onClose}>Готово</button>
+        <button className="btn btn-primary rounded-lg w-full" onClick={onClose}>{t('admin.groups.done')}</button>
       ) : (
         <>
-          <button className="btn btn-ghost rounded-lg" onClick={onClose} disabled={busy}>Отмена</button>
+          <button className="btn btn-ghost rounded-lg" onClick={onClose} disabled={busy}>{t('admin.groups.cancel')}</button>
           <button className="btn btn-primary rounded-lg" onClick={submit} disabled={busy || !form.name || !form.mentorId}>
             {busy && <span className="loading loading-spinner loading-xs" />}
-            {isEdit ? 'Сохранить изменения' : 'Создать группу'}
+            {isEdit ? t('admin.groups.saveChanges') : t('admin.groups.createGroup')}
           </button>
         </>
       )}
@@ -415,15 +424,15 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
                   <UserPlus size={16} />
                 </div>
                 <div>
-                  <p className="font-bold text-sm text-base-content">Ученик создан и добавлен в группу</p>
-                  <p className="text-xs text-base-content/60">Передайте эти данные ученику для входа</p>
+                  <p className="font-bold text-sm text-base-content">{t('admin.groups.studentCreatedHeadline')}</p>
+                  <p className="text-xs text-base-content/60">{t('admin.groups.studentCreatedHint')}</p>
                 </div>
               </div>
 
               <div className="space-y-2 mt-4">
                 {[
-                  { label: 'Логин-код', value: creds.loginCode, field: 'code' },
-                  { label: 'Пароль', value: creds.password, field: 'pass' },
+                  { label: t('admin.groups.loginCode'), value: creds.loginCode, field: 'code' },
+                  { label: t('admin.groups.password'), value: creds.password, field: 'pass' },
                 ].map((row) => (
                   <div key={row.field} className="flex items-center justify-between bg-base-100 border border-base-300 rounded-xl px-3 py-2.5">
                     <div className="flex items-center gap-2 min-w-0">
@@ -439,7 +448,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
                       onClick={() => copyToClipboard(row.value, row.field)}
                     >
                       {copied === row.field ? <Check size={13} className="text-success" /> : <Copy size={13} />}
-                      {copied === row.field ? 'Скопировано' : 'Копировать'}
+                      {copied === row.field ? t('admin.groups.copied') : t('admin.groups.copy')}
                     </button>
                   </div>
                 ))}
@@ -452,11 +461,11 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
           {/* Название */}
           <label className="form-control">
             <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
-              Название группы <span className="text-error">*</span>
+              {t('admin.groups.groupNameLabel')} <span className="text-error">*</span>
             </span>
             <input
               className="input input-bordered w-full rounded-lg"
-              placeholder="напр. Frontend React A1"
+              placeholder={t('admin.groups.groupNamePlaceholder')}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
@@ -465,23 +474,23 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
           {/* Направление — методика с ценой от SEO (методист создаёт -> SEO оценивает -> появляется здесь) */}
           <label className="form-control">
             <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
-              Направление <span className="text-error">*</span>
+              {t('admin.groups.directionLabel')} <span className="text-error">*</span>
             </span>
             <select
               className="select select-bordered w-full rounded-lg"
               value={form.trainingTypeId}
               onChange={(e) => setForm({ ...form, trainingTypeId: e.target.value })}
             >
-              <option value="">— Выберите направление —</option>
-              {trainingTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              <option value="">{t('admin.groups.selectDirectionOption')}</option>
+              {trainingTypes.map((tt) => <option key={tt.id} value={tt.id}>{tt.name}</option>)}
             </select>
             {trainingTypes.length === 0 ? (
               <span className="text-[10px] text-warning mt-1">
-                Пока нет ни одного оценённого направления — методист создаёт методику, SEO ставит ей цену.
+                {t('admin.groups.noEvaluatedDirections')}
               </span>
             ) : (
               <span className="text-[10px] text-base-content/40 mt-1">
-                Цену ставит SEO для всей методики — здесь не редактируется.
+                {t('admin.groups.priceSetBySeo')}
               </span>
             )}
           </label>
@@ -489,19 +498,19 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
           <div className="grid grid-cols-2 gap-4">
             <label className="form-control">
               <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
-                Стоимость (UZS)
+                {t('admin.groups.priceLabel')}
               </span>
               <div className="input input-bordered w-full rounded-lg flex items-center text-base-content/70">
-                {selectedTrainingType ? `${Number(selectedTrainingType.price).toLocaleString('ru-RU')}` : '—'}
+                {selectedTrainingType ? `${Number(selectedTrainingType.price).toLocaleString(locale)}` : '—'}
               </div>
             </label>
             <label className="form-control">
               <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
-                Кабинет
+                {t('admin.groups.roomLabel')}
               </span>
               <input
                 className="input input-bordered w-full rounded-lg"
-                placeholder="напр. 204"
+                placeholder={t('admin.groups.roomPlaceholder')}
                 value={form.room}
                 onChange={(e) => setForm({ ...form, room: e.target.value })}
               />
@@ -511,14 +520,14 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
           {/* Ментор — ОБЯЗАТЕЛЬНО */}
           <label className="form-control">
             <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
-              Ментор <span className="text-error">*</span>
+              {t('admin.groups.mentorLabel')} <span className="text-error">*</span>
             </span>
             <select
               className="select select-bordered w-full rounded-lg"
               value={form.mentorId}
               onChange={(e) => setForm({ ...form, mentorId: e.target.value, startTime: '' })}
             >
-              <option value="">— Выберите ментора —</option>
+              <option value="">{t('admin.groups.selectMentorOption')}</option>
               {mentors.map((m) => (
                 <option key={m.id} value={m.id}>
                   {[m.firstName || m.first_name, m.lastName || m.last_name].filter(Boolean).join(' ')}
@@ -526,16 +535,16 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
               ))}
             </select>
             {mentors.length === 0 && (
-              <span className="text-xs text-warning mt-1">Менторов нет — сначала добавьте ментора</span>
+              <span className="text-xs text-warning mt-1">{t('admin.groups.noMentors')}</span>
             )}
             {!isEdit && form.mentorId && (
               <span className="text-xs text-base-content/50 mt-1 flex items-center gap-1">
                 {slotsLoading ? (
-                  <><span className="loading loading-spinner loading-xs text-primary" /> Загружаем расписание ментора…</>
+                  <><span className="loading loading-spinner loading-xs text-primary" /> {t('admin.groups.loadingMentorSchedule')}</>
                 ) : slotsError ? (
-                  <span className="text-warning">{slotsError} — время укажите вручную</span>
+                  <span className="text-warning">{slotsError} — {t('admin.groups.enterTimeManually')}</span>
                 ) : (
-                  <>Расписание ментора загружено — ниже покажем свободные часы</>
+                  <>{t('admin.groups.mentorScheduleLoaded')}</>
                 )}
               </span>
             )}
@@ -544,7 +553,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
           {/* Дни занятий */}
           <div className="bg-base-200/50 p-4 rounded-xl border border-base-200">
             <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-2 block">
-              Дни занятий
+              {t('admin.groups.lessonDaysLabel')}
             </span>
 
             {/* Быстрые пресеты */}
@@ -564,7 +573,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
                 className={`btn btn-sm rounded-lg flex-1 ${form.showCustomDays ? 'btn-neutral' : 'btn-outline bg-base-100'}`}
                 onClick={() => setForm((f) => ({ ...f, showCustomDays: !f.showCustomDays, days: f.showCustomDays ? [] : f.days }))}
               >
-                Другие
+                {t('admin.groups.otherDaysBtn')}
               </button>
             </div>
 
@@ -583,7 +592,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
                     >
                       {DAY_LABEL[d]}
                       {!isEdit && form.mentorId && (
-                        <span className={`ml-0.5 w-1.5 h-1.5 rounded-full ${free ? 'bg-success' : 'bg-error'}`} title={free ? 'Есть свободное время' : 'День занят'} />
+                        <span className={`ml-0.5 w-1.5 h-1.5 rounded-full ${free ? 'bg-success' : 'bg-error'}`} title={free ? t('admin.groups.hasFreeTime') : t('admin.groups.dayBusy')} />
                       )}
                     </button>
                   );
@@ -604,25 +613,25 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
           {/* Время начала */}
           <div className="bg-base-200/50 p-4 rounded-xl border border-base-200">
             <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-2 block">
-              Время начала
+              {t('admin.groups.startTimeLabel')}
             </label>
 
             {/* Task 4: свободные слоты ментора (только для новой группы) */}
             {!isEdit && form.mentorId && !slotsError && (
               form.days.length === 0 ? (
-                <p className="text-xs text-base-content/50 mb-3">Сначала выберите дни занятий — покажем свободные часы ментора</p>
+                <p className="text-xs text-base-content/50 mb-3">{t('admin.groups.selectDaysFirst')}</p>
               ) : slotsLoading ? (
                 <div className="flex items-center gap-2 text-xs text-base-content/60 py-2">
                   <span className="loading loading-spinner loading-xs text-primary" />
-                  Ищем свободное время…
+                  {t('admin.groups.searchingFreeTime')}
                 </div>
               ) : (
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[10px] uppercase tracking-wider text-base-content/50 font-bold">
-                      Свободные часы ({SLOT_WINDOW.start / 60}:00–{SLOT_WINDOW.end / 60}:00)
+                      {t('admin.groups.freeHours', { start: SLOT_WINDOW.start / 60, end: SLOT_WINDOW.end / 60 })}
                     </span>
-                    <span className="text-[10px] text-base-content/40">урок {durationMin} мин</span>
+                    <span className="text-[10px] text-base-content/40">{t('admin.groups.lessonMinutes', { min: durationMin })}</span>
                   </div>
                   {freeSlots && freeSlots.length > 0 ? (
                     <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
@@ -646,10 +655,10 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
                     </div>
                   ) : Object.keys(busySlots).length > 0 ? (
                     <div className="alert alert-warning py-2 px-3 text-xs rounded-lg mb-2">
-                      Нет общего свободного времени для выбранных дней — уберите занятые дни или выберите другого ментора
+                      {t('admin.groups.noCommonFreeTime')}
                     </div>
                   ) : (
-                    <p className="text-xs text-base-content/50">Нет данных о расписании — укажите время вручную</p>
+                    <p className="text-xs text-base-content/50">{t('admin.groups.noScheduleData')}</p>
                   )}
                 </div>
               )
@@ -665,11 +674,11 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
               <div className="mt-3 flex items-center justify-between bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">
                 <span className="text-xs font-medium text-base-content/70 flex items-center gap-1.5">
                   <Clock size={13} className="text-primary" />
-                  Окончание:
+                  {t('admin.groups.endLabel')}
                 </span>
                 <span className="text-sm font-bold text-primary">
                   {endPreview}
-                  {durationMin && <span className="text-[10px] font-normal text-primary/60 ml-1">({durationMin} мин)</span>}
+                  {durationMin && <span className="text-[10px] font-normal text-primary/60 ml-1">{t('admin.groups.minutesShort', { min: durationMin })}</span>}
                 </span>
               </div>
             )}
@@ -680,7 +689,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
             <div className="bg-base-200/50 p-4 rounded-xl border border-base-200">
               <div className="flex items-center justify-between gap-3">
                 <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider block">
-                  Модуль
+                  {t('admin.groups.moduleLabel')}
                 </label>
                 <select
                   className="select select-bordered select-sm rounded-lg text-sm"
@@ -696,16 +705,16 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
                 <CalendarDays size={15} className="text-primary shrink-0" />
                 <div className="text-xs text-base-content/70">
                   <span className="font-semibold text-base-content">
-                    {fmtDate(modulePreview.firstDate)}
+                    {fmtDate(modulePreview.firstDate, locale)}
                   </span>
                   {' — '}
                   <span className="font-semibold text-primary">
-                    {fmtDate(modulePreview.lastDate)}
+                    {fmtDate(modulePreview.lastDate, locale)}
                   </span>
-                  <span className="text-base-content/50"> · модуль {moduleMonths} мес</span>
+                  <span className="text-base-content/50">{t('admin.groups.moduleMonthsSuffix', { n: moduleMonths })}</span>
                 </div>
               </div>
-              <p className="text-[10px] text-base-content/40 mt-1.5">Дата окончания — предварительная, считается от первого занятия</p>
+              <p className="text-[10px] text-base-content/40 mt-1.5">{t('admin.groups.endDatePreliminary')}</p>
             </div>
           )}
 
@@ -719,18 +728,18 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
               >
                 <span className="flex items-center gap-2">
                   <UserPlus size={15} />
-                  Добавить нового ученика в группу
+                  {t('admin.groups.addNewStudentToggle')}
                 </span>
                 <span className={`transition-transform ${showStudent ? 'rotate-180' : ''}`}>▾</span>
               </button>
               {showStudent && (
                 <div className="p-4 space-y-3 bg-base-100 border-t border-base-300 animate-fade-in">
                   <p className="text-[10px] uppercase tracking-wider text-base-content/50 font-bold">
-                    Ученик будет создан и сразу добавлен в группу
+                    {t('admin.groups.studentWillBeCreated')}
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <label className="form-control">
-                      <span className="text-[11px] font-bold text-base-content/70 mb-1 block">Имя <span className="text-error">*</span></span>
+                      <span className="text-[11px] font-bold text-base-content/70 mb-1 block">{t('admin.groups.firstNameLabel')} <span className="text-error">*</span></span>
                       <input
                         className="input input-bordered input-sm rounded-lg w-full"
                         placeholder="Азиза"
@@ -739,7 +748,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
                       />
                     </label>
                     <label className="form-control">
-                      <span className="text-[11px] font-bold text-base-content/70 mb-1 block">Фамилия</span>
+                      <span className="text-[11px] font-bold text-base-content/70 mb-1 block">{t('admin.groups.lastNameLabel')}</span>
                       <input
                         className="input input-bordered input-sm rounded-lg w-full"
                         placeholder="Рахимова"
@@ -749,7 +758,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
                     </label>
                   </div>
                   <label className="form-control">
-                    <span className="text-[11px] font-bold text-base-content/70 mb-1 block">Телефон</span>
+                    <span className="text-[11px] font-bold text-base-content/70 mb-1 block">{t('admin.groups.phoneLabel')}</span>
                     <input
                       className="input input-bordered input-sm rounded-lg w-full"
                       placeholder="+998 90 123 45 67"
@@ -770,6 +779,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
 
 /* ═══════════════ Main Groups ═══════════════ */
 export default function AdminGroups() {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -869,10 +879,10 @@ export default function AdminGroups() {
   const handleArchiveClick = (g) => {
     // Restore (unarchive) — no reason needed, direct confirm
     if (isArchived(g)) {
-      if (!window.confirm(`Восстановить группу «${g.name}» из архива?`)) return;
+      if (!window.confirm(t('admin.groups.confirmRestore', { name: g.name }))) return;
       api.adminUnarchiveGroup(token, g.id)
         .then(() => refetch())
-        .catch((e) => alert(e.message || 'Ошибка'));
+        .catch((e) => alert(e.message || t('admin.groups.genericError')));
       return;
     }
     // Archive — ask for a reason in a modal
@@ -888,7 +898,7 @@ export default function AdminGroups() {
       refetch();
       setArchiveTarget(null);
     } catch (e) {
-      alert(e.message || 'Ошибка');
+      alert(e.message || t('admin.groups.genericError'));
     } finally {
       setArchiving(false);
     }
@@ -896,20 +906,20 @@ export default function AdminGroups() {
 
   return (
     <div className="space-y-6 pb-8">
-      <PageHeader title="Группы" subtitle="Учебные группы филиала">
+      <PageHeader title={t('admin.groups.title')} subtitle={t('admin.groups.subtitle')}>
         <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={filteredRows.length === 0}>
-          <Download size={14} /> Экспорт
+          <Download size={14} /> {t('admin.groups.export')}
         </button>
         <button className="btn btn-primary btn-sm gap-1" onClick={openCreate}>
-          <Plus size={16} /> Создать группу
+          <Plus size={16} /> {t('admin.groups.createGroup')}
         </button>
       </PageHeader>
 
       {/* ═══ Stats ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Kpi Icon={FolderOpen} title="Всего" value={rows.length}  tone="neutral" />
-        <Kpi Icon={Users} title="Активные" value={activeGroups}  tone="success" />
-        <Kpi Icon={Archive} title="В архиве" value={archivedGroups}  tone="warning" />
+        <Kpi Icon={FolderOpen} title={t('admin.mentors.total')} value={rows.length}  tone="neutral" />
+        <Kpi Icon={Users} title={t('status.active')} value={activeGroups}  tone="success" />
+        <Kpi Icon={Archive} title={t('admin.groups.archived')} value={archivedGroups}  tone="warning" />
       </div>
 
       {/* ═══ Search + View Toggle ═══ */}
@@ -918,7 +928,7 @@ export default function AdminGroups() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Поиск по названию или ментору…"
+            placeholder={t('admin.groups.searchPlaceholder')}
             className="flex-1"
           />
           {/* View toggle */}
@@ -943,15 +953,15 @@ export default function AdminGroups() {
       {isLoading ? (
         <RowSkeleton count={4} />
       ) : error ? (
-        <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
+        <div className="alert alert-error mt-4">{t('admin.groups.loadError', { message: error.message })}</div>
       ) : filteredRows.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
-          title={search ? 'Попробуйте изменить запрос' : 'Нет групп'}
-          hint={search ? undefined : 'Создайте первую учебную группу'}
+          title={search ? t('admin.groups.emptySearchTitle') : t('admin.groups.emptyTitle')}
+          hint={search ? undefined : t('admin.groups.emptyHint')}
           action={!search ? (
             <button className="btn btn-primary btn-sm gap-1" onClick={openCreate}>
-              <Plus size={14} /> Создать
+              <Plus size={14} /> {t('admin.groups.create')}
             </button>
           ) : undefined}
         />
@@ -968,11 +978,11 @@ export default function AdminGroups() {
             <table className="table w-full text-[13px]">
               <thead>
                 <tr>
-                  <th>Название</th>
-                  <th>Ментор</th>
-                  <th>Студенты</th>
-                  <th>Расписание</th>
-                  <th>Статус</th>
+                  <th>{t('admin.groups.colName')}</th>
+                  <th>{t('admin.groups.colMentor')}</th>
+                  <th>{t('admin.groups.colStudents')}</th>
+                  <th>{t('admin.groups.colSchedule')}</th>
+                  <th>{t('admin.groups.colStatus')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -1005,7 +1015,7 @@ export default function AdminGroups() {
                       </td>
                       <td>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${archived ? 'bg-base-100 text-base-content/45' : 'bg-success/15 text-success'}`}>
-                          {archived ? 'Архив' : 'Активна'}
+                          {archived ? t('admin.groups.archived') : t('admin.groups.active')}
                         </span>
                       </td>
                       <td onClick={(e) => e.stopPropagation()}>
@@ -1014,7 +1024,7 @@ export default function AdminGroups() {
                             <button
                               className="btn btn-xs btn-ghost hover:text-primary hover:bg-primary/10"
                               onClick={(e) => { e.stopPropagation(); openEdit(g); }}
-                              title="Изменить группу"
+                              title={t('admin.groups.editGroupTooltip')}
                             >
                               <Pencil size={14} />
                             </button>
@@ -1023,7 +1033,7 @@ export default function AdminGroups() {
                             <button
                               className="btn btn-xs btn-ghost hover:text-warning hover:bg-warning/10"
                               onClick={(e) => { e.stopPropagation(); handleArchiveClick(g); }}
-                              title="Архивировать"
+                              title={t('admin.groups.archiveTooltip')}
                             >
                               <Archive size={14} />
                             </button>
@@ -1032,7 +1042,7 @@ export default function AdminGroups() {
                             <button
                               className="btn btn-xs btn-ghost hover:text-success hover:bg-success/10"
                               onClick={(e) => { e.stopPropagation(); handleArchiveClick(g); }}
-                              title="Восстановить из архива"
+                              title={t('admin.groups.restoreTooltip')}
                             >
                               <ArchiveRestore size={14} />
                             </button>
@@ -1069,15 +1079,15 @@ export default function AdminGroups() {
         isOpen={Boolean(archiveTarget)}
         onClose={() => !archiving && setArchiveTarget(null)}
         boxClass="max-w-md p-6"
-        title="Архивировать группу"
+        title={t('admin.groups.archiveGroupTitle')}
         actions={
           <>
             <button className="btn btn-ghost rounded-lg" onClick={() => setArchiveTarget(null)} disabled={archiving}>
-              Отмена
+              {t('admin.groups.cancel')}
             </button>
             <button className="btn btn-warning rounded-lg gap-1" onClick={confirmArchive} disabled={archiving}>
               {archiving && <span className="loading loading-spinner loading-xs" />}
-              <Archive size={14} /> В архив
+              <Archive size={14} /> {t('admin.groups.toArchive')}
             </button>
           </>
         }
@@ -1085,23 +1095,21 @@ export default function AdminGroups() {
         {archiveTarget && (
           <div className="space-y-4">
             <p className="text-sm text-base-content/70">
-              Вы уверены, что хотите архивировать группу{' '}
-              <b className="text-base-content">{archiveTarget.name}</b>? Ученики и история останутся,
-              группа просто скроется из активного списка.
+              {t('admin.groups.archiveConfirm', { name: archiveTarget.name })}
             </p>
             <label className="form-control">
               <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
-                Причина архивации
+                {t('admin.groups.archiveReasonLabel')}
               </span>
               <textarea
                 className="textarea textarea-bordered w-full rounded-lg"
                 rows={3}
-                placeholder="напр. Группа завершена, ученики переведены…"
+                placeholder={t('admin.groups.archiveReasonPlaceholder')}
                 value={archiveReason}
                 onChange={(e) => setArchiveReason(e.target.value)}
                 autoFocus
               />
-              <span className="text-[10px] text-base-content/40 mt-1">Необязательно, но поможет менеджеру</span>
+              <span className="text-[10px] text-base-content/40 mt-1">{t('admin.groups.archiveReasonHint')}</span>
             </label>
           </div>
         )}
