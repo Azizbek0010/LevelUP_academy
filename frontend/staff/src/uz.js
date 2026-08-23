@@ -2567,6 +2567,15 @@ const uz = {
   'branchManager.expenses.cancel': 'Bekor qilish',
   'branchManager.expenses.saving': 'Saqlanmoqda...',
   'branchManager.expenses.save': 'Saqlash',
+
+  /* ─── components/PasswordInput.jsx ─── */
+  'components.passwordInput.hide': 'Parolni yashirish',
+  'components.passwordInput.show': 'Parolni ko\'rsatish',
+
+  /* ─── components/ErrorBoundary.jsx ─── */
+  'components.errorBoundary.title': 'Nimadir noto\'g\'ri ketdi',
+  'components.errorBoundary.unexpectedError': 'Kutilmagan xatolik yuz berdi',
+  'components.errorBoundary.reload': 'Sahifani yangilash',
 };
 
 export default uz;

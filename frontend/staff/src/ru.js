@@ -2574,6 +2574,15 @@ const ru = {
   'branchManager.expenses.cancel': 'Отмена',
   'branchManager.expenses.saving': 'Сохранение...',
   'branchManager.expenses.save': 'Сохранить',
+
+  /* ─── components/PasswordInput.jsx ─── */
+  'components.passwordInput.hide': 'Скрыть пароль',
+  'components.passwordInput.show': 'Показать пароль',
+
+  /* ─── components/ErrorBoundary.jsx ─── */
+  'components.errorBoundary.title': 'Что-то пошло не так',
+  'components.errorBoundary.unexpectedError': 'Произошла непредвиденная ошибка',
+  'components.errorBoundary.reload': 'Обновить страницу',
 };
 
 export default ru;

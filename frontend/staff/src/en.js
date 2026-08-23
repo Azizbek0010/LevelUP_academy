@@ -2574,6 +2574,15 @@ const en = {
   'branchManager.expenses.cancel': 'Cancel',
   'branchManager.expenses.saving': 'Saving...',
   'branchManager.expenses.save': 'Save',
+
+  /* ─── components/PasswordInput.jsx ─── */
+  'components.passwordInput.hide': 'Hide password',
+  'components.passwordInput.show': 'Show password',
+
+  /* ─── components/ErrorBoundary.jsx ─── */
+  'components.errorBoundary.title': 'Something went wrong',
+  'components.errorBoundary.unexpectedError': 'An unexpected error occurred',
+  'components.errorBoundary.reload': 'Reload page',
 };
 
 export default en;
