@@ -7,13 +7,16 @@ import {
 import {
   ShieldAlert, Ban, Plus, ScrollText, UserX, RotateCcw, Trash2, ListChecks, TriangleAlert, Check,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { fmt } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonTable } from '../../components/Skeleton.jsx';
 import { Metric, Panel, EmptyState, Modal } from './_ui.jsx';
-import { TYPE_META, Dot, LevelBadge } from '../../discipline-meta.jsx';
+import { typeMetaFor, Dot, LevelBadge } from '../../discipline-meta.jsx';
+
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
 
 /**
  * Дисциплина сотрудников организации.
@@ -42,25 +45,27 @@ import { TYPE_META, Dot, LevelBadge } from '../../discipline-meta.jsx';
  * показывает этот каталог вместо устава.
  */
 
-const ROLE_LABEL = {
-  admin: 'Администратор',
-  mentor: 'Ментор',
-  methodist: 'Методист',
-  seo: 'SEO',
-};
+const roleLabelFor = (t) => ({
+  admin: t('super.discipline.roleAdmin'),
+  mentor: t('super.discipline.roleMentor'),
+  methodist: t('super.discipline.roleMethodist'),
+  seo: t('super.discipline.roleSeo'),
+});
 
-function dateTime(iso) {
+function dateTime(iso, locale) {
   if (!iso) return '—';
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? '—'
-    : d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    : d.toLocaleString(locale, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 /** Выбор сотрудника для «Взыскания» — тот же список-строка, что и у правил,
     вместо голого нативного <select> (тот и не красится под дизайн панели, и
     не показывает роль по-человечески). */
 function StaffSelect({ staff, value, onChange }) {
+  const { t } = useTranslation();
+  const ROLE_LABEL = roleLabelFor(t);
   return (
     <div className="border border-base-300 rounded-lg max-h-48 overflow-y-auto divide-y divide-base-200 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-base-300 [&::-webkit-scrollbar-thumb]:rounded-full">
       {staff.map((s) => {
@@ -123,6 +128,7 @@ function RuleSelect({ rules, value, onChange }) {
    какое из уже описанных правил»; цвет/уровень и сумма штрафа подтягиваются
    из выбранного правила автоматически. */
 function IssueModal({ open, onClose, staff, rules, onDone }) {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const [targetUserId, setTarget] = useState('');
   const [ruleId, setRuleId] = useState('');
@@ -144,9 +150,9 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
 
   const submit = async () => {
     setErr('');
-    if (!targetUserId) return setErr('Выберите сотрудника');
-    if (!rule) return setErr('Выберите нарушенное правило');
-    if (!reason.trim()) return setErr('Укажите причину');
+    if (!targetUserId) return setErr(t('super.discipline.selectStaff'));
+    if (!rule) return setErr(t('super.discipline.selectViolatedRule'));
+    if (!reason.trim()) return setErr(t('super.discipline.specifyReason'));
 
     setBusy(true);
     try {
@@ -172,12 +178,12 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
     <Modal
       isOpen={open}
       onClose={onClose}
-      title="Взыскание сотруднику"
+      title={t('super.discipline.issuePenaltyTitle')}
       actions={
         <>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>Отмена</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>{t('super.discipline.cancel')}</button>
           <button className="btn btn-primary btn-sm" onClick={submit} disabled={busy}>
-            {busy ? <span className="loading loading-spinner loading-xs" /> : 'Выписать'}
+            {busy ? <span className="loading loading-spinner loading-xs" /> : t('super.discipline.issue')}
           </button>
         </>
       }
@@ -187,11 +193,11 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            Сотрудник
+            {t('super.discipline.employeeLabel')}
           </span>
           {staff.length === 0 ? (
             <span className="text-xs text-warning mt-1">
-              Сотрудников не найдено — сначала добавьте администратора, ментора или методиста
+              {t('super.discipline.noStaffFound')}
             </span>
           ) : (
             <StaffSelect staff={staff} value={targetUserId} onChange={setTarget} />
@@ -200,11 +206,11 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            Какое правило нарушено
+            {t('super.discipline.whichRuleLabel')}
           </span>
           {rules.length === 0 ? (
             <span className="text-xs text-warning mt-1">
-              Правил ещё нет — сначала добавьте хотя бы одно кнопкой «Новое правило» выше
+              {t('super.discipline.noRulesYet')}
             </span>
           ) : (
             <RuleSelect rules={rules} value={ruleId} onChange={pickRule} />
@@ -214,7 +220,7 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
         {rule && rule.amount != null && (
           <label className="form-control">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-              Процент от оклада, %
+              {t('super.discipline.salaryPercentLabel')}
             </span>
             <input
               type="number"
@@ -226,28 +232,28 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
               placeholder="5"
             />
             <span className="text-xs text-base-content/45 mt-1">
-              Подставлен из правила, можно поправить. Не списывается автоматически — запись для расчёта зарплаты
+              {t('super.discipline.salaryPercentHint')}
             </span>
           </label>
         )}
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            Описание
+            {t('super.discipline.descriptionLabel')}
           </span>
           <textarea
             rows={3}
             className="textarea textarea-bordered rounded-lg text-base sm:text-sm resize-none"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Подставится из правила — можно уточнить детали"
+            placeholder={t('super.discipline.descriptionPlaceholder')}
           />
         </label>
 
         {rule?.type === 'qora' && (
           <div className="alert alert-warning text-sm py-2">
             <UserX size={15} className="shrink-0" />
-            <span>Сотрудник потеряет доступ к системе. Вернуть его можно кнопкой в списке.</span>
+            <span>{t('super.discipline.qoraWarning')}</span>
           </div>
         )}
       </div>
@@ -261,6 +267,8 @@ function IssueModal({ open, onClose, staff, rules, onDone }) {
    уровень, а необязательный довесок к любому из трёх. Чисто справочник —
    ничего само не выдаёт и не считает пороги (см. TYPE_META). */
 function NewRuleModal({ open, onClose, onDone }) {
+  const { t } = useTranslation();
+  const TYPE_META = typeMetaFor(t);
   const { token } = useAuth();
   const [type, setType] = useState('sariq');
   const [amount, setAmount] = useState('');
@@ -272,7 +280,7 @@ function NewRuleModal({ open, onClose, onDone }) {
 
   const submit = async () => {
     setErr('');
-    if (!description.trim()) return setErr('Опишите, за что выдаётся это правило');
+    if (!description.trim()) return setErr(t('super.discipline.describeRule'));
 
     setBusy(true);
     try {
@@ -296,12 +304,12 @@ function NewRuleModal({ open, onClose, onDone }) {
     <Modal
       isOpen={open}
       onClose={onClose}
-      title="Новое правило"
+      title={t('super.discipline.newRuleTitle')}
       actions={
         <>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>Отмена</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>{t('super.discipline.cancel')}</button>
           <button className="btn btn-primary btn-sm" onClick={submit} disabled={busy}>
-            {busy ? <span className="loading loading-spinner loading-xs" /> : 'Сохранить'}
+            {busy ? <span className="loading loading-spinner loading-xs" /> : t('super.discipline.save')}
           </button>
         </>
       }
@@ -311,7 +319,7 @@ function NewRuleModal({ open, onClose, onDone }) {
 
         <div>
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5 block">
-            Уровень
+            {t('super.discipline.levelLabel')}
           </span>
           <div className="grid grid-cols-2 gap-2">
             {Object.entries(TYPE_META).map(([key, m]) => {
@@ -346,7 +354,7 @@ function NewRuleModal({ open, onClose, onDone }) {
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            Процент от оклада, % (необязательно)
+            {t('super.discipline.salaryPercentOptionalLabel')}
           </span>
           <input
             type="number"
@@ -355,20 +363,20 @@ function NewRuleModal({ open, onClose, onDone }) {
             className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="Например, 5"
+            placeholder={t('super.discipline.salaryPercentPlaceholder')}
           />
         </label>
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            За что
+            {t('super.discipline.forWhatLabel')}
           </span>
           <textarea
             rows={2}
             className="textarea textarea-bordered rounded-lg text-base sm:text-sm resize-none"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Например: опоздание более 15 минут"
+            placeholder={t('super.discipline.forWhatPlaceholder')}
           />
         </label>
       </div>
@@ -377,6 +385,7 @@ function NewRuleModal({ open, onClose, onDone }) {
 }
 
 function RulesPanel({ rules, onChanged }) {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState(null);
@@ -397,11 +406,11 @@ function RulesPanel({ rules, onChanged }) {
 
   return (
     <Panel
-      title="Правила (qoyda)"
+      title={t('super.discipline.rulesTitle')}
       icon={ListChecks}
       action={
         <button className="btn btn-outline btn-xs gap-1" onClick={() => setOpen(true)}>
-          <Plus size={13} /> Новое правило
+          <Plus size={13} /> {t('super.discipline.newRule')}
         </button>
       }
     >
@@ -410,17 +419,17 @@ function RulesPanel({ rules, onChanged }) {
       {rules.length === 0 ? (
         <EmptyState
           icon={ListChecks}
-          title="Правил пока нет"
-          hint="Опишите нарушение и уровень взыскания за него один раз — дальше на это правило можно ссылаться при выдаче взыскания."
+          title={t('super.discipline.noRulesTitle')}
+          hint={t('super.discipline.noRulesHint')}
         />
       ) : (
         <div className="overflow-x-auto">
           <table className="table table-sm">
             <thead>
               <tr>
-                <th>Правило</th>
-                <th>Уровень</th>
-                <th className="text-right">% от оклада</th>
+                <th>{t('super.discipline.colRule')}</th>
+                <th>{t('super.discipline.colLevel')}</th>
+                <th className="text-right">{t('super.discipline.colSalaryPercent')}</th>
                 <th />
               </tr>
             </thead>
@@ -437,7 +446,7 @@ function RulesPanel({ rules, onChanged }) {
                       className="btn btn-ghost btn-xs"
                       onClick={() => remove(r.id)}
                       disabled={busyId === r.id}
-                      title="Удалить правило"
+                      title={t('super.discipline.deleteRuleTooltip')}
                     >
                       {busyId === r.id
                         ? <span className="loading loading-spinner loading-xs" />
@@ -457,6 +466,10 @@ function RulesPanel({ rules, onChanged }) {
 }
 
 export default function SuperDiscipline() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const TYPE_META = typeMetaFor(t);
+  const ROLE_LABEL = roleLabelFor(t);
   const { token } = useAuth();
   const qc = useQueryClient();
   const [filter, setFilter] = useState('all');
@@ -566,12 +579,12 @@ export default function SuperDiscipline() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Дисциплина" subtitle="Устав, правила, предупреждения, штрафы и увольнения сотрудников">
+      <PageHeader title={t('super.discipline.title')} subtitle={t('super.discipline.subtitle')}>
         <button
           className="btn btn-primary btn-sm gap-1.5"
           onClick={() => setIssueOpen(true)}
         >
-          <Plus size={15} /> Взыскание
+          <Plus size={15} /> {t('super.discipline.penaltyBtn')}
         </button>
       </PageHeader>
 
@@ -581,15 +594,15 @@ export default function SuperDiscipline() {
         <SkeletonKpis count={3} className="grid-cols-1 sm:grid-cols-3" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Metric Icon={TriangleAlert} tone="warning" label="Жёлтые" value={fmt(totals.sariq)} unit="предупреждений" />
-          <Metric Icon={ShieldAlert} tone="danger" label="Красные" value={fmt(totals.qizil)} unit="предупреждений" />
-          <Metric Icon={Ban} tone="danger" label="Увольнения" value={fmt(totals.qora)} unit="сотрудников" />
+          <Metric Icon={TriangleAlert} tone="warning" label={t('super.discipline.kpiYellow')} value={fmt(totals.sariq)} unit={t('super.discipline.kpiWarningsUnit')} />
+          <Metric Icon={ShieldAlert} tone="danger" label={t('super.discipline.kpiRed')} value={fmt(totals.qizil)} unit={t('super.discipline.kpiWarningsUnit')} />
+          <Metric Icon={Ban} tone="danger" label={t('super.discipline.kpiFirings')} value={fmt(totals.qora)} unit={t('super.discipline.kpiStaffUnit')} />
         </div>
       )}
 
       {items.length > 0 && (
         <div className="grid lg:grid-cols-2 gap-4">
-          <Panel title="Соотношение взысканий" icon={ShieldAlert}>
+          <Panel title={t('super.discipline.ratioTitle')} icon={ShieldAlert}>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -619,7 +632,7 @@ export default function SuperDiscipline() {
             </div>
           </Panel>
 
-          <Panel title="Кто чаще получает" icon={UserX}>
+          <Panel title={t('super.discipline.whoGetsMoreTitle')} icon={UserX}>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={byEmployee} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
@@ -649,7 +662,7 @@ export default function SuperDiscipline() {
       )}
 
       <Panel
-        title="История взысканий"
+        title={t('super.discipline.historyTitle')}
         icon={ScrollText}
         bodyClass="p-0"
         action={
@@ -659,7 +672,7 @@ export default function SuperDiscipline() {
               className={`btn btn-xs join-item ${filter === 'all' ? 'btn-primary' : 'btn-outline'}`}
               onClick={() => setFilter('all')}
             >
-              Все
+              {t('super.discipline.filterAll')}
             </button>
             {Object.entries(TYPE_META).map(([key, m]) => {
               const active = filter === key;
@@ -696,20 +709,20 @@ export default function SuperDiscipline() {
         ) : shown.length === 0 ? (
           <EmptyState
             icon={ShieldAlert}
-            title={items.length === 0 ? 'Взысканий нет' : 'В этой категории пусто'}
-            hint={items.length === 0 ? 'Хорошая новость: сотрудники работают без нарушений.' : undefined}
+            title={items.length === 0 ? t('super.discipline.penaltiesEmptyTitle') : t('super.discipline.categoryEmptyTitle')}
+            hint={items.length === 0 ? t('super.discipline.noPenaltiesHint') : undefined}
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="table table-sm">
               <thead>
                 <tr>
-                  <th>Сотрудник</th>
-                  <th>Вид</th>
-                  <th className="text-right">% от оклада</th>
-                  <th>Причина</th>
-                  <th>Выписал</th>
-                  <th>Когда</th>
+                  <th>{t('super.discipline.colEmployee')}</th>
+                  <th>{t('super.discipline.colType')}</th>
+                  <th className="text-right">{t('super.discipline.colSalaryPercent')}</th>
+                  <th>{t('super.discipline.colReason')}</th>
+                  <th>{t('super.discipline.colIssuedBy')}</th>
+                  <th>{t('super.discipline.colWhen')}</th>
                   <th />
                 </tr>
               </thead>
@@ -737,7 +750,7 @@ export default function SuperDiscipline() {
                         </div>
                       </td>
                       <td className="text-xs text-base-content/55 whitespace-nowrap">
-                        {dateTime(p.created_at ?? p.createdAt)}
+                        {dateTime(p.created_at ?? p.createdAt, locale)}
                       </td>
                       <td className="text-right">
                         {(() => {
@@ -748,18 +761,18 @@ export default function SuperDiscipline() {
                           const targetId = p.target_user_id ?? p.targetUserId;
                           const stillFired = staff.find((s) => s.id === targetId)?.status === 'fired';
                           if (!stillFired) {
-                            return <span className="text-xs text-base-content/35">Восстановлен</span>;
+                            return <span className="text-xs text-base-content/35">{t('super.discipline.restored')}</span>;
                           }
                           return (
                             <button
                               className="btn btn-outline btn-xs gap-1"
                               onClick={() => reactivate(p)}
                               disabled={busyId === p.id}
-                              title="Снять увольнение и вернуть доступ"
+                              title={t('super.discipline.restoreTooltip')}
                             >
                               {busyId === p.id
                                 ? <span className="loading loading-spinner loading-xs" />
-                                : <><RotateCcw size={12} /> Вернуть</>}
+                                : <><RotateCcw size={12} /> {t('super.discipline.restore')}</>}
                             </button>
                           );
                         })()}

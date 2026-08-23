@@ -16,16 +16,27 @@
  * `dark: true` — на закраске этим цветом (hover/выбор) держим тёмный текст,
  * не белый: жёлтый (#eab308) с белым текстом читается плохо.
  */
+import { useTranslation } from 'react-i18next';
+
 export const TYPE_META = {
   sariq: { label: 'Жёлтое предупреждение', color: '#eab308', dark: true },
   qizil: { label: 'Красное предупреждение', color: '#dc2626' },
   qora: { label: 'Увольнение', color: '#111827' },
 };
 
+/** То же самое, но с переведённой подписью — для страниц, уже подключивших
+    react-i18next. Цвет/dark не переводятся, берутся из TYPE_META как есть. */
+export const typeMetaFor = (t) => ({
+  sariq: { ...TYPE_META.sariq, label: t('discipline.typeSariq') },
+  qizil: { ...TYPE_META.qizil, label: t('discipline.typeQizil') },
+  qora: { ...TYPE_META.qora, label: t('discipline.typeQora') },
+});
+
 /** Бейдж уровня — рамка цвета уровня, без заливки и без иконки: серьёзный
     учебный центр, не набор стикеров. Для пассивных мест (таблицы, списки). */
 export function LevelBadge({ type, size = 'md' }) {
-  const m = TYPE_META[type] ?? TYPE_META.sariq;
+  const { t } = useTranslation();
+  const m = typeMetaFor(t)[type] ?? typeMetaFor(t).sariq;
   return (
     <span
       className={`inline-flex items-center rounded-full font-semibold border-[1.5px] whitespace-nowrap ${
