@@ -2600,6 +2600,35 @@ const en = {
   'components.myDiscipline.noRulesHint': "The organization hasn't described any rules yet.",
   'components.myDiscipline.colRule': 'Rule',
   'components.myDiscipline.colLevel': 'Level',
+
+  /* ─── components/ui.jsx ─── */
+  'components.ui.noBranchesYet': 'No branches yet',
+  'components.ui.colBranch': 'Branch',
+  'components.ui.colStudents': 'Students',
+  'components.ui.colAdmins': 'Admins',
+  'components.ui.colRevenue': 'Revenue',
+  'components.ui.colDebt': 'Debt',
+  'components.ui.mainBadge': 'Main',
+  'components.ui.archivedBadge': 'Archived',
+  'components.ui.branchBadge': 'Branch',
+  'components.ui.analyticsCta': 'Detailed analytics — charts, period, payment methods',
+
+  /* ─── components/ExportDialog.jsx ─── */
+  'components.exportDialog.excelDesc': 'Table with auto columns',
+  'components.exportDialog.pdfDesc': 'Document with a title',
+  'components.exportDialog.defaultTitle': 'Export',
+  'components.exportDialog.cyrillicWarning': 'The file was downloaded, but the Cyrillic font failed to load — Russian text in the PDF may render incorrectly.',
+  'components.exportDialog.genericError': 'Failed to create the file. Please try again.',
+  'components.exportDialog.headerTitle': 'Export data',
+  'components.exportDialog.recordsCount': '{{count}} records',
+  'components.exportDialog.documentTitleLabel': 'Document title',
+  'components.exportDialog.titlePlaceholder': 'Enter a title...',
+  'components.exportDialog.rows': 'rows',
+  'components.exportDialog.columns': 'columns',
+  'components.exportDialog.cancel': 'Cancel',
+  'components.exportDialog.done': 'Done!',
+  'components.exportDialog.creating': 'Creating...',
+  'components.exportDialog.download': 'Download',
 };
 
 export default en;

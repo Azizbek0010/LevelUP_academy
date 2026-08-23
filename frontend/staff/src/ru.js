@@ -2600,6 +2600,35 @@ const ru = {
   'components.myDiscipline.noRulesHint': 'Организация пока не описала правила.',
   'components.myDiscipline.colRule': 'Правило',
   'components.myDiscipline.colLevel': 'Уровень',
+
+  /* ─── components/ui.jsx ─── */
+  'components.ui.noBranchesYet': 'Филиалов пока нет',
+  'components.ui.colBranch': 'Филиал',
+  'components.ui.colStudents': 'Ученики',
+  'components.ui.colAdmins': 'Админы',
+  'components.ui.colRevenue': 'Доход',
+  'components.ui.colDebt': 'Долг',
+  'components.ui.mainBadge': 'Главный',
+  'components.ui.archivedBadge': 'Архив',
+  'components.ui.branchBadge': 'Филиал',
+  'components.ui.analyticsCta': 'Подробная аналитика — графики, период, способы оплаты',
+
+  /* ─── components/ExportDialog.jsx ─── */
+  'components.exportDialog.excelDesc': 'Таблица с авто-колонками',
+  'components.exportDialog.pdfDesc': 'Документ с заголовком',
+  'components.exportDialog.defaultTitle': 'Экспорт',
+  'components.exportDialog.cyrillicWarning': 'Файл скачан, но шрифт кириллицы не загрузился — русский текст в PDF может отображаться неверно.',
+  'components.exportDialog.genericError': 'Не удалось создать файл. Попробуйте ещё раз.',
+  'components.exportDialog.headerTitle': 'Экспорт данных',
+  'components.exportDialog.recordsCount': '{{count}} записей',
+  'components.exportDialog.documentTitleLabel': 'Заголовок документа',
+  'components.exportDialog.titlePlaceholder': 'Введите заголовок...',
+  'components.exportDialog.rows': 'строк',
+  'components.exportDialog.columns': 'колонок',
+  'components.exportDialog.cancel': 'Отмена',
+  'components.exportDialog.done': 'Готово!',
+  'components.exportDialog.creating': 'Создаём...',
+  'components.exportDialog.download': 'Скачать',
 };
 
 export default ru;

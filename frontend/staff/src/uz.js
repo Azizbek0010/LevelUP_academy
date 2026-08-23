@@ -2593,6 +2593,35 @@ const uz = {
   'components.myDiscipline.noRulesHint': 'Tashkilot hali qoidalarni tasvirlamagan.',
   'components.myDiscipline.colRule': 'Qoida',
   'components.myDiscipline.colLevel': 'Daraja',
+
+  /* ─── components/ui.jsx ─── */
+  'components.ui.noBranchesYet': 'Hozircha filiallar yo\'q',
+  'components.ui.colBranch': 'Filial',
+  'components.ui.colStudents': 'O\'quvchilar',
+  'components.ui.colAdmins': 'Adminlar',
+  'components.ui.colRevenue': 'Daromad',
+  'components.ui.colDebt': 'Qarz',
+  'components.ui.mainBadge': 'Asosiy',
+  'components.ui.archivedBadge': 'Arxiv',
+  'components.ui.branchBadge': 'Filial',
+  'components.ui.analyticsCta': 'Batafsil tahlil — grafiklar, davr, to\'lov usullari',
+
+  /* ─── components/ExportDialog.jsx ─── */
+  'components.exportDialog.excelDesc': 'Avto-ustunli jadval',
+  'components.exportDialog.pdfDesc': 'Sarlavhali hujjat',
+  'components.exportDialog.defaultTitle': 'Eksport',
+  'components.exportDialog.cyrillicWarning': 'Fayl yuklab olindi, lekin kirill shrift yuklanmadi — PDF dagi ruscha matn noto\'g\'ri ko\'rinishi mumkin.',
+  'components.exportDialog.genericError': 'Faylni yaratib bo\'lmadi. Qayta urinib ko\'ring.',
+  'components.exportDialog.headerTitle': 'Ma\'lumotlarni eksport qilish',
+  'components.exportDialog.recordsCount': '{{count}} ta yozuv',
+  'components.exportDialog.documentTitleLabel': 'Hujjat sarlavhasi',
+  'components.exportDialog.titlePlaceholder': 'Sarlavhani kiriting...',
+  'components.exportDialog.rows': 'qator',
+  'components.exportDialog.columns': 'ustun',
+  'components.exportDialog.cancel': 'Bekor qilish',
+  'components.exportDialog.done': 'Tayyor!',
+  'components.exportDialog.creating': 'Yaratilmoqda...',
+  'components.exportDialog.download': 'Yuklab olish',
 };
 
 export default uz;

@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Download, FileSpreadsheet, FileText, FileDown, FileCode2, X, Check, AlertTriangle } from 'lucide-react';
 import { exportData, PAGE_EXPORT_CONFIG } from '../utils/exportUtils.js';
 
-const FORMAT_OPTIONS = [
+const formatOptionsFor = (t) => [
   {
     key: 'excel',
     label: 'Excel',
@@ -11,7 +12,7 @@ const FORMAT_OPTIONS = [
     icon: FileSpreadsheet,
     color: '#217346',
     bg: 'rgba(33,115,70,0.10)',
-    desc: 'Таблица с авто-колонками',
+    desc: t('components.exportDialog.excelDesc'),
   },
   {
     key: 'pdf',
@@ -20,7 +21,7 @@ const FORMAT_OPTIONS = [
     icon: FileDown,
     color: '#E8543E',
     bg: 'rgba(232,84,62,0.10)',
-    desc: 'Документ с заголовком',
+    desc: t('components.exportDialog.pdfDesc'),
   },
 ];
 
@@ -39,10 +40,12 @@ const FORMAT_OPTIONS = [
  *   title      — optional starting title, overriding the registry's
  */
 export default function ExportDialog({ open, onClose, pageKey, data = [], filename, columns, title: titleProp }) {
+  const { t } = useTranslation();
+  const FORMAT_OPTIONS = formatOptionsFor(t);
   const config = PAGE_EXPORT_CONFIG[pageKey] || {};
   const cols = columns ?? config.columns ?? [];
   const [format, setFormat] = useState('excel');
-  const [title, setTitle] = useState(titleProp || config.title || 'Экспорт');
+  const [title, setTitle] = useState(titleProp || config.title || t('components.exportDialog.defaultTitle'));
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
@@ -62,7 +65,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
       // that looks like a success. The file downloaded either way, so this is a
       // warning, not an error; keep the dialog open so it can actually be read.
       if (format === 'pdf' && result && result.hasCyrillic === false) {
-        setWarning('Файл скачан, но шрифт кириллицы не загрузился — русский текст в PDF может отображаться неверно.');
+        setWarning(t('components.exportDialog.cyrillicWarning'));
         return;
       }
       setTimeout(() => {
@@ -71,7 +74,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
       }, 1200);
     } catch (err) {
       console.error('Export error:', err);
-      setError(err?.message || 'Не удалось создать файл. Попробуйте ещё раз.');
+      setError(err?.message || t('components.exportDialog.genericError'));
     } finally {
       setBusy(false);
     }
@@ -108,8 +111,8 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
               <Download size={20} className={theme.iconColor} />
             </div>
             <div>
-              <h3 className="font-extrabold text-[16px] text-base-content">Экспорт данных</h3>
-              <p className="text-[12px] font-semibold text-base-content/60 mt-0.5">{data.length} записей</p>
+              <h3 className="font-extrabold text-[16px] text-base-content">{t('components.exportDialog.headerTitle')}</h3>
+              <p className="text-[12px] font-semibold text-base-content/60 mt-0.5">{t('components.exportDialog.recordsCount', { count: data.length })}</p>
             </div>
           </div>
           <button className="btn btn-ghost btn-sm btn-circle hover:bg-base-200" onClick={onClose}>
@@ -161,21 +164,21 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
           {/* Title input */}
           <div className="mb-5">
           <label className="text-[10px] font-bold text-base-content/70 uppercase tracking-wider mb-1.5 block">
-            Заголовок документа
+            {t('components.exportDialog.documentTitleLabel')}
           </label>
           <input
             className="input input-bordered w-full text-[13px]"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Введите заголовок..."
+            placeholder={t('components.exportDialog.titlePlaceholder')}
           />
         </div>
 
         {/* Preview info */}
         <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-[10px] bg-base-200 mb-5">
           <div className="text-[11px] text-base-content/60">
-            <span className="font-semibold">{data.length}</span> строк ·{' '}
-            <span className="font-semibold">{(config.columns || []).filter((c) => !c.hidden).length}</span> колонок ·{' '}
+            <span className="font-semibold">{data.length}</span> {t('components.exportDialog.rows')} ·{' '}
+            <span className="font-semibold">{(config.columns || []).filter((c) => !c.hidden).length}</span> {t('components.exportDialog.columns')} ·{' '}
             <span className="font-semibold uppercase">{format}</span>
           </div>
         </div>
@@ -207,7 +210,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
             onClick={onClose}
             disabled={busy || done}
           >
-            Отмена
+            {t('components.exportDialog.cancel')}
           </button>
           <button
             className={`btn btn-sm ${theme.btnColor} gap-1.5`}
@@ -221,7 +224,7 @@ export default function ExportDialog({ open, onClose, pageKey, data = [], filena
             ) : (
               <Download size={14} />
             )}
-            {done ? 'Готово!' : busy ? 'Создаём...' : 'Скачать'}
+            {done ? t('components.exportDialog.done') : busy ? t('components.exportDialog.creating') : t('components.exportDialog.download')}
           </button>
         </div>
       </div>
