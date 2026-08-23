@@ -4,12 +4,11 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import ru from './ru.js';
 import uz from './uz.js';
 import en from './en.js';
-import { DICT as finance } from './pages/finance/_i18n.jsx';
 
 const resources = {
-  ru: { common: { ...ru, ...(finance?.ru || {}) } },
-  uz: { common: { ...uz, ...(finance?.uz || {}) } },
-  en: { common: { ...en, ...(finance?.en || {}) } },
+  ru: { common: ru },
+  uz: { common: uz },
+  en: { common: en },
 };
 
 i18n

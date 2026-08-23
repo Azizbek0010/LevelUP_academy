@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Wallet, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
-import { Metric, Card, BranchSelect, MonthSelect, monthOptions, monthRange } from './_ui.jsx';
-import { useT } from './_i18n.jsx';
+import { Metric, Card, BranchSelect, MonthSelect, monthOptions, monthRange, paymentMethodLabel } from './_ui.jsx';
+import { useTranslation } from 'react-i18next';
 import { useFinanceBranches, useFinanceIncome } from '../../queries.js';
 
 export default function FinanceIncome() {
-  const { t, lang } = useT();
+  const { t, i18n } = useTranslation(); const lang = i18n.language;
   const [branchId, setBranchId] = useState('all');
   const months = monthOptions(lang);
   const [monthKey, setMonthKey] = useState(months[0].key);
@@ -33,7 +33,7 @@ export default function FinanceIncome() {
   const trend = prevTotal ? Math.round(((total - prevTotal) / prevTotal) * 100) : null;
 
   const label = branchId === 'all'
-    ? t('common.allBranches')
+    ? t('finance.common.allBranches')
     : (branches ?? []).find((b) => b.id === branchId)?.name ?? '';
 
   const rows = data?.income ?? [];
@@ -41,35 +41,35 @@ export default function FinanceIncome() {
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title={t('income.title')} subtitle={t('income.subtitle')} />
+      <PageHeader title={t('finance.income.title')} subtitle={t('finance.income.subtitle')} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
         <Metric
           Icon={Wallet}
-          label={t('kpi.income')}
+          label={t('finance.kpi.income')}
           value={money(total)}
           sub={`${label} · ${months.find((m) => m.key === monthKey)?.label}`}
           tone="success"
           trend={trend ?? undefined}
-          trendLabel={t('common.vsPrev')}
+          trendLabel={t('finance.common.vsPrev')}
         />
         <Metric
           Icon={TrendingUp}
-          label={t('common.total')}
+          label={t('finance.common.total')}
           value={`${meta.total}`}
-          sub={t('income.tableTitle')}
+          sub={t('finance.income.tableTitle')}
           tone="info"
         />
       </div>
 
       <Card
-        title={t('income.tableTitle')}
+        title={t('finance.income.tableTitle')}
         action={
           <div className="flex items-center gap-2">
             <BranchSelect
               value={branchId}
               onChange={(v) => { setBranchId(v); setPage(1); }}
-              allLabel={t('common.allBranches')}
+              allLabel={t('finance.common.allBranches')}
               branches={branches ?? []}
             />
             <MonthSelect value={monthKey} onChange={(v) => { setMonthKey(v); setPage(1); }} months={months} />
@@ -81,26 +81,26 @@ export default function FinanceIncome() {
           <table className="table table-sm">
             <thead>
               <tr className="text-[12px] uppercase tracking-wider text-base-content/50">
-                <th>{t('common.date')}</th>
-                {branchId === 'all' && <th>{t('common.branch')}</th>}
-                <th>{t('income.student')}</th>
-                <th>{t('income.group')}</th>
-                <th>{t('common.method')}</th>
-                <th className="text-right">{t('common.amount')}</th>
+                <th>{t('finance.common.date')}</th>
+                {branchId === 'all' && <th>{t('finance.common.branch')}</th>}
+                <th>{t('finance.income.student')}</th>
+                <th>{t('finance.income.group')}</th>
+                <th>{t('finance.common.method')}</th>
+                <th className="text-right">{t('finance.common.amount')}</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={6} className="text-center py-6 text-base-content/50">{t('common.loading')}</td></tr>
+                <tr><td colSpan={6} className="text-center py-6 text-base-content/50">{t('finance.common.loading')}</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-6 text-base-content/50">{t('common.noData')}</td></tr>
+                <tr><td colSpan={6} className="text-center py-6 text-base-content/50">{t('finance.common.noData')}</td></tr>
               ) : rows.map((r) => (
                 <tr key={r.id} className="text-sm">
                   <td className="tabular-nums whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString()}</td>
                   {branchId === 'all' && <td className="text-base-content/70">{r.branchName}</td>}
                   <td className="font-medium">{r.studentName ?? '—'}</td>
                   <td className="text-base-content/70">{r.groupName ?? '—'}</td>
-                  <td>{r.method}</td>
+                  <td>{paymentMethodLabel(r.method, t)}</td>
                   <td className="text-right tabular-nums font-semibold text-success">{money(r.amount)}</td>
                 </tr>
               ))}
@@ -108,7 +108,7 @@ export default function FinanceIncome() {
             {rows.length > 0 && (
               <tfoot>
                 <tr className="border-t border-base-300 bg-base-200/50 font-bold text-sm">
-                  <td colSpan={branchId === 'all' ? 5 : 4}>{t('common.total')}</td>
+                  <td colSpan={branchId === 'all' ? 5 : 4}>{t('finance.common.total')}</td>
                   <td className="text-right tabular-nums">{money(total)}</td>
                 </tr>
               </tfoot>
@@ -117,7 +117,7 @@ export default function FinanceIncome() {
         </div>
         {meta.totalPages > 1 && (
           <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-base-200">
-            <span className="text-xs text-base-content/50">{t('common.page')} {meta.page} / {meta.totalPages}</span>
+            <span className="text-xs text-base-content/50">{t('finance.common.page')} {meta.page} / {meta.totalPages}</span>
             <div className="flex gap-1.5">
               <button className="btn btn-ghost btn-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                 <ChevronLeft size={14} />

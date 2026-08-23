@@ -15,8 +15,9 @@ import PageHeader from '../../components/PageHeader.jsx';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import { useMe, useInvalidate } from '../../queries.js';
-import { Card, LangSwitch } from './_ui.jsx';
-import { useT } from './_i18n.jsx';
+import { Card } from './_ui.jsx';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher.jsx';
 
 function Field({ label, icon: Icon, value, onChange, readOnly }) {
   return (
@@ -41,7 +42,7 @@ function Field({ label, icon: Icon, value, onChange, readOnly }) {
 }
 
 export default function FinanceSettings() {
-  const { t } = useT();
+  const { t } = useTranslation();
   const { token, user, patchUser } = useAuth();
   const invalidate = useInvalidate();
   const { data: meData, isLoading } = useMe();
@@ -73,7 +74,7 @@ export default function FinanceSettings() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.firstName.trim() || !form.lastName.trim()) { setErr(t('settings.firstName') + '/' + t('settings.lastName')); return; }
+    if (!form.firstName.trim() || !form.lastName.trim()) { setErr(t('finance.settings.firstName') + '/' + t('finance.settings.lastName')); return; }
     setSaving(true); setErr('');
     try {
       const patch = { firstName: form.firstName.trim(), lastName: form.lastName.trim(), email: form.email.trim() };
@@ -89,7 +90,7 @@ export default function FinanceSettings() {
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
+      <PageHeader title={t('finance.settings.title')} subtitle={t('finance.settings.subtitle')} />
 
       <Card bodyClass="p-5">
         <div className="flex items-center gap-5">
@@ -115,8 +116,8 @@ export default function FinanceSettings() {
       </Card>
 
       <form onSubmit={handleSave} className="card bg-base-100 border border-base-300 shadow-sm p-6">
-        <h2 className="text-[15px] font-extrabold text-base-content">{t('settings.personal')}</h2>
-        <p className="text-[12px] text-base-content/50 mt-0.5 mb-5">{t('settings.personalSub')}</p>
+        <h2 className="text-[15px] font-extrabold text-base-content">{t('finance.settings.personal')}</h2>
+        <p className="text-[12px] text-base-content/50 mt-0.5 mb-5">{t('finance.settings.personalSub')}</p>
 
         {err && (
           <div className="px-4 py-3 mb-5 rounded-[12px] text-[13px] font-medium bg-error/10 text-error border border-error/20">
@@ -126,38 +127,38 @@ export default function FinanceSettings() {
         {saved && (
           <div className="flex items-center gap-2.5 px-4 py-3 mb-5 rounded-[12px] text-[13px] font-medium bg-success/10 text-success border border-success/20 animate-slide-up">
             <CheckCircle2 size={15} />
-            {t('settings.saved')}
+            {t('finance.settings.saved')}
           </div>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label={t('settings.firstName')} icon={User} value={form.firstName} onChange={(v) => set('firstName', v)} />
-          <Field label={t('settings.lastName')} icon={User} value={form.lastName} onChange={(v) => set('lastName', v)} />
-          <Field label={t('settings.email')} icon={Mail} value={form.email} onChange={(v) => set('email', v)} />
+          <Field label={t('finance.settings.firstName')} icon={User} value={form.firstName} onChange={(v) => set('firstName', v)} />
+          <Field label={t('finance.settings.lastName')} icon={User} value={form.lastName} onChange={(v) => set('lastName', v)} />
+          <Field label={t('finance.settings.email')} icon={Mail} value={form.email} onChange={(v) => set('email', v)} />
           {/* Телефон — реальное поле (GET /users/me), но PATCH его не принимает
               (backend/src/modules/users/users.schemas.js: updateProfileSchema),
               поэтому read-only, а не выдуманное сохранение как раньше. */}
-          <Field label={t('settings.phone')} icon={Phone} value={me?.phone} readOnly />
+          <Field label={t('finance.settings.phone')} icon={Phone} value={me?.phone} readOnly />
         </div>
 
         <div className="flex justify-end mt-6">
           <button type="submit" className="btn btn-primary btn-sm gap-2" disabled={saving || isLoading}>
             {saving ? <span className="loading loading-spinner loading-xs" /> : <Save size={14} />}
-            {t('settings.save')}
+            {t('finance.settings.save')}
           </button>
         </div>
       </form>
 
-      <Card title={t('settings.lang')} subtitle={t('settings.langSub')} bodyClass="p-5">
+      <Card title={t('finance.settings.lang')} subtitle={t('finance.settings.langSub')} bodyClass="p-5">
         <div className="flex items-center gap-4">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
             <Globe size={20} />
           </span>
-          <LangSwitch />
+          <LanguageSwitcher />
         </div>
       </Card>
 
-      <Card title={t('settings.security')} subtitle={t('settings.securitySub')} bodyClass="p-5">
+      <Card title={t('finance.settings.security')} subtitle={t('finance.settings.securitySub')} bodyClass="p-5">
         <div className="flex items-center gap-4">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-warning/10 text-warning">
             <ShieldCheck size={20} />
