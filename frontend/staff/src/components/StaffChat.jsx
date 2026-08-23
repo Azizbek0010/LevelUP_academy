@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } fr
 import {
   Send, ChevronLeft, MessageSquare, Lock, WifiOff, ArrowDown, AlertCircle, Check,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth.jsx';
 import { api, USING_MOCKS } from '../api.js';
@@ -30,73 +31,75 @@ import { Avatar, SearchInput, EmptyState, Tip } from '../pages/mentor/_ui.jsx';
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
 const MAX_LEN = 4000;
 
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+
 /* Разница между панелями — только в словах. Держим её одним объектом, чтобы
    не разводить `if (role === 'admin')` по всей разметке. */
-const COPY = {
+const copyFor = (t) => ({
   mentor: {
-    searchPlaceholder: "Родитель или ученик...",
-    emptyTitle: "Пока нет контактов",
-    emptyHint: "Родители учеников вашей группы появятся здесь.",
-    pickTitle: 'Выберите собеседника',
-    pickHint: "Выберите собеседника из списка слева, чтобы открыть переписку.",
-    composerIdle: "Выберите собеседника слева для начала переписки",
-    privacyTitle: "Эту переписку видите только вы и собеседник. Администратор не имеет доступа.",
+    searchPlaceholder: t('components.chat.mentor.searchPlaceholder'),
+    emptyTitle: t('components.chat.mentor.emptyTitle'),
+    emptyHint: t('components.chat.mentor.emptyHint'),
+    pickTitle: t('components.chat.mentor.pickTitle'),
+    pickHint: t('components.chat.mentor.pickHint'),
+    composerIdle: t('components.chat.mentor.composerIdle'),
+    privacyTitle: t('components.chat.mentor.privacyTitle'),
   },
   admin: {
-    searchPlaceholder: 'Поиск по имени...',
-    emptyTitle: "Пока нет контактов",
-    emptyHint: "Менторы, родители и ученики филиала появятся здесь.",
-    pickTitle: 'Выберите собеседника',
-    pickHint: "Выберите ментора, родителя или ученика из списка слева, чтобы открыть переписку.",
-    composerIdle: "Выберите собеседника слева для начала переписки",
-    privacyTitle: "Эту переписку видите только вы и собеседник.",
+    searchPlaceholder: t('components.chat.admin.searchPlaceholder'),
+    emptyTitle: t('components.chat.admin.emptyTitle'),
+    emptyHint: t('components.chat.admin.emptyHint'),
+    pickTitle: t('components.chat.admin.pickTitle'),
+    pickHint: t('components.chat.admin.pickHint'),
+    composerIdle: t('components.chat.admin.composerIdle'),
+    privacyTitle: t('components.chat.admin.privacyTitle'),
   },
   manager: {
-    searchPlaceholder: 'Поиск ментора...',
-    emptyTitle: 'Пока нет менторов',
-    emptyHint: 'Менторы вашего филиала появятся здесь автоматически.',
-    pickTitle: 'Выберите ментора',
-    pickHint: 'Выберите ментора из списка слева, чтобы открыть переписку.',
-    composerIdle: 'Выберите ментора слева для начала переписки',
-    privacyTitle: 'Эту переписку видите только вы и выбранный ментор.',
+    searchPlaceholder: t('components.chat.manager.searchPlaceholder'),
+    emptyTitle: t('components.chat.manager.emptyTitle'),
+    emptyHint: t('components.chat.manager.emptyHint'),
+    pickTitle: t('components.chat.manager.pickTitle'),
+    pickHint: t('components.chat.manager.pickHint'),
+    composerIdle: t('components.chat.manager.composerIdle'),
+    privacyTitle: t('components.chat.manager.privacyTitle'),
   },
-};
+});
 
 const fullName = (c) => `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim();
-const PEER_LABELS = {
-  admin: 'Администратор',
-  branch_manager: 'Менеджер филиала',
-  employee: 'Сотрудник',
-  mentor: 'Ментор',
-  parent: 'Родитель',
-  student: 'Ученик',
-};
+const peerLabelsFor = (t) => ({
+  admin: t('components.chat.peerAdmin'),
+  branch_manager: t('components.chat.peerBranchManager'),
+  employee: t('components.chat.peerEmployee'),
+  mentor: t('components.chat.peerMentor'),
+  parent: t('components.chat.peerParent'),
+  student: t('components.chat.peerStudent'),
+});
 
-function formatTime(iso) {
+function formatTime(iso, t, locale) {
   if (!iso) return '';
   const d = new Date(iso);
   const today = new Date();
   if (d.toDateString() === today.toDateString()) {
-    return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   }
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
+  if (d.toDateString() === yesterday.toDateString()) return t('components.chat.yesterday');
+  return d.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
 }
 
-function formatDayLabel(iso) {
+function formatDayLabel(iso, t, locale) {
   const d = new Date(iso);
   const today = new Date();
-  if (d.toDateString() === today.toDateString()) return 'Сегодня';
+  if (d.toDateString() === today.toDateString()) return t('components.chat.today');
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long' });
+  if (d.toDateString() === yesterday.toDateString()) return t('components.chat.yesterday');
+  return d.toLocaleDateString(locale, { day: '2-digit', month: 'long' });
 }
 
-const clock = (iso) =>
-  new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+const clock = (iso, locale) =>
+  new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
 /* ── Поле ввода ────────────────────────────────────────────────────────────
    Живёт отдельным компонентом и рендерится ВСЕГДА, даже когда собеседник не
@@ -105,6 +108,7 @@ const clock = (iso) =>
    экран и делал единственно возможный вывод: писать тут негде.
    Теперь поле на месте и само объясняет, чего не хватает. */
 function Composer({ value, onChange, onSend, disabled, sending, placeholder }) {
+  const { t } = useTranslation();
   const ref = useRef(null);
 
   // Авто-высота: textarea растёт под текст до потолка, дальше — свой скролл.
@@ -142,7 +146,7 @@ function Composer({ value, onChange, onSend, disabled, sending, placeholder }) {
             value={value}
             maxLength={MAX_LEN}
             disabled={disabled}
-            aria-label="Текст сообщения"
+            aria-label={t('components.chat.messageTextAria')}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -167,8 +171,8 @@ function Composer({ value, onChange, onSend, disabled, sending, placeholder }) {
           className="btn btn-primary btn-circle shrink-0 disabled:!bg-base-200 disabled:!text-base-content/50 disabled:!border-base-300"
           onClick={onSend}
           disabled={disabled || sending || !value.trim()}
-          aria-label="Отправить"
-          title="Enter — отправить, Shift+Enter — новая строка"
+          aria-label={t('components.chat.send')}
+          title={t('components.chat.sendTooltip')}
         >
           {sending
             ? <span className="loading loading-spinner loading-xs" />
@@ -180,6 +184,10 @@ function Composer({ value, onChange, onSend, disabled, sending, placeholder }) {
 }
 
 export default function StaffChat({ variant = 'mentor' }) {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const COPY = copyFor(t);
+  const PEER_LABELS = peerLabelsFor(t);
   const { token, user } = useAuth();
   const qc = useQueryClient();
   const copy = COPY[variant] ?? COPY.mentor;
@@ -396,23 +404,23 @@ export default function StaffChat({ variant = 'mentor' }) {
         ? ['mentor']
         : ['admin', 'branch_manager', 'employee', 'parent', 'student'];
     const labels = {
-      admin: 'Администраторы',
-      branch_manager: 'Менеджеры филиала',
-      employee: 'Сотрудники',
-      mentor: 'Менторы',
-      parent: 'Родители',
-      student: 'Ученики',
+      admin: t('components.chat.sectionAdmins'),
+      branch_manager: t('components.chat.sectionBranchManagers'),
+      employee: t('components.chat.sectionEmployees'),
+      mentor: t('components.chat.sectionMentors'),
+      parent: t('components.chat.sectionParents'),
+      student: t('components.chat.sectionStudents'),
     };
-    const groups = new Map(order.map((t) => [t, []]));
+    const groups = new Map(order.map((key) => [key, []]));
     filtered.forEach((c) => {
       const bucket = groups.get(c.peer_type);
       if (bucket) bucket.push(c);
     });
     const alwaysVisible = variant === 'mentor' ? new Set(['admin']) : new Set();
     return order
-      .filter((t) => groups.get(t).length > 0 || alwaysVisible.has(t))
-      .map((t) => ({ label: labels[t], items: groups.get(t) }));
-  }, [filtered, variant]);
+      .filter((key) => groups.get(key).length > 0 || alwaysVisible.has(key))
+      .map((key) => ({ label: labels[key], items: groups.get(key) }));
+  }, [filtered, variant, t]);
 
   const handleSend = useCallback(async () => {
     const body = draft.trim();
@@ -461,7 +469,7 @@ export default function StaffChat({ variant = 'mentor' }) {
       });
 
       if (!ack.ok) {
-        setError(ack.error === 'timeout' ? 'Сервер не отвечает' : 'Сообщение не отправлено');
+        setError(ack.error === 'timeout' ? t('components.chat.serverNotResponding') : t('components.chat.messageNotSent'));
         return;
       }
       setDraft('');
@@ -474,11 +482,11 @@ export default function StaffChat({ variant = 'mentor' }) {
         qc.invalidateQueries({ queryKey: ['chat-history', ack.roomKey] });
       }
     } catch {
-      setError('Сообщение не отправлено');
+      setError(t('components.chat.messageNotSent'));
     } finally {
       setSending(false);
     }
-  }, [draft, activeContact, sending, roomKey, token, user, qc, variant]);
+  }, [draft, activeContact, sending, roomKey, token, user, qc, variant, t]);
 
   const totalUnread = contacts.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
 
@@ -490,7 +498,7 @@ export default function StaffChat({ variant = 'mentor' }) {
       {!USING_MOCKS && !connected && (
         <div className="flex items-center gap-2 px-4 py-1.5 bg-warning/10 border-b border-warning/25 text-warning shrink-0">
           <WifiOff size={14} className="shrink-0" />
-          <span className="text-xs">Соединение потеряно — переподключение...</span>
+          <span className="text-xs">{t('components.chat.connectionLost')}</span>
         </div>
       )}
 
@@ -509,9 +517,9 @@ export default function StaffChat({ variant = 'mentor' }) {
         >
           <div className="px-3 py-3 border-b border-base-200 shrink-0">
             <div className="flex items-baseline justify-between mb-2.5">
-              <h1 className="text-base font-bold">Сообщения</h1>
+              <h1 className="text-base font-bold">{t('components.chat.messagesTitle')}</h1>
               {totalUnread > 0 && (
-                <span className="badge badge-primary badge-sm">{totalUnread} новых</span>
+                <span className="badge badge-primary badge-sm">{t('components.chat.newCount', { count: totalUnread })}</span>
               )}
             </div>
             <SearchInput
@@ -537,8 +545,8 @@ export default function StaffChat({ variant = 'mentor' }) {
             ) : filtered.length === 0 ? (
               <EmptyState
                 icon={MessageSquare}
-                title={search ? 'Никого не найдено' : copy.emptyTitle}
-                hint={search ? "Попробуйте другое имя." : copy.emptyHint}
+                title={search ? t('components.chat.nobodyFound') : copy.emptyTitle}
+                hint={search ? t('components.chat.tryAnotherName') : copy.emptyHint}
               />
             ) : (
               <ul>
@@ -553,9 +561,9 @@ export default function StaffChat({ variant = 'mentor' }) {
                         </span>
                       </div>
                     )}
-                    {section.items.length === 0 && section.label === 'Администраторы' && (
+                    {section.items.length === 0 && section.label === t('components.chat.sectionAdmins') && (
                       <div className="px-4 py-3 text-xs text-base-content/45 border-b border-base-200/60">
-                        В этом филиале администратор не назначен
+                        {t('components.chat.noAdminAssigned')}
                       </div>
                     )}
                     <ul>
@@ -580,7 +588,7 @@ export default function StaffChat({ variant = 'mentor' }) {
                                     {fullName(c)}
                                   </span>
                                   <span className="text-[10px] text-base-content/40 shrink-0 tabular-nums">
-                                    {formatTime(c.last_message_at)}
+                                    {formatTime(c.last_message_at, t, locale)}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -593,7 +601,7 @@ export default function StaffChat({ variant = 'mentor' }) {
                                           : 'bg-base-200 text-base-content/55'
                                     }`}
                                   >
-                                    {PEER_LABELS[c.peer_type] || 'Собеседник'}
+                                    {PEER_LABELS[c.peer_type] || t('components.chat.peerFallback')}
                                   </span>
                                   {c.child_names && (
                                     <span className="text-[11px] text-base-content/45 truncate">
@@ -607,7 +615,7 @@ export default function StaffChat({ variant = 'mentor' }) {
                                       unread ? 'text-base-content font-medium' : 'text-base-content/50'
                                     }`}
                                   >
-                                    {c.last_message || "Переписка не начата"}
+                                    {c.last_message || t('components.chat.conversationNotStarted')}
                                   </span>
                                   {unread > 0 && (
                                     <span className="badge badge-primary badge-sm shrink-0 tabular-nums">
@@ -641,7 +649,7 @@ export default function StaffChat({ variant = 'mentor' }) {
                 <button
                   className="btn btn-ghost btn-circle md:hidden shrink-0 -ml-1"
                   onClick={() => setActiveId(null)}
-                  aria-label="Назад"
+                  aria-label={t('components.chat.back')}
                 >
                   <ChevronLeft size={22} />
                 </button>
@@ -660,11 +668,11 @@ export default function StaffChat({ variant = 'mentor' }) {
                   className="ml-auto flex items-center gap-1 text-[11px] text-base-content/40 shrink-0"
                   title={copy.privacyTitle}
                 >
-                  <Lock size={12} /> <span className="hidden sm:inline">Личное</span>
+                  <Lock size={12} /> <span className="hidden sm:inline">{t('components.chat.private')}</span>
                 </span>
               </>
             ) : (
-              <span className="text-sm text-base-content/40">Собеседник не выбран</span>
+              <span className="text-sm text-base-content/40">{t('components.chat.noPeerSelected')}</span>
             )}
           </header>
 
@@ -696,8 +704,8 @@ export default function StaffChat({ variant = 'mentor' }) {
                 <div className="h-full grid place-items-center">
                   <EmptyState
                     icon={MessageSquare}
-                    title="Пока нет сообщений"
-                    hint="Напишите первым — собеседник получит уведомление."
+                    title={t('components.chat.noMessagesYet')}
+                    hint={t('components.chat.writeFirstHint')}
                   />
                 </div>
               ) : (
@@ -706,7 +714,7 @@ export default function StaffChat({ variant = 'mentor' }) {
                     {newDay && (
                       <div className="flex justify-center my-4">
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-base-content/45 bg-base-100 border border-base-200 rounded-full px-3 py-1">
-                          {formatDayLabel(m.created_at)}
+                          {formatDayLabel(m.created_at, t, locale)}
                         </span>
                       </div>
                     )}
@@ -738,7 +746,7 @@ export default function StaffChat({ variant = 'mentor' }) {
                               mine ? 'text-primary-content/65' : 'text-base-content/40'
                             }`}
                           >
-                            {clock(m.created_at)}
+                            {clock(m.created_at, locale)}
                             {mine && <Check size={11} />}
                           </span>
                         )}
@@ -754,7 +762,7 @@ export default function StaffChat({ variant = 'mentor' }) {
               <button
                 onClick={scrollToBottom}
                 className="absolute bottom-4 right-4 btn btn-circle btn-sm bg-base-100 border-base-300 shadow-md"
-                aria-label="К последнему сообщению"
+                aria-label={t('components.chat.jumpToLatest')}
               >
                 <ArrowDown size={16} />
               </button>
@@ -774,7 +782,7 @@ export default function StaffChat({ variant = 'mentor' }) {
             onSend={handleSend}
             disabled={!activeContact}
             sending={sending}
-            placeholder={activeContact ? 'Напишите сообщение...' : copy.composerIdle}
+            placeholder={activeContact ? t('components.chat.writeMessagePlaceholder') : copy.composerIdle}
           />
         </section>
       </div>
