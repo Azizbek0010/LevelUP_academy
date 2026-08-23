@@ -7,36 +7,36 @@ import Avatar from '../components/Avatar.jsx';
 import { EmptyState } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
 import { api } from '../api.js';
-
-const ROOM_INFO = { label: 'Преподаватели', icon: 'academic', desc: 'Личные сообщения с преподавателями ребёнка', color: '#40833B' };
+import { useI18n, fmt as fmtStr } from '../i18n/index.jsx';
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
 
-function formatTime(iso) {
+function formatTime(iso, locale) {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatDayLabel(iso) {
+function formatDayLabel(iso, t, locale) {
   const d = new Date(iso);
   const today = new Date();
-  if (d.toDateString() === today.toDateString()) return 'Сегодня';
+  if (d.toDateString() === today.toDateString()) return t.chat.today;
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+  if (d.toDateString() === yesterday.toDateString()) return t.chat.yesterday;
+  return d.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
-const ROLE_STYLES = {
-  admin: { bg: 'rgba(59,130,246,.12)', text: '#3b82f6', label: 'Админ', icon: 'shield-check' },
-  mentor: { bg: 'rgba(168,85,247,.12)', text: '#a855f7', label: 'Учитель', icon: 'academic' },
-  parent: { bg: 'rgba(34,197,94,.12)', text: '#22c55e', label: 'Родитель', icon: 'user' },
-  seo: { bg: 'rgba(245,158,11,.12)', text: '#f59e0b', label: 'SEO', icon: 'cog' },
+const ROLE_ICON = { admin: 'shield-check', mentor: 'academic', parent: 'user', seo: 'cog' };
+const ROLE_BG = {
+  admin: 'rgba(59,130,246,.12)', mentor: 'rgba(168,85,247,.12)', parent: 'rgba(34,197,94,.12)', seo: 'rgba(245,158,11,.12)',
 };
+const ROLE_TEXT = { admin: '#3b82f6', mentor: '#a855f7', parent: '#22c55e', seo: '#f59e0b' };
 
-function MessageBubble({ m, mine, groupStart, groupEnd, showSender }) {
-  const role = ROLE_STYLES[m.sender_role] || ROLE_STYLES.parent;
+function MessageBubble({ m, mine, groupStart, groupEnd, showSender, t, locale }) {
+  const roleKey = ROLE_ICON[m.sender_role] ? m.sender_role : 'parent';
+  const role = { bg: ROLE_BG[roleKey], text: ROLE_TEXT[roleKey], icon: ROLE_ICON[roleKey], label: t.pchat.role[roleKey] };
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${groupEnd ? 'mb-3' : 'mb-0.5'}`}>
       {!mine && (
@@ -78,7 +78,7 @@ function MessageBubble({ m, mine, groupStart, groupEnd, showSender }) {
                 mine ? 'text-primary-content/55' : 'text-base-content/35'
               }`}
             >
-              {formatTime(m.created_at)}
+              {formatTime(m.created_at, locale)}
               {mine && (
                 <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none">
                   <path d="M2 8.5l3 3 9-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -93,6 +93,8 @@ function MessageBubble({ m, mine, groupStart, groupEnd, showSender }) {
 }
 
 export default function Chat() {
+  const { t, lang } = useI18n();
+  const locale = LOCALE_OF[lang] || 'ru-RU';
   const { token, user } = useAuth();
   const { selectedChild } = useChild();
   const connected = useSocketConnected(token);
@@ -112,7 +114,7 @@ export default function Chat() {
   const threads = threadsData?.data || [];
   const activeThread = threads.find((thread) => thread.id === activeStaffId) || null;
   const roomKey = activeStaffId && user?.id ? `dm:${activeStaffId}:${user.id}` : null;
-  const roomInfo = ROOM_INFO;
+  const roomInfo = { label: t.pchat.label, icon: 'academic', desc: t.pchat.desc, color: '#40833B' };
   const { data, isLoading, error, refetch } = useChatMessages(roomKey);
 
   useEffect(() => {
@@ -207,7 +209,7 @@ export default function Chat() {
           setInput('');
           setAtBottom(true);
           if (textareaRef.current) textareaRef.current.style.height = 'auto';
-        } else setSendError(res?.error || 'Сообщение не отправлено. Попробуйте ещё раз.');
+        } else setSendError(res?.error || t.pchat.sendError);
       });
     } else setSending(false);
     textareaRef.current?.focus();
@@ -245,12 +247,12 @@ export default function Chat() {
               {activeThread ? `${activeThread.first_name || ''} ${activeThread.last_name || ''}`.trim() : roomInfo.label}
             </h1>
             <p className="text-xs opacity-40 truncate">
-              {activeThread ? `Преподаватель${selectedChild?.first_name ? ` · ${selectedChild.first_name}` : ''}` : roomInfo.desc}
+              {activeThread ? fmtStr(t.pchat.withChild, { child: selectedChild?.first_name ? ` · ${selectedChild.first_name}` : '' }) : roomInfo.desc}
             </p>
           </div>
           <div className="flex items-center gap-1.5">
             <div className={`w-2 h-2 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
-            <span className="text-[11px] opacity-40">{connected ? 'Онлайн' : 'Оффлайн'}</span>
+            <span className="text-[11px] opacity-40">{connected ? t.common.online : t.common.offline}</span>
           </div>
         </div>
       </div>
@@ -259,7 +261,7 @@ export default function Chat() {
       <div className="shrink-0 flex gap-2 overflow-x-auto px-4 py-2.5 bg-base-100/50 border-b border-base-200/40">
         {threadsLoading && <div className="skeleton h-9 w-40 rounded-xl" />}
         {!threadsLoading && threads.length === 0 && (
-          <span className="py-2 text-xs text-base-content/50">У ребёнка пока нет назначенного преподавателя</span>
+          <span className="py-2 text-xs text-base-content/50">{t.pchat.noTeachers}</span>
         )}
         {threads.map((r) => {
           const isActive = activeStaffId === r.id;
@@ -285,7 +287,7 @@ export default function Chat() {
       {!connected && (
         <div className="flex items-center gap-2 px-4 py-2 bg-warning/10 border-b border-warning/20 text-warning shrink-0">
           <Icon name="wifi-off" className="w-3.5 h-3.5 shrink-0" />
-          <span className="text-xs font-medium">Соединение потеряно — переподключение...</span>
+          <span className="text-xs font-medium">{t.pchat.connectionLost}</span>
         </div>
       )}
 
@@ -310,8 +312,8 @@ export default function Chat() {
           <div className="h-full grid place-items-center">
             <EmptyState
               icon="chat"
-              title="Пока нет сообщений"
-              message="Напишите преподавателю — сообщение сразу появится у него в чате"
+              title={t.pchat.noMessages}
+              message={t.pchat.noMessagesText}
             />
           </div>
         )}
@@ -323,11 +325,11 @@ export default function Chat() {
               {newDay && (
                 <div className="flex justify-center my-5">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-base-content/40 bg-base-100 border border-base-200/50 rounded-full px-4 py-1.5 shadow-sm">
-                    {formatDayLabel(m.created_at)}
+                    {formatDayLabel(m.created_at, t, locale)}
                   </span>
                 </div>
               )}
-              <MessageBubble m={m} mine={mine} groupStart={groupStart} groupEnd={groupEnd} showSender={showSender} />
+              <MessageBubble m={m} mine={mine} groupStart={groupStart} groupEnd={groupEnd} showSender={showSender} t={t} locale={locale} />
             </div>
           );
         })}
@@ -339,7 +341,7 @@ export default function Chat() {
         <button
           onClick={scrollToBottom}
           className="absolute bottom-24 right-4 btn btn-circle btn-sm bg-base-100 border-base-300 shadow-lg z-10 hover:scale-110 transition-transform"
-          aria-label="К последнему сообщению"
+          aria-label={t.pchat.toLast}
         >
           <Icon name="chevron-down" className="w-4 h-4" />
         </button>
@@ -354,7 +356,7 @@ export default function Chat() {
               ref={textareaRef}
               rows={1}
               className="textarea textarea-bordered w-full resize-none min-h-[2.75rem] max-h-32 text-sm leading-relaxed py-2.5 pr-10 rounded-2xl bg-base-200/30 border-base-200/60 focus:border-primary focus:bg-base-100 transition-colors"
-              placeholder={activeStaffId ? 'Напишите преподавателю...' : 'Преподаватель не назначен'}
+              placeholder={activeStaffId ? t.pchat.placeholder : t.pchat.placeholderNoTeacher}
               value={input}
               maxLength={4000}
               onChange={(e) => setInput(e.target.value)}
@@ -370,7 +372,7 @@ export default function Chat() {
             }`}
             onClick={handleSend}
             disabled={!input.trim() || sending || !activeStaffId || !connected}
-            aria-label="Отправить"
+            aria-label={t.pchat.send}
           >
             {sending ? (
               <span className="loading loading-spinner loading-sm" />

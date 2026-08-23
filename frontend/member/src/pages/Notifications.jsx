@@ -4,7 +4,7 @@ import { timeAgo } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import { EmptyState, ErrorState } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
-import { useI18n } from '../i18n.jsx';
+import { useI18n, fmt as fmtStr } from '../i18n/index.jsx';
 
 const ICON_MAP = {
   grade: 'academic',
@@ -22,12 +22,7 @@ const COLOR_MAP = {
   system: '#6b7280',
 };
 
-const FILTERS = [
-  { key: 'all', label: 'notif.filter.all' },
-  { key: 'grade', label: 'notif.filter.grade' },
-  { key: 'attendance', label: 'notif.filter.attendance' },
-  { key: 'payment', label: 'notif.filter.payment' },
-];
+const FILTERS = ['all', 'grade', 'attendance', 'payment'];
 
 export default function Notifications() {
   const { t } = useI18n();
@@ -40,7 +35,7 @@ export default function Notifications() {
   if (error) {
     return (
       <>
-        <PageHeader title={t('notif.title')} />
+        <PageHeader title={t.notif.title} />
         <ErrorState message={error.message} onRetry={refetch} />
       </>
     );
@@ -49,31 +44,31 @@ export default function Notifications() {
   return (
     <>
       <PageHeader
-        title={t('notif.title')}
-        subtitle={unread > 0 ? t('notif.unread', { count: unread }) : t('notif.allRead')}
+        title={t.notif.title}
+        subtitle={unread > 0 ? fmtStr(t.notif.unread, { count: unread }) : t.notif.allRead}
       />
 
       {/* Filter Tabs */}
       <div className="flex gap-1 mb-4 bg-base-100 p-1 rounded-xl w-fit flex-wrap shadow-sm">
-        {FILTERS.map((f) => {
-          const count = f.key === 'all' ? items.length : items.filter((n) => n.type === f.key).length;
+        {FILTERS.map((key) => {
+          const count = key === 'all' ? items.length : items.filter((n) => n.type === key).length;
           return (
             <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
+              key={key}
+              onClick={() => setFilter(key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                filter === f.key
+                filter === key
                   ? 'bg-primary text-primary-content shadow-sm'
                   : 'text-base-content/50 hover:bg-base-200'
               }`}
             >
-              {f.key !== 'all' && (
-                <div className="w-2 h-2 rounded-full" style={{ background: COLOR_MAP[f.key] }} />
+              {key !== 'all' && (
+                <div className="w-2 h-2 rounded-full" style={{ background: COLOR_MAP[key] }} />
               )}
-              {t(f.label)}
+              {t.notif.filter[key]}
               {count > 0 && (
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                  filter === f.key ? 'bg-primary-content/20' : 'bg-base-200'
+                  filter === key ? 'bg-primary-content/20' : 'bg-base-200'
                 }`}>
                   {count}
                 </span>
@@ -92,7 +87,7 @@ export default function Notifications() {
 
       {/* Empty */}
       {!isLoading && filtered.length === 0 && (
-        <EmptyState icon="bell" title={t('notif.emptyTitle')} message={t('notif.emptyMsg')} />
+        <EmptyState icon="bell" title={t.notif.emptyTitle} message={t.notif.emptyMsg} />
       )}
 
       {/* Notification Cards */}
@@ -145,7 +140,7 @@ export default function Notifications() {
             onClick={loadMore}
             disabled={isFetchingMore}
           >
-            {isFetchingMore ? <span className="loading loading-spinner loading-xs" /> : t('notif.showMore')}
+            {isFetchingMore ? <span className="loading loading-spinner loading-xs" /> : t.notif.showMore}
           </button>
         </div>
       )}

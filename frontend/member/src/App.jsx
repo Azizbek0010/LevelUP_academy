@@ -14,8 +14,6 @@ import Chat from './pages/Chat.jsx';
 import Notifications from './pages/Notifications.jsx';
 import Profile from './pages/Profile.jsx';
 import { ToastProvider } from './student/components/toast.jsx';
-import './i18n.js'; // i18next konfiguratsiyasi
-import { useTranslation } from 'react-i18next';
 import StudentArea from './student/StudentArea.jsx';
 import StudentLayout from './student/components/Layout.jsx';
 import StudentHome from './student/pages/Home.jsx';

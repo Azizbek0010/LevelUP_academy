@@ -8,21 +8,23 @@ import Avatar from '../components/Avatar.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
+import { useI18n, fmt as fmtStr } from '../i18n/index.jsx';
 
 export default function Dashboard() {
+  const { t } = useI18n();
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
   const { data: ratingData, isLoading: ratingLoading } = useGroupRating(selectedChild?.id);
   const [showRating, setShowRating] = useState(false);
 
   if (!selectedChild) {
-    return <EmptyState icon="user-circle" title="Выберите ребёнка" message="Добавьте ребёнка в профиль для просмотра данных" />;
+    return <EmptyState icon="user-circle" title={t.dash.noChildTitle} message={t.dash.noChildMsg} />;
   }
 
   if (isLoading) {
     return (
       <>
-        <PageHeader title="Обзор" />
+        <PageHeader title={t.dash.title} />
         <SkeletonKpis />
       </>
     );
@@ -60,49 +62,49 @@ export default function Dashboard() {
   if (showRating && group) {
     return (
       <>
-        <PageHeader title="Рейтинг группы" subtitle="Результаты учеников за текущий период" />
+        <PageHeader title={t.dash.groupRating.title} subtitle={t.dash.groupRating.subtitle} />
         <button
           onClick={() => setShowRating(false)}
           className="btn btn-ghost btn-sm gap-2 mb-5 px-2"
         >
           <Icon name="arrow-left" className="w-4 h-4" />
-          Назад к обзору
+          {t.common.back}
         </button>
 
         <section className="parent-rating-head mb-5">
           <div className="flex items-center gap-3 min-w-0">
             <div className="parent-rating-monogram">{String(group.name || 'ГР').slice(0, 2).toUpperCase()}</div>
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[.12em] text-slate-400 font-semibold">Текущая группа</p>
+              <p className="text-[10px] uppercase tracking-[.12em] text-slate-400 font-semibold">{t.dash.currentGroup}</p>
               <h2 className="text-lg font-semibold text-slate-900 truncate">{group.name}</h2>
-              <p className="text-xs text-slate-500 mt-0.5">{group.subject || 'Направление не указано'}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{group.subject || t.dash.groupRating.noSubject}</p>
             </div>
           </div>
           <dl className="parent-rating-facts">
-            <div><dt>Преподаватель</dt><dd>{group.mentorName || '—'}</dd></div>
-            <div><dt>Учеников</dt><dd>{students.length || group.studentCount || 0}</dd></div>
-            <div><dt>Место в группе</dt><dd>{childGroupRank ? `№ ${childGroupRank}` : '—'}</dd></div>
-            <div><dt>Место по филиалу</dt><dd>{d.rank?.rank ? `№ ${d.rank.rank}` : '—'}</dd></div>
+            <div><dt>{t.dash.groupRating.teacher}</dt><dd>{group.mentorName || '—'}</dd></div>
+            <div><dt>{t.dash.groupRating.students}</dt><dd>{students.length || group.studentCount || 0}</dd></div>
+            <div><dt>{t.dash.groupRating.placeInGroup}</dt><dd>{childGroupRank ? `№ ${childGroupRank}` : '—'}</dd></div>
+            <div><dt>{t.dash.groupRating.placeInBranch}</dt><dd>{d.rank?.rank ? `№ ${d.rank.rank}` : '—'}</dd></div>
           </dl>
         </section>
 
         <div className="card bg-base-100 overflow-hidden">
           <div className="px-5 py-4 border-b border-base-300 flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">Таблица результатов</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Средний балл и накопленные коины</p>
+              <h3 className="text-sm font-semibold text-slate-900">{t.dash.groupRating.tableTitle}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">{t.dash.groupRating.tableSubtitle}</p>
             </div>
-            <span className="text-xs text-slate-400">{students.length} участников</span>
+            <span className="text-xs text-slate-400">{fmtStr(t.dash.groupRating.participants, { count: students.length })}</span>
           </div>
 
           {ratingLoading ? (
             <div className="p-5 space-y-3">{[1, 2, 3].map((i) => <div key={i} className="skeleton h-12 rounded" />)}</div>
           ) : students.length === 0 ? (
-            <EmptyState icon="trophy" title="Нет данных" message="Рейтинг пока пуст" />
+            <EmptyState icon="trophy" title={t.dash.groupRating.emptyTitle} message={t.dash.groupRating.emptyMsg} />
           ) : (
             <div className="overflow-x-auto">
               <table className="table parent-rating-table">
-                <thead><tr><th className="w-20">Место</th><th>Ученик</th><th className="text-right">Коины</th><th className="text-right">Средний балл</th></tr></thead>
+                <thead><tr><th className="w-20">{t.dash.groupRating.colRank}</th><th>{t.dash.groupRating.colStudent}</th><th className="text-right">{t.dash.groupRating.colCoins}</th><th className="text-right">{t.dash.groupRating.colAvg}</th></tr></thead>
                 <tbody>
                   {students.map((s, i) => {
                     const isMe = s.childId === selectedChild?.id;
@@ -113,7 +115,7 @@ export default function Dashboard() {
                         <td>
                           <div className="flex items-center gap-2.5 min-w-48">
                             <Avatar name={`${s.firstName} ${s.lastName}`} size={34} />
-                            <div><p className="text-sm font-semibold text-slate-900">{s.firstName} {s.lastName} {isMe && <span className="parent-you-label">Ваш ребёнок</span>}</p></div>
+                            <div><p className="text-sm font-semibold text-slate-900">{s.firstName} {s.lastName} {isMe && <span className="parent-you-label">{t.dash.groupRating.yourChild}</span>}</p></div>
                           </div>
                         </td>
                         <td className="text-right font-medium tabular-nums">{fmt(s.coins)}</td>
@@ -132,23 +134,23 @@ export default function Dashboard() {
 
   return (
     <>
-      <PageHeader title="Обзор ученика" subtitle="Учёба, посещаемость и финансовый статус" />
+      <PageHeader title={t.dash.title} subtitle={t.dash.subtitle} />
 
       <section className="parent-student-summary mb-5">
         <div className="flex items-center gap-3 min-w-0">
           <Avatar name={`${d.child.firstName} ${d.child.lastName}`} size={48} />
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Текущий ученик</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t.dash.currentStudentLabel}</p>
             <h2 className="text-lg font-semibold text-slate-900 truncate">{d.child.firstName} {d.child.lastName}</h2>
-            <p className="text-xs text-slate-500 mt-0.5">{group ? `${group.name} · ${group.mentorName}` : 'Группа не назначена'}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{group ? `${group.name} · ${group.mentorName}` : t.dash.noGroupAssigned}</p>
           </div>
         </div>
         <dl className="parent-student-facts">
-          <div><dt>К оплате</dt><dd className={amountToPay > 0 ? 'text-warning' : 'text-success'}>{money(amountToPay)}</dd></div>
-          <div><dt>Баланс оплаты</dt><dd className="text-success">{money(paymentBalance)}</dd></div>
-          <div><dt>Посещаемость</dt><dd>{attPct === null ? '—' : `${attPct}%`}</dd></div>
-          <div><dt>Рейтинг по филиалу</dt><dd>{d.rank?.rank ? `№ ${d.rank.rank}` : '—'}</dd></div>
-          <div><dt>Баллы</dt><dd>{fmt(d.coins)}</dd></div>
+          <div><dt>{t.dash.toPay}</dt><dd className={amountToPay > 0 ? 'text-warning' : 'text-success'}>{money(amountToPay)}</dd></div>
+          <div><dt>{t.dash.paymentBalance}</dt><dd className="text-success">{money(paymentBalance)}</dd></div>
+          <div><dt>{t.dash.attendanceLabel}</dt><dd>{attPct === null ? '—' : `${attPct}%`}</dd></div>
+          <div><dt>{t.dash.groupRating.placeInBranch}</dt><dd>{d.rank?.rank ? `№ ${d.rank.rank}` : '—'}</dd></div>
+          <div><dt>{t.dash.pointsLabel}</dt><dd>{fmt(d.coins)}</dd></div>
         </dl>
       </section>
 
@@ -160,41 +162,41 @@ export default function Dashboard() {
                 <Icon name="wallet" className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-xs text-slate-500">Оплата за обучение</p>
+                <p className="text-xs text-slate-500">{t.dash.payment.label}</p>
                 <h3 className="text-lg font-semibold text-slate-900">
-                  {amountToPay > 0 ? `К оплате ${money(amountToPay)}` : 'Оплата в порядке'}
+                  {amountToPay > 0 ? fmtStr(t.dash.payment.due, { sum: money(amountToPay) }) : t.dash.payment.ok}
                 </h3>
               </div>
             </div>
-            <Link to="/debt" className="btn btn-outline btn-sm">Подробнее</Link>
+            <Link to="/debt" className="btn btn-outline btn-sm">{t.dash.payment.more}</Link>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
             <div className="rounded-lg border border-base-300 p-3">
-              <p className="text-xs text-slate-500">Баланс</p>
+              <p className="text-xs text-slate-500">{t.dash.payment.balance}</p>
               <p className="text-base font-semibold text-success mt-1">{money(paymentBalance)}</p>
-              <p className="text-[11px] text-slate-400 mt-1">Перейдёт на следующий месяц</p>
+              <p className="text-[11px] text-slate-400 mt-1">{t.dash.payment.balanceNote}</p>
             </div>
             <div className="rounded-lg border border-base-300 p-3">
-              <p className="text-xs text-slate-500">За что начислено</p>
+              <p className="text-xs text-slate-500">{t.dash.payment.chargedFor}</p>
               <p className="text-base font-semibold text-slate-900 mt-1">{invoice?.groupName || group?.name || '—'}</p>
-              <p className="text-[11px] text-slate-400 mt-1">{group?.subject || 'Учебная группа'}</p>
+              <p className="text-[11px] text-slate-400 mt-1">{group?.subject || t.dash.payment.defaultGroupLabel}</p>
             </div>
             <div className="rounded-lg border border-base-300 p-3">
-              <p className="text-xs text-slate-500">Расчёт занятий</p>
+              <p className="text-xs text-slate-500">{t.dash.payment.lessonsCalc}</p>
               <p className="text-base font-semibold text-slate-900 mt-1">
-                {invoice?.billableLessons != null ? `${invoice.billableLessons} из ${invoice.lessonsInMonth}` : '—'}
+                {invoice?.billableLessons != null ? fmtStr(t.dash.payment.lessonsOf, { billable: invoice.billableLessons, total: invoice.lessonsInMonth }) : '—'}
               </p>
               <p className="text-[11px] text-slate-400 mt-1">
-                {invoice?.monthlyPrice ? `Месячная цена ${money(invoice.monthlyPrice)}` : 'Нет текущего начисления'}
+                {invoice?.monthlyPrice ? fmtStr(t.dash.payment.monthlyPrice, { sum: money(invoice.monthlyPrice) }) : t.dash.payment.noCurrentCharge}
               </p>
             </div>
             <div className="rounded-lg border border-base-300 p-3">
-              <p className="text-xs text-slate-500">Срок оплаты</p>
+              <p className="text-xs text-slate-500">{t.dash.payment.dueDate}</p>
               <p className={`text-base font-semibold mt-1 ${amountToPay > 0 ? 'text-warning' : 'text-success'}`}>
-                {invoice?.paymentDate ? dateShort(invoice.paymentDate) : 'Оплачено'}
+                {invoice?.paymentDate ? dateShort(invoice.paymentDate) : t.dash.payment.paidLabel}
               </p>
-              <p className="text-[11px] text-slate-400 mt-1">После 5-го кабинет ученика блокируется</p>
+              <p className="text-[11px] text-slate-400 mt-1">{t.dash.payment.blockNote}</p>
             </div>
           </div>
         </div>
@@ -203,12 +205,12 @@ export default function Dashboard() {
       <div className="grid sm:grid-cols-2 gap-3 mb-6">
         <Link to="/attendance" className={`parent-attention-item ${(att.absent || 0) > 0 ? 'is-warning' : 'is-ok'}`}>
           <Icon name="calendar-check" className="w-5 h-5" />
-          <div className="min-w-0 flex-1"><p className="text-xs text-slate-500">За последние 30 дней</p><p className="text-sm font-semibold">{attTotal > 0 ? `Пропусков: ${att.absent || 0} · Опозданий: ${att.late || 0}` : 'Занятий пока не было'}</p></div>
+          <div className="min-w-0 flex-1"><p className="text-xs text-slate-500">{t.dash.last30Days}</p><p className="text-sm font-semibold">{attTotal > 0 ? fmtStr(t.dash.absencesLate, { absent: att.absent || 0, late: att.late || 0 }) : t.dash.noLessonsYet}</p></div>
           <Icon name="chevron-right" className="w-4 h-4 text-slate-400" />
         </Link>
         <Link to="/grades" className={`parent-attention-item ${avgScore > 0 && avgScore < 60 ? 'is-warning' : 'is-neutral'}`}>
           <Icon name="academic" className="w-5 h-5" />
-          <div className="min-w-0 flex-1"><p className="text-xs text-slate-500">Текущая успеваемость</p><p className="text-sm font-semibold">Средний результат: {avgScore || '—'}{avgScore ? '%' : ''}</p></div>
+          <div className="min-w-0 flex-1"><p className="text-xs text-slate-500">{t.dash.currentPerformance}</p><p className="text-sm font-semibold">{fmtStr(t.dash.avgResult, { value: `${avgScore || '—'}${avgScore ? '%' : ''}` })}</p></div>
           <Icon name="chevron-right" className="w-4 h-4 text-slate-400" />
         </Link>
       </div>
@@ -220,12 +222,12 @@ export default function Dashboard() {
           <div className="card-body">
             <h3 className="card-title text-sm gap-2">
               <Icon name="calendar-check" className="w-4 h-4 text-primary" />
-              Посещаемость (30 дней)
+              {t.dash.attendance30Title}
             </h3>
             <div className="parent-attendance-report mt-4">
               <div className="parent-attendance-total">
                 <span>{attPct === null ? '—' : `${attPct}%`}</span>
-                <small>{attPct === null ? 'Занятий пока нет' : `${att.present || 0} посещено из ${attTotal}`}</small>
+                <small>{attPct === null ? t.dash.noLessonsAt : fmtStr(t.dash.presentOf, { present: att.present || 0, total: attTotal })}</small>
               </div>
               <div className="flex-1 space-y-3">
                 {['present', 'absent', 'late', 'excused'].map((s) => {
@@ -253,10 +255,10 @@ export default function Dashboard() {
           <div className="card-body">
             <h3 className="card-title text-sm gap-2">
               <Icon name="academic" className="w-4 h-4 text-primary" />
-              Текущая группа
+              {t.dash.currentGroup}
             </h3>
             {!group ? (
-              <EmptyState icon="folder" title="Нет группы" message="Ещё не записан" />
+              <EmptyState icon="folder" title={t.dash.noGroupTitle} message={t.dash.noGroupMsg} />
             ) : (
               <button
                 onClick={() => setShowRating(true)}
@@ -271,10 +273,10 @@ export default function Dashboard() {
                     <Icon name="user" className="w-3 h-3" />
                     {group.mentorName}
                   </p>
-                  <p className="text-[11px] opacity-30 mt-0.5">{group.studentCount || '—'} учеников</p>
+                  <p className="text-[11px] opacity-30 mt-0.5">{group.studentCount ? fmtStr(t.dash.studentsCount, { n: group.studentCount }) : '—'}</p>
                 </div>
                 <div className="flex items-center gap-1.5 text-primary shrink-0">
-                  <span className="text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">Рейтинг</span>
+                  <span className="text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">{t.leaderboard.title}</span>
                   <Icon name="chevron-right" className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </button>
@@ -289,10 +291,10 @@ export default function Dashboard() {
         <div className="card-body">
           <h3 className="card-title text-sm gap-2">
             <Icon name="clock" className="w-4 h-4 text-primary" />
-            Последние занятия — все группы
+            {t.dash.recentLessonsAllGroups}
           </h3>
           {d.attendance?.recent?.length === 0 ? (
-            <EmptyState icon="calendar" title="Нет записей" />
+            <EmptyState icon="calendar" title={t.dash.noRecords} />
           ) : (
             <div className="mt-3">
               <div className="divide-y divide-base-200">
@@ -331,23 +333,23 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-1">
             <h3 className="card-title text-sm gap-2">
               <Icon name="document-text" className="w-4 h-4 text-primary" />
-              Последние оценки
+              {t.dash.recentGrades}
             </h3>
             {allGrades.length > 0 && (
-              <span className="text-xs opacity-40">Средний: <span className="font-bold opacity-100">{avgScore}%</span></span>
+              <span className="text-xs opacity-40">{fmtStr(t.dash.avgLabel, { value: `${avgScore}%` })}</span>
             )}
           </div>
           {allGrades.length === 0 ? (
-            <EmptyState icon="document-text" title="Нет оценок" />
+            <EmptyState icon="document-text" title={t.dash.noGrades} />
           ) : (
             <div className="overflow-x-auto">
               <table className="table table-sm">
                 <thead>
                   <tr>
-                    <th>Название</th>
-                    <th>Тип</th>
-                    <th>Балл</th>
-                    <th className="text-right">Дата</th>
+                    <th>{t.dash.colName}</th>
+                    <th>{t.dash.colType}</th>
+                    <th>{t.dash.colScore}</th>
+                    <th className="text-right">{t.dash.colDate}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -365,7 +367,7 @@ export default function Dashboard() {
                               color: g.type === 'hw' ? '#3b82f6' : '#a855f7',
                             }}
                           >
-                            {g.type === 'hw' ? 'ДЗ' : 'Тест'}
+                            {g.type === 'hw' ? t.dash.badgeHw : t.dash.badgeTest}
                           </span>
                         </td>
                         <td>

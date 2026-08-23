@@ -1,7 +1,14 @@
-import { getLang, t } from './i18n.jsx';
+import { getLang, getDict } from './i18n/index.jsx';
+import { fmt as fmtStr } from './i18n/index.jsx';
 
 const LOCALES = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
 const localeOf = () => LOCALES[getLang()] || 'ru-RU';
+const t = (key, params) => {
+  const parts = key.split('.');
+  let value = getDict();
+  for (const part of parts) value = value?.[part];
+  return typeof value === 'string' ? fmtStr(value, params) : key;
+};
 
 export const fmt = (n) => new Intl.NumberFormat(localeOf()).format(Number(n ?? 0));
 

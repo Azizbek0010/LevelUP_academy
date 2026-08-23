@@ -242,12 +242,13 @@ export default function Home() {
           <Wallet size={22} style={{ color: '#d97706' }} />
           <div className="flex-1">
             <div className="font-extrabold" style={{ color: C.text }}>
-              {lang === 'uz' ? "O‘qish uchun to‘lov" : 'Оплата за обучение'}
+              {t.home.paymentTitle}
             </div>
             <div className="text-sm" style={{ color: C.muted }}>
-              {lang === 'uz'
-                ? `${data.payment.currentInvoice.billableLessons ?? '—'} ta dars uchun ${Math.round(data.payment.currentInvoice.remainingAmount).toLocaleString('uz-UZ')} so‘m. 5-sanagacha to‘lang.`
-                : `${data.payment.currentInvoice.billableLessons ?? '—'} занятий: ${Math.round(data.payment.currentInvoice.remainingAmount).toLocaleString('ru-RU')} сум. Оплатите до 5-го числа.`}
+              {fmt(t.home.paymentDue, {
+                lessons: data.payment.currentInvoice.billableLessons ?? '—',
+                sum: `${Math.round(data.payment.currentInvoice.remainingAmount).toLocaleString(lang === 'uz' ? 'uz-UZ' : lang === 'en' ? 'en-US' : 'ru-RU')} ${t.home.currency}`,
+              })}
             </div>
           </div>
         </div>
@@ -268,7 +269,7 @@ export default function Home() {
           </Ring>
           <div className="min-w-0 flex-1">
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'rgba(255,255,255,0.75)' }}>
-              {fmt(t.home.hello, { name: user?.firstName || (lang === 'uz' ? "o'quvchi" : 'ученик') })}
+              {fmt(t.home.hello, { name: user?.firstName || t.home.defaultName })}
             </div>
             <h1 className="text-[22px] sm:text-[25px] font-extrabold leading-[1.15] tracking-[-0.01em] mt-1 text-white">
               {fmt(t.home.levelTitle, { level })}

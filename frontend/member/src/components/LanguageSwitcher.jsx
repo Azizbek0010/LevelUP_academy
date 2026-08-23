@@ -1,22 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Globe, Check, ChevronDown } from 'lucide-react';
+import { useI18n } from '../i18n/index.jsx';
 
-const LANGUAGES = [
-  { code: 'uz', label: "O'zbekcha", flag: '🇺🇿', short: 'UZ' },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺', short: 'RU' },
-  { code: 'en', label: 'English', flag: '🇬🇧', short: 'EN' },
-];
+const FLAGS = { uz: '🇺🇿', ru: '🇷🇺', en: '🇬🇧' };
 
 export default function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+  const { lang, setLanguage, t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  const currentLang = LANGUAGES.find((l) => l.code === (i18n.language?.slice(0, 2) || 'uz')) || LANGUAGES[0];
+  const LANGUAGES = [
+    { code: 'uz', label: "O'zbekcha", flag: FLAGS.uz, short: 'UZ' },
+    { code: 'ru', label: 'Русский', flag: FLAGS.ru, short: 'RU' },
+    { code: 'en', label: 'English', flag: FLAGS.en, short: 'EN' },
+  ];
+
+  const currentLang = LANGUAGES.find((l) => l.code === lang) || LANGUAGES[0];
 
   const changeLanguage = (code) => {
-    i18n.changeLanguage(code);
+    setLanguage(code);
     setOpen(false);
   };
 
@@ -43,7 +45,7 @@ export default function LanguageSwitcher() {
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-base-200 bg-base-100 hover:bg-base-200/60 text-base-content text-xs font-semibold transition-all shadow-sm active:scale-95"
         aria-expanded={open}
-        aria-label="Tilni tanlash / Выбор языка"
+        aria-label={t.langSwitch.label}
       >
         <span className="text-sm">{currentLang.flag}</span>
         <span className="tracking-wide uppercase font-bold text-[11px] text-base-content/70">
@@ -59,15 +61,15 @@ export default function LanguageSwitcher() {
         <div className="absolute right-0 mt-1.5 w-40 rounded-xl overflow-hidden shadow-xl border border-base-200 bg-base-100 p-1 z-50 animate-scale-in">
           <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-base-content/40 border-b border-base-200 mb-1 flex items-center gap-1.5">
             <Globe size={11} />
-            <span>Til / Язык</span>
+            <span>{t.langSwitch.label}</span>
           </div>
           <div className="space-y-0.5">
-            {LANGUAGES.map((lang) => {
-              const active = currentLang.code === lang.code;
+            {LANGUAGES.map((item) => {
+              const active = currentLang.code === item.code;
               return (
                 <button
-                  key={lang.code}
-                  onClick={() => changeLanguage(lang.code)}
+                  key={item.code}
+                  onClick={() => changeLanguage(item.code)}
                   className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     active
                       ? 'bg-primary/10 text-primary font-bold'
@@ -75,8 +77,8 @@ export default function LanguageSwitcher() {
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <span className="text-sm">{lang.flag}</span>
-                    <span>{lang.label}</span>
+                    <span className="text-sm">{item.flag}</span>
+                    <span>{item.label}</span>
                   </span>
                   {active && <Check size={14} className="text-primary shrink-0" />}
                 </button>
