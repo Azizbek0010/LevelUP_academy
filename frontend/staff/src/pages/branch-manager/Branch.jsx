@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   MapPin, Phone, Building2, Landmark, Send, Check, Copy,
 } from 'lucide-react';
@@ -39,6 +40,7 @@ function InfoRow({ Icon, label, value, href }) {
  * (Branch Manager o'zi qiladi — botni tashqaridan avtomatik qo'shib bo'lmaydi),
  * so'ng kod guruhning o'ziga /bindbranch <kod> buyrug'i sifatida yuboriladi. */
 function TelegramGroupCard() {
+  const { t } = useTranslation();
   const { token, user } = useAuth();
   // Karis (13.08.2026): Main Admin не включил Telegram-интеграцию партнёру —
   // карточки не должно быть вообще, не только кнопки внутри неё.
@@ -63,14 +65,14 @@ function TelegramGroupCard() {
       const res = await api.branchManagerTelegramBindToken(token);
       setCode(res.data);
     } catch (err) {
-      setError(err.message || 'Xatolik yuz berdi');
+      setError(err.message || t('branchManager.branch.genericError'));
     } finally {
       setIssuing(false);
     }
   }
 
   async function unlink() {
-    if (!window.confirm("Guruh bilan ulanishni uzmoqchimisiz?")) return;
+    if (!window.confirm(t('branchManager.branch.unlinkConfirm'))) return;
     await api.branchManagerTelegramUnlink(token);
     setCode(null);
     refetch();
@@ -87,13 +89,13 @@ function TelegramGroupCard() {
 
   if (status?.linked) {
     return (
-      <Panel title="Ota-onalar guruhi (Telegram)" icon={Send} bodyClass="p-5">
+      <Panel title={t('branchManager.branch.parentGroupTitle')} icon={Send} bodyClass="p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 text-success font-semibold">
-            <Check size={18} /> Guruh ulangan
+            <Check size={18} /> {t('branchManager.branch.groupLinked')}
           </div>
           <button type="button" className="btn btn-sm btn-ghost text-error" onClick={unlink}>
-            Uzish
+            {t('branchManager.branch.unlink')}
           </button>
         </div>
       </Panel>
@@ -101,15 +103,14 @@ function TelegramGroupCard() {
   }
 
   return (
-    <Panel title="Ota-onalar guruhi (Telegram)" icon={Send} bodyClass="p-5">
+    <Panel title={t('branchManager.branch.parentGroupTitle')} icon={Send} bodyClass="p-5">
       {!code ? (
         <>
           <p className="text-sm text-base-content/60 mb-3">
-            Davomat va o'zlashtirish haqida xabarlar shu guruhga avtomatik ketadi.
-            Avval botni guruhga qo'shing, keyin ulash kodini oling.
+            {t('branchManager.branch.connectHint')}
           </p>
           <button type="button" className="btn btn-primary btn-sm" onClick={issueCode} disabled={issuing}>
-            {issuing ? 'Yuklanmoqda...' : 'Ulash kodini olish'}
+            {issuing ? t('branchManager.branch.loading') : t('branchManager.branch.getBindCode')}
           </button>
           {error && <p className="text-error text-sm mt-2">{error}</p>}
         </>
@@ -117,9 +118,9 @@ function TelegramGroupCard() {
         <div className="space-y-3">
           <ol className="text-sm text-base-content/70 list-decimal list-inside space-y-1">
             <li>
-              Guruhga botni qo'shing: <b>@{code.botUsername}</b>
+              {t('branchManager.branch.step1')} <b>@{code.botUsername}</b>
             </li>
-            <li>Guruhning o'ziga quyidagi buyruqni yuboring:</li>
+            <li>{t('branchManager.branch.step2')}</li>
           </ol>
           <div className="flex items-center gap-2 bg-base-200 rounded-lg px-3 py-2 font-mono text-sm">
             <span className="flex-1 select-all">/bindbranch {code.token}</span>
@@ -127,7 +128,7 @@ function TelegramGroupCard() {
               {copied ? <Check size={14} /> : <Copy size={14} />}
             </button>
           </div>
-          <p className="text-xs text-base-content/45">Kod {Math.round(code.expiresIn / 60)} daqiqa amal qiladi.</p>
+          <p className="text-xs text-base-content/45">{t('branchManager.branch.codeExpiresIn', { minutes: Math.round(code.expiresIn / 60) })}</p>
         </div>
       )}
     </Panel>
@@ -135,20 +136,21 @@ function TelegramGroupCard() {
 }
 
 export default function BranchManagerBranch() {
+  const { t } = useTranslation();
   const { data: branch, isLoading, error } = useBranchManagerInfo();
 
-  if (isLoading) return <div className="p-8 text-center text-base-content/45">Yuklanmoqda...</div>;
-  if (error) return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
-  if (!branch) return <div className="p-8 text-center text-base-content/45">Ma'lumot topilmadi</div>;
+  if (isLoading) return <div className="p-8 text-center text-base-content/45">{t('branchManager.branch.loadingBranch')}</div>;
+  if (error) return <div className="p-8 text-center text-error">{t('branchManager.branch.loadError')}</div>;
+  if (!branch) return <div className="p-8 text-center text-base-content/45">{t('branchManager.branch.notFound')}</div>;
 
   const s = branch.stats;
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title="Filial" subtitle={`${branch.name} · joylashuv va statistika`} />
+      <PageHeader title={t('branchManager.branch.title')} subtitle={t('branchManager.branch.subtitle', { name: branch.name })} />
 
       {/* ── Bosh karta ── */}
-      <Panel title="Filial haqida" icon={Building2} bodyClass="p-5">
+      <Panel title={t('branchManager.branch.aboutBranchTitle')} icon={Building2} bodyClass="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="w-12 h-12 rounded-2xl grid place-items-center bg-primary/15 text-primary">
@@ -156,24 +158,24 @@ export default function BranchManagerBranch() {
             </span>
             <h3 className="text-lg font-extrabold text-base-content">{branch.name}</h3>
           </div>
-          {branch.isMain && <span className="badge badge-primary badge-lg">Asosiy filial</span>}
+          {branch.isMain && <span className="badge badge-primary badge-lg">{t('branchManager.branch.mainBranchBadge')}</span>}
         </div>
 
         <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
           <div className="rounded-xl border border-base-200 p-4">
-            <dt className="text-[11px] text-base-content/45">Talabalar</dt>
+            <dt className="text-[11px] text-base-content/45">{t('branchManager.branch.students')}</dt>
             <dd className="text-2xl font-extrabold tabular-nums mt-1">{fmt(s.students)}</dd>
           </div>
           <div className="rounded-xl border border-base-200 p-4">
-            <dt className="text-[11px] text-base-content/45">Guruhlar</dt>
+            <dt className="text-[11px] text-base-content/45">{t('branchManager.branch.groups')}</dt>
             <dd className="text-2xl font-extrabold tabular-nums mt-1">{fmt(s.groups)}</dd>
           </div>
           <div className="rounded-xl border border-base-200 p-4">
-            <dt className="text-[11px] text-base-content/45">Mentorlar</dt>
+            <dt className="text-[11px] text-base-content/45">{t('branchManager.branch.mentors')}</dt>
             <dd className="text-2xl font-extrabold tabular-nums mt-1">{fmt(s.mentors)}</dd>
           </div>
           <div className="rounded-xl border border-base-200 p-4">
-            <dt className="text-[11px] text-base-content/45">Qarzdorlik</dt>
+            <dt className="text-[11px] text-base-content/45">{t('branchManager.branch.debt')}</dt>
             <dd className={`text-2xl font-extrabold tabular-nums mt-1 ${s.debt > 0 ? 'text-error' : ''}`}>
               {money(s.debt)}
             </dd>
@@ -184,26 +186,26 @@ export default function BranchManagerBranch() {
       {/* ── Telegram: ota-onalar guruhi ── */}
 
       {/* ── Kontaktlar ── */}
-      <Panel title="Kontaktlar" icon={MapPin} bodyClass="p-5">
+      <Panel title={t('branchManager.branch.contactsTitle')} icon={MapPin} bodyClass="p-5">
         <div className="space-y-1">
-          <InfoRow Icon={MapPin} label="Manzil" value={branch.address} />
-          <InfoRow Icon={Phone} label="Telefon" value={branch.phone} href={branch.phone ? `tel:${branch.phone.replace(/\s/g, '')}` : undefined} />
+          <InfoRow Icon={MapPin} label={t('branchManager.branch.addressLabel')} value={branch.address} />
+          <InfoRow Icon={Phone} label={t('branchManager.branch.phoneLabel')} value={branch.phone} href={branch.phone ? `tel:${branch.phone.replace(/\s/g, '')}` : undefined} />
         </div>
       </Panel>
 
       {/* ── Moliya ── */}
-      <Panel title="Moliya (jami)" icon={Building2} bodyClass="p-5">
+      <Panel title={t('branchManager.branch.financeTotalTitle')} icon={Building2} bodyClass="p-5">
         <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <dt className="text-[11px] text-base-content/45">Daromad</dt>
+            <dt className="text-[11px] text-base-content/45">{t('branchManager.branch.income')}</dt>
             <dd className="text-xl font-extrabold tabular-nums mt-1 text-success">{money(s.revenue)}</dd>
           </div>
           <div>
-            <dt className="text-[11px] text-base-content/45">Xarajat</dt>
+            <dt className="text-[11px] text-base-content/45">{t('branchManager.branch.expense')}</dt>
             <dd className="text-xl font-extrabold tabular-nums mt-1">{money(s.expenses)}</dd>
           </div>
           <div>
-            <dt className="text-[11px] text-base-content/45">Foyda</dt>
+            <dt className="text-[11px] text-base-content/45">{t('branchManager.branch.profit')}</dt>
             <dd className={`text-xl font-extrabold tabular-nums mt-1 ${s.profit >= 0 ? 'text-success' : 'text-error'}`}>
               {money(s.profit)}
             </dd>
