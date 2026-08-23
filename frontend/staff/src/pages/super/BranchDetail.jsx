@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
 } from 'recharts';
@@ -33,27 +34,29 @@ import BranchFormModal from './BranchFormModal.jsx';
  * кнопка «назад» работает как ожидается.
  */
 
-const TABS = [
-  { key: 'overview', label: 'Обзор',      Icon: Building2 },
-  { key: 'students', label: 'Ученики',    Icon: GraduationCap },
-  { key: 'groups',   label: 'Группы',     Icon: BookOpen },
-  { key: 'staff',    label: 'Сотрудники', Icon: UserCog },
+const tabsFor = (t) => [
+  { key: 'overview', label: t('super.branchDetail.tabOverview'), Icon: Building2 },
+  { key: 'students', label: t('super.branchDetail.tabStudents'), Icon: GraduationCap },
+  { key: 'groups',   label: t('super.branchDetail.tabGroups'),   Icon: BookOpen },
+  { key: 'staff',    label: t('super.branchDetail.tabStaff'),    Icon: UserCog },
 ];
 
-const ATT_META = {
-  present: { label: 'Был',      color: 'oklch(70% 0.17 145)' },
-  late:    { label: 'Опоздал',  color: 'oklch(75% 0.15 85)' },
-  excused: { label: 'По причине', color: 'oklch(62% 0.10 250)' },
-  absent:  { label: 'Пропуск',  color: 'oklch(62% 0.24 25)' },
-};
+const attMetaFor = (t) => ({
+  present: { label: t('super.branchDetail.attPresent'), color: 'oklch(70% 0.17 145)' },
+  late:    { label: t('super.branchDetail.attLate'),    color: 'oklch(75% 0.15 85)' },
+  excused: { label: t('super.branchDetail.attExcused'), color: 'oklch(62% 0.10 250)' },
+  absent:  { label: t('super.branchDetail.attAbsent'),  color: 'oklch(62% 0.24 25)' },
+});
 
-const STATUS_LABEL = {
-  active: 'Активен', frozen: 'Заморожен', fired: 'Уволен',
-  graduated: 'Выпустился', dropped: 'Ушёл',
-};
+const statusLabelFor = (t) => ({
+  active: t('super.branchDetail.statusActive'), frozen: t('super.branchDetail.statusFrozen'), fired: t('super.branchDetail.statusFired'),
+  graduated: t('super.branchDetail.statusGraduated'), dropped: t('super.branchDetail.statusDropped'),
+});
 
 /* ── Группа внутри филиала: состав и посещаемость ─────────────────────── */
 function GroupPanel({ group, onBack }) {
+  const { t } = useTranslation();
+  const ATT_META = attMetaFor(t);
   const { token } = useAuth();
 
   // тот же эндпоинт, что и у сводки посещаемости организации, но с фильтром
@@ -80,38 +83,38 @@ function GroupPanel({ group, onBack }) {
   return (
     <div className="space-y-4">
       <button className="btn btn-ghost btn-xs gap-1" onClick={onBack}>
-        <ArrowLeft size={13} /> Все группы
+        <ArrowLeft size={13} /> {t('super.branchDetail.allGroups')}
       </button>
 
       <div className="flex flex-wrap items-center gap-3">
         <h3 className="text-lg font-bold">{group.name}</h3>
         {group.subject && <span className="badge badge-ghost badge-sm">{group.subject}</span>}
         <span className="text-sm text-base-content/50">
-          {group.mentorName ? `Ментор: ${group.mentorName}` : 'Ментор не назначен'}
+          {group.mentorName ? t('super.branchDetail.mentorLabel', { name: group.mentorName }) : t('super.branchDetail.mentorNotAssigned')}
         </span>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Metric Icon={Users} label="Учеников" value={fmt(group.students)} />
-        <Metric Icon={Wallet} label="Цена в месяц" value={money(group.monthlyPrice)} />
-        <Metric Icon={CalendarCheck} label="Отметок" value={fmt(total)} unit="в журнале" />
+        <Metric Icon={Users} label={t('super.branchDetail.metaStudents')} value={fmt(group.students)} />
+        <Metric Icon={Wallet} label={t('super.branchDetail.metaPricePerMonth')} value={money(group.monthlyPrice)} />
+        <Metric Icon={CalendarCheck} label={t('super.branchDetail.metaMarks')} value={fmt(total)} unit={t('super.branchDetail.inJournal')} />
         <Metric
           Icon={TrendingUp}
-          label="Посещаемость"
+          label={t('super.branchDetail.metaAttendance')}
           value={rate === null ? '—' : `${rate}%`}
           tone={rate === null ? 'neutral' : rate >= 80 ? 'success' : rate >= 60 ? 'warning' : 'danger'}
-          unit={rate === null ? 'нет отметок' : 'был или опоздал'}
+          unit={rate === null ? t('super.branchDetail.noMarks') : t('super.branchDetail.wasOrLate')}
         />
       </div>
 
-      <Panel title="Посещаемость" icon={CalendarCheck}>
+      <Panel title={t('super.branchDetail.attendanceTitle')} icon={CalendarCheck}>
         {att.isLoading ? (
           <SkeletonList rows={3} />
         ) : total === 0 ? (
           <EmptyState
             icon={CalendarCheck}
-            title="Журнал пуст"
-            hint="Отметки появятся, когда ментор начнёт вести занятия этой группы."
+            title={t('super.branchDetail.journalEmptyTitle')}
+            hint={t('super.branchDetail.journalEmptyHint')}
           />
         ) : (
           <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -145,21 +148,24 @@ function GroupPanel({ group, onBack }) {
 }
 
 export default function SuperBranchDetail() {
+  const { t } = useTranslation();
+  const TABS = tabsFor(t);
+  const STATUS_LABEL = statusLabelFor(t);
   const { id } = useParams();
   const [params, setParams] = useSearchParams();
   const { data, isLoading, error, refetch } = useSuperBranchDetail(id);
   // всё управление филиалом — здесь, под шестерёнкой, а не на общем списке
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const tab = TABS.some((t) => t.key === params.get('tab')) ? params.get('tab') : 'overview';
+  const tab = TABS.some((tb) => tb.key === params.get('tab')) ? params.get('tab') : 'overview';
   const groupId = params.get('group');
 
   const branch = data?.branch || data;
   const branchName = branch?.name;
 
   useEffect(() => {
-    if (branchName) document.title = `${branchName} | Филиалы | LevelUp Academy`;
-  }, [branchName]);
+    if (branchName) document.title = `${branchName} | ${t('super.branchDetail.breadcrumbBranches')} | LevelUp Academy`;
+  }, [branchName, t]);
 
   const setTab = (key) => {
     const next = new URLSearchParams(params);
@@ -186,16 +192,16 @@ export default function SuperBranchDetail() {
       <div className="space-y-6">
         <div className="text-xs breadcrumbs text-base-content/50">
           <ul>
-            <li><Link to="/branches" className="hover:text-base-content font-medium">Филиалы</Link></li>
-            <li className="font-semibold text-base-content">Ошибка</li>
+            <li><Link to="/branches" className="hover:text-base-content font-medium">{t('super.branchDetail.breadcrumbBranches')}</Link></li>
+            <li className="font-semibold text-base-content">{t('super.branchDetail.breadcrumbError')}</li>
           </ul>
         </div>
         <Card className="max-w-lg mx-auto mt-6">
           <EmptyState
             icon={AlertTriangle}
-            title="Ошибка загрузки филиала"
-            hint={error.message || 'Не удалось получить данные.'}
-            action={<button className="btn btn-primary btn-sm px-6" onClick={() => refetch()}>Повторить</button>}
+            title={t('super.branchDetail.loadErrorTitle')}
+            hint={error.message || t('super.branchDetail.loadErrorHint')}
+            action={<button className="btn btn-primary btn-sm px-6" onClick={() => refetch()}>{t('super.branchDetail.retry')}</button>}
           />
         </Card>
       </div>
@@ -203,7 +209,7 @@ export default function SuperBranchDetail() {
   }
 
   if (isLoading || !data) {
-    return (<div><PageHeader title="Филиал" /><SkeletonList rows={8} /></div>);
+    return (<div><PageHeader title={t('super.branchDetail.branchFallback')} /><SkeletonList rows={8} /></div>);
   }
 
   const stats = branch.stats ?? {};
@@ -218,40 +224,40 @@ export default function SuperBranchDetail() {
     <div className="space-y-5">
       <div className="text-xs breadcrumbs text-base-content/50">
         <ul>
-          <li><Link to="/branches" className="hover:text-base-content font-medium">Филиалы</Link></li>
+          <li><Link to="/branches" className="hover:text-base-content font-medium">{t('super.branchDetail.breadcrumbBranches')}</Link></li>
           <li className="font-semibold text-base-content">{branch.name}</li>
         </ul>
       </div>
 
       <PageHeader
         title={branch.name}
-        subtitle={branch.address || 'Адрес не указан'}
+        subtitle={branch.address || t('super.branchDetail.addressNotSpecified')}
       >
-        {branch.isMain && <span className="badge badge-primary badge-sm">Главный</span>}
-        {branch.isArchived && <span className="badge badge-ghost badge-sm">Архив</span>}
+        {branch.isMain && <span className="badge badge-primary badge-sm">{t('super.branchDetail.mainBadge')}</span>}
+        {branch.isArchived && <span className="badge badge-ghost badge-sm">{t('super.branchDetail.archivedBadge')}</span>}
         <button
           className="btn btn-ghost btn-sm gap-1.5"
           onClick={() => setSettingsOpen(true)}
-          title="Настройки филиала"
+          title={t('super.branchDetail.settingsTooltip')}
         >
-          <Settings size={16} /> Настройки
+          <Settings size={16} /> {t('super.branchDetail.settings')}
         </button>
       </PageHeader>
 
       {/* Вкладки. Состояние в адресе, поэтому ссылку можно переслать. */}
       <div className="tabs tabs-boxed bg-base-200/50 w-fit">
-        {TABS.map((t) => (
+        {TABS.map((tb) => (
           <button
-            key={t.key}
-            className={`tab gap-1.5 ${tab === t.key ? 'tab-active' : ''}`}
-            onClick={() => setTab(t.key)}
+            key={tb.key}
+            className={`tab gap-1.5 ${tab === tb.key ? 'tab-active' : ''}`}
+            onClick={() => setTab(tb.key)}
           >
-            <t.Icon size={14} />
-            {t.label}
-            {t.key === 'students' && students.length > 0 && (
+            <tb.Icon size={14} />
+            {tb.label}
+            {tb.key === 'students' && students.length > 0 && (
               <span className="text-[10px] opacity-60 tabular-nums">{students.length}</span>
             )}
-            {t.key === 'groups' && groups.length > 0 && (
+            {tb.key === 'groups' && groups.length > 0 && (
               <span className="text-[10px] opacity-60 tabular-nums">{groups.length}</span>
             )}
           </button>
@@ -261,30 +267,30 @@ export default function SuperBranchDetail() {
       {tab === 'overview' && (
         <div className="space-y-5">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Metric Icon={GraduationCap} label="Ученики" value={fmt(stats.students ?? 0)} unit="активных" />
-            <Metric Icon={BookOpen} label="Группы" value={fmt(stats.groups ?? 0)} />
-            <Metric Icon={UserCog} label="Сотрудники" value={fmt((stats.admins ?? 0) + (stats.mentors ?? 0))}
-                 unit={`админы ${fmt(stats.admins ?? 0)} · менторы ${fmt(stats.mentors ?? 0)}`} />
-            <Metric Icon={Wallet} label="Долг учеников" value={money(stats.debt ?? 0)}
+            <Metric Icon={GraduationCap} label={t('super.branchDetail.metaStudents')} value={fmt(stats.students ?? 0)} unit={t('super.branchDetail.activeUnit')} />
+            <Metric Icon={BookOpen} label={t('super.branchDetail.tabGroups')} value={fmt(stats.groups ?? 0)} />
+            <Metric Icon={UserCog} label={t('super.branchDetail.metaStaff')} value={fmt((stats.admins ?? 0) + (stats.mentors ?? 0))}
+                 unit={t('super.branchDetail.staffUnit', { admins: fmt(stats.admins ?? 0), mentors: fmt(stats.mentors ?? 0) })} />
+            <Metric Icon={Wallet} label={t('super.branchDetail.metaStudentDebt')} value={money(stats.debt ?? 0)}
                  tone={(stats.debt ?? 0) > 0 ? 'danger' : 'neutral'} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <Metric Icon={TrendingUp} label="Доход" value={money(stats.revenue ?? 0)} tone="success" />
-            <Metric Icon={Wallet} label="Расход" value={money(stats.expenses ?? 0)} unit="траты филиала" />
+            <Metric Icon={TrendingUp} label={t('super.branchDetail.metaRevenue')} value={money(stats.revenue ?? 0)} tone="success" />
+            <Metric Icon={Wallet} label={t('super.branchDetail.metaExpenses')} value={money(stats.expenses ?? 0)} unit={t('super.branchDetail.branchSpendUnit')} />
             <Metric
               Icon={Coins}
-              label="Разница"
+              label={t('super.branchDetail.metaProfit')}
               value={money(stats.profit ?? 0)}
               tone={(stats.profit ?? 0) >= 0 ? 'success' : 'danger'}
-              unit="доход минус расход"
+              unit={t('super.branchDetail.profitUnit')}
             />
           </div>
 
           {/* Где филиал — показываем картой, а не строкой координат: пять
               знаков после запятой человеку ничего не говорят, а карта отвечает
               на настоящий вопрос «это вообще где». */}
-          <Panel title="Контакты и адрес" icon={Building2}>
+          <Panel title={t('super.branchDetail.contactsAndAddressTitle')} icon={Building2}>
             {/* Контакты строкой сверху, карта под ними во всю ширину: рядом с
                 текстом ей доставалась половина панели, а половина оставалась
                 пустой — читать на такой карте нечего. */}
@@ -292,13 +298,13 @@ export default function SuperBranchDetail() {
               <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm">
                 <span className="flex items-center gap-2">
                   <MapPin size={14} className="text-base-content/40 shrink-0" />
-                  {branch.address || 'Адрес не указан'}
+                  {branch.address || t('super.branchDetail.addressNotSpecified')}
                 </span>
                 <span className="flex items-center gap-2">
                   <Phone size={14} className="text-base-content/40 shrink-0" />
                   {/* тем же видом, что и в поле ввода: +998 90 123 45 67,
                       а не слитной строкой из базы */}
-                  {branch.phone ? phoneDisplay(branch.phone) : 'Телефон не указан'}
+                  {branch.phone ? phoneDisplay(branch.phone) : t('super.branchDetail.phoneNotSpecified')}
                 </span>
                 {hasPoint && (
                   <span className="flex items-center gap-3">
@@ -311,7 +317,7 @@ export default function SuperBranchDetail() {
                       rel="noreferrer"
                       className="text-xs text-base-content/45 hover:text-base-content inline-flex items-center gap-1"
                     >
-                      открыть в Картах <ExternalLink size={11} />
+                      {t('super.branchDetail.openInMaps')} <ExternalLink size={11} />
                     </a>
                   </span>
                 )}
@@ -326,9 +332,9 @@ export default function SuperBranchDetail() {
               ) : (
                 <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-base-300 text-center p-10">
                   <MapPin size={22} className="text-base-content/25" />
-                  <p className="text-xs text-base-content/50">Точка на карте не отмечена</p>
+                  <p className="text-xs text-base-content/50">{t('super.branchDetail.noMapPoint')}</p>
                   <button className="btn btn-ghost btn-xs" onClick={() => setSettingsOpen(true)}>
-                    Отметить на карте
+                    {t('super.branchDetail.markOnMap')}
                   </button>
                 </div>
               )}
@@ -338,15 +344,15 @@ export default function SuperBranchDetail() {
       )}
 
       {tab === 'students' && (
-        <Panel title="Ученики филиала" icon={GraduationCap} bodyClass="p-0">
+        <Panel title={t('super.branchDetail.studentsOfBranchTitle')} icon={GraduationCap} bodyClass="p-0">
           {students.length === 0 ? (
-            <EmptyState icon={GraduationCap} title="Учеников пока нет"
-                        hint="Ученики появляются здесь, когда администратор филиала заводит их в системе." />
+            <EmptyState icon={GraduationCap} title={t('super.branchDetail.noStudentsYetTitle')}
+                        hint={t('super.branchDetail.noStudentsYetHint')} />
           ) : (
             <div className="overflow-x-auto">
               <table className="table table-sm">
                 <thead>
-                  <tr><th>Ученик</th><th>Телефон</th><th>Статус</th><th className="text-right">Долг</th><th className="text-right">Коины</th></tr>
+                  <tr><th>{t('super.branchDetail.colStudent')}</th><th>{t('super.branchDetail.colPhone')}</th><th>{t('super.branchDetail.colStatus')}</th><th className="text-right">{t('super.branchDetail.colDebt')}</th><th className="text-right">{t('super.branchDetail.colCoins')}</th></tr>
                 </thead>
                 <tbody>
                   {students.map((s) => (
@@ -376,22 +382,22 @@ export default function SuperBranchDetail() {
         openedGroup ? (
           <GroupPanel group={openedGroup} onBack={closeGroup} />
         ) : (
-          <Panel title="Группы филиала" icon={BookOpen} bodyClass="p-0">
+          <Panel title={t('super.branchDetail.groupsOfBranchTitle')} icon={BookOpen} bodyClass="p-0">
             {groups.length === 0 ? (
-              <EmptyState icon={BookOpen} title="Групп пока нет"
-                          hint="Группы создаёт администратор филиала." />
+              <EmptyState icon={BookOpen} title={t('super.branchDetail.noGroupsYetTitle')}
+                          hint={t('super.branchDetail.noGroupsYetHint')} />
             ) : (
               <div className="overflow-x-auto">
                 <table className="table table-sm">
                   <thead>
-                    <tr><th>Группа</th><th>Предмет</th><th>Ментор</th><th className="text-right">Учеников</th><th className="text-right">Цена</th></tr>
+                    <tr><th>{t('super.branchDetail.colGroup')}</th><th>{t('super.branchDetail.colSubject')}</th><th>{t('super.branchDetail.colMentor')}</th><th className="text-right">{t('super.branchDetail.colStudents')}</th><th className="text-right">{t('super.branchDetail.colPrice')}</th></tr>
                   </thead>
                   <tbody>
                     {groups.map((g) => (
                       <tr key={g.id} className="hover cursor-pointer" onClick={() => openGroup(g.id)}>
                         <td className="font-semibold">{g.name}</td>
                         <td className="text-sm text-base-content/60">{g.subject || '—'}</td>
-                        <td className="text-sm">{g.mentorName || <span className="text-warning">не назначен</span>}</td>
+                        <td className="text-sm">{g.mentorName || <span className="text-warning">{t('super.branchDetail.notAssigned')}</span>}</td>
                         <td className="text-right tabular-nums">{fmt(g.students)}</td>
                         <td className="text-right tabular-nums">{money(g.monthlyPrice)}</td>
                       </tr>
@@ -407,16 +413,16 @@ export default function SuperBranchDetail() {
       {tab === 'staff' && (
         <div className="space-y-4">
           <Panel
-            title="Администраторы"
+            title={t('super.branchDetail.adminsTitle')}
             icon={UserCog}
             bodyClass="p-0"
             action={
-              <Link to="/admins" className="btn btn-primary btn-xs">Добавить</Link>
+              <Link to="/admins" className="btn btn-primary btn-xs">{t('super.branchDetail.add')}</Link>
             }
           >
             {admins.length === 0 ? (
-              <EmptyState icon={UserCog} title="Администраторов нет"
-                          hint="Без администратора филиалом некому управлять — заведите его на странице «Сотрудники»." />
+              <EmptyState icon={UserCog} title={t('super.branchDetail.noAdminsTitle')}
+                          hint={t('super.branchDetail.noAdminsHint')} />
             ) : (
               <ul className="divide-y divide-base-200">
                 {admins.map((a) => (
@@ -433,10 +439,10 @@ export default function SuperBranchDetail() {
             )}
           </Panel>
 
-          <Panel title="Менторы" icon={Users} bodyClass="p-0">
+          <Panel title={t('super.branchDetail.mentorsTitle')} icon={Users} bodyClass="p-0">
             {mentors.length === 0 ? (
-              <EmptyState icon={Users} title="Менторов нет"
-                          hint="Менторов заводит администратор филиала — у SEO такой формы нет." />
+              <EmptyState icon={Users} title={t('super.branchDetail.noMentorsTitle')}
+                          hint={t('super.branchDetail.noMentorsHint')} />
             ) : (
               <ul className="divide-y divide-base-200">
                 {mentors.map((m) => (
