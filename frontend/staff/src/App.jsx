@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from './auth.jsx';
 
 import Layout from './components/Layout.jsx';
@@ -81,6 +82,7 @@ function Protected({ children }) {
 }
 
 function DashboardRedirect() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const role = user?.role;
   if (role === 'seo') return <SuperDashboard />;
@@ -91,8 +93,8 @@ function DashboardRedirect() {
   if (role === 'methodist') return <MethodistDashboard />;
   if (role === 'employee') return (
     <div className="max-w-2xl mx-auto mt-16 card bg-base-100 p-8 text-center">
-      <h1 className="text-2xl font-bold">Учётная запись сотрудника</h1>
-      <p className="text-base-content/60 mt-2">Для вашей должности отдельная рабочая панель не назначена.</p>
+      <h1 className="text-2xl font-bold">{t('app.employeeAccountTitle')}</h1>
+      <p className="text-base-content/60 mt-2">{t('app.employeeNoPanelHint')}</p>
     </div>
   );
   return <AdminDashboard />;

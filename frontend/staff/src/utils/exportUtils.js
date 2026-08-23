@@ -8,6 +8,10 @@
  */
 
 import { fmt, money, dateShort } from '../format.js';
+import i18n from '../i18n.js';
+
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+const currentLocale = () => LOCALE_OF[i18n.language] || 'ru-RU';
 
 // ═══════════════ Shared Helpers ═══════════════
 
@@ -170,7 +174,7 @@ export async function exportToExcel(data, columns, filename = `export_${today()}
       h.length,
       ...rows.map((r) => {
         const v = r[colIdx];
-        if (typeof v === 'number') return new Intl.NumberFormat('ru-RU').format(v).length;
+        if (typeof v === 'number') return new Intl.NumberFormat(currentLocale()).format(v).length;
         return String(v ?? '').length;
       })
     );
@@ -179,7 +183,7 @@ export async function exportToExcel(data, columns, filename = `export_${today()}
   ws['!cols'] = colWidths;
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Данные');
+  XLSX.utils.book_append_sheet(wb, ws, i18n.t('exportUtils.sheetName'));
   XLSX.writeFile(wb, `${filename}.xlsx`);
 }
 
@@ -254,7 +258,8 @@ async function loadCyrillicFont(doc) {
   }
 }
 
-export async function exportToPDF(data, columns, filename = `export_${today()}`, title = 'Отчёт') {
+export async function exportToPDF(data, columns, filename = `export_${today()}`, title) {
+  title = title ?? i18n.t('exportUtils.defaultReportTitle');
   // jsPDF v4.x exports { jsPDF } as named export
   const jspdfModule = await import('jspdf');
   const JsPDF = jspdfModule.jsPDF ?? jspdfModule.default?.jsPDF ?? jspdfModule.default;
@@ -267,7 +272,7 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
   const doc = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const dateStr = new Date().toLocaleDateString('ru-RU');
+  const dateStr = new Date().toLocaleDateString(currentLocale());
 
   // PDF draws text only — format() output, no raw numbers
   const { header, rows, activeCols } = buildRows(data, columns);
@@ -283,16 +288,18 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
   doc.text(title, 14, 18);
   doc.setFontSize(9);
   doc.setTextColor(120, 120, 120);
-  doc.text(`Дата: ${dateStr}  |  Записей: ${data.length}`, 14, 25);
+  doc.text(`${i18n.t('exportUtils.dateLabel')}: ${dateStr}  |  ${i18n.t('exportUtils.recordsLabel')}: ${data.length}`, 14, 25);
 
   // Numeric columns align right — matches Excel and keeps figures readable.
   // They also get a minimum width: autoTable distributes space by content, and
   // a wide free-text column (an expense note) otherwise squeezes "1 500 000"
   // into a two-line "1 500 / 000" and a date into four lines.
+  // Checked by key, not by the (now-translated) label: 'spentAt'/'dueDate'
+  // are the date-ish columns across the page configs below.
   const columnStyles = {};
   activeCols.forEach((c, i) => {
     if (c.type === 'number') columnStyles[i] = { halign: 'right', cellWidth: 24 };
-    else if (/дата|срок/i.test(c.label)) columnStyles[i] = { cellWidth: 26 };
+    else if (c.key === 'spentAt' || c.key === 'dueDate') columnStyles[i] = { cellWidth: 26 };
   });
 
   const tableOpts = {
@@ -325,9 +332,7 @@ export async function exportToPDF(data, columns, filename = `export_${today()}`,
     margin: { left: 14, right: 14 },
     didDrawPage: () => {
       const pageNum = doc.internal.getCurrentPageInfo().pageNumber;
-      // Uzbek UI elsewhere; keep the page label consistent with it.
-      // (Used to be "1-bet" while the rest of the report was Russian.)
-      const footerText = `${getOrgName()}  |  ${pageNum}-bet`;
+      const footerText = `${getOrgName()}  |  ${pageNum} ${i18n.t('exportUtils.pageLabel')}`;
       doc.setFont(fontName, 'normal');
       doc.setFontSize(7);
       doc.setTextColor(120, 120, 120);
@@ -371,7 +376,7 @@ export async function exportProfilePDF(person, columns, filename, title, pageKey
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(24);
   doc.setFont(fontName, 'bold');
-  const fullName = person.fullName || person.name || `${person.firstName || person.first_name || ''} ${person.lastName || person.last_name || ''}`.trim() || 'Без имени';
+  const fullName = person.fullName || person.name || `${person.firstName || person.first_name || ''} ${person.lastName || person.last_name || ''}`.trim() || i18n.t('exportUtils.noName');
   doc.text(fullName, 20, 25);
   
   doc.setFontSize(12);
@@ -416,8 +421,8 @@ export async function exportProfilePDF(person, columns, filename, title, pageKey
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(150, 150, 150);
-  const dateStr = new Date().toLocaleDateString('ru-RU');
-  doc.text(`${getOrgName()}  |  Сгенерировано: ${dateStr}`, 105, 290, { align: 'center' });
+  const dateStr = new Date().toLocaleDateString(currentLocale());
+  doc.text(`${getOrgName()}  |  ${i18n.t('exportUtils.generatedLabel')}: ${dateStr}`, 105, 290, { align: 'center' });
 
   doc.save(`${filename}.pdf`);
   return { fontName, hasCyrillic };
@@ -444,9 +449,10 @@ export async function exportData(format, data, columns, filename, title, pageKey
  * Columns marked `type: 'number'` bypass this in Excel and get the real number
  * instead, so the sheet can actually sum and sort them.
  */
-const fmtMoney = (v) => v != null ? Number(v).toLocaleString('ru-RU') : '—';
+const fmtMoney = (v) => v != null ? Number(v).toLocaleString(currentLocale()) : '—';
 const fmtDate = (v) => v ? dateShort(v) : '—';
 const fmtFull = (s) => s?.fullName || [s?.firstName || s?.first_name, s?.lastName || s?.last_name].filter(Boolean).join(' ') || '—';
+const statusLabel = (v) => v === 'frozen' ? i18n.t('exportUtils.statusFrozen') : v === 'archived' ? i18n.t('exportUtils.statusArchived') : i18n.t('exportUtils.statusActive');
 
 /** Read the first defined value among several possible field spellings. */
 const pick = (row, ...keys) => {
@@ -454,100 +460,108 @@ const pick = (row, ...keys) => {
   return null;
 };
 
-export const STUDENT_COLUMNS = [
-  { key: 'fullName', label: 'Имя', format: (v, row) => fmtFull(row) },
-  { key: 'login_code', label: 'Код', format: (v, row) => row.login_code || row.loginCode || '—' },
-  { key: 'phone', label: 'Телефон' },
-  { key: 'parentPhone', label: 'Тел. родителя', format: (v, row) => row.parentPhone || row.parent_phone || '—' },
-  { key: 'groups', label: 'Группы', format: (v, row) => {
+export const studentColumnsFor = () => [
+  { key: 'fullName', label: i18n.t('exportUtils.colName'), format: (v, row) => fmtFull(row) },
+  { key: 'login_code', label: i18n.t('exportUtils.colCode'), format: (v, row) => row.login_code || row.loginCode || '—' },
+  { key: 'phone', label: i18n.t('exportUtils.colPhone') },
+  { key: 'parentPhone', label: i18n.t('exportUtils.colParentPhone'), format: (v, row) => row.parentPhone || row.parent_phone || '—' },
+  { key: 'groups', label: i18n.t('exportUtils.colGroups'), format: (v, row) => {
     const gs = row.groups || (row.groupName ? [{ name: row.groupName }] : []);
     return gs.map((g) => g.name).filter(Boolean).join(', ') || '—';
   } },
-  { key: 'coins', label: 'Коины', type: 'number',
+  { key: 'coins', label: i18n.t('exportUtils.colCoins'), type: 'number',
     value: (row) => pick(row, 'coins', 'coin_balance'),
     format: (v, row) => (row.coins ?? row.coin_balance) ?? '—' },
-  { key: 'balance', label: 'Долг', type: 'number',
+  { key: 'balance', label: i18n.t('exportUtils.colDebt'), type: 'number',
     value: (row) => pick(row, 'balance', 'total_debt') ?? 0,
     format: (v, row) => fmtMoney(row.balance ?? row.total_debt ?? 0) },
-  { key: 'status', label: 'Статус', format: (v) => v === 'frozen' ? 'Заморожен' : v === 'archived' ? 'Архив' : 'Активен' },
+  { key: 'status', label: i18n.t('exportUtils.colStatus'), format: (v) => statusLabel(v) },
 ];
 
-export const GROUP_COLUMNS = [
-  { key: 'name', label: 'Название' },
-  { key: 'mentor.name', label: 'Ментор', format: (v, row) =>
+export const groupColumnsFor = () => [
+  { key: 'name', label: i18n.t('exportUtils.colGroupName') },
+  { key: 'mentor.name', label: i18n.t('exportUtils.colMentor'), format: (v, row) =>
     row.mentor?.name || row.mentorName || [row.mentor_first, row.mentor_last].filter(Boolean).join(' ') || '—' },
-  { key: 'studentsCount', label: 'Студенты', type: 'number',
+  { key: 'studentsCount', label: i18n.t('exportUtils.colStudentsCount'), type: 'number',
     value: (row) => pick(row, 'studentCount', 'studentsCount', 'students_count') ?? row.students?.length ?? 0,
     format: (v, row) =>
       String(row.studentCount ?? row.studentsCount ?? row.students_count ?? row.students?.length ?? 0) },
-  { key: 'monthlyPrice', label: 'Цена', type: 'number',
+  { key: 'monthlyPrice', label: i18n.t('exportUtils.colPrice'), type: 'number',
     value: (row) => pick(row, 'monthlyPrice', 'monthly_price', 'price'),
     format: (v, row) => fmtMoney(row.monthlyPrice ?? row.monthly_price ?? row.price) },
-  { key: 'maxStudents', label: 'Макс.', type: 'number',
+  { key: 'maxStudents', label: i18n.t('exportUtils.colMax'), type: 'number',
     value: (row) => Number(row.maxStudents || 15),
     format: (v, row) => String(row.maxStudents || 15) },
-  { key: 'isArchived', label: 'Статус', format: (v, row) =>
-    (row.isArchived ?? row.is_archived ?? row.status === 'archived') ? 'Архив'
-      : (row.status === 'frozen' ? 'Заморожена' : 'Активна') },
+  { key: 'isArchived', label: i18n.t('exportUtils.colStatus'), format: (v, row) =>
+    (row.isArchived ?? row.is_archived ?? row.status === 'archived') ? i18n.t('exportUtils.statusArchived')
+      : (row.status === 'frozen' ? i18n.t('exportUtils.statusFrozenFem') : i18n.t('exportUtils.statusActiveFem')) },
 ];
 
-export const PAYMENT_COLUMNS = [
-  { key: 'student', label: 'Студент', format: (v, row) => row.student || row.studentName || '—' },
-  { key: 'group', label: 'Группа', format: (v, row) => row.group || row.groupName || '—' },
-  { key: 'totalAmount', label: 'Сумма', type: 'number',
+export const paymentColumnsFor = () => [
+  { key: 'student', label: i18n.t('exportUtils.colStudent'), format: (v, row) => row.student || row.studentName || '—' },
+  { key: 'group', label: i18n.t('exportUtils.colGroup'), format: (v, row) => row.group || row.groupName || '—' },
+  { key: 'totalAmount', label: i18n.t('exportUtils.colAmount'), type: 'number',
     value: (row) => pick(row, 'totalAmount', 'amount'),
     format: (v, row) => fmtMoney(row.totalAmount || row.amount) },
-  { key: 'paidAmount', label: 'Оплачено', type: 'number',
+  { key: 'paidAmount', label: i18n.t('exportUtils.colPaid'), type: 'number',
     value: (row) => pick(row, 'paidAmount', 'paid_amount'),
     format: (v, row) => fmtMoney(row.paidAmount || row.paid_amount) },
-  { key: 'status', label: 'Статус', format: (v) => {
-    const m = { paid: 'Оплачен', pending: 'Ожидает', partially_paid: 'Частично', overdue: 'Просрочен', cancelled: 'Отменён', void: 'Аннулирован' };
+  { key: 'status', label: i18n.t('exportUtils.colStatus'), format: (v) => {
+    const m = {
+      paid: i18n.t('exportUtils.invoicePaid'), pending: i18n.t('exportUtils.invoicePending'),
+      partially_paid: i18n.t('exportUtils.invoicePartiallyPaid'), overdue: i18n.t('exportUtils.invoiceOverdue'),
+      cancelled: i18n.t('exportUtils.invoiceCancelled'), void: i18n.t('exportUtils.invoiceVoid'),
+    };
     return m[v] || v || '—';
   }},
-  { key: 'dueDate', label: 'Срок', format: (v, row) => fmtDate(row.dueDate || row.due_date) },
+  { key: 'dueDate', label: i18n.t('exportUtils.colDueDate'), format: (v, row) => fmtDate(row.dueDate || row.due_date) },
 ];
 
-export const REPORT_COLUMNS = [
-  { key: 'name', label: 'Группа', format: (v, row) => row.name || row.groupName || '—' },
-  { key: 'students', label: 'Ученики', type: 'number',
+export const reportColumnsFor = () => [
+  { key: 'name', label: i18n.t('exportUtils.colGroup'), format: (v, row) => row.name || row.groupName || '—' },
+  { key: 'students', label: i18n.t('exportUtils.colStudents'), type: 'number',
     value: (row) => pick(row, 'students', 'studentsCount') ?? 0,
     format: (v, row) => String(row.students ?? row.studentsCount ?? 0) },
-  { key: 'revenue', label: 'Доход', type: 'number',
+  { key: 'revenue', label: i18n.t('exportUtils.colRevenue'), type: 'number',
     value: (row) => pick(row, 'revenue'),
     format: (v) => fmtMoney(v) },
-  { key: 'debt', label: 'Долг', type: 'number',
+  { key: 'debt', label: i18n.t('exportUtils.colDebt'), type: 'number',
     value: (row) => pick(row, 'debt', 'outstandingDebt'),
     format: (v, row) => fmtMoney(row.debt || row.outstandingDebt) },
 ];
 
-export const EXPENSE_COLUMNS = [
-  { key: 'category', label: 'Категория' },
-  { key: 'amount', label: 'Сумма', type: 'number',
+export const expenseColumnsFor = () => [
+  { key: 'category', label: i18n.t('exportUtils.colCategory') },
+  { key: 'amount', label: i18n.t('exportUtils.colAmount'), type: 'number',
     value: (row) => pick(row, 'amount'),
     format: (v) => fmtMoney(v) },
-  { key: 'spentAt', label: 'Дата', format: (v, row) => fmtDate(row.spentAt ?? row.spent_at) },
-  { key: 'note', label: 'Примечание' },
-  { key: 'status', label: 'Статус', format: (v, row) => {
+  { key: 'spentAt', label: i18n.t('exportUtils.colDate'), format: (v, row) => fmtDate(row.spentAt ?? row.spent_at) },
+  { key: 'note', label: i18n.t('exportUtils.colNote') },
+  { key: 'status', label: i18n.t('exportUtils.colStatus'), format: (v, row) => {
     const status = row.status || (row.paid ? 'paid' : row.approved ? 'approved' : 'pending');
-    const m = { paid: 'Оплачен', approved: 'Одобрен', pending: 'Ожидает', rejected: 'Отклонён', cancelled: 'Отменён' };
+    const m = {
+      paid: i18n.t('exportUtils.expensePaid'), approved: i18n.t('exportUtils.expenseApproved'),
+      pending: i18n.t('exportUtils.expensePending'), rejected: i18n.t('exportUtils.expenseRejected'),
+      cancelled: i18n.t('exportUtils.expenseCancelled'),
+    };
     return m[status?.toLowerCase()] || status || '—';
   }},
-  { key: 'paymentMethod', label: 'Способ оплаты', format: (v, row) => {
+  { key: 'paymentMethod', label: i18n.t('exportUtils.colPaymentMethod'), format: (v, row) => {
     const method = v || row.payment_method || row.method;
-    const m = { cash: 'Наличные', card: 'Карта', transfer: 'Перевод' };
+    const m = { cash: i18n.t('exportUtils.methodCash'), card: i18n.t('exportUtils.methodCard'), transfer: i18n.t('exportUtils.methodTransfer') };
     return m[method?.toLowerCase()] || method || '—';
   }},
 ];
 
-export const MENTOR_COLUMNS = [
-  { key: 'firstName', label: 'Имя', format: (v, row) => fmtFull(row) },
-  { key: 'phone', label: 'Телефон' },
-  { key: 'email', label: 'Email' },
-  { key: 'grade', label: 'Грейд', format: (v) => {
+export const mentorColumnsFor = () => [
+  { key: 'firstName', label: i18n.t('exportUtils.colName'), format: (v, row) => fmtFull(row) },
+  { key: 'phone', label: i18n.t('exportUtils.colPhone') },
+  { key: 'email', label: i18n.t('exportUtils.colEmail') },
+  { key: 'grade', label: i18n.t('exportUtils.colGrade'), format: (v) => {
     if (!v) return '—';
     return v.charAt(0).toUpperCase() + v.slice(1);
   }},
-  { key: 'status', label: 'Статус', format: (v) => v === 'frozen' ? 'Заморожен' : v === 'archived' ? 'Архив' : 'Активен' },
+  { key: 'status', label: i18n.t('exportUtils.colStatus'), format: (v) => statusLabel(v) },
 ];
 
 /**
@@ -556,18 +570,18 @@ export const MENTOR_COLUMNS = [
  * name adds nothing, while joinedAt and coinBalance — which the API already
  * returns for group members and the page never showed — do.
  */
-export const GROUP_STUDENT_COLUMNS = [
-  { key: 'fullName', label: 'Ученик', format: (v, row) => fmtFull(row) },
-  { key: 'login_code', label: 'Код', format: (v, row) => row.login_code || row.loginCode || '—' },
-  { key: 'phone', label: 'Телефон', format: (v, row) => row.phone || row.phoneNumber || '—' },
-  { key: 'coinBalance', label: 'Коины', type: 'number',
+export const groupStudentColumnsFor = () => [
+  { key: 'fullName', label: i18n.t('exportUtils.colStudentLabel'), format: (v, row) => fmtFull(row) },
+  { key: 'login_code', label: i18n.t('exportUtils.colCode'), format: (v, row) => row.login_code || row.loginCode || '—' },
+  { key: 'phone', label: i18n.t('exportUtils.colPhone'), format: (v, row) => row.phone || row.phoneNumber || '—' },
+  { key: 'coinBalance', label: i18n.t('exportUtils.colCoins'), type: 'number',
     value: (row) => pick(row, 'coinBalance', 'coin_balance', 'coins'),
     format: (v, row) => (row.coinBalance ?? row.coin_balance ?? row.coins) ?? '—' },
-  { key: 'totalDebt', label: 'Долг', type: 'number',
+  { key: 'totalDebt', label: i18n.t('exportUtils.colDebt'), type: 'number',
     value: (row) => pick(row, 'totalDebt', 'total_debt', 'debt') ?? 0,
     format: (v, row) => fmtMoney(row.totalDebt ?? row.total_debt ?? row.debt ?? 0) },
-  { key: 'joinedAt', label: 'В группе с', format: (v, row) => fmtDate(row.joinedAt ?? row.joined_at) },
-  { key: 'status', label: 'Статус', format: (v) => v === 'frozen' ? 'Заморожен' : v === 'archived' ? 'Архив' : 'Активен' },
+  { key: 'joinedAt', label: i18n.t('exportUtils.colJoinedAt'), format: (v, row) => fmtDate(row.joinedAt ?? row.joined_at) },
+  { key: 'status', label: i18n.t('exportUtils.colStatus'), format: (v) => statusLabel(v) },
 ];
 
 // ═══════════════ Раздатка логинов/паролей группы (PDF с QR) ═══════════════
@@ -716,28 +730,35 @@ export async function exportGroupCredentialsPDF({ groupName, mentorName, student
   doc.save(`login-parollar_${slug}_${today()}.pdf`);
 }
 
-/** Page config registry — maps route → { columns, title, filenamePrefix } */
-export const PAGE_EXPORT_CONFIG = {
-  students: { columns: STUDENT_COLUMNS, title: 'Список студентов', filenamePrefix: 'студенты' },
-  groups: { columns: GROUP_COLUMNS, title: 'Список групп', filenamePrefix: 'группы' },
-  payments: { columns: PAYMENT_COLUMNS, title: 'Платежи', filenamePrefix: 'платежи' },
-  reports: { columns: REPORT_COLUMNS, title: 'Отчёт — Доходы и долги', filenamePrefix: 'отчёт' },
-  expenses: { columns: EXPENSE_COLUMNS, title: 'Отчёт по расходам', filenamePrefix: 'расходы' },
-  mentors: { columns: MENTOR_COLUMNS, title: 'Список менторов', filenamePrefix: 'менторы' },
-  mentorDetail: { columns: MENTOR_COLUMNS, title: 'Профиль ментора', filenamePrefix: 'ментор' },
-  groupStudents: { columns: GROUP_STUDENT_COLUMNS, title: 'Ученики группы', filenamePrefix: 'ученики-группы' },
-  studentDetail: { columns: STUDENT_COLUMNS, title: 'Профиль ученика', filenamePrefix: 'ученик' },
-};
+/** Page config registry — maps route → { columns, title, filenamePrefix }.
+    A function, not a static object: columns/titles must reflect whatever
+    language is active at export time, not whichever was active on first
+    import of this module. */
+export function pageExportConfigFor() {
+  const studentCols = studentColumnsFor();
+  const mentorCols = mentorColumnsFor();
+  return {
+    students: { columns: studentCols, title: i18n.t('exportUtils.titleStudentList'), filenamePrefix: i18n.t('exportUtils.prefixStudents') },
+    groups: { columns: groupColumnsFor(), title: i18n.t('exportUtils.titleGroupList'), filenamePrefix: i18n.t('exportUtils.prefixGroups') },
+    payments: { columns: paymentColumnsFor(), title: i18n.t('exportUtils.titlePayments'), filenamePrefix: i18n.t('exportUtils.prefixPayments') },
+    reports: { columns: reportColumnsFor(), title: i18n.t('exportUtils.titleReport'), filenamePrefix: i18n.t('exportUtils.prefixReport') },
+    expenses: { columns: expenseColumnsFor(), title: i18n.t('exportUtils.titleExpensesReport'), filenamePrefix: i18n.t('exportUtils.prefixExpenses') },
+    mentors: { columns: mentorCols, title: i18n.t('exportUtils.titleMentorList'), filenamePrefix: i18n.t('exportUtils.prefixMentors') },
+    mentorDetail: { columns: mentorCols, title: i18n.t('exportUtils.titleMentorProfile'), filenamePrefix: i18n.t('exportUtils.prefixMentor') },
+    groupStudents: { columns: groupStudentColumnsFor(), title: i18n.t('exportUtils.titleGroupStudents'), filenamePrefix: i18n.t('exportUtils.prefixGroupStudents') },
+    studentDetail: { columns: studentCols, title: i18n.t('exportUtils.titleStudentProfile'), filenamePrefix: i18n.t('exportUtils.prefixStudent') },
+  };
+}
 
 // ═══════════════ Attendance (dynamic month grid) ═══════════════
 
-/** Single-letter marks — a month grid has no room for "Пришёл"/"Опоздал". */
-export const ATTENDANCE_MARK = {
+/** Single-letter marks — a month grid has no room for full status words. */
+export const attendanceMarkFor = () => ({
   present: '+',
-  late: 'О',      // Опоздал
+  late: i18n.t('exportUtils.lateMark'),
   absent: '-',
   null: '·',      // lesson day, not marked
-};
+});
 
 /**
  * Build rows + columns for an attendance export.
@@ -756,9 +777,10 @@ export const ATTENDANCE_MARK = {
 export function buildAttendanceExport(students, days, marks, year, month) {
   const pad2 = (n) => String(n).padStart(2, '0');
   const dateKey = (day) => `${year}-${pad2(month + 1)}-${pad2(day)}`;
+  const ATTENDANCE_MARK = attendanceMarkFor();
 
   const columns = [
-    { key: 'student', label: 'Ученик' },
+    { key: 'student', label: i18n.t('exportUtils.colStudentLabel') },
     ...days.map((d) => ({
       key: `d${d}`,
       // Weekday under the date helps the reader see which column is which
@@ -766,8 +788,8 @@ export function buildAttendanceExport(students, days, marks, year, month) {
       label: `${pad2(d)}.${pad2(month + 1)}`,
     })),
     // Attended counts late as present: the student was in the room.
-    { key: 'attended', label: 'Посетил', type: 'number', value: (row) => row.attended },
-    { key: 'total', label: 'Всего', type: 'number', value: (row) => row.total },
+    { key: 'attended', label: i18n.t('exportUtils.colAttended'), type: 'number', value: (row) => row.attended },
+    { key: 'total', label: i18n.t('exportUtils.colTotal'), type: 'number', value: (row) => row.total },
   ];
 
   const data = students.map((s) => {

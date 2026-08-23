@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Download, FileSpreadsheet, FileText, FileDown, FileCode2, X, Check, AlertTriangle } from 'lucide-react';
-import { exportData, PAGE_EXPORT_CONFIG } from '../utils/exportUtils.js';
+import { exportData, pageExportConfigFor } from '../utils/exportUtils.js';
 
 const formatOptionsFor = (t) => [
   {
@@ -42,7 +42,7 @@ const formatOptionsFor = (t) => [
 export default function ExportDialog({ open, onClose, pageKey, data = [], filename, columns, title: titleProp }) {
   const { t } = useTranslation();
   const FORMAT_OPTIONS = formatOptionsFor(t);
-  const config = PAGE_EXPORT_CONFIG[pageKey] || {};
+  const config = pageExportConfigFor()[pageKey] || {};
   const cols = columns ?? config.columns ?? [];
   const [format, setFormat] = useState('excel');
   const [title, setTitle] = useState(titleProp || config.title || t('components.exportDialog.defaultTitle'));
