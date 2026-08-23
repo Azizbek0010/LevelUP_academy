@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Search, Plus, Trash2, CalendarDays, RefreshCw, MoreVertical, Eye, Pencil,
   X, Banknote, CreditCard, ChevronDown, AlertTriangle, Download,
@@ -10,10 +11,13 @@ import { useAdminExpenses } from '../../queries.js';
 import ExportDialog from '../../components/ExportDialog.jsx';
 import { Modal } from '../mentor/_ui.jsx';
 
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+
 const CATEGORIES = ['All', 'Rent', 'Salary', 'Materials', 'Utility', 'Other'];
-const CATEGORY_LABELS = {
-  All: 'Все', Rent: 'Аренда', Salary: 'Зарплата', Materials: 'Материалы', Utility: 'Коммунальные', Other: 'Другое',
-};
+const categoryLabelsMap = (t) => ({
+  All: t('admin.expenses.catAll'), Rent: t('admin.expenses.catRent'), Salary: t('admin.expenses.catSalary'),
+  Materials: t('admin.expenses.catMaterials'), Utility: t('admin.expenses.catUtility'), Other: t('admin.expenses.catOther'),
+});
 const CATEGORY_COLORS = {
   Rent: '#2ECC71', Salary: '#1D2417', Materials: '#5E6E52',
   Utility: '#E8543E', Other: '#2ECC71',
@@ -23,27 +27,36 @@ const CATEGORY_COLORS_LIGHT = {
   Utility: 'rgba(232,84,62,0.12)', Other: 'rgba(46,204,113,0.12)',
 };
 
-const STATUS_CLASSES = {
-  paid: { className: 'bg-success/10 text-success', label: 'Оплачен', dot: 'bg-success' },
-  pending: { className: 'bg-[rgba(94,110,82,0.12)] text-[#5E6E52]', label: 'Ожидает', dot: 'bg-[#5E6E52]' },
-  rejected: { className: 'bg-error/10 text-error', label: 'Отклонён', dot: 'bg-error' },
-  cancelled: { className: 'bg-base-200 text-base-content/70', label: 'Отменён', dot: 'bg-base-content/40' },
+const statusClassesMap = (t) => ({
+  paid: { className: 'bg-success/10 text-success', label: t('status.paid'), dot: 'bg-success' },
+  pending: { className: 'bg-[rgba(94,110,82,0.12)] text-[#5E6E52]', label: t('status.pending'), dot: 'bg-[#5E6E52]' },
+  rejected: { className: 'bg-error/10 text-error', label: t('admin.expenses.statusRejected'), dot: 'bg-error' },
+  cancelled: { className: 'bg-base-200 text-base-content/70', label: t('status.cancelled'), dot: 'bg-base-content/40' },
+});
+
+/* Значения — канонические (Наличные/Карта), уходят на бэкенд как есть;
+   локализуется только отображаемая подпись, не значение поля. */
+const PAYMENT_METHODS = ['Наличные', 'Карта'];
+const paymentMethodDisplay = (value, t) => {
+  if (value === 'Наличные' || value === 'Naqt') return t('admin.expenses.methodCash');
+  if (value === 'Карта') return t('admin.expenses.methodCard');
+  if (value === 'Банк') return t('admin.expenses.methodBank');
+  if (value === 'Перевод') return t('admin.expenses.methodTransfer');
+  return value;
 };
 
-const PAYMENT_METHODS = ['Наличные', 'Карта'];
-
-function formatCurrency(n) {
-  return Number(n || 0).toLocaleString('ru-RU') + ' сум';
+function formatCurrency(n, locale = 'ru-RU', currencyWord = 'сум') {
+  return `${Number(n || 0).toLocaleString(locale)} ${currencyWord}`;
 }
 
-function formatDate(isoStr) {
+function formatDate(isoStr, locale = 'ru-RU') {
   if (!isoStr) return '—';
   const d = new Date(isoStr);
-  return d.toLocaleDateString('ru-RU');
+  return d.toLocaleDateString(locale);
 }
 
-function getMonthName(date) {
-  return date.toLocaleDateString('ru-RU', { month: 'short' });
+function getMonthName(date, locale = 'ru-RU') {
+  return date.toLocaleDateString(locale, { month: 'short' });
 }
 
 function getStatusFromExpense(e) {
@@ -68,12 +81,14 @@ function getCreatedBy(e) {
 
 // ─── Chart Tooltip ───
 function ChartTooltip({ active, payload, label }) {
+  const { i18n, t } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
   if (!active || !payload) return null;
   return (
     <div className="card bg-base-100 px-3.5 py-2.5 text-[11px] shadow-[0_8px_24px_var(--shadow-lg)]">
       <p className="font-bold text-base-content mb-1.5 text-[12px]">{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color }} className="tabular-nums font-semibold">{formatCurrency(p.value)}</p>
+        <p key={i} style={{ color: p.color }} className="tabular-nums font-semibold">{formatCurrency(p.value, locale, t('admin.expenses.currency'))}</p>
       ))}
     </div>
   );
@@ -81,6 +96,7 @@ function ChartTooltip({ active, payload, label }) {
 
 // ─── Action Dropdown ───
 function ActionDropdown({ expense, onView, onEdit, onDelete }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -110,14 +126,14 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Eye className="w-4 h-4" /></span>
-            Просмотр
+            {t('admin.expenses.view')}
           </button>
           <button
             onClick={() => { onEdit(expense); setOpen(false); }}
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Pencil className="w-4 h-4" /></span>
-            Редактировать
+            {t('admin.expenses.edit')}
           </button>
           <div className="border-t border-base-300 my-1" />
           <button
@@ -125,7 +141,7 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-error hover:bg-[rgba(232,84,62,0.08)] transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Trash2 className="w-4 h-4" /></span>
-            Удалить
+            {t('admin.expenses.delete')}
           </button>
         </div>
       )}
@@ -135,6 +151,8 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
 
 // ─── Status Badge ───
 function StatusBadge({ status }) {
+  const { t } = useTranslation();
+  const STATUS_CLASSES = statusClassesMap(t);
   const config = STATUS_CLASSES[status] || STATUS_CLASSES.paid;
   return (
     <span
@@ -148,6 +166,8 @@ function StatusBadge({ status }) {
 
 // ─── Category Badge ───
 function CategoryBadge({ category }) {
+  const { t } = useTranslation();
+  const CATEGORY_LABELS = categoryLabelsMap(t);
   const color = CATEGORY_COLORS[category] || '#2ECC71';
   const bg = CATEGORY_COLORS_LIGHT[category] || 'rgba(46,204,113,0.12)';
   return (
@@ -165,6 +185,10 @@ function CategoryBadge({ category }) {
 //  Main Component
 // ═══════════════════════════════════════════
 export default function Expenses() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const currencyWord = t('admin.expenses.currency');
+  const CATEGORY_LABELS = categoryLabelsMap(t);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -211,10 +235,10 @@ export default function Expenses() {
 
   // ─── Chart Data ───
   const budgetData = useMemo(() => CATEGORIES.filter((c) => c !== 'All').map((cat) => ({
-    name: cat,
+    name: CATEGORY_LABELS[cat] || cat,
     amount: expenses.filter((e) => e.category === cat).reduce((s, e) => s + (e.amount || 0), 0),
     fill: CATEGORY_COLORS[cat],
-  })), [expenses]);
+  })), [expenses, CATEGORY_LABELS]);
 
   const monthlyData = useMemo(() => {
     const months = {};
@@ -230,9 +254,9 @@ export default function Expenses() {
       .map(([key, amount]) => {
         const [y, m] = key.split('-');
         const date = new Date(Number(y), Number(m) - 1);
-        return { name: getMonthName(date), amount, fill: 'var(--primary)' };
+        return { name: getMonthName(date, locale), amount, fill: 'var(--primary)' };
       });
-  }, [expenses]);
+  }, [expenses, locale]);
 
   // ─── Modal handlers ───
   const openModal = () => {
@@ -296,9 +320,9 @@ export default function Expenses() {
       console.error('Save expense failed:', err);
       const msg = err.response?.data?.message || err.message;
       if (editingId && err.status === 404) {
-        setActionError("Редактирование пока не работает — на бэкенде нет PATCH. Сообщите Карису.");
+        setActionError(t('admin.expenses.editUnavailable'));
       } else {
-        setActionError(msg || "Ошибка сохранения расхода");
+        setActionError(msg || t('admin.expenses.saveFailed'));
       }
     } finally {
       setSaving(false);
@@ -315,7 +339,7 @@ export default function Expenses() {
       refetch();
     } catch (err) {
       console.error('Delete expense failed:', err);
-      setActionError(err.response?.data?.message || err.message || "Ошибка удаления");
+      setActionError(err.response?.data?.message || err.message || t('admin.expenses.deleteFailed'));
     } finally {
       setSaving(false);
     }
@@ -355,7 +379,7 @@ export default function Expenses() {
               className="flex items-center gap-1.5 px-3 h-7 rounded-[8px] text-[11px] font-semibold hover:bg-[rgba(232,84,62,0.12)] transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Обновить
+              {t('admin.expenses.refresh')}
             </button>
             <button onClick={() => setActionError(null)} className="w-7 h-7 rounded-[8px] flex items-center justify-center hover:bg-[rgba(232,84,62,0.1)] transition-all shrink-0">
               <X className="w-4 h-4" />
@@ -368,20 +392,20 @@ export default function Expenses() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Расходы</h1>
+            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">{t('admin.expenses.title')}</h1>
           </div>
           <p className="text-[13px] text-base-content/70">
-            Учёт, управление и анализ расходов организации
+            {t('admin.expenses.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={filtered.length === 0}>
             <Download className="w-4 h-4" />
-            Экспорт
+            {t('admin.expenses.export')}
           </button>
           <button className="btn btn-primary btn-sm gap-1.5" onClick={openModal}>
             <Plus className="w-4 h-4" />
-            Добавить расход
+            {t('admin.expenses.addExpense')}
           </button>
         </div>
       </div>
@@ -394,7 +418,7 @@ export default function Expenses() {
           <div className="relative flex-1 w-full sm:max-w-xs">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/45 pointer-events-none" />
             <input
-              placeholder="Поиск расходов..."
+              placeholder={t('admin.expenses.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full h-10 pl-10 pr-10 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
@@ -415,7 +439,7 @@ export default function Expenses() {
               value={filter}
               onChange={setFilter}
               options={CATEGORIES.map((cat) => ({ value: cat, label: `${CATEGORY_LABELS[cat] || cat} (${getCategoryCount(cat)})` }))}
-              placeholder="Категория"
+              placeholder={t('admin.expenses.categoryFilterLabel')}
             />
           </div>
 
@@ -424,7 +448,7 @@ export default function Expenses() {
 
         {/* Category pills */}
         <div className="flex items-center gap-1.5 flex-wrap px-4 pb-4">
-          <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em] mr-0.5">Категория:</span>
+          <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em] mr-0.5">{t('admin.expenses.categoryLabel')}</span>
           {CATEGORIES.map((cat) => {
             const isActive = filter === cat;
             const catColor = cat === 'All' ? 'var(--primary)' : CATEGORY_COLORS[cat] || '#2ECC71';
@@ -453,7 +477,7 @@ export default function Expenses() {
               className="flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[11px] font-semibold text-base-content/45 hover:text-base-content hover:bg-base-200 transition-all ml-auto shrink-0"
             >
               <X className="w-3.5 h-3.5" />
-              Сбросить
+              {t('admin.expenses.reset')}
             </button>
           )}
         </div>
@@ -495,15 +519,15 @@ export default function Expenses() {
                   <Banknote className="w-8 h-8 text-base-content/45" />
                 </div>
                 <h3 className="text-[15px] font-bold text-base-content mb-1.5">
-                  {search || hasActiveFilters ? 'Ничего не найдено' : 'Пока нет расходов'}
+                  {search || hasActiveFilters ? t('admin.expenses.nothingFoundTitle') : t('admin.expenses.emptyTitle')}
                 </h3>
                 <p className="text-[12px] text-base-content/70 max-w-[280px] mb-5">
-                  {search || hasActiveFilters ? 'Попробуйте изменить параметры поиска или фильтров' : 'Добавьте первый расход, чтобы начать'}
+                  {search || hasActiveFilters ? t('admin.expenses.nothingFoundHint') : t('admin.expenses.emptyHint')}
                 </p>
                 {!search && !hasActiveFilters && (
                   <button className="btn btn-primary btn-sm gap-1.5" onClick={openModal}>
                     <Plus className="w-4 h-4" />
-                    Добавить расход
+                    {t('admin.expenses.addExpense')}
                   </button>
                 )}
                 {!search && !hasActiveFilters && (
@@ -529,14 +553,14 @@ export default function Expenses() {
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-[10px] font-bold uppercase tracking-[0.07em] text-base-content/45 bg-base-100">
-                      <th className="px-5 py-4">Категория</th>
-                      <th className="px-5 py-4">Примечание</th>
-                      <th className="px-5 py-4 text-right">Сумма</th>
-                      <th className="px-5 py-4">Способ оплаты</th>
-                      <th className="px-5 py-4">Дата</th>
-                      <th className="px-5 py-4">Takrorlanish</th>
-                      <th className="px-5 py-4">Статус</th>
-                      <th className="px-5 py-4 hidden md:table-cell">Создал</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colCategory')}</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colNote')}</th>
+                      <th className="px-5 py-4 text-right">{t('admin.expenses.colAmount')}</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colMethod')}</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colDate')}</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colRecurring')}</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colStatus')}</th>
+                      <th className="px-5 py-4 hidden md:table-cell">{t('admin.expenses.colCreatedBy')}</th>
                       <th className="px-5 py-4 w-10"></th>
                     </tr>
                   </thead>
@@ -556,7 +580,7 @@ export default function Expenses() {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right font-bold text-base-content tabular-nums whitespace-nowrap text-[14px]">
-                          {formatCurrency(e.amount)}
+                          {formatCurrency(e.amount, locale, currencyWord)}
                         </td>
                         <td className="px-5 py-4">
                           {(() => {
@@ -566,7 +590,7 @@ export default function Expenses() {
                             return (
                               <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-[11px] font-medium text-base-content/70 bg-base-100 border border-base-300">
                                 <Icon className="w-3.5 h-3.5 shrink-0" />
-                                {pm}
+                                {paymentMethodDisplay(pm, t)}
                               </span>
                             );
                           })()}
@@ -574,15 +598,15 @@ export default function Expenses() {
                         <td className="px-5 py-4 text-base-content/70 tabular-nums whitespace-nowrap text-[12px]">
                           <span className="flex items-center gap-1.5">
                             <CalendarDays className="w-3 h-3 text-base-content/45" />
-                            {formatDate(e.spentAt)}
+                            {formatDate(e.spentAt, locale)}
                           </span>
                         </td>
                         <td className="px-5 py-4 text-base-content/70 text-[11px]">
                           {e.isRecurring ? (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-[6px] bg-[rgba(94,110,82,0.12)] text-[10px] font-medium" style={{ color: '#5E6E52' }}>
                               <RefreshCw className="w-3 h-3" />
-                              {e.recurringPeriod === 'monthly' ? 'Har oy' : e.recurringPeriod === 'quarterly' ? 'Har chorak' : 'Har yil'}
-                              {e.nextPaymentAt && ` → ${formatDate(e.nextPaymentAt)}`}
+                              {e.recurringPeriod === 'monthly' ? t('admin.expenses.everyMonth') : e.recurringPeriod === 'quarterly' ? t('admin.expenses.everyQuarter') : t('admin.expenses.everyYear')}
+                              {e.nextPaymentAt && ` → ${formatDate(e.nextPaymentAt, locale)}`}
                             </span>
                           ) : (
                             <span className="text-base-content/45">—</span>
@@ -612,18 +636,18 @@ export default function Expenses() {
               <div className="flex flex-wrap items-center justify-between px-5 py-3.5 border-t border-base-300 bg-base-100 gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-base-content/45">
-                    {filtered.length} расходов
+                    {t('admin.expenses.expensesCount', { count: filtered.length })}
                   </span>
                   {filtered.length !== expenses.length && (
                     <span className="text-[10px] text-base-content/45 opacity-60">
-                      ({expenses.length} всего)
+                      {t('admin.expenses.ofTotal', { count: expenses.length })}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Итого:</span>
+                  <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">{t('admin.expenses.total')}</span>
                   <span className="text-[13px] font-extrabold text-base-content tabular-nums">
-                    {formatCurrency(filteredTotal)}
+                    {formatCurrency(filteredTotal, locale, currencyWord)}
                   </span>
                 </div>
               </div>
@@ -633,7 +657,7 @@ export default function Expenses() {
           {loading && expenses.length > 0 && (
             <div className="flex items-center justify-center gap-2.5 py-4 text-[12px] text-base-content/45">
               <RefreshCw className="w-4 h-4 animate-spin" />
-              Обновление...
+              {t('admin.expenses.updating')}
             </div>
           )}
         </div>
@@ -643,8 +667,8 @@ export default function Expenses() {
           {/* Budget by Category */}
           <div className="card bg-base-100 p-5 card-hover-premium">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[14px] font-bold text-base-content">По категориям</h3>
-              <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em]">Бюджет</span>
+              <h3 className="text-[14px] font-bold text-base-content">{t('admin.expenses.byCategory')}</h3>
+              <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em]">{t('admin.expenses.budget')}</span>
             </div>
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -659,7 +683,7 @@ export default function Expenses() {
             </div>
             <div className="mt-4 pt-4 border-t border-base-300 space-y-2.5">
               {budgetData.filter((item) => item.amount > 0).length === 0 ? (
-                <p className="text-[11px] text-base-content/45 text-center py-2">Данные о расходах отсутствуют</p>
+                <p className="text-[11px] text-base-content/45 text-center py-2">{t('admin.expenses.noExpenseData')}</p>
               ) : (
                 budgetData.filter((item) => item.amount > 0).map((item, i) => (
                   <div key={i} className="flex items-center justify-between text-[11px] group/chart">
@@ -667,7 +691,7 @@ export default function Expenses() {
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: item.fill }} />
                       <span className="text-base-content/70 group-hover/chart:text-base-content transition-colors">{item.name}</span>
                     </div>
-                    <span className="font-bold text-base-content tabular-nums">{formatCurrency(item.amount)}</span>
+                    <span className="font-bold text-base-content tabular-nums">{formatCurrency(item.amount, locale, currencyWord)}</span>
                   </div>
                 ))
               )}
@@ -676,10 +700,10 @@ export default function Expenses() {
 
           {/* Monthly Trend */}
           <div className="card bg-base-100 p-5 card-hover-premium">
-            <h3 className="text-[14px] font-bold text-base-content mb-5">Тренд по месяцам</h3>
+            <h3 className="text-[14px] font-bold text-base-content mb-5">{t('admin.expenses.monthlyTrend')}</h3>
             {monthlyData.length === 0 ? (
               <div className="h-[140px] flex items-center justify-center">
-                <p className="text-[11px] text-base-content/45">Данные о тренде отсутствуют</p>
+                <p className="text-[11px] text-base-content/45">{t('admin.expenses.noTrendData')}</p>
               </div>
             ) : (
               <div className="h-[140px]">
@@ -702,7 +726,7 @@ export default function Expenses() {
         isOpen={viewModalOpen}
         onClose={() => { setViewModalOpen(false); setViewTarget(null); }}
         boxClass="max-w-lg"
-        title="Детали расхода"
+        title={t('admin.expenses.detailsTitle')}
       >
         {viewTarget && (
           <div className="space-y-5">
@@ -713,47 +737,47 @@ export default function Expenses() {
 
               <div className="space-y-0">
                 <div className="flex justify-between items-center py-3 border-b border-base-300">
-                  <span className="text-[12px] text-base-content/70 font-medium">Сумма</span>
-                  <span className="text-[18px] font-extrabold text-base-content tabular-nums">{formatCurrency(viewTarget.amount)}</span>
+                  <span className="text-[12px] text-base-content/70 font-medium">{t('admin.expenses.amountLabel')}</span>
+                  <span className="text-[18px] font-extrabold text-base-content tabular-nums">{formatCurrency(viewTarget.amount, locale, currencyWord)}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-base-300">
-                  <span className="text-[12px] text-base-content/70 font-medium">Дата</span>
-                  <span className="text-[13px] font-semibold text-base-content">{formatDate(viewTarget.spentAt)}</span>
+                  <span className="text-[12px] text-base-content/70 font-medium">{t('admin.expenses.dateLabel')}</span>
+                  <span className="text-[13px] font-semibold text-base-content">{formatDate(viewTarget.spentAt, locale)}</span>
                 </div>
                 {getPaymentMethod(viewTarget) !== '—' && (
                   <div className="flex justify-between items-center py-3 border-b border-base-300">
-                    <span className="text-[12px] text-base-content/70 font-medium">Способ оплаты</span>
-                    <span className="text-[13px] font-semibold text-base-content">{getPaymentMethod(viewTarget)}</span>
+                    <span className="text-[12px] text-base-content/70 font-medium">{t('admin.expenses.methodLabel')}</span>
+                    <span className="text-[13px] font-semibold text-base-content">{paymentMethodDisplay(getPaymentMethod(viewTarget), t)}</span>
                   </div>
                 )}
                 {viewTarget.isRecurring && (
                   <div className="flex justify-between items-center py-3 border-b border-base-300">
-                    <span className="text-[12px] text-base-content/70 font-medium">Takrorlanuvchi</span>
+                    <span className="text-[12px] text-base-content/70 font-medium">{t('admin.expenses.recurringLabel')}</span>
                     <span className="text-[13px] font-semibold text-base-content">
-                      {viewTarget.recurringPeriod === 'monthly' ? 'Har oy' : viewTarget.recurringPeriod === 'quarterly' ? 'Har chorak yil' : 'Har yil'}
-                      {viewTarget.nextPaymentAt && ` — keyingi: ${formatDate(viewTarget.nextPaymentAt)}`}
+                      {viewTarget.recurringPeriod === 'monthly' ? t('admin.expenses.everyMonth') : viewTarget.recurringPeriod === 'quarterly' ? t('admin.expenses.everyQuarter') : t('admin.expenses.everyYear')}
+                      {viewTarget.nextPaymentAt && t('admin.expenses.nextPayment', { date: formatDate(viewTarget.nextPaymentAt, locale) })}
                     </span>
                   </div>
                 )}
                 {getCreatedBy(viewTarget) !== '—' && (
                   <div className="flex justify-between items-center py-3 border-b border-base-300">
-                    <span className="text-[12px] text-base-content/70 font-medium">Создал</span>
+                    <span className="text-[12px] text-base-content/70 font-medium">{t('admin.expenses.createdByLabel')}</span>
                     <span className="text-[13px] font-semibold text-base-content">{getCreatedBy(viewTarget)}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-start py-3">
-                  <span className="text-[12px] text-base-content/70 font-medium pt-0.5">Примечание</span>
-                  <span className="text-[13px] text-base-content text-right max-w-[250px] leading-relaxed">{viewTarget.note || <span className="text-base-content/45 italic">Нет</span>}</span>
+                  <span className="text-[12px] text-base-content/70 font-medium pt-0.5">{t('admin.expenses.noteLabel')}</span>
+                  <span className="text-[13px] text-base-content text-right max-w-[250px] leading-relaxed">{viewTarget.note || <span className="text-base-content/45 italic">{t('admin.expenses.none')}</span>}</span>
                 </div>
               </div>
 
               <div className="flex justify-end gap-2.5 pt-3 border-t border-base-300">
                 <button className="btn btn-ghost btn-sm" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
-                  Закрыть
+                  {t('admin.expenses.close')}
                 </button>
                 <button className="btn btn-primary btn-sm gap-1.5" onClick={() => { setViewModalOpen(false); setViewTarget(null); openEditModal(viewTarget); }}>
                   <Pencil className="w-4 h-4" />
-                  Редактировать
+                  {t('admin.expenses.edit')}
                 </button>
               </div>
             </div>
@@ -765,24 +789,24 @@ export default function Expenses() {
         isOpen={modalOpen}
         onClose={() => { if (!saving) setModalOpen(false); }}
         boxClass="max-w-lg"
-        title={editingId ? 'Редактировать расход' : 'Добавить расход'}
+        title={editingId ? t('admin.expenses.editTitle') : t('admin.expenses.addExpense')}
         actions={
           <div className="flex justify-end gap-2.5 pt-2">
-            <button className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={saving}>Отмена</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={saving}>{t('admin.expenses.cancel')}</button>
             <button className="btn btn-primary btn-sm gap-1.5" onClick={handleSave} disabled={saving || !formData.amount || (formData.category === 'Other' && !(formData.title || '').trim())}>
               {saving ? (
                 <span className="flex items-center gap-1.5">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  Сохранение...
+                  {t('admin.expenses.saving')}
                 </span>
-              ) : editingId ? "Сохранить" : "Добавить"}
+              ) : editingId ? t('admin.expenses.save') : t('admin.expenses.add')}
             </button>
           </div>
         }
       >
         <div className="space-y-5">
             <div>
-              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Категория *</label>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.categoryRequired')}</label>
               <div className="grid grid-cols-3 gap-2">
                 {CATEGORIES.filter((c) => c !== 'All').map((cat) => {
                   const isActive = formData.category === cat;
@@ -806,11 +830,11 @@ export default function Expenses() {
 
               {formData.category === 'Other' && (
                 <div>
-                  <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Название расхода *</label>
+                  <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.titleRequired')}</label>
                   <input
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Например: Wi-Fi, канцелярия, ремонт"
+                    placeholder={t('admin.expenses.titlePlaceholder')}
                     className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
                   />
                 </div>
@@ -818,7 +842,7 @@ export default function Expenses() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Сумма *</label>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.amountRequired')}</label>
               <input
                 type="number"
                 value={formData.amount}
@@ -829,7 +853,7 @@ export default function Expenses() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Способ оплаты</label>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.methodLabel')}</label>
               <div className="grid grid-cols-2 gap-2">
                 {PAYMENT_METHODS.map((method) => {
                   const Icon = method === 'Наличные' ? Banknote : CreditCard;
@@ -846,7 +870,7 @@ export default function Expenses() {
                       }}
                     >
                       <Icon className="w-4 h-4 shrink-0" />
-                      {method}
+                      {paymentMethodDisplay(method, t)}
                     </button>
                   );
                 })}
@@ -854,7 +878,7 @@ export default function Expenses() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Takrorlanuvchi xarajat</label>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.recurringExpenseLabel')}</label>
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -863,25 +887,25 @@ export default function Expenses() {
                     onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
                     className="checkbox checkbox-primary w-4 h-4"
                   />
-                  <span className="text-[12px] text-base-content/70">Har oy avtomatik qo'shilsin</span>
+                  <span className="text-[12px] text-base-content/70">{t('admin.expenses.autoAddMonthly')}</span>
                 </label>
               </div>
               {formData.isRecurring && (
                 <div className="mt-3 space-y-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Takrorlanish davri</label>
+                    <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.recurringPeriodLabel')}</label>
                     <select
                       value={formData.recurringPeriod}
                       onChange={(e) => setFormData({ ...formData, recurringPeriod: e.target.value })}
                       className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
                     >
-                      <option value="monthly">Har oy</option>
-                      <option value="quarterly">Har chorak yil</option>
-                      <option value="yearly">Har yil</option>
+                      <option value="monthly">{t('admin.expenses.everyMonth')}</option>
+                      <option value="quarterly">{t('admin.expenses.everyQuarter')}</option>
+                      <option value="yearly">{t('admin.expenses.everyYear')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Keyingi to'lov sanasi *</label>
+                    <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.nextPaymentDateRequired')}</label>
                     <input
                       type="date"
                       value={formData.nextPaymentAt}
@@ -896,11 +920,11 @@ export default function Expenses() {
 
             {formData.category !== 'Other' && (
               <div>
-                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Примечание</label>
+                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.noteLabel')}</label>
                 <input
                   value={formData.note}
                   onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                  placeholder="Комментарий к расходу"
+                  placeholder={t('admin.expenses.noteCommentPlaceholder')}
                   className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
                 />
               </div>
@@ -923,17 +947,17 @@ export default function Expenses() {
         isOpen={!!deleteTarget}
         onClose={() => { if (!saving) setDeleteTarget(null); }}
         boxClass="max-w-md"
-        title="Удалить расход"
+        title={t('admin.expenses.deleteTitle')}
         actions={
           <div className="flex justify-end gap-2.5 pt-2 border-t border-base-300">
-            <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Отмена</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>{t('admin.expenses.cancel')}</button>
             <button className="btn btn-error btn-sm gap-1.5 text-white" onClick={handleDelete} disabled={saving}>
               {saving ? (
                 <span className="flex items-center gap-1.5">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  Удаление...
+                  {t('admin.expenses.deleting')}
                 </span>
-              ) : "Удалить"}
+              ) : t('admin.expenses.delete')}
             </button>
           </div>
         }
@@ -944,11 +968,11 @@ export default function Expenses() {
               <AlertTriangle className="w-5 h-5 text-error" />
             </div>
             <div className="flex-1">
-              <p className="text-[14px] font-bold text-base-content mb-1.5">Вы уверены?</p>
+              <p className="text-[14px] font-bold text-base-content mb-1.5">{t('admin.expenses.confirmTitle')}</p>
               <p className="text-[12px] text-base-content/70 leading-relaxed">
                 <CategoryBadge category={deleteTarget?.category} />{' '}
-                <span className="tabular-nums font-semibold text-base-content">{formatCurrency(deleteTarget?.amount)}</span>{' '}
-                — удалить этот расход? Это действие нельзя отменить.
+                <span className="tabular-nums font-semibold text-base-content">{formatCurrency(deleteTarget?.amount, locale, currencyWord)}</span>{' '}
+                {t('admin.expenses.confirmBody')}
               </p>
             </div>
           </div>
@@ -966,7 +990,7 @@ export default function Expenses() {
       </Modal>
 
       {/* ═══ Export Dialog ═══ */}
-      <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="expenses" data={filtered} filename="расходы" />
+      <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="expenses" data={filtered} filename={t('admin.expenses.filename')} />
     </div>
   );
 }
