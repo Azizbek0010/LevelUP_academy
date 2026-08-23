@@ -1,8 +1,8 @@
 import { useMethodistAnalytics } from '../../queries.js';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { BookOpen, FileQuestion, TrendingDown, AlertTriangle, BarChart3, RefreshCw, BarChart } from 'lucide-react';
-import { LangProvider, useLang } from './i18n.js';
-import LangSwitcher from './LangSwitcher.jsx';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher.jsx';
 
 const scoreColor = (avg) => {
   if (avg >= 70) return '#059669';
@@ -11,9 +11,9 @@ const scoreColor = (avg) => {
 };
 
 const scoreLabel = (avg, t) => {
-  if (avg >= 70) return t('analytics.score_good');
-  if (avg >= 50) return t('analytics.score_avg');
-  return t('analytics.score_hard');
+  if (avg >= 70) return t('methodist.analytics.score_good');
+  if (avg >= 50) return t('methodist.analytics.score_avg');
+  return t('methodist.analytics.score_hard');
 };
 
 function ScoreBadge({ score, size = 'md' }) {
@@ -44,7 +44,7 @@ function DonutChart({ value, size = 96, t }) {
       viewBox={`0 0 ${size} ${size}`}
       className="block"
       role="img"
-      aria-label={t('analytics.donut_aria', { num })}
+      aria-label={t('methodist.analytics.donut_aria', { num })}
     >
       <defs>
         <linearGradient id="mt-donut-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -88,7 +88,7 @@ function DifficultyBar({ name, avgScore, count, index, t }) {
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-semibold text-[var(--mt-text)]">{name}</span>
-          <span className="text-[10px] text-[var(--mt-text-muted)]">({t('common.tests_count', { count })})</span>
+          <span className="text-[10px] text-[var(--mt-text-muted)]">({t('methodist.common.tests_count', { count })})</span>
         </div>
         <ScoreBadge score={avgScore} />
       </div>
@@ -121,7 +121,7 @@ function WorstTestCard({ test, index, t }) {
       </span>
       <div className="flex-1 min-w-0">
         <div className="text-[13px] font-semibold text-[var(--mt-text)] truncate">{test.title}</div>
-        <div className="text-[11px] text-[var(--mt-text-muted)]">{test.group_name} · {t('common.attempts_count', { count: test.attempts })}</div>
+        <div className="text-[11px] text-[var(--mt-text-muted)]">{test.group_name} · {t('methodist.common.attempts_count', { count: test.attempts })}</div>
       </div>
       <ScoreBadge score={test.avg_score} size="sm" />
     </div>
@@ -129,7 +129,7 @@ function WorstTestCard({ test, index, t }) {
 }
 
 function AnalyticsView() {
-  const { t } = useLang();
+  const { t } = useTranslation();
   const { data, isLoading, error } = useMethodistAnalytics();
 
   const header = (
@@ -140,11 +140,11 @@ function AnalyticsView() {
             <BarChart size={20} className="text-[var(--mt-accent)]" />
           </div>
           <div>
-            <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('analytics.title')}</h1>
-            <p className="text-[13px] text-[var(--mt-text-muted)]">{t('analytics.subtitle')}</p>
+            <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('methodist.analytics.title')}</h1>
+            <p className="text-[13px] text-[var(--mt-text-muted)]">{t('methodist.analytics.subtitle')}</p>
           </div>
         </div>
-        <LangSwitcher />
+        <LanguageSwitcher />
       </div>
     </div>
   );
@@ -165,14 +165,14 @@ function AnalyticsView() {
             <AlertTriangle size={22} className="text-[var(--mt-danger)]" />
           </div>
           <div className="flex-1">
-            <p className="text-[14px] font-bold text-[var(--mt-text)] mb-0.5">{t('common.loading_error')}</p>
+            <p className="text-[14px] font-bold text-[var(--mt-text)] mb-0.5">{t('methodist.common.loading_error')}</p>
             <p className="text-[12px] text-[var(--mt-text-muted)]">{error.message}</p>
           </div>
           <button
             className="mt-btn-ghost"
             onClick={() => window.location.reload()}
           >
-            <RefreshCw size={14} /> {t('common.retry')}
+            <RefreshCw size={14} /> {t('methodist.common.retry')}
           </button>
         </div>
       </div>
@@ -184,14 +184,14 @@ function AnalyticsView() {
 
   const subjectStats = {};
   for (const item of tests) {
-    const subj = item.subject || t('analytics.general_subject');
+    const subj = item.subject || t('methodist.analytics.general_subject');
     if (!subjectStats[subj]) subjectStats[subj] = { tests: 0, avgScore: 0, count: 0 };
     subjectStats[subj].tests += 1;
     subjectStats[subj].avgScore += Number(item.avg_score || 0);
     subjectStats[subj].count += 1;
   }
   for (const h of homework) {
-    const subj = h.subject || t('analytics.general_subject');
+    const subj = h.subject || t('methodist.analytics.general_subject');
     if (!subjectStats[subj]) subjectStats[subj] = { tests: 0, avgScore: 0, count: 0 };
     subjectStats[subj].avgScore += Number(h.avg_score || 0);
     subjectStats[subj].count += 1;
@@ -217,21 +217,21 @@ function AnalyticsView() {
       <div className="mt-stat-strip mt-animate-in mt-stagger-1">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 items-center">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mt-text-muted)] mb-1">{t('analytics.total_tests')}</div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mt-text-muted)] mb-1">{t('methodist.analytics.total_tests')}</div>
             <div className="text-[24px] font-extrabold leading-none tracking-tight tabular-nums text-[var(--mt-text)]">{tests.length}</div>
           </div>
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mt-text-muted)] mb-1">{t('analytics.total_attempts')}</div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mt-text-muted)] mb-1">{t('methodist.analytics.total_attempts')}</div>
             <div className="text-[24px] font-extrabold leading-none tracking-tight tabular-nums text-[var(--mt-text)]">{totalAttempts}</div>
           </div>
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mt-text-muted)] mb-1">{t('analytics.overall_avg')}</div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mt-text-muted)] mb-1">{t('methodist.analytics.overall_avg')}</div>
             <div className="text-[24px] font-extrabold leading-none tracking-tight tabular-nums" style={{ color: scoreColor(overallAvg) }}>{overallAvg}%</div>
           </div>
           <div className="flex items-center gap-4">
             <DonutChart value={overallAvg} t={t} />
             <div className="min-w-0">
-              <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mt-text-muted)] mb-1">{t('analytics.performance')}</div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mt-text-muted)] mb-1">{t('methodist.analytics.performance')}</div>
               <div className="text-[13px] font-bold text-[var(--mt-text)]">{scoreLabel(overallAvg, t)}</div>
             </div>
           </div>
@@ -244,8 +244,8 @@ function AnalyticsView() {
           <div className="mt-section-header">
             <TrendingDown size={18} className="text-[var(--mt-warning)]" />
             <div>
-              <h2 className="text-[14px] font-bold text-[var(--mt-text)]">{t('analytics.subject_difficulty')}</h2>
-              <p className="text-[11px] text-[var(--mt-text-muted)]">{t('analytics.by_avg_score')}</p>
+              <h2 className="text-[14px] font-bold text-[var(--mt-text)]">{t('methodist.analytics.subject_difficulty')}</h2>
+              <p className="text-[11px] text-[var(--mt-text-muted)]">{t('methodist.analytics.by_avg_score')}</p>
             </div>
           </div>
           {difficultSubjects.length === 0 ? (
@@ -253,7 +253,7 @@ function AnalyticsView() {
               <div className="w-12 h-12 rounded-xl grid place-items-center mb-3" style={{ background: 'var(--mt-surface-warm)' }}>
                 <BarChart3 size={20} className="text-[var(--mt-text-muted)]" />
               </div>
-              <p className="text-[13px] text-[var(--mt-text-muted)]">{t('common.no_data')}</p>
+              <p className="text-[13px] text-[var(--mt-text-muted)]">{t('methodist.common.no_data')}</p>
             </div>
           ) : (
             <div className="space-y-5">
@@ -269,8 +269,8 @@ function AnalyticsView() {
           <div className="mt-section-header">
             <AlertTriangle size={18} className="text-[var(--mt-danger)]" />
             <div>
-              <h2 className="text-[14px] font-bold text-[var(--mt-text)]">{t('analytics.low_tests')}</h2>
-              <p className="text-[11px] text-[var(--mt-text-muted)]">{t('analytics.top5')}</p>
+              <h2 className="text-[14px] font-bold text-[var(--mt-text)]">{t('methodist.analytics.low_tests')}</h2>
+              <p className="text-[11px] text-[var(--mt-text-muted)]">{t('methodist.analytics.top5')}</p>
             </div>
           </div>
           {worstTests.length === 0 ? (
@@ -278,7 +278,7 @@ function AnalyticsView() {
               <div className="w-12 h-12 rounded-xl grid place-items-center mb-3" style={{ background: 'var(--mt-surface-warm)' }}>
                 <AlertTriangle size={20} className="text-[var(--mt-text-muted)]" />
               </div>
-              <p className="text-[13px] text-[var(--mt-text-muted)]">{t('common.no_data')}</p>
+              <p className="text-[13px] text-[var(--mt-text-muted)]">{t('methodist.common.no_data')}</p>
             </div>
           ) : (
             <div className="space-y-2.5">
@@ -294,19 +294,19 @@ function AnalyticsView() {
           <div className="mt-section-header">
             <FileQuestion size={18} className="text-[var(--mt-accent)]" />
             <div>
-              <h2 className="text-[14px] font-bold text-[var(--mt-text)]">{t('analytics.all_tests')}</h2>
-              <p className="text-[11px] text-[var(--mt-text-muted)]">{t('analytics.full_table')}</p>
+              <h2 className="text-[14px] font-bold text-[var(--mt-text)]">{t('methodist.analytics.all_tests')}</h2>
+              <p className="text-[11px] text-[var(--mt-text-muted)]">{t('methodist.analytics.full_table')}</p>
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="table w-full">
               <thead>
                 <tr className="border-b-2 border-[var(--mt-border)]">
-                  <th className="font-bold text-[10px] uppercase tracking-[0.08em] text-[var(--mt-text-muted)] bg-[var(--mt-surface)]">{t('analytics.col_title')}</th>
-                  <th className="font-bold text-[10px] uppercase tracking-[0.08em] text-[var(--mt-text-muted)] bg-[var(--mt-surface)]">{t('analytics.col_group')}</th>
-                  <th className="font-bold text-[10px] uppercase tracking-[0.08em] text-[var(--mt-text-muted)] bg-[var(--mt-surface)]">{t('analytics.col_branch')}</th>
-                  <th className="font-bold text-[10px] uppercase tracking-[0.08em] text-[var(--mt-text-muted)] text-right bg-[var(--mt-surface)]">{t('analytics.col_attempts')}</th>
-                  <th className="font-bold text-[10px] uppercase tracking-[0.08em] text-[var(--mt-text-muted)] text-right bg-[var(--mt-surface)]">{t('analytics.col_avg')}</th>
+                  <th className="font-bold text-[10px] uppercase tracking-[0.08em] text-[var(--mt-text-muted)] bg-[var(--mt-surface)]">{t('methodist.analytics.col_title')}</th>
+                  <th className="font-bold text-[10px] uppercase tracking-[0.08em] text-[var(--mt-text-muted)] bg-[var(--mt-surface)]">{t('methodist.analytics.col_group')}</th>
+                  <th className="font-bold text-[10px] uppercase tracking-[0.08em] text-[var(--mt-text-muted)] bg-[var(--mt-surface)]">{t('methodist.analytics.col_branch')}</th>
+                  <th className="font-bold text-[10px] uppercase tracking-[0.08em] text-[var(--mt-text-muted)] text-right bg-[var(--mt-surface)]">{t('methodist.analytics.col_attempts')}</th>
+                  <th className="font-bold text-[10px] uppercase tracking-[0.08em] text-[var(--mt-text-muted)] text-right bg-[var(--mt-surface)]">{t('methodist.analytics.col_avg')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -317,7 +317,7 @@ function AnalyticsView() {
                         <div className="w-12 h-12 rounded-xl grid place-items-center mb-3" style={{ background: 'var(--mt-surface-warm)' }}>
                           <FileQuestion size={20} className="text-[var(--mt-text-muted)]" />
                         </div>
-                        <p className="text-[13px] text-[var(--mt-text-muted)]">{t('common.no_data')}</p>
+                        <p className="text-[13px] text-[var(--mt-text-muted)]">{t('methodist.common.no_data')}</p>
                       </div>
                     </td>
                   </tr>
@@ -345,8 +345,6 @@ function AnalyticsView() {
 
 export default function MethodistAnalytics() {
   return (
-    <LangProvider>
-      <AnalyticsView />
-    </LangProvider>
+    <AnalyticsView />
   );
 }

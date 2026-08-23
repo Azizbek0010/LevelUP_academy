@@ -9,12 +9,12 @@ import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import TrainingTypeIcon from '../../components/TrainingTypeIcon.jsx';
-import { LangProvider, useLang } from './i18n.js';
-import LangSwitcher from './LangSwitcher.jsx';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher.jsx';
 
 
 const makeSchema = (t) => z.object({
-  name: z.string().trim().min(1, t('types.name_required')).max(160),
+  name: z.string().trim().min(1, t('methodist.types.name_required')).max(160),
   description: z.string().trim().max(1000).optional(),
   icon: z.string().trim().max(60).optional(),
   aiReviewEnabled: z.boolean().optional(),
@@ -61,7 +61,7 @@ function DescriptionPopover({ description, children, t }) {
           <div className="rounded-[14px] p-4 max-w-[300px] shadow-[0_16px_48px_rgba(29,36,23,0.12)] border border-[var(--mt-border)] bg-white">
             <div className="flex items-center gap-2 mb-2">
               <Info size={14} className="text-[var(--mt-accent)] shrink-0" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.04em] text-[var(--mt-text-muted)]">{t('types.description')}</span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.04em] text-[var(--mt-text-muted)]">{t('methodist.types.description')}</span>
             </div>
             <p className="text-[13px] text-[var(--mt-text-muted)] leading-relaxed">{description}</p>
             <div className="absolute bottom-0 left-6 w-3 h-3 bg-white border-r border-b border-[var(--mt-border)] transform rotate-45 translate-y-1/2" />
@@ -73,7 +73,7 @@ function DescriptionPopover({ description, children, t }) {
 }
 
 function TrainingTypesView() {
-  const { t } = useLang();
+  const { t } = useTranslation();
   const { token } = useAuth();
   const { data, isLoading, error } = useTrainingTypes();
   const invalidate = useInvalidate();
@@ -142,11 +142,11 @@ function TrainingTypesView() {
               <BookOpen size={20} className="text-[var(--mt-accent)]" />
             </div>
             <div>
-              <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('types.title')}</h1>
-              <p className="text-[13px] text-[var(--mt-text-muted)]">{t('types.subtitle')}</p>
+              <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('methodist.types.title')}</h1>
+              <p className="text-[13px] text-[var(--mt-text-muted)]">{t('methodist.types.subtitle')}</p>
             </div>
           </div>
-          <LangSwitcher />
+          <LanguageSwitcher />
         </div>
       </div>
       <div className="mt-card-flat p-6 mt-animate-in">
@@ -155,14 +155,14 @@ function TrainingTypesView() {
             <AlertTriangle size={22} className="text-[var(--mt-danger)]" />
           </div>
           <div className="flex-1">
-            <p className="text-[14px] font-bold text-[var(--mt-text)] mb-0.5">{t('common.loading_error')}</p>
-            <p className="text-[12px] text-[var(--mt-text-muted)]">{error?.message || t('common.loading_failed')}</p>
+            <p className="text-[14px] font-bold text-[var(--mt-text)] mb-0.5">{t('methodist.common.loading_error')}</p>
+            <p className="text-[12px] text-[var(--mt-text-muted)]">{error?.message || t('methodist.common.loading_failed')}</p>
           </div>
           <button
             className="mt-btn-ghost"
             onClick={() => window.location.reload()}
           >
-            <RefreshCw size={14} /> {t('common.retry')}
+            <RefreshCw size={14} /> {t('methodist.common.retry')}
           </button>
         </div>
       </div>
@@ -178,14 +178,14 @@ function TrainingTypesView() {
             <BookOpen size={20} className="text-[var(--mt-accent)]" />
           </div>
           <div>
-            <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('types.title')}</h1>
-            <p className="text-[13px] text-[var(--mt-text-muted)]">{t('types.subtitle')}</p>
+            <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('methodist.types.title')}</h1>
+            <p className="text-[13px] text-[var(--mt-text-muted)]">{t('methodist.types.subtitle')}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <LangSwitcher />
+          <LanguageSwitcher />
           <button className="mt-btn-primary" onClick={openCreate}>
-            <Plus size={16} strokeWidth={2.5} /> {t('types.add')}
+            <Plus size={16} strokeWidth={2.5} /> {t('methodist.types.add')}
           </button>
         </div>
       </div>
@@ -207,10 +207,10 @@ function TrainingTypesView() {
             <div className="w-20 h-20 rounded-[20px] grid place-items-center mb-5" style={{ background: 'var(--mt-accent-light)' }}>
               <BookOpen size={32} className="text-[var(--mt-accent)]" />
             </div>
-            <p className="text-[15px] font-bold text-[var(--mt-text)] mb-1">{t('types.no_types')}</p>
-            <p className="text-[13px] text-[var(--mt-text-muted)] mb-5">{t('types.no_types_hint')}</p>
+            <p className="text-[15px] font-bold text-[var(--mt-text)] mb-1">{t('methodist.types.no_types')}</p>
+            <p className="text-[13px] text-[var(--mt-text-muted)] mb-5">{t('methodist.types.no_types_hint')}</p>
             <button className="mt-btn-primary" onClick={openCreate}>
-              <Plus size={16} strokeWidth={2.5} /> {t('types.create_first')}
+              <Plus size={16} strokeWidth={2.5} /> {t('methodist.types.create_first')}
             </button>
           </div>
         </div>
@@ -241,12 +241,12 @@ function TrainingTypesView() {
                       </Link>
                       <div className="flex items-center gap-1.5 text-[11px] text-[var(--mt-text-muted)] mt-0.5">
                         <Layers size={11} />
-                        <span className="font-medium">{t('types.topics_count', { count: tt.topics_count || 0 })}</span>
+                        <span className="font-medium">{t('methodist.types.topics_count', { count: tt.topics_count || 0 })}</span>
                         {tt.description && (
                           <>
                             <span className="opacity-50">·</span>
                             <span className="opacity-70 flex items-center gap-1">
-                              <Info size={10} /> {t('types.description_short')}
+                              <Info size={10} /> {t('methodist.types.description_short')}
                             </span>
                           </>
                         )}
@@ -256,7 +256,7 @@ function TrainingTypesView() {
                   <button
                     className="w-8 h-8 rounded-lg grid place-items-center opacity-0 group-hover:opacity-100 hover:bg-[rgba(220,38,38,0.08)] transition-all duration-200 shrink-0"
                     onClick={() => setConfirmArchive({ id: tt.id, name: tt.name })}
-                    title={t('types.archive_tooltip')}
+                    title={t('methodist.types.archive_tooltip')}
                   >
                     <Trash2 size={14} className="text-[var(--mt-danger)]" />
                   </button>
@@ -266,7 +266,7 @@ function TrainingTypesView() {
                     to={`/methodist/types/${tt.id}/topics`}
                     className="mt-notebook-item mt-notebook-item:hover !p-3"
                   >
-                    <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] flex-1">{t('types.open_topics')}</span>
+                    <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] flex-1">{t('methodist.types.open_topics')}</span>
                     <ArrowRight size={14} className="text-[var(--mt-text-muted)] group-hover/link:translate-x-0.5 transition-transform shrink-0" />
                   </Link>
                 </DescriptionPopover>
@@ -286,18 +286,18 @@ function TrainingTypesView() {
                 <Trash2 size={18} className="text-[var(--mt-danger)]" />
               </div>
               <div>
-                <h3 className="font-bold text-[15px] text-[var(--mt-text)]">{t('types.archive_confirm')}</h3>
-                <p className="text-[12px] text-[var(--mt-text-muted)]">{t('types.archive_hidden', { name: confirmArchive.name })}</p>
+                <h3 className="font-bold text-[15px] text-[var(--mt-text)]">{t('methodist.types.archive_confirm')}</h3>
+                <p className="text-[12px] text-[var(--mt-text-muted)]">{t('methodist.types.archive_hidden', { name: confirmArchive.name })}</p>
               </div>
             </div>
             <div className="flex gap-2 mt-4">
-              <button className="mt-btn-ghost flex-1 justify-center" onClick={() => setConfirmArchive(null)}>{t('common.cancel')}</button>
+              <button className="mt-btn-ghost flex-1 justify-center" onClick={() => setConfirmArchive(null)}>{t('methodist.common.cancel')}</button>
               <button
                 className="flex-1 h-10 px-4 rounded-xl text-[13px] font-bold transition-colors"
                 style={{ background: 'rgba(220,38,38,0.1)', color: '#DC2626' }}
                 onClick={() => archive(confirmArchive.id)}
               >
-                {t('types.archive')}
+                {t('methodist.types.archive')}
               </button>
             </div>
           </div>
@@ -315,8 +315,8 @@ function TrainingTypesView() {
                   <BookOpen size={18} className="text-[var(--mt-accent)]" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[16px] text-[var(--mt-text)]">{t('types.new_title')}</h3>
-                  <p className="text-[11px] text-[var(--mt-text-muted)]">{t('types.new_hint')}</p>
+                  <h3 className="font-bold text-[16px] text-[var(--mt-text)]">{t('methodist.types.new_title')}</h3>
+                  <p className="text-[11px] text-[var(--mt-text-muted)]">{t('methodist.types.new_hint')}</p>
                 </div>
               </div>
               <button onClick={() => setModalOpen(false)} className="w-8 h-8 rounded-lg grid place-items-center hover:bg-[var(--mt-accent-light)] transition-colors">
@@ -325,26 +325,26 @@ function TrainingTypesView() {
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="mt-modal-body space-y-4">
               <label className="form-control w-full">
-                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('types.name_label')}</span>
+                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('methodist.types.name_label')}</span>
                 <input
                   type="text"
                   {...register('name')}
-                  placeholder={t('types.name_placeholder')}
+                  placeholder={t('methodist.types.name_placeholder')}
                   className={`mt-input ${errors.name ? 'border-[var(--mt-danger)]' : ''}`}
                 />
                 {errors.name && <span className="text-[11px] text-[var(--mt-danger)] mt-1 block">{errors.name.message}</span>}
               </label>
               <label className="form-control w-full">
-                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('types.description_label')}</span>
+                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('methodist.types.description_label')}</span>
                 <textarea
                   {...register('description')}
-                  placeholder={t('types.description_placeholder')}
+                  placeholder={t('methodist.types.description_placeholder')}
                   className="mt-textarea"
                   rows={2}
                 />
               </label>
               <label className="form-control w-full">
-                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('types.icon_label')}</span>
+                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('methodist.types.icon_label')}</span>
                 <input
                   type="text"
                   {...register('icon')}
@@ -355,16 +355,16 @@ function TrainingTypesView() {
               <label className="flex items-start gap-2.5 rounded-xl p-3 cursor-pointer" style={{ background: 'var(--mt-accent-light)' }}>
                 <input type="checkbox" {...register('aiReviewEnabled')} className="mt-1 shrink-0" />
                 <span>
-                  <span className="text-[13px] font-bold text-[var(--mt-text)] block">{t('types.ai_review_label')}</span>
-                  <span className="text-[11px] text-[var(--mt-text-muted)] block mt-0.5 leading-relaxed">{t('types.ai_review_hint')}</span>
+                  <span className="text-[13px] font-bold text-[var(--mt-text)] block">{t('methodist.types.ai_review_label')}</span>
+                  <span className="text-[11px] text-[var(--mt-text-muted)] block mt-0.5 leading-relaxed">{t('methodist.types.ai_review_hint')}</span>
                 </span>
               </label>
               <div className="flex gap-2 pt-2">
                 <button type="button" className="mt-btn-ghost flex-1 justify-center" onClick={() => setModalOpen(false)} disabled={busy}>
-                  {t('common.cancel')}
+                  {t('methodist.common.cancel')}
                 </button>
                 <button type="submit" className="mt-btn-primary flex-1 justify-center" disabled={busy}>
-                  {busy && <span className="loading loading-spinner loading-xs" />} {t('common.create')}
+                  {busy && <span className="loading loading-spinner loading-xs" />} {t('methodist.common.create')}
                 </button>
               </div>
             </form>
@@ -377,8 +377,6 @@ function TrainingTypesView() {
 
 export default function TrainingTypes() {
   return (
-    <LangProvider>
-      <TrainingTypesView />
-    </LangProvider>
+    <TrainingTypesView />
   );
 }

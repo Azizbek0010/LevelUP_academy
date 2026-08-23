@@ -2,8 +2,8 @@ import { BookOpen, Layers, FileQuestion, TrendingUp, ArrowRight, Sparkles, PenTo
 import { Link } from 'react-router-dom';
 import { useTrainingTypes, useMethodistAnalytics } from '../../queries.js';
 import { SkeletonKpis } from '../../components/Skeleton.jsx';
-import { LangProvider, useLang } from './i18n.js';
-import LangSwitcher from './LangSwitcher.jsx';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher.jsx';
 
 const KPIS = [
   { key: 'types', Icon: BookOpen, labelKey: 'kpi.types', color: '#40833B' },
@@ -49,7 +49,7 @@ function ContentLink({ to, icon, label, count, color, t }) {
         <div className="text-[13px] font-semibold text-[var(--mt-text)] group-hover:text-[var(--mt-accent)] transition-colors truncate">
           {label}
         </div>
-        <div className="text-[11px] text-[var(--mt-text-muted)]">{t('dashboard.topics_count', { count })}</div>
+        <div className="text-[11px] text-[var(--mt-text-muted)]">{t('methodist.dashboard.topics_count', { count })}</div>
       </div>
       <ArrowRight size={15} className="text-[var(--mt-text-muted)] group-hover:text-[var(--mt-accent)] group-hover:translate-x-0.5 transition-all shrink-0" />
     </Link>
@@ -57,7 +57,7 @@ function ContentLink({ to, icon, label, count, color, t }) {
 }
 
 function DashboardView() {
-  const { t } = useLang();
+  const { t } = useTranslation();
   const { data: types, isLoading: typesLoading, error: typesError } = useTrainingTypes();
   const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useMethodistAnalytics();
 
@@ -82,11 +82,11 @@ function DashboardView() {
             <PenTool size={20} className="text-[var(--mt-accent)]" />
           </div>
           <div>
-            <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('app.name')}</h1>
-            <p className="text-[13px] text-[var(--mt-text-muted)]">{t('dashboard.subtitle')}</p>
+            <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('methodist.app.name')}</h1>
+            <p className="text-[13px] text-[var(--mt-text-muted)]">{t('methodist.dashboard.subtitle')}</p>
           </div>
         </div>
-        <LangSwitcher />
+        <LanguageSwitcher />
       </div>
     </div>
   );
@@ -96,11 +96,11 @@ function DashboardView() {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <PenTool size={24} className="text-[var(--mt-accent)]" />
-          <h1 className="text-[22px] font-extrabold text-[var(--mt-text)]">{t('app.name')}</h1>
+          <h1 className="text-[22px] font-extrabold text-[var(--mt-text)]">{t('methodist.app.name')}</h1>
         </div>
-        <LangSwitcher />
+        <LanguageSwitcher />
       </div>
-      <p className="text-[13px] text-[var(--mt-text-muted)] ml-[36px]">{t('dashboard.subtitle')}</p>
+      <p className="text-[13px] text-[var(--mt-text-muted)] ml-[36px]">{t('methodist.dashboard.subtitle')}</p>
     </div>
   );
 
@@ -123,14 +123,14 @@ function DashboardView() {
               <AlertTriangle size={22} className="text-[var(--mt-danger)]" />
             </div>
             <div className="flex-1">
-              <p className="text-[14px] font-bold text-[var(--mt-text)] mb-0.5">{t('common.loading_error')}</p>
-              <p className="text-[12px] text-[var(--mt-text-muted)]">{(typesError || analyticsError)?.message || t('common.loading_failed')}</p>
+              <p className="text-[14px] font-bold text-[var(--mt-text)] mb-0.5">{t('methodist.common.loading_error')}</p>
+              <p className="text-[12px] text-[var(--mt-text-muted)]">{(typesError || analyticsError)?.message || t('methodist.common.loading_failed')}</p>
             </div>
             <button
               className="mt-btn-ghost"
               onClick={() => window.location.reload()}
             >
-              <RefreshCw size={14} /> {t('common.retry')}
+              <RefreshCw size={14} /> {t('methodist.common.retry')}
             </button>
           </div>
         </div>
@@ -163,14 +163,14 @@ function DashboardView() {
             </div>
             <div className="flex-1">
               <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--mt-text-muted)] mb-1">
-                {t('dashboard.avg_score')}
+                {t('methodist.dashboard.avg_score')}
               </div>
               <div className="flex items-end gap-3">
                 <span className="text-[32px] font-extrabold leading-none tracking-tight text-[var(--mt-text)] tabular-nums">
                   {avgScore}%
                 </span>
                 <span className={`text-[12px] font-semibold mb-1 ${avgScore >= 70 ? 'text-[var(--mt-success)]' : avgScore >= 50 ? 'text-[var(--mt-warning)]' : 'text-[var(--mt-danger)]'}`}>
-                  {avgScore >= 70 ? t('dashboard.great') : avgScore >= 50 ? t('dashboard.good') : t('dashboard.need_work')}
+                  {avgScore >= 70 ? t('methodist.dashboard.great') : avgScore >= 50 ? t('methodist.dashboard.good') : t('methodist.dashboard.need_work')}
                 </span>
               </div>
               <div className="mt-2.5 mt-progress">
@@ -188,12 +188,12 @@ function DashboardView() {
       <div className="mt-card-flat mt-animate-in mt-stagger-6">
         <div className="mt-section-header">
           <BarChart3 size={18} className="text-[var(--mt-accent)]" />
-          <h2 className="text-[15px] font-bold text-[var(--mt-text)] flex-1">{t('dashboard.types_section')}</h2>
+          <h2 className="text-[15px] font-bold text-[var(--mt-text)] flex-1">{t('methodist.dashboard.types_section')}</h2>
           <Link
             to="/methodist/types"
             className="text-[12px] font-semibold text-[var(--mt-accent)] hover:text-[#2f6129] transition-colors flex items-center gap-1"
           >
-            {t('dashboard.all_types')} <ArrowRight size={14} />
+            {t('methodist.dashboard.all_types')} <ArrowRight size={14} />
           </Link>
         </div>
         {ttList.length === 0 ? (
@@ -201,13 +201,13 @@ function DashboardView() {
             <div className="w-16 h-16 rounded-2xl bg-[var(--mt-accent-light)] grid place-items-center mb-4">
               <BookOpen size={28} className="text-[var(--mt-accent)]" />
             </div>
-            <p className="text-[15px] font-bold text-[var(--mt-text)] mb-1">{t('dashboard.no_types')}</p>
-            <p className="text-[13px] text-[var(--mt-text-muted)] mb-5">{t('dashboard.no_types_hint')}</p>
+            <p className="text-[15px] font-bold text-[var(--mt-text)] mb-1">{t('methodist.dashboard.no_types')}</p>
+            <p className="text-[13px] text-[var(--mt-text-muted)] mb-5">{t('methodist.dashboard.no_types_hint')}</p>
             <Link
               to="/methodist/types"
               className="mt-btn-primary"
             >
-              <BookOpen size={16} /> {t('dashboard.create_type')}
+              <BookOpen size={16} /> {t('methodist.dashboard.create_type')}
             </Link>
           </div>
         ) : (
@@ -232,8 +232,6 @@ function DashboardView() {
 
 export default function MethodistDashboard() {
   return (
-    <LangProvider>
-      <DashboardView />
-    </LangProvider>
+    <DashboardView />
   );
 }
