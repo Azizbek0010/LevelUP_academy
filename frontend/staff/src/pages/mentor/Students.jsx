@@ -11,6 +11,7 @@ import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import Avatar from '../../components/Avatar.jsx';
 import { SearchInput, EmptyState } from './_ui.jsx';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Все ученики ментора — по всем его группам сразу.
@@ -21,11 +22,13 @@ import { SearchInput, EmptyState } from './_ui.jsx';
  * списка новый API.
  */
 
-const STATUS = {
-  active: { label: 'Активен', cls: 'badge-success' },
-  frozen: { label: 'Заморожен', cls: 'badge-warning' },
-  dropped: { label: 'Отчислен', cls: 'badge-ghost' },
-};
+function statusMap(t) {
+  return {
+    active: { label: t('mentor.students.statusActive'), cls: 'badge-success' },
+    frozen: { label: t('mentor.students.statusFrozen'), cls: 'badge-warning' },
+    dropped: { label: t('mentor.students.statusDropped'), cls: 'badge-ghost' },
+  };
+}
 
 /**
  * Контекстное меню строки — правая кнопка мыши или двойной клик.
@@ -34,6 +37,7 @@ const STATUS = {
  * за нижний край списка из 46 человек, пришлось бы догонять прокруткой.
  */
 function RowMenu({ x, y, student, onClose }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const ref = useRef(null);
   const [pos, setPos] = useState({ x, y });
@@ -67,14 +71,14 @@ function RowMenu({ x, y, student, onClose }) {
   const items = [
     {
       Icon: MessageSquare,
-      label: 'Написать ученику',
+      label: t('mentor.students.msgStudent'),
       // Комната та же, что и с родителем: dm:<staffId>:<peerId>. Бэкенд теперь
       // пускает вторым участником и ученика (canStaffChatStudent).
       onClick: () => navigate(`/chat?peer=${student.id}`),
     },
     {
       Icon: UserRound,
-      label: 'Написать родителю',
+      label: t('mentor.students.msgParent'),
       /* По идентификатору родителя, а не по имени ребёнка.
          Первая версия передавала имя и полагалась на поиск по child_names:
          тёзки открывали чужой диалог, а расхождение в записи имени не
@@ -83,11 +87,11 @@ function RowMenu({ x, y, student, onClose }) {
       // У ученика может не быть привязанного родителя — тогда писать некому,
       // и честнее показать это, чем открыть пустой чат.
       disabled: !student.parentId,
-      hint: student.parentId ? null : 'Родитель не привязан',
+      hint: student.parentId ? null : t('mentor.students.noParent'),
     },
     {
       Icon: BarChart3,
-      label: 'Посмотреть статистику',
+      label: t('mentor.students.viewStats'),
       onClick: () => navigate(`/students/${student.id}`),
     },
   ];
@@ -130,6 +134,8 @@ function RowMenu({ x, y, student, onClose }) {
 }
 
 export default function MentorStudents() {
+  const { t } = useTranslation();
+  const STATUS = statusMap(t);
   const { token } = useAuth();
   const { data: groupsData, isLoading: groupsLoading } = useMentorGroups();
   const groups = useMemo(() => groupsData?.data ?? [], [groupsData]);
@@ -189,7 +195,7 @@ export default function MentorStudents() {
               <Users size={16} />
             </span>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
-              Ученики
+              {t('mentor.students.students')}
             </span>
           </div>
           <div className="text-3xl font-extrabold mt-3 leading-none tabular-nums">
@@ -202,7 +208,7 @@ export default function MentorStudents() {
               <BookOpen size={16} />
             </span>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
-              Группы
+              {t('mentor.students.groups')}
             </span>
           </div>
           <div className="text-3xl font-extrabold mt-3 leading-none tabular-nums">
@@ -215,7 +221,7 @@ export default function MentorStudents() {
               <Coins size={16} />
             </span>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
-              Всего коинов
+              {t('mentor.students.totalCoins')}
             </span>
           </div>
           <div className="text-3xl font-extrabold mt-3 leading-none tabular-nums">
@@ -226,14 +232,14 @@ export default function MentorStudents() {
 
       <section className="card bg-base-100">
         <header className="flex items-center justify-between gap-3 flex-wrap px-4 py-3 border-b border-base-200">
-          <h1 className="font-bold">Все мои ученики</h1>
+          <h1 className="font-bold">{t('mentor.students.allMyStudents')}</h1>
           <div className="flex items-center gap-2 flex-wrap">
             <select
               className="select select-bordered select-sm rounded-lg"
               value={groupFilter}
               onChange={(e) => setGroupFilter(e.target.value)}
             >
-              <option value="">Все группы</option>
+              <option value="">{t('mentor.students.allGroups')}</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
@@ -241,7 +247,7 @@ export default function MentorStudents() {
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="Имя, телефон или ID..."
+              placeholder={t('mentor.students.searchPlaceholder')}
               className="w-full sm:w-64"
             />
           </div>
@@ -259,13 +265,13 @@ export default function MentorStudents() {
               icon={UserX}
               title={
                 students.length === 0
-                  ? 'Пока нет учеников'
-                  : 'Ничего не найдено'
+                  ? t('mentor.students.noStudentsTitle')
+                  : t('mentor.students.nothingFoundTitle')
               }
               hint={
                 students.length === 0
-                  ? 'Когда ученики будут добавлены в ваши группы, они появятся здесь.'
-                  : 'Измените поиск или фильтр группы.'
+                  ? t('mentor.students.noStudentsHint')
+                  : t('mentor.students.nothingFoundHint')
               }
             />
           ) : (
@@ -273,11 +279,11 @@ export default function MentorStudents() {
               <table className="table table-sm">
                 <thead>
                   <tr>
-                    <th>Ученик</th>
-                    <th>Группа</th>
-                    <th>Телефон</th>
-                    <th>Статус</th>
-                    <th className="text-right">Коины</th>
+                    <th>{t('mentor.students.colStudent')}</th>
+                    <th>{t('mentor.students.colGroup')}</th>
+                    <th>{t('mentor.students.colPhone')}</th>
+                    <th>{t('mentor.students.colStatus')}</th>
+                    <th className="text-right">{t('mentor.students.colCoins')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -345,13 +351,13 @@ export default function MentorStudents() {
 
         {!loading && filtered.length > 0 && filtered.length !== students.length && (
           <footer className="px-4 py-2.5 border-t border-base-200 text-xs text-base-content/50">
-            {filtered.length} / {students.length} учеников отображается
+            {t('mentor.students.shownCount', { shown: filtered.length, total: students.length })}
           </footer>
         )}
       </section>
 
       <Link to="/groups" className="btn btn-ghost btn-sm gap-1.5 text-primary">
-        Посмотреть по группам <ArrowRight size={14} />
+        {t('mentor.students.viewByGroups')} <ArrowRight size={14} />
       </Link>
 
       {menu && (
