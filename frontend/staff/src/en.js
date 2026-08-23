@@ -1759,6 +1759,35 @@ const en = {
   'super.shopCatalog.namePlaceholder': 'Name',
   'super.shopCatalog.imageLinkPlaceholder': 'Image link (optional)',
   'super.shopCatalog.pricePlaceholder': 'Price, coins',
+
+  /* ─── super/TrainingTypes.jsx ─── */
+  'super.trainingTypes.specifyPrice': 'Specify a price',
+  'super.trainingTypes.genericError': 'Error',
+  'super.trainingTypes.title': 'Training types',
+  'super.trainingTypes.subtitle': 'Only SEO assigns the price and group limit — the methodist only sets the name',
+  'super.trainingTypes.allTrainingTypes': 'All training types',
+  'super.trainingTypes.noneCreatedYet': 'No methodist has created a training type yet.',
+  'super.trainingTypes.archivedBadge': 'Archived',
+  'super.trainingTypes.groupsCount': '{{count}} groups',
+  'super.trainingTypes.priceNotSet': 'Price not set',
+  'super.trainingTypes.hiddenArchived': 'Not shown when creating a group — archived',
+  'super.trainingTypes.pricePlaceholder': 'Price, sum',
+  'super.trainingTypes.maxStudentsPlaceholder': 'Max students',
+  'super.trainingTypes.cancel': 'Cancel',
+  'super.trainingTypes.save': 'Save',
+  'super.trainingTypes.priceSum': '{{price}} sum',
+  'super.trainingTypes.edit': 'Edit',
+  'super.trainingTypes.assignPrice': 'Assign price',
+  'super.trainingTypes.restoreFromArchive': 'Restore from archive',
+  'super.trainingTypes.archive': 'Archive',
+
+  /* ─── super/BranchesMap.jsx ─── */
+  'super.branchesMap.branchOnMapSingular': 'branch on the map',
+  'super.branchesMap.branchOnMapPlural': 'branches on the map',
+  'super.branchesMap.addressNotSpecified': 'address not specified',
+  'super.branchesMap.close': 'Close',
+  'super.branchesMap.debt': 'debt',
+  'super.branchesMap.openBranch': 'Open branch',
 };
 
 export default en;

@@ -1752,6 +1752,35 @@ const uz = {
   'super.shopCatalog.namePlaceholder': 'Nomi',
   'super.shopCatalog.imageLinkPlaceholder': 'Rasm havolasi (ixtiyoriy)',
   'super.shopCatalog.pricePlaceholder': 'Narxi, koinlar',
+
+  /* ─── super/TrainingTypes.jsx ─── */
+  'super.trainingTypes.specifyPrice': 'Narxni kiriting',
+  'super.trainingTypes.genericError': 'Xatolik',
+  'super.trainingTypes.title': 'Metodikalar',
+  'super.trainingTypes.subtitle': 'Narx va guruh limitini faqat SEO belgilaydi — metodist faqat nomini kiritadi',
+  'super.trainingTypes.allTrainingTypes': 'Barcha metodikalar',
+  'super.trainingTypes.noneCreatedYet': 'Hozircha hech bir metodist metodika yaratmagan.',
+  'super.trainingTypes.archivedBadge': 'Arxivlangan',
+  'super.trainingTypes.groupsCount': '{{count}} guruh',
+  'super.trainingTypes.priceNotSet': 'Narx belgilanmagan',
+  'super.trainingTypes.hiddenArchived': 'Guruh yaratishda ko‘rinmaydi — arxivlangan',
+  'super.trainingTypes.pricePlaceholder': 'Narxi, so‘m',
+  'super.trainingTypes.maxStudentsPlaceholder': 'Maks. o‘quvchi',
+  'super.trainingTypes.cancel': 'Bekor qilish',
+  'super.trainingTypes.save': 'Saqlash',
+  'super.trainingTypes.priceSum': '{{price}} so‘m',
+  'super.trainingTypes.edit': 'Tahrirlash',
+  'super.trainingTypes.assignPrice': 'Narx belgilash',
+  'super.trainingTypes.restoreFromArchive': 'Arxivdan qaytarish',
+  'super.trainingTypes.archive': 'Arxivlash',
+
+  /* ─── super/BranchesMap.jsx ─── */
+  'super.branchesMap.branchOnMapSingular': 'filial xaritada',
+  'super.branchesMap.branchOnMapPlural': 'filial xaritada',
+  'super.branchesMap.addressNotSpecified': 'manzil ko‘rsatilmagan',
+  'super.branchesMap.close': 'Yopish',
+  'super.branchesMap.debt': 'qarz',
+  'super.branchesMap.openBranch': 'Filialni ochish',
 };
 
 export default uz;

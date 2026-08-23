@@ -1759,6 +1759,35 @@ const ru = {
   'super.shopCatalog.namePlaceholder': 'Название',
   'super.shopCatalog.imageLinkPlaceholder': 'Ссылка на фото (необязательно)',
   'super.shopCatalog.pricePlaceholder': 'Цена, коины',
+
+  /* ─── super/TrainingTypes.jsx ─── */
+  'super.trainingTypes.specifyPrice': 'Укажите цену',
+  'super.trainingTypes.genericError': 'Ошибка',
+  'super.trainingTypes.title': 'Методики',
+  'super.trainingTypes.subtitle': 'Цену и лимит группы назначает только SEO — методист заводит только название',
+  'super.trainingTypes.allTrainingTypes': 'Все методики',
+  'super.trainingTypes.noneCreatedYet': 'Пока ни один методист не создал методику.',
+  'super.trainingTypes.archivedBadge': 'Архивирован',
+  'super.trainingTypes.groupsCount': '{{count}} групп',
+  'super.trainingTypes.priceNotSet': 'Цена не назначена',
+  'super.trainingTypes.hiddenArchived': 'Не виден при создании группы — архивирован',
+  'super.trainingTypes.pricePlaceholder': 'Цена, сум',
+  'super.trainingTypes.maxStudentsPlaceholder': 'Макс. студ.',
+  'super.trainingTypes.cancel': 'Отмена',
+  'super.trainingTypes.save': 'Сохранить',
+  'super.trainingTypes.priceSum': '{{price}} сум',
+  'super.trainingTypes.edit': 'Изменить',
+  'super.trainingTypes.assignPrice': 'Назначить цену',
+  'super.trainingTypes.restoreFromArchive': 'Вернуть из архива',
+  'super.trainingTypes.archive': 'Архивировать',
+
+  /* ─── super/BranchesMap.jsx ─── */
+  'super.branchesMap.branchOnMapSingular': 'филиал на карте',
+  'super.branchesMap.branchOnMapPlural': 'филиалов на карте',
+  'super.branchesMap.addressNotSpecified': 'адрес не указан',
+  'super.branchesMap.close': 'Закрыть',
+  'super.branchesMap.debt': 'долг',
+  'super.branchesMap.openBranch': 'Открыть филиал',
 };
 
 export default ru;
