@@ -1890,6 +1890,32 @@ const en = {
   'super.features.catalogEmpty': 'Catalog is empty',
   'super.features.myRequests': 'My requests',
   'super.features.noRequestsYet': 'No requests yet',
+
+  /* ─── super/Branches.jsx ─── */
+  'super.branches.docTitle': 'Branches | LevelUp Academy',
+  'super.branches.title': 'Branches',
+  'super.branches.subtitle': "Manage the organization's branches",
+  'super.branches.newBranch': 'New branch',
+  'super.branches.loadErrorTitle': 'Failed to load branches',
+  'super.branches.loadErrorHint': 'An unexpected error occurred while contacting the server.',
+  'super.branches.retry': 'Retry',
+  'super.branches.searchPlaceholder': 'Search branches…',
+  'super.branches.topEarner': 'Top earner:',
+  'super.branches.topSpender': 'Top spender:',
+  'super.branches.emptyTitle': 'No branches',
+  'super.branches.emptySearchHint': 'Nothing found for your search. Try a different query.',
+  'super.branches.emptyHint': 'No branches yet. Create the first branch to get started.',
+  'super.branches.createFirst': 'Create the first branch',
+  'super.branches.archivedBadge': 'archived',
+  'super.branches.mainBadge': 'main',
+  'super.branches.addressNotSpecified': 'address not specified',
+  'super.branches.phoneNotSpecified': 'phone not specified',
+  'super.branches.colStudents': 'Students',
+  'super.branches.colGroups': 'Groups',
+  'super.branches.colStaff': 'Staff',
+  'super.branches.colRevenue': 'Revenue',
+  'super.branches.colExpense': 'Expense',
+  'super.branches.colDebt': 'Debt',
 };
 
 export default en;

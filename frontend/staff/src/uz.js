@@ -1883,6 +1883,32 @@ const uz = {
   'super.features.catalogEmpty': 'Katalog bo\'sh',
   'super.features.myRequests': 'Mening so\'rovlarim',
   'super.features.noRequestsYet': 'Hozircha so\'rovlar yo\'q',
+
+  /* ─── super/Branches.jsx ─── */
+  'super.branches.docTitle': 'Filiallar | LevelUp Academy',
+  'super.branches.title': 'Filiallar',
+  'super.branches.subtitle': 'Tashkilot filiallarini boshqarish',
+  'super.branches.newBranch': 'Yangi filial',
+  'super.branches.loadErrorTitle': 'Filiallarni yuklashda xatolik',
+  'super.branches.loadErrorHint': 'Serverga so\'rov yuborishda kutilmagan xatolik yuz berdi.',
+  'super.branches.retry': 'Qayta urinish',
+  'super.branches.searchPlaceholder': 'Filiallarni qidirish…',
+  'super.branches.topEarner': 'Eng ko\'p daromad topgan:',
+  'super.branches.topSpender': 'Eng ko\'p xarajat qilgan:',
+  'super.branches.emptyTitle': 'Filiallar yo\'q',
+  'super.branches.emptySearchHint': 'So\'rovingiz bo\'yicha hech narsa topilmadi. Qidiruv so\'zini o\'zgartirib ko\'ring.',
+  'super.branches.emptyHint': 'Hozircha filiallar yo\'q. Ishni boshlash uchun birinchi filialni yarating.',
+  'super.branches.createFirst': 'Birinchi filialni yaratish',
+  'super.branches.archivedBadge': 'arxivda',
+  'super.branches.mainBadge': 'asosiy',
+  'super.branches.addressNotSpecified': 'manzil ko\'rsatilmagan',
+  'super.branches.phoneNotSpecified': 'telefon ko\'rsatilmagan',
+  'super.branches.colStudents': 'O\'quvchilar',
+  'super.branches.colGroups': 'Guruhlar',
+  'super.branches.colStaff': 'Xodimlar',
+  'super.branches.colRevenue': 'Daromad',
+  'super.branches.colExpense': 'Xarajat',
+  'super.branches.colDebt': 'Qarz',
 };
 
 export default uz;

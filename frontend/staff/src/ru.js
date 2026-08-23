@@ -1890,6 +1890,32 @@ const ru = {
   'super.features.catalogEmpty': 'Каталог пуст',
   'super.features.myRequests': 'Мои заявки',
   'super.features.noRequestsYet': 'Заявок пока нет',
+
+  /* ─── super/Branches.jsx ─── */
+  'super.branches.docTitle': 'Филиалы | LevelUp Academy',
+  'super.branches.title': 'Филиалы',
+  'super.branches.subtitle': 'Управление филиалами организации',
+  'super.branches.newBranch': 'Новый филиал',
+  'super.branches.loadErrorTitle': 'Ошибка загрузки филиалов',
+  'super.branches.loadErrorHint': 'Произошла непредвиденная ошибка при запросе к серверу.',
+  'super.branches.retry': 'Повторить попытку',
+  'super.branches.searchPlaceholder': 'Поиск филиалов…',
+  'super.branches.topEarner': 'Больше всех зарабатывает:',
+  'super.branches.topSpender': 'Больше всех тратит:',
+  'super.branches.emptyTitle': 'Нет филиалов',
+  'super.branches.emptySearchHint': 'По вашему запросу ничего не найдено. Попробуйте изменить поисковый запрос.',
+  'super.branches.emptyHint': 'Филиалов пока нет. Создайте первый филиал, чтобы начать работу.',
+  'super.branches.createFirst': 'Создать первый филиал',
+  'super.branches.archivedBadge': 'в архиве',
+  'super.branches.mainBadge': 'главный',
+  'super.branches.addressNotSpecified': 'адрес не указан',
+  'super.branches.phoneNotSpecified': 'телефон не указан',
+  'super.branches.colStudents': 'Ученики',
+  'super.branches.colGroups': 'Группы',
+  'super.branches.colStaff': 'Сотрудники',
+  'super.branches.colRevenue': 'Доход',
+  'super.branches.colExpense': 'Расход',
+  'super.branches.colDebt': 'Долг',
 };
 
 export default ru;
