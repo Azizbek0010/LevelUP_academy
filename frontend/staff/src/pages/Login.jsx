@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth.jsx';
 import { api, USING_MOCKS } from '../api.js';
 
@@ -63,6 +64,7 @@ function EmailField({ value, onChange, placeholder, autoFocus }) {
 
 // Поле пароля с кнопкой показать/скрыть.
 function PasswordField({ value, onChange, placeholder, autoComplete, minLength }) {
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
@@ -83,7 +85,7 @@ function PasswordField({ value, onChange, placeholder, autoComplete, minLength }
         type="button"
         onClick={() => setShow((s) => !s)}
         tabIndex={-1}
-        aria-label={show ? 'Скрыть пароль' : 'Показать пароль'}
+        aria-label={show ? t('login.hidePassword') : t('login.showPassword')}
         className="absolute inset-y-0 right-0 grid w-11 place-items-center text-base-content/40 hover:text-base-content transition-colors"
       >
         <EyeIcon off={show} />
@@ -102,6 +104,7 @@ function LockIcon() {
 }
 
 function LoginForm({ onForgot }) {
+  const { t } = useTranslation();
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -115,16 +118,16 @@ function LoginForm({ onForgot }) {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!email.trim() || !password) { setError('Введите email и пароль'); return; }
+    if (!email.trim() || !password) { setError(t('login.enterEmailPassword')); return; }
     setBusy(true);
     try {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      if (err.status === 401) setError('Неверный email или пароль');
-      else if (err.status === 429) setError('Слишком много попыток — попробуйте позже');
-      else if (err.status === 422) setError('Введите email и пароль');
-      else setError(err.message || 'Не удалось войти');
+      if (err.status === 401) setError(t('login.invalidCredentials'));
+      else if (err.status === 429) setError(t('login.tooManyAttempts'));
+      else if (err.status === 422) setError(t('login.enterEmailPassword'));
+      else setError(err.message || t('login.couldNotLogin'));
     } finally { setBusy(false); }
   };
 
@@ -135,25 +138,25 @@ function LoginForm({ onForgot }) {
       await loginWithGoogle();
       navigate(from, { replace: true });
     } catch (err) {
-      if (err.code === 'firebase-not-configured') setError('Google-вход пока не настроен');
-      else if (err.status === 403 || err.status === 401) setError('Этот Google-аккаунт не привязан');
-      else if (err.code !== 'auth/popup-closed-by-user') setError(err.message || 'Не удалось войти через Google');
+      if (err.code === 'firebase-not-configured') setError(t('login.googleNotConfigured'));
+      else if (err.status === 403 || err.status === 401) setError(t('login.googleAccountNotLinked'));
+      else if (err.code !== 'auth/popup-closed-by-user') setError(err.message || t('login.couldNotLoginGoogle'));
     } finally { setGoogleBusy(false); }
   };
 
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight animate-slide-up">Вход в панель</h1>
-      <p className="text-sm opacity-60 mb-6 animate-slide-up stagger-1">SEO · Администратор · Branch Manager · Ментор · Методист</p>
+      <h1 className="text-2xl font-bold tracking-tight animate-slide-up">{t('login.title')}</h1>
+      <p className="text-sm opacity-60 mb-6 animate-slide-up stagger-1">{t('login.rolesSubtitle')}</p>
       {error && <div role="alert" className="alert alert-error text-sm py-2 mb-4 animate-fade-in"><span>{error}</span></div>}
 
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <label className="form-control w-full animate-slide-up stagger-2">
-          <span className="label-text mb-1 font-medium">Email</span>
+          <span className="label-text mb-1 font-medium">{t('login.emailLabel')}</span>
           <EmailField autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@gmail.com" />
         </label>
         <label className="form-control w-full animate-slide-up stagger-3">
-          <span className="label-text mb-1 font-medium">Пароль</span>
+          <span className="label-text mb-1 font-medium">{t('login.passwordLabel')}</span>
           <PasswordField
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -164,23 +167,23 @@ function LoginForm({ onForgot }) {
         <button type="submit"
           className="btn btn-primary w-full gap-2 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 animate-slide-up stagger-4"
           disabled={busy || googleBusy}>
-          {busy ? <span className="loading loading-spinner loading-sm" /> : 'Войти'}
+          {busy ? <span className="loading loading-spinner loading-sm" /> : t('login.signIn')}
         </button>
       </form>
 
-      <div className="divider text-xs opacity-40 animate-slide-up stagger-4">или</div>
+      <div className="divider text-xs opacity-40 animate-slide-up stagger-4">{t('login.or')}</div>
 
       <button type="button"
         className="btn btn-outline w-full gap-2 border-base-300 text-base-content transition-transform duration-150 hover:-translate-y-0.5 hover:border-base-content/30 hover:bg-base-200 hover:text-base-content active:translate-y-0 animate-slide-up stagger-5"
         onClick={onGoogle} disabled={busy || googleBusy}>
-        {googleBusy ? <span className="loading loading-spinner loading-sm" /> : <><GoogleIcon /> Войти через Google</>}
+        {googleBusy ? <span className="loading loading-spinner loading-sm" /> : <><GoogleIcon /> {t('login.signInWithGoogle')}</>}
       </button>
 
       <div className="text-center pt-4 animate-slide-up stagger-6">
         <button type="button"
           className="text-sm text-base-content/50 hover:text-base-content transition-colors"
           onClick={onForgot}>
-          Забыли пароль?
+          {t('login.forgotPassword')}
         </button>
       </div>
     </>
@@ -188,6 +191,7 @@ function LoginForm({ onForgot }) {
 }
 
 function ForgotForm({ onBack }) {
+  const { t } = useTranslation();
   const [stage, setStage] = useState('request');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -198,41 +202,41 @@ function ForgotForm({ onBack }) {
   const sendCode = async (e) => {
     e.preventDefault();
     setError('');
-    if (!email.trim()) { setError('Укажите email'); return; }
+    if (!email.trim()) { setError(t('login.specifyEmail')); return; }
     setBusy(true);
     try {
       await api.forgotPassword(email.trim());
       setStage('confirm');
-    } catch (err) { setError(err.message || 'Не удалось отправить код'); } finally { setBusy(false); }
+    } catch (err) { setError(err.message || t('login.couldNotSendCode')); } finally { setBusy(false); }
   };
 
   const reset = async (e) => {
     e.preventDefault();
     setError('');
-    if (!otp.trim() || newPassword.length < 8) { setError('Введите код и новый пароль (мин. 8 символов)'); return; }
+    if (!otp.trim() || newPassword.length < 8) { setError(t('login.enterCodeAndPassword')); return; }
     setBusy(true);
     try {
       await api.resetPassword({ email: email.trim(), otp: otp.trim(), newPassword });
       setStage('done');
     } catch (err) {
-      if (err.status === 400) setError('Неверный или просроченный код');
-      else if (err.status === 429) setError('Слишком много попыток — запросите код заново');
-      else setError(err.message || 'Не удалось сменить пароль');
+      if (err.status === 400) setError(t('login.invalidOrExpiredCode'));
+      else if (err.status === 429) setError(t('login.tooManyAttemptsResend'));
+      else setError(err.message || t('login.couldNotChangePassword'));
     } finally { setBusy(false); }
   };
 
   return (
     <>
-      <button type="button" className="link no-underline text-sm opacity-60 hover:opacity-100 mb-3 transition-opacity" onClick={onBack}>← Назад ко входу</button>
-      <h1 className="text-2xl font-bold tracking-tight animate-slide-up">Восстановление пароля</h1>
+      <button type="button" className="link no-underline text-sm opacity-60 hover:opacity-100 mb-3 transition-opacity" onClick={onBack}>{t('login.backToLogin')}</button>
+      <h1 className="text-2xl font-bold tracking-tight animate-slide-up">{t('login.restorePasswordTitle')}</h1>
       {error && <div role="alert" className="alert alert-error text-sm py-2 my-4 animate-fade-in"><span>{error}</span></div>}
 
       {stage === 'request' && (
         <form onSubmit={sendCode} className="space-y-4 mt-4 animate-fade-in" noValidate>
-          <p className="text-sm opacity-60">Укажите email — пришлём 6-значный код на почту.</p>
+          <p className="text-sm opacity-60">{t('login.specifyEmailHint')}</p>
           <EmailField autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@gmail.com" />
           <button className="btn btn-primary w-full transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0" disabled={busy}>
-            {busy ? <span className="loading loading-spinner loading-sm" /> : 'Отправить код'}
+            {busy ? <span className="loading loading-spinner loading-sm" /> : t('login.sendCode')}
           </button>
         </form>
       )}
@@ -240,44 +244,40 @@ function ForgotForm({ onBack }) {
       {stage === 'confirm' && (
         <form onSubmit={reset} className="space-y-4 mt-4 animate-fade-in" noValidate>
           <p className="text-sm opacity-60">
-            Код отправлен на <b>{email}</b> (проверьте почту, в т.ч. «Спам»). Введите код и новый пароль.
+            {t('login.codeSentToPrefix')} <b>{email}</b> {t('login.codeSentToSuffix')}
           </p>
           <input inputMode="numeric" maxLength={6} required autoFocus autoComplete="one-time-code" value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-            placeholder="Код из письма (6 цифр)" className="input input-bordered w-full text-center text-lg tracking-[0.5em] transition-shadow focus:shadow-[0_0_0_4px_rgba(59,130,246,0.18)]" />
+            placeholder={t('login.codePlaceholder')} className="input input-bordered w-full text-center text-lg tracking-[0.5em] transition-shadow focus:shadow-[0_0_0_4px_rgba(59,130,246,0.18)]" />
           <PasswordField
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Новый пароль (мин. 8)"
+            placeholder={t('login.newPasswordPlaceholder')}
             autoComplete="new-password"
             minLength={8}
           />
           <button className="btn btn-primary w-full transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0" disabled={busy}>
-            {busy ? <span className="loading loading-spinner loading-sm" /> : 'Сменить пароль'}
+            {busy ? <span className="loading loading-spinner loading-sm" /> : t('login.changePassword')}
           </button>
           <button type="button" className="link link-primary text-xs" onClick={() => setStage('request')}>
-            Отправить код заново
+            {t('login.resendCode')}
           </button>
         </form>
       )}
 
       {stage === 'done' && (
         <div className="mt-4 space-y-4 animate-fade-in">
-          <div className="alert alert-success text-sm"><span>Пароль изменён. Войдите с новым паролем.</span></div>
-          <button className="btn btn-primary w-full transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg" onClick={onBack}>Ко входу</button>
+          <div className="alert alert-success text-sm"><span>{t('login.passwordChangedSuccess')}</span></div>
+          <button className="btn btn-primary w-full transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg" onClick={onBack}>{t('login.toLogin')}</button>
         </div>
       )}
     </>
   );
 }
 
-const FEATURES = [
-  'Филиалы, сотрудники и студенты в одном месте',
-  'Финансы, платежи и отчёты',
-  'Тесты, домашние задания и посещаемость',
-];
-
 export default function Login() {
+  const { t } = useTranslation();
+  const FEATURES = [t('login.feature1'), t('login.feature2'), t('login.feature3')];
   const [mode, setMode] = useState('login');
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-base-200">
@@ -287,8 +287,8 @@ export default function Login() {
         <div className="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full bg-limebrand/10 blur-3xl animate-float" style={{ animationDelay: '1.2s' }} />
         <img src="/logo-white.svg" alt="LevelUp Academy" className="relative h-10 w-auto self-start animate-slide-up" />
         <div className="relative">
-          <h2 className="text-3xl font-bold leading-tight animate-slide-up">Панель управления</h2>
-          <p className="opacity-60 mt-2 max-w-sm animate-slide-up stagger-1">SEO, Администратор, Branch Manager, Ментор и Методист — управляйте своей организацией из одной панели.</p>
+          <h2 className="text-3xl font-bold leading-tight animate-slide-up">{t('login.dashboardTitle')}</h2>
+          <p className="opacity-60 mt-2 max-w-sm animate-slide-up stagger-1">{t('login.dashboardSubtitle')}</p>
           <ul className="mt-8 space-y-3">
             {FEATURES.map((f, i) => (
               <li key={f} className={`flex items-center gap-3 text-sm opacity-80 animate-slide-up stagger-${i + 2}`}>
@@ -321,7 +321,7 @@ export default function Login() {
                 попытка входа честно давала "Неверный email или пароль". */}
             {mode === 'login' && USING_MOCKS && (
               <div className="mt-4 rounded-xl border border-dashed border-base-300 bg-base-200/50 p-3 text-[11px] leading-relaxed text-base-content/50 animate-fade-in">
-                <p className="font-semibold uppercase tracking-wider text-base-content/40 mb-1">Демо-доступ (без бэкенда)</p>
+                <p className="font-semibold uppercase tracking-wider text-base-content/40 mb-1">{t('login.demoAccessTitle')}</p>
                 <p><b>Finance Manager:</b> finance.manager@gmail.com · pass123</p>
                 <p><b>Branch Manager:</b> kozim.manager@gmail.com · ChangeMe123!</p>
               </div>
