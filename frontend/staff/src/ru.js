@@ -2439,6 +2439,40 @@ const ru = {
   'super.discipline.restored': 'Восстановлен',
   'super.discipline.restoreTooltip': 'Снять увольнение и вернуть доступ',
   'super.discipline.restore': 'Вернуть',
+
+  /* ─── branch-manager/_ui.jsx ─── */
+  'branchManager.ui.incomeTooltip': '{{label}} · Доход {{amount}}',
+  'branchManager.ui.expenseTooltip': '{{label}} · Расход {{amount}}',
+
+  /* ─── branch-manager/Income.jsx ─── */
+  'branchManager.income.title': 'Доход',
+  'branchManager.income.loadingSubtitle': 'Загрузка данных...',
+  'branchManager.income.loadErrorMessage': 'Произошла ошибка при загрузке данных',
+  'branchManager.income.retry': 'Попробовать снова',
+  'branchManager.income.subtitle': 'Филиал · платежи и задолженность',
+  'branchManager.income.hintTitle': 'Доход формируется из платежей',
+  'branchManager.income.hintText': 'Новый платёж оформляется в разделе «Платежи»',
+  'branchManager.income.makePayment': 'Оформить платёж',
+  'branchManager.income.kpiMonthRevenue': 'Доход за месяц',
+  'branchManager.income.kpiPaid': 'Оплачено',
+  'branchManager.income.kpiPaidUnit': 'из {{count}} платежей',
+  'branchManager.income.kpiOverdue': 'Просрочено',
+  'branchManager.income.kpiOverdueUnit': 'просроченных платежей',
+  'branchManager.income.kpiTotalDebt': 'Общая задолженность',
+  'branchManager.income.kpiTotalDebtUnit': 'по филиалу',
+  'branchManager.income.paymentsPanelTitle': 'Платежи — {{month}}',
+  'branchManager.income.searchPlaceholder': 'Поиск по студенту или группе...',
+  'branchManager.income.nothingFoundTitle': 'Ничего не найдено',
+  'branchManager.income.emptyMonthTitle': 'В этом месяце нет платежей',
+  'branchManager.income.searchHint': 'Попробуйте изменить запрос или выбрать другой месяц',
+  'branchManager.income.emptyMonthHint': 'Оформите платёж в разделе «Платежи» — он появится здесь',
+  'branchManager.income.colDate': 'Дата',
+  'branchManager.income.colStudent': 'Студент',
+  'branchManager.income.colGroup': 'Группа',
+  'branchManager.income.colMethod': 'Метод',
+  'branchManager.income.colAmount': 'Сумма',
+  'branchManager.income.colStatus': 'Статус',
+  'branchManager.income.total': 'Итого',
 };
 
 export default ru;

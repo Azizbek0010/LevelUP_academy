@@ -2439,6 +2439,40 @@ const en = {
   'super.discipline.restored': 'Restored',
   'super.discipline.restoreTooltip': 'Lift the termination and restore access',
   'super.discipline.restore': 'Restore',
+
+  /* ─── branch-manager/_ui.jsx ─── */
+  'branchManager.ui.incomeTooltip': '{{label}} · Income {{amount}}',
+  'branchManager.ui.expenseTooltip': '{{label}} · Expense {{amount}}',
+
+  /* ─── branch-manager/Income.jsx ─── */
+  'branchManager.income.title': 'Income',
+  'branchManager.income.loadingSubtitle': 'Loading data...',
+  'branchManager.income.loadErrorMessage': 'An error occurred while loading the data',
+  'branchManager.income.retry': 'Try again',
+  'branchManager.income.subtitle': 'Branch · payments and debt',
+  'branchManager.income.hintTitle': 'Income is generated from payments',
+  'branchManager.income.hintText': 'New payments are made in the "Payments" section',
+  'branchManager.income.makePayment': 'Make payment',
+  'branchManager.income.kpiMonthRevenue': 'Monthly revenue',
+  'branchManager.income.kpiPaid': 'Paid',
+  'branchManager.income.kpiPaidUnit': 'of {{count}} payments',
+  'branchManager.income.kpiOverdue': 'Overdue',
+  'branchManager.income.kpiOverdueUnit': 'overdue payments',
+  'branchManager.income.kpiTotalDebt': 'Total debt',
+  'branchManager.income.kpiTotalDebtUnit': 'branch-wide',
+  'branchManager.income.paymentsPanelTitle': 'Payments — {{month}}',
+  'branchManager.income.searchPlaceholder': 'Search by student or group...',
+  'branchManager.income.nothingFoundTitle': 'Nothing found',
+  'branchManager.income.emptyMonthTitle': 'No payments this month',
+  'branchManager.income.searchHint': 'Try a different search or another month',
+  'branchManager.income.emptyMonthHint': 'Make a payment in the "Payments" section — it will appear here',
+  'branchManager.income.colDate': 'Date',
+  'branchManager.income.colStudent': 'Student',
+  'branchManager.income.colGroup': 'Group',
+  'branchManager.income.colMethod': 'Method',
+  'branchManager.income.colAmount': 'Amount',
+  'branchManager.income.colStatus': 'Status',
+  'branchManager.income.total': 'Total',
 };
 
 export default en;

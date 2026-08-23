@@ -2432,6 +2432,40 @@ const uz = {
   'super.discipline.restored': 'Tiklandi',
   'super.discipline.restoreTooltip': 'Ishdan bo\'shatishni bekor qilish va kirishni qaytarish',
   'super.discipline.restore': 'Qaytarish',
+
+  /* ─── branch-manager/_ui.jsx ─── */
+  'branchManager.ui.incomeTooltip': '{{label}} · Daromad {{amount}}',
+  'branchManager.ui.expenseTooltip': '{{label}} · Xarajat {{amount}}',
+
+  /* ─── branch-manager/Income.jsx ─── */
+  'branchManager.income.title': 'Daromad',
+  'branchManager.income.loadingSubtitle': 'Ma\'lumotlar yuklanmoqda...',
+  'branchManager.income.loadErrorMessage': 'Ma\'lumotlarni yuklashda xatolik yuz berdi',
+  'branchManager.income.retry': 'Qayta urinish',
+  'branchManager.income.subtitle': 'Filial · to\'lovlar va qarzdorlik',
+  'branchManager.income.hintTitle': 'Daromad to\'lovlardan shakllanadi',
+  'branchManager.income.hintText': 'Yangi to\'lov «To\'lovlar» bo\'limida rasmiylashtiriladi',
+  'branchManager.income.makePayment': 'To\'lov rasmiylashtirish',
+  'branchManager.income.kpiMonthRevenue': 'Oylik daromad',
+  'branchManager.income.kpiPaid': 'To\'landi',
+  'branchManager.income.kpiPaidUnit': '{{count}} tadan',
+  'branchManager.income.kpiOverdue': 'Muddati o\'tgan',
+  'branchManager.income.kpiOverdueUnit': 'muddati o\'tgan to\'lovlar',
+  'branchManager.income.kpiTotalDebt': 'Umumiy qarzdorlik',
+  'branchManager.income.kpiTotalDebtUnit': 'filial bo\'yicha',
+  'branchManager.income.paymentsPanelTitle': 'To\'lovlar — {{month}}',
+  'branchManager.income.searchPlaceholder': 'O\'quvchi yoki guruh bo\'yicha qidirish...',
+  'branchManager.income.nothingFoundTitle': 'Hech narsa topilmadi',
+  'branchManager.income.emptyMonthTitle': 'Bu oyda to\'lovlar yo\'q',
+  'branchManager.income.searchHint': 'So\'rovni o\'zgartiring yoki boshqa oyni tanlang',
+  'branchManager.income.emptyMonthHint': '«To\'lovlar» bo\'limida to\'lov rasmiylashtiring — u shu yerda paydo bo\'ladi',
+  'branchManager.income.colDate': 'Sana',
+  'branchManager.income.colStudent': 'O\'quvchi',
+  'branchManager.income.colGroup': 'Guruh',
+  'branchManager.income.colMethod': 'Usul',
+  'branchManager.income.colAmount': 'Summa',
+  'branchManager.income.colStatus': 'Holat',
+  'branchManager.income.total': 'Jami',
 };
 
 export default uz;
