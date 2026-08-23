@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin, Search, X, Maximize2, Minimize2 } from 'lucide-react';
 
 const YANDEX_KEY = import.meta.env.VITE_YANDEX_KEY;
@@ -170,6 +171,7 @@ export default function YMapPicker({
   readOnly = false,
   onPickAddress,
 }) {
+  const { t } = useTranslation();
   const containerRef = useRef(null);
   const wrapRef = useRef(null);
   const mapRef = useRef(null);
@@ -213,7 +215,7 @@ export default function YMapPicker({
       >
         <MapPin size={32} className="text-base-content/30" />
         <p className="text-sm text-base-content/50">
-          Добавьте <code className="bg-base-300 px-1 rounded">VITE_YANDEX_KEY</code> в .env
+          {t('components.mapPicker.addEnvKeyPrefix')} <code className="bg-base-300 px-1 rounded">VITE_YANDEX_KEY</code> {t('components.mapPicker.addEnvKeySuffix')}
         </p>
       </div>
     );
@@ -233,10 +235,7 @@ export default function YMapPicker({
            Пишем это прямо, иначе поиск причины начинается с кода. */
         if (!cancelled) {
           onUnavailable?.(true);
-          setError(
-            'Карта не загрузилась. Проверьте ключ Яндекса: в кабинете разработчика ' +
-            'у него должны быть заданы ограничения по HTTP referer для этого домена.',
-          );
+          setError(t('components.mapPicker.loadErrorMessage'));
         }
       });
 
@@ -371,7 +370,7 @@ export default function YMapPicker({
       } catch (_) {
         if (id !== reqRef.current) return;
         setItems([]);
-        setSearchErr('Поиск сейчас недоступен');
+        setSearchErr(t('components.mapPicker.searchUnavailable'));
       } finally {
         if (id === reqRef.current) setSearching(false);
       }
@@ -389,7 +388,7 @@ export default function YMapPicker({
     const found = await resolveSuggestion(item, v?.lng != null ? [v.lng, v.lat] : TASHKENT);
     setSearching(false);
     if (!found) {
-      setSearchErr('Не удалось определить координаты — отметьте точку кликом по карте');
+      setSearchErr(t('components.mapPicker.coordsResolveFailed'));
       return;
     }
     setSearchErr('');
@@ -444,7 +443,7 @@ export default function YMapPicker({
               onChange={(e) => { setQ(e.target.value); setSearchErr(''); }}
               onKeyDown={onSearchKey}
               onFocus={() => items.length && setOpen(true)}
-              placeholder="Найти адрес или место…"
+              placeholder={t('components.mapPicker.searchPlaceholder')}
               /* Поле стоит внутри <form> и выглядит для браузера как адрес —
                  Chrome подставлял в него адрес из своего профиля, стоило
                  открыть окно. Автозаполнению тут делать нечего: это поиск по
@@ -466,7 +465,7 @@ export default function YMapPicker({
                 type="button"
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/35 hover:text-base-content"
                 onClick={() => { setQ(''); setItems([]); setOpen(false); setSearchErr(''); }}
-                aria-label="Очистить"
+                aria-label={t('components.mapPicker.clear')}
               >
                 <X size={15} />
               </button>
@@ -510,8 +509,8 @@ export default function YMapPicker({
       <button
         type="button"
         onClick={toggleFs}
-        title={isFs ? 'Выйти из полноэкранного режима' : 'Во весь экран'}
-        aria-label={isFs ? 'Выйти из полноэкранного режима' : 'Во весь экран'}
+        title={isFs ? t('components.mapPicker.exitFullscreen') : t('components.mapPicker.fullscreen')}
+        aria-label={isFs ? t('components.mapPicker.exitFullscreen') : t('components.mapPicker.fullscreen')}
         className="absolute top-3 right-3 z-20 w-9 h-9 flex items-center justify-center rounded-lg bg-base-100 border border-base-300 shadow-sm text-base-content/60 hover:text-base-content"
       >
         {isFs ? <Minimize2 size={15} /> : <Maximize2 size={15} />}

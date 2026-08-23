@@ -2629,6 +2629,17 @@ const ru = {
   'components.exportDialog.done': 'Готово!',
   'components.exportDialog.creating': 'Создаём...',
   'components.exportDialog.download': 'Скачать',
+
+  /* ─── components/YMapPicker.jsx ─── */
+  'components.mapPicker.addEnvKeyPrefix': 'Добавьте',
+  'components.mapPicker.addEnvKeySuffix': 'в .env',
+  'components.mapPicker.loadErrorMessage': 'Карта не загрузилась. Проверьте ключ Яндекса: в кабинете разработчика у него должны быть заданы ограничения по HTTP referer для этого домена.',
+  'components.mapPicker.searchUnavailable': 'Поиск сейчас недоступен',
+  'components.mapPicker.coordsResolveFailed': 'Не удалось определить координаты — отметьте точку кликом по карте',
+  'components.mapPicker.searchPlaceholder': 'Найти адрес или место…',
+  'components.mapPicker.clear': 'Очистить',
+  'components.mapPicker.exitFullscreen': 'Выйти из полноэкранного режима',
+  'components.mapPicker.fullscreen': 'Во весь экран',
 };
 
 export default ru;

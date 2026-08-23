@@ -2629,6 +2629,17 @@ const en = {
   'components.exportDialog.done': 'Done!',
   'components.exportDialog.creating': 'Creating...',
   'components.exportDialog.download': 'Download',
+
+  /* ─── components/YMapPicker.jsx ─── */
+  'components.mapPicker.addEnvKeyPrefix': 'Add',
+  'components.mapPicker.addEnvKeySuffix': 'to .env',
+  'components.mapPicker.loadErrorMessage': "The map failed to load. Check the Yandex key: in the developer console it must have HTTP referer restrictions set for this domain.",
+  'components.mapPicker.searchUnavailable': 'Search is currently unavailable',
+  'components.mapPicker.coordsResolveFailed': 'Could not determine coordinates — mark the point by clicking on the map',
+  'components.mapPicker.searchPlaceholder': 'Find an address or place…',
+  'components.mapPicker.clear': 'Clear',
+  'components.mapPicker.exitFullscreen': 'Exit fullscreen',
+  'components.mapPicker.fullscreen': 'Fullscreen',
 };
 
 export default en;

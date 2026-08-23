@@ -2622,6 +2622,17 @@ const uz = {
   'components.exportDialog.done': 'Tayyor!',
   'components.exportDialog.creating': 'Yaratilmoqda...',
   'components.exportDialog.download': 'Yuklab olish',
+
+  /* ─── components/YMapPicker.jsx ─── */
+  'components.mapPicker.addEnvKeyPrefix': '.env fayliga',
+  'components.mapPicker.addEnvKeySuffix': 'qo\'shing',
+  'components.mapPicker.loadErrorMessage': 'Xarita yuklanmadi. Yandex kalitini tekshiring: dasturchi kabinetida shu domen uchun HTTP referer cheklovlari belgilangan bo\'lishi kerak.',
+  'components.mapPicker.searchUnavailable': 'Qidiruv hozircha mavjud emas',
+  'components.mapPicker.coordsResolveFailed': 'Koordinatalarni aniqlab bo\'lmadi — nuqtani xaritani bosib belgilang',
+  'components.mapPicker.searchPlaceholder': 'Manzil yoki joyni qidirish…',
+  'components.mapPicker.clear': 'Tozalash',
+  'components.mapPicker.exitFullscreen': 'To\'liq ekrandan chiqish',
+  'components.mapPicker.fullscreen': 'To\'liq ekran',
 };
 
 export default uz;
