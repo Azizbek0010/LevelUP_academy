@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -30,12 +31,13 @@ import { Card, Metric, FilterPills, CHART_PRIMARY, CHART_SERIES } from './_ui.js
  * посчитанные за выбранный период.
  */
 
-const METHOD_LABEL = { cash: 'Наличные', card: 'Карта', transfer: 'Перевод' };
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+const methodLabelFor = (t) => ({ cash: t('super.stats.methodCash'), card: t('super.stats.methodCard'), transfer: t('super.stats.methodTransfer') });
 
-const PERIODS = [
-  { key: '7d', label: '7 дней' },
-  { key: '30d', label: '30 дней' },
-  { key: '90d', label: '90 дней' },
+const periodsFor = (t) => [
+  { key: '7d', label: t('super.stats.period7d') },
+  { key: '30d', label: t('super.stats.period30d') },
+  { key: '90d', label: t('super.stats.period90d') },
 ];
 
 // ---- Custom Tooltip ----
@@ -57,13 +59,17 @@ function NeonTooltip({ active, payload, label }) {
 
 // ---- Main ----
 export default function SuperStats() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const METHOD_LABEL = methodLabelFor(t);
+  const PERIODS = periodsFor(t);
   const [period, setPeriod] = useState('30d');
   const { data, isLoading, error } = useSuperStats(period);
 
   if (isLoading || !data) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Статистика" />
+        <PageHeader title={t('super.stats.title')} />
         <SkeletonKpis count={4} />
         <SkeletonTable />
       </div>
@@ -76,20 +82,21 @@ export default function SuperStats() {
     );
   }
 
-  const t = data.totals ?? {};
-  const cur = t.currency ?? 'UZS';
+  const totals = data.totals ?? {};
+  const cur = totals.currency ?? 'UZS';
   const branches = data.branches ?? [];
 
   // средняя выручка и доля долга приходят с сервера — считать их второй раз незачем
-  const avgRevenue = t.periodAvgRevenue ?? 0;
-  const debtRatio = (t.debtRatio ?? 0).toFixed(1);
+  const avgRevenue = totals.periodAvgRevenue ?? 0;
+  const debtRatio = (totals.debtRatio ?? 0).toFixed(1);
   const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? period;
 
   /* Выручка по дням за выбранный период — то, ради чего график и нужен.
      Раньше по оси X стояли филиалы, то есть «динамика» была не динамикой. */
+  const revenueSeriesLabel = t('super.stats.revenueSeriesLabel');
   const areaData = (data.revenueSeries ?? []).map((p) => ({
-    name: new Date(p.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }),
-    Выручка: Number(p.revenue ?? 0),
+    name: new Date(p.date).toLocaleDateString(locale, { day: '2-digit', month: '2-digit' }),
+    [revenueSeriesLabel]: Number(p.revenue ?? 0),
   }));
 
   const methodData = (data.paymentMethods ?? [])
@@ -118,7 +125,7 @@ export default function SuperStats() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Статистика" subtitle="Финансовые показатели организации">
+      <PageHeader title={t('super.stats.title')} subtitle={t('super.stats.subtitle')}>
         <div className="flex items-center gap-3">
           <FilterPills options={PERIODS.map((p) => ({ key: p.key, label: p.label }))} value={period} onChange={setPeriod} />
         </div>
@@ -132,40 +139,40 @@ export default function SuperStats() {
         <Metric
           Icon={Landmark}
           tone="primary"
-          label={`Выручка за ${periodLabel.toLowerCase()}`}
-          value={money(t.periodRevenue ?? 0, cur)}
-          unit={`Средняя: ${money(avgRevenue)} / филиал`}
+          label={t('super.stats.revenueLabel', { period: periodLabel.toLowerCase() })}
+          value={money(totals.periodRevenue ?? 0, cur)}
+          unit={t('super.stats.avgPerBranch', { amount: money(avgRevenue) })}
         />
         <Metric
           Icon={CreditCard}
           tone="danger"
-          label="Долг"
-          value={money(t.outstandingDebt ?? 0, cur)}
-          unit="Задолженность на сегодня"
+          label={t('super.stats.debtLabel')}
+          value={money(totals.outstandingDebt ?? 0, cur)}
+          unit={t('super.stats.debtUnit')}
         />
         <Metric
           Icon={Users}
           tone="info"
-          label="Ученики"
-          value={fmt(t.activeStudents ?? 0)}
-          unit={`В ${t.branches ?? 0} филиалах`}
+          label={t('super.stats.studentsLabel')}
+          value={fmt(totals.activeStudents ?? 0)}
+          unit={t('super.stats.inBranches', { count: totals.branches ?? 0 })}
         />
         <Metric
           Icon={Percent}
           tone="warning"
-          label="Доля долга"
+          label={t('super.stats.debtShareLabel')}
           value={`${debtRatio}%`}
-          unit="От общей суммы счетов"
+          unit={t('super.stats.debtShareUnit')}
         />
       </div>
 
       {/* Hero area chart */}
       <Card className="p-5 md:p-6">
         <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-          <TrendingUp size={18} /> Выручка по дням
+          <TrendingUp size={18} /> {t('super.stats.revenueByDayTitle')}
         </h2>
         {areaData.length === 0 ? (
-          <p className="text-center py-12 opacity-50 text-sm">За выбранный период оплат не было</p>
+          <p className="text-center py-12 opacity-50 text-sm">{t('super.stats.noPaymentsInPeriod')}</p>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={areaData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
@@ -179,7 +186,7 @@ export default function SuperStats() {
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => fmt(v)} />
               <Tooltip content={<NeonTooltip />} />
-              <Area type="monotone" dataKey="Выручка" stroke={CHART_PRIMARY} fill="url(#gradRev)" strokeWidth={2} />
+              <Area type="monotone" dataKey={revenueSeriesLabel} stroke={CHART_PRIMARY} fill="url(#gradRev)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -189,9 +196,9 @@ export default function SuperStats() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Bar chart: revenue per branch */}
         <Card className="p-5 md:p-6">
-          <h2 className="text-base font-bold mb-4">Выручка по филиалам</h2>
+          <h2 className="text-base font-bold mb-4">{t('super.stats.revenueByBranchTitle')}</h2>
           {barData.length === 0 ? (
-            <p className="text-center py-10 opacity-50 text-sm">Нет данных</p>
+            <p className="text-center py-10 opacity-50 text-sm">{t('super.stats.noData')}</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={barData} layout="vertical" margin={{ left: 0, right: 20 }}>
@@ -199,7 +206,7 @@ export default function SuperStats() {
                 <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => fmt(v)} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
                 <Tooltip content={<NeonTooltip />} />
-                <Bar dataKey="revenue" name="Выручка" fill={CHART_PRIMARY} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="revenue" name={revenueSeriesLabel} fill={CHART_PRIMARY} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -207,9 +214,9 @@ export default function SuperStats() {
 
         {/* Pie chart: branch revenue distribution */}
         <Card className="p-5 md:p-6">
-          <h2 className="text-base font-bold mb-4">Доля выручки по филиалам</h2>
+          <h2 className="text-base font-bold mb-4">{t('super.stats.revenueShareTitle')}</h2>
           {pieData.length === 0 ? (
-            <p className="text-center py-10 opacity-50 text-sm">Нет данных</p>
+            <p className="text-center py-10 opacity-50 text-sm">{t('super.stats.noData')}</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -239,20 +246,20 @@ export default function SuperStats() {
           сюда 2026-07-28): та же выборка, что и в графиках выше, но с точной
           долей филиала в общей выручке, посчитанной на сервере. */}
       <Card className="p-5 md:p-6">
-        <h2 className="text-base font-bold mb-4">Сводка по филиалам</h2>
+        <h2 className="text-base font-bold mb-4">{t('super.stats.branchSummaryTitle')}</h2>
         {branches.length === 0 ? (
-          <p className="text-center py-10 opacity-50 text-sm">Нет данных</p>
+          <p className="text-center py-10 opacity-50 text-sm">{t('super.stats.noData')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="table table-sm tabular-nums">
               <thead>
                 <tr>
-                  <th>Филиал</th>
-                  <th className="text-right">Ученики</th>
-                  <th className="text-right">Админы</th>
-                  <th className="text-right">Выручка</th>
-                  <th className="text-right">Долг</th>
-                  <th className="text-right">Доля</th>
+                  <th>{t('super.stats.colBranch')}</th>
+                  <th className="text-right">{t('super.stats.colStudents')}</th>
+                  <th className="text-right">{t('super.stats.colAdmins')}</th>
+                  <th className="text-right">{t('super.stats.colRevenue')}</th>
+                  <th className="text-right">{t('super.stats.colDebt')}</th>
+                  <th className="text-right">{t('super.stats.colShare')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -280,10 +287,10 @@ export default function SuperStats() {
           с настоящей агрегацией — она приходит с /super/stats. */}
       <Card className="p-5 md:p-6">
         <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-          <Wallet size={18} /> Способы оплаты
+          <Wallet size={18} /> {t('super.stats.paymentMethodsTitle')}
         </h2>
         {methodData.length === 0 ? (
-          <p className="text-center py-10 opacity-50 text-sm">За выбранный период оплат не было</p>
+          <p className="text-center py-10 opacity-50 text-sm">{t('super.stats.noPaymentsInPeriod')}</p>
         ) : (
           <div className="flex flex-col sm:flex-row items-center gap-8">
             <div className="w-full sm:w-56 h-48">
