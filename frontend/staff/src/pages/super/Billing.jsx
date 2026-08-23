@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { CircleCheck, CircleAlert, CircleX, Receipt } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
@@ -8,18 +9,18 @@ import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonList } from '../../components/Skeleton.jsx';
 import { Card, EmptyState, StatusBadge } from './_ui.jsx';
 
-const REASON_LABEL = {
-  frozen: 'Заморожен вручную',
-  no_payment: 'Оплата ещё не зафиксирована',
-  grace_period: 'Льготный период — оплатите до 5 числа',
-  payment_overdue: 'Оплата просрочена',
-};
+const reasonLabelFor = (t) => ({
+  frozen: t('super.billing.reasonFrozen'),
+  no_payment: t('super.billing.reasonNoPayment'),
+  grace_period: t('super.billing.reasonGracePeriod'),
+  payment_overdue: t('super.billing.reasonPaymentOverdue'),
+});
 
-const LEDGER_TYPE = {
-  payment: { label: 'Оплата', tone: 'success' },
-  bonus: { label: 'Бонус', tone: 'info' },
-  addon_credit: { label: 'Кредит', tone: 'warning' },
-};
+const ledgerTypeFor = (t) => ({
+  payment: { label: t('super.billing.ledgerPayment'), tone: 'success' },
+  bonus: { label: t('super.billing.ledgerBonus'), tone: 'info' },
+  addon_credit: { label: t('super.billing.ledgerAddonCredit'), tone: 'warning' },
+});
 
 function useBilling() {
   const { token, logout } = useAuth();
@@ -50,6 +51,8 @@ const STATUS_TONE_CLS = {
 };
 
 function StatusCard({ billing }) {
+  const { t } = useTranslation();
+  const REASON_LABEL = reasonLabelFor(t);
   if (!billing) return null;
   const { blocked, reason, accessUntil } = billing;
 
@@ -63,10 +66,10 @@ function StatusCard({ billing }) {
         <Icon size={22} className={cls.icon} />
         <div>
           <div className="font-bold text-sm">
-            {blocked ? 'Доступ заблокирован' : reason === 'grace_period' ? 'Льготный период' : 'Доступ активен'}
+            {blocked ? t('super.billing.accessBlocked') : reason === 'grace_period' ? t('super.billing.gracePeriod') : t('super.billing.accessActive')}
           </div>
           <div className="text-xs text-base-content/55 mt-0.5">
-            {accessUntil ? `Оплачено до ${dateShort(accessUntil)}` : 'Оплата ещё не зафиксирована'}
+            {accessUntil ? t('super.billing.paidUntil', { date: dateShort(accessUntil) }) : t('super.billing.paymentNotRecorded')}
             {reason && REASON_LABEL[reason] && ` · ${REASON_LABEL[reason]}`}
           </div>
         </div>
@@ -76,22 +79,24 @@ function StatusCard({ billing }) {
 }
 
 export default function SuperBilling() {
+  const { t } = useTranslation();
+  const LEDGER_TYPE = ledgerTypeFor(t);
   const { data: billing, isLoading: billingLoading } = useBilling();
   const { data: ledger, isLoading: ledgerLoading } = useLedger();
   const items = ledger?.items ?? [];
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Оплата" subtitle="Статус доступа организации и журнал оплат" />
+      <PageHeader title={t('super.billing.title')} subtitle={t('super.billing.subtitle')} />
 
       {billingLoading ? <SkeletonList rows={1} /> : <StatusCard billing={billing} />}
 
       <section className="space-y-3">
-        <h2 className="font-bold text-sm flex items-center gap-2"><Receipt size={15} className="text-primary" /> Журнал</h2>
+        <h2 className="font-bold text-sm flex items-center gap-2"><Receipt size={15} className="text-primary" /> {t('super.billing.journal')}</h2>
         {ledgerLoading ? (
           <SkeletonList rows={3} />
         ) : items.length === 0 ? (
-          <Card><EmptyState icon={Receipt} title="Записей пока нет" /></Card>
+          <Card><EmptyState icon={Receipt} title={t('super.billing.noEntriesYet')} /></Card>
         ) : (
           <div className="space-y-2">
             {items.map((row) => {
@@ -105,8 +110,8 @@ export default function SuperBilling() {
                     </div>
                     <div className="text-xs text-base-content/45 mt-0.5">
                       {dateShort(row.created_at)}
-                      {row.period_covered && ` · период ${row.period_covered}`}
-                      {row.months_granted && ` · ${row.months_granted} мес`}
+                      {row.period_covered && t('super.billing.periodSuffix', { period: row.period_covered })}
+                      {row.months_granted && t('super.billing.monthsGrantedSuffix', { months: row.months_granted })}
                       {row.method && ` · ${row.method}`}
                     </div>
                   </div>
