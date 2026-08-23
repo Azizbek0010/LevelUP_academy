@@ -42,16 +42,19 @@ const GRADE_META = {
   senior: { label: 'Senior', color: '#15803d' },
 };
 
-function dateTime(iso) {
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+
+function dateTime(iso, locale) {
   if (!iso) return '—';
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? '—'
-    : d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    : d.toLocaleString(locale, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export default function StaffDetail() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
   const { role, id } = useParams();
   const { token } = useAuth();
   const [gradeBusy, setGradeBusy] = useState(false);
@@ -99,7 +102,7 @@ export default function StaffDetail() {
     return (
       <div>
         <div className="text-xs breadcrumbs text-base-content/50">
-          <ul><li><Link to="/admins" className="hover:text-base-content font-medium">Сотрудники</Link></li></ul>
+          <ul><li><Link to="/admins" className="hover:text-base-content font-medium">{t('super.staffDetail.breadcrumbStaff')}</Link></li></ul>
         </div>
         <SkeletonList rows={8} />
       </div>
@@ -111,14 +114,14 @@ export default function StaffDetail() {
       <div className="space-y-4">
         <div className="text-xs breadcrumbs text-base-content/50">
           <ul>
-            <li><Link to="/admins" className="hover:text-base-content font-medium">Сотрудники</Link></li>
-            <li className="font-semibold text-base-content">Не найден</li>
+            <li><Link to="/admins" className="hover:text-base-content font-medium">{t('super.staffDetail.breadcrumbStaff')}</Link></li>
+            <li className="font-semibold text-base-content">{t('super.staffDetail.notFound')}</li>
           </ul>
         </div>
         <EmptyState
           icon={ShieldAlert}
-          title="Сотрудник не найден"
-          hint="Возможно, аккаунт был удалён, или ссылка ведёт на другую роль."
+          title={t('super.staffDetail.staffNotFoundTitle')}
+          hint={t('super.staffDetail.staffNotFoundHint')}
         />
       </div>
     );
@@ -134,7 +137,7 @@ export default function StaffDetail() {
       await api.superUpdateMentorGrade(token, person.id, grade || null);
       await mentors.refetch();
     } catch (err) {
-      alert(err.message || 'Не удалось изменить грейд');
+      alert(err.message || t('super.staffDetail.gradeChangeError'));
     } finally {
       setGradeBusy(false);
     }
@@ -143,14 +146,14 @@ export default function StaffDetail() {
   const changeMentorBranch = async (branchId) => {
     if (!branchId || branchId === person.branchId) return;
     const next = (branches.data?.branches ?? []).find((b) => b.id === branchId);
-    if (!window.confirm(`${fullName} mentorini “${next?.name || 'boshqa filial'}”ga o‘tkazasizmi? Eski filialdagi guruhlardan mentor avtomatik ajratiladi.`)) return;
+    if (!window.confirm(t('super.staffDetail.confirmMentorBranchChange', { name: fullName, branch: next?.name || t('super.staffDetail.otherBranchFallback') }))) return;
     setBranchBusy(true);
     try {
       const result = await api.superUpdateMentorBranch(token, person.id, branchId);
       await mentors.refetch();
-      if (result.mentor?.detachedGroups) alert(`${result.mentor.detachedGroups} ta eski guruh mentorsiz qoldi. Ularga yangi mentor biriktiring.`);
+      if (result.mentor?.detachedGroups) alert(t('super.staffDetail.detachedGroupsAlert', { count: result.mentor.detachedGroups }));
     } catch (err) {
-      alert(err.message || 'Mentor filialini o‘zgartirib bo‘lmadi');
+      alert(err.message || t('super.staffDetail.mentorBranchChangeError'));
     } finally {
       setBranchBusy(false);
     }
@@ -159,7 +162,7 @@ export default function StaffDetail() {
   return (
     <div className="space-y-5">
       <PageHead
-        breadcrumbs={[{ label: 'Сотрудники', to: '/admins' }, { label: fullName }]}
+        breadcrumbs={[{ label: t('super.staffDetail.breadcrumbStaff'), to: '/admins' }, { label: fullName }]}
         avatar={<Avatar name={fullName} size="lg" />}
         title={fullName}
         subtitle={ROLE_LABELS(t)[role] ?? role}
@@ -167,7 +170,7 @@ export default function StaffDetail() {
         {role === 'mentor' && (
           <label className="flex items-center gap-1.5">
             <Building2 size={13} className="text-base-content/50" />
-            <select className="select select-bordered select-xs font-semibold" value={person.branchId || ''} disabled={branchBusy} onChange={(e) => changeMentorBranch(e.target.value)} title="Mentor filialini o‘zgartirish">
+            <select className="select select-bordered select-xs font-semibold" value={person.branchId || ''} disabled={branchBusy} onChange={(e) => changeMentorBranch(e.target.value)} title={t('super.staffDetail.changeMentorBranchTooltip')}>
               {(branches.data?.branches ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </label>
@@ -180,9 +183,9 @@ export default function StaffDetail() {
               value={person.grade || ''}
               disabled={gradeBusy}
               onChange={(e) => changeGrade(e.target.value)}
-              title="Изменить грейд ментора"
+              title={t('super.staffDetail.changeMentorGradeTooltip')}
             >
-              <option value="">Не задан</option>
+              <option value="">{t('super.staffDetail.gradeNotSet')}</option>
               {Object.entries(GRADE_META).map(([value, meta]) => (
                 <option key={value} value={value}>{meta.label}</option>
               ))}
@@ -191,7 +194,7 @@ export default function StaffDetail() {
         )}
         {lastViolation && (
           <span className="badge badge-ghost badge-sm gap-1.5">
-            <ScrollText size={11} /> Последнее: {dateShort(lastViolation.created_at ?? lastViolation.createdAt)}
+            <ScrollText size={11} /> {t('super.staffDetail.lastViolationLabel', { date: dateShort(lastViolation.created_at ?? lastViolation.createdAt) })}
           </span>
         )}
         <StatusBadge tone={STATUS_CLS_TONE[status.cls] ?? 'neutral'}>{status.label}</StatusBadge>
@@ -201,13 +204,13 @@ export default function StaffDetail() {
         <SkeletonKpis count={3} className="grid-cols-1 sm:grid-cols-3" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Metric Icon={TriangleAlert} tone="warning" label="Жёлтые" value={fmt(totals.sariq)} unit="предупреждений" />
-          <Metric Icon={ShieldAlert} tone="danger" label="Красные" value={fmt(totals.qizil)} unit="предупреждений" />
-          <Metric Icon={Ban} tone="danger" label="Увольнения" value={fmt(totals.qora)} unit="записей" />
+          <Metric Icon={TriangleAlert} tone="warning" label={t('super.staffDetail.kpiYellow')} value={fmt(totals.sariq)} unit={t('super.staffDetail.kpiWarningsUnit')} />
+          <Metric Icon={ShieldAlert} tone="danger" label={t('super.staffDetail.kpiRed')} value={fmt(totals.qizil)} unit={t('super.staffDetail.kpiWarningsUnit')} />
+          <Metric Icon={Ban} tone="danger" label={t('super.staffDetail.kpiFirings')} value={fmt(totals.qora)} unit={t('super.staffDetail.kpiRecordsUnit')} />
         </div>
       )}
 
-      <Panel title="Профиль" icon={UserCog}>
+      <Panel title={t('super.staffDetail.profileTitle')} icon={UserCog}>
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm">
             <span className="flex items-center gap-2">
@@ -216,26 +219,26 @@ export default function StaffDetail() {
             </span>
             <span className="flex items-center gap-2">
               <Phone size={14} className="text-base-content/40 shrink-0" />
-              {person.phone ? phoneDisplay(person.phone) : 'Телефон не указан'}
+              {person.phone ? phoneDisplay(person.phone) : t('super.staffDetail.phoneNotSpecified')}
             </span>
             <span className="flex items-center gap-2">
               <Calendar size={14} className="text-base-content/40 shrink-0" />
-              В системе с {dateShort(person.createdAt)}
+              {t('super.staffDetail.inSystemSince', { date: dateShort(person.createdAt) })}
             </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm pt-3 border-t border-base-200">
             <span className="flex items-center gap-2">
               <Wallet size={14} className="text-base-content/40 shrink-0" />
-              Оклад: <span className="font-semibold">
-                {person.monthlySalary != null ? money(person.monthlySalary) : 'не указан'}
+              {t('super.staffDetail.salaryLabel')} <span className="font-semibold">
+                {person.monthlySalary != null ? money(person.monthlySalary) : t('super.staffDetail.notSpecified')}
               </span>
             </span>
             {role !== 'methodist' && (
               <>
                 <span className="flex items-center gap-2">
                   <Building2 size={14} className="text-base-content/40 shrink-0" />
-                  {person.branchName || 'Филиал не указан'}
+                  {person.branchName || t('super.staffDetail.branchNotSpecified')}
                 </span>
                 {branch?.address && (
                   <span className="flex items-center gap-2 text-base-content/60">
@@ -246,7 +249,7 @@ export default function StaffDetail() {
                 {branch?.phone && (
                   <span className="flex items-center gap-2 text-base-content/60">
                     <Phone size={14} className="text-base-content/40 shrink-0" />
-                    {phoneDisplay(branch.phone)} · филиал
+                    {phoneDisplay(branch.phone)} {t('super.staffDetail.branchSuffix')}
                   </span>
                 )}
               </>
@@ -256,11 +259,11 @@ export default function StaffDetail() {
       </Panel>
 
       {role === 'mentor' && (
-        <Panel title="О менторе" icon={Award}>
+        <Panel title={t('super.staffDetail.aboutMentorTitle')} icon={Award}>
           <div className="space-y-4">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-2">
-                Навыки
+                {t('super.staffDetail.skillsLabel')}
               </div>
               {person.skills?.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
@@ -274,44 +277,44 @@ export default function StaffDetail() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-base-content/45">Не указаны</p>
+                <p className="text-sm text-base-content/45">{t('super.staffDetail.notSpecifiedPl')}</p>
               )}
             </div>
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-2">
-                О себе
+                {t('super.staffDetail.aboutMeLabel')}
               </div>
               {person.bio ? (
                 <p className="text-sm text-base-content/75 leading-relaxed border-l-2 border-base-300 pl-3 whitespace-pre-wrap">
                   {person.bio}
                 </p>
               ) : (
-                <p className="text-sm text-base-content/45">Не заполнено</p>
+                <p className="text-sm text-base-content/45">{t('super.staffDetail.notFilled')}</p>
               )}
             </div>
           </div>
         </Panel>
       )}
 
-      <Panel title="История нарушений дисциплины" icon={ScrollText} bodyClass="p-0">
+      <Panel title={t('super.staffDetail.disciplineHistoryTitle')} icon={ScrollText} bodyClass="p-0">
         {penalties.isLoading ? (
           <div className="p-4"><SkeletonTable /></div>
         ) : items.length === 0 ? (
           <EmptyState
             icon={ScrollText}
-            title="Нарушений нет"
-            hint="За этим сотрудником не числится взысканий."
+            title={t('super.staffDetail.noViolationsTitle')}
+            hint={t('super.staffDetail.noViolationsHint')}
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="table table-sm">
               <thead>
                 <tr>
-                  <th>Вид</th>
-                  <th className="text-right">% от оклада</th>
-                  <th>Причина</th>
-                  <th>Выписал</th>
-                  <th>Когда</th>
+                  <th>{t('super.staffDetail.colType')}</th>
+                  <th className="text-right">{t('super.staffDetail.colSalaryPercent')}</th>
+                  <th>{t('super.staffDetail.colReason')}</th>
+                  <th>{t('super.staffDetail.colIssuedBy')}</th>
+                  <th>{t('super.staffDetail.colWhen')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -329,7 +332,7 @@ export default function StaffDetail() {
                       </div>
                     </td>
                     <td className="text-xs text-base-content/55 whitespace-nowrap">
-                      {dateTime(p.created_at ?? p.createdAt)}
+                      {dateTime(p.created_at ?? p.createdAt, locale)}
                     </td>
                   </tr>
                 ))}
