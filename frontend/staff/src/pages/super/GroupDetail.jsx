@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   BookOpen, Users, Wallet, DoorOpen, Clock, AlertTriangle, ArrowRight, UserCog,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { fmt, money, USER_STATUS } from '../../format.js';
 import { useSuperGroupDetail } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
@@ -18,6 +19,7 @@ const DAY_LABEL = {
 const STATUS_CLS_TONE = { 'badge-success': 'success', 'badge-error': 'danger', 'badge-ghost': 'neutral' };
 
 export default function SuperGroupDetail() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useSuperGroupDetail(id);
@@ -110,8 +112,8 @@ export default function SuperGroupDetail() {
                     </td>
                     <td className="text-sm">{s.phone || '—'}</td>
                     <td>
-                      <StatusBadge tone={STATUS_CLS_TONE[USER_STATUS[s.status]?.cls] ?? 'neutral'}>
-                        {USER_STATUS[s.status]?.label ?? s.status}
+                      <StatusBadge tone={STATUS_CLS_TONE[USER_STATUS(t)[s.status]?.cls] ?? 'neutral'}>
+                        {USER_STATUS(t)[s.status]?.label ?? s.status}
                       </StatusBadge>
                     </td>
                     <td className={`text-right tabular-nums font-semibold ${s.totalDebt > 0 ? 'text-error' : 'text-base-content/40'}`}>

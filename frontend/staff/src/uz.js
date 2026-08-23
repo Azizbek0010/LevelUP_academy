@@ -104,6 +104,37 @@ const uz = {
   'common.accountMenu': 'Hisob menyusi',
   'common.yesterday': 'Kecha',
 
+  // people/Directory.jsx
+  'people.title': 'Odamlar va mijozlar',
+  'people.subtitle': "Rolingizga qarab kirish huquqi bilan xodimlar, ota-onalar va o'quvchilarning yagona bazasi",
+  'people.searchPlaceholder': 'Ism, telefon yoki email',
+  'people.allRoles': 'Barcha rollar',
+  'people.loading': 'Baza yuklanmoqda…',
+  'people.loadError': "Bazani yuklab bo'lmadi",
+  'people.emptyFilter': "Filtringiz bo'yicha hech kim topilmadi",
+  'people.inSelection': 'Tanlovdagi odamlar',
+  'people.students': "O'quvchilar",
+  'people.debt': 'Hisob bo‘yicha qarz',
+  'people.overdue': "Muddati o'tgan",
+  'people.person': 'Inson',
+  'people.role': 'Rol',
+  'people.branch': 'Filial',
+  'people.status': 'Holat',
+  'people.paid': "To'langan",
+  'people.noContact': "Kontakt ko'rsatilmagan",
+  'people.platform': 'Platforma',
+  'people.childrenCount': 'Farzandlar: {{count}}',
+
+  // status (format.js: ORG_STATUS/USER_STATUS/ADMIN_STATUS/LEAD_STATUS)
+  'status.active': 'Faol',
+  'status.trial': 'Sinov',
+  'status.frozen': 'Muzlatilgan',
+  'status.dropped': "O'chirilgan",
+  'status.new': 'Yangi',
+  'status.contacted': "Bog'lanildi",
+  'status.onboarded': 'Onboarding',
+  'status.rejected': 'Rad etilgan',
+
   // roles
   'role.seo': 'SEO (Rahbar)',
   'role.admin': 'Administrator',

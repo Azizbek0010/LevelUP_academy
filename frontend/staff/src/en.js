@@ -104,6 +104,37 @@ const en = {
   'common.accountMenu': 'Account menu',
   'common.yesterday': 'Yesterday',
 
+  // people/Directory.jsx
+  'people.title': 'People & clients',
+  'people.subtitle': 'A single directory of staff, parents and students, scoped to your role',
+  'people.searchPlaceholder': 'Name, phone or email',
+  'people.allRoles': 'All roles',
+  'people.loading': 'Loading directory…',
+  'people.loadError': 'Failed to load the directory',
+  'people.emptyFilter': 'No one matches your filter',
+  'people.inSelection': 'People in selection',
+  'people.students': 'Students',
+  'people.debt': 'Invoice debt',
+  'people.overdue': 'Overdue',
+  'people.person': 'Person',
+  'people.role': 'Role',
+  'people.branch': 'Branch',
+  'people.status': 'Status',
+  'people.paid': 'Paid',
+  'people.noContact': 'No contact listed',
+  'people.platform': 'Platform',
+  'people.childrenCount': 'Children: {{count}}',
+
+  // status (format.js: ORG_STATUS/USER_STATUS/ADMIN_STATUS/LEAD_STATUS)
+  'status.active': 'Active',
+  'status.trial': 'Trial',
+  'status.frozen': 'Frozen',
+  'status.dropped': 'Dropped',
+  'status.new': 'New',
+  'status.contacted': 'Contacted',
+  'status.onboarded': 'Onboarded',
+  'status.rejected': 'Rejected',
+
   // roles
   'role.seo': 'SEO (Head)',
   'role.admin': 'Administrator',

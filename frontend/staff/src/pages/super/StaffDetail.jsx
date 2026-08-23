@@ -5,6 +5,7 @@ import {
   Mail, Phone, Building2, Wallet, Calendar, MapPin, UserCog, Award,
   ShieldAlert, Ban, TriangleAlert, ScrollText,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { fmt, dateShort, money, ADMIN_STATUS, ROLE_LABELS } from '../../format.js';
 import { useSuperAdmins, useSuperMentors, useSuperMethodists, useSuperBranches, useSuperBranchManagers } from '../../queries.js';
 import { api } from '../../api.js';
@@ -50,6 +51,7 @@ function dateTime(iso) {
 }
 
 export default function StaffDetail() {
+  const { t } = useTranslation();
   const { role, id } = useParams();
   const { token } = useAuth();
   const [gradeBusy, setGradeBusy] = useState(false);
@@ -122,7 +124,7 @@ export default function StaffDetail() {
     );
   }
 
-  const status = ADMIN_STATUS[person.status === 'frozen' ? 'frozen' : 'active'] || { label: person.status, cls: 'badge-ghost' };
+  const status = ADMIN_STATUS(t)[person.status === 'frozen' ? 'frozen' : 'active'] || { label: person.status, cls: 'badge-ghost' };
   const lastViolation = items[0] ?? null;
   const fullName = `${person.firstName} ${person.lastName}`;
 
@@ -160,7 +162,7 @@ export default function StaffDetail() {
         breadcrumbs={[{ label: 'Сотрудники', to: '/admins' }, { label: fullName }]}
         avatar={<Avatar name={fullName} size="lg" />}
         title={fullName}
-        subtitle={ROLE_LABELS[role] ?? role}
+        subtitle={ROLE_LABELS(t)[role] ?? role}
       >
         {role === 'mentor' && (
           <label className="flex items-center gap-1.5">
@@ -323,7 +325,7 @@ export default function StaffDetail() {
                     <td className="text-sm">
                       {p.issued_by_name ?? p.issuedByName ?? '—'}
                       <div className="text-xs text-base-content/45">
-                        {ROLE_LABELS[p.issuer_role] ?? p.issuer_role}
+                        {ROLE_LABELS(t)[p.issuer_role] ?? p.issuer_role}
                       </div>
                     </td>
                     <td className="text-xs text-base-content/55 whitespace-nowrap">

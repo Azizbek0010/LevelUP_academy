@@ -104,6 +104,37 @@ const ru = {
   'common.accountMenu': 'Меню аккаунта',
   'common.yesterday': 'Вчера',
 
+  // people/Directory.jsx
+  'people.title': 'Люди и клиенты',
+  'people.subtitle': 'Единая база сотрудников, родителей и учеников с доступом по вашей роли',
+  'people.searchPlaceholder': 'Имя, телефон или email',
+  'people.allRoles': 'Все роли',
+  'people.loading': 'Загрузка базы…',
+  'people.loadError': 'Не удалось загрузить базу',
+  'people.emptyFilter': 'По вашему фильтру никого нет',
+  'people.inSelection': 'Людей в выборке',
+  'people.students': 'Учеников',
+  'people.debt': 'Долг по счетам',
+  'people.overdue': 'Просрочено',
+  'people.person': 'Человек',
+  'people.role': 'Роль',
+  'people.branch': 'Филиал',
+  'people.status': 'Статус',
+  'people.paid': 'Оплачено',
+  'people.noContact': 'Контакт не указан',
+  'people.platform': 'Платформа',
+  'people.childrenCount': 'Детей: {{count}}',
+
+  // status (format.js: ORG_STATUS/USER_STATUS/ADMIN_STATUS/LEAD_STATUS)
+  'status.active': 'Активен',
+  'status.trial': 'Триал',
+  'status.frozen': 'Заморожен',
+  'status.dropped': 'Удалён',
+  'status.new': 'Новая',
+  'status.contacted': 'Связались',
+  'status.onboarded': 'Онбординг',
+  'status.rejected': 'Отклонена',
+
   // roles
   'role.seo': 'SEO (Руководитель)',
   'role.admin': 'Администратор',

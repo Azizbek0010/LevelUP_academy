@@ -4,6 +4,7 @@ import {
   Coins, Wallet, KeyRound, Phone, Cake, AlertTriangle, ArrowRight,
   BookOpen, Snowflake, Users2,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { fmt, money, dateShort, USER_STATUS } from '../../format.js';
 import { useSuperStudentDetail } from '../../queries.js';
 import PageHeader from '../../components/PageHeader.jsx';
@@ -16,6 +17,7 @@ import {
 const STATUS_CLS_TONE = { 'badge-success': 'success', 'badge-error': 'danger', 'badge-ghost': 'neutral' };
 
 export default function SuperStudentDetail() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useSuperStudentDetail(id);
@@ -51,8 +53,8 @@ export default function SuperStudentDetail() {
       <Breadcrumbs name={fullName} />
 
       <PageHeader title={fullName} subtitle={s.branchName || 'Филиал не указан'}>
-        <StatusBadge tone={STATUS_CLS_TONE[USER_STATUS[s.status]?.cls] ?? 'neutral'}>
-          {USER_STATUS[s.status]?.label ?? s.status}
+        <StatusBadge tone={STATUS_CLS_TONE[USER_STATUS(t)[s.status]?.cls] ?? 'neutral'}>
+          {USER_STATUS(t)[s.status]?.label ?? s.status}
         </StatusBadge>
         {s.hasOverdueInvoice && (
           <span className="inline-flex items-center gap-1 text-xs font-semibold text-error">
