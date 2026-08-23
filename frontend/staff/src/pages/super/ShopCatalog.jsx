@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Gift, Pencil, Archive, ArchiveRestore, Coins } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useSuperShopItems, useInvalidate } from '../../queries.js';
@@ -9,6 +10,7 @@ import { Card, EmptyState, Modal, RowSkeleton } from './_ui.jsx';
 const emptyForm = { id: null, name: '', imageKey: '', coinPrice: '' };
 
 export default function SuperShopCatalog() {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const invalidate = useInvalidate();
   const itemsQ = useSuperShopItems();
@@ -43,7 +45,7 @@ export default function SuperShopCatalog() {
       }
       setForm(null);
       invalidate(['super-shop-items']);
-    } catch (e) { setErr(e.message || 'Не удалось сохранить товар'); }
+    } catch (e) { setErr(e.message || t('super.shopCatalog.saveError')); }
     finally { setBusy(false); }
   };
 
@@ -51,16 +53,16 @@ export default function SuperShopCatalog() {
     try {
       await api.superSetShopItemArchived(token, item.id, !item.is_archived);
       invalidate(['super-shop-items']);
-    } catch (e) { alert(e.message || 'Не удалось изменить статус'); }
+    } catch (e) { alert(e.message || t('super.shopCatalog.statusChangeError')); }
   };
 
   const valid = form && form.name.trim() && form.coinPrice !== '' && Number(form.coinPrice) > 0;
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Магазин" subtitle="Единый каталог организации: товар SEO автоматически появляется во всех филиалах.">
+      <PageHeader title={t('super.shopCatalog.title')} subtitle={t('super.shopCatalog.subtitle')}>
         <button className="btn btn-primary btn-sm gap-1.5" onClick={openCreate}>
-          <Plus size={16} /> Новый товар
+          <Plus size={16} /> {t('super.shopCatalog.newItem')}
         </button>
       </PageHeader>
 
@@ -68,7 +70,7 @@ export default function SuperShopCatalog() {
         <RowSkeleton count={4} />
       ) : items.length === 0 ? (
         <Card className="border-dashed">
-          <EmptyState icon={Gift} title="Пока нет товаров" hint="Создайте первый товар — он появится во всех филиалах организации" />
+          <EmptyState icon={Gift} title={t('super.shopCatalog.emptyTitle')} hint={t('super.shopCatalog.emptyHint')} />
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -84,18 +86,18 @@ export default function SuperShopCatalog() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] font-bold text-base-content truncate">{item.name}</div>
-                  <div className="text-[11px] text-success font-medium">Все филиалы · {item.branch_count} филиалов</div>
+                  <div className="text-[11px] text-success font-medium">{t('super.shopCatalog.allBranchesCount', { count: item.branch_count })}</div>
                   <div className="flex items-center gap-1 text-[11px] text-base-content/60 mt-1">
-                    <Coins size={11} className="text-warning" /> {item.coin_price} · общий остаток {item.total_stock}
+                    <Coins size={11} className="text-warning" /> {item.coin_price} · {t('super.shopCatalog.totalStock', { stock: item.total_stock })}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 mt-3">
                 <button className="btn btn-ghost btn-xs gap-1" onClick={() => openEdit(item)}>
-                  <Pencil size={12} /> Изменить
+                  <Pencil size={12} /> {t('super.shopCatalog.edit')}
                 </button>
                 <button className="btn btn-ghost btn-xs gap-1" onClick={() => toggleArchived(item)}>
-                  {item.is_archived ? <><ArchiveRestore size={12} /> Вернуть</> : <><Archive size={12} /> В архив</>}
+                  {item.is_archived ? <><ArchiveRestore size={12} /> {t('super.shopCatalog.restore')}</> : <><Archive size={12} /> {t('super.shopCatalog.toArchive')}</>}
                 </button>
               </div>
             </Card>
@@ -106,13 +108,13 @@ export default function SuperShopCatalog() {
       <Modal
         isOpen={!!form}
         onClose={() => setForm(null)}
-        title={form?.id ? 'Изменить товар' : 'Новый товар'}
+        title={form?.id ? t('super.shopCatalog.editItemTitle') : t('super.shopCatalog.newItem')}
         className="max-w-sm border border-base-300"
         actions={
           <>
-            <button className="btn btn-ghost btn-sm" onClick={() => setForm(null)} disabled={busy}>Отмена</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setForm(null)} disabled={busy}>{t('super.shopCatalog.cancel')}</button>
             <button className="btn btn-primary btn-sm" onClick={save} disabled={busy || !valid}>
-              {busy && <span className="loading loading-spinner loading-xs" />} Сохранить
+              {busy && <span className="loading loading-spinner loading-xs" />} {t('super.shopCatalog.save')}
             </button>
           </>
         }
@@ -120,10 +122,10 @@ export default function SuperShopCatalog() {
         {form && (
           <div className="space-y-3">
             {err && <div className="alert alert-error py-2 text-sm">{err}</div>}
-            {!form.id && <div className="alert alert-info py-2 text-xs">Товар автоматически появится во всех филиалах. Остаток каждый филиал ведёт отдельно.</div>}
-            <input className="input input-bordered w-full" placeholder="Название" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            <input className="input input-bordered w-full" placeholder="Ссылка на фото (необязательно)" value={form.imageKey} onChange={(e) => setForm({ ...form, imageKey: e.target.value })} />
-            <input type="number" min="1" className="input input-bordered w-full" placeholder="Цена, коины" value={form.coinPrice} onChange={(e) => setForm({ ...form, coinPrice: e.target.value })} />
+            {!form.id && <div className="alert alert-info py-2 text-xs">{t('super.shopCatalog.autoAppearHint')}</div>}
+            <input className="input input-bordered w-full" placeholder={t('super.shopCatalog.namePlaceholder')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <input className="input input-bordered w-full" placeholder={t('super.shopCatalog.imageLinkPlaceholder')} value={form.imageKey} onChange={(e) => setForm({ ...form, imageKey: e.target.value })} />
+            <input type="number" min="1" className="input input-bordered w-full" placeholder={t('super.shopCatalog.pricePlaceholder')} value={form.coinPrice} onChange={(e) => setForm({ ...form, coinPrice: e.target.value })} />
           </div>
         )}
       </Modal>
