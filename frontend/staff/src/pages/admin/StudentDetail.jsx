@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import QRCode from 'qrcode';
 import {
   ArrowLeft, Edit3, Save, Loader2, Coins, CalendarDays,
@@ -22,48 +23,55 @@ import { api } from '../../api.js';
 import PhoneInput from '../../components/PhoneInput.jsx';
 import { Avatar, RowSkeleton, Modal } from '../mentor/_ui.jsx';
 import { formatPhone } from '../../format.js';
+import { paymentMethodLabel } from '../finance/_ui.jsx';
 
 /* ─── helpers ─── */
 const fullName = (s) =>
   s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
-const formatMoney = (n) => (n != null ? Number(n).toLocaleString('ru-RU') + ' сум' : '—');
-const formatDate = (d) => {
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+const formatMoney = (n, locale = 'ru-RU', currencyWord = 'сум') => (n != null ? `${Number(n).toLocaleString(locale)} ${currencyWord}` : '—');
+const formatDate = (d, locale = 'ru-RU') => {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  return new Date(d).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
 };
-const DAY_LABELS = { mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс' };
-const METHOD_LABELS = {
-  cash: 'Наличные', humo: 'Humo', uzcard: 'Uzcard', uzum: 'Uzum',
-  payme: 'Payme', click: 'Click', bank_transfer: 'Банк. перевод',
-};
-const INVOICE_STATUS = {
-  paid: { label: 'Оплачено', bg: '#2ECC7115', text: '#2ECC71' },
-  partially_paid: { label: 'Частично', bg: '#F5A62315', text: '#F5A623' },
-  pending: { label: 'Ожидание', bg: '#94A3B815', text: '#64748B' },
-  overdue: { label: 'Долг', bg: '#E8543E15', text: '#E8543E' },
-  cancelled: { label: 'Отменён', bg: '#94A3B815', text: '#94A3B8' },
-};
-const monthLabel = (d) => {
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const dayLabelsFor = (locale) => Object.fromEntries(
+  DAY_KEYS.map((key, i) => [key, new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: 'short' })]),
+);
+const invoiceStatusMap = (t) => ({
+  paid: { label: t('admin.studentDetail.stPaid'), bg: '#2ECC7115', text: '#2ECC71' },
+  partially_paid: { label: t('admin.studentDetail.stPartial'), bg: '#F5A62315', text: '#F5A623' },
+  pending: { label: t('admin.studentDetail.stPending'), bg: '#94A3B815', text: '#64748B' },
+  overdue: { label: t('admin.studentDetail.stOverdue'), bg: '#E8543E15', text: '#E8543E' },
+  cancelled: { label: t('admin.studentDetail.stCancelled'), bg: '#94A3B815', text: '#94A3B8' },
+});
+const monthLabel = (d, locale = 'ru-RU') => {
   if (!d) return '—';
   const dt = new Date(d);
-  return dt.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+  return dt.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 };
-const ATTENDANCE_COLORS = {
-  present: { bg: '#2ECC7120', text: '#2ECC71', label: 'Был(а)' },
-  late: { bg: '#F5A62320', text: '#F5A623', label: 'Опоздал(а)' },
-  absent: { bg: '#E8543E20', text: '#E8543E', label: 'Отсутствовал(а)' },
-  excused: { bg: '#94A3B820', text: '#64748B', label: 'Уважительная' },
-};
-const dayShort = (d) => new Date(d).toLocaleDateString('ru-RU', { day: 'numeric' });
-const weekdayShort = (d) => new Date(d).toLocaleDateString('ru-RU', { weekday: 'short' });
+const attendanceColorsMap = (t) => ({
+  present: { bg: '#2ECC7120', text: '#2ECC71', label: t('admin.studentDetail.attPresent') },
+  late: { bg: '#F5A62320', text: '#F5A623', label: t('admin.studentDetail.attLate') },
+  absent: { bg: '#E8543E20', text: '#E8543E', label: t('admin.studentDetail.attAbsent') },
+  excused: { bg: '#94A3B820', text: '#64748B', label: t('admin.studentDetail.attExcused') },
+});
+const dayShort = (d, locale = 'ru-RU') => new Date(d).toLocaleDateString(locale, { day: 'numeric' });
+const weekdayShort = (d, locale = 'ru-RU') => new Date(d).toLocaleDateString(locale, { weekday: 'short' });
 const monthInputValue = (d) => {
   const dt = d ? new Date(d) : new Date();
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
 };
-const soon = () => alert('Эта функция ещё в разработке');
 
 /* ═══════════════ Main StudentDetail ═══════════════ */
 export default function AdminStudentDetail() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const currencyWord = t('admin.studentDetail.currency');
+  const DAY_LABELS = dayLabelsFor(locale);
+  const INVOICE_STATUS = invoiceStatusMap(t);
+  const ATTENDANCE_COLORS = attendanceColorsMap(t);
+  const soon = () => alert(t('admin.studentDetail.soon'));
   const { id } = useParams();
   const navigate = useNavigate();
   const { token, user } = useAuth();
@@ -186,7 +194,7 @@ export default function AdminStudentDetail() {
       setEditing(false);
       refetch();
     } catch (e) {
-      alert(e.message || 'Ошибка');
+      alert(e.message || t('admin.mentors.genericError'));
     } finally {
       setSaving(false);
     }
@@ -201,14 +209,14 @@ export default function AdminStudentDetail() {
   const doFreeze = async (frozen, reason) => {
     setBusy(true);
     try { await api.adminFreezeStudent(token, id, frozen, reason || ''); refetch(); }
-    catch (e) { alert(e.message || 'Ошибка'); }
+    catch (e) { alert(e.message || t('admin.mentors.genericError')); }
     finally { setBusy(false); }
   };
   const handleDelete = () => { setActionReason(''); setActionModal('archive'); };
   const confirmArchive = async () => {
     setBusy(true);
     try { await api.adminDeleteStudent(token, id, actionReason || ''); navigate('/students'); }
-    catch (e) { alert(e.message || 'Ошибка'); }
+    catch (e) { alert(e.message || t('admin.mentors.genericError')); }
     finally { setBusy(false); setActionModal(null); }
   };
   const handleRegen = async () => {
@@ -216,10 +224,10 @@ export default function AdminStudentDetail() {
     try {
       const res = await api.adminRegenStudentPassword(token, id);
       const r = res?.data || res;
-      alert(`Новый пароль: ${r.password || 'сгенерирован'}`);
+      alert(t('admin.studentDetail.newPasswordAlert', { password: r.password || t('admin.studentDetail.generated') }));
       refetch();
       invalidate(['admin-student-credentials', id]);
-    } catch (e) { alert(e.message || 'Ошибка'); }
+    } catch (e) { alert(e.message || t('admin.mentors.genericError')); }
     finally { setBusy(false); }
   };
   const [parentBusy, setParentBusy] = useState(false);
@@ -228,9 +236,9 @@ export default function AdminStudentDetail() {
     try {
       const res = await api.adminRegenParentPassword(token, id);
       const r = res?.data || res;
-      alert(`Новый пароль родителя: ${r.password || 'сгенерирован'}`);
+      alert(t('admin.studentDetail.newParentPasswordAlert', { password: r.password || t('admin.studentDetail.generated') }));
       invalidate(['admin-parent-credentials', id]);
-    } catch (e) { alert(e.message || 'Ошибка'); }
+    } catch (e) { alert(e.message || t('admin.mentors.genericError')); }
     finally { setParentBusy(false); }
   };
 
@@ -240,9 +248,9 @@ export default function AdminStudentDetail() {
     return (
       <div className="card bg-base-100 p-8 text-center">
         <AlertCircle size={40} className="mx-auto mb-3 text-red-400" />
-        <p className="text-[14px] font-bold text-base-content">Произошла ошибка</p>
+        <p className="text-[14px] font-bold text-base-content">{t('mentor.coins.genericError')}</p>
         <p className="text-[12px] text-base-content/45 mt-1">{error.message}</p>
-        <Link to="/students" className="btn btn-primary btn-sm mt-4"><ArrowLeft size={14} /> Назад</Link>
+        <Link to="/students" className="btn btn-primary btn-sm mt-4"><ArrowLeft size={14} /> {t('mentor.back')}</Link>
       </div>
     );
   }
@@ -250,8 +258,8 @@ export default function AdminStudentDetail() {
     return (
       <div className="card bg-base-100 p-8 text-center">
         <User size={40} className="mx-auto mb-3 text-base-content/45 opacity-30" />
-        <p className="text-[14px] font-bold text-base-content">Ученик не найден</p>
-        <Link to="/students" className="btn btn-primary btn-sm mt-4"><ArrowLeft size={14} /> Назад</Link>
+        <p className="text-[14px] font-bold text-base-content">{t('admin.studentDetail.notFound')}</p>
+        <Link to="/students" className="btn btn-primary btn-sm mt-4"><ArrowLeft size={14} /> {t('mentor.back')}</Link>
       </div>
     );
   }
@@ -259,20 +267,20 @@ export default function AdminStudentDetail() {
   // «Профиль заполнен» — gender/address/school/hasLaptop подключены к
   // student_profiles 08.08.2026 (миграция 1784340000000, задача #20).
   const profileFields = [
-    { key: 'birthDate', label: 'Дата рождения', ok: !!student.birthDate },
-    { key: 'phone', label: 'Телефон', ok: !!student.phone },
-    { key: 'parent', label: 'Родитель', ok: !!student.parent },
-    { key: 'gender', label: 'Пол', ok: !!student.gender },
-    { key: 'address', label: 'Адрес', ok: !!student.address },
-    { key: 'school', label: 'Школа', ok: !!student.school },
-    { key: 'hasLaptop', label: 'Ноутбук', ok: student.hasLaptop === true },
+    { key: 'birthDate', label: t('admin.studentDetail.fieldBirthDate'), ok: !!student.birthDate },
+    { key: 'phone', label: t('admin.studentDetail.fieldPhone'), ok: !!student.phone },
+    { key: 'parent', label: t('admin.studentDetail.fieldParent'), ok: !!student.parent },
+    { key: 'gender', label: t('admin.studentDetail.fieldGender'), ok: !!student.gender },
+    { key: 'address', label: t('admin.studentDetail.fieldAddress'), ok: !!student.address },
+    { key: 'school', label: t('admin.studentDetail.fieldSchool'), ok: !!student.school },
+    { key: 'hasLaptop', label: t('admin.studentDetail.fieldLaptop'), ok: student.hasLaptop === true },
   ];
   const profilePct = Math.round((profileFields.filter((f) => f.ok).length / profileFields.length) * 100);
 
   return (
     <div className="space-y-4 pb-8">
       <Link to="/students" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-base-content/45 hover:text-primary transition-colors">
-        <ArrowLeft size={16} /> К ученикам
+        <ArrowLeft size={16} /> {t('admin.studentDetail.backToStudents')}
       </Link>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(320px,380px)_minmax(0,1fr)_300px] gap-4 items-start">
@@ -284,7 +292,7 @@ export default function AdminStudentDetail() {
               <button
                 className="w-8 h-8 rounded-[8px] border border-base-300 flex items-center justify-center hover:border-primary hover:text-primary transition-colors shrink-0"
                 onClick={() => setShowCreds(true)}
-                title="Логин и пароль"
+                title={t('admin.studentDetail.loginPasswordTooltip')}
               >
                 <QrCode size={15} />
               </button>
@@ -292,22 +300,22 @@ export default function AdminStudentDetail() {
 
             <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
-                {isActive ? 'Активен' : 'Заморожен'}
+                {isActive ? t('status.active') : t('status.frozen')}
               </span>
               <span className="text-[11px] font-mono text-base-content/45">#{student.loginCode || student.login_code || '—'}</span>
               <span className="inline-flex items-center gap-1 text-[11px] text-base-content/45">
-                <CalendarDays size={11} /> {formatDate(student.createdAt)}
+                <CalendarDays size={11} /> {formatDate(student.createdAt, locale)}
               </span>
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${student.offerSigned ? 'bg-emerald-100 text-emerald-700' : 'bg-red-50 text-red-500 border border-red-200'}`}>
-                {student.offerSigned ? 'Оферта подписана' : 'Оферта не подписана'}
+                {student.offerSigned ? t('admin.studentDetail.offerSigned') : t('admin.studentDetail.offerNotSigned')}
               </span>
             </div>
 
             <div className="mt-4 space-y-2">
               <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-200/60">
-                <span className="text-[11px] font-semibold text-base-content/50 uppercase">Телефон</span>
+                <span className="text-[11px] font-semibold text-base-content/50 uppercase">{t('admin.studentDetail.phoneLabel')}</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-bold text-base-content">{student.phone ? formatPhone(student.phone) : 'Не указан'}</span>
+                  <span className="text-[13px] font-bold text-base-content">{student.phone ? formatPhone(student.phone) : t('admin.studentDetail.notSpecified')}</span>
                   {student.phone && (
                     <button onClick={() => copyToClipboard(student.phone, 'phone')} className="text-base-content/45 hover:text-primary">
                       {copied === 'phone' ? <Check size={12} /> : <Copy size={12} />}
@@ -317,7 +325,7 @@ export default function AdminStudentDetail() {
               </div>
 
               <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-200/60">
-                <span className="text-[11px] font-semibold text-base-content/50 uppercase">Родитель</span>
+                <span className="text-[11px] font-semibold text-base-content/50 uppercase">{t('admin.studentDetail.parentLabel')}</span>
                 {student.parent ? (
                   <div className="flex items-center gap-2">
                     <span className="text-[13px] font-bold text-base-content">
@@ -326,25 +334,25 @@ export default function AdminStudentDetail() {
                     <button
                       className="w-6 h-6 rounded-[6px] border border-base-300 flex items-center justify-center hover:border-primary hover:text-primary transition-colors shrink-0"
                       onClick={() => setShowParentCreds(true)}
-                      title="Логин и пароль родителя"
+                      title={t('admin.studentDetail.parentLoginTooltip')}
                     >
                       <QrCode size={12} />
                     </button>
                   </div>
                 ) : (
-                  <span className="text-[12px] text-base-content/40 italic">Не указан</span>
+                  <span className="text-[12px] text-base-content/40 italic">{t('admin.studentDetail.notSpecified')}</span>
                 )}
               </div>
 
               {tgEnabled && (
                 <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-200/60">
-                  <span className="text-[11px] font-semibold text-base-content/50 uppercase">Telegram</span>
+                  <span className="text-[11px] font-semibold text-base-content/50 uppercase">{t('admin.studentDetail.telegramLabel')}</span>
                   {telegram?.student?.linked ? (
                     <button onClick={() => setShowTgMessage(true)} className="flex items-center gap-1.5 text-[12px] font-bold text-primary hover:underline">
-                      <Send size={12} /> {telegram.student.username ? `@${telegram.student.username}` : 'Написать'}
+                      <Send size={12} /> {telegram.student.username ? `@${telegram.student.username}` : t('admin.studentDetail.write')}
                     </button>
                   ) : (
-                    <span className="text-[12px] text-base-content/40 italic">Не подключён</span>
+                    <span className="text-[12px] text-base-content/40 italic">{t('admin.studentDetail.notConnected')}</span>
                   )}
                 </div>
               )}
@@ -353,34 +361,34 @@ export default function AdminStudentDetail() {
             {/* Действия */}
             <div className="grid grid-cols-2 gap-1.5 mt-4">
               <button onClick={toggleFreeze} disabled={busy} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
-                {isActive ? <Snowflake size={13} /> : <Sun size={13} />} {isActive ? 'Заморозить' : 'Разморозить'}
+                {isActive ? <Snowflake size={13} /> : <Sun size={13} />} {isActive ? t('admin.mentorDetail.freeze') : t('admin.mentorDetail.unfreeze')}
               </button>
               <button onClick={soon} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
-                <GraduationCap size={13} /> Выпускник
+                <GraduationCap size={13} /> {t('admin.studentDetail.graduate')}
               </button>
               <button onClick={soon} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
-                <UserX size={13} /> Отчислить
+                <UserX size={13} /> {t('admin.studentDetail.expel')}
               </button>
               <button onClick={handleRegen} disabled={busy} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
-                <KeyRound size={13} /> Новый пароль
+                <KeyRound size={13} /> {t('admin.studentDetail.newPassword')}
               </button>
               <button onClick={startEdit} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
-                <Edit3 size={13} /> Изменить
+                <Edit3 size={13} /> {t('admin.mentorDetail.edit')}
               </button>
               <button onClick={soon} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px]">
-                <MessageSquare size={13} /> SMS
+                <MessageSquare size={13} /> {t('admin.studentDetail.sms')}
               </button>
               <button onClick={soon} className="btn btn-sm btn-ghost bg-base-200/60 justify-start gap-1.5 text-[12px] col-span-2">
-                <Gift size={13} /> Реферал
+                <Gift size={13} /> {t('admin.studentDetail.referral')}
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-2 mt-3">
               <button onClick={() => setShowAddGroup(true)} className="btn btn-sm bg-base-200/60 border-0 text-[12px] font-bold">
-                {groups.length > 0 ? 'Сменить группу' : 'Добавить в группу'}
+                {groups.length > 0 ? t('admin.studentDetail.changeGroup') : t('admin.studentDetail.addToGroup')}
               </button>
               <button onClick={() => setShowTopUp(true)} className="btn btn-sm btn-primary gap-1 text-[12px] font-bold">
-                <Plus size={13} /> Пополнить счёт
+                <Plus size={13} /> {t('admin.studentDetail.topUpBalance')}
               </button>
             </div>
           </div>
@@ -388,7 +396,7 @@ export default function AdminStudentDetail() {
           {/* Профиль заполнен */}
           <div className="card bg-base-100 p-5">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[12px] font-bold text-base-content/60">Профиль заполнен</span>
+              <span className="text-[12px] font-bold text-base-content/60">{t('admin.studentDetail.profileFilled')}</span>
               <span className="text-[13px] font-extrabold text-primary">{profilePct}%</span>
             </div>
             <div className="h-1.5 rounded-full bg-base-200 overflow-hidden mb-3">
@@ -412,33 +420,33 @@ export default function AdminStudentDetail() {
               <>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-[16px] font-extrabold text-base-content">{primaryGroup.name}</h3>
-                  <Link to="/groups" className="text-[11px] font-semibold text-primary hover:underline">Все группы</Link>
+                  <Link to="/groups" className="text-[11px] font-semibold text-primary hover:underline">{t('admin.studentDetail.allGroups')}</Link>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-[10px] bg-base-200/60">
-                    <div className="text-[10px] font-bold text-base-content/45 uppercase">Курс</div>
+                    <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.studentDetail.courseLabel')}</div>
                     <div className="text-[13px] font-bold text-base-content mt-0.5">{primaryGroup.subject}</div>
                   </div>
                   <div className="p-3 rounded-[10px] bg-base-200/60">
-                    <div className="text-[10px] font-bold text-base-content/45 uppercase">Ментор</div>
+                    <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.studentDetail.mentorLabel')}</div>
                     <div className="text-[13px] font-bold text-base-content mt-0.5">{primaryGroup.mentor}</div>
                   </div>
                   <div className="p-3 rounded-[10px] bg-base-200/60">
-                    <div className="text-[10px] font-bold text-base-content/45 uppercase">Время занятий</div>
+                    <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.studentDetail.lessonTimeLabel')}</div>
                     <div className="text-[13px] font-bold text-base-content mt-0.5">
                       {groupStartTime ? `${groupStartTime} · ${groupDays.map((d) => DAY_LABELS[d] || d).join('/')}` : '—'}
                     </div>
                   </div>
                   <div className="p-3 rounded-[10px] bg-base-200/60">
-                    <div className="text-[10px] font-bold text-base-content/45 uppercase">Стоимость</div>
-                    <div className="text-[13px] font-bold text-base-content mt-0.5">{formatMoney(primaryGroup.monthlyPrice)}/мес</div>
+                    <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.studentDetail.priceLabel')}</div>
+                    <div className="text-[13px] font-bold text-base-content mt-0.5">{formatMoney(primaryGroup.monthlyPrice, locale, currencyWord)}{t('admin.studentDetail.perMonth')}</div>
                   </div>
                 </div>
               </>
             ) : (
               <div className="text-center py-6">
                 <Users size={28} className="mx-auto mb-2 text-base-content/45 opacity-30" />
-                <p className="text-[13px] text-base-content/45">Не привязан к группе</p>
+                <p className="text-[13px] text-base-content/45">{t('admin.studentDetail.noGroupAttached')}</p>
               </div>
             )}
           </div>
@@ -446,7 +454,7 @@ export default function AdminStudentDetail() {
           <div className="card bg-base-100 p-5 xl:col-start-2 xl:col-span-2 xl:row-start-2">
               <div className="flex items-center gap-2 mb-3">
                 <CalendarDays size={15} className="text-primary" />
-                <h3 className="text-[13px] font-bold text-base-content">Посещаемость</h3>
+                <h3 className="text-[13px] font-bold text-base-content">{t('admin.studentDetail.attendanceTitle')}</h3>
               </div>
               {attendanceDays.length > 0 ? <div className="flex gap-1.5 overflow-x-auto pb-1">
                 {attendanceDays.map((d) => {
@@ -454,20 +462,20 @@ export default function AdminStudentDetail() {
                   return (
                     <div
                       key={d.date}
-                      title={`${c.label} · ${formatDate(d.date)}`}
+                      title={`${c.label} · ${formatDate(d.date, locale)}`}
                       className="shrink-0 w-11 h-14 rounded-[10px] flex flex-col items-center justify-center gap-0.5 border"
                       style={{ background: c.bg, color: c.text, borderColor: c.text + '40' }}
                     >
-                      <span className="text-[13px] font-extrabold">{dayShort(d.date)}</span>
-                      <span className="text-[9px] font-semibold uppercase opacity-70">{weekdayShort(d.date)}</span>
+                      <span className="text-[13px] font-extrabold">{dayShort(d.date, locale)}</span>
+                      <span className="text-[9px] font-semibold uppercase opacity-70">{weekdayShort(d.date, locale)}</span>
                     </div>
                   );
                 })}
               </div> : (
                 <div className="min-h-16 rounded-[10px] bg-base-200/45 flex items-center justify-center text-center px-4">
                   <div>
-                    <p className="text-[13px] font-semibold text-base-content/55">Пока нет данных</p>
-                    <p className="text-[11px] text-base-content/35 mt-0.5">Посещаемость появится после первого отмеченного занятия</p>
+                    <p className="text-[13px] font-semibold text-base-content/55">{t('admin.studentDetail.noDataYet')}</p>
+                    <p className="text-[11px] text-base-content/35 mt-0.5">{t('admin.studentDetail.attendanceHint')}</p>
                   </div>
                 </div>
               )}
@@ -476,13 +484,13 @@ export default function AdminStudentDetail() {
           <div className="card bg-base-100 p-5 h-full min-h-0 max-h-[420px] xl:max-h-[280px] overflow-hidden flex flex-col xl:col-start-2 xl:col-span-2 xl:row-start-3 self-stretch">
             <div className="flex items-center gap-2 mb-4 shrink-0">
               <CreditCard size={15} className="text-primary" />
-              <h3 className="text-[13px] font-bold text-base-content">История платежей</h3>
+              <h3 className="text-[13px] font-bold text-base-content">{t('admin.studentDetail.paymentHistory')}</h3>
               <span className="text-[11px] text-base-content/45 ml-auto">{invoices.length}</span>
             </div>
             {invoices.length === 0 ? (
               <div className="text-center py-8">
                 <CreditCard size={28} className="mx-auto mb-2 text-base-content/45 opacity-30" />
-                <p className="text-[13px] text-base-content/45">Нет платежей</p>
+                <p className="text-[13px] text-base-content/45">{t('admin.studentDetail.noPayments')}</p>
               </div>
             ) : (
               <div className="space-y-1.5 min-h-0 overflow-y-auto overscroll-contain pr-1">
@@ -491,13 +499,13 @@ export default function AdminStudentDetail() {
                   return (
                     <div key={inv.id} className="flex items-center justify-between p-2.5 rounded-[10px] hover:bg-base-200/60 transition-colors">
                       <div className="min-w-0">
-                        <div className="text-[13px] font-bold text-base-content capitalize">{monthLabel(inv.periodMonth)}</div>
+                        <div className="text-[13px] font-bold text-base-content capitalize">{monthLabel(inv.periodMonth, locale)}</div>
                         <div className="text-[10px] font-semibold text-base-content/45 mt-0.5">
-                          Принял: {inv.acceptedBy || '—'}
+                          {t('admin.studentDetail.acceptedBy', { name: inv.acceptedBy || '—' })}
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-[13px] font-bold text-base-content tabular-nums">{formatMoney(inv.paidAmount)}</span>
+                        <span className="text-[13px] font-bold text-base-content tabular-nums">{formatMoney(inv.paidAmount, locale, currencyWord)}</span>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: st.bg, color: st.text }}>{st.label}</span>
                       </div>
                     </div>
@@ -511,45 +519,45 @@ export default function AdminStudentDetail() {
         {/* ══════════════ КОЛОНКА 3 — текущий месяц ══════════════ */}
         <div className="space-y-4 w-full min-w-0 xl:col-start-3 xl:row-start-1">
           <div className="card bg-base-100 p-5">
-            <div className="text-[13px] font-extrabold text-base-content capitalize">{monthLabel(new Date())}</div>
+            <div className="text-[13px] font-extrabold text-base-content capitalize">{monthLabel(new Date(), locale)}</div>
             <div className="flex items-baseline justify-between mt-2">
               <span className={`text-[12px] font-bold ${currentInvoice?.status === 'paid' ? 'text-emerald-600' : 'text-red-500'}`}>
-                {currentInvoice?.status === 'paid' ? 'Оплачено' : 'Не оплачено'}
+                {currentInvoice?.status === 'paid' ? t('admin.studentDetail.paid') : t('admin.studentDetail.notPaid')}
               </span>
-              <span className="text-[20px] font-extrabold text-base-content tabular-nums">{formatMoney(currentInvoice?.paidAmount ?? 0)}</span>
+              <span className="text-[20px] font-extrabold text-base-content tabular-nums">{formatMoney(currentInvoice?.paidAmount ?? 0, locale, currencyWord)}</span>
             </div>
             <div className="text-[11px] text-base-content/45 mt-1">
-              Ежемесячно: {formatMoney(primaryGroup?.monthlyPrice)} · Долг: {formatMoney(student.totalDebt)}
+              {t('admin.studentDetail.monthlyDebtLine', { price: formatMoney(primaryGroup?.monthlyPrice, locale, currencyWord), debt: formatMoney(student.totalDebt, locale, currencyWord) })}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="card bg-base-100 p-4 text-center">
               <div className="text-[18px] font-extrabold text-base-content tabular-nums">{student.coinBalance ?? 0}</div>
-              <div className="text-[10px] font-semibold text-base-content/45 uppercase mt-0.5 flex items-center justify-center gap-1"><Coins size={11} /> Коины</div>
+              <div className="text-[10px] font-semibold text-base-content/45 uppercase mt-0.5 flex items-center justify-center gap-1"><Coins size={11} /> {t('admin.studentDetail.coins')}</div>
             </div>
             <div className="card bg-base-100 p-4 text-center">
-              <div className={`text-[18px] font-extrabold tabular-nums ${student.totalDebt > 0 ? 'text-red-500' : 'text-base-content'}`}>{formatMoney(student.totalDebt)}</div>
-              <div className="text-[10px] font-semibold text-base-content/45 uppercase mt-0.5">Долг</div>
+              <div className={`text-[18px] font-extrabold tabular-nums ${student.totalDebt > 0 ? 'text-red-500' : 'text-base-content'}`}>{formatMoney(student.totalDebt, locale, currencyWord)}</div>
+              <div className="text-[10px] font-semibold text-base-content/45 uppercase mt-0.5">{t('admin.studentDetail.debt')}</div>
             </div>
           </div>
 
           <div className="hidden">
             <div className="flex items-center gap-2 mb-3">
               <Wallet size={15} className="text-primary" />
-              <h3 className="text-[13px] font-bold text-base-content">Счета</h3>
+              <h3 className="text-[13px] font-bold text-base-content">{t('admin.studentDetail.invoices')}</h3>
             </div>
             {invoices.length === 0 ? (
-              <p className="text-[12px] text-base-content/40 text-center py-4">Пока пусто</p>
+              <p className="text-[12px] text-base-content/40 text-center py-4">{t('admin.studentDetail.emptyYet')}</p>
             ) : (
               <div className="space-y-2 max-h-[720px] overflow-y-auto overscroll-contain pr-1">
                 {invoices.map((inv) => (
                   <div key={inv.id} className="p-2.5 rounded-[10px] bg-base-200/60">
                     <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-extrabold text-emerald-600 tabular-nums">+{formatMoney(inv.paidAmount).replace(' сум', '')}</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-base-300 text-base-content/60 uppercase">{inv.type === 'split' ? 'Сплит' : 'Полный'}</span>
+                      <span className="text-[13px] font-extrabold text-emerald-600 tabular-nums">+{formatMoney(inv.paidAmount, locale, currencyWord).replace(` ${currencyWord}`, '')}</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-base-300 text-base-content/60 uppercase">{inv.type === 'split' ? t('admin.studentDetail.split') : t('admin.studentDetail.full')}</span>
                     </div>
-                    <div className="text-[10px] text-base-content/45 mt-0.5">{formatDate(inv.createdAt)} · {monthLabel(inv.periodMonth)}</div>
+                    <div className="text-[10px] text-base-content/45 mt-0.5">{formatDate(inv.createdAt, locale)} · {monthLabel(inv.periodMonth, locale)}</div>
                   </div>
                 ))}
               </div>
@@ -559,11 +567,11 @@ export default function AdminStudentDetail() {
       </div>
 
       {/* ═══ Модалка логин/пароль ═══ */}
-      <Modal isOpen={showCreds} onClose={() => setShowCreds(false)} title="Данные для входа">
+      <Modal isOpen={showCreds} onClose={() => setShowCreds(false)} title={t('admin.studentDetail.credsTitle')}>
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-200/60">
             <div>
-              <div className="text-[10px] font-bold text-base-content/45 uppercase">Логин-код</div>
+              <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.studentDetail.loginCode')}</div>
               <div className="text-[15px] font-mono font-extrabold text-base-content">{realCreds?.loginCode || student.loginCode || student.login_code || '—'}</div>
             </div>
             <button onClick={() => copyToClipboard(realCreds?.loginCode || student.loginCode, 'lc')} className="btn btn-ghost btn-sm">
@@ -572,9 +580,9 @@ export default function AdminStudentDetail() {
           </div>
           <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-200/60">
             <div>
-              <div className="text-[10px] font-bold text-base-content/45 uppercase">Пароль</div>
+              <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.studentDetail.password')}</div>
               <div className="text-[15px] font-mono font-extrabold text-base-content">
-                {credsLoading ? '…' : realCreds?.password || '— недоступен, нажмите «Новый пароль»'}
+                {credsLoading ? '…' : realCreds?.password || t('admin.studentDetail.passwordUnavailable')}
               </div>
             </div>
             {realCreds?.password && (
@@ -586,28 +594,27 @@ export default function AdminStudentDetail() {
 
           <div className="flex flex-col items-center gap-2 pt-1">
             {qrImage ? (
-              <img src={qrImage} alt="QR для входа" width={180} height={180} className="rounded-[10px] border border-base-300" />
+              <img src={qrImage} alt={t('admin.studentDetail.qrAlt')} width={180} height={180} className="rounded-[10px] border border-base-300" />
             ) : qrError ? (
-              <p className="text-[11px] text-error text-center">Не удалось сгенерировать QR — попробуйте открыть модалку заново</p>
+              <p className="text-[11px] text-error text-center">{t('admin.studentDetail.qrError')}</p>
             ) : (
               <div className="w-[180px] h-[180px] rounded-[10px] border border-base-300 grid place-items-center bg-base-200/60">
                 <span className="loading loading-spinner loading-sm text-primary" />
               </div>
             )}
             <p className="text-[11px] text-base-content/45 text-center">
-              Студент сканирует камерой телефона — входит в кабинет сразу, без набора логина и пароля.
-              Код постоянный, работает при каждом сканировании — как студенческий бейдж.
+              {t('admin.studentDetail.qrHint')}
             </p>
           </div>
         </div>
       </Modal>
 
       {/* ═══ Модалка логин/пароль родителя ═══ */}
-      <Modal isOpen={showParentCreds} onClose={() => setShowParentCreds(false)} title="Данные для входа — Родитель">
+      <Modal isOpen={showParentCreds} onClose={() => setShowParentCreds(false)} title={t('admin.studentDetail.parentCredsTitle')}>
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-200/60">
             <div>
-              <div className="text-[10px] font-bold text-base-content/45 uppercase">Логин-код</div>
+              <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.studentDetail.loginCode')}</div>
               <div className="text-[15px] font-mono font-extrabold text-base-content">
                 {parentCredsLoading ? '…' : parentCreds?.loginCode || '—'}
               </div>
@@ -620,9 +627,9 @@ export default function AdminStudentDetail() {
           </div>
           <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-200/60">
             <div>
-              <div className="text-[10px] font-bold text-base-content/45 uppercase">Пароль</div>
+              <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.studentDetail.password')}</div>
               <div className="text-[15px] font-mono font-extrabold text-base-content">
-                {parentCredsLoading ? '…' : parentCreds?.password || '— недоступен, нажмите «Новый пароль»'}
+                {parentCredsLoading ? '…' : parentCreds?.password || t('admin.studentDetail.passwordUnavailable')}
               </div>
             </div>
             {parentCreds?.password && (
@@ -633,22 +640,21 @@ export default function AdminStudentDetail() {
           </div>
 
           <button onClick={handleRegenParent} disabled={parentBusy} className="btn btn-sm btn-ghost bg-base-200/60 gap-1.5 text-[12px] w-full">
-            {parentBusy ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />} Новый пароль родителя
+            {parentBusy ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />} {t('admin.studentDetail.newParentPassword')}
           </button>
 
           <div className="flex flex-col items-center gap-2 pt-1">
             {parentQrImage ? (
-              <img src={parentQrImage} alt="QR для входа родителя" width={180} height={180} className="rounded-[10px] border border-base-300" />
+              <img src={parentQrImage} alt={t('admin.studentDetail.qrAltParent')} width={180} height={180} className="rounded-[10px] border border-base-300" />
             ) : parentQrError ? (
-              <p className="text-[11px] text-error text-center">Не удалось сгенерировать QR — попробуйте открыть модалку заново</p>
+              <p className="text-[11px] text-error text-center">{t('admin.studentDetail.qrError')}</p>
             ) : (
               <div className="w-[180px] h-[180px] rounded-[10px] border border-base-300 grid place-items-center bg-base-200/60">
                 <span className="loading loading-spinner loading-sm text-primary" />
               </div>
             )}
             <p className="text-[11px] text-base-content/45 text-center">
-              Родитель сканирует камерой телефона — входит в кабинет сразу, без набора логина и пароля.
-              Код постоянный, работает при каждом сканировании.
+              {t('admin.studentDetail.qrHintParent')}
             </p>
           </div>
         </div>
@@ -688,31 +694,31 @@ export default function AdminStudentDetail() {
       {editing && (
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-4">Редактирование ученика</h3>
+            <h3 className="font-bold text-lg mb-4">{t('admin.studentDetail.editTitle')}</h3>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Имя</label>
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">{t('admin.studentDetail.firstNameLabel')}</label>
                   <input className="input input-bordered w-full" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Фамилия</label>
+                  <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">{t('admin.studentDetail.lastNameLabel')}</label>
                   <input className="input input-bordered w-full" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
                 </div>
               </div>
               <div>
-                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Телефон</label>
+                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">{t('admin.studentDetail.phoneLabel')}</label>
                 <PhoneInput className="input input-bordered w-full" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
               </div>
               <div>
-                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">Дата рождения</label>
+                <label className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">{t('admin.studentDetail.birthDateLabel')}</label>
                 <input className="input input-bordered w-full" type="date" value={form.birthDate || ''} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
               </div>
             </div>
             <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setEditing(false)} disabled={saving}>Отмена</button>
+              <button className="btn btn-ghost" onClick={() => setEditing(false)} disabled={saving}>{t('admin.studentDetail.cancel')}</button>
               <button className="btn btn-primary gap-1" onClick={saveEdit} disabled={saving || !form.firstName || !form.lastName}>
-                {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Сохранить
+                {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {t('admin.studentDetail.save')}
               </button>
             </div>
           </div>
@@ -724,38 +730,38 @@ export default function AdminStudentDetail() {
       <Modal
         isOpen={actionModal === 'freeze'}
         onClose={() => setActionModal(null)}
-        title="Заморозить студента"
+        title={t('admin.studentDetail.freezeTitle')}
         actions={
           <div className="flex items-center gap-2">
-            <button className="btn btn-ghost btn-sm" onClick={() => setActionModal(null)} disabled={busy}>Отмена</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setActionModal(null)} disabled={busy}>{t('admin.studentDetail.cancel')}</button>
             <button className="btn btn-warning btn-sm gap-1" onClick={() => { const r = actionReason.trim(); setActionModal(null); doFreeze(true, r); }} disabled={busy}>
-              {busy ? <Loader2 size={14} className="animate-spin" /> : <Snowflake size={14} />} Заморозить
+              {busy ? <Loader2 size={14} className="animate-spin" /> : <Snowflake size={14} />} {t('admin.mentorDetail.freeze')}
             </button>
           </div>
         }
       >
-        <p className="text-sm text-base-content/70 mb-1">Почему вы замораживаете <b>{fullName(student)}</b>?</p>
-        <p className="text-xs text-base-content/45 mb-3">Укажите причину — она будет видна другим сотрудникам.</p>
-        <textarea className="textarea textarea-bordered w-full" rows={3} placeholder="Причина заморозки…" value={actionReason} onChange={(e) => setActionReason(e.target.value)} autoFocus />
+        <p className="text-sm text-base-content/70 mb-1">{t('admin.studentDetail.freezeConfirm', { name: fullName(student) })}</p>
+        <p className="text-xs text-base-content/45 mb-3">{t('admin.studentDetail.freezeHint')}</p>
+        <textarea className="textarea textarea-bordered w-full" rows={3} placeholder={t('admin.studentDetail.freezeReasonPlaceholder')} value={actionReason} onChange={(e) => setActionReason(e.target.value)} autoFocus />
       </Modal>
 
       {/* ═══ Archive Modal ═══ */}
       <Modal
         isOpen={actionModal === 'archive'}
         onClose={() => setActionModal(null)}
-        title="Архивировать студента"
+        title={t('admin.studentDetail.archiveTitle')}
         actions={
           <div className="flex items-center gap-2">
-            <button className="btn btn-ghost btn-sm" onClick={() => setActionModal(null)} disabled={busy}>Отмена</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setActionModal(null)} disabled={busy}>{t('admin.studentDetail.cancel')}</button>
             <button className="btn btn-error btn-sm gap-1" onClick={confirmArchive} disabled={busy}>
-              {busy ? <Loader2 size={14} className="animate-spin" /> : <Archive size={14} />} Архивировать
+              {busy ? <Loader2 size={14} className="animate-spin" /> : <Archive size={14} />} {t('admin.mentorDetail.archive')}
             </button>
           </div>
         }
       >
-        <p className="text-sm text-base-content/70 mb-1">Вы уверены, что хотите архивировать <b>{fullName(student)}</b>?</p>
-        <p className="text-xs text-base-content/45 mb-3">Студент будет скрыт из активного списка, данные сохранятся. Укажите причину.</p>
-        <textarea className="textarea textarea-bordered w-full" rows={3} placeholder="Причина архивации…" value={actionReason} onChange={(e) => setActionReason(e.target.value)} autoFocus />
+        <p className="text-sm text-base-content/70 mb-1">{t('admin.studentDetail.archiveConfirm', { name: fullName(student) })}</p>
+        <p className="text-xs text-base-content/45 mb-3">{t('admin.studentDetail.archiveHint')}</p>
+        <textarea className="textarea textarea-bordered w-full" rows={3} placeholder={t('admin.studentDetail.archiveReasonPlaceholder')} value={actionReason} onChange={(e) => setActionReason(e.target.value)} autoFocus />
       </Modal>
     </div>
   );
@@ -763,6 +769,9 @@ export default function AdminStudentDetail() {
 
 /* ═══════════════ Модалка пополнения счёта ═══════════════ */
 function TopUpModal({ isOpen, onClose, student, primaryGroup, currentInvoice, token, onDone }) {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const currencyWord = t('admin.studentDetail.currency');
   const [amount, setAmount] = useState('');
   const [month, setMonth] = useState(monthInputValue(new Date()));
   const [method, setMethod] = useState('cash');
@@ -777,7 +786,7 @@ function TopUpModal({ isOpen, onClose, student, primaryGroup, currentInvoice, to
 
   const submit = async () => {
     const numericAmount = Number(String(amount).replace(',', '.'));
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) { setErr('Укажите корректную сумму'); return; }
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) { setErr(t('admin.studentDetail.invalidAmount')); return; }
     setBusy(true); setErr('');
     try {
       const hasOpenInvoice = currentInvoice
@@ -807,28 +816,30 @@ function TopUpModal({ isOpen, onClose, student, primaryGroup, currentInvoice, to
         setAmount(''); setComment('');
         onDone();
       } else {
-        setErr(e.message || 'Ошибка');
+        setErr(e.message || t('admin.mentors.genericError'));
       }
     }
     finally { setBusy(false); }
   };
 
+  const METHOD_ORDER = ['cash', 'humo', 'uzcard', 'uzum', 'payme', 'click', 'bank_transfer'];
+
   return (
     <dialog className="modal modal-open">
       <div className="modal-box card bg-base-100 border border-base-300 max-w-lg p-0 max-h-[calc(100dvh-2rem)] overflow-hidden !flex flex-col">
         <div className="px-6 pt-6 pb-4 border-b border-base-200 shrink-0">
-          <h3 className="font-extrabold text-lg text-base-content">Пополнить счёт</h3>
+          <h3 className="font-extrabold text-lg text-base-content">{t('admin.studentDetail.topUpTitle')}</h3>
           <p className="text-[12px] text-base-content/45 mt-0.5">{fullName(student)} {primaryGroup ? `· ${primaryGroup.name}` : ''}</p>
         </div>
         <div className="px-6 py-5 space-y-4 overflow-y-auto min-h-0 overscroll-contain">
           {err && <div className="alert alert-error py-2 text-sm">{err}</div>}
           <div>
-            <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">Сумма *</label>
+            <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">{t('admin.studentDetail.amountRequired')}</label>
             <input
               className="input input-bordered w-full"
               type="text"
               inputMode="decimal"
-              placeholder="Например: 4.63"
+              placeholder={t('admin.studentDetail.amountPlaceholder')}
               value={amount}
               onChange={(e) => {
                 const next = e.target.value.replace(',', '.');
@@ -837,44 +848,43 @@ function TopUpModal({ isOpen, onClose, student, primaryGroup, currentInvoice, to
             />
             {currentInvoice && ['pending', 'partially_paid', 'overdue'].includes(currentInvoice.status) && (
               <p className="text-[11px] text-base-content/50 mt-1.5">
-                Остаток по текущему счёту: {formatMoney(Number(currentInvoice.totalAmount) - Number(currentInvoice.paidAmount))}.
-                Переплата сохранится на балансе.
+                {t('admin.studentDetail.remainingOnInvoice', { amount: formatMoney(Number(currentInvoice.totalAmount) - Number(currentInvoice.paidAmount), locale, currencyWord) })}
               </p>
             )}
             {presets.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {presets.map((p) => (
                   <button key={p} type="button" className="btn btn-xs btn-outline" onClick={() => setAmount(String(p))}>
-                    +{p.toLocaleString('ru-RU')}
+                    +{p.toLocaleString(locale)}
                   </button>
                 ))}
               </div>
             )}
           </div>
           <div>
-            <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">За какой месяц?</label>
+            <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">{t('admin.studentDetail.forWhichMonth')}</label>
             <input className="input input-bordered w-full" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
           </div>
           <div>
-            <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">Способ оплаты *</label>
+            <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">{t('admin.studentDetail.methodRequired')}</label>
             <div className="grid grid-cols-2 gap-2">
-              {Object.entries(METHOD_LABELS).map(([k, label]) => (
+              {METHOD_ORDER.map((k) => (
                 <label key={k} className={`flex items-center justify-center gap-1.5 cursor-pointer input input-bordered text-[13px] ${method === k ? 'border-primary text-primary' : ''}`}>
                   <input type="radio" name="method" className="radio radio-xs" checked={method === k} onChange={() => setMethod(k)} />
-                  {label}
+                  {paymentMethodLabel(k, t)}
                 </label>
               ))}
             </div>
           </div>
           <div>
-            <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">Комментарий</label>
-            <textarea className="textarea textarea-bordered w-full" rows={2} placeholder="Комментарий (необязательно)" value={comment} onChange={(e) => setComment(e.target.value)} />
+            <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">{t('admin.studentDetail.commentLabel')}</label>
+            <textarea className="textarea textarea-bordered w-full" rows={2} placeholder={t('admin.studentDetail.commentPlaceholder')} value={comment} onChange={(e) => setComment(e.target.value)} />
           </div>
         </div>
         <div className="modal-action px-6 py-4 mt-0 border-t border-base-200 shrink-0 bg-base-100">
-          <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>Отмена</button>
+          <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>{t('admin.studentDetail.cancel')}</button>
           <button type="button" className="btn btn-primary gap-1.5" onClick={submit} disabled={busy || !amount}>
-            {busy && <span className="loading loading-spinner loading-xs" />} Сохранить
+            {busy && <span className="loading loading-spinner loading-xs" />} {t('admin.studentDetail.save')}
           </button>
         </div>
       </div>
@@ -889,6 +899,7 @@ function TopUpModal({ isOpen, onClose, student, primaryGroup, currentInvoice, to
    «transfer»-эндпоинта нет — два вызова подряд, второй не идёт при ошибке первого. */
 /* ═══════════════ Модалка отправки сообщения студенту в Telegram ═══════════════ */
 function TgMessageModal({ isOpen, onClose, token, studentId }) {
+  const { t } = useTranslation();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -896,34 +907,34 @@ function TgMessageModal({ isOpen, onClose, token, studentId }) {
   if (!isOpen) return null;
 
   const submit = async () => {
-    if (!text.trim()) { setErr('Введите текст'); return; }
+    if (!text.trim()) { setErr(t('admin.studentDetail.enterText')); return; }
     setBusy(true); setErr('');
     try {
       await api.adminSendStudentTelegramMessage(token, studentId, text.trim());
       setSent(true);
       setTimeout(() => { setSent(false); setText(''); onClose(); }, 900);
-    } catch (e) { setErr(e.message || 'Ошибка'); }
+    } catch (e) { setErr(e.message || t('admin.mentors.genericError')); }
     finally { setBusy(false); }
   };
 
   return (
     <dialog className="modal modal-open">
       <div className="modal-box card bg-base-100 border border-base-300 max-w-md">
-        <h3 className="font-extrabold text-lg text-base-content mb-4">Написать в Telegram</h3>
+        <h3 className="font-extrabold text-lg text-base-content mb-4">{t('admin.studentDetail.writeToTelegram')}</h3>
         {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
         <textarea
           className="textarea textarea-bordered w-full"
           rows={4}
-          placeholder="Текст сообщения…"
+          placeholder={t('admin.studentDetail.messagePlaceholder')}
           value={text}
           onChange={(e) => setText(e.target.value)}
           autoFocus
         />
         <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>Отмена</button>
+          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>{t('admin.studentDetail.cancel')}</button>
           <button className="btn btn-primary gap-1.5" onClick={submit} disabled={busy || !text.trim()}>
             {busy && <span className="loading loading-spinner loading-xs" />}
-            {sent ? <Check size={14} /> : <Send size={14} />} {sent ? 'Отправлено' : 'Отправить'}
+            {sent ? <Check size={14} /> : <Send size={14} />} {sent ? t('admin.studentDetail.sent') : t('admin.studentDetail.send')}
           </button>
         </div>
       </div>
@@ -933,6 +944,7 @@ function TgMessageModal({ isOpen, onClose, token, studentId }) {
 }
 
 function AddGroupModal({ isOpen, onClose, groupOptions, token, studentId, currentGroups, onDone }) {
+  const { t } = useTranslation();
   const [groupId, setGroupId] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -941,7 +953,7 @@ function AddGroupModal({ isOpen, onClose, groupOptions, token, studentId, curren
   const isTransfer = (currentGroups || []).length > 0;
 
   const submit = async () => {
-    if (!groupId) { setErr('Выберите группу'); return; }
+    if (!groupId) { setErr(t('admin.studentDetail.selectGroupError')); return; }
     setBusy(true); setErr('');
     try {
       for (const g of currentGroups || []) {
@@ -950,30 +962,30 @@ function AddGroupModal({ isOpen, onClose, groupOptions, token, studentId, curren
       await api.adminAddStudentToGroup(token, groupId, studentId);
       setGroupId('');
       onDone();
-    } catch (e) { setErr(e.message || 'Ошибка'); }
+    } catch (e) { setErr(e.message || t('admin.mentors.genericError')); }
     finally { setBusy(false); }
   };
 
   return (
     <dialog className="modal modal-open">
       <div className="modal-box card bg-base-100 border border-base-300 max-w-sm">
-        <h3 className="font-extrabold text-lg text-base-content mb-1">{isTransfer ? 'Перевести в другую группу' : 'Добавить в группу'}</h3>
+        <h3 className="font-extrabold text-lg text-base-content mb-1">{isTransfer ? t('admin.studentDetail.transferToOtherGroup') : t('admin.studentDetail.addToGroup')}</h3>
         {isTransfer && (
           <p className="text-[12px] text-base-content/45 mb-3">
-            Сейчас: {currentGroups.map((g) => g.name).join(', ')} — при переводе студент выйдет отсюда.
+            {t('admin.studentDetail.currentGroupsHint', { groups: currentGroups.map((g) => g.name).join(', ') })}
           </p>
         )}
         {err && <div className="alert alert-error mb-3 py-2 text-sm mt-3">{err}</div>}
         <select className="select select-bordered w-full mt-3" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
-          <option value="">Выберите группу…</option>
+          <option value="">{t('admin.studentDetail.selectGroupPlaceholder')}</option>
           {groupOptions.filter((g) => !(currentGroups || []).some((cg) => cg.id === g.id)).map((g) => (
             <option key={g.id} value={g.id}>{g.name}{g.subject ? ` — ${g.subject}` : ''}</option>
           ))}
         </select>
         <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>Отмена</button>
+          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>{t('admin.studentDetail.cancel')}</button>
           <button className="btn btn-primary gap-1.5" onClick={submit} disabled={busy || !groupId}>
-            {busy && <span className="loading loading-spinner loading-xs" />} {isTransfer ? 'Перевести' : 'Добавить'}
+            {busy && <span className="loading loading-spinner loading-xs" />} {isTransfer ? t('admin.studentDetail.transfer') : t('admin.studentDetail.add')}
           </button>
         </div>
       </div>
