@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Search, Inbox, X, ArrowRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 /**
@@ -213,6 +214,7 @@ export function EmptyState({ icon: Icon = Inbox, title, hint, action }) {
    так ConfirmDialog ниже и BranchFormModal (max-w-6xl/max-w-md) не нуждаются
    в собственной обёртке. */
 export function Modal({ isOpen, onClose, title, children, actions, className = 'border border-base-300' }) {
+  const { t } = useTranslation();
   const ref = useRef(null);
   useEffect(() => {
     const el = ref.current;
@@ -229,7 +231,7 @@ export function Modal({ isOpen, onClose, title, children, actions, className = '
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-lg grid place-items-center text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors"
-            aria-label="Закрыть"
+            aria-label={t('super.ui.close')}
           >
             <X size={16} />
           </button>
@@ -246,7 +248,8 @@ export function Modal({ isOpen, onClose, title, children, actions, className = '
 /* ── Диалог подтверждения ─────────────────────────────────────────────
    Groups.jsx и Students.jsx заводили байт-в-байт одинаковый диалог
    удаления — сведено в один. */
-export function ConfirmDialog({ open, onClose, title, text, confirmLabel = 'Удалить', onConfirm, pending, error }) {
+export function ConfirmDialog({ open, onClose, title, text, confirmLabel, onConfirm, pending, error }) {
+  const { t } = useTranslation();
   return (
     <Modal
       isOpen={open}
@@ -255,9 +258,9 @@ export function ConfirmDialog({ open, onClose, title, text, confirmLabel = 'Уд
       className="max-w-sm border border-base-300"
       actions={
         <>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={pending}>Отмена</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={pending}>{t('super.ui.cancel')}</button>
           <button className="btn btn-error btn-sm" onClick={onConfirm} disabled={pending}>
-            {pending ? <span className="loading loading-spinner loading-xs" /> : confirmLabel}
+            {pending ? <span className="loading loading-spinner loading-xs" /> : (confirmLabel ?? t('super.ui.delete'))}
           </button>
         </>
       }

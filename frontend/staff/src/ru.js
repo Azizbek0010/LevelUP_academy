@@ -2204,6 +2204,11 @@ const ru = {
   'super.branchForm.toArchive': 'в архив',
   'super.branchForm.create': 'Создать',
   'super.branchForm.save': 'Сохранить',
+
+  /* ─── super/_ui.jsx ─── */
+  'super.ui.close': 'Закрыть',
+  'super.ui.cancel': 'Отмена',
+  'super.ui.delete': 'Удалить',
 };
 
 export default ru;

@@ -2204,6 +2204,11 @@ const en = {
   'super.branchForm.toArchive': 'to archive',
   'super.branchForm.create': 'Create',
   'super.branchForm.save': 'Save',
+
+  /* ─── super/_ui.jsx ─── */
+  'super.ui.close': 'Close',
+  'super.ui.cancel': 'Cancel',
+  'super.ui.delete': 'Delete',
 };
 
 export default en;

@@ -2197,6 +2197,11 @@ const uz = {
   'super.branchForm.toArchive': 'arxivga',
   'super.branchForm.create': 'Yaratish',
   'super.branchForm.save': 'Saqlash',
+
+  /* ─── super/_ui.jsx ─── */
+  'super.ui.close': 'Yopish',
+  'super.ui.cancel': 'Bekor qilish',
+  'super.ui.delete': 'O\'chirish',
 };
 
 export default uz;
