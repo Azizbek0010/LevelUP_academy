@@ -2583,6 +2583,23 @@ const en = {
   'components.errorBoundary.title': 'Something went wrong',
   'components.errorBoundary.unexpectedError': 'An unexpected error occurred',
   'components.errorBoundary.reload': 'Reload page',
+
+  /* ─── components/MyDiscipline.jsx ─── */
+  'components.myDiscipline.roleAdmin': 'Admin',
+  'components.myDiscipline.roleSeo': 'SEO',
+  'components.myDiscipline.myPenaltiesTitle': 'My penalties',
+  'components.myDiscipline.noPenaltiesTitle': 'No penalties',
+  'components.myDiscipline.noPenaltiesHint': 'Good news: a clean record.',
+  'components.myDiscipline.colType': 'Type',
+  'components.myDiscipline.colSalaryPercent': '% of salary',
+  'components.myDiscipline.colReason': 'Reason',
+  'components.myDiscipline.colIssuedBy': 'Issued by',
+  'components.myDiscipline.colWhen': 'When',
+  'components.myDiscipline.orgRulesTitle': 'Organization rules',
+  'components.myDiscipline.noRulesTitle': 'No rules yet',
+  'components.myDiscipline.noRulesHint': "The organization hasn't described any rules yet.",
+  'components.myDiscipline.colRule': 'Rule',
+  'components.myDiscipline.colLevel': 'Level',
 };
 
 export default en;

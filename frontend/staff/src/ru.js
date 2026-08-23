@@ -2583,6 +2583,23 @@ const ru = {
   'components.errorBoundary.title': 'Что-то пошло не так',
   'components.errorBoundary.unexpectedError': 'Произошла непредвиденная ошибка',
   'components.errorBoundary.reload': 'Обновить страницу',
+
+  /* ─── components/MyDiscipline.jsx ─── */
+  'components.myDiscipline.roleAdmin': 'Администратор',
+  'components.myDiscipline.roleSeo': 'SEO',
+  'components.myDiscipline.myPenaltiesTitle': 'Мои взыскания',
+  'components.myDiscipline.noPenaltiesTitle': 'Взысканий нет',
+  'components.myDiscipline.noPenaltiesHint': 'Хорошая новость: чистая история.',
+  'components.myDiscipline.colType': 'Вид',
+  'components.myDiscipline.colSalaryPercent': '% от оклада',
+  'components.myDiscipline.colReason': 'Причина',
+  'components.myDiscipline.colIssuedBy': 'Кто выписал',
+  'components.myDiscipline.colWhen': 'Когда',
+  'components.myDiscipline.orgRulesTitle': 'Правила организации',
+  'components.myDiscipline.noRulesTitle': 'Правил пока нет',
+  'components.myDiscipline.noRulesHint': 'Организация пока не описала правила.',
+  'components.myDiscipline.colRule': 'Правило',
+  'components.myDiscipline.colLevel': 'Уровень',
 };
 
 export default ru;

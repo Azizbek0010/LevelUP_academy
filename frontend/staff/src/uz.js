@@ -2576,6 +2576,23 @@ const uz = {
   'components.errorBoundary.title': 'Nimadir noto\'g\'ri ketdi',
   'components.errorBoundary.unexpectedError': 'Kutilmagan xatolik yuz berdi',
   'components.errorBoundary.reload': 'Sahifani yangilash',
+
+  /* ─── components/MyDiscipline.jsx ─── */
+  'components.myDiscipline.roleAdmin': 'Administrator',
+  'components.myDiscipline.roleSeo': 'SEO',
+  'components.myDiscipline.myPenaltiesTitle': 'Mening jazolarim',
+  'components.myDiscipline.noPenaltiesTitle': 'Jazolar yo\'q',
+  'components.myDiscipline.noPenaltiesHint': 'Yaxshi xabar: toza tarix.',
+  'components.myDiscipline.colType': 'Turi',
+  'components.myDiscipline.colSalaryPercent': 'Oyliqdan %',
+  'components.myDiscipline.colReason': 'Sabab',
+  'components.myDiscipline.colIssuedBy': 'Kim chiqargan',
+  'components.myDiscipline.colWhen': 'Qachon',
+  'components.myDiscipline.orgRulesTitle': 'Tashkilot qoidalari',
+  'components.myDiscipline.noRulesTitle': 'Hozircha qoidalar yo\'q',
+  'components.myDiscipline.noRulesHint': 'Tashkilot hali qoidalarni tasvirlamagan.',
+  'components.myDiscipline.colRule': 'Qoida',
+  'components.myDiscipline.colLevel': 'Daraja',
 };
 
 export default uz;
