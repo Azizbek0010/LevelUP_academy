@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Trash2, Users, UserCheck } from 'lucide-react';
 import { useInvalidate } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
@@ -32,6 +33,7 @@ function useStudentsQuery(search, statusFilter, page) {
 }
 
 export default function SuperStudents() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { token } = useAuth();
   const invalidate = useInvalidate();
@@ -75,19 +77,19 @@ export default function SuperStudents() {
   const statusBadge = (student) => {
     const frozen = student.frozen || student.status === 'frozen';
     return frozen
-      ? <StatusBadge tone="danger">Заморожен</StatusBadge>
-      : <StatusBadge tone="success">Активен</StatusBadge>;
+      ? <StatusBadge tone="danger">{t('super.students.frozen')}</StatusBadge>
+      : <StatusBadge tone="success">{t('super.students.active')}</StatusBadge>;
   };
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Студенты" subtitle="Все студенты организации" />
+      <PageHeader title={t('super.students.title')} subtitle={t('super.students.subtitle')} />
 
       {/* Stat pills */}
       <div className="flex flex-wrap gap-3">
-        <Metric size="sm" Icon={Users} tone="primary" label="Всего" value={total} />
-        <Metric size="sm" Icon={UserCheck} tone="success" label="На странице" value={items.length} />
-        <Metric size="sm" Icon={UserCheck} tone="info" label="Активных" value={activeCount} />
+        <Metric size="sm" Icon={Users} tone="primary" label={t('super.students.total')} value={total} />
+        <Metric size="sm" Icon={UserCheck} tone="success" label={t('super.students.onPage')} value={items.length} />
+        <Metric size="sm" Icon={UserCheck} tone="info" label={t('super.students.activeCount')} value={activeCount} />
       </div>
 
       {/* Filters */}
@@ -95,14 +97,14 @@ export default function SuperStudents() {
         <SearchInput
           value={rawSearch}
           onChange={setRawSearch}
-          placeholder="Поиск студентов..."
+          placeholder={t('super.students.searchPlaceholder')}
           className="flex-1 max-w-sm"
         />
         <FilterPills
           options={[
-            { key: 'all', label: 'Все' },
-            { key: 'active', label: 'Активные' },
-            { key: 'frozen', label: 'Заморожены' },
+            { key: 'all', label: t('super.students.filterAll') },
+            { key: 'active', label: t('super.students.filterActive') },
+            { key: 'frozen', label: t('super.students.filterFrozen') },
           ]}
           value={statusFilter}
           onChange={handleFilterChange}
@@ -118,7 +120,7 @@ export default function SuperStudents() {
         </div>
       ) : items.length === 0 ? (
         <div className="text-center py-16 text-base-content/40 text-sm">
-          Студентов не найдено
+          {t('super.students.noneFound')}
         </div>
       ) : (
         <Card>
@@ -126,11 +128,11 @@ export default function SuperStudents() {
             <table className="table table-sm">
               <thead>
                 <tr>
-                  <th>ФИО</th>
-                  <th>Телефон</th>
-                  <th>Статус</th>
-                  <th>Создан</th>
-                  <th className="text-right">Действия</th>
+                  <th>{t('super.students.colFullName')}</th>
+                  <th>{t('super.students.colPhone')}</th>
+                  <th>{t('super.students.colStatus')}</th>
+                  <th>{t('super.students.colCreated')}</th>
+                  <th className="text-right">{t('super.students.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,7 +161,7 @@ export default function SuperStudents() {
                         <button
                           className="btn btn-ghost btn-xs text-error"
                           onClick={() => setDeleteTarget(student)}
-                          title="Удалить"
+                          title={t('super.students.delete')}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -175,7 +177,7 @@ export default function SuperStudents() {
           {pageCount > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-base-200">
               <span className="text-xs text-base-content/50">
-                Страница {page} из {pageCount}
+                {t('super.students.pageOf', { page, pageCount })}
               </span>
               <div className="join">
                 <button
@@ -202,14 +204,14 @@ export default function SuperStudents() {
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        title="Удалить студента?"
+        title={t('super.students.deleteStudentTitle')}
         text={
           <>
-            Вы уверены, что хотите удалить{' '}
+            {t('super.students.deleteConfirmPrefix')}{' '}
             <strong>
               {`${deleteTarget?.firstName ?? deleteTarget?.first_name ?? ''} ${deleteTarget?.lastName ?? deleteTarget?.last_name ?? ''}`.trim()}
             </strong>
-            ? Это действие необратимо.
+            {t('super.students.deleteConfirmSuffix')}
           </>
         }
         onConfirm={() => deleteMutation.mutate(deleteTarget.id)}

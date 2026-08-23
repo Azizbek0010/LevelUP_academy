@@ -1949,6 +1949,30 @@ const ru = {
   'super.settings.unlimited': 'Без ограничений',
   'super.settings.diskSpaceLabel': 'Дисковое пространство',
   'super.settings.defaultDiskSpace': '500 ГБ',
+
+  /* ─── super/Students.jsx ─── */
+  'super.students.frozen': 'Заморожен',
+  'super.students.active': 'Активен',
+  'super.students.title': 'Студенты',
+  'super.students.subtitle': 'Все студенты организации',
+  'super.students.total': 'Всего',
+  'super.students.onPage': 'На странице',
+  'super.students.activeCount': 'Активных',
+  'super.students.searchPlaceholder': 'Поиск студентов...',
+  'super.students.filterAll': 'Все',
+  'super.students.filterActive': 'Активные',
+  'super.students.filterFrozen': 'Заморожены',
+  'super.students.noneFound': 'Студентов не найдено',
+  'super.students.colFullName': 'ФИО',
+  'super.students.colPhone': 'Телефон',
+  'super.students.colStatus': 'Статус',
+  'super.students.colCreated': 'Создан',
+  'super.students.colActions': 'Действия',
+  'super.students.delete': 'Удалить',
+  'super.students.pageOf': 'Страница {{page}} из {{pageCount}}',
+  'super.students.deleteStudentTitle': 'Удалить студента?',
+  'super.students.deleteConfirmPrefix': 'Вы уверены, что хотите удалить',
+  'super.students.deleteConfirmSuffix': '? Это действие необратимо.',
 };
 
 export default ru;

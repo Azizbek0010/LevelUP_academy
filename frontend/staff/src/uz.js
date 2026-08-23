@@ -1942,6 +1942,30 @@ const uz = {
   'super.settings.unlimited': 'Cheklovsiz',
   'super.settings.diskSpaceLabel': 'Disk maydoni',
   'super.settings.defaultDiskSpace': '500 GB',
+
+  /* ─── super/Students.jsx ─── */
+  'super.students.frozen': 'Muzlatilgan',
+  'super.students.active': 'Faol',
+  'super.students.title': 'O\'quvchilar',
+  'super.students.subtitle': 'Tashkilotning barcha o\'quvchilari',
+  'super.students.total': 'Jami',
+  'super.students.onPage': 'Sahifada',
+  'super.students.activeCount': 'Faol',
+  'super.students.searchPlaceholder': 'O\'quvchilarni qidirish...',
+  'super.students.filterAll': 'Barchasi',
+  'super.students.filterActive': 'Faol',
+  'super.students.filterFrozen': 'Muzlatilgan',
+  'super.students.noneFound': 'O\'quvchilar topilmadi',
+  'super.students.colFullName': 'F.I.Sh.',
+  'super.students.colPhone': 'Telefon',
+  'super.students.colStatus': 'Holat',
+  'super.students.colCreated': 'Yaratilgan',
+  'super.students.colActions': 'Amallar',
+  'super.students.delete': 'O\'chirish',
+  'super.students.pageOf': '{{page}}-sahifa, jami {{pageCount}}',
+  'super.students.deleteStudentTitle': 'O\'quvchini o\'chirasizmi?',
+  'super.students.deleteConfirmPrefix': 'Haqiqatan ham o\'chirmoqchimisiz',
+  'super.students.deleteConfirmSuffix': '? Bu amalni ortga qaytarib bo\'lmaydi.',
 };
 
 export default uz;

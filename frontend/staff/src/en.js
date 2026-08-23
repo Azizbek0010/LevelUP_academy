@@ -1949,6 +1949,30 @@ const en = {
   'super.settings.unlimited': 'Unlimited',
   'super.settings.diskSpaceLabel': 'Disk space',
   'super.settings.defaultDiskSpace': '500 GB',
+
+  /* ─── super/Students.jsx ─── */
+  'super.students.frozen': 'Frozen',
+  'super.students.active': 'Active',
+  'super.students.title': 'Students',
+  'super.students.subtitle': "All of the organization's students",
+  'super.students.total': 'Total',
+  'super.students.onPage': 'On page',
+  'super.students.activeCount': 'Active',
+  'super.students.searchPlaceholder': 'Search students...',
+  'super.students.filterAll': 'All',
+  'super.students.filterActive': 'Active',
+  'super.students.filterFrozen': 'Frozen',
+  'super.students.noneFound': 'No students found',
+  'super.students.colFullName': 'Full name',
+  'super.students.colPhone': 'Phone',
+  'super.students.colStatus': 'Status',
+  'super.students.colCreated': 'Created',
+  'super.students.colActions': 'Actions',
+  'super.students.delete': 'Delete',
+  'super.students.pageOf': 'Page {{page}} of {{pageCount}}',
+  'super.students.deleteStudentTitle': 'Delete student?',
+  'super.students.deleteConfirmPrefix': 'Are you sure you want to delete',
+  'super.students.deleteConfirmSuffix': '? This action cannot be undone.',
 };
 
 export default en;
