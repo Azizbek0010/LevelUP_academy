@@ -997,6 +997,33 @@ const en = {
   'admin.schedule.roomNamePlaceholder': 'Name (e.g. A1)',
   'admin.schedule.capacityPlaceholder': 'Capacity',
   'admin.schedule.create': 'Create',
+
+  // admin/Profile.jsx
+  'admin.profile.loadErrorPrefix': 'Failed to load profile: {{message}}. Showing session data.',
+  'admin.profile.retry': 'Retry',
+  'admin.profile.emailLabel': 'Email',
+  'admin.profile.phoneLabel': 'Phone',
+  'admin.profile.registeredLabel': 'Registered',
+  'admin.profile.personalData': 'Personal data',
+  'admin.profile.personalDataHint': 'This data is visible to the organization admin.',
+  'admin.profile.firstNameLabel': 'First name',
+  'admin.profile.lastNameLabel': 'Last name',
+  'admin.profile.emailHint': 'You sign in with this email; the password reset code is also sent here.',
+  'admin.profile.saved': 'Saved',
+  'admin.profile.dirty': 'You have unsaved changes',
+  'admin.profile.cancel': 'Cancel',
+  'admin.profile.save': 'Save',
+  'admin.profile.security': 'Security',
+  'admin.profile.password': 'Password',
+  'admin.profile.passwordHint': 'For security, the password is not changed here — it is restored via a confirmation code sent to your email.',
+  'admin.profile.resetPassword': 'Reset password',
+  'admin.profile.endSession': 'End session',
+  'admin.profile.sessionHint': 'You will be signed out on this device.',
+  'admin.profile.logout': 'Sign out',
+  'admin.profile.enterName': 'Enter first name',
+  'admin.profile.enterLast': 'Enter last name',
+  'admin.profile.invalidEmail': 'Invalid email',
+  'admin.profile.saveFailed': 'Failed to save',
 };
 
 export default en;

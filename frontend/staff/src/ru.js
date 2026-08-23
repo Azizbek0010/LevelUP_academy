@@ -997,6 +997,33 @@ const ru = {
   'admin.schedule.roomNamePlaceholder': 'Название (например A1)',
   'admin.schedule.capacityPlaceholder': 'Вместимость',
   'admin.schedule.create': 'Создать',
+
+  // admin/Profile.jsx
+  'admin.profile.loadErrorPrefix': 'Не удалось загрузить профиль: {{message}}. Показаны данные из сессии.',
+  'admin.profile.retry': 'Повторить',
+  'admin.profile.emailLabel': 'Email',
+  'admin.profile.phoneLabel': 'Телефон',
+  'admin.profile.registeredLabel': 'Зарегистрирован',
+  'admin.profile.personalData': 'Личные данные',
+  'admin.profile.personalDataHint': 'Эти данные видит администратор организации.',
+  'admin.profile.firstNameLabel': 'Имя',
+  'admin.profile.lastNameLabel': 'Фамилия',
+  'admin.profile.emailHint': 'Вы входите в систему с этим email, код восстановления пароля также приходит на этот адрес.',
+  'admin.profile.saved': 'Сохранено',
+  'admin.profile.dirty': 'Есть несохранённые изменения',
+  'admin.profile.cancel': 'Отмена',
+  'admin.profile.save': 'Сохранить',
+  'admin.profile.security': 'Безопасность',
+  'admin.profile.password': 'Пароль',
+  'admin.profile.passwordHint': 'В целях безопасности пароль не изменяется здесь — он восстанавливается через код подтверждения, отправляемый на ваш email.',
+  'admin.profile.resetPassword': 'Восстановить пароль',
+  'admin.profile.endSession': 'Завершить сеанс',
+  'admin.profile.sessionHint': 'Вы выйдете из аккаунта на этом устройстве.',
+  'admin.profile.logout': 'Выйти',
+  'admin.profile.enterName': 'Введите имя',
+  'admin.profile.enterLast': 'Введите фамилию',
+  'admin.profile.invalidEmail': 'Некорректный email',
+  'admin.profile.saveFailed': 'Не удалось сохранить',
 };
 
 export default ru;

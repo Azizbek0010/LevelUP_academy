@@ -990,6 +990,33 @@ const uz = {
   'admin.schedule.roomNamePlaceholder': 'Nomi (masalan A1)',
   'admin.schedule.capacityPlaceholder': 'Sig\'imi',
   'admin.schedule.create': 'Yaratish',
+
+  // admin/Profile.jsx
+  'admin.profile.loadErrorPrefix': 'Profilni yuklab bo\'lmadi: {{message}}. Sessiyadagi ma\'lumotlar ko\'rsatilmoqda.',
+  'admin.profile.retry': 'Qayta urinish',
+  'admin.profile.emailLabel': 'Email',
+  'admin.profile.phoneLabel': 'Telefon',
+  'admin.profile.registeredLabel': 'Ro\'yxatdan o\'tgan',
+  'admin.profile.personalData': 'Shaxsiy ma\'lumotlar',
+  'admin.profile.personalDataHint': 'Bu ma\'lumotlarni tashkilot admini ko\'radi.',
+  'admin.profile.firstNameLabel': 'Ism',
+  'admin.profile.lastNameLabel': 'Familiya',
+  'admin.profile.emailHint': 'Siz tizimga shu email orqali kirasiz, parolni tiklash kodi ham shu manzilga keladi.',
+  'admin.profile.saved': 'Saqlangan',
+  'admin.profile.dirty': 'Saqlanmagan o\'zgarishlar bor',
+  'admin.profile.cancel': 'Bekor qilish',
+  'admin.profile.save': 'Saqlash',
+  'admin.profile.security': 'Xavfsizlik',
+  'admin.profile.password': 'Parol',
+  'admin.profile.passwordHint': 'Xavfsizlik maqsadida parol bu yerda o\'zgartirilmaydi — u emailingizga yuboriladigan tasdiqlash kodi orqali tiklanadi.',
+  'admin.profile.resetPassword': 'Parolni tiklash',
+  'admin.profile.endSession': 'Seansni yakunlash',
+  'admin.profile.sessionHint': 'Siz bu qurilmadagi akkauntdan chiqasiz.',
+  'admin.profile.logout': 'Chiqish',
+  'admin.profile.enterName': 'Ism kiriting',
+  'admin.profile.enterLast': 'Familiya kiriting',
+  'admin.profile.invalidEmail': 'Noto\'g\'ri email',
+  'admin.profile.saveFailed': 'Saqlab bo\'lmadi',
 };
 
 export default uz;
