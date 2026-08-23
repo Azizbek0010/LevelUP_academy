@@ -11,6 +11,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
+import { useTranslation } from 'react-i18next';
 import { useMentorStudentStats } from '../../queries.js';
 import Avatar from '../../components/Avatar.jsx';
 import { EmptyState } from './_ui.jsx';
@@ -51,25 +52,26 @@ const STATUS = {
   critical: '#d03b3b',
 };
 
-const MONTH_SHORT = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+const monthShort = (t) => t('mentor.sd.months').split(',');
 
-const HW_STATE = {
-  graded:    { label: 'Оценено', cls: 'bg-success/10 text-success border-success/25', Icon: Check },
-  submitted: { label: 'Сдано', cls: 'bg-info/10 text-info border-info/25', Icon: ClipboardCheck },
-  late:      { label: 'Сдано с опозданием', cls: 'bg-warning/10 text-warning border-warning/25', Icon: Clock },
-  missed:    { label: 'Не сдано', cls: 'bg-error/10 text-error border-error/25', Icon: X },
-  pending:   { label: 'Срок не наступил', cls: 'bg-base-200 text-base-content/50 border-base-300', Icon: Clock },
-};
+const hwState = (t) => ({
+  graded:    { label: t('mentor.sd.hw.graded'), cls: 'bg-success/10 text-success border-success/25', Icon: Check },
+  submitted: { label: t('mentor.sd.hw.submitted'), cls: 'bg-info/10 text-info border-info/25', Icon: ClipboardCheck },
+  late:      { label: t('mentor.sd.hw.late'), cls: 'bg-warning/10 text-warning border-warning/25', Icon: Clock },
+  missed:    { label: t('mentor.sd.hw.missed'), cls: 'bg-error/10 text-error border-error/25', Icon: X },
+  pending:   { label: t('mentor.sd.hw.pending'), cls: 'bg-base-200 text-base-content/50 border-base-300', Icon: Clock },
+});
 
-const ATT_STATE = {
-  present: { label: 'Присутствует', cls: 'bg-success/15 text-success' },
-  late:    { label: 'Опоздал', cls: 'bg-warning/15 text-warning' },
-  absent:  { label: 'Отсутствует', cls: 'bg-error/15 text-error' },
-  excused: { label: 'По уважит.', cls: 'bg-info/15 text-info' },
-};
+const attState = (t) => ({
+  present: { label: t('mentor.sd.att.present'), cls: 'bg-success/15 text-success' },
+  late:    { label: t('mentor.sd.att.late'), cls: 'bg-warning/15 text-warning' },
+  absent:  { label: t('mentor.sd.att.absent'), cls: 'bg-error/15 text-error' },
+  excused: { label: t('mentor.sd.att.excused'), cls: 'bg-info/15 text-info' },
+});
 
-const fmtDate = (iso) =>
-  iso ? new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' }) : '—';
+const fmtDate = (iso, lang) =>
+  iso ? new Date(iso).toLocaleDateString(LOCALE_OF[lang] || 'ru-RU', { day: '2-digit', month: 'short' }) : '—';
 
 /** Порог, по которому процент превращается в оценку состояния. */
 const bandOf = (v) => (v === null ? 'none' : v >= 80 ? 'good' : v >= 60 ? 'warning' : 'critical');
@@ -123,7 +125,7 @@ function Ring({ value, label, sub, size = 108 }) {
    накладываются друг на друга и дают мутное серое пятно, в котором не разобрать
    ни одной из них, — проверено на живой странице. Для нескольких серий остаются
    чистые линии. */
-function TrendArea({ points, series, height = 240 }) {
+function TrendArea({ points, series, height = 240, noDataLabel }) {
   const single = series.length === 1;
 
   const data = {
@@ -184,7 +186,7 @@ function TrendArea({ points, series, height = 240 }) {
         backgroundColor: '#1D2417', padding: 10, cornerRadius: 8,
         usePointStyle: true,
         callbacks: {
-          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y === null ? 'нет данных' : `${ctx.parsed.y}%`}`,
+          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y === null ? noDataLabel : `${ctx.parsed.y}%`}`,
         },
       },
     },
@@ -214,21 +216,27 @@ function TopicRow({ title, meta, percent }) {
 
 /** Изменение к прошлому месяцу с данными. Направление важнее величины. */
 function Delta({ points, field }) {
+  const { t } = useTranslation();
   const known = points.map((p) => p[field]).filter((v) => v !== null && v !== undefined);
   if (known.length < 2) return null;
   const diff = known[known.length - 1] - known[known.length - 2];
-  if (diff === 0) return <span className="text-[11px] text-base-content/40">без изменений</span>;
+  if (diff === 0) return <span className="text-[11px] text-base-content/40">{t('mentor.sd.noChange')}</span>;
   const up = diff > 0;
   return (
     <span className={`text-[11px] font-bold flex items-center gap-0.5 ${up ? 'text-success' : 'text-error'}`}>
       {up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
       {up ? '+' : ''}{diff}%
-      <span className="font-medium text-base-content/40 ml-0.5">к прошлому мес.</span>
+      <span className="font-medium text-base-content/40 ml-0.5">{t('mentor.sd.vsPrevMonth')}</span>
     </span>
   );
 }
 
 export default function MentorStudentDetail() {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
+  const HW_STATE = hwState(t);
+  const ATT_STATE = attState(t);
+  const MONTH_SHORT = monthShort(t);
   const { id } = useParams();
   const { data, isLoading, error } = useMentorStudentStats(id);
   const stats = data?.data ?? null;
@@ -246,14 +254,14 @@ export default function MentorStudentDetail() {
       .map((h) => ({
         id: `hw-${h.id}`,
         title: h.title,
-        kind: 'Домашнее задание',
+        kind: t('mentor.sd.homeworkKind'),
         percent: Math.round((h.score / (h.maxScore || 100)) * 100),
       }));
     const fromTests = stats.tests.items
-      .filter((t) => t.percent !== null)
-      .map((t) => ({ id: `t-${t.id}`, title: t.title, kind: 'Тест', percent: t.percent }));
+      .filter((tst) => tst.percent !== null)
+      .map((tst) => ({ id: `t-${tst.id}`, title: tst.title, kind: t('mentor.sd.testKind'), percent: tst.percent }));
     return [...fromHw, ...fromTests].sort((a, b) => b.percent - a.percent);
-  }, [stats]);
+  }, [stats, t]);
 
   if (isLoading) {
     return (
@@ -269,9 +277,9 @@ export default function MentorStudentDetail() {
       <div className="card bg-base-100">
         <EmptyState
           icon={UserX}
-          title="Ученик не найден"
-          hint="Возможно, он был отчислен из вашей группы."
-          action={<Link to="/students" className="btn btn-sm btn-primary">К списку учеников</Link>}
+          title={t('mentor.sd.studentNotFoundTitle')}
+          hint={t('mentor.sd.studentNotFoundHint')}
+          action={<Link to="/students" className="btn btn-sm btn-primary">{t('mentor.sd.toStudentsList')}</Link>}
         />
       </div>
     );
@@ -299,16 +307,16 @@ export default function MentorStudentDetail() {
     : homework.items.filter((h) => (hwFilter === 'missed' ? h.state === 'missed' : h.state !== 'missed'));
 
   const TABS = [
-    { key: 'umumiy', label: 'Общее', Icon: LayoutGrid },
-    { key: 'davomat', label: 'Посещаемость', Icon: CalendarCheck },
-    { key: 'testlar', label: 'Тесты', Icon: ClipboardCheck },
-    { key: 'vazifa', label: 'Домашнее задание', Icon: FileText },
+    { key: 'umumiy', label: t('mentor.sd.tabOverall'), Icon: LayoutGrid },
+    { key: 'davomat', label: t('mentor.sd.tabAttendance'), Icon: CalendarCheck },
+    { key: 'testlar', label: t('mentor.sd.tabTests'), Icon: ClipboardCheck },
+    { key: 'vazifa', label: t('mentor.sd.tabHomework'), Icon: FileText },
   ];
 
   return (
     <div className="space-y-5">
       <Link to="/students" className="btn btn-ghost btn-sm gap-1.5 -ml-2">
-        <ArrowLeft size={15} /> Все ученики
+        <ArrowLeft size={15} /> {t('mentor.sd.allStudents')}
       </Link>
 
       {/* ═════ Шапка ученика ═════ */}
@@ -319,7 +327,7 @@ export default function MentorStudentDetail() {
             <h1 className="text-xl font-extrabold truncate">{fullName}</h1>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               {student.status !== 'active' && (
-                <span className="badge badge-warning badge-sm">Заморожен</span>
+                <span className="badge badge-warning badge-sm">{t('mentor.sd.frozen')}</span>
               )}
               {groups.map((g) => (
                 <Link
@@ -338,7 +346,7 @@ export default function MentorStudentDetail() {
           </div>
           <div className="text-right">
             <div className="text-[11px] uppercase tracking-wider text-base-content/45 font-semibold">
-              Коины
+              {t('mentor.sd.coins')}
             </div>
             <div className="text-2xl font-extrabold text-warning flex items-center gap-1.5 justify-end">
               <Coins size={18} /> {coins.balance}
@@ -351,10 +359,10 @@ export default function MentorStudentDetail() {
       <section className="card bg-base-100 overflow-hidden">
         <header className="px-4 sm:px-5 pt-4 border-b border-base-200">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-            <h2 className="font-bold">Статистика</h2>
+            <h2 className="font-bold">{t('mentor.sd.stats')}</h2>
             {homework.missed > 0 && (
               <span className="flex items-center gap-1.5 text-xs font-semibold text-error">
-                <AlertTriangle size={14} /> {homework.missed} заданий не выполнено
+                <AlertTriangle size={14} /> {t('mentor.sd.missedTasks', { count: homework.missed })}
               </span>
             )}
           </div>
@@ -389,33 +397,34 @@ export default function MentorStudentDetail() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Ring
                 value={attendance.rate}
-                label="Посещаемость"
-                sub={`${attendance.present + attendance.late} / ${attendance.total} уроков`}
+                label={t('mentor.sd.attendanceRing')}
+                sub={t('mentor.sd.lessonsCount', { n: attendance.present + attendance.late, total: attendance.total })}
               />
               <Ring
                 value={homework.completionRate}
-                label="Домашнее задание"
-                sub={`${homework.done} / ${homework.total} сдано`}
+                label={t('mentor.sd.homeworkRing')}
+                sub={t('mentor.sd.submittedCount', { n: homework.done, total: homework.total })}
               />
               <Ring
                 value={tests.avgPercent}
-                label="Тесты"
-                sub={`${tests.taken} / ${tests.total} пройдено`}
+                label={t('mentor.sd.testsRing')}
+                sub={t('mentor.sd.takenCount', { n: tests.taken, total: tests.total })}
               />
             </div>
 
             <div>
-              <h3 className="text-sm font-bold mb-1">Последние 6 мес.</h3>
+              <h3 className="text-sm font-bold mb-1">{t('mentor.sd.last6Months')}</h3>
               <TrendArea
                 points={points}
+                noDataLabel={t('mentor.sd.noDataTooltip')}
                 series={[
-                  { key: 'attendanceRate', label: 'Посещаемость', color: SERIES.attendance },
-                  { key: 'homeworkAvg', label: 'Ср. оценка', color: SERIES.grade },
-                  { key: 'testAvg', label: 'Тесты', color: SERIES.tests },
+                  { key: 'attendanceRate', label: t('mentor.sd.attendanceRing'), color: SERIES.attendance },
+                  { key: 'homeworkAvg', label: t('mentor.sd.avgGrade'), color: SERIES.grade },
+                  { key: 'testAvg', label: t('mentor.sd.testsRing'), color: SERIES.tests },
                 ]}
               />
               <p className="text-[11px] text-base-content/40 mt-2">
-                Разрыв линии — нет данных за этот месяц (не было уроков или заданий).
+                {t('mentor.sd.gapNote')}
               </p>
             </div>
 
@@ -424,16 +433,16 @@ export default function MentorStudentDetail() {
               <div className="rounded-xl border border-base-200 overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-success/5 border-b border-base-200">
                   <ThumbsUp size={14} className="text-success" />
-                  <span className="text-sm font-bold">Хорошо усвоено</span>
+                  <span className="text-sm font-bold">{t('mentor.sd.wellLearned')}</span>
                 </div>
                 {strong.length === 0 ? (
                   <p className="px-4 py-6 text-sm text-base-content/45 text-center">
-                    Нет оцененных работ
+                    {t('mentor.sd.noGradedWorks')}
                   </p>
                 ) : (
                   <ul className="divide-y divide-base-200">
-                    {strong.map((t) => (
-                      <TopicRow key={t.id} title={t.title} meta={t.kind} percent={t.percent} />
+                    {strong.map((tp) => (
+                      <TopicRow key={tp.id} title={tp.title} meta={tp.kind} percent={tp.percent} />
                     ))}
                   </ul>
                 )}
@@ -442,16 +451,16 @@ export default function MentorStudentDetail() {
               <div className="rounded-xl border border-base-200 overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-error/5 border-b border-base-200">
                   <AlertCircle size={14} className="text-error" />
-                  <span className="text-sm font-bold">Есть сложности</span>
+                  <span className="text-sm font-bold">{t('mentor.sd.hasDifficulties')}</span>
                 </div>
                 {weak.length === 0 ? (
                   <p className="px-4 py-6 text-sm text-base-content/45 text-center">
-                    Слабых тем нет — все работы выше 80%
+                    {t('mentor.sd.noWeakTopics')}
                   </p>
                 ) : (
                   <ul className="divide-y divide-base-200">
-                    {weak.map((t) => (
-                      <TopicRow key={t.id} title={t.title} meta={t.kind} percent={t.percent} />
+                    {weak.map((tp) => (
+                      <TopicRow key={tp.id} title={tp.title} meta={tp.kind} percent={tp.percent} />
                     ))}
                   </ul>
                 )}
@@ -466,8 +475,8 @@ export default function MentorStudentDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 items-center">
               <Ring
                 value={attendance.rate}
-                label="Посещаемость"
-                sub={`${attendance.total} уроков`}
+                label={t('mentor.sd.attendanceRing')}
+                sub={t('mentor.sd.totalLessons', { n: attendance.total })}
                 size={124}
               />
               <div>
@@ -483,10 +492,10 @@ export default function MentorStudentDetail() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                   {[
-                    { label: 'Присутствует', value: attendance.present, c: STATUS.good },
-                    { label: 'Опоздал', value: attendance.late, c: STATUS.warning },
-                    { label: 'Отсутствует', value: attendance.absent, c: STATUS.critical },
-                    { label: 'По уважит.', value: attendance.excused, c: SERIES.homework },
+                    { label: t('mentor.sd.att.present'), value: attendance.present, c: STATUS.good },
+                    { label: t('mentor.sd.att.late'), value: attendance.late, c: STATUS.warning },
+                    { label: t('mentor.sd.att.absent'), value: attendance.absent, c: STATUS.critical },
+                    { label: t('mentor.sd.att.excused'), value: attendance.excused, c: SERIES.homework },
                   ].map((s) => (
                     <div key={s.label} className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.c }} />
@@ -502,27 +511,28 @@ export default function MentorStudentDetail() {
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <h3 className="text-sm font-bold">По месяцам</h3>
+                <h3 className="text-sm font-bold">{t('mentor.sd.byMonth')}</h3>
                 <Delta points={points} field="attendanceRate" />
               </div>
               <TrendArea
                 points={points}
-                series={[{ key: 'attendanceRate', label: 'Посещаемость', color: SERIES.attendance }]}
+                noDataLabel={t('mentor.sd.noDataTooltip')}
+                series={[{ key: 'attendanceRate', label: t('mentor.sd.attendanceRing'), color: SERIES.attendance }]}
                 height={200}
               />
             </div>
 
             <div>
-              <h3 className="text-sm font-bold mb-2">Последние уроки</h3>
+              <h3 className="text-sm font-bold mb-2">{t('mentor.sd.recentLessons')}</h3>
               {recentAttendance.length === 0 ? (
-                <EmptyState icon={CalendarCheck} title="Посещаемость не отмечена" />
+                <EmptyState icon={CalendarCheck} title={t('mentor.sd.attendanceNotMarked')} />
               ) : (
                 <ul className="divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
                   {recentAttendance.slice(0, 8).map((a, i) => {
                     const st = ATT_STATE[a.status] ?? ATT_STATE.present;
                     return (
                       <li key={`${a.date}-${i}`} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                        <span className="text-sm">{fmtDate(a.date)}</span>
+                        <span className="text-sm">{fmtDate(a.date, lang)}</span>
                         <span className="text-[11px] text-base-content/45 truncate flex-1">{a.groupName}</span>
                         <span className={`text-[11px] font-semibold px-2 py-1 rounded-md ${st.cls}`}>
                           {st.label}
@@ -542,55 +552,56 @@ export default function MentorStudentDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 items-center">
               <Ring
                 value={tests.avgPercent}
-                label="Средний балл"
-                sub={`${tests.taken} / ${tests.total} пройдено`}
+                label={t('mentor.sd.avgScore')}
+                sub={t('mentor.sd.takenCount', { n: tests.taken, total: tests.total })}
                 size={124}
               />
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-bold">По месяцам</h3>
+                  <h3 className="text-sm font-bold">{t('mentor.sd.byMonth')}</h3>
                   <Delta points={points} field="testAvg" />
                 </div>
                 <TrendArea
                   points={points}
-                  series={[{ key: 'testAvg', label: 'Тесты', color: SERIES.tests }]}
+                  noDataLabel={t('mentor.sd.noDataTooltip')}
+                  series={[{ key: 'testAvg', label: t('mentor.sd.testsRing'), color: SERIES.tests }]}
                   height={180}
                 />
               </div>
             </div>
 
             <div>
-              <h3 className="text-sm font-bold mb-2">Все тесты</h3>
+              <h3 className="text-sm font-bold mb-2">{t('mentor.sd.allTests')}</h3>
               {tests.items.length === 0 ? (
-                <EmptyState icon={ClipboardCheck} title="Нет тестов" />
+                <EmptyState icon={ClipboardCheck} title={t('mentor.sd.noTests')} />
               ) : (
                 <ul className="divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
-                  {tests.items.map((t) => (
-                    <li key={t.id} className="flex items-center gap-3 px-4 py-3">
+                  {tests.items.map((tst) => (
+                    <li key={tst.id} className="flex items-center gap-3 px-4 py-3">
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold truncate">{t.title}</div>
+                        <div className="text-sm font-semibold truncate">{tst.title}</div>
                         <div className="text-[11px] text-base-content/45">
-                          {t.groupName}{t.finishedAt ? ` · ${fmtDate(t.finishedAt)}` : ''}
+                          {tst.groupName}{tst.finishedAt ? ` · ${fmtDate(tst.finishedAt, lang)}` : ''}
                         </div>
                       </div>
-                      {t.finishedAt ? (
+                      {tst.finishedAt ? (
                         <>
                           <div className="hidden sm:block w-24 h-1.5 rounded-full bg-base-200 overflow-hidden shrink-0">
                             <div
                               className="h-full rounded-full"
-                              style={{ width: `${t.percent}%`, background: bandColor(t.percent) }}
+                              style={{ width: `${tst.percent}%`, background: bandColor(tst.percent) }}
                             />
                           </div>
                           <span className="text-sm font-bold w-20 text-right shrink-0">
-                            {t.score}/{t.maxScore}
-                            <span className="ml-1.5 text-[11px]" style={{ color: bandColor(t.percent) }}>
-                              {t.percent}%
+                            {tst.score}/{tst.maxScore}
+                            <span className="ml-1.5 text-[11px]" style={{ color: bandColor(tst.percent) }}>
+                              {tst.percent}%
                             </span>
                           </span>
                         </>
                       ) : (
                         <span className="text-[11px] font-semibold px-2 py-1 rounded-md border border-base-300 text-base-content/45 shrink-0">
-                          Не пройден
+                          {t('mentor.sd.notTaken')}
                         </span>
                       )}
                     </li>
@@ -607,18 +618,19 @@ export default function MentorStudentDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 items-center">
               <Ring
                 value={homework.completionRate}
-                label="Сдано"
+                label={t('mentor.sd.hw.submitted')}
                 sub={`${homework.done} / ${homework.total}`}
                 size={124}
               />
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-bold">Ср. оценка — по месяцам</h3>
+                  <h3 className="text-sm font-bold">{t('mentor.sd.avgGradeByMonth')}</h3>
                   <Delta points={points} field="homeworkAvg" />
                 </div>
                 <TrendArea
                   points={points}
-                  series={[{ key: 'homeworkAvg', label: 'Ср. оценка', color: SERIES.grade }]}
+                  noDataLabel={t('mentor.sd.noDataTooltip')}
+                  series={[{ key: 'homeworkAvg', label: t('mentor.sd.avgGrade'), color: SERIES.grade }]}
                   height={180}
                 />
               </div>
@@ -626,25 +638,25 @@ export default function MentorStudentDetail() {
 
             <div>
               <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
-                <h3 className="text-sm font-bold">Задания</h3>
+                <h3 className="text-sm font-bold">{t('mentor.sd.tasks')}</h3>
                 <div role="tablist" className="flex gap-1 bg-base-200/70 p-0.5 rounded-lg">
                   {[
-                    { key: 'missed', label: `Не сдано (${homework.missed})` },
-                    { key: 'done', label: `Сдано (${homework.done})` },
-                    { key: 'all', label: 'Все' },
-                  ].map((t) => (
+                    { key: 'missed', label: t('mentor.sd.notSubmittedCount', { count: homework.missed }) },
+                    { key: 'done', label: t('mentor.sd.submittedCountFilter', { count: homework.done }) },
+                    { key: 'all', label: t('mentor.sd.all') },
+                  ].map((tabDef) => (
                     <button
-                      key={t.key}
+                      key={tabDef.key}
                       role="tab"
-                      aria-selected={hwFilter === t.key}
-                      onClick={() => setHwFilter(t.key)}
+                      aria-selected={hwFilter === tabDef.key}
+                      onClick={() => setHwFilter(tabDef.key)}
                       className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
-                        hwFilter === t.key
+                        hwFilter === tabDef.key
                           ? 'bg-base-100 text-base-content shadow-sm'
                           : 'text-base-content/50 hover:text-base-content'
                       }`}
                     >
-                      {t.label}
+                      {tabDef.label}
                     </button>
                   ))}
                 </div>
@@ -653,7 +665,7 @@ export default function MentorStudentDetail() {
               {hwFiltered.length === 0 ? (
                 <EmptyState
                   icon={hwFilter === 'missed' ? Check : FileText}
-                  title={hwFilter === 'missed' ? 'Все задания выполнены' : 'Нет заданий'}
+                  title={hwFilter === 'missed' ? t('mentor.sd.allTasksDone') : t('mentor.sd.noTasks')}
                 />
               ) : (
                 <ul className="divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
@@ -668,7 +680,7 @@ export default function MentorStudentDetail() {
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-semibold truncate">{h.title}</div>
                           <div className="text-[11px] text-base-content/45 truncate">
-                            {h.groupName} · {fmtDate(h.deadline)} до
+                            {h.groupName} · {t('mentor.sd.until')} {fmtDate(h.deadline, lang)}
                           </div>
                         </div>
                         {percent !== null ? (
