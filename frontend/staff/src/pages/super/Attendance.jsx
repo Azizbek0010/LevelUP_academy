@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Calendar, ChevronRight, Filter, BookOpen, CheckCircle2, XCircle, Percent } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
@@ -87,6 +88,7 @@ function LessonRow({ lesson }) {
 }
 
 export default function SuperAttendance() {
+  const { t } = useTranslation();
   const [groupFilter, setGroupFilter] = useState('all');
   const [preset, setPreset] = useState('14d');
   const [from, setFrom] = useState(daysBack(14));
@@ -120,7 +122,7 @@ export default function SuperAttendance() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Посещаемость" subtitle="Журнал уроков за выбранный период" />
+      <PageHeader title={t('super.attendance.title')} subtitle={t('super.attendance.subtitle')} />
 
       {error && error.status !== 401 && (
         <div className="alert alert-error text-sm"><span>{error.message}</span></div>
@@ -130,10 +132,10 @@ export default function SuperAttendance() {
       <div className="flex flex-wrap items-center gap-3">
         <FilterPills
           options={[
-            { key: '7d', label: '7 дней' },
-            { key: '14d', label: '14 дней' },
-            { key: '30d', label: '30 дней' },
-            { key: 'custom', label: <span className="flex items-center gap-1"><Calendar size={13} /> Период</span> },
+            { key: '7d', label: t('super.attendance.days7') },
+            { key: '14d', label: t('super.attendance.days14') },
+            { key: '30d', label: t('super.attendance.days30') },
+            { key: 'custom', label: <span className="flex items-center gap-1"><Calendar size={13} /> {t('super.attendance.period')}</span> },
           ]}
           value={preset}
           onChange={setPreset}
@@ -166,7 +168,7 @@ export default function SuperAttendance() {
             value={groupFilter}
             onChange={(e) => setGroupFilter(e.target.value)}
           >
-            <option value="all">Все группы</option>
+            <option value="all">{t('super.attendance.allGroups')}</option>
             {activeGroups.map((g) => (
               <option key={g.id} value={g.id}>{g.name}</option>
             ))}
@@ -176,15 +178,15 @@ export default function SuperAttendance() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
-        <Metric Icon={BookOpen} tone="neutral" label="Уроков" value={filtered.length} />
-        <Metric Icon={CheckCircle2} tone="success" label="Присутствовало" value={totalPresent} />
-        <Metric Icon={XCircle} tone="danger" label="Пропустило" value={totalAbsent} />
-        <Metric Icon={Percent} tone="primary" label="% посещаемости" value={`${attendanceRate}%`} />
+        <Metric Icon={BookOpen} tone="neutral" label={t('super.attendance.kpiLessons')} value={filtered.length} />
+        <Metric Icon={CheckCircle2} tone="success" label={t('super.attendance.kpiPresent')} value={totalPresent} />
+        <Metric Icon={XCircle} tone="danger" label={t('super.attendance.kpiAbsent')} value={totalAbsent} />
+        <Metric Icon={Percent} tone="primary" label={t('super.attendance.kpiRate')} value={`${attendanceRate}%`} />
       </div>
 
       {totalUnknown > 0 && (
         <p className="text-xs text-base-content/50">
-          Не отмечено: <span className="font-medium">{totalUnknown}</span>
+          {t('super.attendance.unmarked')} <span className="font-medium">{totalUnknown}</span>
         </p>
       )}
 
@@ -192,20 +194,20 @@ export default function SuperAttendance() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           {isLoading ? (
-            <div className="p-10 text-center text-base-content/40 text-sm">Загрузка…</div>
+            <div className="p-10 text-center text-base-content/40 text-sm">{t('super.attendance.loading')}</div>
           ) : filtered.length === 0 ? (
             <div className="p-10 text-center text-base-content/40 text-sm">
-              Уроков в выбранном периоде не найдено
+              {t('super.attendance.emptyPeriod')}
             </div>
           ) : (
             <table className="table table-sm">
               <thead className="bg-base-200/60">
                 <tr>
-                  <th>Дата · время</th>
-                  <th>Группа</th>
-                  <th className="text-right">Всего</th>
-                  <th>Присутствие</th>
-                  <th className="text-right w-36">Процент</th>
+                  <th>{t('super.attendance.colDateTime')}</th>
+                  <th>{t('super.attendance.colGroup')}</th>
+                  <th className="text-right">{t('super.attendance.colTotal')}</th>
+                  <th>{t('super.attendance.colPresence')}</th>
+                  <th className="text-right w-36">{t('super.attendance.colPercent')}</th>
                 </tr>
               </thead>
               <tbody>

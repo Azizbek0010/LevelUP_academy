@@ -1973,6 +1973,27 @@ const ru = {
   'super.students.deleteStudentTitle': 'Удалить студента?',
   'super.students.deleteConfirmPrefix': 'Вы уверены, что хотите удалить',
   'super.students.deleteConfirmSuffix': '? Это действие необратимо.',
+
+  /* ─── super/Attendance.jsx ─── */
+  'super.attendance.title': 'Посещаемость',
+  'super.attendance.subtitle': 'Журнал уроков за выбранный период',
+  'super.attendance.days7': '7 дней',
+  'super.attendance.days14': '14 дней',
+  'super.attendance.days30': '30 дней',
+  'super.attendance.period': 'Период',
+  'super.attendance.allGroups': 'Все группы',
+  'super.attendance.kpiLessons': 'Уроков',
+  'super.attendance.kpiPresent': 'Присутствовало',
+  'super.attendance.kpiAbsent': 'Пропустило',
+  'super.attendance.kpiRate': '% посещаемости',
+  'super.attendance.unmarked': 'Не отмечено:',
+  'super.attendance.loading': 'Загрузка…',
+  'super.attendance.emptyPeriod': 'Уроков в выбранном периоде не найдено',
+  'super.attendance.colDateTime': 'Дата · время',
+  'super.attendance.colGroup': 'Группа',
+  'super.attendance.colTotal': 'Всего',
+  'super.attendance.colPresence': 'Присутствие',
+  'super.attendance.colPercent': 'Процент',
 };
 
 export default ru;

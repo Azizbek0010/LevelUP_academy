@@ -1973,6 +1973,27 @@ const en = {
   'super.students.deleteStudentTitle': 'Delete student?',
   'super.students.deleteConfirmPrefix': 'Are you sure you want to delete',
   'super.students.deleteConfirmSuffix': '? This action cannot be undone.',
+
+  /* ─── super/Attendance.jsx ─── */
+  'super.attendance.title': 'Attendance',
+  'super.attendance.subtitle': 'Lesson log for the selected period',
+  'super.attendance.days7': '7 days',
+  'super.attendance.days14': '14 days',
+  'super.attendance.days30': '30 days',
+  'super.attendance.period': 'Period',
+  'super.attendance.allGroups': 'All groups',
+  'super.attendance.kpiLessons': 'Lessons',
+  'super.attendance.kpiPresent': 'Present',
+  'super.attendance.kpiAbsent': 'Absent',
+  'super.attendance.kpiRate': 'Attendance %',
+  'super.attendance.unmarked': 'Unmarked:',
+  'super.attendance.loading': 'Loading…',
+  'super.attendance.emptyPeriod': 'No lessons found in the selected period',
+  'super.attendance.colDateTime': 'Date · time',
+  'super.attendance.colGroup': 'Group',
+  'super.attendance.colTotal': 'Total',
+  'super.attendance.colPresence': 'Presence',
+  'super.attendance.colPercent': 'Percent',
 };
 
 export default en;

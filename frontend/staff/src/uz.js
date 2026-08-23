@@ -1966,6 +1966,27 @@ const uz = {
   'super.students.deleteStudentTitle': 'O\'quvchini o\'chirasizmi?',
   'super.students.deleteConfirmPrefix': 'Haqiqatan ham o\'chirmoqchimisiz',
   'super.students.deleteConfirmSuffix': '? Bu amalni ortga qaytarib bo\'lmaydi.',
+
+  /* ─── super/Attendance.jsx ─── */
+  'super.attendance.title': 'Davomat',
+  'super.attendance.subtitle': 'Tanlangan davr uchun darslar jurnali',
+  'super.attendance.days7': '7 kun',
+  'super.attendance.days14': '14 kun',
+  'super.attendance.days30': '30 kun',
+  'super.attendance.period': 'Davr',
+  'super.attendance.allGroups': 'Barcha guruhlar',
+  'super.attendance.kpiLessons': 'Darslar',
+  'super.attendance.kpiPresent': 'Keldi',
+  'super.attendance.kpiAbsent': 'Kelmadi',
+  'super.attendance.kpiRate': 'Davomat %',
+  'super.attendance.unmarked': 'Belgilanmagan:',
+  'super.attendance.loading': 'Yuklanmoqda…',
+  'super.attendance.emptyPeriod': 'Tanlangan davrda darslar topilmadi',
+  'super.attendance.colDateTime': 'Sana · vaqt',
+  'super.attendance.colGroup': 'Guruh',
+  'super.attendance.colTotal': 'Jami',
+  'super.attendance.colPresence': 'Davomat',
+  'super.attendance.colPercent': 'Foiz',
 };
 
 export default uz;
