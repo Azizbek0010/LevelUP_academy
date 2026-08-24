@@ -43,7 +43,7 @@ export default function Home() {
   });
 
   return (
-    <main>
+    <main className="home-page">
       {/* ===== Hero ===== */}
       <section className="hero">
         <div className="container hero__grid">
@@ -130,8 +130,9 @@ export default function Home() {
             <p>{h.featuresLead}</p>
           </div>
           <div className="cards-3">
-            {h.features.map((f) => (
+            {h.features.map((f, index) => (
               <article className="feature" key={f.title}>
+                <span className="feature__number">0{index + 1}</span>
                 <div className="feature__icon">
                   <Icon name={f.icon} />
                 </div>
@@ -150,14 +151,28 @@ export default function Home() {
             <h2>{h.rolesHead}</h2>
             <p>{h.rolesLead}</p>
           </div>
-          <div className="roles">
-            {h.roles.map((r) => (
-              <article className="role" key={r.tag}>
-                <div className="role__avatar">{r.tag}</div>
-                <h3>{r.title}</h3>
-                <p>{r.text}</p>
-              </article>
-            ))}
+          <div className="roles roles--orbit">
+            <div className="roles__side roles__side--left">
+              {h.roles.slice(0, 3).map((r) => (
+                <article className="role" key={r.tag}>
+                  <div className="role__avatar">{r.tag}</div>
+                  <div><h3>{r.title}</h3><p>{r.text}</p></div>
+                </article>
+              ))}
+            </div>
+            <div className="roles__hub" aria-hidden="true">
+              <span>LEVELUP</span>
+              <strong>6</strong>
+              <small>ONE SYSTEM</small>
+            </div>
+            <div className="roles__side roles__side--right">
+              {h.roles.slice(3).map((r) => (
+                <article className="role" key={r.tag}>
+                  <div className="role__avatar">{r.tag}</div>
+                  <div><h3>{r.title}</h3><p>{r.text}</p></div>
+                </article>
+              ))}
+            </div>
           </div>
         </div>
       </section>

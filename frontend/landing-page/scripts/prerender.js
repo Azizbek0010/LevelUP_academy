@@ -34,7 +34,9 @@ const PAGES = [
   '/landing/gamification',
   '/landing/faq',
   '/landing/about',
+  '/landing/team',
   '/landing/team/azizbek-amangeldiev',
+  '/landing/team/yunusov-abdulloh',
   '/landing/contacts',
 ];
 

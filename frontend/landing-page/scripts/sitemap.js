@@ -51,12 +51,14 @@ const PAGES = [
   { path: '/landing/blog/attendance-automation', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.6' },
   { path: '/landing/faq', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.8' },
   { path: '/landing/about', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.6' },
+  { path: '/landing/team', lastmod: '2026-08-24', changefreq: 'monthly', priority: '0.7' },
   {
     path: '/landing/team/azizbek-amangeldiev',
     lastmod: '2026-08-20',
     changefreq: 'monthly',
     priority: '0.6',
   },
+  { path: '/landing/team/yunusov-abdulloh', lastmod: '2026-08-24', changefreq: 'monthly', priority: '0.6' },
   { path: '/landing/contacts', lastmod: '2026-08-05', changefreq: 'monthly', priority: '0.6' },
 ];
 

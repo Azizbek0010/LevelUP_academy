@@ -83,13 +83,14 @@ export default function Pricing() {
   };
 
   return (
-    <main>
+    <main className="product-page product-page--pricing">
       <section className="page-hero">
         <div className="container">
           <span className="badge badge--lime">{p.badge}</span>
           <h1>{p.h1}</h1>
           <p>{p.lead}</p>
           <p className="pricing-note">{p.positioning}</p>
+          <div className="product-hero__panel"><span>START</span><strong>0</strong><small>{lang === 'uz' ? "so'm / 30 akkauntgacha" : lang === 'en' ? 'UZS / up to 30 accounts' : 'сум / до 30 аккаунтов'}</small></div>
         </div>
       </section>
 
@@ -99,12 +100,13 @@ export default function Pricing() {
             <h2>{p.plansHead}</h2>
             <p>{p.plansLead}</p>
           </div>
-          <div className="plans">
-            {p.plans.map((plan) => (
+          <div className="plans pricing-matrix">
+            {p.plans.map((plan, index) => (
               <article
                 className={`plan${plan.popular ? ' plan--popular' : ''}`}
                 key={plan.id}
               >
+                <span className="plan__index">0{index + 1}</span>
                 {plan.popular && <span className="plan__badge">{p.popular}</span>}
                 <h3 className="plan__name">{plan.name}</h3>
                 {renderPrice(plan)}

@@ -1,14 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { LANGS, canonicalPath, dictOf, localizePath, useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const lastScrollY = useRef(0);
   const close = () => setOpen(false);
   const t = useT();
   const lang = useLang();
   const lp = useLocalizePath();
   const { pathname } = useLocation();
+
+  useEffect(() => {
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      const delta = currentY - lastScrollY.current;
+
+      setScrolled(currentY > 12);
+      if (currentY < 60 || open) {
+        setHidden(false);
+      } else if (delta > 6) {
+        setHidden(true);
+      } else if (delta < -6) {
+        setHidden(false);
+      }
+
+      lastScrollY.current = currentY;
+    };
+
+    lastScrollY.current = window.scrollY;
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [open]);
 
   const links = [
     { to: lp('/landing/features'), label: t.nav.features },
@@ -25,18 +50,15 @@ export default function Header() {
   // <a> с hrefLang: перекрёстные ссылки между версиями сами по себе сигнал для
   // краулера, что версии связаны, и работают они без JavaScript.
   const canonical = canonicalPath(pathname);
-  const otherLangs = LANGS.filter((l) => l !== lang);
-
   const LangSwitch = ({ className = '' }) => (
     <span className={`lang-switch ${className}`}>
-      {otherLangs.map((l) => (
-        <Link
-          key={l}
-          to={localizePath(canonical, l)}
-          hrefLang={l}
-          aria-label={dictOf(l).lang.label}
-          onClick={close}
-        >
+      {LANGS.map((l) => l === lang ? (
+        <span key={l} className="lang-switch__current" aria-current="true">
+          {dictOf(l).lang.label}
+        </span>
+      ) : (
+        <Link key={l} to={localizePath(canonical, l)} hrefLang={l}
+          aria-label={dictOf(l).lang.label} onClick={close}>
           {dictOf(l).lang.label}
         </Link>
       ))}
@@ -45,11 +67,13 @@ export default function Header() {
 
   return (
     <>
-      <header className="header">
+      <header className={`header${hidden ? ' header--hidden' : ''}${scrolled ? ' header--scrolled' : ''}`}>
         <div className="container header__inner">
           <Link to={lp('/landing')} className="header__logo" onClick={close}>
-            <img src="/logo-mark.svg" alt="LevelUp Academy" width="30" height="30" />
-            LevelUp Academy
+            <span className="header__logo-mark">
+              <img src="/logo-mark.svg" alt="" width="30" height="30" />
+            </span>
+            <span className="header__brand"><strong>LevelUp</strong><small>Academy</small></span>
           </Link>
 
           {/* Десктоп-навигация */}
@@ -65,11 +89,12 @@ export default function Header() {
             ))}
           </nav>
 
-          <LangSwitch />
-
-          <Link to={lp('/landing/contacts')} className="btn btn--dark header__cta">
-            {t.nav.login}
-          </Link>
+          <div className="header__actions">
+            <LangSwitch />
+            <Link to={lp('/landing/contacts')} className="btn btn--dark header__cta">
+              <span>{t.nav.login}</span>
+            </Link>
+          </div>
 
           {/* Мобильный бургер */}
           <button
@@ -93,8 +118,8 @@ export default function Header() {
       />
       <aside className={`drawer${open ? ' drawer--open' : ''}`}>
         <div className="drawer__head">
-          <img src="/logo-mark.svg" alt="" width="28" height="28" />
-          <span>LevelUp Academy</span>
+          <span className="drawer__brand"><img src="/logo-mark.svg" alt="" width="28" height="28" /><span>LevelUp Academy</span></span>
+          <button type="button" className="drawer__close" onClick={close} aria-label={t.nav.menu}>×</button>
         </div>
         <nav className="drawer__nav" aria-label={t.nav.mobileLabel}>
           <NavLink to={lp('/landing')} end onClick={close}>

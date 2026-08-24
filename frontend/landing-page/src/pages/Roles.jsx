@@ -7,6 +7,11 @@ export default function Roles() {
   const t = useT();
   const lang = useLang();
   const r = t.roles;
+  const financeRole = lang === 'uz'
+    ? { tag: 'FM', title: 'Finance Manager', text: "Markaz moliyasini operatsion ishlardan alohida boshqaradi.", list: ["Kassa va xarajatlar", "Maosh va qarzdorlik", "Moliyaviy hisobotlar"] }
+    : lang === 'en'
+      ? { tag: 'FM', title: 'Finance Manager', text: 'Runs center finances independently from daily operations.', list: ['Cash flow and expenses', 'Payroll and debt', 'Financial reporting'] }
+      : { tag: 'FM', title: 'Finance Manager', text: 'Управляет финансами центра отдельно от операционной работы.', list: ['Касса и расходы', 'Зарплаты и задолженность', 'Финансовые отчёты'] };
 
   const jsonLd = useMemo(
     () => [
@@ -29,20 +34,22 @@ export default function Roles() {
   });
 
   return (
-    <main>
+    <main className="product-page product-page--roles">
       <section className="page-hero">
         <div className="container">
           <span className="badge badge--lime">{r.badge}</span>
           <h1>{r.h1}</h1>
           <p>{r.lead}</p>
+          <div className="product-hero__panel"><span>ACCESS MAP</span><strong>7</strong><small>{lang === 'uz' ? 'alohida kabinet' : lang === 'en' ? 'dedicated workspaces' : 'отдельных кабинетов'}</small></div>
         </div>
       </section>
 
       <section className="section section--white">
         <div className="container">
-          <div className="cards-2">
-            {r.items.map((item) => (
+          <div className="cards-2 role-stories">
+            {[...r.items, financeRole].map((item, index) => (
               <article className="big-card" key={item.tag}>
+                <span className="role-story__number">0{index + 1}</span>
                 <div className="role__avatar">{item.tag}</div>
                 <h3 style={{ marginTop: 12 }}>{item.title}</h3>
                 <p>{item.text}</p>

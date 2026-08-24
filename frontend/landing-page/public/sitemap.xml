@@ -185,12 +185,32 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://levelup-academy.uz/landing/team</loc>
+      <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/team" />
+      <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/team" />
+      <xhtml:link rel="alternate" hreflang="en" href="https://levelup-academy.uz/en/landing/team" />
+      <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/en/landing/team" />
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://levelup-academy.uz/landing/team/azizbek-amangeldiev</loc>
       <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/team/azizbek-amangeldiev" />
       <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/team/azizbek-amangeldiev" />
       <xhtml:link rel="alternate" hreflang="en" href="https://levelup-academy.uz/en/landing/team/azizbek-amangeldiev" />
       <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/en/landing/team/azizbek-amangeldiev" />
     <lastmod>2026-08-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://levelup-academy.uz/landing/team/yunusov-abdulloh</loc>
+      <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/team/yunusov-abdulloh" />
+      <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/team/yunusov-abdulloh" />
+      <xhtml:link rel="alternate" hreflang="en" href="https://levelup-academy.uz/en/landing/team/yunusov-abdulloh" />
+      <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/en/landing/team/yunusov-abdulloh" />
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -376,12 +396,32 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://levelup-academy.uz/uz/landing/team</loc>
+      <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/team" />
+      <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/team" />
+      <xhtml:link rel="alternate" hreflang="en" href="https://levelup-academy.uz/en/landing/team" />
+      <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/en/landing/team" />
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://levelup-academy.uz/uz/landing/team/azizbek-amangeldiev</loc>
       <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/team/azizbek-amangeldiev" />
       <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/team/azizbek-amangeldiev" />
       <xhtml:link rel="alternate" hreflang="en" href="https://levelup-academy.uz/en/landing/team/azizbek-amangeldiev" />
       <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/en/landing/team/azizbek-amangeldiev" />
     <lastmod>2026-08-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://levelup-academy.uz/uz/landing/team/yunusov-abdulloh</loc>
+      <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/team/yunusov-abdulloh" />
+      <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/team/yunusov-abdulloh" />
+      <xhtml:link rel="alternate" hreflang="en" href="https://levelup-academy.uz/en/landing/team/yunusov-abdulloh" />
+      <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/en/landing/team/yunusov-abdulloh" />
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -567,12 +607,32 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://levelup-academy.uz/en/landing/team</loc>
+      <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/team" />
+      <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/team" />
+      <xhtml:link rel="alternate" hreflang="en" href="https://levelup-academy.uz/en/landing/team" />
+      <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/en/landing/team" />
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://levelup-academy.uz/en/landing/team/azizbek-amangeldiev</loc>
       <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/team/azizbek-amangeldiev" />
       <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/team/azizbek-amangeldiev" />
       <xhtml:link rel="alternate" hreflang="en" href="https://levelup-academy.uz/en/landing/team/azizbek-amangeldiev" />
       <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/en/landing/team/azizbek-amangeldiev" />
     <lastmod>2026-08-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://levelup-academy.uz/en/landing/team/yunusov-abdulloh</loc>
+      <xhtml:link rel="alternate" hreflang="ru" href="https://levelup-academy.uz/landing/team/yunusov-abdulloh" />
+      <xhtml:link rel="alternate" hreflang="uz" href="https://levelup-academy.uz/uz/landing/team/yunusov-abdulloh" />
+      <xhtml:link rel="alternate" hreflang="en" href="https://levelup-academy.uz/en/landing/team/yunusov-abdulloh" />
+      <xhtml:link rel="alternate" hreflang="x-default" href="https://levelup-academy.uz/en/landing/team/yunusov-abdulloh" />
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

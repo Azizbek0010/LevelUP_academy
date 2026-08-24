@@ -5,141 +5,44 @@ import Icon from '../components/Icon.jsx';
 import { breadcrumb, useSeo } from '../lib/seo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
-/**
- * Страница «О компании» — базовая для E-E-A-T: до неё сайт нигде не отвечал на вопрос
- * «кто за этим стоит».
- *
- * Все факты берутся из DIRECTORY-LISTINGS.md (единый источник для сайта и каталогов):
- * 2026 год, 6 человек, Узбекистан, почта и соцсети. С 20.08.2026 добавлен реальный
- * основатель (Azizbek Amangeldiev, по его прямой просьбе) — прежний принцип
- * «выдуманные имена вредят доверию сильнее, чем их отсутствие» был про фиктивные
- * персоналии, а не про запрет указывать настоящего фаундера.
- *
- * Блок «Нас часто путают» повторяет `disambiguatingDescription` из index.html человеческим
- * текстом: разметку читает поисковик, а цитирует AI то, что написано на странице.
- */
 export default function About() {
   const t = useT();
   const lang = useLang();
   const lp = useLocalizePath();
   const s = t.about;
+  const tr = (uz, en, ru) => (lang === 'uz' ? uz : lang === 'en' ? en : ru);
+  const jsonLd = useMemo(() => [breadcrumb([{ name: t.seo.breadcrumbHome, path: '/landing' }, { name: s.badge, path: '/landing/about' }], lang)], [t.seo.breadcrumbHome, s.badge, lang]);
 
-  const jsonLd = useMemo(
-    () => [
-      breadcrumb(
-        [
-          { name: t.seo.breadcrumbHome, path: '/landing' },
-          { name: s.badge, path: '/landing/about' },
-        ],
-        lang,
-      ),
-    ],
-    [t.seo.breadcrumbHome, s.badge, lang],
-  );
-
-  useSeo({
-    title: t.seo.about.title,
-    description: t.seo.about.description,
-    path: '/landing/about',
-    jsonLd,
-  });
+  useSeo({ title: t.seo.about.title, description: t.seo.about.description, path: '/landing/about', jsonLd });
 
   return (
-    <main>
-      <section className="page-hero">
-        <div className="container">
-          <span className="badge badge--lime">{s.badge}</span>
-          <h1>{s.h1}</h1>
-          <p>{s.lead}</p>
-          <p className="pricing-note">{s.intro}</p>
+    <main className="about-brand-page">
+      <section className="about-brand-hero"><div className="container">
+        <div className="about-brand-hero__top"><span className="badge badge--lime">{s.badge}</span><small>UZBEKISTAN / 2026</small></div>
+        <div className="about-brand-hero__grid"><div><h1>{s.h1}</h1><p>{s.lead}</p><p className="about-brand-hero__intro">{s.intro}</p></div>
+          <div className="about-brand-mark" aria-hidden="true"><span>LEVEL</span><strong>UP</strong><i>ACADEMY</i><b>↗</b></div>
         </div>
-      </section>
+      </div></section>
 
-      <section className="section section--white">
-        <div className="container">
-          <div className="section__head">
-            <h2>{s.whyHead}</h2>
-            <p>{s.whyLead}</p>
-          </div>
-          <div className="cards-3">
-            {s.why.map((item) => (
-              <article className="feature" key={item.title}>
-                <div className="feature__icon">
-                  <Icon name={item.icon} />
-                </div>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      <section className="about-manifest"><div className="container"><span>01</span><p>{tr('Biz ta’lim markazini boshqarishni oddiy, aniq va shaffof qilamiz.', 'We make education business management simple, clear and transparent.', 'Мы делаем управление образовательным бизнесом простым, понятным и прозрачным.')}</p></div></section>
 
-      <section className="section">
-        <div className="container">
-          <div className="section__head">
-            <h2>{s.principlesHead}</h2>
-            <p>{s.principlesLead}</p>
-          </div>
-          <div className="cards-2">
-            {s.principles.map((item) => (
-              <article className="feature" key={item.title}>
-                <div className="feature__icon">
-                  <Icon name={item.icon} />
-                </div>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      <section className="section section--white about-why"><div className="container"><div className="section__head"><h2>{s.whyHead}</h2><p>{s.whyLead}</p></div>
+        <div className="about-why__grid">{s.why.map((item, index) => <article key={item.title}><span>0{index + 1}</span><div className="feature__icon"><Icon name={item.icon} /></div><h3>{item.title}</h3><p>{item.text}</p></article>)}</div>
+      </div></section>
 
-      <section className="section section--white">
-        <div className="container">
-          <div className="section__head">
-            <h2>{s.factsHead}</h2>
-            <p>{s.factsLead}</p>
-          </div>
-          <table className="compare">
-            <tbody>
-              {s.facts.map((row) => (
-                <tr key={row.label}>
-                  <td>{row.label}</td>
-                  <td>{row.value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <section className="section about-principles"><div className="container about-principles__layout"><div className="about-principles__head"><span>02 / VALUES</span><h2>{s.principlesHead}</h2><p>{s.principlesLead}</p></div>
+        <div className="about-principles__list">{s.principles.map((item, index) => <article key={item.title}><span>0{index + 1}</span><div><h3>{item.title}</h3><p>{item.text}</p></div><div className="feature__icon"><Icon name={item.icon} /></div></article>)}</div>
+      </div></section>
 
-      <section className="section">
-        <div className="container">
-          <div className="section__head">
-            <h2>{s.sameHead}</h2>
-          </div>
-          <p className="pricing-note" style={{ maxWidth: 760, margin: '0 auto' }}>
-            {s.sameText}
-          </p>
-        </div>
-      </section>
+      <section className="section section--white about-facts"><div className="container"><div className="section__head"><span className="about-kicker">03 / FACTS</span><h2>{s.factsHead}</h2><p>{s.factsLead}</p></div>
+        <div className="about-facts__grid">{s.facts.map((row, index) => <article key={row.label}><span>0{index + 1}</span><small>{row.label}</small><strong>{row.value}</strong></article>)}</div>
+      </div></section>
 
-      <section className="section section--white">
-        <div className="container">
-          <div className="section__head">
-            <h2>{s.linksHead}</h2>
-          </div>
-          <ul className="checklist" style={{ maxWidth: 520, margin: '0 auto' }}>
-            {s.links.map((link) => (
-              <li key={link.path}>
-                <Link to={lp(link.path)}>{link.label}</Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <section className="about-identity"><div className="container about-identity__grid"><div><span>04 / IDENTITY</span><h2>{s.sameHead}</h2></div><p>{s.sameText}</p></div></section>
 
+      <section className="section section--white about-explore"><div className="container"><div className="section__head"><span className="about-kicker">05 / EXPLORE</span><h2>{s.linksHead}</h2></div>
+        <div className="about-explore__grid">{s.links.map((link, index) => <Link key={link.path} to={lp(link.path)}><span>0{index + 1}</span><strong>{link.label}</strong><i>↗</i></Link>)}</div>
+      </div></section>
       <Cta title={s.ctaTitle} text={s.ctaText} />
     </main>
   );

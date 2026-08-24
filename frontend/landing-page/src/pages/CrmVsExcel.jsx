@@ -5,154 +5,87 @@ import Icon from '../components/Icon.jsx';
 import { breadcrumb, faqPage, useSeo } from '../lib/seo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
-/**
- * Коммерческая страница сравнения «Excel или CRM».
- *
- * Намеренно отделена от статьи /landing/blog/excel-to-crm: та отвечает на «как перейти»
- * (информационный запрос, пошаговый гайд), эта — на «чем заменить и стоит ли»
- * (коммерческий). Разные title/description и перекрёстная ссылка ниже держат их
- * в разных выдачах: две страницы под один запрос конкурировали бы между собой.
- */
 export default function CrmVsExcel() {
   const t = useT();
   const lang = useLang();
   const lp = useLocalizePath();
   const s = t.vsExcel;
+  const tr = (uz, en, ru) => (lang === 'uz' ? uz : lang === 'en' ? en : ru);
 
-  const jsonLd = useMemo(
-    () => [
-      breadcrumb(
-        [
-          { name: t.seo.breadcrumbHome, path: '/landing' },
-          { name: s.badge, path: '/landing/crm-vs-excel' },
-        ],
-        lang,
-      ),
-      faqPage(s.faq),
-    ],
-    [t.seo.breadcrumbHome, s, lang],
-  );
+  const jsonLd = useMemo(() => [
+    breadcrumb([{ name: t.seo.breadcrumbHome, path: '/landing' }, { name: s.badge, path: '/landing/crm-vs-excel' }], lang),
+    faqPage(s.faq),
+  ], [t.seo.breadcrumbHome, s, lang]);
 
-  useSeo({
-    title: t.seo.vsExcel.title,
-    description: t.seo.vsExcel.description,
-    path: '/landing/crm-vs-excel',
-    jsonLd,
-  });
+  useSeo({ title: t.seo.vsExcel.title, description: t.seo.vsExcel.description, path: '/landing/crm-vs-excel', jsonLd });
 
   return (
-    <main>
-      <section className="page-hero">
-        <div className="container">
-          <span className="badge badge--lime">{s.badge}</span>
-          <h1>{s.h1}</h1>
-          <p>{s.lead}</p>
-          <p className="pricing-note">{s.intro}</p>
-          <p className="pricing-note">
-            <Link to={lp('/landing/pricing')}>{s.pricingLink} →</Link>
-          </p>
+    <main className="excel-page">
+      <section className="excel-hero">
+        <div className="container excel-hero__layout">
+          <div>
+            <span className="badge badge--lime">{s.badge}</span>
+            <h1>{s.h1}</h1>
+            <p className="excel-hero__lead">{s.lead}</p>
+            <p className="excel-hero__intro">{s.intro}</p>
+            <div className="excel-hero__actions">
+              <Link className="btn btn--primary" to={lp('/landing/pricing')}>{s.pricingLink}</Link>
+              <a className="btn btn--outline" href="#compare">{tr('Taqqoslash', 'Compare', 'Сравнить')}</a>
+            </div>
+          </div>
+          <div className="excel-switch" aria-hidden="true">
+            <div className="excel-sheet">
+              <header><i /><span>students_final_v7.xlsx</span><b>×</b></header>
+              <div className="excel-sheet__cells">
+                {Array.from({ length: 20 }, (_, i) => <span key={i} className={i === 6 || i === 12 ? 'is-error' : ''}>{i === 6 ? '#REF!' : i === 12 ? '?' : i % 4 === 0 ? 'SUM' : ''}</span>)}
+              </div>
+              <footer>{tr('5 ta versiya · kim o‘zgartirdi?', '5 versions · who edited?', '5 версий · кто изменил?')}</footer>
+            </div>
+            <div className="excel-switch__arrow">→</div>
+            <div className="crm-live">
+              <header><span>LEVELUP CRM</span><b>LIVE</b></header>
+              <strong>100%</strong><small>{tr('ma’lumotlar bir joyda', 'data in one place', 'данных в одном месте')}</small>
+              <div><i /><span>{tr('Avtomatik yangilanadi', 'Updates automatically', 'Обновляется автоматически')}</span></div>
+              <div><i /><span>{tr('Har bir amal ko‘rinadi', 'Every action is visible', 'Каждое действие видно')}</span></div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="section section--white">
+      <section className="excel-signal"><div className="container"><span>EXCEL</span><i>→</i><strong>LEVELUP ACADEMY</strong><small>{tr('tartibsizlikdan boshqaruvga', 'from spreadsheets to control', 'от таблиц к управлению')}</small></div></section>
+
+      <section className="section section--white excel-pain">
         <div className="container">
-          <div className="section__head">
-            <h2>{s.painHead}</h2>
-            <p>{s.painLead}</p>
+          <div className="section__head"><h2>{s.painHead}</h2><p>{s.painLead}</p></div>
+          <div className="excel-pain__grid">
+            {s.pain.map((item, index) => <article key={item.title}><span>0{index + 1}</span><div className="feature__icon"><Icon name={item.icon} /></div><h3>{item.title}</h3><p>{item.text}</p></article>)}
           </div>
-          <div className="cards-3">
-            {s.pain.map((item) => (
-              <article className="feature" key={item.title}>
-                <div className="feature__icon">
-                  <Icon name={item.icon} />
-                </div>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
+        </div>
+      </section>
+
+      <section className="section excel-compare" id="compare">
+        <div className="container">
+          <div className="section__head"><h2>{s.compareHead}</h2></div>
+          <div className="excel-compare__table">
+            <div className="excel-compare__head"><span>{s.compare.task}</span><b>{s.compare.before}</b><strong>{s.compare.after}</strong></div>
+            {s.compare.rows.map((row, index) => (
+              <article key={row.task}><span><i>0{index + 1}</i>{row.task}</span><b>× {row.before}</b><strong>✓ {row.after}</strong></article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="section">
+      <section className="section section--white language-flow excel-move">
         <div className="container">
-          <div className="section__head">
-            <h2>{s.compareHead}</h2>
+          <div className="section__head"><h2>{s.howHead}</h2><p>{s.howLead}</p></div>
+          <div className="language-flow__list">
+            {s.how.map((item, index) => <article key={item.title}><span>0{index + 1}</span><div><h3>{item.title}</h3><p>{item.text}</p></div><i>↗</i></article>)}
           </div>
-          <table className="compare">
-            <thead>
-              <tr>
-                <th>{s.compare.task}</th>
-                <th>{s.compare.before}</th>
-                <th>{s.compare.after}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {s.compare.rows.map((row) => (
-                <tr key={row.task}>
-                  <td data-label={s.compare.task}>{row.task}</td>
-                  <td className="no" data-label={s.compare.before}>
-                    {row.before}
-                  </td>
-                  <td className="yes" data-label={s.compare.after}>
-                    {row.after}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Link className="excel-guide" to={lp('/landing/blog/excel-to-crm')}>{s.guideLink} <span>→</span></Link>
         </div>
       </section>
 
-      <section className="section section--white">
-        <div className="container">
-          <div className="section__head">
-            <h2>{s.howHead}</h2>
-            <p>{s.howLead}</p>
-          </div>
-          <div className="steps">
-            {s.how.map((item) => (
-              <article className="step" key={item.title}>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-          <p className="pricing-note" style={{ textAlign: 'center', marginTop: 24 }}>
-            <Link to={lp('/landing/blog/excel-to-crm')}>{s.guideLink} →</Link>
-          </p>
-        </div>
-      </section>
-
-      <section className="section" id="faq">
-        <div className="container">
-          <div className="section__head">
-            <h2>{s.faqHead}</h2>
-          </div>
-          <div className="faq" style={{ maxWidth: 760, margin: '0 auto' }}>
-            {s.faq.map((f, i) => (
-              <details
-                key={i}
-                style={{
-                  border: '1px solid var(--border, #E6EDD8)',
-                  borderRadius: 14,
-                  padding: '14px 18px',
-                  marginBottom: 12,
-                  background: '#fff',
-                }}
-              >
-                <summary style={{ cursor: 'pointer', fontWeight: 700, listStyle: 'none' }}>
-                  {f.q}
-                </summary>
-                <p style={{ marginTop: 10, color: 'var(--muted, #5E6E52)', lineHeight: 1.6 }}>
-                  {f.a}
-                </p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
+      <section className="section excel-faq" id="faq"><div className="container"><div className="section__head"><h2>{s.faqHead}</h2></div><div className="faq language-faq__list">{s.faq.map((item, index) => <details key={item.q}><summary><span>0{index + 1}</span>{item.q}</summary><p>{item.a}</p></details>)}</div></div></section>
       <Cta title={s.ctaTitle} text={s.ctaText} />
     </main>
   );
