@@ -30,12 +30,13 @@ export default function Finance() {
   });
 
   return (
-    <main>
+    <main className="product-page product-page--finance">
       <section className="page-hero">
         <div className="container">
           <span className="badge badge--lime">{f.badge}</span>
           <h1>{f.h1}</h1>
           <p>{f.lead}</p>
+          <div className="product-hero__panel"><span>FINANCE LIVE</span><strong>0</strong><small>{lang === 'uz' ? 'yashirin operatsiya' : lang === 'en' ? 'hidden transactions' : 'скрытых операций'}</small></div>
         </div>
       </section>
 
@@ -56,6 +57,14 @@ export default function Finance() {
               </article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="finance-signal">
+        <div className="container finance-signal__grid">
+          <div><span>LIVE</span><strong>48.2M</strong><small>{lang === 'uz' ? 'oylik tushum' : lang === 'en' ? 'monthly revenue' : 'выручка за месяц'}</small></div>
+          <div><span>SYNC</span><strong>100%</strong><small>{lang === 'uz' ? 'to‘lovlar bog‘langan' : lang === 'en' ? 'payments reconciled' : 'платежей сверено'}</small></div>
+          <div><span>SAFE</span><strong>0</strong><small>{lang === 'uz' ? 'yashirin o‘zgarishlar' : lang === 'en' ? 'hidden edits' : 'скрытых изменений'}</small></div>
         </div>
       </section>
 

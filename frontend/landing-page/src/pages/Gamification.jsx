@@ -38,12 +38,13 @@ export default function Gamification() {
   });
 
   return (
-    <main>
+    <main className="product-page product-page--gamification">
       <section className="page-hero">
         <div className="container">
           <span className="badge badge--lime">{g.badge}</span>
           <h1>{g.h1}</h1>
           <p>{g.lead}</p>
+          <div className="product-hero__panel"><span>GAME LOOP</span><strong>+10</strong><small>{lang === 'uz' ? 'faollik uchun coin' : lang === 'en' ? 'coins for activity' : 'коинов за активность'}</small></div>
         </div>
       </section>
 

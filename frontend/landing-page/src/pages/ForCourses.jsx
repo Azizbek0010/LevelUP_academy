@@ -10,20 +10,15 @@ export default function ForCourses() {
   const lang = useLang();
   const lp = useLocalizePath();
   const s = t.courses;
+  const tr = (uz, en, ru) => (lang === 'uz' ? uz : lang === 'en' ? en : ru);
 
-  const jsonLd = useMemo(
-    () => [
-      breadcrumb(
-        [
-          { name: t.seo.breadcrumbHome, path: '/landing' },
-          { name: s.badge, path: '/landing/for-courses' },
-        ],
-        lang,
-      ),
-      faqPage(s.faq),
-    ],
-    [t.seo.breadcrumbHome, s, lang],
-  );
+  const jsonLd = useMemo(() => [
+    breadcrumb([
+      { name: t.seo.breadcrumbHome, path: '/landing' },
+      { name: s.badge, path: '/landing/for-courses' },
+    ], lang),
+    faqPage(s.faq),
+  ], [t.seo.breadcrumbHome, s, lang]);
 
   useSeo({
     title: t.seo.courses.title,
@@ -33,80 +28,89 @@ export default function ForCourses() {
   });
 
   return (
-    <main>
-      <section className="page-hero">
-        <div className="container">
-          <span className="badge badge--lime">{s.badge}</span>
-          <h1>{s.h1}</h1>
-          <p>{s.lead}</p>
-          <p className="pricing-note">{s.intro}</p>
-          <p className="pricing-note">
-            <Link to={lp('/landing/pricing')}>{s.pricingLink} →</Link>
-          </p>
+    <main className="language-page courses-page">
+      <section className="language-hero courses-hero">
+        <div className="container language-hero__grid">
+          <div className="language-hero__copy">
+            <span className="badge badge--lime">{s.badge}</span>
+            <h1>{s.h1}</h1>
+            <p className="language-hero__lead">{s.lead}</p>
+            <p className="language-hero__intro">{s.intro}</p>
+            <div className="language-hero__actions">
+              <Link className="btn btn--primary" to={lp('/landing/pricing')}>{s.pricingLink}</Link>
+              <a className="btn btn--outline" href="#how">{tr('Jarayonni ko‘rish', 'See the workflow', 'Посмотреть процесс')}</a>
+            </div>
+          </div>
+
+          <div className="course-player" aria-hidden="true">
+            <div className="course-player__bar"><span>LEVELUP / COURSE</span><b>•••</b></div>
+            <div className="course-player__video">
+              <div className="course-player__play">▶</div>
+              <span>08:24 / 24:00</span>
+              <i><b /></i>
+            </div>
+            <div className="course-player__title">
+              <div><small>{tr('08-MODUL', 'MODULE 08', 'МОДУЛЬ 08')}</small><strong>{tr('Amaliy dars va test', 'Practical lesson and test', 'Практический урок и тест')}</strong></div>
+              <b>72%</b>
+            </div>
+            <div className="course-player__path">
+              {[
+                ['01', tr('Video dars', 'Video lesson', 'Видеоурок'), true],
+                ['02', tr('Test', 'Quiz', 'Тест'), true],
+                ['03', tr('Uy vazifasi', 'Homework', 'Домашнее задание'), false],
+              ].map(([number, label, done]) => (
+                <article key={number} className={done ? 'is-done' : ''}><span>{done ? '✓' : number}</span><strong>{label}</strong><small>{done ? '100%' : '0%'}</small></article>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="section section--white">
+      <section className="language-proof courses-proof">
+        <div className="container language-proof__grid">
+          {[
+            ['3×', tr('kamroq qo‘lda ish', 'less manual work', 'меньше ручной работы')],
+            ['100%', tr('o‘quv jarayoni nazoratda', 'learning flow tracked', 'учебный процесс под контролем')],
+            ['1 CRM', tr('kurs, to‘lov va natijalar', 'course, payment and progress', 'курс, оплата и результаты')],
+          ].map(([value, label]) => <div key={value}><strong>{value}</strong><span>{label}</span></div>)}
+        </div>
+      </section>
+
+      <section className="section section--white language-fit courses-fit">
         <div className="container">
-          <div className="section__head">
-            <h2>{s.fitHead}</h2>
-            <p>{s.fitLead}</p>
-          </div>
-          <div className="cards-3">
-            {s.fit.map((item) => (
-              <article className="feature" key={item.title}>
-                <div className="feature__icon">
-                  <Icon name={item.icon} />
-                </div>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
+          <div className="section__head"><h2>{s.fitHead}</h2><p>{s.fitLead}</p></div>
+          <div className="language-fit__grid">
+            {s.fit.map((item, index) => (
+              <article className="language-feature" key={item.title}>
+                <span className="language-feature__index">0{index + 1}</span>
+                <div className="feature__icon"><Icon name={item.icon} /></div>
+                <h3>{item.title}</h3><p>{item.text}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="section">
+      <section className="section language-flow courses-flow" id="how">
         <div className="container">
-          <div className="section__head">
-            <h2>{s.howHead}</h2>
-            <p>{s.howLead}</p>
-          </div>
-          <div className="steps">
-            {s.how.map((item) => (
-              <article className="step" key={item.title}>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
+          <div className="section__head"><h2>{s.howHead}</h2><p>{s.howLead}</p></div>
+          <div className="language-flow__list">
+            {s.how.map((item, index) => (
+              <article key={item.title}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <div><h3>{item.title}</h3><p>{item.text}</p></div><i>↗</i>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="section section--white" id="faq">
+      <section className="section section--white language-faq" id="faq">
         <div className="container">
-          <div className="section__head">
-            <h2>{s.faqHead}</h2>
-          </div>
-          <div className="faq" style={{ maxWidth: 760, margin: '0 auto' }}>
-            {s.faq.map((f, i) => (
-              <details
-                key={i}
-                style={{
-                  border: '1px solid var(--border, #E6EDD8)',
-                  borderRadius: 14,
-                  padding: '14px 18px',
-                  marginBottom: 12,
-                  background: '#fff',
-                }}
-              >
-                <summary style={{ cursor: 'pointer', fontWeight: 700, listStyle: 'none' }}>
-                  {f.q}
-                </summary>
-                <p style={{ marginTop: 10, color: 'var(--muted, #5E6E52)', lineHeight: 1.6 }}>
-                  {f.a}
-                </p>
-              </details>
+          <div className="section__head"><h2>{s.faqHead}</h2></div>
+          <div className="faq language-faq__list">
+            {s.faq.map((item, index) => (
+              <details key={item.q}><summary><span>0{index + 1}</span>{item.q}</summary><p>{item.a}</p></details>
             ))}
           </div>
         </div>

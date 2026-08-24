@@ -22,6 +22,7 @@ export default {
     gamification: 'Motivatsiya',
     faq: 'Savol va javoblar',
     about: 'Kompaniya haqida',
+    team: 'Jamoa',
     contacts: 'Aloqa',
     home: 'Bosh sahifa',
     login: 'Kirish',
@@ -1110,7 +1111,8 @@ export default {
       sizeOptions: [
         "100 tagacha o'quvchi",
         "100–500 o'quvchi",
-        "500+ o'quvchi",
+        "500–1000 o'quvchi",
+        { value: '1000+', label: "1000 dan ortiq o'quvchi" },
         'Filiallar tarmog\'i',
       ],
       message: 'Xabar',
@@ -1126,18 +1128,19 @@ export default {
     info: [
       {
         icon: 'send',
-        title: 'Telegram',
-        text: "Eng tezi — bizga Telegram'da yozish: javob beramiz va tizim haqida gapirib beramiz.",
+        title: 'Jonli maslahat',
+        text: "Markazingiz jarayonlarini tahlil qilib, LevelUp Academy qaysi vazifalarni avtomatlashtirishini ko'rsatamiz.",
       },
       {
         icon: 'rocket',
-        title: 'Mahsulot holati',
-        text: "LevelUp Academy faol rivojlanmoqda. Kontakt qoldiring — ishga tushish haqida birinchi bo'lib bilasiz.",
+        title: 'Joriy etish rejasi',
+        text: "Ma'lumotlarni ko'chirish, jamoani ulash va filiallarni ishga tushirish rejasini tayyorlaymiz.",
       },
       {
         icon: 'message',
-        title: 'Savol va takliflar',
-        text: "Markazingizga nima yetishmayotganini ayting — eng yaxshi g'oyalar mahsulotga qo'shiladi.",
+        icon: 'shield',
+        title: 'Shaxsiy hisob-kitob',
+        text: "O'quvchilar va xodimlar soniga mos narxni yashirin majburiyatlarsiz hisoblaymiz.",
       },
     ],
   },
