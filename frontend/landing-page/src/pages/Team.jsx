@@ -14,9 +14,9 @@ const MEMBERS = [
 ];
 
 const COPY = {
-  ru: { badge: 'КОМАНДА LEVELUP ACADEMY', title: 'Команда LevelUp Academy', seoTitle: 'Команда LevelUp Academy — разработчики CRM', lead: 'Команда LevelUp Academy — шесть специалистов, которые создают и развивают CRM-систему для учебных центров.', seoDescription: 'Команда LevelUp Academy: разработчики и специалисты, которые создают CRM для учебных центров. Участники, роли, вклад и персональные профили.', tasks: 'задач', note: 'Показан подтверждённый минимум выполненных задач', profile: 'Открыть профиль', areas: 'Зона вклада' },
-  uz: { badge: 'LEVELUP ACADEMY JAMOASI', title: 'LevelUp Academy jamoasi', seoTitle: 'LevelUp Academy jamoasi — CRM dasturchilari', lead: "LevelUp jamoasi — o‘quv markazlari uchun CRM tizimini yaratayotgan va rivojlantirayotgan olti nafar mutaxassis.", seoDescription: "LevelUp Academy jamoasi: o‘quv markazlari uchun CRM yaratayotgan dasturchilar va mutaxassislar. Jamoa a'zolari, vazifalari va profillari.", tasks: 'task', note: "Bajarilgan tasklarning tasdiqlangan minimumi ko'rsatilgan", profile: "Profilni ko'rish", areas: 'Hissa yo‘nalishi' },
-  en: { badge: 'LEVELUP ACADEMY TEAM', title: 'LevelUp Academy team', seoTitle: 'LevelUp Academy team — CRM developers', lead: 'The LevelUp team is a group of six specialists building and developing a CRM system for education centers.', seoDescription: 'Meet the LevelUp Academy team: developers and specialists building a CRM for education centers. Team members, roles, contributions and profiles.', tasks: 'tasks', note: 'The verified minimum of completed tasks is shown', profile: 'View profile', areas: 'Contribution area' },
+  ru: { badge: 'КОМАНДА LEVELUP ACADEMY', title: 'Azizbek Amangeldiev и команда LevelUp Academy', seoTitle: 'Azizbek Amangeldiev — основатель и лидер команды LevelUp Academy', lead: 'Команду LevelUp Academy возглавляет основатель Azizbek Amangeldiev. Вместе с шестью специалистами он создаёт и развивает CRM-систему для учебных центров.', seoDescription: 'Azizbek Amangeldiev — основатель и Team Lead LevelUp Academy. Команда разработчиков создаёт CRM для учебных центров: участники, роли, вклад и профили.', tasks: 'задач', note: 'Показан подтверждённый минимум выполненных задач', profile: 'Открыть профиль', areas: 'Зона вклада' },
+  uz: { badge: 'LEVELUP ACADEMY JAMOASI', title: 'Azizbek Amangeldiev va LevelUp Academy jamoasi', seoTitle: 'Azizbek Amangeldiev — LevelUp Academy asoschisi va jamoa rahbari', lead: "LevelUp Academy jamoasiga asoschi Azizbek Amangeldiev rahbarlik qiladi. U olti nafar mutaxassis bilan o‘quv markazlari uchun CRM tizimini yaratadi va rivojlantiradi.", seoDescription: "Azizbek Amangeldiev — LevelUp Academy asoschisi va Team Lead. LevelUp jamoasi o‘quv markazlari uchun CRM yaratadi: a'zolar, vazifalar va profillar.", tasks: 'task', note: "Bajarilgan tasklarning tasdiqlangan minimumi ko'rsatilgan", profile: "Profilni ko'rish", areas: 'Hissa yo‘nalishi' },
+  en: { badge: 'LEVELUP ACADEMY TEAM', title: 'Azizbek Amangeldiev and the LevelUp Academy team', seoTitle: 'Azizbek Amangeldiev — founder and Team Lead at LevelUp Academy', lead: 'The LevelUp Academy team is led by founder Azizbek Amangeldiev. Together with six specialists, he builds and develops a CRM system for education centers.', seoDescription: 'Azizbek Amangeldiev is the founder and Team Lead of LevelUp Academy. Meet the developers building its CRM for education centers, their roles and profiles.', tasks: 'tasks', note: 'The verified minimum of completed tasks is shown', profile: 'View profile', areas: 'Contribution area' },
 };
 
 const TEAM_ALIASES = [
@@ -48,6 +48,8 @@ export default function Team() {
       alternateName: TEAM_ALIASES,
       description: c.seoDescription,
       about: { '@id': `${SITE_URL}/#organization` },
+      creator: { '@id': `${SITE_URL}/#founder` },
+      author: { '@id': `${SITE_URL}/#founder` },
       mainEntity: {
         '@type': 'ItemList',
         name: c.title,
