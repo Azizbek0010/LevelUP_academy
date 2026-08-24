@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
 import { faqPage, useSeo } from '../lib/seo.js';
-import { useLocalizePath, useT } from '../i18n/index.js';
+import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 // Числовые данные демо-дашборда — от языка не зависят.
 const leaders = [
@@ -27,10 +27,18 @@ const stats = [
   { value: '24/7', key: 'telegram' },
 ];
 
+const FOUNDER_COPY = {
+  ru: { eyebrow: 'ОСНОВАТЕЛЬ И TEAM LEAD', title: 'Azizbek Amangeldiev', text: 'Основатель и руководитель команды LevelUp Academy. Отвечает за продукт, архитектуру CRM и развитие платформы для учебных центров.', link: 'Профиль основателя' },
+  uz: { eyebrow: 'ASOSCHI VA JAMOA RAHBARI', title: 'Azizbek Amangeldiev', text: "LevelUp Academy asoschisi va jamoa rahbari. Mahsulot, CRM arxitekturasi va o‘quv markazlari uchun platformani rivojlantirishga javob beradi.", link: "Asoschi profilini ko‘rish" },
+  en: { eyebrow: 'FOUNDER AND TEAM LEAD', title: 'Azizbek Amangeldiev', text: 'Founder and Team Lead of LevelUp Academy. Responsible for the product, CRM architecture and development of the platform for education centers.', link: 'View founder profile' },
+};
+
 export default function Home() {
   const t = useT();
+  const lang = useLang();
   const lp = useLocalizePath();
   const h = t.home;
+  const founder = FOUNDER_COPY[lang] || FOUNDER_COPY.ru;
 
   // Стабильная ссылка обязательна: иначе useSeo пересоздавал бы JSON-LD каждый рендер.
   const jsonLd = useMemo(() => [faqPage(h.faq)], [h.faq]);
@@ -119,6 +127,22 @@ export default function Home() {
               <div className="band__label">{h.band[s.key]}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ===== Основатель ===== */}
+      <section className="home-founder" aria-labelledby="home-founder-title">
+        <div className="container home-founder__card">
+          <div className="home-founder__portrait">
+            <img src="/team/azizbek-amangeldiev.png" alt="Azizbek Amangeldiev — основатель LevelUp Academy" width="480" height="560" />
+          </div>
+          <div className="home-founder__copy">
+            <span>{founder.eyebrow}</span>
+            <h2 id="home-founder-title">{founder.title}</h2>
+            <p>{founder.text}</p>
+            <Link to={lp('/landing/team/azizbek-amangeldiev')} className="btn btn--dark">{founder.link} ↗</Link>
+          </div>
+          <Link to={lp('/landing/team')} className="home-founder__team-link">LevelUp Academy team / jamoasi / команда →</Link>
         </div>
       </section>
 
