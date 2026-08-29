@@ -14,6 +14,7 @@ import { aiReviewWorker } from './queues/workers/aiReview.worker.js';
 import { dailyDigestWorker, scheduleDailyDigestCron } from './queues/workers/dailyDigest.worker.js';
 import { startReminderLogging, stopReminderLogging } from './modules/super/reminders/reminders.listener.js';
 import { chargeCurrentMonth } from './modules/billing/billing.service.js';
+import { recordError } from './shared/errorTracker.js';
 
 // ioredis шлёт AUTH сам, внутри своей connect-логики — если Redis отвечает
 // ReplyError'ом (не сетевым обрывом, а протокольным отказом — 11.08.2026 это
@@ -24,6 +25,26 @@ import { chargeCurrentMonth } from './modules/billing/billing.service.js';
 // должна валить API, который на Redis не завязан (Postgres — отдельно).
 process.on('unhandledRejection', (err) => {
   logger.error({ err }, 'Unhandled rejection — process kept alive');
+  void recordError('crash', err);
+});
+
+/**
+ * До 26.08.2026 такого обработчика не было вообще — любое синхронное
+ * исключение без try/catch где-либо в коде роняло процесс молча (в логе
+ * только сырой стек, ничего не сохранялось). unhandledRejection выше
+ * намеренно НЕ завершает процесс (см. комментарий над ним — Redis ReplyError
+ * не должен валить API), но uncaughtException — другой случай: Node сам
+ * предупреждает, что состояние процесса после него небезопасно для
+ * продолжения работы. Поэтому здесь: записать (с коротким таймаутом — само
+ * падение не должно зависнуть на медленной записи) и выйти, чтобы процесс-
+ * менеджер (Render/PM2) поднял свежий процесс.
+ */
+process.on('uncaughtException', (err) => {
+  logger.error({ err }, 'Uncaught exception — recording and exiting');
+  Promise.race([
+    recordError('crash', err),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]).finally(() => process.exit(1));
 });
 
 const app = createApp();
@@ -70,7 +91,7 @@ for (const [label, schedule] of [
     logger.error({ err }, `Failed to schedule ${label} cron — continuing without it`);
   }
 }
-startReminderLogging(); // AB-SUPER-REM: логирует payment.due/due_soon/debt.overdue в reminders (SEO)
+startReminderLogging(); // AB-SUPER-REM: логирует payment.due/due_soon/debt.overdue в reminders (CEO)
 logger.info(
   'Queues+crons running in web process: notifications + overdue cron (09:00) + billing cron (1st 00:05, overdue 09:30) + due-soon cron (08:00) + ai-review + daily-digest cron (00:00 Tashkent) + reminder logging',
 );

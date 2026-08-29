@@ -607,7 +607,7 @@ function addMinutes(hhmm, minutes) {
 }
 
 // Вариант B: admin даёт дни + время начала, конец считает бэкенд из
-// длительности урока организации (её задаёт SEO).
+// длительности урока организации (её задаёт CEO).
 async function buildSchedule(branchId, days, startTime) {
   const durationMin = await repo.getOrgLessonDuration(branchId);
   const end = addMinutes(startTime, durationMin);
@@ -620,7 +620,7 @@ export async function createGroup(branchId, body) {
 
   let { subject, monthlyPrice } = body;
   if (body.trainingTypeId) {
-    // Цену и название направления назначает только SEO (см. super.setTrainingTypePrice) —
+    // Цену и название направления назначает только CEO (см. super.setTrainingTypePrice) —
     // клиенту не доверяем, даже если он прислал свои subject/monthlyPrice.
     const tt = await repo.findPricedTrainingType(body.trainingTypeId, branchId);
     if (!tt) throw new AppError(404, 'Training type not found or not priced yet');
@@ -883,7 +883,7 @@ async function requireGroup(branchId, groupId) {
 // Роли, чья отметка считается «исправлением администратора»: всё, что выше
 // ментора. Клетка с такой отметкой сохраняет цвет статуса, но помечается как
 // поправленная админом — это видят и ментор, и админ.
-const ADMIN_MARK_ROLES = new Set(['admin', 'seo', 'main_admin']);
+const ADMIN_MARK_ROLES = new Set(['admin', 'ceo', 'main_admin']);
 
 export async function getGroupAttendance(branchId, groupId, date) {
   await requireGroup(branchId, groupId);

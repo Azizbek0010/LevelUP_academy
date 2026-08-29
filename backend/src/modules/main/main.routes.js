@@ -21,6 +21,12 @@ import {
   createExpenseSchema,
   featureRequestListQuery,
   decideFeatureRequestSchema,
+  auditQuerySchema,
+  siteAnalyticsQuery,
+  addBannedWordsSchema,
+  toggleBannedWordSchema,
+  setAutoMaskSchema,
+  flaggedMessagesQuery,
 } from './main.schemas.js';
 import * as ctrl from './main.controller.js';
 
@@ -34,12 +40,12 @@ router.use(authenticate, authorize('main_admin'));
  * /api/main/partners:
  *   post:
  *     tags: [Main Admin]
- *     summary: Onboard a new partner (organization + its SEO)
+ *     summary: Onboard a new partner (organization + its CEO)
  *     description: >
- *       Creates the organization and its SEO user in one transaction, sets
+ *       Creates the organization and its CEO user in one transaction, sets
  *       the org owner, and (if `leadId` given) marks that lead as onboarded and links
  *       it to the new organization. Returns a one-time temp password for the new
- *       SEO (must be relayed to the partner out-of-band; they reset it via
+ *       CEO (must be relayed to the partner out-of-band; they reset it via
  *       forgot-password afterwards).
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
@@ -64,7 +70,7 @@ router.use(authenticate, authorize('main_admin'));
  *                     domain: { type: string, nullable: true }
  *                     status: { type: string }
  *                     created_at: { type: string, format: date-time }
- *                 seo:
+ *                 ceo:
  *                   type: object
  *                   properties:
  *                     id: { type: string, format: uuid }
@@ -197,10 +203,16 @@ router.delete('/expenses/:id', validate({ params: idParam }), ctrl.deleteExpense
 // --- расход на видео-файлы тем (Storj: хранение + трафик), см. src/config/pricing.js ---
 router.get('/video-storage-costs', ctrl.videoStorageCosts);
 
+// --- журнал действий платформы (Karis 25.08.2026) ---
+router.get('/audit', validate({ query: auditQuerySchema }), ctrl.listAudit);
+
+// --- центр проблем: что требует вмешательства сейчас (Karis 25.08.2026) ---
+router.get('/action-center', ctrl.actionCenter);
+
 // --- баланс/P&L платформы (реальная выручка минус собственные расходы) ---
 router.get('/finance', ctrl.finance);
 
-// --- входящие заявки SEO на подключение/отключение фичи ---
+// --- входящие заявки CEO на подключение/отключение фичи ---
 router.get('/feature-requests', validate({ query: featureRequestListQuery }), ctrl.listFeatureRequests);
 router.patch(
   '/feature-requests/:id',
@@ -432,7 +444,7 @@ router.patch('/leads/:id', validate({ params: idParam, body: leadUpdateSchema })
  *               body: { type: string }
  *               targetType:
  *                 type: string
- *                 enum: [all-partners, all-seo]
+ *                 enum: [all-partners, all-ceo]
  *     responses:
  *       201:
  *         description: Создано
@@ -537,5 +549,185 @@ router.patch('/profile', validate({ body: updateProfileSchema }), ctrl.updatePro
 
 /* GET /api/main/penalties удалён: платформе незачем видеть, кого из сотрудников
  * партнёра наказали и за что. Дисциплина — /api/super/penalties. */
+
+/**
+ * @openapi
+ * /api/main/site-analytics:
+ *   get:
+ *     tags: [Main Admin]
+ *     summary: Аналитика сайта levelup-academy.uz (Search Console + GA4)
+ *     description: >
+ *       Сводит три источника: Search Console (запросы, показы, клики, позиция),
+ *       GA4 (посетители, сеансы, средняя длительность, источники трафика) и
+ *       собственное событие page_exit (точки выхода — метрики exit rate в GA4
+ *       не существует).
+ *
+ *       Если сервисный аккаунт Google не настроен, отдаёт `configured: false`
+ *       со списком недостающих переменных, а не пустые данные. Если один из
+ *       API ответил ошибкой — его блок приходит `null`, текст ошибки в
+ *       `errors`, остальные блоки заполнены.
+ *
+ *       Ответ кешируется в памяти процесса на 10 минут (восемь сетевых
+ *       вызовов к Google на каждое открытие страницы — это секунды ожидания).
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema: { type: integer, enum: [7, 28, 90], default: 28 }
+ *         description: Период. Больше 90 дней Search Console не хранит.
+ *     responses:
+ *       200:
+ *         description: Аналитика (или инструкция по настройке)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 configured: { type: boolean }
+ *                 missing:
+ *                   type: array
+ *                   items: { type: string }
+ *                   description: Незаданные переменные окружения (при configured=false)
+ *                 site: { type: string, example: 'levelup-academy.uz' }
+ *                 days: { type: integer, example: 28 }
+ *                 searchRange:
+ *                   type: object
+ *                   description: Окно Search Console — сдвинуто на 3 дня назад (задержка публикации)
+ *                   properties:
+ *                     startDate: { type: string, example: '2026-07-30' }
+ *                     endDate: { type: string, example: '2026-08-22' }
+ *                 traffic: { type: object, nullable: true }
+ *                 behaviour: { type: object, nullable: true }
+ *                 search: { type: object, nullable: true }
+ *                 trends: { type: object, nullable: true, description: 'Изменение к прошлому периоду в %, null если сравнивать не с чем' }
+ *                 exitTrackingSince: { type: string, example: '2026-08-25' }
+ *                 errors: { type: object, nullable: true }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get('/site-analytics', validate({ query: siteAnalyticsQuery }), ctrl.siteAnalytics);
+
+/**
+ * @openapi
+ * /api/main/banned-words:
+ *   get:
+ *     tags: [Main Admin]
+ *     summary: Список запрещённых слов чата (модерация)
+ *     description: >
+ *       Один список на всю платформу — действует во всех чатах всех партнёров
+ *       и филиалов сразу, без привязки к organization_id.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Список слов (активных и выключенных)
+ *   post:
+ *     tags: [Main Admin]
+ *     summary: Добавить слова в список (массово)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               words: { type: array, items: { type: string }, example: ['слово1', 'слово2'] }
+ *     responses:
+ *       201: { description: Добавлено }
+ *       422: { $ref: '#/components/responses/ValidationError' }
+ */
+router.get('/banned-words', ctrl.listBannedWords);
+router.post('/banned-words', validate({ body: addBannedWordsSchema }), ctrl.addBannedWords);
+
+/**
+ * @openapi
+ * /api/main/banned-words/{id}:
+ *   patch:
+ *     tags: [Main Admin]
+ *     summary: Включить/выключить слово
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties: { isActive: { type: boolean } }
+ *     responses:
+ *       200: { description: Обновлено }
+ *       404: { description: Слово не найдено }
+ *   delete:
+ *     tags: [Main Admin]
+ *     summary: Удалить слово из списка
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: Удалено }
+ *       404: { description: Слово не найдено }
+ */
+router.patch('/banned-words/:id', validate({ params: idParam, body: toggleBannedWordSchema }), ctrl.setBannedWordActive);
+router.delete('/banned-words/:id', validate({ params: idParam }), ctrl.deleteBannedWord);
+
+/**
+ * @openapi
+ * /api/main/banned-words/{id}/auto-mask:
+ *   patch:
+ *     tags: [Main Admin]
+ *     summary: Включить/выключить авто-замену слова на **** прямо в чате
+ *     description: >
+ *       Выключено по умолчанию для каждого нового слова: включение цензуры —
+ *       не побочный эффект добавления слова в список, а отдельное решение.
+ *       Когда включено, ВСЕ вхождения слова заменяются на **** ещё до
+ *       сохранения сообщения — участники чата видят маску, не оригинал.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties: { autoMask: { type: boolean } }
+ *     responses:
+ *       200: { description: Обновлено }
+ *       404: { description: Слово не найдено }
+ */
+router.patch('/banned-words/:id/auto-mask', validate({ params: idParam, body: setAutoMaskSchema }), ctrl.setBannedWordAutoMask);
+
+/**
+ * @openapi
+ * /api/main/flagged-messages:
+ *   get:
+ *     tags: [Main Admin]
+ *     summary: Сообщения чата, сработавшие на список запрещённых слов
+ *     description: >
+ *       Единственный срез переписки, видимый Main Admin'у — только сообщения
+ *       с flagged_word. Обычная переписка партнёров закрыта, как и раньше.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 50 }
+ *       - in: query
+ *         name: offset
+ *         schema: { type: integer, default: 0 }
+ *     responses:
+ *       200: { description: Список сработавших сообщений }
+ */
+router.get('/flagged-messages', validate({ query: flaggedMessagesQuery }), ctrl.listFlaggedMessages);
 
 export default router;

@@ -472,7 +472,7 @@ export function insertMethodist(
 // ---------- менторы (для выбора в «Взыскании» — сами менторов не заводят) ----------
 
 /** Все менторы организации (по всем филиалам) — только чтение, для выбора
-    цели взыскания у SEO. Заводит/редактирует ментора Admin филиала. */
+    цели взыскания у CEO. Заводит/редактирует ментора Admin филиала. */
 export function listMentors(orgId, client = pool) {
   return client
     .query(
@@ -1201,7 +1201,7 @@ export function orgAttendance(orgId, { groupId, date }, client = pool) {
 // ---------- методики / цены абонемента (Super Settings — цена ставится один раз на методику) ----------
 
 /** Методики организации с ценой и числом групп, которые её уже используют —
- * чтобы SEO видел, скольких абонемент затронет при смене цены. */
+ * чтобы CEO видел, скольких абонемент затронет при смене цены. */
 export function listTrainingTypesWithPrice(orgId, client = pool) {
   return client
     .query(
@@ -1217,9 +1217,9 @@ export function listTrainingTypesWithPrice(orgId, client = pool) {
 }
 
 /** maxStudents === undefined -> не трогаем текущее значение (частичное обновление). */
-/** SEO может вернуть методику из архива — иначе назначенная цена молча
+/** CEO может вернуть методику из архива — иначе назначенная цена молча
  * ничего не даёт: у admin/branch_manager архивные методики не выбираемы
- * (listPricedTrainingTypes фильтрует is_archived=false), а на странице SEO
+ * (listPricedTrainingTypes фильтрует is_archived=false), а на странице CEO
  * это никак не было видно, что и привело к путанице. */
 export function setTrainingTypeArchived(id, orgId, archived, client = pool) {
   return client
@@ -1244,13 +1244,13 @@ export function setTrainingTypePrice(id, orgId, price, maxStudents, client = poo
     .then((r) => r.rows[0] ?? null);
 }
 
-// ---------- анонсы платформы (Main Admin → нам) — read-only для SEO ----------
+// ---------- анонсы платформы (Main Admin → нам) — read-only для CEO ----------
 
-/** Раньше Main Admin писал в platform_announcements, а SEO их вообще не мог
+/** Раньше Main Admin писал в platform_announcements, а CEO их вообще не мог
  * прочитать — не было ни роута, ни фронт-страницы (баг, найден 11.08.2026).
- * `all-partners`/`all-seo` — видно всем; `specific` — только если наша
+ * `all-partners`/`all-ceo` — видно всем; `specific` — только если наша
  * organization_id есть в platform_announcement_recipients. */
-// ---------- каталог платных фич + свои заявки (SEO не переключает сам) ----------
+// ---------- каталог платных фич + свои заявки (CEO не переключает сам) ----------
 
 export function listActiveAddonCatalog(client = pool) {
   return client
@@ -1297,7 +1297,7 @@ export function listOwnFeatureRequests(orgId, client = pool) {
     .then((r) => r.rows);
 }
 
-// ---------- свой биллинг (access_until/status + журнал) — read-only для SEO ----------
+// ---------- свой биллинг (access_until/status + журнал) — read-only для CEO ----------
 
 export function getOwnAccessInfo(orgId, client = pool) {
   return client
@@ -1325,7 +1325,7 @@ export function listPlatformAnnouncementsForOrg(orgId, client = pool) {
          FROM platform_announcements a
         WHERE a.deleted_at IS NULL
           AND (
-            a.target_type IN ('all-partners', 'all-seo')
+            a.target_type IN ('all-partners', 'all-ceo')
             OR (a.target_type = 'specific' AND EXISTS (
                   SELECT 1 FROM platform_announcement_recipients r
                    WHERE r.announcement_id = a.id AND r.organization_id = $1

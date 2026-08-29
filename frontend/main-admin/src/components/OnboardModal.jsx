@@ -79,7 +79,7 @@ export default function OnboardModal({ lead, onClose, onDone }) {
               </div>
               <div>
                 <h3 className="font-bold text-lg text-success">Партнёр создан!</h3>
-                <p className="text-sm text-base-content/60">Организация и SEO заведены</p>
+                <p className="text-sm text-base-content/60">Организация и CEO заведены</p>
               </div>
             </div>
 
@@ -95,7 +95,7 @@ export default function OnboardModal({ lead, onClose, onDone }) {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-base-content/55 w-20 shrink-0">Логин:</span>
-                  <span className="font-semibold">{done.seo?.email}</span>
+                  <span className="font-semibold">{done.ceo?.email}</span>
                 </div>
                 <div className="border-t border-base-200 pt-2 mt-2">
                   <div className="text-xs text-base-content/50 mb-1.5 font-semibold uppercase tracking-wider">Временный пароль</div>
@@ -179,7 +179,7 @@ export default function OnboardModal({ lead, onClose, onDone }) {
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <User size={15} className="text-lime-600" />
-                    <span className="font-semibold text-sm">Аккаунт SEO</span>
+                    <span className="font-semibold text-sm">Аккаунт CEO</span>
                   </div>
                   <span className="text-xs text-base-content/50 bg-base-200 px-2 py-1 rounded-md">{form.organizationName}</span>
                 </div>

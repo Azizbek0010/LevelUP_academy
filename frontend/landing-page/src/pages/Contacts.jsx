@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import Icon from '../components/Icon.jsx';
-import { breadcrumb, useSeo } from '../lib/seo.js';
+import { breadcrumb, useCeo } from '../lib/ceo.js';
 import { trackEvent } from '../lib/analytics.js';
 import { useLang, useT } from '../i18n/index.js';
 
@@ -23,18 +23,18 @@ export default function Contacts() {
     () => [
       breadcrumb(
         [
-          { name: t.seo.breadcrumbHome, path: '/landing' },
+          { name: t.ceo.breadcrumbHome, path: '/landing' },
           { name: c.badge, path: '/landing/contacts' },
         ],
         lang,
       ),
     ],
-    [t.seo.breadcrumbHome, c.badge, lang],
+    [t.ceo.breadcrumbHome, c.badge, lang],
   );
 
-  useSeo({
-    title: t.seo.contacts.title,
-    description: t.seo.contacts.description,
+  useCeo({
+    title: t.ceo.contacts.title,
+    description: t.ceo.contacts.description,
     path: '/landing/contacts',
     jsonLd,
   });

@@ -7,7 +7,7 @@ Realtime chat REST history (sending is via Socket.io, not REST)
 ### GET `/api/chat/{roomKey}/messages`
 Cursor-paginated message history for a chat room
 
-Room access rules (`requireRoomAccess`): `global` — everyone except students; `parent:<uuid>` — that parent themself or any staff role; `group:<uuid>` — main_admin/seo/admin unconditionally, or the group's own mentor/enrolled students. `limit` is clamped server-side to [1, 100] (non-numeric defaults to 50); `cursor` must be a valid ISO timestamp (checked before hitting the DB — otherwise Postgres would 500 on a bad `::timestamptz` cast). This is REST read-only history; sending messages happens over the Socket.io chat namespace, not via this REST API.
+Room access rules (`requireRoomAccess`): `global` — everyone except students; `parent:<uuid>` — that parent themself or any staff role; `group:<uuid>` — main_admin/ceo/admin unconditionally, or the group's own mentor/enrolled students. `limit` is clamped server-side to [1, 100] (non-numeric defaults to 50); `cursor` must be a valid ISO timestamp (checked before hitting the DB — otherwise Postgres would 500 on a bad `::timestamptz` cast). This is REST read-only history; sending messages happens over the Socket.io chat namespace, not via this REST API.
 
 
 **Auth:** Bearer JWT required
@@ -104,7 +104,7 @@ Marks every message in the room not sent by the caller as read. Room access is e
 ### GET `/api/chat/contacts`
 Parents this staff member may privately message
 
-Contact list for private `dm:<staffId>:<parentId>` conversations, with the last message and unread count per room. Scope mirrors the send-time check exactly: a mentor sees parents whose child is in one of their own groups, an admin — parents of their branch, a seo — parents of their organization. Other roles get an empty list. Staff never see each other's conversations, so this list is per-user by construction.
+Contact list for private `dm:<staffId>:<parentId>` conversations, with the last message and unread count per room. Scope mirrors the send-time check exactly: a mentor sees parents whose child is in one of their own groups, an admin — parents of their branch, a ceo — parents of their organization. Other roles get an empty list. Staff never see each other's conversations, so this list is per-user by construction.
 
 
 **Auth:** Bearer JWT required
@@ -140,7 +140,7 @@ Contact list for private `dm:<staffId>:<parentId>` conversations, with the last 
 ### POST `/api/chat/dm`
 Send a direct message over HTTP
 
-Sends a private message without a websocket. Direction follows the caller's role, never a request field: staff (mentor/admin/seo) message a parent or a student, while a parent or student may only reply to a staff member who is already allowed to talk to them — neither can open a conversation. Permission checks and persistence are shared with the socket events, and the message is still pushed live to both participants' `user:<id>` rooms.
+Sends a private message without a websocket. Direction follows the caller's role, never a request field: staff (mentor/admin/ceo) message a parent or a student, while a parent or student may only reply to a staff member who is already allowed to talk to them — neither can open a conversation. Permission checks and persistence are shared with the socket events, and the message is still pushed live to both participants' `user:<id>` rooms.
 
 
 **Auth:** Bearer JWT required

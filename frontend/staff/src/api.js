@@ -547,7 +547,7 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
 
       // Мок-креды по ролям (совпадают с backend seed env-переменными)
       const MOCK_ACCOUNTS = [
-        { email: 'azizbekamangeldiev.2010@gmail.com', password: 'ChangeMe123!', role: 'seo', firstName: 'Demo', lastName: 'SEO' },
+        { email: 'azizbekamangeldiev.2010@gmail.com', password: 'ChangeMe123!', role: 'ceo', firstName: 'Demo', lastName: 'CEO' },
         { email: 'hp8187081014laptop@gmail.com', password: 'ChangeMe123!', role: 'admin', firstName: 'Demo', lastName: 'Admin' },
         { email: 'mentor.demo@levelup.local', password: 'ChangeMe123!', role: 'mentor', firstName: 'Demo', lastName: 'Mentor' },
         { email: 'methodist@levelup.local', password: 'ChangeMe123!', role: 'methodist', firstName: 'Мадина', lastName: 'Рахимова' },
@@ -582,17 +582,17 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     }
 
     if (path === '/auth/staff/google') {
-      // В мок-режиме Google-вход имитирует seo
+      // В мок-режиме Google-вход имитирует ceo
       const user = {
-        id: 'mock-seo-google-id-001',
+        id: 'mock-ceo-google-id-001',
         firstName: 'Demo',
-        lastName: 'SEO',
-        role: 'seo',
+        lastName: 'CEO',
+        role: 'ceo',
         email: 'azizbekamangeldiev.2010@gmail.com',
       };
-      localStorage.setItem('mock_token', 'mock-jwt-seo-xyz');
+      localStorage.setItem('mock_token', 'mock-jwt-ceo-xyz');
       localStorage.setItem('mock_user', JSON.stringify(user));
-      return { user, accessToken: 'mock-jwt-seo-xyz' };
+      return { user, accessToken: 'mock-jwt-ceo-xyz' };
     }
 
     if (path === '/auth/staff/refresh') {
@@ -2127,11 +2127,11 @@ if (path === '/branch-manager/reports') {
       });
       const students = [...seenStudents.values()];
 
-      /* Менторы — только для роля admin/seo. Ментор не должен видеть
+      /* Менторы — только для роля admin/ceo. Ментор не должен видеть
          других менторов в списке контактов (он пишет родителям/ученикам). */
       const me = JSON.parse(localStorage.getItem('mock_user') || localStorage.getItem('mock_me') || 'null');
       const myRole = me?.role ?? 'mentor';
-      const mentors = (myRole === 'admin' || myRole === 'seo')
+      const mentors = (myRole === 'admin' || myRole === 'ceo')
         ? (() => {
             let list = JSON.parse(localStorage.getItem('mock_admin_mentors') || '[]');
             if (list.length === 0) {
@@ -2459,7 +2459,7 @@ export const api = {
   chatMarkRead: (token, roomKey) =>
     request(`/chat/${encodeURIComponent(roomKey)}/read`, { method: 'POST', token }),
 
-  // -------- AUTH (staff — admin/seo/mentor/methodist) --------
+  // -------- AUTH (staff — admin/ceo/mentor/methodist) --------
   loginStaff: (login, password) =>
     request('/auth/staff/login', { method: 'POST', body: { login, password } }),
   refresh: () => refreshOnce(),
@@ -2523,7 +2523,7 @@ export const api = {
   adminRegenParentPassword: (token, id) => request(`/admin/students/${id}/parent/regenerate-password`, { method: 'POST', token }),
   adminParentCredentials: (token, id) => request(`/admin/students/${id}/parent/credentials`, { token }),
 
-  // -------- ADMIN/Branch Manager: Shop (остаток + заказы своего филиала; каталог — у SEO) --------
+  // -------- ADMIN/Branch Manager: Shop (остаток + заказы своего филиала; каталог — у CEO) --------
   adminShopItems: (token) => request('/admin/shop/items', { token }),
   adminCreateShopItem: (token, body) => request('/admin/shop/items', { method: 'POST', token, body }),
   adminRestockShopItem: (token, id, stock) => request(`/admin/shop/items/${id}/stock`, { method: 'PATCH', token, body: { stock } }),
@@ -2586,8 +2586,8 @@ export const api = {
     request(`/super/stats?period=${period}${branchId ? `&branchId=${branchId}` : ''}`, { token }),
 
   // -------- FINANCE MANAGER --------
-  // Тот же контроллер/сервис, что у SEO (super.controller.js) — просто другой
-  // роут с authorize('finance_manager', 'seo') вместо authorize('seo'), чтобы
+  // Тот же контроллер/сервис, что у CEO (super.controller.js) — просто другой
+  // роут с authorize('finance_manager', 'ceo') вместо authorize('ceo'), чтобы
   // не открывать Finance Manager'у филиалы/админов вместе с финансами
   // (backend/src/modules/finance/finance.routes.js, Karis 22.08.2026).
   financeDashboard: (token) => request('/finance/dashboard', { token }),
@@ -2638,7 +2638,7 @@ export const api = {
     request(`/super/training-types/${id}/price`, { method: 'PATCH', token, body: { price, maxStudents } }),
   superSetTrainingTypeArchived: (token, id, archived) =>
     request(`/super/training-types/${id}/archive`, { method: 'PATCH', token, body: { archived } }),
-  // -------- SEO: Shop-каталог (имя/фото/цена/старт.остаток — филиал дальше только пополняет) --------
+  // -------- CEO: Shop-каталог (имя/фото/цена/старт.остаток — филиал дальше только пополняет) --------
   superShopItems: (token, qs = '') => request(`/super/shop/items${qs}`, { token }),
   superCreateShopItem: (token, body) => request('/super/shop/items', { method: 'POST', token, body }),
   superUpdateShopItem: (token, id, body) => request(`/super/shop/items/${id}`, { method: 'PATCH', token, body }),

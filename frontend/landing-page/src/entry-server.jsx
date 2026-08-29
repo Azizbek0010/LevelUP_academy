@@ -1,7 +1,7 @@
 import { renderToString } from 'react-dom/server';
 import { StaticRouter } from 'react-router-dom/server';
 import App from './App.jsx';
-import { SeoCollectorContext, renderSeoHead } from './lib/seo.js';
+import { CeoCollectorContext, renderCeoHead } from './lib/ceo.js';
 
 /**
  * Рендерит маршрут в статический HTML на этапе сборки (см. scripts/prerender.js).
@@ -16,12 +16,12 @@ export function render(url) {
   const collector = {};
 
   const html = renderToString(
-    <SeoCollectorContext.Provider value={collector}>
+    <CeoCollectorContext.Provider value={collector}>
       <StaticRouter location={url}>
         <App />
       </StaticRouter>
-    </SeoCollectorContext.Provider>,
+    </CeoCollectorContext.Provider>,
   );
 
-  return { html, head: renderSeoHead(collector.seo) };
+  return { html, head: renderCeoHead(collector.ceo) };
 }

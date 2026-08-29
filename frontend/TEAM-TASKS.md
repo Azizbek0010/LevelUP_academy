@@ -38,7 +38,7 @@
 ### Ключевые принципы
 
 - **НЕ одна SPA — пять отдельных Vite-приложений** (исправлено 2026-07-26):
-  `landing-page` · `main-admin` · `staff` (Admin + SEO + Mentor + Methodist) ·
+  `landing-page` · `main-admin` · `staff` (Admin + CEO + Mentor + Methodist) ·
   `member` (вход + кабинет Parent) · `student`. Внутри `staff` роль из JWT определяет
   layout и дерево маршрутов — но между приложениями общего роутера нет.
 - **Нет ролевой логики «на глазок»** — только через `RoleGuard` и ролевые layouts.
@@ -55,16 +55,16 @@
 
 | Человек | Его панель | ❌ НЕЛЬЗЯ трогать |
 |---------|-----------|-------------------|
-| Elyor | Auth | SEO, Admin, Mentor, Methodist |
-| Said Islom | SEO (дашборд) | Auth, Admin, Mentor, Methodist |
-| Aziz | SEO (филиалы) | Auth, Admin, Mentor, Methodist |
+| Elyor | Auth | CEO, Admin, Mentor, Methodist |
+| Said Islom | CEO (дашборд) | Auth, Admin, Mentor, Methodist |
+| Aziz | CEO (филиалы) | Auth, Admin, Mentor, Methodist |
 | Abduloh | Admin (студенты) + **весь фронт** | 🔓 **ИСКЛЮЧЕНИЕ — ограничений нет** (см. ниже) |
-| Odil | Admin (группы) | Auth, SEO, Mentor, Methodist |
-| Hamidula | Admin (расходы) | Auth, SEO, Mentor, Methodist |
-| Sardor | Mentor (дашборд) | Auth, SEO, Admin, Methodist |
-| Kozim | Mentor (домашки) | Auth, SEO, Admin, Methodist |  
-| Alish | Mentor (тесты) | Auth, SEO, Admin, Methodist |
-| Azizbek | Methodist | Auth, SEO, Admin, Mentor |
+| Odil | Admin (группы) | Auth, CEO, Mentor, Methodist |
+| Hamidula | Admin (расходы) | Auth, CEO, Mentor, Methodist |
+| Sardor | Mentor (дашборд) | Auth, CEO, Admin, Methodist |
+| Kozim | Mentor (домашки) | Auth, CEO, Admin, Methodist |  
+| Alish | Mentor (тесты) | Auth, CEO, Admin, Methodist |
+| Azizbek | Methodist | Auth, CEO, Admin, Mentor |
 
 **Почему:** Каждая панель — отдельное Vite-приложение. Смешивание кода = конфликты + ломает рабочий процесс.
 
@@ -134,7 +134,7 @@
 | Endpoint | Роль | Способ входа |
 |----------|------|-------------|
 | `POST /api/auth/main/login` | Main Admin | Email + пароль |
-| `POST /api/auth/staff/login` | SEO + Admin + Mentor | Email + пароль |
+| `POST /api/auth/staff/login` | CEO + Admin + Mentor | Email + пароль |
 | `POST /api/auth/member/login` | Student + Parent | Логин-код (8 симв.) + пароль (6 цифр) |
 
 > ⚠️ Единого `/api/auth/login` НЕТ. Тело у всех `{ login, password }`. Чужая роль на чужом endpoint → 401.
@@ -142,7 +142,7 @@
 ### Google OAuth (Firebase)
 
 - `POST /api/auth/main/google` — только main_admin
-- `POST /api/auth/staff/google` — admin/seo/mentor
+- `POST /api/auth/staff/google` — admin/ceo/mentor
 - member (student/parent) — **без Google**
 
 ### Сброс пароля
@@ -170,12 +170,12 @@
 // src/app/router.jsx — ключевые маршруты
 /login          → Navigate to /login/staff
 /login/main     → LoginPage variant="main"    // Main Admin
-/login/staff    → LoginPage variant="staff"   // SEO + Admin + Mentor + Methodist
+/login/staff    → LoginPage variant="staff"   // CEO + Admin + Mentor + Methodist
 /login/member   → LoginPage variant="member"  // Student + Parent
 
 /student        → RoleGuard allow={['student']}   → StudentLayout
 /admin          → RoleGuard allow={['admin']}     → AdminLayout
-/seo     → RoleGuard allow={['seo']} → SEOLayout
+/ceo     → RoleGuard allow={['ceo']} → CEOLayout
 /mentor         → RoleGuard allow={['mentor']}    → MentorLayout
 /methodist      → RoleGuard allow={['methodist']}  → MethodistLayout
 ```
@@ -189,7 +189,7 @@ frontend/
 ├── TEAM-TASKS.md          ← ЭТОТ ФАЙЛ
 ├── landing-page/          # Лендинг (React + Vite)
 ├── main-admin/            # Панель Main Admin (DaisyUI лайм)
-├── staff/                 # Панель Admin + SEO + Mentor + Methodist (ОБЩИЙ)
+├── staff/                 # Панель Admin + CEO + Mentor + Methodist (ОБЩИЙ)
 ├── auth/                  # Логин/регистрация (общий)
 └── logos/                 # Логотипы
 ```
@@ -222,13 +222,13 @@ src/
 |--------|-----------|------|-------------|----------|
 | **Auth** | все | Elyor | K-AUTH ✅ | §7 этого файла |
 | **Main Admin** | `main-admin` | Shohjahon | K-MAIN ✅ (announcements/profile ❌ нет) | `TASK.md` |
-| **SEO** | `staff/pages/super` | Said Islom, Aziz | K-SUPER ✅ + AB-SUPER-* ✅ | §8 этого файла |
+| **CEO** | `staff/pages/super` | Said Islom, Aziz | K-SUPER ✅ + AB-SUPER-* ✅ | §8 этого файла |
 | **Admin** | `staff/pages/admin` | Abduloh, Odil, Hamidula, XOB | K-ADMIN ✅ (+ group attendance/homework/feedback ✅) | §9 этого файла |
 | **Mentor** | `staff/pages/mentor` | Kozim, Alish | AB-MENTOR ✅ | §10 этого файла |
 | **Methodist** | `staff/pages/methodist` | Said Islom, Aziz (каркас — Karis) | AB-METHODIST ✅ | §11 этого файла |
 | **Student** | `student` | **Sardor** (с 2026-07-26, полный владелец) | AB-STUDENT ✅ | `TASK.md` |
 | **Parent** | `member` | Kama (git `iface9808`) | AB-PARENT ✅ | `TASK.md` |
-| **Landing** | `landing-page` | Karis + Abdulaziz (SEO) | `POST /api/leads` ✅ | `TASK.md` |
+| **Landing** | `landing-page` | Karis + Abdulaziz (CEO — поисковая оптимизация) | `POST /api/leads` ✅ | `TASK.md` |
 
 > Отдельные `docs/TASK-frontend-*.md` УДАЛЕНЫ — контракты живут только здесь, чтобы не расходились.
 
@@ -262,7 +262,7 @@ src/
 #### 7.2 Страницы логина — 3 endpoint'а
 
 - `/login/main` → **Main Admin** → `POST /api/auth/main/login`
-- `/login/staff` → **SEO / Admin / Mentor** → `POST /api/auth/staff/login`
+- `/login/staff` → **CEO / Admin / Mentor** → `POST /api/auth/staff/login`
 - `/login/member` → **Student / Parent** (логин-код 8 симв. + пароль 6 цифр) → `POST /api/auth/member/login`
 - Голый `/login` → редирект на `/login/staff`
 
@@ -292,11 +292,11 @@ src/
 
 ---
 
-## 8. SEO — Karis
+## 8. CEO — Karis
 
-> 🔒 **Панель SEO — задача Karis.** Shohjahon её собрал (богатые страницы), Karis доводит/стилизует и закрывает. **Остальным не трогать** (Said Islom, Aziz переведены в Methodist). Разделы 8.1–8.2 ниже — исторический API-контракт, теперь под Karis.
+> 🔒 **Панель CEO — задача Karis.** Shohjahon её собрал (богатые страницы), Karis доводит/стилизует и закрывает. **Остальным не трогать** (Said Islom, Aziz переведены в Methodist). Разделы 8.1–8.2 ниже — исторический API-контракт, теперь под Karis.
 
-**Панель:** SEO (владелец организации, видит ВСЕ филиалы)
+**Панель:** CEO (владелец организации, видит ВСЕ филиалы)
 **Backend:** Karis, K-SUPER — ✅ готов
 
 > Скоуп своей организации бэк ставит по токену — org/branch с фронта слать НЕ нужно.
@@ -305,9 +305,9 @@ src/
 
 #### Задачи
 
-- `SEOLayout`: тёмный сайдбар (Dashboard, Branches, Admins, Reports, Settings), topbar с live-онлайном, профиль, логаут
+- `CEOLayout`: тёмный сайдбар (Dashboard, Branches, Admins, Reports, Settings), topbar с live-онлайном, профиль, логаут
 - `ErrorBoundary` на layout, `lazy()` подключение
-- Dashboard (`/seo`): стат-карточки (Total Revenue, Outstanding Debts, Active Students, Live Online), графики (bar по филиалам, тренд долгов), таблица-обзор филиалов
+- Dashboard (`/ceo`): стат-карточки (Total Revenue, Outstanding Debts, Active Students, Live Online), графики (bar по филиалам, тренд долгов), таблица-обзор филиалов
 
 #### API
 
@@ -320,7 +320,7 @@ src/
 
 #### Definition of Done
 
-- [ ] Layout + сайдбар + guard (`allow={['seo']}`)
+- [ ] Layout + сайдбар + guard (`allow={['ceo']}`)
 - [ ] Дашборд тянет `/api/super/dashboard`, live-счётчик обновляется
 - [ ] Skeleton при загрузке, EmptyState если данных нет
 
@@ -328,8 +328,8 @@ src/
 
 #### Страницы
 
-- **Branches** (`/seo/branches`): CRUD филиалов, архивация/разархивация, бейдж «главный» (`isMain`)
-- **Branch Detail** (`/seo/branches/:id`): KPI филиала + список админов и групп
+- **Branches** (`/ceo/branches`): CRUD филиалов, архивация/разархивация, бейдж «главный» (`isMain`)
+- **Branch Detail** (`/ceo/branches/:id`): KPI филиала + список админов и групп
 
 #### API
 
@@ -396,7 +396,7 @@ src/
 - **Ментор** — обязателен (селектор из `GET /api/admin/mentors`).
 - **Дни:** быстрые пресеты **1-3-5** (`["mon","wed","fri"]`) и **2-4-6** (`["tue","thu","sat"]`) + кнопка «другие дни» → галочки `mon..sun` (любой набор).
 - **Время начала** — админ вводит (напр. `15:00`).
-- **Конец урока — НЕ вводится**, показывается превью: возьми длительность из `GET /api/admin/settings` → `{ lessonDurationMin }` (её задаёт SEO), посчитай `start + duration` (напр. 15:00 + 80 = 16:20). Реальный конец всё равно считает бэкенд — превью только для UX.
+- **Конец урока — НЕ вводится**, показывается превью: возьми длительность из `GET /api/admin/settings` → `{ lessonDurationMin }` (её задаёт CEO), посчитай `start + duration` (напр. 15:00 + 80 = 16:20). Реальный конец всё равно считает бэкенд — превью только для UX.
 - Позже день/время/ментора можно менять тем же PATCH.
 
 #### API
@@ -590,7 +590,7 @@ src/
 - **Landing Page** — ✅ Готово
 - **Auth** — ✅ Готово (email/код + пароль, Google OAuth)
 - **Main Admin** — ✅ Готово (дашборд, заявки, онбординг)
-- **SEO** — ✅ Готово (филиалы, админы, дашборд)
+- **CEO** — ✅ Готово (филиалы, админы, дашборд)
 - **Admin** — ✅ Готово (дашборд, расходы, студенты, группы)
 - **Mentor** — ✅ Готово (ДЗ, тесты, коины, посещаемость)
 - **Student** — ✅ Готово (тесты, ДЗ, видео, магазин)
@@ -624,7 +624,7 @@ cd frontend/auth && npm run dev
 # Main Admin
 cd frontend/main-admin && npm run dev
 
-# Staff (Admin + SEO + Mentor + Methodist)
+# Staff (Admin + CEO + Mentor + Methodist)
 cd frontend/staff && npm run dev
 ```
 
@@ -635,7 +635,7 @@ cd frontend/staff && npm run dev
 | Роль | Email / Код | Пароль |
 |------|-------------|--------|
 | Main Admin | hp8187081014laptop@gmail.com | azizbek_10.3 |
-| SEO | azizbekamangeldiev.2010@gmail.com | (создаётся при онбординге) |
+| CEO | azizbekamangeldiev.2010@gmail.com | (создаётся при онбординге) |
 | Student | demostud | 123456 |
 | Parent | demopare | 654321 |
 | Mentor | mentor.demo@levelup.local | ChangeMe123! |

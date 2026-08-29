@@ -62,7 +62,7 @@ export function LangSwitch() {
 }
 
 /* ── KPI-карточка с иконкой и подписью ──
-   Токены и структура — те же "strict"-переменные, что у Admin/SEO дашборда
+   Токены и структура — те же "strict"-переменные, что у Admin/CEO дашборда
    (index.css § DASHBOARD STRICT TOKENS, components/ui.jsx KpiCard): плоская
    белая карточка, тонкая рамка вместо цветного ring-halo, компактная 8px
    плашка под иконку вместо круглой rounded-xl — раньше Finance выглядела
@@ -115,7 +115,7 @@ export function Metric({ Icon, label, value, sub, tone = 'neutral', trend, trend
   );
 }
 
-/* ── Карточка с заголовком — тот же DashboardPanel-паттерн, что у Admin/SEO ── */
+/* ── Карточка с заголовком — тот же DashboardPanel-паттерн, что у Admin/CEO ── */
 export function Card({ title, subtitle, action, children, bodyClass = 'p-4', className = '' }) {
   return (
     <section className={`

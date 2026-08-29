@@ -13,7 +13,7 @@ export async function findItemsByBranch(branchId) {
   return rows;
 }
 
-/** Каталог всей организации (SEO) — опционально сузить одним филиалом. */
+/** Каталог всей организации (CEO) — опционально сузить одним филиалом. */
 export async function findItemsByOrg(organizationId, branchId = null) {
   const params = [organizationId];
   let filter = '';
@@ -125,7 +125,7 @@ export async function syncCatalogForBranch(branchId, client = pool) {
   );
 }
 
-/** branch_id + organization_id товара — чтобы SEO мог проверить владение перед правкой. */
+/** branch_id + organization_id товара — чтобы CEO мог проверить владение перед правкой. */
 export async function findItemBranchOrg(itemId) {
   const { rows: [row] } = await pool.query(
     `SELECT i.id, i.branch_id, b.organization_id

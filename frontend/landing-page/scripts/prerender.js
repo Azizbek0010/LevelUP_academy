@@ -67,7 +67,7 @@ async function main() {
     const { html, head } = render(route);
 
     if (!head.includes('<title>')) {
-      throw new Error(`${route}: страница не объявила SEO через useSeo — нет <title>`);
+      throw new Error(`${route}: страница не объявила CEO через useCeo — нет <title>`);
     }
     if (!html.trim()) {
       throw new Error(`${route}: пустая разметка`);

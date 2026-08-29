@@ -1,4 +1,4 @@
-# SEO
+# CEO
 
 Organization owner: branches, admins, methodists, org dashboard
 
@@ -7,10 +7,10 @@ Organization owner: branches, admins, methodists, org dashboard
 ### POST `/api/super/admins`
 Create an admin assigned to one of the organization's branches
 
-Login (email) is set by SEO; password is auto-generated and returned once (tempPassword).
+Login (email) is set by CEO; password is auto-generated and returned once (tempPassword).
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Request body:**
 - **CreateAdminRequest**:
@@ -82,7 +82,7 @@ Login (email) is set by SEO; password is auto-generated and returned once (tempP
 List admins of the organization
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Responses:**
 
@@ -123,7 +123,7 @@ Update an admin (partial — at least one field; can reassign branch)
 If `branchId` is changed, the new branch must belong to the same organization.
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -189,7 +189,7 @@ If `branchId` is changed, the new branch must belong to the same organization.
 Freeze or unfreeze an admin account
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -251,7 +251,7 @@ Freeze or unfreeze an admin account
 List organization announcements (migration 1783870000000_super-announcements)
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Responses:**
 
@@ -286,7 +286,7 @@ List organization announcements (migration 1783870000000_super-announcements)
 Create an announcement — queues Telegram delivery for parent/student audiences
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Request body:**
 - `title`: string **(required)**
@@ -331,7 +331,7 @@ Create an announcement — queues Telegram delivery for parent/student audiences
 Soft-delete an announcement
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -373,7 +373,7 @@ Attendance across the organization (optional group/date filter)
 
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `groupId` (query, string) (optional)
@@ -424,7 +424,7 @@ Attendance across the organization (optional group/date filter)
 Organization audit log (migration 1783880000000_audit-log)
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Responses:**
 
@@ -456,7 +456,7 @@ Organization audit log (migration 1783880000000_audit-log)
 Create a branch manager assigned to one of the organization's branches
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Request body:**
 - _CreateBranchManagerRequest_ (unresolved ref)
@@ -517,7 +517,7 @@ Create a branch manager assigned to one of the organization's branches
 List branch managers of the organization
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Responses:**
 
@@ -552,7 +552,7 @@ Create a branch in the organization
 The organization's first branch is automatically flagged `isMain`.
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Request body:**
 - **CreateBranchRequest**:
@@ -607,7 +607,7 @@ The organization's first branch is automatically flagged `isMain`.
 List branches of the organization (with admin/student counts)
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Responses:**
 
@@ -647,7 +647,7 @@ List branches of the organization (with admin/student counts)
 Branch detail — branch info + its admins + its groups
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -720,7 +720,7 @@ Branch detail — branch info + its admins + its groups
 Update branch fields (partial — at least one field required)
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -786,7 +786,7 @@ Update branch fields (partial — at least one field required)
 Archive a branch (read-only afterwards)
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -834,7 +834,7 @@ Archive a branch (read-only afterwards)
 Unarchive a branch
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -882,7 +882,7 @@ Unarchive a branch
 Organization dashboard (revenue, debt, students, per-branch breakdown)
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Responses:**
 
@@ -927,7 +927,7 @@ Organization dashboard (revenue, debt, students, per-branch breakdown)
 List groups across the whole organization
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Responses:**
 
@@ -968,7 +968,7 @@ List groups across the whole organization
 Soft-delete a group of the organization
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -1008,7 +1008,7 @@ Soft-delete a group of the organization
 Archive a group (read-only, mutations return 403 afterwards)
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -1050,7 +1050,7 @@ Archive a group (read-only, mutations return 403 afterwards)
 Unarchive a group
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -1094,7 +1094,7 @@ List mentors of the organization (read-only — Admin of the branch manages them
 Нужен только для выбора цели в «Взыскании» — CRUD ментора остаётся у Admin филиала.
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Responses:**
 
@@ -1122,7 +1122,7 @@ List mentors of the organization (read-only — Admin of the branch manages them
 Create a methodist (organization-level, not tied to a branch)
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Request body:**
 - **CreateMethodistRequest**:
@@ -1185,7 +1185,7 @@ Create a methodist (organization-level, not tied to a branch)
 List methodists of the organization
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Responses:**
 
@@ -1223,7 +1223,7 @@ List methodists of the organization
 Update a methodist (partial — at least one field)
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -1288,7 +1288,7 @@ Update a methodist (partial — at least one field)
 Freeze or unfreeze a methodist account
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -1353,7 +1353,7 @@ Returns the partner organization profile. `plan` is derived from the organizatio
 
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Responses:**
 
@@ -1402,7 +1402,7 @@ Partial update — at least one field is required. `lessonDurationMin` applies t
 
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Request body:**
 - **UpdateOrganizationRequest**:
@@ -1477,7 +1477,7 @@ Not written by an HTTP handler — a BullMQ QueueEvents listener (reminders/remi
 
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Responses:**
 
@@ -1516,7 +1516,7 @@ Not written by an HTTP handler — a BullMQ QueueEvents listener (reminders/remi
 Delete a reminder history entry
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -1567,7 +1567,7 @@ Delete a reminder history entry
 Re-queue the same reminder job (same payload) — history is not overwritten, a new entry appears once it settles
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**
@@ -1618,7 +1618,7 @@ Re-queue the same reminder job (same payload) — history is not overwritten, a 
 Organization statistics — KPIs, revenue series, per-branch and per-method breakdown
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `period` (query, string) (optional)
@@ -1677,7 +1677,7 @@ Search matches first name, last name or phone (ILIKE). Scope is the caller's org
 
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `search` (query, string) (optional) — Substring match on first name / last name / phone
@@ -1726,7 +1726,7 @@ Soft-delete a student of the organization
 Sets `deleted_at`; the row is kept for finance history.
 
 **Auth:** Bearer JWT required
-**Role(s):** seo
+**Role(s):** ceo
 
 **Params:**
 - `id` (path, string) **(required)**

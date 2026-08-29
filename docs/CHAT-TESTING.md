@@ -85,7 +85,7 @@ curl -H "Authorization: Bearer $T" \
 |---|---|---|
 | `chat:dm:send` | сотрудник → родитель **или** ученик | `{ "peerId": "<uuid>", "body": "текст" }` |
 | `chat:dm:reply` | **только родитель** → сотрудник | `{ "staffId": "<uuid>", "body": "текст" }` |
-| `chat:global:send` | main_admin / seo / admin / mentor | `{ "body": "текст" }` |
+| `chat:global:send` | main_admin / ceo / admin / mentor | `{ "body": "текст" }` |
 
 Каждое отвечает подтверждением: `{ ok: true, id, roomKey }` либо
 `{ ok: false, error: "..." }`.

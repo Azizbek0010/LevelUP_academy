@@ -1,11 +1,11 @@
 import { pool } from '../../config/db.js';
 
-export async function insertMessage({ chatType, roomKey, senderId, branchId, body, attachmentKey }) {
+export async function insertMessage({ chatType, roomKey, senderId, branchId, body, attachmentKey, flaggedWord }) {
   const { rows: [message] } = await pool.query(
-    `INSERT INTO chat_messages (chat_type, room_key, sender_id, branch_id, body, attachment_key)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO chat_messages (chat_type, room_key, sender_id, branch_id, body, attachment_key, flagged_word)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING id, chat_type, room_key, sender_id, branch_id, body, attachment_key, created_at`,
-    [chatType, roomKey, senderId, branchId ?? null, body, attachmentKey ?? null],
+    [chatType, roomKey, senderId, branchId ?? null, body, attachmentKey ?? null, flaggedWord ?? null],
   );
   return message;
 }

@@ -1,6 +1,6 @@
 # LevelUp Academy — TUGALLANGAN VAZIFALAR
 
-> Oxirgi yangilanish: 22.08.2026 06:45 (UTC+5, Toshkent vaqti)
+> Oxirgi yangilanish: 25.08.2026 06:20 (UTC+5, Toshkent vaqti)
 > Statistika: 209/237 task tugallangan (88%)
 
 ---
@@ -8,6 +8,55 @@
 ## Progress: [#################...] 88%
 
 ## Tugallangan vazifalar
+
+### Main Admin — levelup-academy.uz sayti statistikasi (Karis, 25.08.2026) ✅
+- [x] Yangi sahifa `/site-analytics`: sayt bo'yicha hamma raqam bitta ekranda. Ilgari
+      ular uchta begona kabinetda edi — Search Console, GA4 va Clarity
+- [x] Search Console API: qanday so'rovlar bilan topishadi, ko'rsatishlar, kliklar, CTR,
+      o'rtacha pozitsiya, qaysi sahifalar qidiruvda chiqadi
+- [x] GA4 Data API: nechta odam kelgan, **saytda o'rtacha qancha vaqt turgan**, qayerdan
+      kelgan (Google / to'g'ridan-to'g'ri / ijtimoiy tarmoq), qaysi sahifalarni ko'rgan va
+      qancha vaqt, qaysi sahifadan boshlagan va necha foizi hech narsa qilmay ketgan.
+      Mamlakatlar, qurilmalar, ariza formasi konversiyalari (`generate_lead`)
+- [x] **Saytdan qaysi sahifada chiqib ketishgani**: GA4'da exit rate metrikasi YO'Q —
+      u Universal Analytics bilan birga olib tashlangan. Shuning uchun landing o'zi
+      `page_exit` hodisasini yuboradi (`pagehide` + `visibilitychange`, sahifaga bir
+      marta, `transport_type: beacon`), panel uni `pagePath` kesimida sanaydi.
+      Ma'lumot chiqarilgan kundan boshlab to'planadi — ekranda shu sana ochiq yozilgan
+- [x] Yangi kutubxona qo'shilmadi: `google-auth-library` Google-login uchun allaqachon
+      bor edi, u service account JWT'ni ham qiladi. Ikkala skoup ham readonly — server
+      GA4 va Search Console'da hech narsani o'zgartira olmaydi
+- [x] Xatolar bo'sh massiv bilan almashtirilmaydi: kalit yo'q bo'lsa `configured:false`
+      va sozlash qadamlari ekranda, API xato bersa — o'sha blok `null` va aniq xato
+      matni, qolgan bloklar chiziladi. Begona kalit bilan nazorat tajribasi o'tkazildi
+- [x] Search Console oynasi 3 kunga orqaga surilgan (Google ma'lumotni kechikib chiqaradi,
+      aks holda oxirgi kunlar nol bo'lib grafik «qulash» ko'rinishini beradi) — sanalar
+      raqamlar yonida ochiq yozilgan
+- [x] **Google ulanishi sozlandi 25.08.2026** — Karis so'roviga ko'ra brauzer orqali:
+      service account `site-analytics-reader@levelup-1c059.iam.gserviceaccount.com`,
+      ikkala API yoqildi, GA4'da «Читатель», Search Console'da «Ограниченный доступ»
+      (bu yetarli ekani jonli tekshirildi), JSON kalit `backend/.env` ga ko'chirildi.
+      Parol kiritilmadi, kalit chatga chiqarilmadi, `.env` git'ga tushmaydi
+- [x] **Jonli natija (28 kun):** 88 tashrif buyuruvchi, 144 seans, 714 sahifa ko'rish,
+      o'rtacha saytda 6 daq 04 son, rad etish 54,9%. Google'dan 51 klik / 327 ko'rsatish,
+      CTR 15,6%, o'rtacha pozitsiya 8,0. Eng ko'p so'rov «levelup academy» (9 klik,
+      1,8-pozitsiya). Manbalar: Organic Search 77, Direct 58 seans. Xatolar yo'q
+- [ ] ⚠️ QOLGANI — `page_exit` hodisasi hozircha faqat lokal kodda. «Где уходят с сайта»
+      bo'sh turadi (hozir 0) — landing prod'ga deploy qilinishi kerak
+
+### Main Admin — Audit Log, Центр контроля va backend qulashi (Karis, 25.08.2026) ✅
+- [x] **Audit Log**: ilgari `main` modulida bitta ham jurnal yozuvi yo'q edi — hamkorni
+      muzlatish, qo'lda to'lov, bonus oylar, pullik fichalar izsiz ketardi
+      (`audit_log.organization_id` NOT NULL edi, Main Admin esa tashkilotdan tashqarida).
+      Endi 8 ta amal «bo'ldi → bo'ldi» ko'rinishida yoziladi. Onboarding'dagi vaqtinchalik
+      parol ATAYLAB yozilmaydi. Sahifa `/audit`
+- [x] **Центр контроля** (`/action-center`): hozir aralashuv talab qiladigan 6 xil signal,
+      har biri havola bilan — qayerga borib tuzatish kerakligini ko'rsatadi. Bloklash
+      qoidasi qayta yozilmadi, `shared/orgAccess.js` dagi `isOrgAccessBlocked` chaqiriladi
+- [x] **Backend qulashining sababi topildi**: `pool.on('error')` faqat bo'sh turgan
+      klientlarni ushlaydi; `pool.connect()` bergan klient uzilishda o'zida 'error'
+      chiqaradi, tinglovchisi yo'q → uncaughtException → butun protsess o'ladi.
+      `pool.on('connect')` ichida tinglovchi qo'shildi. Nazorat tajribasi bilan isbotlandi
 
 ### Student — Mavzu ichida video → test → uyga vazifa ketma-ketligi (Karis, 22.08.2026) ✅
 - [x] «Mening darslarim» ikki bosqichga bo'lindi: mavzular ro'yxati (`/lessons`) → mavzu ichi
@@ -40,8 +89,8 @@
 
 ### Finance Manager — mock rol HAQIQIY backend roliga aylandi (Karis, 22.08.2026) ✅
 - [x] Migratsiya: `chk_users_branch_scope` endi `finance_manager`ga `branch_id IS NULL` ruxsat
-      beradi — rol butun tashkilotni ko'radi (SEO/metodist kabi), bitta filialga bog'lanmaydi
-- [x] Alohida modul `/api/finance/*` (`authorize('finance_manager','seo')`) — SEO'ning
+      beradi — rol butun tashkilotni ko'radi (CEO/metodist kabi), bitta filialga bog'lanmaydi
+- [x] Alohida modul `/api/finance/*` (`authorize('finance_manager','ceo')`) — CEO'ning
       `super.routes.js` bloki KENGAYTIRILMADI, aks holda filiallar/adminlar/o'quvchilar ham
       ochilib ketardi. Kontroller/servis o'sha bitta (dublikat yo'q), faqat kirish nuqtasi boshqa
 - [x] 6 sahifa mock'dan real ma'lumotga o'tdi, `pages/finance/_data.js` butunlay o'chirildi
@@ -49,7 +98,7 @@
 
 ### Backend + Frontend — Moliyaviy hisob-kitobdagi 10 ta xato tuzatildi (Karis, 22.08.2026) ✅
 - [x] Filial ulushi: davr daromadi BUTUN VAQT daromadiga bo'linardi — ulushlar 100% bermasdi
-      (jonli tekshiruv: 37.5% + 9.4% = 46.9% → 80% + 20% = 100%). SEO panelida ham shu xato bor edi
+      (jonli tekshiruv: 37.5% + 9.4% = 46.9% → 80% + 20% = 100%). CEO panelida ham shu xato bor edi
 - [x] Oylik dinamika: qatordagi oxirgi ikki nuqta olinardi, to'lovsiz oylar qatorda umuman
       bo'lmaydi — «avgust iyunga» «oydan-oyga» deb ko'rsatilardi. Endi kalendar bo'yicha aniq
 - [x] O'sish foizi: bitta oy ma'lumoti bo'lsa mavjud bo'lmagan oyga nisbatan «+100%» to'qib
@@ -116,7 +165,7 @@
 - [x] K-MAIN: Partner freeze/activate (PATCH /partners/:id/status)
 - [x] K-MAIN: YANGI narx modeli (2026-07-16) — o'quvchi bucket tariflari (Free/Start/Standard/Pro/Business/Network), filiallar bepul; config/plans.js TIERS + computeBill({students}); eski filial+o'quvchi formula bekor; GET /api/main/pricing endi { tiers, currency }
 
-### Backend — SEO (Karis)
+### Backend — CEO (Karis)
 - [x] K-SUPER: Organization dashboard (GET /api/super/dashboard: totals + branch breakdown)
 - [x] K-SUPER: CRUD branches (+ archive/unarchive) va CRUD admins (+ freeze)
 
@@ -134,7 +183,7 @@
 
 ### Backend — Xodimlar intizomi (Karis) ✅ 2026-07-18 (MVP1, main da)
 - [x] K-DISC: shtraf (summa + sabab, avto-yechish YO'Q) + qora (ishdan bo'shatish, status='fired', withTransaction)
-- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): seo→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
+- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): ceo→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
 - [x] K-DISC: Ustav (org_charters, erkin matn, upsert, barcha xodimlarga ko'rinadi)
 - [x] K-DISC: Endpointlar — super PUT/GET /charter, POST/GET /penalties, POST /staff/:id/reactivate; admin GET /charter, POST/GET /penalties; shared GET /users/me/penalties, /users/me/charter
 - [x] K-DISC: Swagger — Discipline tegi, 10 endpoint, swagger/*.md qayta generatsiya (139 endpoint)
@@ -180,7 +229,7 @@
 - [x] AB-V1: Partner profit main dashboardda (income - expenses; pul jadvallariga faqat SELECT)
 - [x] AB-V1: Integration testlar: payments full/split + auth flow (login -> refresh -> reuse-detect -> OTP)
 
-### Backend — SEO Integratsiya (Karis) 🔥 hozirgi fokus
+### Backend — CEO Integratsiya (Karis) 🔥 hozirgi fokus
 - [x] K-SUPER-INT: GET + PATCH /api/super/organization — Settings (org profil) ✅ jonli tekshirildi (35586f6)
 - [x] K-SUPER-INT: Dars davomiyligi (2026-07-16) — organizations.lesson_duration_min + lessonDurationMin GET/PATCH /api/super/organization da
 - [x] K-SUPER-INT: GET /api/super/students (+search/filter/pagination + DELETE) — Students sahifa (repository listOrgStudents: ILIKE search + LIMIT/OFFSET)
@@ -252,7 +301,7 @@
 
 ### Frontend — Auth (Elyor)
 - [x] AUTH: Login sahifalar (3 endpoint: main / staff / member) — `staff/pages/Login.jsx`, `member/pages/Login.jsx`, `main-admin/pages/Login.jsx`, uchalasi `/auth/{staff,member,main}/login` ga ulangan. `origin/elyor` da save-zone dan ortiqcha commit YO'Q — merge qilinadigan narsa qolmagan
-- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+seo route'larida ishlatiladi
+- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+ceo route'larida ishlatiladi
 - [x] AUTH: Router setup by roles — staff/App.jsx da rolli route'lar
 - [x] AUTH: Redux authSlice — KERAK EMAS (useAuth() context yetarli, qaror 2026-07-15)
 - [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617). Auditda tasdiqlandi: `refreshPromise` 4 ta app da ham bor
@@ -260,7 +309,7 @@
 - [x] AUTH-FORGOT ✅ TUZATILDI 2026-07-28 (Karis): `staff/api.js` mock-blokiga
 - [x] AUTH-ELYOR-4 ✅ 4/4 YOPILDI 2026-07-28 (Karis): 1) admin dashboard — tuzatilgan
 
-### Frontend — SEO ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
+### Frontend — CEO ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 - [x] SUPER (front): Dashboard (org income, branches, admins, students)
 - [x] SUPER (front): CRUD branches (Branches -> BranchDetail)
 - [x] SUPER (front): CRUD admins
@@ -342,7 +391,7 @@
 - [x] LANDING: Home, Features, Roles, Finance, Gamification, Contacts
 - [x] LANDING: Header, Footer, CTA
 
-### Frontend — Methodist (Said Islom, Aziz — SEO'dan o'tkazildi) ✅ karkas
+### Frontend — Methodist (Said Islom, Aziz — CEO'dan o'tkazildi) ✅ karkas
 - [x] METHODIST: Training Types (CRUD)
 - [x] METHODIST: Topics (CRUD)
 - [x] METHODIST: Lessons (CRUD + LessonEditor)
@@ -355,7 +404,10 @@
 - [x] UI-CACHE ✅ AUDIT 2026-07-28 (Karis): barcha admin/mentor/methodist/super sahifalari
 
 ### YANGI ROLLAR — Branch Manager + Finance Manager (2026-08-04, Karis og'zaki berdi)
-- [x] ROLE-RENAME-SUPERADMIN ✅ **YOPILDI 07.08.2026.** Karis SEO/CEO savoliga ikki marta
+- [x] ROLE-RENAME-SUPERADMIN ✅ **YOPILDI 07.08.2026.** `superadmin` → `ceo` (Karis CEO/CEO
+      savoliga ikki marta javob berdi). ⚠️ **29.08.2026 qayta nomlandi: `ceo` → `ceo`** —
+      «CEO» butun dunyoda Search Engine Optimization deb tushuniladi, direktor uchun
+      to‘g‘ri qisqartma CEO. Migratsiya `1787160000000_rename-ceo-to-ceo.js`
 
 ---
 
@@ -364,3 +416,28 @@
 - Karis (Backend): 129 task
 - Abdulaziz (Backend): 84 task
 - Frontend jamoasi: 74 task
+
+---
+
+## 2026-08-24 — Landing UI/UX yangilanishi (Karis)
+
+- [x] **Bajaruvchi: Karis (Team Lead).** Landing sahifalarining umumiy vizual
+      uslubi yangilandi: `for-language-school`, `for-courses`, `crm-vs-excel`,
+      `blog`, `blog/excel-to-crm`, `vs/modme`, `vs/umai` va `about`.
+- [x] Umumiy header qayta ishlab chiqildi: bitta yaxlit panel, logo/menu/til
+      almashtirgich atrofidagi ortiqcha alohida cardlar olib tashlandi.
+- [x] Logo `LevelUp Academy` oddiy va yaxlit ko'rinishga keltirildi; yashil belgi
+      atrofidagi qo'shimcha card va umumiy oq logo-card olib tashlandi.
+- [x] Navigatsiya va RU/UZ/EN almashtirgichi soddalashtirildi; aktiv holatlar
+      laym chiziq bilan ko'rsatiladi.
+- [x] Header scroll harakati qo'shildi: pastga scroll qilganda yashirinadi,
+      tepaga scroll qilganda qayta paydo bo'ladi; kichik scroll tebranishlariga
+      qarshi threshold ishlatiladi.
+- [x] Header fixed/overlay rejimiga o'tkazildi va orqasidagi bo'sh oq fon olib
+      tashlandi; birinchi ekran kontenti header ostiga kirib ketmasligi uchun
+      responsive kompensatsion padding qo'shildi.
+- [x] Mobil drawer dizayni va yopish tugmasi saqlandi; desktop/tablet/mobile
+      responsive holatlari tekshirildi.
+- [x] Tekshiruv: landing client production build muvaffaqiyatli; to'liq buildda
+      client + SSR + 57 ta lokalizatsiyalangan prerender URL muvaffaqiyatli;
+      `http://localhost:5173/landing/about` — HTTP 200.

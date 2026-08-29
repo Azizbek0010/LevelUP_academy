@@ -29,7 +29,7 @@ function ItemRow({ item, onRestock, busy }) {
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-bold text-base-content truncate">{item.name}</span>
           <span className={`badge badge-sm ${item.is_global ? 'badge-primary badge-outline' : 'badge-ghost'}`}>
-            {item.is_global ? 'От SEO' : 'Товар филиала'}
+            {item.is_global ? 'От CEO' : 'Товар филиала'}
           </span>
           {item.is_archived && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-base-200 text-base-content/45">
@@ -155,7 +155,7 @@ export default function AdminShop() {
 
   return (
     <div className="space-y-6 pb-8">
-      <PageHeader title="Магазин" subtitle="Общие товары SEO и локальные товары вашего филиала.">
+      <PageHeader title="Магазин" subtitle="Общие товары CEO и локальные товары вашего филиала.">
         <button className="btn btn-primary btn-sm gap-1.5" onClick={() => setCreateOpen(true)}><Plus size={16} /> Новый товар</button>
       </PageHeader>
 
@@ -176,7 +176,7 @@ export default function AdminShop() {
         itemsQ.isLoading ? (
           <RowSkeleton count={3} />
         ) : items.length === 0 ? (
-          <EmptyState icon={Gift} title="Пока нет товаров" hint="SEO ещё не завёл товары для этого филиала" />
+          <EmptyState icon={Gift} title="Пока нет товаров" hint="CEO ещё не завёл товары для этого филиала" />
         ) : (
           <div className="space-y-2">
             {items.map((item) => (

@@ -1,11 +1,19 @@
-# SEO / AEO / GEO — бэклог и статус
+# CEO / AEO / GEO — бэклог и статус
 
 Живой список задач по поисковой и AI-поисковой оптимизации LevelUp Academy.
-Ведёт Abdulaziz (`abdulazizSEO`). Технический гайд «как всё устроено» — в [SEO.md](./SEO.md).
+Ведёт Abdulaziz (`abdulazizCEO`). Технический гайд «как всё устроено» — в [CEO.md](./CEO.md).
 
 - **Домен:** https://levelup-academy.uz (лендинг), noindex — на всех панелях и API
 - **Search Console:** domain-property `sc-domain:levelup-academy.uz` (владельцы: thermidorplus@gmail.com, amangeldiev.azizbek.010@gmail.com)
 - **GA4:** `G-RWCK0B6TXP` (ресурс `levelup-1c059 / 544460142`), связан с GSC
+- **Своё событие `page_exit`** в GA4 (Karis, 25.08.2026) — с какой страницы уходят с сайта.
+  Метрики exit rate в GA4 НЕТ (убрана вместе с Universal Analytics), поэтому лендинг шлёт
+  событие сам: `src/App.jsx` → `ExitTracker` (`pagehide` + `visibilitychange`, один раз
+  на страницу, `transport_type: beacon`). Считается в Main Admin → Аналитика сайта
+  (`/site-analytics`) в разрезе `pagePath`. Там же — данные GSC и GA4 через service
+  account; настройка описана в `docs/SITE-ANALYTICS.md`. Данные копятся с 25.08.2026.
+  `trackPageView` теперь дополнительно делает `gtag('set', …)` — без этого ВСЕ события SPA
+  (включая `generate_lead`) висли бы на первой открытой странице
 - **Bing Webmaster:** вход через Google-аккаунт `thermidorplus@gmail.com`, сайт как URL-prefix `https://levelup-academy.uz/`. 3 sitemap'а (лендинг + staff + member), IndexNow активен. Разбор и гочи — в разделе «Bing Webmaster» ниже
 - **Yandex Webmaster:** сайт `https://levelup-academy.uz` подтверждён через DNS TXT (`yandex-verification: 3fad9273b6b005db`, Cloudflare). ⚠️ meta/HTML-file методы НЕ работают: корень `/` отдаёт 308→`/landing`, а `cleanUrls` режет `.html` — Яндексу нужен 200 на главной. Только DNS. **Настроен 23.07** — см. таблицу ниже.
 - **DNS:** Cloudflare (NS `jobs/elle.ns.cloudflare.com`); там TXT для Google + Yandex + SPF
@@ -18,7 +26,7 @@
 | Что | Где | Дата |
 |---|---|---|
 | Prerender лендинга (Vite SSG) — краулеры видят текст без JS | `scripts/prerender.js`, `entry-server.jsx` | 14.07 |
-| Полный SEO-каркас: meta, canonical, OG, JSON-LD (Organization/WebSite/SoftwareApplication/FAQ), sitemap, robots | `index.html`, `lib/seo.js` | 11–14.07 |
+| Полный CEO-каркас: meta, canonical, OG, JSON-LD (Organization/WebSite/SoftwareApplication/FAQ), sitemap, robots | `index.html`, `lib/ceo.js` | 11–14.07 |
 | AI-краулеры в robots (в т.ч. live-fetch агенты: Claude-User, Perplexity-User, OAI-SearchBot) | `public/robots.txt` | 14.07 |
 | `llms.txt`, растровый `logo.png` для Organization.logo | `public/` | 14.07 |
 | `noindex` на всех приватных панелях (main-admin, student) + API | панели + `backend/src/app.js` | 14.07 |
@@ -34,18 +42,18 @@
 | Bing: сайт добавлен (импорт из GSC), sitemap отправлен | — | 15.07 |
 | **Yandex Webmaster: сайт подтверждён** (DNS TXT в Cloudflare) + meta-тег в коде как доп. сигнал | `index.html` (meta), Cloudflare DNS | 16.07 |
 | **Yandex Webmaster настроен полностью**: sitemap принят (26 URL, 0 ошибок в валидаторе); регион **Узбекистан** отправлен на модерацию (подтверждающая страница — `/landing/contacts`, до 7 дней); переобход всех 26 URL; 14 коммерческих страниц в «Мониторинг важных страниц»; robots.txt — 0 ошибок, `Sitemap:` виден; микроразметка парсится целиком (FAQPage, Organization, WebSite, SoftwareApplication, OG, Twitter) | Вебмастер (ручное) | 23.07 |
-| **Security headers на лендинге** — CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` в правиле `/(.*)`. Allowlist собран по реальным ресурсам сборки (GA4 + `api.levelup-academy.uz`), а не по шаблону. HSTS не трогал: Vercel уже отдаёт `max-age=63072000`, а `includeSubDomains` затронул бы `api./staff./member.` — решение Team Lead'а | `vercel.json`, `SEO.md` §Security headers | 24.07 |
+| **Security headers на лендинге** — CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` в правиле `/(.*)`. Allowlist собран по реальным ресурсам сборки (GA4 + `api.levelup-academy.uz`), а не по шаблону. HSTS не трогал: Vercel уже отдаёт `max-age=63072000`, а `includeSubDomains` затронул бы `api./staff./member.` — решение Team Lead'а | `vercel.json`, `CEO.md` §Security headers | 24.07 |
 | **Страница «CRM вместо Excel»** `/landing/crm-vs-excel` (+`/uz/...`) — сравнение таблиц и CRM по 8 задачам, FAQPage + Breadcrumb, ссылка из футера; разведена по намерению с блог-гайдом `excel-to-crm` | `pages/CrmVsExcel.jsx`, `i18n/`, `Footer.jsx`, sitemap, `llms.txt` | 24.07 |
 | **Entity disambiguation — разметка достроена и в проде**: `sameAs` (Telegram + Instagram, оба профиля проверены живыми), `foundingDate: 2026`, `numberOfEmployees: 6`. Цель — чтобы Google перестал смешивать нас с одноимённой IT-школой: датированная сущность с подтверждёнными профилями отличима, недатированная без соцсетей — нет. Доставлено cherry-pick'ом в `main` (полный промоушен `save-zone` не делался: там 10 чужих коммитов). После деплоя прогнан IndexNow (28 URL, HTTP 200) | `index.html` Organization | 03.08 |
 | **Ключевые слова в meta**: в узбекскую `for-language-school` возвращены `A1–C1, IELTS` (были в теле страницы, но не в description — а узбекоязычная аудитория ищет «IELTS» напрямую); в русскую `features` возвращено слово «посещаемость» — это была единственная meta, где `davomat` стоял без русского эквивалента. Verify: build 28 роутов + grep по `dist/` (обе meta на месте, 0 `undefined`) | `i18n/uz.js:1177`, `i18n/ru.js:1150` | 03.08 |
-| **Английская версия сайта `/en`** — третий язык (14 страниц), собственный словарь `en.js`. Тексты **не перевод русских**, а прицел в глобальные запросы, которые уже занял конкурент: `school management software`, `student management system`, `learning center software`, `education CRM`. `x-default` переведён на английский. Заодно `PREFIXED_LANGS` вместо хардкода двух языков — маршруты, prerender, переключатель, hreflang и sitemap теперь выводятся из одного списка | `i18n/en.js`, `i18n/index.js`, `App.jsx`, `Header.jsx`, `lib/seo.js`, `prerender.js`, `index.css` | 05.08 |
-| **Sitemap стал генерируемым** — `scripts/sitemap.js` + `npm run sitemap` в начале `build`. Причина: 14 страниц × 3 языка × 4 hreflang = 42 записи, ручная синхронизация уже подводила (Bing три недели обходил карту из 24 URL при 28 реальных). `public/sitemap.xml` теперь **не редактируется руками** | `scripts/sitemap.js`, `package.json`, `SEO.md` | 05.08 |
-| **`inLanguage` больше не врёт.** Статический `@graph` в `index.html` объявлял `"ru"` на **всех** страницах, включая узбекские — для Google и AI это значило «узбекского контента здесь нет». Теперь `useSeo` автоматически отдаёт `WebPage` с языком страницы (`ru-UZ` / `uz-UZ` / `en`), а `WebSite` и `SoftwareApplication` перечисляют все три | `lib/seo.js`, `index.html` | 05.08 |
-| **Дубли JSON-LD после гидратации** — prerender впечатывал разметку, а клиентский `useSeo` добавлял те же узлы повторно, и в `<head>` висели два одинаковых набора. `useSeo` снимает серверные теги перед вставкой своих. Проверено в браузере: 3 блока (WebPage, BreadcrumbList, FAQPage), дублей нет | `lib/seo.js` | 05.08 |
+| **Английская версия сайта `/en`** — третий язык (14 страниц), собственный словарь `en.js`. Тексты **не перевод русских**, а прицел в глобальные запросы, которые уже занял конкурент: `school management software`, `student management system`, `learning center software`, `education CRM`. `x-default` переведён на английский. Заодно `PREFIXED_LANGS` вместо хардкода двух языков — маршруты, prerender, переключатель, hreflang и sitemap теперь выводятся из одного списка | `i18n/en.js`, `i18n/index.js`, `App.jsx`, `Header.jsx`, `lib/ceo.js`, `prerender.js`, `index.css` | 05.08 |
+| **Sitemap стал генерируемым** — `scripts/sitemap.js` + `npm run sitemap` в начале `build`. Причина: 14 страниц × 3 языка × 4 hreflang = 42 записи, ручная синхронизация уже подводила (Bing три недели обходил карту из 24 URL при 28 реальных). `public/sitemap.xml` теперь **не редактируется руками** | `scripts/sitemap.js`, `package.json`, `CEO.md` | 05.08 |
+| **`inLanguage` больше не врёт.** Статический `@graph` в `index.html` объявлял `"ru"` на **всех** страницах, включая узбекские — для Google и AI это значило «узбекского контента здесь нет». Теперь `useCeo` автоматически отдаёт `WebPage` с языком страницы (`ru-UZ` / `uz-UZ` / `en`), а `WebSite` и `SoftwareApplication` перечисляют все три | `lib/ceo.js`, `index.html` | 05.08 |
+| **Дубли JSON-LD после гидратации** — prerender впечатывал разметку, а клиентский `useCeo` добавлял те же узлы повторно, и в `<head>` висели два одинаковых набора. `useCeo` снимает серверные теги перед вставкой своих. Проверено в браузере: 3 блока (WebPage, BreadcrumbList, FAQPage), дублей нет | `lib/ceo.js` | 05.08 |
 | **`llms.txt` на каждый язык** — `llms.txt` (ru) + `llms-uz.txt` + `llms-en.txt`, перекрёстно слинкованы и перечислены в `robots.txt`. Раньше был только русский, прямо с пометкой «Язык: русский» — ассистент, отвечающий на узбекский вопрос, вынужден был читать русский. Добавлены таблицы тарифов и блок разведения бренда | `public/llms*.txt`, `public/robots.txt` | 05.08 |
 | **Entity disambiguation усилен** — `disambiguatingDescription` прямо называет одноимённые организации (США, Сербия, Сингапур, Молдова, Таджикистан) чужими, `featureList` из 12 пунктов, узбекские `alternateName` и `knowsAbout`. Повод: по запросу «levelup academy uz» в топ-10 десять разных «Level Up Academy», нас нет | `index.html` | 05.08 |
 | **`Product.offers.url` на узбекской странице** указывал на русский URL тарифов | `pages/Pricing.jsx` | 05.08 |
-| **favicon для Яндекса**: `favicon.ico` (16/32/48) + `apple-touch-icon.png` (180) сгенерированы из `logo-mark.svg` (Pillow) и слинкованы в `index.html`. Причина: Яндекс не принимает SVG-only иконку и тянет её от корня, который 308-редиректится. **В проде** (`/favicon.ico` → 200, cherry-pick в `main`, Vercel задеплоил) | `public/favicon.ico`, `public/apple-touch-icon.png`, `index.html`, `SEO.md` | 23.07 |
+| **favicon для Яндекса**: `favicon.ico` (16/32/48) + `apple-touch-icon.png` (180) сгенерированы из `logo-mark.svg` (Pillow) и слинкованы в `index.html`. Причина: Яндекс не принимает SVG-only иконку и тянет её от корня, который 308-редиректится. **В проде** (`/favicon.ico` → 200, cherry-pick в `main`, Vercel задеплоил) | `public/favicon.ico`, `public/apple-touch-icon.png`, `index.html`, `CEO.md` | 23.07 |
 
 | **Страница «О компании»** `/landing/about` (+uz/en) — базовая для E-E-A-T, факты из `DIRECTORY-LISTINGS.md` (2026, 6 человек), блок разведения с одноимёнными текстом, а не только разметкой | `pages/About.jsx`, `i18n/`, `Footer.jsx`, sitemap, `llms*.txt` | 05.08 |
 | **AEO-хаб `/landing/faq`** (+uz/en) — 12 вопросов, ни один не дублирует шесть существующих FAQ-блоков (проверено: 44 вопроса, точных дублей 0). Ответы сверены с кодом: `paymentGate.js`, `auth/credentials.js`, `telegram/constants.js` | `pages/Faq.jsx`, `i18n/`, `Footer.jsx`, sitemap, `llms*.txt` | 05.08 |
@@ -64,7 +72,7 @@
       (фикс по бакету учеников, совпадает с `backend/config/plans.js` TIERS), Offer/AggregateOffer +
       FAQPage schema.org, акцент на гарантии (возврат 30 дней, бэкап, запуск за неделю). Блокер снят.
 - [x] ~~**Ниша «для языковой школы»** (`/landing/for-language-school` + `/uz/...`)~~ — ✅ 16.07.
-      Запрос «программа для языковой школы» / «til markazi uchun dastur». Полный SEO-каркас +
+      Запрос «программа для языковой школы» / «til markazi uchun dastur». Полный CEO-каркас +
       FAQPage, ссылка из футера (sitewide) и на тарифы. Верифицировано: build + браузер (гидратация чистая).
 
 ### P2 — следом
@@ -72,7 +80,7 @@
 - [x] ~~**Шлифовка on-page** главной и `/landing/finance`~~ — ✅ 16.07. title/description
       главной и finance (ru+uz) переписаны под точные запросы: «программа для учёта учеников»,
       «электронный журнал», «учёт оплат/долгов учеников», «o'quvchilar hisobi dasturi»,
-      «elektron jurnal». URL не тронуты, title ≤60. Правки только в seo-блоках `i18n`.
+      «elektron jurnal». URL не тронуты, title ≤60. Правки только в ceo-блоках `i18n`.
 - [x] ~~**Ниша «для курсов и репетиторов»** `/landing/for-courses` (+`/uz/...`)~~ — ✅ 17.07.
       «CRM для курсов», «репетиторский центр», «kurslar uchun CRM». FAQPage + Breadcrumb,
       ссылка из футера + на тарифы. Verify: build (sitemap 26 URL) + браузер (гидратация чистая, ru+uz).
@@ -115,7 +123,7 @@
       новые статьи добавляются одним ключом в `i18n .blog.articles` + путь в prerender/sitemap.
       Verify: build (24 URL) + браузер (гидратация чистая, ru+uz).
 
-> При добавлении любой страницы — чеклист в [SEO.md](./SEO.md) §«Adding a page»
+> При добавлении любой страницы — чеклист в [CEO.md](./CEO.md) §«Adding a page»
 > (i18n ru+uz → App.jsx PAGES → prerender ROUTES → sitemap обе версии + hreflang).
 
 ---
@@ -299,7 +307,7 @@ URL-prefix `https://levelup-academy.uz/`.
 ценности контента, а не техническая ошибка — правкой мета-тегов не лечится.
 
 > [!important] Что из этого следует
-> On-site SEO здесь больше не является узким местом — он сделан. Узкое место —
+> On-site CEO здесь больше не является узким местом — он сделан. Узкое место —
 > **отсутствие сайта во внешнем мире**: 0 ссылок, 0 упоминаний, 0 цитирований.
 > Приоритет смещается с разметки на off-site ([GEO-OFFSITE.md](./GEO-OFFSITE.md)) и на
 > контент, который Google сочтёт достойным индекса.
@@ -363,7 +371,7 @@ soffcrm.uz sitemap нет вовсе. Modme доминирует с 7 стран
 
 ## 🔗 Ссылки
 
-- [SEO.md](./SEO.md) — как устроен prerender / i18n / hreflang (технический гайд)
+- [CEO.md](./CEO.md) — как устроен prerender / i18n / hreflang (технический гайд)
 - [GEO-OFFSITE.md](./GEO-OFFSITE.md) — off-site GEO/AEO задачи (соцсети, Reddit/Quora, каталоги, `sameAs`, мониторинг)
 - Artifact «карта запросов и контент-план»: https://claude.ai/code/artifact/20e09347-5615-4df4-907e-bb44d7558438
 - GSC: https://search.google.com/search-console?resource_id=sc-domain:levelup-academy.uz

@@ -6,16 +6,16 @@ import { LevelBadge } from '../discipline-meta.jsx';
 /**
  * K-DISC-FRONT: read-only дисциплина сотрудника (mentor/methodist) — свои
  * взыскания и каталог правил организации. Только просмотр: правила заводит
- * SEO (см. pages/super/Discipline.jsx), CAN_ISSUE не даёт
+ * CEO (см. pages/super/Discipline.jsx), CAN_ISSUE не даёт
  * mentor/methodist никаких прав на запись.
  *
  * Свободный текстовый устав убран 2026-07-28 — здесь теперь тот же каталог
- * правил (qoyda), что и в SEO.
+ * правил (qoyda), что и в CEO.
  */
 
 const ROLE_LABEL = {
   admin: 'Администратор',
-  seo: 'SEO',
+  ceo: 'CEO',
 };
 
 function dateTime(iso) {

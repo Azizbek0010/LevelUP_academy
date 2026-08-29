@@ -84,6 +84,55 @@ body {
   scrollbar-width: thin;
 }
 
+/* Sidebar: Windows Chromium otherwise renders a wide white native scrollbar
+   with arrow buttons, visually splitting the navigation from the page. */
+.main-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(198, 255, 52, 0.22) transparent;
+  scrollbar-gutter: stable;
+}
+.main-sidebar-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.main-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.main-sidebar-scroll::-webkit-scrollbar-thumb {
+  min-height: 36px;
+  border-radius: 999px;
+  background: rgba(198, 255, 52, 0.16);
+}
+.main-sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(198, 255, 52, 0.32);
+}
+.main-sidebar-scroll::-webkit-scrollbar-button,
+.main-sidebar-scroll::-webkit-scrollbar-corner {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+/* DaisyUI drawer-side itself is scrollable by default. That produced the wide
+   Windows scrollbar across the whole sidebar whenever Partners expanded. */
+.main-sidebar-drawer {
+  overflow: hidden !important;
+}
+
+/* The main menu must remain scrollable on short screens, otherwise lower
+   links (Audit/Settings) are clipped and cannot be clicked. Keep that scroll
+   functional but visually hidden; Partners has its own visible mini-scroll. */
+.main-nav-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior: contain;
+}
+.main-nav-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Затемнение модального окна должно накрывать ЭКРАН, а не область контента.
    У DaisyUI `.modal` это `position: fixed; inset: 0; width: 100%; height: 100%`,
    и проценты считаются от предка, если у того осталась трансформация — так и

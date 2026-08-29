@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { SITE_URL, breadcrumb, faqPage, useSeo } from '../lib/seo.js';
+import { SITE_URL, breadcrumb, faqPage, useCeo } from '../lib/ceo.js';
 import { localizePath, useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 // Space-grouped thousands ("199 000") — matches both ru and uz number style.
@@ -53,7 +53,7 @@ export default function Pricing() {
     () => [
       breadcrumb(
         [
-          { name: t.seo.breadcrumbHome, path: '/landing' },
+          { name: t.ceo.breadcrumbHome, path: '/landing' },
           { name: p.badge, path: '/landing/pricing' },
         ],
         lang,
@@ -61,12 +61,12 @@ export default function Pricing() {
       pricingLd(p, lang),
       faqPage(p.faq),
     ],
-    [t.seo.breadcrumbHome, p, lang],
+    [t.ceo.breadcrumbHome, p, lang],
   );
 
-  useSeo({
-    title: t.seo.pricing.title,
-    description: t.seo.pricing.description,
+  useCeo({
+    title: t.ceo.pricing.title,
+    description: t.ceo.pricing.description,
     path: '/landing/pricing',
     jsonLd,
   });

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { breadcrumb, SITE_URL, useSeo } from '../lib/seo.js';
+import { breadcrumb, SITE_URL, useCeo } from '../lib/ceo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 // Реальные варианты написания одного имени для поиска на латинице и кириллице.
@@ -29,7 +29,7 @@ const COPY = {
     highlightsHead: 'Ключевой вклад', highlights: [
       { n: '01', title: 'Admin-панель', text: 'Развивает административный интерфейс: группы, платежи, отчёты и рабочие процессы учебного центра.' },
       { n: '02', title: 'Весь frontend', text: 'Подключается к staff, member, main-admin и landing-page для исправлений, интеграции и выравнивания интерфейсов.' },
-      { n: '03', title: 'Единая локализация', text: 'Системно развивает i18n для Admin, Mentor, Methodist и SEO-разделов.' },
+      { n: '03', title: 'Единая локализация', text: 'Системно развивает i18n для Admin, Mentor, Methodist и CEO-разделов.' },
     ],
     stackHead: 'Стек и зоны работы', stack: [
       { label: 'Frontend', items: ['React 18', 'Vite', 'JavaScript', 'React Router'] },
@@ -46,7 +46,7 @@ const COPY = {
     highlightsHead: 'Asosiy hissa', highlights: [
       { n: '01', title: 'Admin paneli', text: "Guruhlar, to'lovlar, hisobotlar va o'quv markazi jarayonlari uchun admin interfeysini rivojlantiradi." },
       { n: '02', title: 'Butun frontend', text: "Tuzatish, integratsiya va UI birxillashtirish uchun staff, member, main-admin va landing-page'ga qo'shiladi." },
-      { n: '03', title: 'Yagona lokalizatsiya', text: "Admin, Mentor, Methodist va SEO bo'limlari uchun i18n tizimini rivojlantiradi." },
+      { n: '03', title: 'Yagona lokalizatsiya', text: "Admin, Mentor, Methodist va CEO bo'limlari uchun i18n tizimini rivojlantiradi." },
     ],
     stackHead: "Stack va ish yo'nalishlari", stack: [
       { label: 'Frontend', items: ['React 18', 'Vite', 'JavaScript', 'React Router'] },
@@ -63,7 +63,7 @@ const COPY = {
     highlightsHead: 'Key contribution', highlights: [
       { n: '01', title: 'Admin panel', text: 'Develops the administrative interface for groups, payments, reports and education-center workflows.' },
       { n: '02', title: 'Full frontend', text: 'Contributes to staff, member, main-admin and landing-page for fixes, integration and UI alignment.' },
-      { n: '03', title: 'Unified localization', text: 'Systematically develops i18n across Admin, Mentor, Methodist and SEO sections.' },
+      { n: '03', title: 'Unified localization', text: 'Systematically develops i18n across Admin, Mentor, Methodist and CEO sections.' },
     ],
     stackHead: 'Stack and work areas', stack: [
       { label: 'Frontend', items: ['React 18', 'Vite', 'JavaScript', 'React Router'] },
@@ -78,7 +78,7 @@ const COPY = {
 export default function Abdulloh() {
   const lang = useLang(); const lp = useLocalizePath(); const t = useT(); const c = COPY[lang] || COPY.ru;
   const profileUrl = `${SITE_URL}/landing/team/yunusov-abdulloh`;
-  const jsonLd = useMemo(() => [breadcrumb([{ name: t.seo.breadcrumbHome, path: '/landing' }, { name: t.nav.team, path: '/landing/team' }, { name: c.name, path: '/landing/team/yunusov-abdulloh' }], lang), {
+  const jsonLd = useMemo(() => [breadcrumb([{ name: t.ceo.breadcrumbHome, path: '/landing' }, { name: t.nav.team, path: '/landing/team' }, { name: c.name, path: '/landing/team/yunusov-abdulloh' }], lang), {
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
     '@id': `${profileUrl}#profile`,
@@ -103,8 +103,8 @@ export default function Abdulloh() {
       address: { '@type': 'PostalAddress', addressLocality: 'Tashkent', addressCountry: 'UZ' },
       knowsAbout: ['React', 'Vite', 'JavaScript', 'Frontend development', 'Admin panel', 'i18n'],
     },
-  }], [c.lead, c.name, lang, profileUrl, t.nav.team, t.seo.breadcrumbHome]);
-  useSeo({ title: `${c.name} (Abdulloh Yunusov) — LevelUp Academy`, description: `${c.name} — также Abdulloh Yunusov, Abduloh Yunusov, Yunusov Abduloh и Abdulka Yunusov. ${c.location}. ${c.lead}`, path: '/landing/team/yunusov-abdulloh', jsonLd });
+  }], [c.lead, c.name, lang, profileUrl, t.nav.team, t.ceo.breadcrumbHome]);
+  useCeo({ title: `${c.name} (Abdulloh Yunusov) — LevelUp Academy`, description: `${c.name} — также Abdulloh Yunusov, Abduloh Yunusov, Yunusov Abduloh и Abdulka Yunusov. ${c.location}. ${c.lead}`, path: '/landing/team/yunusov-abdulloh', jsonLd });
 
   return <main className="founder-page abdulloh-page">
     <section className="founder-hero"><div className="container founder-hero__grid"><div className="founder-hero__copy"><span className="badge badge--lime founder-hero__badge">{c.badge}</span><h1>{c.name}</h1><p className="founder-hero__meta"><span>{c.subName}</span><span className="founder-hero__meta-separator" /><span>{c.location}</span></p><p className="founder-hero__lead">{c.lead}</p><div className="founder-hero__tags">{c.tags.map(tag => <span className="tag" key={tag}>{tag}</span>)}</div></div><div className="founder-portrait abdulloh-portrait"><div className="founder-portrait__frame"><img src="/team/yunusov-abdulloh.jpg" alt={c.name} width="3024" height="4032" /><div className="founder-portrait__shade" /></div><span className="founder-portrait__index">02</span><span className="founder-portrait__caption">LEVELUP / FRONTEND</span></div></div></section>

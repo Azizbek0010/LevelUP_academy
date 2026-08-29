@@ -21,7 +21,7 @@ flowchart TD
     RG -- parent --> PL[ParentLayout]
     RG -- mentor --> ML[MentorLayout]
     RG -- admin --> AL[AdminLayout]
-    RG -- seo --> SAL[SEOLayout]
+    RG -- ceo --> SAL[CEOLayout]
 
     SL --> S1[Home] & S2[Shop] & S3[Test] & S4[Homework] & S5[Video] & S6[Leaderboard]
     PL --> P1[Child: attendance / scores / debt] & P2[Chat]
@@ -102,7 +102,7 @@ flowchart TD
     ROLE -- student --> PO[emit presence:online]
     PO --> HB[heartbeat every 25s]
 
-    ROLE -- admin / seo --> DASH[join dashboards room]
+    ROLE -- admin / ceo --> DASH[join dashboards room]
     DASH --> CNT[on presence:count → uiSlice]
     CNT --> UI[Live counter on dashboard<br/>aria-live]
 

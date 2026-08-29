@@ -1,6 +1,6 @@
 /**
  * Karis 22.08.2026: Finance Manager (frontend/staff/src/pages/finance/) видит
- * ВСЮ организацию насквозь (как SEO/methodist), не один филиал — но
+ * ВСЮ организацию насквозь (как CEO/methodist), не один филиал — но
  * chk_users_branch_scope до этой миграции требовал branch_id у любой роли,
  * кроме main_admin/superadmin/methodist. Добавляем finance_manager в тот же
  * список исключений — тот же приём, что и для methodist

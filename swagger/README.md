@@ -1,6 +1,6 @@
 # LevelUp Academy API — API reference (v0.1.0)
 
-Multi-tenant Educational CRM backend for LevelUp Academy. Roles: main_admin, seo, admin, mentor, student, parent, methodist. Auth via JWT bearer access tokens (15 min TTL) + httpOnly refresh-token cookie (30 days, rotated).
+Multi-tenant Educational CRM backend for LevelUp Academy. Roles: main_admin, ceo, admin, mentor, student, parent, methodist. Auth via JWT bearer access tokens (15 min TTL) + httpOnly refresh-token cookie (30 days, rotated).
 
 > Auto-generated from `backend/src/config/swagger.js` (the same spec that powers the live
 > `GET /api/docs` Swagger UI when the backend is running). Regenerate after any route/schema
@@ -15,7 +15,7 @@ Multi-tenant Educational CRM backend for LevelUp Academy. Roles: main_admin, seo
 - [Auth](./auth.md) — Login (main/staff/member), Google OAuth, refresh, logout, password reset _(11 endpoints)_
 - [Leads](./leads.md) — Public landing-page lead submission _(1 endpoint)_
 - [Main Admin](./main-admin.md) — Platform owner: partner onboarding, pricing, leads, platform dashboard _(14 endpoints)_
-- [SEO](./seo.md) — Organization owner: branches, admins, methodists, org dashboard _(35 endpoints)_
+- [CEO](./ceo.md) — Organization owner: branches, admins, methodists, org dashboard _(35 endpoints)_
 - [Admin](./admin.md) — Branch admin: dashboard, expenses, students, mentors, groups _(33 endpoints)_
 - [Admin Payments](./admin-payments.md) — K-PAY: invoices, ad-hoc payments, refunds/voids, receipts _(7 endpoints)_
 - [Admin Reports](./admin-reports.md) — K-PAY: branch revenue/debt report by group _(1 endpoint)_

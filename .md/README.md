@@ -19,7 +19,7 @@ npm run worker:dev     # запустить фоновые воркеры оче
 *   **API URL:** `http://localhost:4000`
 *   **Mailpit (тестовые письма):** `http://localhost:8025`
 
-### 2. Фронтенд SEO (frontend/super-admin/)
+### 2. Фронтенд CEO (frontend/super-admin/)
 ```bash
 cd frontend/super-admin
 npm install
@@ -32,7 +32,7 @@ npm run dev            # запустить Vite-сервер разработк
 
 ## 🔑 Тестовые аккаунты (после `npm run seed`)
 *   **Main Admin:** `hp8187081014laptop@gmail.com` / `ChangeMe123!` (вход на `/login/main`)
-*   **SEO:** `azizbekamangeldiev.2010@gmail.com` / `ChangeMe123!` (вход на `/login/staff`)
+*   **CEO:** `azizbekamangeldiev.2010@gmail.com` / `ChangeMe123!` (вход на `/login/staff`)
 *   **Mentor:** `mentor.demo@levelup.local` / `ChangeMe123!` (вход на `/login/staff`)
 *   **Student:** логин-код `demostud` / пароль `123456` (вход на `/login/member`)
 *   **Parent:** логин-код `demopare` / пароль `654321` (вход на `/login/member`)

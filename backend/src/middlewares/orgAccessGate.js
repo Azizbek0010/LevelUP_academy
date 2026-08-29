@@ -7,7 +7,7 @@ const CACHE_TTL_SECONDS = 45;
 const cacheKey = (orgId) => `org:access:${orgId}`;
 
 /**
- * Блокирует ВЕСЬ доступ организации (все роли: seo/admin/mentor/methodist/
+ * Блокирует ВЕСЬ доступ организации (все роли: ceo/admin/mentor/methodist/
  * branch_manager/student/parent, все методы), если Main Admin заморозил
  * партнёра или партнёр не заплатил и грейс-период (до 5 числа следующего
  * месяца) истёк. `main_admin` не org-scoped (organizationId=null) — пропускается

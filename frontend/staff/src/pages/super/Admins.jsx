@@ -20,7 +20,7 @@ import { Card, SearchInput, StatusBadge, Modal, Dropdown, DropdownItem, Avatar }
  * «Сотрудники» — раньше две отдельные вкладки (Администраторы / Методисты),
  * каждая со своим поиском. Karis: поиск сверху должен видеть ВСЕХ сотрудников
  * разом (включая менторов — read-only, заводит их Admin филиала, но видеть
- * и находить их SEO должен), а у каждой строки должно быть видно,
+ * и находить их CEO должен), а у каждой строки должно быть видно,
  * кто это — админ/ментор/методист. Поэтому одна таблица на всех троих.
  *
  * Действия (редактировать/сбросить пароль/заморозить) раньше сидели прямо в
@@ -165,7 +165,7 @@ function TempPasswordModal({ email, password, onClose }) {
 }
 
 // ─── Действия над строкой сотрудника ──────────────────────────
-// Ментор — read-only для SEO (заводит и правит его Admin филиала),
+// Ментор — read-only для CEO (заводит и правит его Admin филиала),
 // поэтому у него в меню нечего показывать.
 function StaffActionsMenu({ row, resetBusy, onEdit, onResetPassword, onToggleFreeze }) {
   if (row.role === 'mentor') {
@@ -213,7 +213,7 @@ function StaffActionsMenu({ row, resetBusy, onEdit, onResetPassword, onToggleFre
   );
 }
 
-// ─── Кнопка «Добавить» — выбор роли (ментора SEO не заводит) ────
+// ─── Кнопка «Добавить» — выбор роли (ментора CEO не заводит) ────
 function AddStaffButton({ onPick, disabled }) {
   return (
     <Dropdown

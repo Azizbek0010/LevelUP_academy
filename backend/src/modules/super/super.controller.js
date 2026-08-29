@@ -4,7 +4,7 @@ import { improveAnnouncement as improveAnnouncementText } from './announcement-a
 import { buildObjectKey, getUploadUrl } from '../../config/s3.js';
 import * as shopService from '../admin/shop/shop-admin.service.js';
 
-// req.scope.organizationId проставляет authorize('seo') — своя организация
+// req.scope.organizationId проставляет authorize('ceo') — своя организация
 const orgId = (req) => req.scope.organizationId;
 
 /**
@@ -464,7 +464,7 @@ export const setTrainingTypeArchived = asyncHandler(async (req, res) => {
   res.json({ trainingType });
 });
 
-// ---------- shop-каталог: имя/цена/фото заводит SEO, остаток пополняет филиал (см. admin/shop) ----------
+// ---------- shop-каталог: имя/цена/фото заводит CEO, остаток пополняет филиал (см. admin/shop) ----------
 
 export const listShopItems = asyncHandler(async (req, res) => {
   res.json({ items: await shopService.listItemsForOrg(orgId(req), req.query.branchId) });
@@ -498,7 +498,7 @@ export const listPlatformAnnouncements = asyncHandler(async (req, res) => {
   res.json({ announcements: await service.listPlatformAnnouncements(orgId(req)) });
 });
 
-// --- каталог платных фич + свои заявки (SEO не переключает сам, только просит) ---
+// --- каталог платных фич + свои заявки (CEO не переключает сам, только просит) ---
 export const getFeatureCatalog = asyncHandler(async (req, res) => {
   res.json({ catalog: await service.getFeatureCatalog(orgId(req)) });
 });

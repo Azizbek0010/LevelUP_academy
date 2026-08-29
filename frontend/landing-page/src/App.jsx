@@ -21,7 +21,7 @@ import Team from './pages/Team.jsx';
 import Abdulloh from './pages/Abdulloh.jsx';
 import Contacts from './pages/Contacts.jsx';
 import NotFound from './pages/NotFound.jsx';
-import { trackPageView } from './lib/analytics.js';
+import { trackPageView, trackPageExit } from './lib/analytics.js';
 import { PREFIXED_LANGS, useT } from './i18n/index.js';
 
 /**
@@ -56,11 +56,44 @@ function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
-    // Fire after the route's useSeo effect has set document.title (child effects
+    // Fire after the route's useCeo effect has set document.title (child effects
     // run before this parent effect, but title is set in the page effect which
     // runs first for the new route only after paint on some paths — defer to be safe).
     const id = setTimeout(() => trackPageView(pathname), 0);
     return () => clearTimeout(id);
+  }, [pathname]);
+  return null;
+}
+
+/**
+ * Records which page the visitor left the site from (Karis 25.08.2026).
+ *
+ * Deliberately NOT fired on in-app route changes: moving from one page to the
+ * next is not leaving the site, and counting it would make every page look
+ * like an exit.
+ *
+ * Two listeners, because neither alone is enough: 'pagehide' misses iOS Safari
+ * being backgrounded, and visibilitychange never fires on a plain desktop tab
+ * close. The `sent` guard keeps that overlap from double-counting; it resets
+ * on navigation so the next page can report its own exit.
+ */
+function ExitTracker() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    let sent = false;
+    const report = () => {
+      if (sent) return;
+      sent = true;
+      trackPageExit(pathname);
+    };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') report(); };
+
+    window.addEventListener('pagehide', report);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', report);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [pathname]);
   return null;
 }
@@ -70,6 +103,7 @@ export default function App() {
   return (
     <>
       <ScrollToTop />
+      <ExitTracker />
       <a href="#main-content" className="skip-link">
         {t.nav.skipToContent}
       </a>

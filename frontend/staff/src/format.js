@@ -35,7 +35,7 @@ export const ADMIN_STATUS = {
 };
 
 export const ROLE_LABELS = {
-  seo: 'SEO',
+  ceo: 'CEO',
   admin: 'Администратор',
   branch_manager: 'Branch Manager',
   mentor: 'Ментор',

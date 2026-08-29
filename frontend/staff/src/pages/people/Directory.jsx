@@ -5,7 +5,7 @@ import { usePeopleDirectory } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
 
 const ROLES = [
-  ['', 'Все роли'], ['seo', 'SEO'], ['branch_manager', 'Branch Manager'],
+  ['', 'Все роли'], ['ceo', 'CEO'], ['branch_manager', 'Branch Manager'],
   ['admin', 'Admin'], ['finance_manager', 'Finance Manager'], ['methodist', 'Methodist'],
   ['mentor', 'Mentor'], ['parent', 'Parent'], ['student', 'Student'],
 ];

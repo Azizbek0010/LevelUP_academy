@@ -99,6 +99,7 @@ async function issueTokens(user, client = pool) {
     { userId: user.id, tokenHash: hash, expiresAt: new Date(Date.now() + REFRESH_TTL_MS) },
     client,
   );
+  await repo.touchLastLogin(user.id, client);
   return { accessToken, refreshToken: token };
 }
 
@@ -107,7 +108,7 @@ const hashToken = (token) => crypto.createHash('sha256').update(token).digest('h
 // ---------- login / refresh / logout ----------
 
 export async function login({ login, password }, allowedRoles = null) {
-  // login = email (admin/seo/main_admin/mentor) ИЛИ login_code (parent/student)
+  // login = email (admin/ceo/main_admin/mentor) ИЛИ login_code (parent/student)
   const user = await repo.findUserByLogin(login);
   // одинаковая ошибка на "нет юзера" и "неверный пароль" — против перебора и энумерации
   if (!user || !user.password_hash || !(await argon2.verify(user.password_hash, password))) {

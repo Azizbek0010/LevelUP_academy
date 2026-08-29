@@ -64,14 +64,14 @@ export function insertOrganization({ name, domain, plan = null }, client = pool)
     .then((r) => r.rows[0]);
 }
 
-export function insertSeo(
+export function insertCeo(
   { orgId, firstName, lastName, email, phone, passwordHash },
   client = pool,
 ) {
   return client
     .query(
       `INSERT INTO users (organization_id, role, first_name, last_name, email, phone, password_hash)
-       VALUES ($1, 'seo', $2, $3, $4, $5, $6)
+       VALUES ($1, 'ceo', $2, $3, $4, $5, $6)
        RETURNING id, role, organization_id, first_name, last_name, email`,
       [orgId, firstName, lastName, email, phone ?? null, passwordHash],
     )
@@ -101,7 +101,7 @@ export function setOrgOwner(orgId, userId, client = pool) {
  */
 /** Только 'active' — замороженный/выпустившийся/отчисленный студент не должен
  * раздувать биллинг-счётчик (тот же фильтр, что уже стоит в super.repository.js
- * для собственного дашборда SEO — раньше здесь его не было, и из-за этого
+ * для собственного дашборда CEO — раньше здесь его не было, и из-за этого
  * счётчик Main Admin расходился с тем, что видит сам партнёр). */
 export function listPartners(client = pool) {
   return client
@@ -117,7 +117,7 @@ export function listPartners(client = pool) {
                    AND u.status = 'active' AND u.deleted_at IS NULL) AS parents,
               (SELECT count(*) FROM users u
                  WHERE u.organization_id = o.id
-                   AND u.role IN ('seo', 'admin', 'mentor', 'methodist', 'branch_manager')
+                   AND u.role IN ('ceo', 'admin', 'mentor', 'methodist', 'branch_manager')
                    AND u.status = 'active' AND u.deleted_at IS NULL) AS staff
          FROM organizations o
         WHERE o.deleted_at IS NULL
@@ -309,7 +309,11 @@ export function listExpenses(client = pool) {
 export function softDeleteExpense(id, client = pool) {
   return client
     .query(
-      `UPDATE platform_expenses SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
+      // RETURNING полей, а не только id: журнал должен показывать, ЧТО удалили
+      // (при RETURNING id в audit_log попадал пустой before, поймано 25.08.2026)
+      `UPDATE platform_expenses SET deleted_at = now()
+        WHERE id = $1 AND deleted_at IS NULL
+        RETURNING id, label, amount, category, expense_date`,
       [id],
     )
     .then((r) => r.rows[0] ?? null);
@@ -360,7 +364,7 @@ export function setAccessUntil(orgId, date, client = pool) {
     .then((r) => r.rows[0]?.access_until ?? null);
 }
 
-// ---------- заявки SEO на подключение/отключение фичи ----------
+// ---------- заявки CEO на подключение/отключение фичи ----------
 
 export function listFeatureRequests(status, client = pool) {
   const where = status ? 'WHERE fr.status = $1' : '';
@@ -486,18 +490,18 @@ export function markLeadOnboarded(id, orgId, client = pool) {
 /**
  * Сколько адресатов у объявления на момент отправки.
  * `all-partners` — активные организации (адресат = центр как таковой),
- * `all-seo` — активные владельцы организаций (адресат = человек),
+ * `all-ceo` — активные владельцы организаций (адресат = человек),
  * `specific` — явный список organizationIds (длина массива).
  * Считаем в момент создания и сохраняем: список меняется, а «кому отправили»
  * должно остаться историческим фактом.
  */
 export function countAnnouncementRecipients(targetType, organizationIds, client = pool) {
   if (targetType === 'specific') return Promise.resolve(organizationIds?.length ?? 0);
-  if (targetType === 'all-seo') {
+  if (targetType === 'all-ceo') {
     return client
       .query(
         `SELECT count(*)::int AS n FROM users
-          WHERE role = 'seo' AND status = 'active' AND deleted_at IS NULL`,
+          WHERE role = 'ceo' AND status = 'active' AND deleted_at IS NULL`,
       )
       .then((r) => r.rows[0].n);
   }
@@ -621,7 +625,7 @@ export function updateProfile(id, fields, client = pool) {
 
 /* Запросы по staff_penalties отсюда убраны: платформа не читает дисциплину
  * сотрудников партнёров. Эти данные принадлежат организации и доступны её
- * SEO через /api/super/penalties. */
+ * CEO через /api/super/penalties. */
 
 /**
  * Karis 21.08.2026: темы с видео-файлом (методист загрузил вместо ссылки
@@ -642,6 +646,291 @@ export function listVideoStorageCosts(client = pool) {
          JOIN organizations o ON o.id = tt.organization_id
         WHERE t.video_file_key IS NOT NULL AND t.deleted_at IS NULL
         ORDER BY t.video_storage_cost_usd DESC NULLS LAST`,
+    )
+    .then((r) => r.rows);
+}
+
+// ---------- Audit Log платформы (Karis 25.08.2026) ----------
+
+/**
+ * Запись действия Main Admin. organization_id = NULL — действие уровня
+ * платформы; если действие касается конкретного партнёра, кладём его id,
+ * чтобы запись была видна и в разрезе организации.
+ *
+ * actor_name берётся из users по actor_id, если не передан явно — тот же
+ * приём, что в super-модуле: аккаунт могут удалить, а в журнале имя
+ * обязано остаться.
+ */
+export function insertPlatformAudit(entry, client = pool) {
+  const {
+    orgId = null, actorId, actorName = null, actorRole, action,
+    entityType = null, entityId = null, entityLabel = null,
+    success = true, ip = null, userAgent = null,
+    before = null, after = null, reason = null, meta = null,
+  } = entry;
+  return client
+    .query(
+      `INSERT INTO audit_log
+         (organization_id, actor_id, actor_name, actor_role, action,
+          entity_type, entity_id, entity_label, success, ip, user_agent,
+          before_data, after_data, reason, meta)
+       VALUES ($1, $2,
+               COALESCE($3, (SELECT first_name || ' ' || last_name FROM users WHERE id = $2)),
+               $4, $5, $6, $7, $8, $9, $10, $11,
+               $12::jsonb, $13::jsonb, $14, $15::jsonb)
+       RETURNING id`,
+      [
+        orgId, actorId ?? null, actorName, actorRole ?? null, action,
+        entityType, entityId, entityLabel, success, ip, userAgent,
+        before ? JSON.stringify(before) : null,
+        after ? JSON.stringify(after) : null,
+        reason,
+        meta ? JSON.stringify(meta) : null,
+      ],
+    )
+    .then((r) => r.rows[0]);
+}
+
+/**
+ * Лента журнала для Main Admin. По умолчанию — только платформенные записи
+ * (organization_id IS NULL): действия партнёров живут в своей панели у CEO
+ * и здесь только зашумляли бы ленту. `scope='all'` показывает всё вместе.
+ *
+ * Пагинация обязательна: журнал растёт бесконечно, а на фронте Main Admin
+ * пагинации нигде нет — здесь она появляется впервые (см. main.routes.js).
+ */
+export function listPlatformAudit(
+  { scope = 'platform', action = null, actorId = null, organizationId = null, search = null, limit = 50, offset = 0 },
+  client = pool,
+) {
+  const conds = [];
+  const vals = [];
+  let i = 1;
+
+  if (scope === 'platform') conds.push('a.organization_id IS NULL');
+  else if (scope === 'org') conds.push('a.organization_id IS NOT NULL');
+  if (scope === 'platform') conds.push(`a.action NOT LIKE 'auth.%'`);
+  else if (scope === 'security') conds.push(`a.action LIKE 'auth.%'`);
+
+  if (action) { conds.push(`a.action = $${i++}`); vals.push(action); }
+  if (actorId) { conds.push(`a.actor_id = $${i++}`); vals.push(actorId); }
+  if (organizationId) { conds.push(`a.organization_id = $${i++}`); vals.push(organizationId); }
+  if (search) {
+    conds.push(`(a.actor_name ILIKE $${i} OR a.entity_label ILIKE $${i} OR o.name ILIKE $${i} OR a.action ILIKE $${i})`);
+    vals.push(`%${search}%`); i += 1;
+  }
+
+  const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
+  vals.push(limit, offset);
+
+  return client
+    .query(
+      `SELECT a.id, a.organization_id, o.name AS organization_name,
+              a.actor_id, a.actor_name, a.actor_role, a.action,
+              a.entity_type, a.entity_id, a.entity_label, a.success,
+              a.ip, a.user_agent, a.before_data, a.after_data, a.reason, a.meta,
+              a.created_at,
+              count(*) OVER()::int AS total_count
+         FROM audit_log a
+         LEFT JOIN organizations o ON o.id = a.organization_id
+         ${where}
+        ORDER BY a.created_at DESC
+        LIMIT $${i++} OFFSET $${i}`,
+      vals,
+    )
+    .then((r) => r.rows);
+}
+
+/** Список различных action — для выпадающего фильтра на фронте. */
+export function listAuditActions(scope = 'platform', client = pool) {
+  const cond = scope === 'platform' ? `WHERE organization_id IS NULL AND action NOT LIKE 'auth.%'`
+    : scope === 'org' ? 'WHERE organization_id IS NOT NULL'
+      : scope === 'security' ? `WHERE action LIKE 'auth.%'` : '';
+  return client
+    .query(`SELECT DISTINCT action FROM audit_log ${cond} ORDER BY action`)
+    .then((r) => r.rows.map((x) => x.action));
+}
+
+// ---------- Action Center (Karis 25.08.2026) ----------
+
+/**
+ * Сырые сигналы для центра проблем. Namеренно НЕ считаем здесь severity и не
+ * решаем, заблокирован ли партнёр: правило блокировки живёт в
+ * shared/orgAccess.js (isOrgAccessBlocked) и должно быть ОДНО на весь проект —
+ * иначе предупреждение в панели и реальная блокировка на входе разъедутся.
+ * Отдаём факты, решение принимает сервис.
+ *
+ * last_login_at берём из refresh_tokens: отдельного поля «последний вход» в
+ * схеме нет (проверено), а каждая выдача refresh-токена — это факт входа.
+ * Приблизительно, но честно, и не требует новой инфраструктуры.
+ */
+export function actionCenterOrgSignals(client = pool) {
+  return client
+    .query(
+      `SELECT o.id, o.name, o.status, o.access_until,
+              (SELECT max(u.last_login_at) FROM users u WHERE u.organization_id = o.id) AS last_login_at,
+              (SELECT count(*)::int
+                 FROM users u
+                WHERE u.organization_id = o.id AND u.role = 'student'
+                  AND u.status = 'active' AND u.deleted_at IS NULL) AS students,
+              (SELECT max(p.period_covered) FROM platform_org_payments p
+                WHERE p.organization_id = o.id AND p.type = 'payment') AS last_paid_period,
+              o.created_at
+         FROM organizations o
+        WHERE o.deleted_at IS NULL
+        ORDER BY o.name`,
+    )
+    .then((r) => r.rows);
+}
+
+/** Необработанные заявки с лендинга + возраст самой старой. */
+export function actionCenterLeads(client = pool) {
+  return client
+    .query(
+      `SELECT id, center_name, name, phone, created_at,
+              EXTRACT(DAY FROM now() - created_at)::int AS age_days
+         FROM leads
+        WHERE status = 'new'
+        ORDER BY created_at ASC`,
+    )
+    .then((r) => r.rows);
+}
+
+/** Заявки партнёров на фичи, ожидающие решения Main Admin. */
+export function actionCenterFeatureRequests(client = pool) {
+  return client
+    .query(
+      `SELECT fr.id, fr.feature_key, fr.type, fr.created_at,
+              EXTRACT(DAY FROM now() - fr.created_at)::int AS age_days,
+              o.id AS organization_id, o.name AS organization_name
+         FROM platform_feature_requests fr
+         JOIN organizations o ON o.id = fr.organization_id
+        WHERE fr.status = 'pending' AND o.deleted_at IS NULL
+        ORDER BY fr.created_at ASC`,
+    )
+    .then((r) => r.rows);
+}
+
+// ---------- Модерация чата (Karis 26.08.2026) ----------
+
+/** Полный список слов — для экрана управления (активные и выключенные вместе). */
+export function listBannedWords(client = pool) {
+  return client
+    .query(
+      `SELECT bw.id, bw.word, bw.is_active, bw.auto_mask, bw.created_at,
+              u.first_name || ' ' || u.last_name AS created_by_name
+         FROM platform_banned_words bw
+         LEFT JOIN users u ON u.id = bw.created_by
+        ORDER BY bw.created_at DESC`,
+    )
+    .then((r) => r.rows);
+}
+
+/**
+ * Массовое добавление. ON CONFLICT переактивирует уже существующее слово
+ * вместо ошибки — если слово когда-то выключили, а потом добавили заново
+ * тем же текстом, это должно просто включить его обратно, а не звать 409.
+ */
+export function addBannedWords(words, createdBy, client = pool) {
+  return client
+    .query(
+      `INSERT INTO platform_banned_words (word, created_by)
+       SELECT DISTINCT trim(w), $2::uuid FROM unnest($1::text[]) AS w
+       WHERE trim(w) <> ''
+       ON CONFLICT (lower(word)) DO UPDATE SET is_active = true
+       RETURNING id, word, is_active, created_at`,
+      [words, createdBy],
+    )
+    .then((r) => r.rows);
+}
+
+export function setBannedWordActive(id, isActive, client = pool) {
+  return client
+    .query(
+      `UPDATE platform_banned_words SET is_active = $2 WHERE id = $1
+       RETURNING id, word, is_active`,
+      [id, isActive],
+    )
+    .then((r) => r.rows[0]);
+}
+
+/**
+ * Отдельная ручка, а не общий PATCH с обоими полями сразу: is_active уже
+ * протестирован живьём как самостоятельный поток, лишний риск его задеть
+ * ради общего эндпоинта не оправдан (Karis 26.08.2026).
+ */
+export function setBannedWordAutoMask(id, autoMask, client = pool) {
+  return client
+    .query(
+      `UPDATE platform_banned_words SET auto_mask = $2 WHERE id = $1
+       RETURNING id, word, is_active, auto_mask`,
+      [id, autoMask],
+    )
+    .then((r) => r.rows[0]);
+}
+
+export function deleteBannedWord(id, client = pool) {
+  return client
+    .query(`DELETE FROM platform_banned_words WHERE id = $1 RETURNING id, word`, [id])
+    .then((r) => r.rows[0]);
+}
+
+/**
+ * Сообщения, сработавшие на список слов — единственный кусок переписки,
+ * который видит Main Admin. Обычные сообщения сюда не попадают: WHERE
+ * жёстко фильтрует по flagged_word IS NOT NULL, это не общий чат-браузер.
+ */
+export function listFlaggedMessages({ limit = 50, offset = 0 } = {}, client = pool) {
+  return client
+    .query(
+      `SELECT m.id, m.chat_type, m.room_key, m.body, m.flagged_word, m.created_at,
+              u.id AS sender_id, u.first_name AS sender_first_name, u.last_name AS sender_last_name,
+              u.role AS sender_role,
+              b.id AS branch_id, b.name AS branch_name,
+              o.id AS organization_id, o.name AS organization_name,
+              count(*) OVER()::int AS total_count
+         FROM chat_messages m
+         JOIN users u ON u.id = m.sender_id
+         LEFT JOIN branches b ON b.id = m.branch_id
+         LEFT JOIN organizations o ON o.id = u.organization_id
+        WHERE m.flagged_word IS NOT NULL AND m.deleted_at IS NULL
+        ORDER BY m.created_at DESC
+        LIMIT $1 OFFSET $2`,
+      [limit, offset],
+    )
+    .then((r) => r.rows);
+}
+
+/** Сколько сообщений сработало на список слов за последние сутки — для
+ *  Центра контроля. Скользящее окно, а не «непрочитанные»: у сообщений чата
+ *  нет и не должно быть отдельного статуса «просмотрено» ради одного
+ *  счётчика — через сутки без нового срабатывания сигнал сам угасает. */
+export function countRecentFlaggedMessages(client = pool) {
+  return client
+    .query(
+      `SELECT count(*)::int AS count
+         FROM chat_messages
+        WHERE flagged_word IS NOT NULL AND deleted_at IS NULL
+          AND created_at > now() - interval '24 hours'`,
+    )
+    .then((r) => r.rows[0].count);
+}
+
+/**
+ * Признак подбора пароля — N и более неудачных попыток входа под одним
+ * логином за короткое окно. Группируем по actor_name (введённая строка
+ * логина/телефона), не по IP: это то, что реально можно предупредить —
+ * "твой аккаунт X сейчас подбирают", а не абстрактный IP-адрес.
+ */
+export function detectBruteForceLogins(client = pool) {
+  return client
+    .query(
+      `SELECT actor_name, count(*)::int AS attempts, max(created_at) AS last_attempt_at
+         FROM audit_log
+        WHERE action = 'auth.login_failed' AND created_at > now() - interval '1 hour'
+        GROUP BY actor_name
+       HAVING count(*) >= 5
+        ORDER BY attempts DESC`,
     )
     .then((r) => r.rows);
 }

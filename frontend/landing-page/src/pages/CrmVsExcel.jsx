@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { breadcrumb, faqPage, useSeo } from '../lib/seo.js';
+import { breadcrumb, faqPage, useCeo } from '../lib/ceo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 export default function CrmVsExcel() {
@@ -13,11 +13,11 @@ export default function CrmVsExcel() {
   const tr = (uz, en, ru) => (lang === 'uz' ? uz : lang === 'en' ? en : ru);
 
   const jsonLd = useMemo(() => [
-    breadcrumb([{ name: t.seo.breadcrumbHome, path: '/landing' }, { name: s.badge, path: '/landing/crm-vs-excel' }], lang),
+    breadcrumb([{ name: t.ceo.breadcrumbHome, path: '/landing' }, { name: s.badge, path: '/landing/crm-vs-excel' }], lang),
     faqPage(s.faq),
-  ], [t.seo.breadcrumbHome, s, lang]);
+  ], [t.ceo.breadcrumbHome, s, lang]);
 
-  useSeo({ title: t.seo.vsExcel.title, description: t.seo.vsExcel.description, path: '/landing/crm-vs-excel', jsonLd });
+  useCeo({ title: t.ceo.vsExcel.title, description: t.ceo.vsExcel.description, path: '/landing/crm-vs-excel', jsonLd });
 
   return (
     <main className="excel-page">

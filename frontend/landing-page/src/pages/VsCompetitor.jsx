@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { breadcrumb, faqPage, useSeo } from '../lib/seo.js';
+import { breadcrumb, faqPage, useCeo } from '../lib/ceo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 export default function VsCompetitor({ dictKey, path }) {
@@ -12,9 +12,9 @@ export default function VsCompetitor({ dictKey, path }) {
   const s = t[dictKey];
   const competitor = dictKey === 'vsModme' ? 'MODME' : 'UMAI CRM';
   const tr = (uz, en, ru) => (lang === 'uz' ? uz : lang === 'en' ? en : ru);
-  const jsonLd = useMemo(() => [breadcrumb([{ name: t.seo.breadcrumbHome, path: '/landing' }, { name: s.h1, path }], lang), faqPage(s.faq)], [t.seo.breadcrumbHome, s, path, lang]);
+  const jsonLd = useMemo(() => [breadcrumb([{ name: t.ceo.breadcrumbHome, path: '/landing' }, { name: s.h1, path }], lang), faqPage(s.faq)], [t.ceo.breadcrumbHome, s, path, lang]);
 
-  useSeo({ title: t.seo[dictKey].title, description: t.seo[dictKey].description, path, jsonLd });
+  useCeo({ title: t.ceo[dictKey].title, description: t.ceo[dictKey].description, path, jsonLd });
 
   return (
     <main className={`versus-page ${dictKey === 'vsUmai' ? 'versus-page--umai' : ''}`}>

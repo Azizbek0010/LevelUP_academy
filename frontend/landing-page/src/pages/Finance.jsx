@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { breadcrumb, useSeo } from '../lib/seo.js';
+import { breadcrumb, useCeo } from '../lib/ceo.js';
 import { useLang, useT } from '../i18n/index.js';
 
 export default function Finance() {
@@ -13,18 +13,18 @@ export default function Finance() {
     () => [
       breadcrumb(
         [
-          { name: t.seo.breadcrumbHome, path: '/landing' },
+          { name: t.ceo.breadcrumbHome, path: '/landing' },
           { name: f.badge, path: '/landing/finance' },
         ],
         lang,
       ),
     ],
-    [t.seo.breadcrumbHome, f.badge, lang],
+    [t.ceo.breadcrumbHome, f.badge, lang],
   );
 
-  useSeo({
-    title: t.seo.finance.title,
-    description: t.seo.finance.description,
+  useCeo({
+    title: t.ceo.finance.title,
+    description: t.ceo.finance.description,
     path: '/landing/finance',
     jsonLd,
   });

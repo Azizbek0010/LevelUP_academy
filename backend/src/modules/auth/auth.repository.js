@@ -76,6 +76,35 @@ export function insertRefreshToken({ userId, tokenHash, expiresAt }, client = po
   );
 }
 
+export function touchLastLogin(userId, client = pool) {
+  return client.query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [userId]);
+}
+
+/** Security audit. Passwords and tokens are deliberately never stored. */
+export function insertLoginAudit({ user = null, login, success, group, ip, userAgent }, client = pool) {
+  const actorName = user
+    ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || login
+    : login;
+  return client.query(
+    `INSERT INTO audit_log
+       (organization_id, actor_id, actor_name, actor_role, action,
+        entity_type, entity_id, entity_label, success, ip, user_agent, meta)
+     VALUES
+       (NULL, $1, $2, $3, $4, 'login', $1, $5, $6, $7, $8, $9)`,
+    [
+      user?.id ?? null,
+      actorName || 'Неизвестный логин',
+      user?.role ?? null,
+      success ? 'auth.login_succeeded' : 'auth.login_failed',
+      group,
+      success,
+      ip ?? null,
+      userAgent ?? null,
+      { group },
+    ],
+  );
+}
+
 export function findRefreshByHash(tokenHash, client = pool) {
   return client
     .query(`SELECT * FROM refresh_tokens WHERE token_hash = $1`, [tokenHash])

@@ -169,7 +169,7 @@ Allowed transitions: draft→approved, approved→paid, paid→approved (rollbac
 ### GET `/api/mentor/salary/mentors/{mentorId}`
 List a mentor's salary records for a year
 
-Same ownership rules as the suggestion endpoint (self, or admin/seo/main_admin).
+Same ownership rules as the suggestion endpoint (self, or admin/ceo/main_admin).
 
 **Auth:** Bearer JWT required
 **Role(s):** mentor (own record)
@@ -231,7 +231,7 @@ Same ownership rules as the suggestion endpoint (self, or admin/seo/main_admin).
 ### GET `/api/mentor/salary/mentors/{mentorId}/suggestion`
 Decision-support salary suggestion for a month (pure calculation, writes nothing)
 
-`groupRevenue = monthlyPrice × activeStudents` per group the mentor teaches during the month. Access: the mentor may only view their own suggestion; admin only for mentors in their own branch (404 if a foreign branch, to avoid disclosure); seo/main_admin unrestricted.
+`groupRevenue = monthlyPrice × activeStudents` per group the mentor teaches during the month. Access: the mentor may only view their own suggestion; admin only for mentors in their own branch (404 if a foreign branch, to avoid disclosure); ceo/main_admin unrestricted.
 
 
 **Auth:** Bearer JWT required

@@ -53,7 +53,7 @@ cp .env.example .env        # fill JWT_ACCESS_SECRET (min 32 chars)
 docker compose up -d        # Postgres 16, Redis 7, MinIO, Mailpit
 npm install
 npm run migrate             # apply schema
-npm run seed                # main_admin + demo org/branch/seo — LOCAL DB ONLY
+npm run seed                # main_admin + demo org/branch/ceo — LOCAL DB ONLY
 npm run dev                 # API + queues/crons on :4000, one process
 ```
 

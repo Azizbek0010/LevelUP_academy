@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
-import { SITE_URL, breadcrumb, useSeo } from '../lib/seo.js';
+import { SITE_URL, breadcrumb, useCeo } from '../lib/ceo.js';
 import { localizePath, useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 function Block({ block }) {
@@ -24,19 +24,19 @@ export default function BlogArticle() {
   const jsonLd = useMemo(() => {
     if (!article) return [];
     return [
-      breadcrumb([{ name: t.seo.breadcrumbHome, path: '/landing' }, { name: b.badge, path: '/landing/blog' }, { name: article.title, path }], lang),
+      breadcrumb([{ name: t.ceo.breadcrumbHome, path: '/landing' }, { name: b.badge, path: '/landing/blog' }, { name: article.title, path }], lang),
       {
         '@context': 'https://schema.org', '@type': 'BlogPosting', headline: article.title,
-        description: article.seoDescription, datePublished: article.date, dateModified: article.date,
+        description: article.ceoDescription, datePublished: article.date, dateModified: article.date,
         inLanguage: lang === 'uz' ? 'uz' : lang === 'en' ? 'en' : 'ru',
         author: { '@type': 'Organization', name: 'LevelUp Academy' },
         publisher: { '@type': 'Organization', name: 'LevelUp Academy', logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` } },
         mainEntityOfPage: `${SITE_URL}${localizePath(path, lang)}`,
       },
     ];
-  }, [article, b.badge, t.seo.breadcrumbHome, lang, path]);
+  }, [article, b.badge, t.ceo.breadcrumbHome, lang, path]);
 
-  useSeo({ title: article ? article.seoTitle : '', description: article ? article.seoDescription : '', path, jsonLd, noindex: !article });
+  useCeo({ title: article ? article.ceoTitle : '', description: article ? article.ceoDescription : '', path, jsonLd, noindex: !article });
 
   if (!article) return <main><section className="page-hero"><div className="container"><span className="badge badge--lime">404</span><h1>{t.notFound.h1}</h1><p>{t.notFound.text}</p><Link to={lp('/landing/blog')} className="btn btn--dark">{b.backToBlog}</Link></div></section></main>;
 

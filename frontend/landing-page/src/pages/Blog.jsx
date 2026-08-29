@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
-import { breadcrumb, useSeo } from '../lib/seo.js';
+import { breadcrumb, useCeo } from '../lib/ceo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 export default function Blog() {
@@ -12,9 +12,9 @@ export default function Blog() {
   const entries = Object.entries(b.articles);
   const [featured, ...rest] = entries;
   const tr = (uz, en, ru) => (lang === 'uz' ? uz : lang === 'en' ? en : ru);
-  const jsonLd = useMemo(() => [breadcrumb([{ name: t.seo.breadcrumbHome, path: '/landing' }, { name: b.badge, path: '/landing/blog' }], lang)], [t.seo.breadcrumbHome, b.badge, lang]);
+  const jsonLd = useMemo(() => [breadcrumb([{ name: t.ceo.breadcrumbHome, path: '/landing' }, { name: b.badge, path: '/landing/blog' }], lang)], [t.ceo.breadcrumbHome, b.badge, lang]);
 
-  useSeo({ title: t.seo.blog.title, description: t.seo.blog.description, path: '/landing/blog', jsonLd });
+  useCeo({ title: t.ceo.blog.title, description: t.ceo.blog.description, path: '/landing/blog', jsonLd });
 
   return (
     <main className="editorial-page">

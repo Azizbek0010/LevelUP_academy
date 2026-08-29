@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Search, Inbox, X, ArrowRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 /**
- * Общие кирпичики панели SEO.
+ * Общие кирпичики панели CEO.
  *
  * Card, Panel, Metric — оставлены для обратной совместимости с другими страницами super/.
  * Новые строгие компоненты (DashboardPanel, KpiCard, BranchesTable, AnalyticsCTA)

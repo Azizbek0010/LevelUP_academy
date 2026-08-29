@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { breadcrumb, useSeo } from '../lib/seo.js';
+import { breadcrumb, useCeo } from '../lib/ceo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 export default function About() {
@@ -11,9 +11,9 @@ export default function About() {
   const lp = useLocalizePath();
   const s = t.about;
   const tr = (uz, en, ru) => (lang === 'uz' ? uz : lang === 'en' ? en : ru);
-  const jsonLd = useMemo(() => [breadcrumb([{ name: t.seo.breadcrumbHome, path: '/landing' }, { name: s.badge, path: '/landing/about' }], lang)], [t.seo.breadcrumbHome, s.badge, lang]);
+  const jsonLd = useMemo(() => [breadcrumb([{ name: t.ceo.breadcrumbHome, path: '/landing' }, { name: s.badge, path: '/landing/about' }], lang)], [t.ceo.breadcrumbHome, s.badge, lang]);
 
-  useSeo({ title: t.seo.about.title, description: t.seo.about.description, path: '/landing/about', jsonLd });
+  useCeo({ title: t.ceo.about.title, description: t.ceo.about.description, path: '/landing/about', jsonLd });
 
   return (
     <main className="about-brand-page">

@@ -30,7 +30,7 @@ List penalties issued by this admin
         - `target_role`: enum: `admin` | `mentor` | `methodist` (optional)
         - `target_name`: string (optional)
         - `issued_by`: string (uuid) (optional)
-        - `issuer_role`: enum: `seo` | `admin` (optional)
+        - `issuer_role`: enum: `ceo` | `admin` (optional)
         - `issued_by_name`: string (optional)
 
 - **401** — Missing/invalid/expired bearer token
@@ -83,7 +83,7 @@ Issue penalty — Admin → mentor/methodist (shtraf), mentor (qora)
           - `target_role`: enum: `admin` | `mentor` | `methodist` (optional)
           - `target_name`: string (optional)
           - `issued_by`: string (uuid) (optional)
-          - `issuer_role`: enum: `seo` | `admin` (optional)
+          - `issuer_role`: enum: `ceo` | `admin` (optional)
           - `issued_by_name`: string (optional)
       - `fired`: boolean (optional) — true если это qora (сотрудник уволен, status=fired)
 
@@ -259,7 +259,7 @@ List penalties in the organization
         - `target_role`: enum: `admin` | `mentor` | `methodist` (optional)
         - `target_name`: string (optional)
         - `issued_by`: string (uuid) (optional)
-        - `issuer_role`: enum: `seo` | `admin` (optional)
+        - `issuer_role`: enum: `ceo` | `admin` (optional)
         - `issued_by_name`: string (optional)
 
 - **401** — Missing/invalid/expired bearer token
@@ -283,7 +283,7 @@ List penalties in the organization
 ### POST `/api/super/penalties`
 Issue a warning (sariq/qizil) or fire (qora) a staff member
 
-SEO → admin / mentor / methodist. amount — необязательный довесок к любому из трёх уровней, не отдельная категория. qora ставит целевому status=fired (атомарно).
+CEO → admin / mentor / methodist. amount — необязательный довесок к любому из трёх уровней, не отдельная категория. qora ставит целевому status=fired (атомарно).
 
 
 **Auth:** Bearer JWT required
@@ -313,7 +313,7 @@ SEO → admin / mentor / methodist. amount — необязательный до
           - `target_role`: enum: `admin` | `mentor` | `methodist` (optional)
           - `target_name`: string (optional)
           - `issued_by`: string (uuid) (optional)
-          - `issuer_role`: enum: `seo` | `admin` (optional)
+          - `issuer_role`: enum: `ceo` | `admin` (optional)
           - `issued_by_name`: string (optional)
       - `fired`: boolean (optional) — true если это qora (сотрудник уволен, status=fired)
 

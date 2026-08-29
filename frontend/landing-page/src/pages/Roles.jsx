@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import Cta from '../components/Cta.jsx';
-import { breadcrumb, useSeo } from '../lib/seo.js';
+import { breadcrumb, useCeo } from '../lib/ceo.js';
 import { useLang, useT } from '../i18n/index.js';
 
 export default function Roles() {
@@ -17,18 +17,18 @@ export default function Roles() {
     () => [
       breadcrumb(
         [
-          { name: t.seo.breadcrumbHome, path: '/landing' },
+          { name: t.ceo.breadcrumbHome, path: '/landing' },
           { name: r.badge, path: '/landing/roles' },
         ],
         lang,
       ),
     ],
-    [t.seo.breadcrumbHome, r.badge, lang],
+    [t.ceo.breadcrumbHome, r.badge, lang],
   );
 
-  useSeo({
-    title: t.seo.roles.title,
-    description: t.seo.roles.description,
+  useCeo({
+    title: t.ceo.roles.title,
+    description: t.ceo.roles.description,
     path: '/landing/roles',
     jsonLd,
   });

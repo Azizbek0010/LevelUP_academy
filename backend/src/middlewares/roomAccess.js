@@ -2,7 +2,7 @@ import { pool } from '../config/db.js';
 import { AppError } from '../utils/AppError.js';
 import { assertDmAccess } from '../modules/chat/chat.access.js';
 
-const STAFF = new Set(['main_admin', 'seo', 'admin', 'mentor']);
+const STAFF = new Set(['main_admin', 'ceo', 'admin', 'mentor']);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -42,7 +42,7 @@ export async function requireRoomAccess(req, _res, next) {
 
     if (type === 'group') {
       // Комнату группы видят ТОЛЬКО её участники: ведущий ментор и ученики
-      // группы. Раньше admin/seo/main_admin пропускались без проверки —
+      // группы. Раньше admin/ceo/main_admin пропускались без проверки —
       // то есть управленец мог читать всё общение ментора с учениками в чате
       // группы. Это ровно тот надзор, которого быть не должно: личные диалоги
       // (`dm:`) уже закрыты (assertDmAccess), а групповой чат оставался щелью.

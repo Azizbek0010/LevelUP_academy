@@ -49,6 +49,28 @@ pool.on('error', (err) => {
   logger.error({ err }, 'Unexpected error on idle PostgreSQL client');
 });
 
+/**
+ * Karis 25.08.2026: pool.on('error') выше ловит ТОЛЬКО простаивающих клиентов
+ * внутри пула. Клиент, уже выданный через pool.connect() (withTransaction,
+ * mentor/coins.service), при обрыве соединения эмитит 'error' сам на себе — а
+ * слушателя на нём нет. EventEmitter без слушателя 'error' бросает синхронно,
+ * и это НЕ unhandledRejection (тот обработчик в server.js процесс бы удержал),
+ * а uncaughtException, которого в проекте нет вообще — падал весь процесс.
+ *
+ * Из-за этого бэкенд ложился целиком несколько раз за 25.08 с
+ * 'Connection terminated unexpectedly': Neon на бесплатном плане рвёт
+ * простаивающие соединения, и вместо переподключения умирал сервер.
+ *
+ * Слушатель ничего не проглатывает: промис самого запроса отклоняется отдельно
+ * и доходит до вызывающего кода как раньше. Он лишь снимает падение процесса —
+ * пул выбрасывает битое соединение и открывает новое.
+ */
+pool.on('connect', (client) => {
+  client.on('error', (err) => {
+    logger.error({ err }, 'PostgreSQL client error (соединение будет пересоздано)');
+  });
+});
+
 /** Shortcut for one-off queries (no transaction). */
 export const query = (text, params) => pool.query(text, params);
 

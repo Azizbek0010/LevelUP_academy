@@ -23,11 +23,11 @@ export async function listBranchUsers({ branchId, role, status, page, limit, off
   return { items, total, page, limit };
 }
 
-const FINANCE_ROLES = new Set(['main_admin', 'seo', 'admin', 'branch_manager', 'finance_manager']);
+const FINANCE_ROLES = new Set(['main_admin', 'ceo', 'admin', 'branch_manager', 'finance_manager']);
 
 function directoryScope(user) {
   if (user.role === 'main_admin') return {};
-  if (user.role === 'seo' || user.role === 'methodist') {
+  if (user.role === 'ceo' || user.role === 'methodist') {
     return { organizationId: user.organizationId };
   }
   if (user.role === 'mentor') {
@@ -58,7 +58,7 @@ export async function listDirectory({ requester, role, status, search, page, lim
       canSeeFinance: FINANCE_ROLES.has(requester.role),
       scope: requester.role === 'main_admin'
         ? 'platform'
-        : requester.role === 'seo' || requester.role === 'methodist'
+        : requester.role === 'ceo' || requester.role === 'methodist'
           ? 'organization'
           : requester.role === 'mentor' ? 'assigned_students' : 'branch',
     },

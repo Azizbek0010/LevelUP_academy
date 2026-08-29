@@ -2,7 +2,7 @@
 
 Готовые тексты для регистрации LevelUp Academy в SaaS-каталогах и локальных
 бизнес-справочниках (задача P2 в [GEO-OFFSITE.md](./GEO-OFFSITE.md)). По разделению
-ролей: **я (`abdulazizSEO`) готовлю тексты**, **владелец создаёт аккаунты и подаёт
+ролей: **я (`abdulazizCEO`) готовлю тексты**, **владелец создаёт аккаунты и подаёт
 листинги** (авто-регистрация в чужих сервисах не делается).
 
 После подачи — отметь статус в трекере в [GEO-OFFSITE.md](./GEO-OFFSITE.md#Трекер-подачи)
@@ -15,7 +15,7 @@
 ## Факты о продукте (единый источник для всех листингов)
 
 Чтобы описания не расходились между площадками — все цифры и формулировки ниже
-взяты из `src/i18n/ru.js` / `uz.js` (`seo.*`) и `SEO-BACKLOG.md`, ничего не придумано.
+взяты из `src/i18n/ru.js` / `uz.js` (`ceo.*`) и `CEO-BACKLOG.md`, ничего не придумано.
 
 | Поле | Значение |
 |---|---|
@@ -27,7 +27,7 @@
 | Одна строка (RU) | CRM для учебного центра: учёт учеников, оплаты и долги, посещаемость, тесты, мотивация и Telegram-уведомления в одной системе |
 | Одна строка (EN) | All-in-one CRM for education centers: student records, payments & debts, attendance, tests, gamification and Telegram notifications |
 | Ключевые модули | Платежи и сплит-инвойсы, davomat (посещаемость), тесты с серверным таймером, домашние задания, коины/геймификация, realtime-чаты, видеоуроки, отчёты, Telegram-бот, мультифилиальность |
-| Роли/кабинеты | SEO-роль (бывш. Super Admin), Admin, Ментор, Методист, Родитель, Ученик — 6 кабинетов, RBAC на сервере |
+| Роли/кабинеты | CEO-роль (бывш. Super Admin), Admin, Ментор, Методист, Родитель, Ученик — 6 кабинетов, RBAC на сервере |
 | Цена | До 30 активных аккаунтов — бесплатно; далее от 199 000 сум/мес. Считаются ученики, родители и сотрудники; филиалы безлимитно |
 | Триал | Первая неделя бесплатно |
 | Ниши посадочных страниц | `/landing/for-language-school`, `/landing/for-courses`, `/landing/crm-vs-excel` |
@@ -66,7 +66,7 @@
   - Gamification: coins, shop, leaderboards
   - Real-time chat and presence
   - Telegram bot notifications
-  - Multi-branch support with role-based access (SEO-role/Admin/Mentor/Methodist/Parent/Student)
+  - Multi-branch support with role-based access (CEO-role/Admin/Mentor/Methodist/Parent/Student)
 - **Pricing model:** Freemium — free up to 30 active accounts, then tiered pricing from 199,000 UZS/month; students, parents and staff all count
 
 ### SaaSHub
@@ -104,7 +104,7 @@
 > [!warning] Главное, что выяснилось 05.08
 > Страница продукта отдаётся с `robots: noindex`, и на ней написано: «The primary details
 > have not been verified within the last quarter, and they might be outdated». То есть
-> ссылка сейчас **не работает как SEO-сигнал** — Google эту страницу в индекс не берёт.
+> ссылка сейчас **не работает как CEO-сигнал** — Google эту страницу в индекс не берёт.
 > Это меняет приоритет: сначала верификация, потом всё остальное.
 
 ### 1. Верификация — делать первой
@@ -131,7 +131,7 @@
 - Realtime chat plus a direct parent-to-administrator channel
 - Telegram bot: absences, payments, grades and debts, no app to install
 - Multi-branch by design — branches are isolated, the owner sees the whole network
-- Seven roles with server-side RBAC: Main Admin, SEO-role, Admin, Mentor, Methodist, Student, Parent
+- Seven roles with server-side RBAC: Main Admin, CEO-role, Admin, Mentor, Methodist, Student, Parent
 
 ### 3. Q&A — вставить как есть
 
@@ -183,7 +183,7 @@
 ## Локальные площадки (RU/UZ)
 
 ### Yandex Бизнес
-- ⚠️ **Блокер (тот же, что в SEO-BACKLOG.md):** нужен физический адрес офиса и
+- ⚠️ **Блокер (тот же, что в CEO-BACKLOG.md):** нужен физический адрес офиса и
   телефон компании — без них организацию не завести, регион «Узбекистан» тоже
   подтягивается через это. Как только адрес/телефон появятся — заполню карточку.
 - **Название:** LevelUp Academy
@@ -218,6 +218,6 @@
 ## Связанное
 
 - [GEO-OFFSITE.md](./GEO-OFFSITE.md) — общий план off-site GEO/AEO, трекер подачи
-- [SEO-BACKLOG.md](./SEO-BACKLOG.md) — общий SEO-бэклог (тот же блокер адреса упомянут там же)
+- [CEO-BACKLOG.md](./CEO-BACKLOG.md) — общий CEO-бэклог (тот же блокер адреса упомянут там же)
 
-#seo #geo #directories #backlinks
+#ceo #geo #directories #backlinks

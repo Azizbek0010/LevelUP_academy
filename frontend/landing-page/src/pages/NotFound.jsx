@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useSeo } from '../lib/seo.js';
+import { useCeo } from '../lib/ceo.js';
 import { useLocalizePath, useT } from '../i18n/index.js';
 
 export default function NotFound() {
@@ -7,9 +7,9 @@ export default function NotFound() {
   const t = useT();
   const lp = useLocalizePath();
 
-  useSeo({
-    title: t.seo.notFound.title,
-    description: t.seo.notFound.description,
+  useCeo({
+    title: t.ceo.notFound.title,
+    description: t.ceo.notFound.description,
     path: pathname,
     noindex: true,
   });

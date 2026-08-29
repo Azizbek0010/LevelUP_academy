@@ -1507,7 +1507,7 @@ Freeze or unfreeze a mentor account
 ### GET `/api/admin/settings`
 Branch-visible org settings (lesson duration)
 
-Read-only for admins — the value is owned by the organization and is edited by the SEO (PATCH /api/super/organization). The group form uses it to compute the lesson end time from the chosen start time.
+Read-only for admins — the value is owned by the organization and is edited by the CEO (PATCH /api/super/organization). The group form uses it to compute the lesson end time from the chosen start time.
 
 
 **Auth:** Bearer JWT required

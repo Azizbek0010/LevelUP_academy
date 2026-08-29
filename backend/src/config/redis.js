@@ -25,7 +25,19 @@ function createClient(name, options = {}) {
     ? { retryStrategy: () => null, connectTimeout: 500, enableOfflineQueue: false }
     : { retryStrategy };
   const client = new Redis(env.REDIS_URL, { lazyConnect: false, ...testOptions, ...options });
-  client.on('error', (err) => logger.error(`Redis error [${name}]: ${err.message}`));
+  let lastLoggedMessage = '';
+  let lastLoggedAt = 0;
+  client.on('error', (err) => {
+    const message = err?.message || 'Unknown Redis error';
+    const now = Date.now();
+    // One unavailable Redis used to produce millions of identical log lines,
+    // starving the Node event loop and turning otherwise healthy logins into 500s.
+    if (message !== lastLoggedMessage || now - lastLoggedAt >= 60_000) {
+      lastLoggedMessage = message;
+      lastLoggedAt = now;
+      logger.error(`Redis error [${name}]: ${message}`);
+    }
+  });
   return client;
 }
 
