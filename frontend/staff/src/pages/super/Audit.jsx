@@ -40,7 +40,7 @@ const ACTION_META = {
 };
 
 const ROLE_LABEL = {
-  seo:         'SEO',
+  ceo:         'CEO',
   admin:       'Администратор',
   mentor:      'Ментор',
   methodist:   'Методист',
@@ -50,7 +50,7 @@ const ROLE_LABEL = {
 };
 
 const ROLE_TONE = {
-  seo: 'primary',
+  ceo: 'primary',
   admin:      'info',
   mentor:     'success',
   methodist:  'warning',

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { faqPage, useSeo } from '../lib/seo.js';
+import { faqPage, useCeo } from '../lib/ceo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 // Числовые данные демо-дашборда — от языка не зависят.
@@ -40,12 +40,12 @@ export default function Home() {
   const h = t.home;
   const founder = FOUNDER_COPY[lang] || FOUNDER_COPY.ru;
 
-  // Стабильная ссылка обязательна: иначе useSeo пересоздавал бы JSON-LD каждый рендер.
+  // Стабильная ссылка обязательна: иначе useCeo пересоздавал бы JSON-LD каждый рендер.
   const jsonLd = useMemo(() => [faqPage(h.faq)], [h.faq]);
 
-  useSeo({
-    title: t.seo.home.title,
-    description: t.seo.home.description,
+  useCeo({
+    title: t.ceo.home.title,
+    description: t.ceo.home.description,
     path: '/landing',
     jsonLd,
   });
@@ -288,7 +288,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== FAQ (SEO/GEO/AEO) ===== */}
+      {/* ===== FAQ (CEO/GEO/AEO) ===== */}
       <section className="section section--white" id="faq">
         <div className="container">
           <div className="section__head">

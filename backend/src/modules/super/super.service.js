@@ -212,7 +212,7 @@ export async function createAdmin(orgId, { firstName, lastName, email, branchId,
   if (!branch) throw new AppError(404, 'Branch not found in your organization');
 
   // пароль всегда генерится сервером и показывается один раз — так же, как
-  // Main Admin заводит SEO. Ручной ввод убрали: опечатка/автозаполнение
+  // Main Admin заводит CEO. Ручной ввод убрали: опечатка/автозаполнение
   // браузера в форме создания приводили к аккаунту с паролем, который никто
   // не мог вспомнить, а сбросить его было нечем.
   const tempPassword = genTempPassword();
@@ -240,7 +240,7 @@ export async function createAdmin(orgId, { firstName, lastName, email, branchId,
     lastName: admin.last_name,
     email: admin.email,
     branchId: admin.branch_id,
-    // показать один раз — SEO передаёт сотруднику
+    // показать один раз — CEO передаёт сотруднику
     tempPassword,
   };
 }
@@ -1133,7 +1133,7 @@ export async function listPlatformAnnouncements(orgId) {
   return repo.listPlatformAnnouncementsForOrg(orgId);
 }
 
-// ---------- каталог платных фич + заявки (SEO не переключает сам) ----------
+// ---------- каталог платных фич + заявки (CEO не переключает сам) ----------
 
 export async function getFeatureCatalog(orgId) {
   const [catalog, flags] = await Promise.all([repo.listActiveAddonCatalog(), repo.getOwnFeatureFlags(orgId)]);

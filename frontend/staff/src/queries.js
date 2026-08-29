@@ -16,7 +16,7 @@ function useAuthedQuery(queryKey, queryFn, opts = {}) {
 export function useSuperDashboard() {
   const { token, user } = useAuth();
   // Finance Manager видит те же данные (super.controller.js), но через свой
-  // роут (/finance/*, authorize('finance_manager','seo')) — /super/* у него
+  // роут (/finance/*, authorize('finance_manager','ceo')) — /super/* у него
   // 403 на всё остальное. Один и тот же хук для обеих ролей, чтобы не
   // дублировать Dashboard.jsx/Reports.jsx под каждую роль отдельно.
   const isFinance = user?.role === 'finance_manager';

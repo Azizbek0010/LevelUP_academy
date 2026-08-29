@@ -23,7 +23,7 @@ const ROLE_BY_TAG = {
   'Auth': 'Public (credentials in body — this endpoint issues the token)',
   'Leads': 'Public — no token (landing page lead form)',
   'Main Admin': 'main_admin',
-  'SEO': 'seo',
+  'CEO': 'ceo',
   'Admin': 'admin (own branch only)',
   'Admin Payments': 'admin (own branch only)',
   'Admin Reports': 'admin (own branch only)',

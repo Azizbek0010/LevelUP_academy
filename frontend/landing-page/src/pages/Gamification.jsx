@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { breadcrumb, useSeo } from '../lib/seo.js';
+import { breadcrumb, useCeo } from '../lib/ceo.js';
 import { useLang, useT } from '../i18n/index.js';
 
 const leaders = [
@@ -21,18 +21,18 @@ export default function Gamification() {
     () => [
       breadcrumb(
         [
-          { name: t.seo.breadcrumbHome, path: '/landing' },
+          { name: t.ceo.breadcrumbHome, path: '/landing' },
           { name: g.badge, path: '/landing/gamification' },
         ],
         lang,
       ),
     ],
-    [t.seo.breadcrumbHome, g.badge, lang],
+    [t.ceo.breadcrumbHome, g.badge, lang],
   );
 
-  useSeo({
-    title: t.seo.gamification.title,
-    description: t.seo.gamification.description,
+  useCeo({
+    title: t.ceo.gamification.title,
+    description: t.ceo.gamification.description,
     path: '/landing/gamification',
     jsonLd,
   });

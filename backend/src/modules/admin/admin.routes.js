@@ -116,7 +116,7 @@ router.get('/dashboard', ctrl.dashboard);
  *     summary: Branch-visible org settings (lesson duration)
  *     description: >
  *       Read-only for admins — the value is owned by the organization and is edited by the
- *       SEO (PATCH /api/super/organization). The group form uses it to compute the
+ *       CEO (PATCH /api/super/organization). The group form uses it to compute the
  *       lesson end time from the chosen start time.
  *     security: [{ bearerAuth: [] }]
  *     responses:
@@ -736,7 +736,7 @@ router.delete('/mentors/:id', validate({ params: idParam }), ctrl.deleteMentor);
  */
 router.post('/groups', validate({ body: createGroupSchema }), ctrl.createGroup);
 router.get('/groups', validate({ query: listGroupsQuery }), ctrl.listGroups);
-// методики с уже назначенной SEO ценой — источник «Направление» при создании группы
+// методики с уже назначенной CEO ценой — источник «Направление» при создании группы
 router.get('/training-types', ctrl.listTrainingTypes);
 
 /**

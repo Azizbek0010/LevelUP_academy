@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { breadcrumb, faqPage, useSeo } from '../lib/seo.js';
+import { breadcrumb, faqPage, useCeo } from '../lib/ceo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 export default function ForCourses() {
@@ -14,15 +14,15 @@ export default function ForCourses() {
 
   const jsonLd = useMemo(() => [
     breadcrumb([
-      { name: t.seo.breadcrumbHome, path: '/landing' },
+      { name: t.ceo.breadcrumbHome, path: '/landing' },
       { name: s.badge, path: '/landing/for-courses' },
     ], lang),
     faqPage(s.faq),
-  ], [t.seo.breadcrumbHome, s, lang]);
+  ], [t.ceo.breadcrumbHome, s, lang]);
 
-  useSeo({
-    title: t.seo.courses.title,
-    description: t.seo.courses.description,
+  useCeo({
+    title: t.ceo.courses.title,
+    description: t.ceo.courses.description,
     path: '/landing/for-courses',
     jsonLd,
   });

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { breadcrumb, useSeo, SITE_URL } from '../lib/seo.js';
+import { breadcrumb, useCeo, SITE_URL } from '../lib/ceo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 // Личные контакты — только реальные значения, подтверждённые владельцем.
@@ -43,7 +43,7 @@ export default function Founder() {
     () => [
       breadcrumb(
         [
-          { name: t.seo.breadcrumbHome, path: '/landing' },
+          { name: t.ceo.breadcrumbHome, path: '/landing' },
           { name: t.about.badge, path: '/landing/about' },
           { name: s.h1, path: '/landing/team/azizbek-amangeldiev' },
         ],
@@ -56,12 +56,12 @@ export default function Founder() {
         mainEntity: { '@id': `${SITE_URL}/#founder` },
       },
     ],
-    [t.seo.breadcrumbHome, t.about.badge, s.h1, lang],
+    [t.ceo.breadcrumbHome, t.about.badge, s.h1, lang],
   );
 
-  useSeo({
-    title: t.seo.founder.title,
-    description: t.seo.founder.description,
+  useCeo({
+    title: t.ceo.founder.title,
+    description: t.ceo.founder.description,
     path: '/landing/team/azizbek-amangeldiev',
     jsonLd,
   });

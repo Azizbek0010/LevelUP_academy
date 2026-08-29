@@ -4,7 +4,7 @@ import { changeCoins, emitCoinsChanged } from '../../coins/coins.service.js';
 import { createItem as insertItem, updateItem as patchItem } from '../../student/shop/shop.repository.js';
 import * as repo from './shop-admin.repository.js';
 
-// ==================== каталог (SEO, вся организация) ====================
+// ==================== каталог (CEO, вся организация) ====================
 
 export async function listItemsForOrg(organizationId, branchId) {
   return repo.findCatalogByOrg(organizationId);
@@ -37,7 +37,7 @@ export async function createItemForBranch(branchId, body) {
   return insertItem({ branchId, ...body });
 }
 
-/** Пополнение остатка — единственное поле, которое может трогать филиал (цену/название держит SEO). */
+/** Пополнение остатка — единственное поле, которое может трогать филиал (цену/название держит CEO). */
 export async function restockItem(branchId, itemId, stock) {
   const updated = await patchItem(itemId, branchId, { stock });
   if (!updated) throw new AppError(404, 'Item not found in your branch');

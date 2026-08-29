@@ -32,7 +32,7 @@ const definition = {
     version: pkg.version,
     description:
       'Multi-tenant Educational CRM backend for LevelUp Academy. Roles: main_admin, ' +
-      'seo, admin, mentor, student, parent, methodist. Auth via JWT bearer ' +
+      'ceo, admin, mentor, student, parent, methodist. Auth via JWT bearer ' +
       'access tokens (15 min TTL) + httpOnly refresh-token cookie (30 days, rotated).',
   },
   servers: [
@@ -43,7 +43,7 @@ const definition = {
     { name: 'Auth', description: 'Login (main/staff/member), Google OAuth, refresh, logout, password reset' },
     { name: 'Leads', description: 'Public landing-page lead submission' },
     { name: 'Main Admin', description: 'Platform owner: partner onboarding, pricing, leads, platform dashboard' },
-    { name: 'SEO', description: 'Organization owner: branches, admins, methodists, org dashboard' },
+    { name: 'CEO', description: 'Organization owner: branches, admins, methodists, org dashboard' },
     { name: 'Admin', description: 'Branch admin: dashboard, expenses, students, mentors, groups' },
     { name: 'Admin Payments', description: 'K-PAY: invoices, ad-hoc payments, refunds/voids, receipts' },
     { name: 'Admin Reports', description: 'K-PAY: branch revenue/debt report by group' },

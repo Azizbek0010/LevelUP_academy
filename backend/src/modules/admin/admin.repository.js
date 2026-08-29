@@ -634,7 +634,7 @@ export function findMentorInBranch(mentorId, branchId, client = pool) {
     .then((r) => r.rows[0] ?? null);
 }
 
-// длительность урока организации (её задаёт SEO) — по филиалу
+// длительность урока организации (её задаёт CEO) — по филиалу
 export function getOrgLessonDuration(branchId, client = pool) {
   return client
     .query(
@@ -683,7 +683,7 @@ export function studentAttendance(studentId, branchId, from, to, client = pool) 
     .then((r) => r.rows);
 }
 
-/** Методики, которым SEO уже назначил цену — только они выбираемы при создании группы. */
+/** Методики, которым CEO уже назначил цену — только они выбираемы при создании группы. */
 export function listPricedTrainingTypes(branchId, client = pool) {
   return client
     .query(

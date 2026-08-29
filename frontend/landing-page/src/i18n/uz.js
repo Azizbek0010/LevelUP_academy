@@ -119,7 +119,7 @@ export default {
     rolesLead:
       "Kirgandan so'ng tizim tokendagi rolga qarab kerakli kabinetni o'zi ochadi. Ortiqcha ma'lumotni hech kim ko'rmaydi — ruxsatni serverdagi RBAC hal qiladi.",
     roles: [
-      { tag: 'SA', title: 'SEO', text: "Butun filiallar tarmog'i va filtrsiz umumiy hisobotlar." },
+      { tag: 'SA', title: 'CEO', text: "Butun filiallar tarmog'i va filtrsiz umumiy hisobotlar." },
       { tag: 'A', title: 'Admin', text: "O'z filialining to'lovlari, guruhlari, o'quvchilari va hisobotlari." },
       { tag: 'M', title: 'Mentor', text: "Davomat, uy vazifasini tekshirish, koinlar, imtihonlar va o'z maoshi." },
       { tag: 'ME', title: 'Metodist', text: "Ta'lim dasturi, mavzu va darslar video bilan, testlar uchun savollar banki." },
@@ -181,7 +181,7 @@ export default {
       },
       {
         q: 'Tizimda qanday rollar bor?',
-        a: "Main Admin (platforma egasi), SEO (tashkilot), Admin (filial), Mentor (o'qituvchi), Student, Parent va Methodist — har bir rolning o'z kabineti va huquqlari bor.",
+        a: "Main Admin (platforma egasi), CEO (tashkilot), Admin (filial), Mentor (o'qituvchi), Student, Parent va Methodist — har bir rolning o'z kabineti va huquqlari bor.",
       },
       {
         q: 'Qanday imkoniyatlar bor?',
@@ -262,7 +262,7 @@ export default {
       {
         icon: 'building',
         title: "Ko'p filiallilik",
-        text: "Har bir filial izolyatsiya qilingan: admin faqat o'zinikini ko'radi. SEO esa butun tarmoqni ko'radi — filiallarni solishtiradi va o'sish nuqtalarini topadi.",
+        text: "Har bir filial izolyatsiya qilingan: admin faqat o'zinikini ko'radi. CEO esa butun tarmoqni ko'radi — filiallarni solishtiradi va o'sish nuqtalarini topadi.",
         tags: ["Ma'lumot izolyatsiyasi", 'Filiallar tarmog\'i'],
       },
     ],
@@ -290,7 +290,7 @@ export default {
       },
       {
         q: 'Nechta filialni ulash mumkin?',
-        a: "Cheklov yo'q. Ko'p filiallilik birinchi kundan qo'yilgan: har bir filial izolyatsiya qilingan, SEO esa butun tarmoqni ko'radi.",
+        a: "Cheklov yo'q. Ko'p filiallilik birinchi kundan qo'yilgan: har bir filial izolyatsiya qilingan, CEO esa butun tarmoqni ko'radi.",
       },
       {
         q: "Ota-onalarga ilova o'rnatish kerakmi?",
@@ -312,7 +312,7 @@ export default {
     items: [
       {
         tag: 'SA',
-        title: "SEO — butun tarmoq kaft ustida",
+        title: "CEO — butun tarmoq kaft ustida",
         text: "Har bir filialni va butun tarmoqni birdan ko'radi: umumiy tushum, qarzlar, onlayn hisoblagich. Filiallar, adminlar va umumiy chatni boshqaradi.",
         list: [
           'Barcha filiallar bo\'yicha filtrsiz umumiy hisobotlar',
@@ -502,7 +502,7 @@ export default {
 
     plansHead: "Tariflar — faol akkauntlar soniga qarab",
     plansLead:
-      "Barcha faol akkauntlar hisoblanadi: o'quvchi, ota-ona, SEO, admin, mentor, metodist, filial rahbari va moliyachi.",
+      "Barcha faol akkauntlar hisoblanadi: o'quvchi, ota-ona, CEO, admin, mentor, metodist, filial rahbari va moliyachi.",
     free: 'Bepul',
     negotiable: 'Kelishuv asosida',
     per: "so'm/oyiga",
@@ -924,8 +924,8 @@ export default {
     articles: {
       'excel-to-crm': {
         title: "Excel'dan o'quv markazi uchun CRM'ga qanday o'tish kerak",
-        seoTitle: "Excel'dan CRM'ga o'tish — o'quv markazi | LevelUp",
-        seoDescription:
+        ceoTitle: "Excel'dan CRM'ga o'tish — o'quv markazi | LevelUp",
+        ceoDescription:
           "O'quv markazining Excel'dan CRM'ga bosqichma-bosqich o'tishi: nimani ko'chirish (o'quvchilar, guruhlar, to'lovlar, qarzlar), hech narsani yo'qotmaslik va nimadan boshlash. Migratsiya cheklisti.",
         excerpt:
           "Jadvallar ikkinchi yuz o'quvchida buziladi. CRM'ga nimani ko'chirish, hech narsani yo'qotmaslik va nimadan boshlashni ko'rib chiqamiz.",
@@ -963,8 +963,8 @@ export default {
       },
       'student-debts': {
         title: "O'quvchilar qarzida pulni qanday yo'qotmaslik kerak",
-        seoTitle: "O'quvchilar qarzida pulni yo'qotmaslik | LevelUp",
-        seoDescription:
+        ceoTitle: "O'quvchilar qarzida pulni yo'qotmaslik | LevelUp",
+        ceoDescription:
           "O'quvchilar qarzi nega sezilmay o'sadi va uni qanday nazorat qilish: qarzdorlarning avtomatik ro'yxati, Telegram'da ota-onaga eslatma va tarixni yo'qotmasdan muzlatish.",
         excerpt:
           "O'quv markazida qarzlar jimgina yig'iladi va oy oxirida chiqadi. Ularni qanday ko'rinadigan qilish va nizosiz pulni qaytarish.",
@@ -994,8 +994,8 @@ export default {
       },
       'attendance-automation': {
         title: "O'quv markazida davomatni qanday avtomatlashtirish kerak",
-        seoTitle: 'Markazda davomatni avtomatlashtirish (davomat) | LevelUp',
-        seoDescription:
+        ceoTitle: 'Markazda davomatni avtomatlashtirish (davomat) | LevelUp',
+        ceoDescription:
           "Davomatni qog'ozda yuritishni to'xtatish: bir daqiqada elektron davomat jurnali, Telegram'da ota-onaga kelmaslik haqida avto-bildirishnoma va admin uchun hisobotlar.",
         excerpt:
           "Qog'oz davomat jurnali vaqtni o'g'irlaydi va kelmaslikdan qutqarmaydi. Davomatni elektron ko'rinishga o'tkazish va ota-onalarni o'zingiz xabardor qilish.",
@@ -1596,7 +1596,7 @@ export default {
     button: 'Bosh sahifaga',
   },
 
-  seo: {
+  ceo: {
     home: {
       title: "O'quv markazi uchun CRM — o'quvchilar hisobi | LevelUp",
       description:
@@ -1610,7 +1610,7 @@ export default {
     roles: {
       title: 'Rollar va ruxsatlar — 6 kabinet | LevelUp Academy',
       description:
-        "SEO, Admin, Mentor, Metodist, Ota-ona va O'quvchi — har bir rolning o'z kabineti. Ruxsatni serverdagi RBAC hal qiladi: ortiqchasini hech kim ko'rmaydi.",
+        "CEO, Admin, Mentor, Metodist, Ota-ona va O'quvchi — har bir rolning o'z kabineti. Ruxsatni serverdagi RBAC hal qiladi: ortiqchasini hech kim ko'rmaydi.",
     },
     finance: {
       title: "O'quvchilar to'lovi va qarzlar hisobi | LevelUp Academy",

@@ -36,7 +36,7 @@ function useRequestsQuery() {
 }
 
 /**
- * Тумблера здесь нет — SEO не переключает фичу сам, только просит.
+ * Тумблера здесь нет — CEO не переключает фичу сам, только просит.
  * Main Admin рассматривает заявку на своей стороне (Main Admin → Фичи).
  */
 function FeatureRow({ feature, pendingByKey, onRequest, busy }) {

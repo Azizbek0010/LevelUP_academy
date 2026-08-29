@@ -3,7 +3,7 @@
 Мульти-арендная платформа (SaaS), которую мы продаём учебным центрам Узбекистана.
 Каждый партнёр = отдельная организация (тенант) со своими филиалами, сотрудниками и учениками.
 
-**7 ролей:** Main Admin (мы, платформа) → SEO (партнёр) → Admin (филиал) →
+**7 ролей:** Main Admin (мы, платформа) → CEO (партнёр) → Admin (филиал) →
 Mentor · Methodist · Student · Parent.
 
 Что внутри: заявки с лендинга и онбординг партнёров, филиалы и сотрудники, посещаемость,
@@ -55,7 +55,7 @@ realtime-чаты и presence через Socket.io, уведомления в Te
 | Деплой | Render (backend) + Vercel (frontend) |
 
 Фронт — **не монолит**, а 4 независимых Vite-приложения:
-`landing-page` · `main-admin` · `staff` (Admin + SEO + Mentor + Methodist) ·
+`landing-page` · `main-admin` · `staff` (Admin + CEO + Mentor + Methodist) ·
 `member` (вход + кабинеты Student и Parent).
 
 ---

@@ -17,7 +17,9 @@ import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonList } from '../components/Skeleton.jsx';
-import { Kpi, Modal, Avatar, CHART_PRIMARY, CHART_SERIES } from '../components/_ui.jsx';
+import { Modal, Avatar, CHART_PRIMARY, CHART_SERIES } from '../components/_ui.jsx';
+import ActionCenterPanel from '../components/ActionCenterPanel.jsx';
+import { useDashboardLive } from '../socket.js';
 
 const PIE_COLORS = { active: '#A3E635', trial: '#FCD34D', frozen: '#F87171' };
 const PIE_LABELS = { active: 'Активные', trial: 'Триал', frozen: 'Заморожены' };
@@ -36,6 +38,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function Dashboard() {
   const { data, isLoading, error, refetch } = useDashboard();
   const { data: allLeads } = useLeads();
+  const liveConnected = useDashboardLive();
+  const today = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
   const recentLeads = useMemo(
     () => (allLeads || [])
@@ -58,18 +62,18 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <PageHeader title="Дашборд платформы" subtitle="Обзор партнёров, дохода и заявок LevelUp Academy" />
-        <button
-          className="btn btn-ghost btn-sm gap-1.5 shrink-0 mt-1"
-          onClick={() => refetch()}
-          disabled={isLoading}
-        >
-          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-          Обновить
-        </button>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 border-b border-base-300 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <PageHeader title="Обзор" subtitle={<span className="capitalize">{today} · ключевые показатели платформы</span>} />
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 text-xs font-medium text-base-content/45" title={liveConnected ? 'Данные обновляются автоматически' : 'Переподключение к live-каналу'}>
+            <span className={`h-1.5 w-1.5 rounded-full ${liveConnected ? 'bg-success' : 'animate-pulse bg-warning'}`} />
+            {liveConnected ? 'Live' : 'Подключение…'}
+          </span>
+        </div>
       </div>
+
+      <ActionCenterPanel />
 
       {isLoading || !data ? (
         <>
@@ -173,40 +177,16 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Kpi
-          Icon={Wallet}
-          title="Наш доход / мес"
-          value={fmt(t.ourMonthlyIncome)}
-          unit={`${cur} · разбивка`}
-          onClick={() => setModal('income')}
-        />
-        <Kpi
-          Icon={Building2}
-          title="Партнёры"
-          value={fmt(t.partners)}
-          unit="учебных центров · по статусам"
-          onClick={() => setModal('partners')}
-        />
-        <Kpi
-          Icon={GraduationCap}
-          title="Ученики"
-          value={fmt(t.students)}
-          unit="по платформе · топ 5"
-          onClick={() => setModal('students')}
-        />
-        <Kpi
-          Icon={Store}
-          title="Филиалы"
-          value={fmt(t.branches)}
-          unit="всего · распределение"
-          onClick={() => setModal('branches')}
-        />
+      <div className="grid overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-[0_2px_12px_rgba(29,36,23,0.04)] sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCell Icon={Wallet} label="Доход / месяц" value={fmt(t.ourMonthlyIncome)} meta={`${cur} · ${activeCount} активных`} onClick={() => setModal('income')} />
+        <MetricCell Icon={Building2} label="Партнёры" value={fmt(t.partners)} meta={`${activeShare}% активны`} onClick={() => setModal('partners')} />
+        <MetricCell Icon={GraduationCap} label="Ученики" value={fmt(t.students)} meta={`${partners.length ? Math.round(t.students / partners.length) : 0} в среднем`} onClick={() => setModal('students')} />
+        <MetricCell Icon={Store} label="Филиалы" value={fmt(t.branches)} meta={`${partners.length ? (t.branches / partners.length).toFixed(1) : 0} на партнёра`} onClick={() => setModal('branches')} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        <div className="card bg-base-100 shadow-sm border border-base-200/60 lg:col-span-2">
-          <div className="card-body">
+        <div className="card overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)] lg:col-span-2">
+          <div className="card-body p-5 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Crown size={17} className="text-primary" />
@@ -251,7 +231,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
 
         <div className="flex flex-col gap-5">
           {pieData.length > 0 && (
-            <div className="card bg-base-100 shadow-sm border border-base-200/60">
+            <div className="card rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)]">
               <div className="card-body p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <PieIcon size={15} className="text-primary" />
@@ -281,7 +261,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
             </div>
           )}
 
-          <div className="card bg-base-100 shadow-sm border border-base-200/60 flex-1">
+          <div className="card flex-1 rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)]">
             <div className="card-body p-5">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -333,7 +313,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
       </div>
 
       {partners.length > 0 && (
-        <div className="card bg-base-100 shadow-sm border border-base-200/60">
+        <div className="card rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)]">
           <div className="card-body">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -355,7 +335,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
                   <button
                     type="button"
                     key={p.id}
-                    className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-primary/10 transition-colors text-left"
+                    className="w-full flex items-center gap-3 rounded-lg border border-transparent p-2.5 text-left transition-colors hover:border-primary/20 hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     onClick={() => setModal({ type: 'partner', p })}
                   >
                     <span className="w-6 text-center text-xs font-extrabold text-base-content/40 tabular-nums">{i + 1}</span>
@@ -364,9 +344,9 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
                       <div className="flex justify-between text-sm mb-1.5 gap-2 items-center">
                         <span className="truncate font-medium hover:text-primary transition-colors">{p.name}</span>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[10px] text-base-content/50 tabular-nums">{share}%</span>
-                          <span className={`badge badge-xs ${statusCls[p.status] || 'badge-ghost'}`}>{statusLabel[p.status] || p.status}</span>
-                          <span className="font-bold tabular-nums">{fmt(p.monthlyBill)}</span>
+                          <span className="hidden text-[10px] text-base-content/50 tabular-nums sm:inline">{share}%</span>
+                          <span className={`badge badge-xs hidden sm:inline-flex ${statusCls[p.status] || 'badge-ghost'}`}>{statusLabel[p.status] || p.status}</span>
+                          <span className="text-xs font-bold tabular-nums sm:text-sm">{fmt(p.monthlyBill)}</span>
                         </div>
                       </div>
                       <div className="h-2 rounded-full bg-base-200 overflow-hidden">
@@ -595,6 +575,20 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         />
       )}
     </>
+  );
+}
+
+function MetricCell({ Icon, label, value, meta, onClick }) {
+  return (
+    <button type="button" onClick={onClick} className="group relative min-h-[132px] border-b border-base-300 p-4 text-left transition-colors hover:bg-base-200/55 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:border-r lg:border-b-0 last:border-b-0 last:border-r-0">
+      <div className="flex items-center justify-between">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200 text-base-content/55 transition-colors group-hover:bg-primary/20 group-hover:text-lime-800"><Icon size={16} /></span>
+        <ChevronRight size={14} className="text-base-content/20 transition-transform group-hover:translate-x-0.5 group-hover:text-base-content/45" />
+      </div>
+      <div className="mt-4 text-[10px] font-bold uppercase tracking-[0.12em] text-base-content/40">{label}</div>
+      <div className="mt-0.5 text-2xl font-extrabold tracking-tight tabular-nums">{value}</div>
+      <div className="mt-0.5 text-[11px] font-medium text-base-content/40">{meta}</div>
+    </button>
   );
 }
 

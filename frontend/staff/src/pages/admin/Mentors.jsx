@@ -76,7 +76,7 @@ function MentorCard({ m, onEdit, canMessage }) {
 
           {/* Action buttons */}
           <div className="flex items-center gap-1 mt-3 flex-wrap">
-            <span className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold bg-base-200 text-base-content/65" title="Грейд назначает SEO">
+            <span className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold bg-base-200 text-base-content/65" title="Грейд назначает CEO">
               <Award size={11} /> {GRADE_LABELS[m.grade] || 'Не задан'}
             </span>
             <button className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold text-base-content/70 bg-base-100 border border-base-300 hover:border-primary/40 hover:bg-primary/10 transition-all"

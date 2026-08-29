@@ -31,7 +31,7 @@
 1. **Работать ТОЛЬКО в зоне этого участника** (колонка «Права доступа» в таблице «Команда»). Человек не должен выходить за свою линию.
 2. **Попытка редактировать чужие файлы → ОТКАЗ** + напоминание правила. Никаких исключений «ну только одну строчку».
 3. **Karis (Team Lead)** — единственный с полным доступом: любые файлы, коммиты прямо в `main`.
-4. **`abdulazizSEO`** — если Abdulaziz представился так, у него SEO-режим: правки в любых файлах обеих зон, но только SEO-задачи (meta, sitemap, robots, скорость, разметка).
+4. **`abdulazizCEO`** — если Abdulaziz представился так, у него CEO-режим: правки в любых файлах обеих зон, но только CEO-задачи (meta, sitemap, robots, скорость, разметка).
 5. **Имя не из списка → СТОП**, работу не начинать, сообщить Team Lead'у (Karis).
 
 ---
@@ -67,9 +67,9 @@
 | Роль | Кто | Идентификатор входа | Права |
 |------|-----|---------------------|-------|
 | **Team Lead** | Karis (@Azizbek2603, владелец репозитория) | выбирает «Karis» в вопросе «Кто ты?» | Видит и правит любые файлы (`frontend/` + `backend/` + `docs/`); работает и коммитит **прямо в `main`**, в обход `save-zone` |
-| **SEO** | Abdulaziz | представляется как `abdulazizSEO` | На время SEO-задач может править любые файлы обеих зон: meta-теги, `sitemap.xml`, `robots.txt`, заголовки/alt-тексты, семантическая разметка, скорость загрузки, SSR/prerender-настройки |
+| **CEO** | Abdulaziz | представляется как `abdulazizCEO` | На время CEO-задач может править любые файлы обеих зон: meta-теги, `sitemap.xml`, `robots.txt`, заголовки/alt-тексты, семантическая разметка, скорость загрузки, SSR/prerender-настройки |
 
-Вне контекста `abdulazizSEO` Abdulaziz остаётся в рамках своей обычной backend-зоны (Mentor/Student/Parent/Infra) — SEO-доступ не отменяет, а **добавляется** к его основной роли.
+Вне контекста `abdulazizCEO` Abdulaziz остаётся в рамках своей обычной backend-зоны (Mentor/Student/Parent/Infra) — CEO-доступ не отменяет, а **добавляется** к его основной роли.
 
 ---
 
@@ -105,25 +105,28 @@
 | Роль | Кто это | Права | Область видимости |
 |------|---------|-------|-------------------|
 | **Main Admin** | МЫ (владельцы платформы) | Всё: заявки, партнёры, биллинг, наш доход | Вся платформа |
-| **SEO** (бывш. Super Admin) | Партнёр = учебный центр | Организация: филиалы, админы, свой доход | Своя организация |
+| **CEO** (бывш. Super Admin) | Партнёр = учебный центр | Организация: филиалы, админы, свой доход | Своя организация |
 | **Admin** | Сотрудник филиала | Филиал: доход + расход, студенты, группы, платежи | Свой филиал |
 | **Mentor** | Преподаватель | Свои группы: ДЗ, тесты, коины, посещаемость | Свои группы |
 | **Student** | Ученик | Личный кабинет: тесты, ДЗ, видео, магазин, лидерборд | Себя |
 | **Parent** | Родитель ученика | Обзор ребёнка: оценки, посещаемость, долг, коины | Свои дети |
 | **Methodist** | Методист | Контент: тесты, ДЗ, учебные материалы, аналитика | Свои предметы |
 
-> **Всего 7 ролей.** Все панели (Admin, SEO, Mentor, Methodist) — в общем `staff/`.
-> ⚠️ Роль **SEO** здесь — это бывший Super Admin (переименован 07.08.2026), не путать
-> с `abdulazizSEO`-режимом ниже (это доступ к meta/sitemap/robots, а не роль в БД).
+> **Всего 7 ролей.** Все панели (Admin, CEO, Mentor, Methodist) — в общем `staff/`.
+> ⚠️ Роль **CEO** — это бывший Super Admin: `superadmin` → `ceo` (07.08.2026) → `ceo`
+> (29.08.2026). Переименовали второй раз потому, что «CEO» читается как Search Engine
+> Optimization и путалось с настоящей поисковой оптимизацией лендинга. Слово **CEO**
+> в этом репозитории теперь означает ТОЛЬКО поисковую оптимизацию (`abdulazizCEO`-режим,
+> `frontend/landing-page/`), ролью оно больше не является.
 
 ### Поток онбординга
 
 ```
 Центр оставляет заявку на лендинге
         ↓
-Main Admin видит заявку → создаёт SEO (организацию)
+Main Admin видит заявку → создаёт CEO (организацию)
         ↓
-SEO добавляет филиалы → приглашает Admin'ов
+CEO добавляет филиалы → приглашает Admin'ов
         ↓
 Admin добавляет студентов/родителей
         ↓
@@ -134,7 +137,7 @@ Mentor работает со своими группами
 
 | Роль | Способ входа |
 |------|-------------|
-| Main Admin / SEO / Admin / Mentor | Email + пароль |
+| Main Admin / CEO / Admin / Mentor | Email + пароль |
 | Student / Parent | Логин-код (8 символов) + пароль (6 цифр) |
 
 ### API endpoints по ролям
@@ -180,7 +183,7 @@ LevelUp-Academy/
 │   │   ├── modules/         # Модули по ролям
 │   │   │   ├── auth/        # Вход, JWT, OTP, Google OAuth
 │   │   │   ├── main/        # Main Admin: онбординг, биллинг, лиды
-│   │   │   ├── super/       # SEO: филиалы, админы
+│   │   │   ├── super/       # CEO: филиалы, админы
 │   │   │   ├── admin/       # Admin: дашборд, расходы, студенты, группы, менторы
 │   │   │   │   ├── payments/   # K-PAY: инвойсы, оплата (full/split), refund/void, чек в S3
 │   │   │   │   └── reports/    # K-PAY: выручка + долги филиала по группам
@@ -204,8 +207,8 @@ LevelUp-Academy/
 ├── frontend/                 # React SPA — 4 независимых Vite-приложения (не монолит)
 │   ├── landing-page/        # Лендинг (React + Vite), форма заявки → POST /api/leads
 │   ├── main-admin/          # Панель Main Admin (DaisyUI лайм), свой логин
-│   ├── staff/               # ОДНО приложение, ОДИН логин: Admin + Mentor + Methodist + SEO
-│   │   └── src/pages/super/ # SEO-секция (роуты /super/*, TS/TSX) — свой Layout,
+│   ├── staff/               # ОДНО приложение, ОДИН логин: Admin + Mentor + Methodist + CEO
+│   │   └── src/pages/super/ # CEO-секция (роуты /super/*, TS/TSX) — свой Layout,
 │   │                        # свой auth-store (zustand), синхронизируется с общим
 │   │                        # useAuth() через AuthSync.jsx (см. docs/FRONTEND-ARCHITECTURE.md §2)
 │   ├── member/               # Логин + кабинеты Student и Parent (вход по логин-коду), Elyor
@@ -233,14 +236,14 @@ LevelUp-Academy/
 
 | Участник | Зона ответственности | Права доступа |
 |----------|---------------------|---------------|
-| **Karis** (@Azizbek2603) — **Team Lead**, владелец репо | Backend: Auth, Main Admin, роль SEO (бывш. Super Admin), Admin, Billing, платежи | **ВСЁ**: видит и правит любые файлы (frontend + backend), коммитит прямо в `main` |
-| **Abdulaziz** (@YakubovAbdulaziz) | Backend: Mentor, Student, Parent, Инфраструктура + **SEO-режим (полный)** | Своя backend-зона; **как `abdulazizSEO`** — SEO-правки (meta/sitemap/robots) в любых файлах обеих зон. (Интеграция роли SEO, бывш. Super Admin, на бэкенде возвращена Karis'у — не путать с SEO-режимом выше, это разные вещи с одинаковым именем.) |
+| **Karis** (@Azizbek2603) — **Team Lead**, владелец репо | Backend: Auth, Main Admin, роль CEO (бывш. Super Admin), Admin, Billing, платежи | **ВСЁ**: видит и правит любые файлы (frontend + backend), коммитит прямо в `main` |
+| **Abdulaziz** (@YakubovAbdulaziz) | Backend: Mentor, Student, Parent, Инфраструктура + **CEO-режим (полный)** | Своя backend-зона; **как `abdulazizCEO`** — CEO-правки (meta/sitemap/robots) в любых файлах обеих зон. (Интеграция роли CEO, бывш. Super Admin, на бэкенде возвращена Karis'у — не путать с CEO-режимом выше, это разные вещи с одинаковым именем.) |
 | **Bilol** | Telegram-бот | только `backend/src/modules/telegram/` + воркеры уведомлений |
 | **Kama** (TG @Azizovcf, git: iface9808-sketch) | Parent фронт (переведён из Methodist) | только `frontend/member` (parent) |
 | **Elyor** (@Elyor2011) | Auth фронт, каркас SPA | только auth-часть фронта |
-| **Shohjahon** | Main Admin фронт (завершил SEO → переведён на Main Admin) | только `frontend/main-admin` |
-| **Said Islom** | Methodist фронт (переведён из SEO — панель завершена) | только `frontend/staff` (methodist) |
-| **Aziz** | Methodist фронт (переведён из SEO — панель завершена) | только `frontend/staff` (methodist) |
+| **Shohjahon** | Main Admin фронт (завершил CEO → переведён на Main Admin) | только `frontend/main-admin` |
+| **Said Islom** | Methodist фронт (переведён из CEO — панель завершена) | только `frontend/staff` (methodist) |
+| **Aziz** | Methodist фронт (переведён из CEO — панель завершена) | только `frontend/staff` (methodist) |
 | **Abduloh** (@Corvin_0, git: yunusovabdullox36-hash) | Admin фронт + **весь фронтенд (полный доступ)** | **ВЕСЬ `frontend/`**: любая панель, любое из 4 Vite-приложений (`staff`, `main-admin`, `member`, `landing-page`). ❌ `backend/` по-прежнему НЕЛЬЗЯ |
 | **Odil** | Admin фронт | только `frontend/staff` (admin) |
 | **Hamidula** | Admin фронт | только `frontend/staff` (admin) |
@@ -303,7 +306,7 @@ cd frontend/landing-page && npm run dev
 # Main Admin
 cd frontend/main-admin && npm run dev
 
-# Staff (один логин: Admin + SEO + Mentor + Methodist)
+# Staff (один логин: Admin + CEO + Mentor + Methodist)
 cd frontend/staff && npm run dev
 
 # Member — логин + оба кабинета: Student и Parent
@@ -400,7 +403,7 @@ python scripts/rollback.py v0.1.1   # вернуть main к состоянию 
 | **Landing Page** | Лендинг с формой заявки (POST /api/leads) | ✅ Готово |
 | **Auth** | Логин по ролям (email/код + пароль), JWT, Google OAuth | ✅ Готово |
 | **Main Admin** | Дашборд, заявки, онбординг партнёров, управление | ✅ Готово |
-| **SEO** | Организация: филиалы, админы, дашборд | ✅ Готово |
+| **CEO** | Организация: филиалы, админы, дашборд | ✅ Готово |
 | **Admin** | Филиал: дашборд, расходы, студенты, группы | ✅ Готово |
 | **Mentor** | Группы: ДЗ, тесты, коины, посещаемость, зарплата | ✅ Готово |
 | **Student** | Home: тесты, ДЗ, видео, магазин, лидерборд | ✅ Готово |
@@ -450,10 +453,10 @@ python scripts/rollback.py v0.1.1   # вернуть main к состоянию 
 
 | Панель | v1.0 (MVP 1) | v2.0 (MVP 2) | v3.0 (MVP 3) |
 |--------|-------------|-------------|-------------|
-| Landing | ✅ Готов | + SEO, A/B тесты | + Мультиязычность |
+| Landing | ✅ Готов | + CEO, A/B тесты | + Мультиязычность |
 | Auth | ✅ Готов | + Register, Forgot | + Face ID, 2FA |
 | Main Admin | ✅ Готов | + Billing детали | + Аналитика платформы |
-| SEO | ✅ Готов | + Revenue дашборд | + Сравнение филиалов |
+| CEO | ✅ Готов | + Revenue дашборд | + Сравнение филиалов |
 | Admin | ✅ Готов | + Расширенные отчёты | + Экспорт, прогнозирование |
 | Mentor | ✅ Готов | + Тутор модуль | + ИИ-проверка ДЗ |
 | Student | ✅ Готов | + Продвинутый магазин | + Турниры, ИИ-рекомендации |

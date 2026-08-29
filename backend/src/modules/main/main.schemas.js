@@ -18,7 +18,7 @@ export const updatePricingSchema = z
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
 
-// Main Admin заводит партнёра: организация + её SEO + домен (+ опц. из заявки)
+// Main Admin заводит партнёра: организация + её CEO + домен (+ опц. из заявки)
 export const onboardPartnerSchema = z.object({
   organizationName: z.string().trim().min(2, 'Too short').max(160),
   domain: domain.optional(),
@@ -35,13 +35,23 @@ export const onboardPartnerSchema = z.object({
 
 const LEAD_STATUSES = ['new', 'contacted', 'onboarded', 'rejected'];
 
+// Lead data is later shown in admin interfaces and notifications. React escapes
+// text by default, but rejecting markup here also protects any future non-React
+// consumer from stored XSS. C0 controls are not valid user-facing form content.
+const safeLeadText = (max) => z
+  .string()
+  .trim()
+  .max(max)
+  .refine((value) => !/[<>]/.test(value), 'HTML markup is not allowed')
+  .refine((value) => !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(value), 'Control characters are not allowed');
+
 // ПУБЛИЧНАЯ форма лендинга (без токена). name+phone обязательны.
 export const leadSubmitSchema = z.object({
-  name: z.string().trim().min(2, 'Too short').max(120),
+  name: safeLeadText(120).refine((value) => value.length >= 2, 'Too short'),
   phone: z.string().trim().regex(/^\+?[\d\s()-]{7,32}$/, 'Invalid phone'),
-  centerName: z.string().trim().max(160).optional(),
-  centerSize: z.string().trim().max(60).optional(),
-  message: z.string().trim().max(2000).optional(),
+  centerName: safeLeadText(160).optional(),
+  centerSize: safeLeadText(60).optional(),
+  message: safeLeadText(2000).optional(),
 });
 
 // фильтр списка заявок по статусу (?status=new) — опционально
@@ -64,6 +74,26 @@ export const idParam = z.object({ id: z.string().uuid('Invalid id') });
 // Main Admin активирует/замораживает организацию-партнёра
 export const partnerStatusSchema = z.object({
   status: z.enum(['active', 'frozen']),
+  reason: z.string().trim().min(3).max(500).optional(),
+});
+
+export const auditQuerySchema = z.object({
+  scope: z.enum(['platform', 'org', 'security', 'all']).default('platform'),
+  action: z.string().trim().max(80).optional(),
+  actorId: z.string().uuid().optional(),
+  organizationId: z.string().uuid().optional(),
+  search: z.string().trim().max(160).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+// ---- аналитика сайта levelup-academy.uz (Karis 25.08.2026) ----
+// Период жёстко из списка, а не любое число: 90 дней — предел, за который
+// Search Console вообще хранит отчёты по запросам.
+export const siteAnalyticsQuery = z.object({
+  days: z.coerce.number().int().refine((v) => [7, 28, 90].includes(v), {
+    message: 'days must be one of 7, 28, 90',
+  }).default(28),
 });
 
 // ---- каталог платных фич ----
@@ -92,15 +122,17 @@ export const recordPaymentSchema = z.object({
   amount: z.number().int().nonnegative(),
   method: z.enum(['cash', 'card', 'transfer', 'other']),
   periodCovered: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Format: YYYY-MM'),
+  note: z.string().trim().max(500).optional(),
 });
 
 export const grantBonusSchema = z.object({
   months: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  note: z.string().trim().max(500).optional(),
 });
 
 // ---- собственные расходы платформы ----
 
-// ---- заявки SEO на фичи ----
+// ---- заявки CEO на фичи ----
 
 export const featureRequestListQuery = z.object({
   status: z.enum(['pending', 'approved', 'rejected']).optional(),
@@ -125,7 +157,7 @@ export const createAnnouncementSchema = z
   .object({
     title: z.string().trim().min(1, 'Title is required').max(200),
     body: z.string().trim().min(1, 'Body is required'),
-    targetType: z.enum(['all-partners', 'all-seo', 'specific']),
+    targetType: z.enum(['all-partners', 'all-ceo', 'specific']),
     organizationIds: z.array(z.string().uuid()).optional(),
   })
   .refine((v) => v.targetType !== 'specific' || (v.organizationIds && v.organizationIds.length > 0), {
@@ -146,3 +178,22 @@ export const updateProfileSchema = z
   })
   .partial()
   .refine((o) => Object.keys(o).length > 0, { message: 'At least one field is required' });
+
+// ---- модерация чата (Karis 26.08.2026) ----
+
+export const addBannedWordsSchema = z.object({
+  words: z.array(z.string().trim().min(1).max(80)).min(1).max(200),
+});
+
+export const toggleBannedWordSchema = z.object({
+  isActive: z.boolean(),
+});
+
+export const setAutoMaskSchema = z.object({
+  autoMask: z.boolean(),
+});
+
+export const flaggedMessagesQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});

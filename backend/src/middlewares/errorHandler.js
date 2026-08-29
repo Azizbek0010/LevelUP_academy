@@ -1,5 +1,6 @@
 import { env } from '../config/env.js';
 import { logger } from '../config/logger.js';
+import { recordError } from '../shared/errorTracker.js';
 
 /**
  * Централизованный обработчик — монтируется в app.js ПОСЛЕДНИМ.
@@ -10,7 +11,21 @@ import { logger } from '../config/logger.js';
  */
 // eslint-disable-next-line no-unused-vars
 export function errorHandler(err, req, res, _next) {
-  const status = err.statusCode ?? err.status ?? 500;
+  // Managed PostgreSQL/Redis occasionally close an idle connection or hit a
+  // provider quota. This is an infrastructure outage, not an application bug:
+  // expose it as retryable 503 instead of the misleading HTTP 500.
+  const infraCodes = new Set([
+    'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN', 'ENOTFOUND',
+    '57P01', '57P02', '57P03', '08000', '08001', '08003', '08004', '08006', '08007', '08P01',
+  ]);
+  const infraMessage = String(err?.message ?? '').toLowerCase();
+  const isInfrastructureError = infraCodes.has(err?.code)
+    || infraMessage.includes('connection terminated')
+    || infraMessage.includes('connection timeout')
+    || infraMessage.includes('command timed out')
+    || infraMessage.includes("stream isn't writeable")
+    || infraMessage.includes('max requests limit exceeded');
+  const status = isInfrastructureError ? 503 : (err.statusCode ?? err.status ?? 500);
   // Клиентская ошибка = наш AppError ИЛИ безопасно-раскрываемая 4xx
   // (body-parser при кривом/пустом JSON бросает 400 с expose:true).
   const isClientError = Boolean(err.isOperational) || (status < 500 && err.expose === true);
@@ -20,11 +35,20 @@ export function errorHandler(err, req, res, _next) {
   const errorId = req?.id ?? null;
 
   // логируем как unhandled только реальные серверные (5xx)
-  if (status >= 500) logger.error({ err, errorId }, 'Unhandled error');
+  if (status >= 500) {
+    logger.error({ err, errorId }, 'Unhandled error');
+    // не await — запись в трекер не должна задерживать ответ клиенту
+    void recordError(isInfrastructureError ? 'infra' : 'http', err, {
+      route: req?.originalUrl,
+      statusCode: status,
+    });
+  }
 
   res.status(status).json({
     success: false,
-    message: isClientError ? err.message : 'Internal server error',
+    message: isInfrastructureError
+      ? 'Service temporarily unavailable. Please try again.'
+      : (isClientError ? err.message : 'Internal server error'),
 
     /* details — только для клиентских ошибок.
        Раньше поле уходило при ЛЮБОМ статусе. У 4xx это разбор полей формы,

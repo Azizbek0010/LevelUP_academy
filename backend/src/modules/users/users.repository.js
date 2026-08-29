@@ -130,7 +130,7 @@ export async function findDirectory({
         AND ($6::text IS NULL OR concat_ws(' ', u.first_name, u.last_name, u.phone, u.email) ILIKE '%' || $6 || '%')
       ORDER BY
         CASE u.role::text
-          WHEN 'seo' THEN 1 WHEN 'branch_manager' THEN 2 WHEN 'admin' THEN 3
+          WHEN 'ceo' THEN 1 WHEN 'branch_manager' THEN 2 WHEN 'admin' THEN 3
           WHEN 'finance_manager' THEN 4 WHEN 'methodist' THEN 5 WHEN 'mentor' THEN 6
           WHEN 'parent' THEN 7 WHEN 'student' THEN 8 ELSE 9
         END,

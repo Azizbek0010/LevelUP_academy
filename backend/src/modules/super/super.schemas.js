@@ -31,7 +31,7 @@ export const updateEmployeeSchema = z.object({
   monthlySalary: z.coerce.number().min(0).max(1_000_000_000_000).optional(),
 }).refine((v) => Object.keys(v).length > 0, { message: 'At least one field is required' });
 
-// SEO создаёт расход на уровне организации, поэтому филиал указывается
+// CEO создаёт расход на уровне организации, поэтому филиал указывается
 // явно и затем проверяется по organization_id в service.
 export const createOrgExpenseSchema = z.object({
   // null = expense for the whole learning center, UUID = one concrete branch
@@ -64,7 +64,7 @@ export const updateOrgExpenseSchema = z
 // цена абонемента методики — та же граница, что и у monthlyPrice группы в admin.schemas.js
 export const setTrainingTypePriceSchema = z.object({
   price: z.coerce.number().nonnegative().max(9_999_999_999),
-  // лимит группы для этой методики — решает только SEO (не admin/branch_manager при создании группы)
+  // лимит группы для этой методики — решает только CEO (не admin/branch_manager при создании группы)
   maxStudents: z.coerce.number().int().positive().max(500).optional(),
 });
 
@@ -147,7 +147,7 @@ export const updateMentorBranchSchema = z.object({
   branchId: z.string().uuid('Invalid branchId'),
 });
 
-// SEO создаёт филиал в своей организации
+// CEO создаёт филиал в своей организации
 export const createBranchSchema = z.object({
   name: z.string().trim().min(2, 'Too short').max(120),
   address: z.string().trim().max(500).optional(),
@@ -159,9 +159,9 @@ export const createBranchSchema = z.object({
   path: ['lat'],
 });
 
-// SEO создаёт админа и назначает в свой филиал.
-// Логин (email) задаёт SEO; пароль генерируется автоматически и
-// показывается один раз — так же, как Main Admin заводит SEO.
+// CEO создаёт админа и назначает в свой филиал.
+// Логин (email) задаёт CEO; пароль генерируется автоматически и
+// показывается один раз — так же, как Main Admin заводит CEO.
 export const createAdminSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
@@ -268,7 +268,7 @@ export const reassignBranchManagersSchema = z.object({
     }),
 });
 
-// ---------- shop-каталог (SEO заводит товары/цену/фото — филиал только пополняет остаток) ----------
+// ---------- shop-каталог (CEO заводит товары/цену/фото — филиал только пополняет остаток) ----------
 export const createShopItemSchema = z.object({
   name: z.string().trim().min(1).max(160),
   imageKey: z.string().trim().max(512).optional(),
@@ -290,7 +290,7 @@ export const setShopItemArchivedSchema = z.object({
 
 export const listShopItemsQuery = z.object({});
 
-// SEO не переключает фичи сам — только просит Main Admin подключить/отключить.
+// CEO не переключает фичи сам — только просит Main Admin подключить/отключить.
 export const createFeatureRequestSchema = z.object({
   featureKey: z.string().trim().min(1).max(60),
   type: z.enum(['add', 'remove']),

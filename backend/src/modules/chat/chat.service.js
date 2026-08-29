@@ -2,6 +2,7 @@ import { AppError } from '../../utils/AppError.js';
 import { pool } from '../../config/db.js';
 import { emitTo } from '../../sockets/io.js';
 import { notifyDirectChatRecipient } from '../telegram/directChatNotify.js';
+import { moderateMessage } from '../../shared/chatModeration.js';
 import * as chatRepository from './chat.repository.js';
 import {
   canStaffChatPeer, canStaffChatStaff, dmRoom, userRoom, isUuid, DM_STAFF_ROLES,
@@ -9,7 +10,18 @@ import {
 
 const MAX_BODY_LENGTH = 4000;
 
-/** Единственная точка записи сообщений — используется и сокетами, и REST. */
+/**
+ * Единственная точка записи сообщений — используется и сокетами, и REST,
+ * поэтому проверка на запрещённые слова стоит здесь одна на все каналы
+ * (global/direct/group), а не дублируется в каждом обработчике.
+ *
+ * Два независимых режима на каждое слово (Karis 26.08.2026):
+ *   - обычное слово — сообщение НЕ меняется, только помечается flagged_word
+ *     для списка нарушений в Main Admin; автор и собеседник ничего не видят;
+ *   - слово с auto_mask — все его вхождения заменяются на **** ПЕРЕД
+ *     сохранением, поэтому и в базе, и в живой рассылке через сокет уже
+ *     лежит замаскированный текст — участники видят **** вместо слова.
+ */
 export async function saveMessage({ chatType, roomKey, senderId, branchId, body, attachmentKey }) {
   const trimmed = body?.trim();
   if (!trimmed) throw new AppError(422, 'Message body is required');
@@ -17,13 +29,16 @@ export async function saveMessage({ chatType, roomKey, senderId, branchId, body,
     throw new AppError(422, `Message is too long (max ${MAX_BODY_LENGTH} chars)`);
   }
 
+  const { body: moderatedBody, flaggedWords } = await moderateMessage(trimmed);
+
   return chatRepository.insertMessage({
     chatType,
     roomKey,
     senderId,
     branchId,
-    body: trimmed,
+    body: moderatedBody,
     attachmentKey,
+    flaggedWord: flaggedWords.length ? flaggedWords.join(', ') : null,
   });
 }
 

@@ -19,8 +19,8 @@ const PRESETS = [
 ];
 
 // subject/monthlyPrice больше не вводятся руками — приходят из методики
-// (training_type), которую SEO уже оценил (Karis, 08.08.2026): методист
-// заводит методику -> SEO ставит цену -> только тогда она доступна здесь.
+// (training_type), которую CEO уже оценил (Karis, 08.08.2026): методист
+// заводит методику -> CEO ставит цену -> только тогда она доступна здесь.
 // trainingTypeId — единственное, что выбирает admin/branch_manager.
 const emptyForm = { name: '', trainingTypeId: '', room: '', mentorId: '', days: [], startTime: '', showCustomDays: false };
 
@@ -462,7 +462,7 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
             />
           </label>
 
-          {/* Направление — методика с ценой от SEO (методист создаёт -> SEO оценивает -> появляется здесь) */}
+          {/* Направление — методика с ценой от CEO (методист создаёт -> CEO оценивает -> появляется здесь) */}
           <label className="form-control">
             <span className="text-[11px] font-bold text-base-content/70 uppercase tracking-wider mb-1 block">
               Направление <span className="text-error">*</span>
@@ -477,11 +477,11 @@ export function GroupFormModal({ open, onClose, mentors, lessonDurationMin, init
             </select>
             {trainingTypes.length === 0 ? (
               <span className="text-[10px] text-warning mt-1">
-                Пока нет ни одного оценённого направления — методист создаёт методику, SEO ставит ей цену.
+                Пока нет ни одного оценённого направления — методист создаёт методику, CEO ставит ей цену.
               </span>
             ) : (
               <span className="text-[10px] text-base-content/40 mt-1">
-                Цену ставит SEO для всей методики — здесь не редактируется.
+                Цену ставит CEO для всей методики — здесь не редактируется.
               </span>
             )}
           </label>

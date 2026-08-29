@@ -62,6 +62,33 @@ const schema = z.object({
   // Публичное значение. Пусто → /api/auth/google отдаёт 503.
   GOOGLE_CLIENT_ID: z.string().optional().or(z.literal('')),
 
+  // --- Аналитика сайта levelup-academy.uz (Karis 25.08.2026) ---
+  // Сервисный аккаунт Google для чтения GA4 Data API и Search Console API.
+  // Это НЕ GOOGLE_CLIENT_ID выше: тот — публичный OAuth-клиент для входа
+  // пользователей, а здесь приватный ключ, которым сервер ходит в чужие API
+  // от своего имени. Пусто → /api/main/site-analytics отвечает
+  // { configured: false } с инструкцией, а не падает и не врёт нулями.
+  GOOGLE_SA_CLIENT_EMAIL: z.string().optional().or(z.literal('')),
+  // Приватный ключ из JSON сервисного аккаунта. В .env переводы строк хранятся
+  // как литеральные \n (иначе значение не помещается в одну строку) —
+  // google.auth.js разворачивает их обратно. Base64 тоже принимается.
+  GOOGLE_SA_PRIVATE_KEY: z.string().optional().or(z.literal('')),
+  // Числовой ID ресурса GA4 (Админ → Настройки ресурса → Идентификатор).
+  // Именно ID ресурса, а не Measurement ID G-XXXX из тега на сайте.
+  GA4_PROPERTY_ID: z.string().optional().or(z.literal('')),
+  // Ресурс в Search Console. Для domain-property формат строго
+  // 'sc-domain:levelup-academy.uz'; для префиксного — 'https://levelup-academy.uz/'.
+  GSC_SITE_URL: z.string().default('sc-domain:levelup-academy.uz'),
+
+  // --- Лимиты хранилища (Karis 26.08.2026) ---
+  // Ни у Neon, ни у Storj нет API биллинга, подключённого сюда — сервер видит
+  // только РЕАЛЬНЫЙ объём (pg_database_size / сумма размеров в бакете), а сам
+  // лимит плана знает только владелец аккаунта. Пусто → страница показывает
+  // фактический объём без процента "сколько из лимита" — придумывать чужую
+  // цифру плана нельзя.
+  NEON_STORAGE_LIMIT_GB: z.string().optional().or(z.literal('')),
+  STORJ_STORAGE_LIMIT_GB: z.string().optional().or(z.literal('')),
+
   // за сколько дней до due_date слать родителям напоминание payment.due_soon
   DUE_SOON_REMINDER_DAYS: z.coerce.number().int().positive().default(2),
 
@@ -81,7 +108,7 @@ const schema = z.object({
   SEED_MAIN_ADMIN_PHONE: z.string().default('+998900000000'),
   SEED_MAIN_ADMIN_EMAIL: z.string().email().default('hp8187081014laptop@gmail.com'),
   SEED_MAIN_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),
-  SEED_SEO_EMAIL: z.string().email().default('azizbekamangeldiev.2010@gmail.com'),
+  SEED_CEO_EMAIL: z.string().email().default('azizbekamangeldiev.2010@gmail.com'),
 }).superRefine((cfg, ctx) => {
   if (cfg.NODE_ENV !== 'production') return;
 

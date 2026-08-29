@@ -2,7 +2,7 @@
 
 ## v0.1.1 — 2026-07-10
 
-- chore: remove duplicate backend/backend and docs/docs, add SEO/Team Lead roles, add release process (d1ebf1c)
+- chore: remove duplicate backend/backend and docs/docs, add CEO/Team Lead roles, add release process (d1ebf1c)
 - fix: remove duplicate frontend/frontend folder, add .env files with VITE_API_URL, update api.js and vite.config.js for Render backend (cdede1e)
 - feat: add full project — backend, frontend, docs, workflow automation (a4b2043)
 - chore: deduplicate gitignore (139c9b9)

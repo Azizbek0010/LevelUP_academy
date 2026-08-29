@@ -40,7 +40,7 @@ function useMediaQuery(query) {
 
 /* ──────────────────── NAV CONFIG ──────────────────── */
 /**
- * Меню SEO: тринадцать пунктов свёрнуты в семь.
+ * Меню CEO: тринадцать пунктов свёрнуты в семь.
  *
  * Две проблемы были одновременно. Первая — длина: одиннадцать ссылок подряд,
  * где ежедневный дашборд стоял наравне с аудитом, который открывают раз в
@@ -198,7 +198,7 @@ function filterNavByFeatures(nav, orgFeatures) {
 }
 
 const ROLE_NAV = {
-  seo: superNav,
+  ceo: superNav,
   admin: adminNav,
   branch_manager: branchManagerNav,
   finance_manager: financeManagerNav,
@@ -208,7 +208,7 @@ const ROLE_NAV = {
 };
 
 const ROLE_TITLE = {
-  seo: 'SEO',
+  ceo: 'CEO',
   admin: 'Администратор',
   branch_manager: 'Branch Manager',
   finance_manager: 'Finance Manager',
@@ -218,7 +218,7 @@ const ROLE_TITLE = {
 };
 
 const ROLE_COLORS = {
-  seo: '#8b5cf6',
+  ceo: '#8b5cf6',
   admin: '#3b82f6',
   branch_manager: '#0ea5e9',
   finance_manager: '#0d9488',
@@ -313,9 +313,9 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
   );
 }
 
-/* ──────────────────── SEO: список филиалов ────────────────────
+/* ──────────────────── CEO: список филиалов ────────────────────
    То же решение, что у ментора с группами: филиал — главная сущность
-   SEO, и выбирать его логично один раз в меню, а не заходить сначала
+   CEO, и выбирать его логично один раз в меню, а не заходить сначала
    в список, потом в карточку. Хук вызывается только под этой ролью —
    у остальных /super/branches вернул бы 403. */
 function SuperBranchesNav({ collapsed, onExpandSidebar }) {
@@ -883,7 +883,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
   const role = user?.role;
   // Профиль есть не у всех ролей: у branch_manager отдельной страницы пока нет,
   // и пункт «Профиль» в меню аккаунта был бы кнопкой, которая ведёт на «/».
-  const hasProfilePage = ['admin', 'seo', 'mentor', 'methodist'].includes(role);
+  const hasProfilePage = ['admin', 'ceo', 'mentor', 'methodist'].includes(role);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 

@@ -128,7 +128,7 @@ export const down = (pgm) => {
 ```
 
 **Constraint `chk_users_branch_scope` трогать НЕ надо** — он уже
-`CHECK (role IN ('main_admin','seo') OR branch_id IS NOT NULL)`, а
+`CHECK (role IN ('main_admin','ceo') OR branch_id IS NOT NULL)`, а
 `branch_manager`, как и `admin`, ОБЯЗАН иметь `branch_id` — новая роль уже
 проходит существующее условие.
 
@@ -136,7 +136,7 @@ export const down = (pgm) => {
 
 Строка ~43:
 ```js
-staff: ['admin', 'seo', 'mentor', 'methodist'],
+staff: ['admin', 'ceo', 'mentor', 'methodist'],
 ```
 → добавить `'branch_manager'` в этот массив. Вход у branch_manager — как у
 admin: email + пароль, через `POST /api/auth/staff/login`.
@@ -210,15 +210,15 @@ export async function listExpenses(branchId, query) {
 
 Пользователь явно просил, чтобы у branch_manager была **более полная**
 картинка филиала, чем видит обычный admin. У admin сейчас нет отдельного
-эндпоинта "инфо о своём филиале" вообще (branch — это епархия SEO,
+эндпоинта "инфо о своём филиале" вообще (branch — это епархия CEO,
 `backend/src/modules/super/`). Смотри `super.repository.js` — там уже есть
 запрос на детальную карточку филиала (адрес, координаты, счётчики
-студентов/групп/админов) для SEO; переиспользуй ту же SQL-логику,
+студентов/групп/админов) для CEO; переиспользуй ту же SQL-логику,
 но:
 - ограничь её ОДНИМ филиалом — `req.scope.branchId` (а не списком по
   organizationId, как у Super);
 - НЕ давай возможность редактировать (PATCH/DELETE) — это остаётся зоной
-  SEO, branch_manager только читает.
+  CEO, branch_manager только читает.
 
 ### 2.4 Регистрация роутера
 
@@ -235,7 +235,7 @@ app.use('/api/branch-manager', branchManagerRoutes); // BRANCH MANAGER: дашб
 
 ---
 
-## Часть 3 — SEO: кнопка «Добавить Branch-менеджера» (backend + frontend, ОБЯЗАТЕЛЬНО, должно реально работать)
+## Часть 3 — CEO: кнопка «Добавить Branch-менеджера» (backend + frontend, ОБЯЗАТЕЛЬНО, должно реально работать)
 
 **Это критично — без этого роль нерабочая**, некому будет логиниться.
 Не опция, не «если останется время» — обязательная часть задачи, довести до
@@ -295,7 +295,7 @@ switch третьим случаем, не переписывай форму с 
 
 ---
 
-## Часть 3.5 — SEO: кнопка «Финанс-менеджер» — ТОЛЬКО UI-заглушка, backend НЕ делать
+## Часть 3.5 — CEO: кнопка «Финанс-менеджер» — ТОЛЬКО UI-заглушка, backend НЕ делать
 
 Пользователь также хочет **четвёртый** пункт в том же выпадающем списке —
 "Финанс-менеджера" ("Финанс" / "Молия"). **Это НЕ функция, а видимость

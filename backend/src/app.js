@@ -17,6 +17,8 @@ import mentorRoutes from './modules/mentor/mentor.routes.js';
 import studentRoutes from './modules/student/student.routes.js';
 import parentRoutes from './modules/parent/parent.routes.js';
 import mainRoutes from './modules/main/main.routes.js';
+import healthRoutes from './modules/health/health.routes.js';
+import platformBillingRoutes from './modules/platformBilling/platformBilling.routes.js';
 import leadsRoutes from './modules/main/leads.routes.js';
 import superRoutes from './modules/super/super.routes.js';
 import financeRoutes from './modules/finance/finance.routes.js';
@@ -24,6 +26,7 @@ import adminRoutes from './modules/admin/admin.routes.js';
 import branchManagerRoutes from './modules/branch-manager/branch-manager.routes.js';
 import methodistRoutes from './modules/methodist/methodist.routes.js';
 import telegramRoutes from './modules/telegram/telegram.routes.js';
+import { emitMainDashboardChanged } from './sockets/io.js';
 
 /**
  * Кто имеет право звать API из браузера.
@@ -112,9 +115,31 @@ export function createApp() {
   app.use(cors({ origin: corsOrigin, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
   app.use(pinoHttp({ logger, autoLogging: env.NODE_ENV !== 'test' }));
+
+  // Health checks must not depend on Redis. Otherwise a Redis outage delays
+  // the hosting probe and can cause a healthy API process to be restarted.
+  app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
   app.use(createRateLimiter({ keyPrefix: 'rl:api', points: 300, duration: 60 }));
 
-  app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+  // Dashboard live-invalidation. The socket carries no business data; it only
+  // tells authenticated Main Admin clients to refetch canonical API responses.
+  // This keeps permissions and calculations in the existing HTTP endpoints.
+  app.use((req, res, next) => {
+    const changesDashboard = req.method !== 'GET' && req.method !== 'HEAD'
+      && (req.path.startsWith('/api/main')
+        || req.path.startsWith('/api/leads')
+        || req.path.startsWith('/api/super')
+        || req.path.startsWith('/api/admin/students'));
+    if (changesDashboard) {
+      res.on('finish', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          emitMainDashboardChanged({ resource: req.path, method: req.method });
+        }
+      });
+    }
+    next();
+  });
 
   // Краулер запрашивает /robots.txt до всего остального. Без файла он получал 404 и считал,
   // что обходить можно всё. X-Robots-Tag выше закрывает уже загруженные ответы — этот файл
@@ -153,7 +178,9 @@ export function createApp() {
   app.use('/api/chat', chatRoutes);
   app.use('/api/leads', leadsRoutes); // ПУБЛИЧНЫЙ приём заявок с лендинга (без токена)
   app.use('/api/main', mainRoutes);   // Main Admin: онбординг партнёров, дашборд платформы
-  app.use('/api/super', superRoutes); // SEO: филиалы + админы своей организации
+  app.use('/api/main', healthRoutes); // Main Admin: настоящая проверка БД/Redis/S3 (Karis 26.08.2026)
+  app.use('/api/main/invoices', platformBillingRoutes); // Main Admin: счета и долги партнёров (Karis 26.08.2026)
+  app.use('/api/super', superRoutes); // CEO: филиалы + админы своей организации
   app.use('/api/finance', financeRoutes); // FINANCE MANAGER: доход/расход всей организации, без филиалов/админов
 app.use('/api/admin', adminRoutes); // K-ADMIN: филиал — дашборд, расходы, студенты, группы
 app.use('/api/branch-manager', branchManagerRoutes); // BRANCH MANAGER: дашборд/доход/расход/отчёты/карточка своего филиала

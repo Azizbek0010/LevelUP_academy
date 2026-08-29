@@ -36,7 +36,7 @@ const AUTOSAVE_DELAY = 700;
 
 // Роли, чья отметка = «исправление администратора»: клетка держит цвет статуса,
 // но получает пометку. Ментор видит её так же, как админ.
-const ADMIN_MARK_ROLES = new Set(['admin', 'seo', 'main_admin']);
+const ADMIN_MARK_ROLES = new Set(['admin', 'ceo', 'main_admin']);
 
 const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 

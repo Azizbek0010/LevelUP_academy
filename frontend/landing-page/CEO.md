@@ -1,4 +1,4 @@
-# SEO / GEO / AEO — LevelUp Academy Landing
+# CEO / GEO / AEO — LevelUp Academy Landing
 
 How search and AI-search are wired in this app, and how to keep them correct.
 
@@ -15,7 +15,7 @@ eventually, but **the AI crawlers that produce citations do not** — ChatGPT's 
 run JS at all. An unrendered page gives them nothing to quote, no matter how good the copy is.
 
 So every route is **prerendered**: a real HTML file with its text, headings and metadata
-already inside. No part of SEO here depends on the browser running JavaScript.
+already inside. No part of CEO here depends on the browser running JavaScript.
 
 ---
 
@@ -50,10 +50,10 @@ artifact. The build **fails loudly** if a route renders empty or forgets its `<t
 | Layer | Lives in | Seen by |
 |---|---|---|
 | **Static** — `og:image`, `og:type`, `twitter:card`, JSON-LD `@graph` (Organization, WebSite, SoftwareApplication, FAQPage) | `index.html` | Everyone, always |
-| **Per-route** — title, description, canonical, `og:url`, BreadcrumbList / FAQ | `useSeo()` in each page | Baked into the HTML **and** re-applied client-side on navigation |
+| **Per-route** — title, description, canonical, `og:url`, BreadcrumbList / FAQ | `useCeo()` in each page | Baked into the HTML **and** re-applied client-side on navigation |
 
-`src/lib/seo.js` serves both: in the browser `useSeo()` writes to the DOM; during the server
-pass it reports the same data through `SeoCollectorContext`, and `renderSeoHead()` turns it
+`src/lib/ceo.js` serves both: in the browser `useCeo()` writes to the DOM; during the server
+pass it reports the same data through `CeoCollectorContext`, and `renderCeoHead()` turns it
 into tags. **Keep the two in sync** — add a tag to one and not the other, and the crawler and
 the browser end up with different heads.
 
@@ -83,7 +83,7 @@ queries (`school management software`, `student management system`, `learning ce
 software`) because the search intent outside the region is different. Its `<title>` and
 `<meta description>` are written for those, not converted from Russian.
 
-`x-default` points at **English** (`X_DEFAULT_LANG` in `src/lib/seo.js`): it is the version
+`x-default` points at **English** (`X_DEFAULT_LANG` in `src/lib/ceo.js`): it is the version
 served to a visitor whose language matches none of the declared ones, and for an audience
 outside Uzbekistan and the CIS English is the meaningful default.
 
@@ -95,7 +95,7 @@ without it Google treats them as competing duplicates and may serve the wrong on
   key renders as `undefined` on the page, not a build error.
 - `src/i18n/index.js` — `useT()` (dictionary), `useLang()`, `useLocalizePath()` (`lp()` for links),
   `dictOf()` (another language's dictionary — the switcher labels the others with it).
-- Pages pass the **canonical** path to `useSeo` (`/landing/finance`); it localises internally
+- Pages pass the **canonical** path to `useCeo` (`/landing/finance`); it localises internally
   and emits the `hreflang` set (every language + x-default, each page listing all of them —
   Google drops a cluster whose references are not reciprocal).
 - FAQ/Breadcrumb JSON-LD is generated **in code**, not in `index.html`: the markup has to be in
@@ -105,10 +105,10 @@ without it Google treats them as competing duplicates and may serve the wrong on
 ## Adding a page
 
 1. Add the strings to **all three** dictionaries: `src/i18n/{ru,uz,en}.js`.
-2. Call `useSeo({ title, description, path, jsonLd })` with the **canonical** path.
+2. Call `useCeo({ title, description, path, jsonLd })` with the **canonical** path.
    `jsonLd` **must have a stable reference** — wrap it in `useMemo`, otherwise the effect
    re-runs every render. A `WebPage` node with the page's language is added automatically
-   by `useSeo` — do not declare it yourself.
+   by `useCeo` — do not declare it yourself.
 3. Add the route to `PAGES` in `src/App.jsx` — the prefixed variants are generated from it.
 4. Add the canonical path to `PAGES` in `scripts/prerender.js`. **Skip this and the page ships
    as an empty shell** — invisible to AI crawlers.
@@ -227,7 +227,7 @@ exist elsewhere, on-site GEO work has nothing to amplify. See `GEO-OFFSITE.md`.
 
 ## Open items
 
-- **Uzbek copy is a machine draft and needs a native review.** The structure, terms and SEO
+- **Uzbek copy is a machine draft and needs a native review.** The structure, terms and CEO
   are correct; tone and phrasing are not guaranteed. Edit `src/i18n/uz.js` — nothing else.
 - Footer Telegram link is still a placeholder (`https://t.me/`, `src/components/Footer.jsx`).
   Needs the real handle — do not guess one.

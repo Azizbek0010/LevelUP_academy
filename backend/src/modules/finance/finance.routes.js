@@ -20,7 +20,7 @@ import * as ctrl from './finance.controller.js';
  * трогает. Karis 22.08.2026.
  *
  * Намеренно отдельный роутер/модуль, а не "authorize('finance_manager')"
- * добавлен в блок super.routes.js: там ОДИН authorize('seo') на весь роутер
+ * добавлен в блок super.routes.js: там ОДИН authorize('ceo') на весь роутер
  * (филиалы, админы, студенты, объявления, аудит и т.д.) — расширять его
  * означало бы открыть Finance Manager'у всё это заодно. Контроллеры и
  * сервисный слой те же самые (super.controller.js/super.service.js) —
@@ -28,7 +28,7 @@ import * as ctrl from './finance.controller.js';
  */
 const router = Router();
 
-router.use(authenticate, orgAccessGate, authorize('finance_manager', 'seo'));
+router.use(authenticate, orgAccessGate, authorize('finance_manager', 'ceo'));
 
 router.get('/dashboard', superCtrl.dashboard);
 router.get('/stats', validate({ query: statsQuery }), superCtrl.stats);

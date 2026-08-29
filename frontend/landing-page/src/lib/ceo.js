@@ -61,12 +61,12 @@ export function webPage({ title, description, url, lang }) {
 }
 
 /**
- * Канал сбора SEO во время серверного рендера (prerender).
+ * Канал сбора CEO во время серверного рендера (prerender).
  * На клиенте провайдера нет → значение null → сбор не выполняется, работает только DOM-ветка.
  * На сервере entry-server кладёт сюда объект-приёмник и после renderToString читает из него
  * то, что объявила отрисованная страница.
  */
-export const SeoCollectorContext = createContext(null);
+export const CeoCollectorContext = createContext(null);
 
 function upsert(selector, create) {
   let el = document.head.querySelector(selector);
@@ -109,7 +109,7 @@ function removeCanonical() {
 }
 
 /**
- * Client-side per-route SEO: обновляет title, description, canonical и
+ * Client-side per-route CEO: обновляет title, description, canonical и
  * переменную часть Open Graph / Twitter. Статический baseline (og:image,
  * og:type, twitter:card и JSON-LD Organization/WebSite/SoftwareApplication)
  * живёт в index.html — его видят соц-скраперы без JS.
@@ -120,7 +120,7 @@ function removeCanonical() {
  *   noindex — страница не должна попасть в индекс (клиентский 404): робот получает
  *   noindex, а canonical снимается, т.к. указывать его на несуществующий URL нельзя.
  */
-export function useSeo({ title, description, path, jsonLd, noindex = false }) {
+export function useCeo({ title, description, path, jsonLd, noindex = false }) {
   const lang = useLang();
   // `path` — канонический путь без языка ('/landing/finance'). Локализуем здесь, чтобы
   // страницам не приходилось знать про языковые префиксы. Исключение — noindex-страница
@@ -130,8 +130,8 @@ export function useSeo({ title, description, path, jsonLd, noindex = false }) {
   // Серверная ветка: useEffect при renderToString не выполняется, поэтому единственный
   // момент, когда страница может сообщить о себе, — сам рендер. Запись безопасна: приёмник
   // существует только внутри одного prerender-прохода и на клиенте всегда null.
-  const collector = useContext(SeoCollectorContext);
-  if (collector) collector.seo = { title, description, path, jsonLd, noindex, lang };
+  const collector = useContext(CeoCollectorContext);
+  if (collector) collector.ceo = { title, description, path, jsonLd, noindex, lang };
 
   useEffect(() => {
     const url = `${SITE_URL}${localized}`;
@@ -178,12 +178,12 @@ export function useSeo({ title, description, path, jsonLd, noindex = false }) {
     // ту же страницу теми же узлами, и без этого после гидратации в <head> висели два
     // одинаковых набора JSON-LD. Свой cleanup удаляет только то, что создал сам, — до
     // серверных тегов он не дотягивался.
-    document.head.querySelectorAll('script[data-seo-jsonld]').forEach((n) => n.remove());
+    document.head.querySelectorAll('script[data-ceo-jsonld]').forEach((n) => n.remove());
 
     const nodes = graph.map((obj) => {
       const s = document.createElement('script');
       s.type = 'application/ld+json';
-      s.setAttribute('data-seo-jsonld', '');
+      s.setAttribute('data-ceo-jsonld', '');
       s.textContent = JSON.stringify(obj);
       document.head.appendChild(s);
       return s;
@@ -201,16 +201,16 @@ const escapeAttr = (s) =>
     .replace(/"/g, '&quot;');
 
 /**
- * Собранный на сервере SEO → готовые теги для <head> статической страницы.
- * Клиентский useSeo делает ровно то же самое, но через DOM: списки тегов обязаны
+ * Собранный на сервере CEO → готовые теги для <head> статической страницы.
+ * Клиентский useCeo делает ровно то же самое, но через DOM: списки тегов обязаны
  * совпадать, иначе гидратация даст странице другой <head>, чем видел краулер.
  *
  * Только переменная часть. Постоянная (og:image, og:type, twitter:card, JSON-LD @graph)
  * живёт статикой в index.html и здесь не дублируется.
  */
-export function renderSeoHead(seo) {
-  if (!seo) return '';
-  const { title, description, path, jsonLd, noindex = false, lang = 'ru' } = seo;
+export function renderCeoHead(ceo) {
+  if (!ceo) return '';
+  const { title, description, path, jsonLd, noindex = false, lang = 'ru' } = ceo;
   const url = `${SITE_URL}${noindex ? path : localizePath(path, lang)}`;
   const tags = [];
 
@@ -228,7 +228,7 @@ export function renderSeoHead(seo) {
   tags.push(
     `<meta name="robots" content="${noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'}" />`,
   );
-  // canonical на несуществующий URL указывать нельзя — см. noindex в useSeo.
+  // canonical на несуществующий URL указывать нельзя — см. noindex в useCeo.
   if (!noindex) tags.push(`<link rel="canonical" href="${escapeAttr(url)}" />`);
   tags.push(`<meta property="og:url" content="${escapeAttr(url)}" />`);
   tags.push(`<meta property="og:locale" content="${ogLocale(lang)}" />`);
@@ -239,14 +239,14 @@ export function renderSeoHead(seo) {
     }
   }
 
-  // Тот же автоматический WebPage, что и в useSeo — списки обязаны совпадать, иначе
+  // Тот же автоматический WebPage, что и в useCeo — списки обязаны совпадать, иначе
   // гидратация даст странице другой набор разметки, чем видел краулер.
   const graph = noindex ? (jsonLd ?? []) : [webPage({ title, description, url, lang }), ...(jsonLd ?? [])];
 
   for (const obj of graph) {
     // </script> внутри JSON закрыл бы тег раньше времени.
     const json = JSON.stringify(obj).replace(/</g, '\\u003c');
-    tags.push(`<script type="application/ld+json" data-seo-jsonld>${json}</script>`);
+    tags.push(`<script type="application/ld+json" data-ceo-jsonld>${json}</script>`);
   }
 
   return tags.join('\n    ');

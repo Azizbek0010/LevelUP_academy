@@ -386,7 +386,7 @@ export default function Settings() {
       {/* Разделы, которых нет в меню.
           Сайдбар сокращён до ежедневной работы (дашборд, партнёры, заявки),
           а редкие экраны собраны здесь. Ссылка на «Штрафы» удалена вместе со
-          страницей: дисциплина сотрудников — зона SEO. */}
+          страницей: дисциплина сотрудников — зона CEO. */}
       <div className="card bg-base-100 border border-base-200/60 shadow-sm">
         <div className="card-body">
           <h2 className="font-bold text-sm mb-4">Ещё разделы</h2>

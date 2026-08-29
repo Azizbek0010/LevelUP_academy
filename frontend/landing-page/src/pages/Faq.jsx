@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { breadcrumb, faqPage, useSeo } from '../lib/seo.js';
+import { breadcrumb, faqPage, useCeo } from '../lib/ceo.js';
 import { useLang, useLocalizePath, useT } from '../i18n/index.js';
 
 const extraGroupByLang = {
@@ -111,19 +111,19 @@ export default function Faq() {
     () => [
       breadcrumb(
         [
-          { name: t.seo.breadcrumbHome, path: '/landing' },
+          { name: t.ceo.breadcrumbHome, path: '/landing' },
           { name: s.badge, path: '/landing/faq' },
         ],
         lang,
       ),
       faqPage(items),
     ],
-    [t.seo.breadcrumbHome, s.badge, items, lang],
+    [t.ceo.breadcrumbHome, s.badge, items, lang],
   );
 
-  useSeo({
-    title: t.seo.faqHub.title,
-    description: t.seo.faqHub.description,
+  useCeo({
+    title: t.ceo.faqHub.title,
+    description: t.ceo.faqHub.description,
     path: '/landing/faq',
     jsonLd,
   });

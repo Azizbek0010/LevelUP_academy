@@ -133,7 +133,7 @@ export const updateMentorSchema = z
 
 // ---------- группы ----------
 // Admin выбирает дни недели + время начала; конец урока считает бэкенд
-// из длительности урока организации (SEO). См. admin.service.buildSchedule.
+// из длительности урока организации (CEO). См. admin.service.buildSchedule.
 const dayEnum = z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
 const daysSchema = z
   .array(dayEnum)
@@ -142,7 +142,7 @@ const daysSchema = z
   .refine((a) => new Set(a).size === a.length, 'Duplicate days');
 const startTimeSchema = z.string().regex(/^\d{2}:\d{2}$/, 'HH:MM');
 
-// trainingTypeId — методика с ценой от SEO; когда указана, backend сам берёт
+// trainingTypeId — методика с ценой от CEO; когда указана, backend сам берёт
 // subject/monthlyPrice из неё (см. admin.service.createGroup), а не доверяет
 // клиенту. subject/monthlyPrice остаются опциональными только ради старых
 // групп без методики (см. 1783980000000_training-type-price.js).

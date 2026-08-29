@@ -20,6 +20,9 @@ export function initSockets(httpServer) {
   io.use(socketAuth);                            // JWT из handshake.auth.token → socket.user
 
   io.on('connection', (socket) => {
+    // Platform-wide live updates are private to Main Admin accounts. Joining
+    // server-side from the verified JWT avoids a client-controlled subscribe.
+    if (socket.user?.role === 'main_admin') socket.join('main-admins');
     registerPresence(io, socket, redis);
     registerChat(io, socket, redis);
     registerAttendance(io, socket);

@@ -1,9 +1,9 @@
 import { AppError } from '../../../utils/AppError.js';
 import * as repo from './salary.repository.js';
 
-// admin/seo/main_admin видят зарплаты любого ментора своего филиала;
+// admin/ceo/main_admin видят зарплаты любого ментора своего филиала;
 // сам ментор — только свою запись.
-const PRIVILEGED_ROLES = new Set(['admin', 'seo', 'main_admin']);
+const PRIVILEGED_ROLES = new Set(['admin', 'ceo', 'main_admin']);
 
 function assertAdmin(requester) {
   if (requester.role !== 'admin') {
@@ -32,7 +32,7 @@ export async function getMentorSalaries({ requester, mentorId, year }) {
  * расчёт (groupRevenue = monthlyPrice × activeStudents), ничего не пишет в БД.
  *
  * Владение как в getMentorSalaries: ментор — только свою запись; admin — только
- * менторов своего филиала; seo/main_admin — шире. Иначе чужая выручка утекает.
+ * менторов своего филиала; ceo/main_admin — шире. Иначе чужая выручка утекает.
  */
 export async function getSalarySuggestion({ requester, mentorId, month }) {
   const isSelf = requester.role === 'mentor' && requester.id === mentorId;

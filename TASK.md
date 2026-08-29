@@ -3,7 +3,7 @@
 > "har bir pageni... main admin desingi dashboard design ga o'hshasin full".
 > Разница оказалась не в компонентах, а в ТЕМЕ: `main-admin/tailwind.config.js`
 > ещё 11.08 уменьшил радиус скруглений DaisyUI ("острее углы = серьёзнее
-> продукт"), а `frontend/staff/tailwind.config.js` — общий для Admin/SEO/
+> продукт"), а `frontend/staff/tailwind.config.js` — общий для Admin/CEO/
 > Mentor/Methodist/Branch Manager/Finance — так и остался на старом мягком
 > `--rounded-box: 1rem`. Один токен правится → эффект сразу на ВСЕХ страницах,
 > использующих `.card`/`.btn`/`.badge`/`.modal-box` (подавляющее большинство).
@@ -16,13 +16,13 @@
 >       tabular-nums`) — везде убраны хардкод-переопределения `rounded-2xl`,
 >       которые сам токен не ловит:
 >       `pages/super/_ui.jsx` (Card/Panel/Metric/EmptyState — держит Дисциплину,
->       Объявления, Фичи, StaffDetail, BranchDetail и другие SEO-страницы),
+>       Объявления, Фичи, StaffDetail, BranchDetail и другие CEO-страницы),
 >       `pages/mentor/_ui.jsx` (Panel/Kpi/EmptyState — держит Students/Groups/
 >       Mentors/Payments/Dashboard/Reports по комментарию в файле),
 >       `pages/finance/_ui.jsx` (см. блок выше, 13.08 раньше этой сессии).
 > - [x] Точечно: `finance/Settings.jsx`, `super/Branches.jsx` (плитки филиалов),
 >       `super/BranchFormModal.jsx` (модалка) — убраны локальные `rounded-2xl`.
-> - [x] Живьём проверено (SEO): Дашборд, Филиалы, Дисциплина, Финансы — единый
+> - [x] Живьём проверено (CEO): Дашборд, Филиалы, Дисциплина, Финансы — единый
 >       плоский стиль, без ошибок в консоли.
 > - ⚠️ **Не 100% страниц.** Methodist сознательно НЕ трогал — у него отдельная
 >       задокументированная "Content Studio" айдентика (index.css, лайм-акцент)
@@ -71,7 +71,7 @@
 
 > So'rov: Main Admin Shop va Telegram-integratsiyani partnyorlarga alohida
 > yoqib/o'chira olishi kerak (xuddi shu mexanizm — `org_feature_flags` +
-> `platform_addon_prices` + SEO so'rov-inbox — allaqachon AI-review uchun
+> `platform_addon_prices` + CEO so'rov-inbox — allaqachon AI-review uchun
 > ishlagan, endi shu ikkisiga ham qo'shildi). O'chirilgan bo'lsa — sidebar'da
 > ko'rinmasin VA to'g'ridan-to'g'ri link bilan ham ochilmasin (backend ham
 > 403 qaytaradi, front ham yashiradi).
@@ -88,7 +88,7 @@
 - [x] Shop: gейт `student.routes.js` (`/shop`), `admin.routes.js` (`/shop`),
       `super.routes.js` (4 ta `/shop/items*` rout alohida-alohida, chunki
       sub-router emas). Sidebar: `frontend/staff` — `Layout.jsx`
-      `filterNavByFeatures()` (admin/seo/branch_manager), route guard —
+      `filterNavByFeatures()` (admin/ceo/branch_manager), route guard —
       yangi `FeatureGuard.jsx` (`App.jsx` `/shop`, `/shop-catalog`).
       `frontend/member` (student) — `student/components/Layout.jsx`
       `buildNav()`, route guard — `App.jsx` ichidagi lokal `FeatureGuard`.
@@ -228,13 +228,13 @@ navbatlar baribir ishlamaydi, kvota tugagunicha yoki ko'tarilgunicha).
 > organizatsiyalarni login'da bloklab qo'ygan edi, testlar orqali deploy'dan
 > OLDIN topildi). Backend to'liq: fича-katalog CRUD, org-level access gate
 > (login + har bir so'rov, 10 ta router'ga ulandi), AI-review gate, to'lov/
-> bonus/про-рейт, platform_expenses + balans, SEO fича so'rovlari, anons bagi
+> bonus/про-рейт, platform_expenses + balans, CEO fича so'rovlari, anons bagi
 > tuzatildi + nishonlash.
 >
 > **Frontend ham qo'shildi** (11.08.2026, davomi): Main Admin — `Features.jsx`
 > (katalog CRUD + kiruvchi so'rovlar inbox'i), `OrgDetail.jsx`'ga "Доступ"
 > tab (to'lov/bonus/ledger) + "Финансы" tab'ga fича-tumbler'lar, sidebar
-> badge. `staff/super` (SEO tomoni) — `Features.jsx` (katalog ko'rish +
+> badge. `staff/super` (CEO tomoni) — `Features.jsx` (katalog ko'rish +
 > подключение/отключение so'rash, tumbler yo'q — faqat so'rov), `Billing.jsx`
 > (access_until/grace status + ledger, YANGI backend endpoint'lar
 > `GET /super/billing` va `GET /super/billing/ledger` shu bilan birga
@@ -253,15 +253,15 @@ navbatlar baribir ishlamaydi, kvota tugagunicha yoki ko'tarilgunicha).
 >
 > **✅ Live e2e test o'tkazildi (11.08.2026, kechqurun), butunlay yashil:**
 > alohida test-org (`E2E QA Test Org`, keyin frozen qilindi, real partnyorlarga
-> tegmaydi) orqali: onboarding → access_until avto to'g'ri qo'yildi → SEO
-> login ishlaydi → access_until 60 kunga orqaga surildi → SEO login `402
+> tegmaydi) orqali: onboarding → access_until avto to'g'ri qo'yildi → CEO
+> login ishlaydi → access_until 60 kunga orqaga surildi → CEO login `402
 > payment_overdue` bilan bloklandi → to'lov yozildi → login qayta ishladi →
 > **allaqachon chiqarilgan (eski) student токен** access_until orqaga
 > surilgandan keyin keyingi so'rovda `402`ga uchradi — bu request-time
 > gate'ning (login-time emas) asosiy isboti → bonus +2 oy stackланди to'g'ri
 > (`GREATEST(access_until, bugun) + N`) → student_panel/parent_panel
-> mustaqil ishlaydi (bittasini yoqish ikkinchisiga tegmaydi) → SEO fича
-> so'rovi → Main Admin approve → flag va SEO'dagi katalog ikkalasi ham
+> mustaqil ishlaydi (bittasini yoqish ikkinchisiga tegmaydi) → CEO fича
+> so'rovi → Main Admin approve → flag va CEO'dagi katalog ikkalasi ham
 > yangilandi → `GET /super/billing`, `/billing/ledger`, `/features/catalog`
 > — hammasi to'g'ri javob qaytardi (avvalgi bug tuzatilgani ham shu bilan
 > tasdiqlandi) → dashboard user-count (students/parents/staff) aniq to'g'ri
@@ -418,7 +418,7 @@ qatorga tegilgan).
 - [x] K-MAIN: Partner freeze/activate (PATCH /partners/:id/status)
 - [x] K-MAIN: YANGI narx modeli (2026-07-16) — o'quvchi bucket tariflari (Free/Start/Standard/Pro/Business/Network), filiallar bepul; config/plans.js TIERS + computeBill({students}); eski filial+o'quvchi formula bekor; GET /api/main/pricing endi { tiers, currency }
 
-## Backend — SEO (Karis)
+## Backend — CEO (Karis)
 
 - [x] K-SUPER: Organization dashboard (GET /api/super/dashboard: totals + branch breakdown)
 - [x] K-SUPER: CRUD branches (+ archive/unarchive) va CRUD admins (+ freeze)
@@ -443,7 +443,7 @@ qatorga tegilgan).
 > 1783820000000 (staff_penalties), 1783830000000 (org_charters).
 
 - [x] K-DISC: shtraf (summa + sabab, avto-yechish YO'Q) + qora (ishdan bo'shatish, status='fired', withTransaction)
-- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): seo→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
+- [x] K-DISC: Huquqlar matritsasi (CAN_ISSUE): ceo→admin/mentor/methodist; admin→mentor/methodist (shtraf), faqat mentor (qora); main_admin→HECH NARSA
 - [x] K-DISC: Ustav (org_charters, erkin matn, upsert, barcha xodimlarga ko'rinadi)
 - [x] K-DISC: Endpointlar — super PUT/GET /charter, POST/GET /penalties, POST /staff/:id/reactivate; admin GET /charter, POST/GET /penalties; shared GET /users/me/penalties, /users/me/charter
 - [x] K-DISC: Swagger — Discipline tegi, 10 endpoint, swagger/*.md qayta generatsiya (139 endpoint)
@@ -650,9 +650,9 @@ qatorga tegilgan).
 - [x] AB-V1: Partner profit main dashboardda (income - expenses; pul jadvallariga faqat SELECT)
 - [x] AB-V1: Integration testlar: payments full/split + auth flow (login -> refresh -> reuse-detect -> OTP)
 
-## Backend — SEO Integratsiya (Karis) 🔥 hozirgi fokus
+## Backend — CEO Integratsiya (Karis) 🔥 hozirgi fokus
 
-> SEO FRONT = to'liq Shohjahon versiyasi (14 sahifa), lekin uning yangi sahifalari
+> CEO FRONT = to'liq Shohjahon versiyasi (14 sahifa), lekin uning yangi sahifalari
 > backend endpoint'larini chaqiradi — ular YO'Q edi. **Karis quradi** (avval Abdulaziz'ga berilgandi →
 > Team Lead o'ziga qaytarib oldi). Zona: `modules/super`.
 
@@ -672,7 +672,7 @@ qatorga tegilgan).
 - [x] K-SUPER-INT ✅ JONLI TEKSHIRILDI 2026-07-28 (Karis): Dashboard, Филиалы, Студенты, Группы,
       Отчёты, Статистика (7/30/90 kunlik almashtirish), Дисциплина (взыскание/устав),
       Объявления (real create+delete+audit), Напоминания, Настройки (lessonDurationMin
-      saqlash) — barchasi real seo login bilan tekshirildi, hech qanday xato topilmadi
+      saqlash) — barchasi real ceo login bilan tekshirildi, hech qanday xato topilmadi
 
 ## Backend — YANGI TOPSHIRIQ (Abdulaziz) 🔥 2026-07-19, Karis bergan
 
@@ -816,7 +816,7 @@ qatorga tegilgan).
 > 4 ta vazifa allaqachon bajarilgan, 1 tasi kerak emas. Faqat BITTA haqiqiy tirqish topildi (pastda).
 
 - [x] AUTH: Login sahifalar (3 endpoint: main / staff / member) — `staff/pages/Login.jsx`, `member/pages/Login.jsx`, `main-admin/pages/Login.jsx`, uchalasi `/auth/{staff,member,main}/login` ga ulangan. `origin/elyor` da save-zone dan ortiqcha commit YO'Q — merge qilinadigan narsa qolmagan
-- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+seo route'larida ishlatiladi
+- [x] AUTH: ProtectedRoute + RoleGuard — ProtectedRoute uchala App.jsx da, `staff/components/RoleGuard.jsx` admin+ceo route'larida ishlatiladi
 - [x] AUTH: Router setup by roles — staff/App.jsx da rolli route'lar
 - [x] AUTH: Redux authSlice — KERAK EMAS (useAuth() context yetarli, qaror 2026-07-15)
 - [x] AUTH: 401 → refresh → retry interceptor (api.js, bitta refreshPromise) — ✅ Elyor bajardi (staff/member/main-admin), save-zone ga merge (55ef617). Auditda tasdiqlandi: `refreshPromise` 4 ta app da ham bor
@@ -836,7 +836,7 @@ qatorga tegilgan).
       3) Google COOP — FE-COOP bilan yopildi. 4) React Router future-flag — FE-ROUTER-FLAG
       bilan yopildi
 
-## Frontend — SEO ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
+## Frontend — CEO ⚠️ TUGAMAGAN (Said Islom + Aziz) — 2026-07-19 auditda ochildi
 
 > ❌ Bu bo'lim ilgari "✅ TUGADI" deb turgan edi — bu NOTO'G'RI bo'lgan.
 > Sahifalar chizilgan, lekin 3 tasi bo'sh qaytadi va 1 tasi O'YLAB TOPILGAN raqam ko'rsatadi.
@@ -886,7 +886,7 @@ qatorga tegilgan).
       (`Announcements.jsx`, `Reminders.jsx`, `Audit.jsx`) allaqachon o'z real endpointlariga
       ulangan (`api.superAnnouncements/superReminders/superAudit` va CRUD mutatsiyalar),
       `useSuperDashboard` ga tayanib qolgan joy yo'q. Kim tomonidan yopilgani noaniq —
-      TASK.md eskirgan edi. Qolgan ish: jonli seo login bilan E2E (AB-VERIFY/
+      TASK.md eskirgan edi. Qolgan ish: jonli ceo login bilan E2E (AB-VERIFY/
       K-SUPER-INT blokiga qara), kod tomoni yopiq
 
 ## Main Admin (Karis) 🔥 to'liq egasi — 2026-07-26 dan, front + backend
@@ -927,7 +927,7 @@ qatorga tegilgan).
       Ilgari front mavjud bo'lmagan 4 ta yo'lga urilardi. Endi ular bor:
       • `GET/POST/DELETE /api/main/announcements` — platforma e'lonlari.
         Yangi migratsiya `1783900000000_platform-announcements` (`platform_announcements`
-        jadvali + `platform_announcement_target` enum: `all-partners` / `all-seos`).
+        jadvali + `platform_announcement_target` enum: `all-partners` / `all-ceos`).
         Super'nikidan alohida: u yerda auditoriya bitta tashkilot ichida, bu yerda —
         hamkorlarning o'zi, qiymatlar kesishmaydi.
         ⚠️ Navbatga (`notificationQueue`) ATAYIN qo'yilmaydi: qabul qiluvchilar xodimlar,
@@ -945,7 +945,7 @@ qatorga tegilgan).
       `initialMock` (6 ta o'ylab topilgan hamkor va jarima) butunlay olib tashlandi.
       **Qaror: shtraf yozish formasi olib tashlandi, sahifa faqat ko'rish uchun.**
       Sabab kod bilan tasdiqlangan: `discipline` modulidagi CAN_ISSUE matritsasida
-      `main_admin` HECH KIMGA jazo bera olmaydi — jazoni SEO va Admin o'z
+      `main_admin` HECH KIMGA jazo bera olmaydi — jazoni CEO va Admin o'z
       tashkiloti ichida beradi. Ya'ni "jarima yozish" tugmasi tamoyil bo'yicha ishlay
       olmasdi, uni backendga ulash mumkin emas edi.
       O'rniga: `GET /api/main/penalties` — barcha hamkorlar bo'yicha intizom sharhi
@@ -1094,7 +1094,7 @@ qatorga tegilgan).
 >
 > 🔄 **Eski yozuv (2026-07-26, tarix uchun):** panel Abdulaziz'dan Sardor'ga o'tgan edi.
 > Abdulaziz **faqat backend**da qoladi (`Backend — Student`, `Backend — Mentor`,
-> `Backend — Parent`, `Backend — Infrastructure`, SEO) — frontendda uning zonasi yo'q.
+> `Backend — Parent`, `Backend — Infrastructure`, CEO) — frontendda uning zonasi yo'q.
 > Sardor'ning eski vazifalari (FE-DEAD-CODE / FE-ROUTER-FLAG / FE-COOP / UI-DS)
 > boshqalarga berildi.
 
@@ -1174,13 +1174,13 @@ qatorga tegilgan).
 - [x] LANDING: Home, Features, Roles, Finance, Gamification, Contacts
 - [x] LANDING: Header, Footer, CTA
 
-## Frontend — Methodist (Said Islom, Aziz — SEO'dan o'tkazildi) ✅ karkas
+## Frontend — Methodist (Said Islom, Aziz — CEO'dan o'tkazildi) ✅ karkas
 
 > Panel karkasi tayyor (Karis). Said Islom + Aziz endi Methodist jamoasida — qo'shimcha ish + MVP2 kontent-menejer + support/maintenance.
 > ⚠️ **2026-07-26:** bu bo'limda ochiq vazifa YO'Q, lekin ikkalasining REAL ochiq ishi bor —
-> `Frontend — SEO` bo'limidagi FE-SUPER-STATS / FE-SUPER-REPORTS / FE-SUPER-WIRE.
-> Git-hisobotda ular shu sababli endi "SEO" panelida ko'rinadi (ilgari "Methodist · 0 vazifa"
-> deb turardi, SEO esa egasiz ko'rinardi — ikkalasi ham noto'g'ri manzara berardi).
+> `Frontend — CEO` bo'limidagi FE-SUPER-STATS / FE-SUPER-REPORTS / FE-SUPER-WIRE.
+> Git-hisobotda ular shu sababli endi "CEO" panelida ko'rinadi (ilgari "Methodist · 0 vazifa"
+> deb turardi, CEO esa egasiz ko'rinardi — ikkalasi ham noto'g'ri manzara berardi).
 > Methodist ishi qaytadan boshlansa (MVP2 kontent-menejer) — hisobotdagi panel qaytariladi.
 
 - [x] METHODIST: Training Types (CRUD)
@@ -1232,7 +1232,7 @@ qatorga tegilgan).
 ## 🆕 YANGI ROLLAR — Branch Manager + Finance Manager (2026-08-04, Karis og'zaki berdi)
 
 > ⚠️ Hozircha faqat REJALASHTIRISH — kod yozilmagan. Ikkalasi ham hozirgi 7 ta rolga
-> (main_admin/seo/admin/mentor/student/parent/methodist) qo'shiladigan YANGI rol.
+> (main_admin/ceo/admin/mentor/student/parent/methodist) qo'shiladigan YANGI rol.
 > **Karis o'zi 2026-08-04 aytdi: backend integratsiyani (DB migratsiya, `authorize`
 > middleware, RBAC) O'ZI qiladi — jamoadan FAQAT frontend (UI, mock-rejim bilan) kerak.**
 > Backend tomon `backend/src/middlewares/authorize.js`da: rol nomi `req.user.role` bilan
@@ -1258,28 +1258,28 @@ qatorga tegilgan).
       papkasida Branch Manager variantini qurish, farqlarni taklif sifatida yozib qo'yish.
       Mock-rejimda ishlang — backend Karis'da.
 
-- [x] ROLE-RENAME-SUPERADMIN ✅ **YOPILDI 07.08.2026.** Karis SEO/CEO savoliga ikki marta
-      aniq javob berdi: SEO, CEO emas. To'liq texnik o'zgartirish qilindi (faqat UI matni
+- [x] ROLE-RENAME-SUPERADMIN ✅ **YOPILDI 07.08.2026.** Karis CEO/CEO savoliga ikki marta
+      aniq javob berdi: CEO, CEO emas. To'liq texnik o'zgartirish qilindi (faqat UI matni
       emas) — Postgres enum (`user_role` va `platform_announcement_target`), JWT/RBAC
       (`authorize.js` va h.k.), barcha rol-tekshiruvlari backend+frontend, hujjatlar.
-      Migratsiya `1784320000000_rename-superadmin-to-seo.js` — `ALTER TYPE ... RENAME VALUE`,
+      Migratsiya `1784320000000_rename-superadmin-to-ceo.js` — `ALTER TYPE ... RENAME VALUE`,
       Docker'da tekshirilgan, hali hech qanday bazaga qo'llanmagan (prod ham, local ham).
-      Qo'llashda: barcha joriy SEO/Super Admin foydalanuvchilari qayta login qilishi kerak
-      (JWT'dagi eski role qiymati bilan `authorize('seo')` endi mos kelmaydi).
+      Qo'llashda: barcha joriy CEO/Super Admin foydalanuvchilari qayta login qilishi kerak
+      (JWT'dagi eski role qiymati bilan `authorize('ceo')` endi mos kelmaydi).
 
 - [x] ROLE-FINANCE ✅ **YOPILDI 22.08.2026 (Karis)** — rol endi mock emas, HAQIQIY backend roli:
       migratsiya `1787090000000_finance-manager-org-wide.js` (butun tashkilot, `branch_id IS NULL`),
       alohida modul `backend/src/modules/finance/` → `/api/finance/*`, huquq
-      `authorize('finance_manager','seo')`. SEO bloki (`super.routes.js`) ATAYLAB kengaytirilmadi —
+      `authorize('finance_manager','ceo')`. CEO bloki (`super.routes.js`) ATAYLAB kengaytirilmadi —
       aks holda filiallar/adminlar/o'quvchilar ham ochilib ketardi. 6 sahifa real ma'lumotga
       o'tdi, `pages/finance/_data.js` butunlay o'chirildi. Scope savoliga javob: BUTUN TASHKILOT
-      (SEO darajasida). Tafsilot va topilgan 10 ta hisob-kitob xatosi — `done.md`, 22.08.2026.
+      (CEO darajasida). Tafsilot va topilgan 10 ta hisob-kitob xatosi — `done.md`, 22.08.2026.
       Quyida dastlabki topshiriq matni tarix uchun saqlanadi:
 
 - [ ] ROLE-FINANCE 🔄 EGASI (frontend, jamoa): **Shohjahon, Aziz, Alish** (Karis
       tayinladi, 2026-08-04). Yangi rol — **Finance Manager** (Finans menejeri). Karis
       ta'rifi: daromad, rashod, xodimlar oyligi va boshqa BARCHA xarajatlarni kuzatadi.
-      Scope hali aniqlanmagan (butun tashkilotmi — seo darajasida, yoki filial —
+      Scope hali aniqlanmagan (butun tashkilotmi — ceo darajasida, yoki filial —
       admin darajasida?) — bu ham jamoa taklifi bilan Karis'ga qaytishi kerak.
       Boshlanish nuqtasi: mavjud moliyaviy sahifalarni ko'rib chiqish —
       `admin/Expenses.jsx`, `admin/Reports.jsx`, `super/Reports.jsx`, `main/Revenue.jsx`,
@@ -1307,3 +1307,89 @@ qatorga tegilgan).
       farqi bilan. Backend tomon (`backend/src/sockets/chat.js`, `modules/chat`) allaqachon
       tayyor, student→mentor yo'nalishi ham (`AB-VERIFY` yozuviga qara yuqorida) ishlaydi —
       demak bu asosan FRONTEND ish, mock kerak emas, real socket bilan qurilishi mumkin.
+
+## Landing header va sahifalar dizayni (2026-08-24, Karis)
+
+- [x] LANDING-UI-2026-08-24 — **EGASI VA BAJARUVCHI: Karis (Team Lead)**.
+      Landing sahifalari va umumiy header yangilandi: zamonaviy yagona panel,
+      alohida ichki cardlarsiz logo/menu/til almashtirgich, responsive mobil drawer,
+      pastga scroll qilganda header yashirinishi va tepaga scroll qilganda qayta
+      ko'rinishi, header ortidagi bo'sh oq fon yo'qotilishi. Landing sahifalari
+      (`for-language-school`, `for-courses`, `crm-vs-excel`, `blog`, maqola,
+      `vs/modme`, `vs/umai`, `about`) UI/UX bo'yicha yangilandi. Client build,
+      SSR/prerender va localhost HTTP tekshiruvlari muvaffaqiyatli o'tdi.
+
+## SaaS Control Center — Main Admin paneli (2026-08-25, Karis)
+
+> Karis belgilagan tartib: chiroyli grafiklardan emas, to'rtta narsadan boshlanadi —
+> Action Center, hisob-fakturalar va qarzlar, Audit Log, Health Score.
+> Quyidagi uchtasi bajarildi (hisob-fakturalar va Health Score hali qolgan).
+
+- [x] SCC-AUDIT ✅ **BAJARILDI 25.08.2026 (Karis)** — platforma egasining harakatlari
+      jurnali. Ilgari `main` modulida bitta ham yozuv yo'q edi: hamkorni muzlatish,
+      qo'lda to'lov, bonus oylar, pullik fichalarni yoqish — hammasi izsiz ketardi,
+      chunki `audit_log.organization_id` NOT NULL edi, Main Admin esa hech qaysi
+      tashkilotga tegishli emas (migratsiya `1787100000000` buni oldi, `before_data`,
+      `after_data`, `reason` ustunlari qo'shildi). Endi 8 ta amal «bo'ldi → bo'ldi»
+      ko'rinishida yoziladi: kim, qachon, qaysi IP. Onboarding'dagi vaqtinchalik
+      parol ATAYLAB yozilmaydi. UI: `/audit` sahifasi + yon menyuda «История изменений»
+
+- [x] SCC-ACTION ✅ **BAJARILDI 25.08.2026 (Karis)** — «Центр контроля»: hozir
+      aralashuv talab qiladigan narsalar bitta ekranda. 6 xil signal: kirish
+      bloklangan hamkor, grace-davri tugayotgan, kirish muddati yaqinlashgan,
+      qo'lda muzlatilgan, hech qachon kirmagan / 14 kundan beri kirmagan hamkor,
+      javobsiz ariza, kutayotgan ficha so'rovi. Har biri `href` bilan — qayerga
+      borib tuzatishni ko'rsatadi. Bloklash qoidasi QAYTA YOZILMADI, `shared/
+      orgAccess.js` dagi `isOrgAccessBlocked` chaqiriladi — aks holda panel bir
+      narsani ko'rsatib, tizim boshqacha ishlagan bo'lardi. Dashboard tepasida
+      panel + yon menyuda birinchi punkt, kritik soni bilan
+
+- [x] SCC-PGCRASH ✅ **BAJARILDI 25.08.2026 (Karis)** — backend'ning kun davomida
+      qayta-qayta o'lishi sababi topildi: `pool.on('error')` faqat pul ichida
+      bo'sh turgan klientlarni ushlaydi, `pool.connect()` orqali berilgan klient
+      esa uzilishda o'zida 'error' chiqaradi — tinglovchisi yo'q, bu
+      unhandledRejection emas, uncaughtException, va butun protsess o'lardi.
+      `pool.on('connect')` ichida tinglovchi qo'shildi (`config/db.js`).
+      Nazorat tajribasi bilan isbotlangan: tinglovchisiz pul o'ladi, tuzatilgani
+      omon qoladi va `SELECT 1` ishlaydi
+
+- [x] SCC-SITE-ANALYTICS ✅ **BAJARILDI 25.08.2026 (Karis)** — `levelup-academy.uz`
+      sayti bo'yicha to'liq statistika Main Admin ichida (`/site-analytics`).
+      Ilgari bu raqamlar uchta begona kabinetda yotardi. Search Console API —
+      qanday so'rovlar bilan topishadi, ko'rsatishlar, kliklar, CTR, o'rtacha
+      pozitsiya. GA4 Data API — nechta odam kelgan, **saytda o'rtacha qancha
+      vaqt turgan**, qayerdan kelgan, qaysi sahifalarni ko'rgan, qaysi sahifadan
+      boshlagan va necha foizi hech narsa qilmay ketgan. Mamlakatlar, qurilmalar,
+      `generate_lead` konversiyalari.
+      **Saytdan qaysi sahifada chiqib ketishgani**: GA4'da exit rate metrikasi
+      YO'Q — u Universal Analytics bilan birga olib tashlangan, Data API orqali
+      olishning iloji yo'q. Shuning uchun landing o'zi `page_exit` hodisasini
+      yuboradi (`pagehide` + `visibilitychange`, sahifaga bir marta), panel esa
+      uni `pagePath` kesimida sanaydi. Ma'lumot chiqarilgan kundan boshlab
+      to'planadi, ekranda shu sana ochiq yozilgan
+- [x] SCC-SITE-ANALYTICS-QA — yangi kutubxona qo'shilmadi (`google-auth-library`
+      Google-login uchun allaqachon bor edi). Xatolar bo'sh massiv bilan
+      almashtirilmaydi: kalit yo'q bo'lsa `configured:false` va sozlash bo'yicha
+      qadamlar, API xato bersa — o'sha blok `null` va aniq xato matni, qolganlari
+      chiziladi. Begona kalit bilan nazorat tajribasi o'tkazildi. Ikkala build
+      (main-admin + landing SSR/prerender) toza. Hujjat: `docs/SITE-ANALYTICS.md`
+- [x] SCC-SITE-ANALYTICS-KEY ✅ **BAJARILDI 25.08.2026** — Karis so'roviga ko'ra
+      brauzer avtomatizatsiyasi orqali sozlandi (parol kiritilmadi, kalit chatga
+      chiqarilmadi): service account `site-analytics-reader@levelup-1c059.iam.
+      gserviceaccount.com`, ikkala API yoqildi, GA4'da «Читатель», Search
+      Console'da «Ограниченный доступ» (bu yetarli — tekshirildi), JSON kalit
+      `backend/.env` ga ko'chirildi. **Jonli tekshiruv:** 28 kunda 88 tashrif
+      buyuruvchi, 144 seans, o'rtacha 6 daq 04 son, Google'dan 51 klik / 327
+      ko'rsatish, CTR 15,6%, o'rtacha pozitsiya 8,0 — xatolarsiz
+
+- [ ] SCC-SITE-ANALYTICS-DEPLOY ⚠️ — `page_exit` hodisasi hozircha faqat lokal
+      koddа. Prod'ga chiqmaguncha «Где уходят с сайта» bo'sh turadi (hozir 0),
+      chunki hodisa saytda hali yuborilmayapti. Landing deploy qilinishi kerak
+
+- [ ] SCC-BILLING — platforma → hamkor hisob-fakturalari (`platform_invoices`,
+      pozitsiyalar, to'lovlar, chegirmalar; qisman to'lov, statuslar). Hozircha
+      faqat `platform_org_payments` (kassa jurnali) bor, tariflar esa
+      `config/plans.js` da qotib yotibdi — `PUT /api/main/pricing` hech nima
+      yozmaydi, `platform_pricing` jadvali bo'sh
+- [ ] SCC-HEALTH — hamkor Health Score (0–100): kirishlar, to'lov intizomi,
+      faollik. SCC-BILLING dan keyin, chunki unga to'lov tarixi kerak

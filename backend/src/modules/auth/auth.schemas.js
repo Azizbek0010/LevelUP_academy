@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const email = z.string().trim().toLowerCase().email('Invalid email');
 
-// login = email (admin/seo/main_admin/mentor) ИЛИ логин-код (parent/student)
+// login = email (admin/ceo/main_admin/mentor) ИЛИ логин-код (parent/student)
 export const loginSchema = z.object({
   login: z.string().trim().min(1, 'Login is required').toLowerCase(),
   password: z.string().min(1, 'Password is required'),

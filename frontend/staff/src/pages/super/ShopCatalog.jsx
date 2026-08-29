@@ -58,7 +58,7 @@ export default function SuperShopCatalog() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Магазин" subtitle="Единый каталог организации: товар SEO автоматически появляется во всех филиалах.">
+      <PageHeader title="Магазин" subtitle="Единый каталог организации: товар CEO автоматически появляется во всех филиалах.">
         <button className="btn btn-primary btn-sm gap-1.5" onClick={openCreate}>
           <Plus size={16} /> Новый товар
         </button>

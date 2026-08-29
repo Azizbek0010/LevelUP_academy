@@ -112,7 +112,7 @@ router.get('/me/discipline-rules', authorize('admin', 'mentor', 'methodist'), di
 // Единый каталог. Порядок важен: статический `/directory` должен идти до `/:id`.
 router.get(
   '/directory',
-  authorize('main_admin', 'seo', 'admin', 'branch_manager', 'finance_manager', 'mentor', 'methodist'),
+  authorize('main_admin', 'ceo', 'admin', 'branch_manager', 'finance_manager', 'mentor', 'methodist'),
   validate({ query: directoryQuerySchema }),
   ctrl.listDirectory,
 );
@@ -122,13 +122,13 @@ router.get(
  * /api/users:
  *   get:
  *     tags: [Users]
- *     summary: List users of the caller's own branch (admin/seo only)
+ *     summary: List users of the caller's own branch (admin/ceo only)
  *     description: Requires `req.user.branchId` to be set — returns 400 if the caller has no branch scope.
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - name: role
  *         in: query
- *         schema: { type: string, enum: [main_admin, seo, admin, mentor, methodist, parent, student] }
+ *         schema: { type: string, enum: [main_admin, ceo, admin, mentor, methodist, parent, student] }
  *       - name: status
  *         in: query
  *         schema: { type: string, enum: [active, frozen, graduated, dropped] }
@@ -156,7 +156,7 @@ router.get(
  *       403: { $ref: '#/components/responses/Forbidden' }
  *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.get('/', authorize('admin', 'seo'), validate({ query: listUsersQuerySchema }), ctrl.listUsers);
+router.get('/', authorize('admin', 'ceo'), validate({ query: listUsersQuerySchema }), ctrl.listUsers);
 
 /**
  * @openapi
@@ -165,9 +165,9 @@ router.get('/', authorize('admin', 'seo'), validate({ query: listUsersQuerySchem
  *     tags: [Users]
  *     summary: Get a user's profile card, scoped to the caller
  *     description: >
- *       Staff-only (main_admin, seo, admin, mentor) — student/parent must
+ *       Staff-only (main_admin, ceo, admin, mentor) — student/parent must
  *       use `GET /api/users/me` for their own data. Scope: main_admin sees the
- *       whole platform; seo only users in their own organization; admin/
+ *       whole platform; ceo only users in their own organization; admin/
  *       mentor only users in their own branch. A user outside scope returns 404
  *       (existence not disclosed).
  *     security: [{ bearerAuth: [] }]
@@ -194,6 +194,6 @@ router.get('/', authorize('admin', 'seo'), validate({ query: listUsersQuerySchem
  */
 // только персонал — member-роли (student/parent) не должны читать чужой PII;
 // контроллер дополнительно скоупит по org/branch. Свои данные — через GET /me.
-router.get('/:id', authorize('main_admin', 'seo', 'admin', 'mentor'), validate({ params: idParamSchema }), ctrl.getUser);
+router.get('/:id', authorize('main_admin', 'ceo', 'admin', 'mentor'), validate({ params: idParamSchema }), ctrl.getUser);
 
 export default router;

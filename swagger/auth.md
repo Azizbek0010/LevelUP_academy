@@ -77,7 +77,7 @@ Verifies the Google id-token (audience = GOOGLE_CLIENT_ID) via google-auth-libra
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `ceo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)
@@ -138,7 +138,7 @@ Only accounts with role `main_admin` may authenticate here. Any other role retur
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `ceo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)
@@ -203,7 +203,7 @@ Login as member (student, parent) via login-code + password
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `ceo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)
@@ -268,7 +268,7 @@ Same rotation/reuse-detection as /api/auth/refresh, but reads/writes a group-sco
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `ceo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)
@@ -308,7 +308,7 @@ Legacy shared endpoint, kept only for already-deployed frontends. New clients sh
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `ceo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)
@@ -384,7 +384,7 @@ On success, revokes ALL of the user's existing refresh tokens (forces re-login o
 ---
 
 ### POST `/api/auth/staff/google`
-Login as staff (admin, seo, mentor, methodist) via Google/Firebase id-token
+Login as staff (admin, ceo, mentor, methodist) via Google/Firebase id-token
 
 Same flow as /api/auth/main/google, restricted to staff roles.
 
@@ -401,7 +401,7 @@ Same flow as /api/auth/main/google, restricted to staff roles.
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `ceo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)
@@ -443,9 +443,9 @@ Same flow as /api/auth/main/google, restricted to staff roles.
 ---
 
 ### POST `/api/auth/staff/login`
-Login as staff (admin, seo, mentor, methodist) via email + password
+Login as staff (admin, ceo, mentor, methodist) via email + password
 
-Only accounts with role `admin`, `seo`, `mentor` or `methodist` may authenticate here. Sets the `refresh_token` httpOnly cookie on success.
+Only accounts with role `admin`, `ceo`, `mentor` or `methodist` may authenticate here. Sets the `refresh_token` httpOnly cookie on success.
 
 
 **Auth:** Public — no token required
@@ -462,7 +462,7 @@ Only accounts with role `admin`, `seo`, `mentor` or `methodist` may authenticate
     - `user` (optional):
       - **AuthUser**:
         - `id`: string (uuid) (optional)
-        - `role`: enum: `main_admin` | `seo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
+        - `role`: enum: `main_admin` | `ceo` | `admin` | `mentor` | `student` | `parent` | `methodist` (optional)
         - `organizationId`: string (uuid) (optional)
         - `branchId`: string (uuid) (optional)
         - `firstName`: string (optional)

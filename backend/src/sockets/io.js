@@ -28,3 +28,11 @@ export function emitTo(room, event, payload) {
   io.to(room).emit(event, payload);
   return true;
 }
+
+/** Tell connected Main Admin dashboards that server data changed. */
+export function emitMainDashboardChanged(payload = {}) {
+  return emitTo('main-admins', 'main:dashboard:changed', {
+    at: new Date().toISOString(),
+    ...payload,
+  });
+}

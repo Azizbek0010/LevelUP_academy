@@ -97,8 +97,8 @@ export const api = {
   revenue: (token) => request('/main/revenue', { token }),
   getProfile: (token) => request('/main/profile', { token }),
   // список партнёров отдельно не запрашиваем — он приходит внутри /main/dashboard
-  setPartnerStatus: (token, id, status) =>
-    request(`/main/partners/${id}/status`, { method: 'PATCH', token, body: { status } }),
+  setPartnerStatus: (token, id, status, reason = 'Изменено вручную через Main Admin') =>
+    request(`/main/partners/${id}/status`, { method: 'PATCH', token, body: { status, reason } }),
   onboardPartner: (token, body) =>
     request('/main/partners', { method: 'POST', token, body }),
 
@@ -140,8 +140,8 @@ export const api = {
   // биллинг партнёра (ручная фиксация оплаты/бонуса)
   recordPayment: (token, id, body) =>
     request(`/main/partners/${id}/payments`, { method: 'POST', token, body }),
-  grantBonus: (token, id, months) =>
-    request(`/main/partners/${id}/bonus`, { method: 'POST', token, body: { months } }),
+  grantBonus: (token, id, months, note = 'Бонус предоставлен Main Admin') =>
+    request(`/main/partners/${id}/bonus`, { method: 'POST', token, body: { months, note } }),
   orgLedger: (token, id) => request(`/main/partners/${id}/ledger`, { token }),
 
   // собственные расходы платформы + P&L
@@ -151,9 +151,64 @@ export const api = {
   finance: (token) => request('/main/finance', { token }),
   videoStorageCosts: (token) => request('/main/video-storage-costs', { token }),
 
-  // заявки SEO на подключение/отключение фичи
+  // заявки CEO на подключение/отключение фичи
   featureRequests: (token, status) =>
     request(`/main/feature-requests${status ? `?status=${status}` : ''}`, { token }),
   decideFeatureRequest: (token, id, decision) =>
     request(`/main/feature-requests/${id}`, { method: 'PATCH', token, body: { decision } }),
+
+  // журнал действий платформы (Karis 25.08.2026)
+  // центр проблем: что требует вмешательства прямо сейчас (Karis 25.08.2026)
+  actionCenter: (token) => request('/main/action-center', { token }),
+  systemHealth: (token) => request('/main/system-health', { token }),
+  errorLog: (token, params = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''),
+    ).toString();
+    return request(`/main/error-log${qs ? `?${qs}` : ''}`, { token });
+  },
+  resolveError: (token, id) => request(`/main/error-log/${id}/resolve`, { method: 'PATCH', token }),
+  queueHealth: (token) => request('/main/queue-health', { token }),
+  partnerHealth: (token) => request('/main/partner-health', { token }),
+  productActivity: (token, days = 7) => request(`/main/product-activity?days=${days}`, { token }),
+  storageHealth: (token) => request('/main/storage-health', { token }),
+  partnerChanges: (token, days = 7) => request(`/main/partner-changes?days=${days}`, { token }),
+
+  // счета и долги партнёров (Karis 26.08.2026)
+  invoices: (token, params = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''),
+    ).toString();
+    return request(`/main/invoices${qs ? `?${qs}` : ''}`, { token });
+  },
+  orgDebt: (token) => request('/main/invoices/debt', { token }),
+  generateInvoices: (token, periodCovered) =>
+    request('/main/invoices', { method: 'POST', token, body: periodCovered ? { periodCovered } : {} }),
+  cancelInvoice: (token, id, reason) =>
+    request(`/main/invoices/${id}/cancel`, { method: 'PATCH', token, body: { reason } }),
+
+  // аналитика сайта levelup-academy.uz: Search Console + GA4 (Karis 25.08.2026)
+  siteAnalytics: (token, days = 28) => request(`/main/site-analytics?days=${days}`, { token }),
+
+  // модерация чата: один список слов на всю платформу (Karis 26.08.2026)
+  bannedWords: (token) => request('/main/banned-words', { token }),
+  addBannedWords: (token, words) => request('/main/banned-words', { method: 'POST', token, body: { words } }),
+  setBannedWordActive: (token, id, isActive) =>
+    request(`/main/banned-words/${id}`, { method: 'PATCH', token, body: { isActive } }),
+  setBannedWordAutoMask: (token, id, autoMask) =>
+    request(`/main/banned-words/${id}/auto-mask`, { method: 'PATCH', token, body: { autoMask } }),
+  deleteBannedWord: (token, id) => request(`/main/banned-words/${id}`, { method: 'DELETE', token }),
+  flaggedMessages: (token, params = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''),
+    ).toString();
+    return request(`/main/flagged-messages${qs ? `?${qs}` : ''}`, { token });
+  },
+
+  auditLog: (token, params = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''),
+    ).toString();
+    return request(`/main/audit${qs ? `?${qs}` : ''}`, { token });
+  },
 };

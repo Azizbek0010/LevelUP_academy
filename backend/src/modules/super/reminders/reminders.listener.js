@@ -5,7 +5,7 @@ import { logger } from '../../../config/logger.js';
 import * as repo from './reminders.repository.js';
 
 /**
- * Лог напоминаний (AB-SUPER-REM) для SEO. Namespaces очередей/воркеров
+ * Лог напоминаний (AB-SUPER-REM) для CEO. Namespaces очередей/воркеров
  * платежей (billing/dueSoon/overdue — Karis, K-PAY) и Telegram-доставки
  * (notification.worker.js — Bilol) — чужая зона, их файлы не трогаем.
  * Вместо правки чужих воркеров — независимый подписчик на события уже

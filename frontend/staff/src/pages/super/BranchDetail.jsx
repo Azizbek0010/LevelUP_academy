@@ -57,7 +57,7 @@ function GroupPanel({ group, onBack }) {
   const { token } = useAuth();
 
   // тот же эндпоинт, что и у сводки посещаемости организации, но с фильтром
-  // по группе — отдельного «журнала группы» для SEO на бэкенде нет
+  // по группе — отдельного «журнала группы» для CEO на бэкенде нет
   const att = useQuery({
     queryKey: ['super-attendance', group.id],
     queryFn: () => api.superAttendance(token, `?groupId=${group.id}`),
@@ -436,7 +436,7 @@ export default function SuperBranchDetail() {
           <Panel title="Менторы" icon={Users} bodyClass="p-0">
             {mentors.length === 0 ? (
               <EmptyState icon={Users} title="Менторов нет"
-                          hint="Менторов заводит администратор филиала — у SEO такой формы нет." />
+                          hint="Менторов заводит администратор филиала — у CEO такой формы нет." />
             ) : (
               <ul className="divide-y divide-base-200">
                 {mentors.map((m) => (

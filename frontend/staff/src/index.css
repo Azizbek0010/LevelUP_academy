@@ -839,7 +839,7 @@ html {
   animation: mt-fade 0.3s ease-out both;
 }
 
-/* === DASHBOARD STRICT TOKENS (Admin + SEO shared) === */
+/* === DASHBOARD STRICT TOKENS (Admin + CEO shared) === */
 :root {
   --border-hairline: rgba(29, 36, 23, 0.06);
   --border-faint: rgba(29, 36, 23, 0.04);

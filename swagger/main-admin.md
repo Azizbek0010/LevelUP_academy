@@ -22,7 +22,7 @@ Platform owner: partner onboarding, pricing, leads, platform dashboard
         - `id`: string (uuid) (optional)
         - `title`: string (optional)
         - `body`: string (optional)
-        - `targetType`: enum: `all-partners` | `all-seo` (optional)
+        - `targetType`: enum: `all-partners` | `all-ceo` (optional)
         - `recipientCount`: integer (optional) — Counted at send time and frozen — the audience changes later.
         - `readCount`: integer (optional) — Always 0 — read receipts do not exist in the system yet.
         - `senderName`: string (optional)
@@ -59,7 +59,7 @@ Platform owner: partner onboarding, pricing, leads, platform dashboard
 **Request body:**
 - `title`: string **(required)**
 - `body`: string **(required)**
-- `targetType`: enum: `all-partners` | `all-seo` **(required)**
+- `targetType`: enum: `all-partners` | `all-ceo` **(required)**
 
 **Responses:**
 
@@ -68,7 +68,7 @@ Platform owner: partner onboarding, pricing, leads, platform dashboard
     - `id`: string (uuid) (optional)
     - `title`: string (optional)
     - `body`: string (optional)
-    - `targetType`: enum: `all-partners` | `all-seo` (optional)
+    - `targetType`: enum: `all-partners` | `all-ceo` (optional)
     - `recipientCount`: integer (optional) — Counted at send time and frozen — the audience changes later.
     - `readCount`: integer (optional) — Always 0 — read receipts do not exist in the system yet.
     - `senderName`: string (optional)
@@ -327,9 +327,9 @@ Update a lead's status and/or notes (partial — at least one field)
 ---
 
 ### POST `/api/main/partners`
-Onboard a new partner (organization + its SEO)
+Onboard a new partner (organization + its CEO)
 
-Creates the organization and its SEO user in one transaction, sets the org owner, and (if `leadId` given) marks that lead as onboarded and links it to the new organization. Returns a one-time temp password for the new SEO (must be relayed to the partner out-of-band; they reset it via forgot-password afterwards).
+Creates the organization and its CEO user in one transaction, sets the org owner, and (if `leadId` given) marks that lead as onboarded and links it to the new organization. Returns a one-time temp password for the new CEO (must be relayed to the partner out-of-band; they reset it via forgot-password afterwards).
 
 
 **Auth:** Bearer JWT required
@@ -356,7 +356,7 @@ Creates the organization and its SEO user in one transaction, sets the org owner
     - `domain`: string (optional)
     - `status`: string (optional)
     - `created_at`: string (date-time) (optional)
-  - `seo` (optional):
+  - `ceo` (optional):
     - `id`: string (uuid) (optional)
     - `firstName`: string (optional)
     - `lastName`: string (optional)

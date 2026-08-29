@@ -4,7 +4,7 @@ const PRESENCE_TTL = 60;                        // сек; heartbeat кажды�
 const ONLINE_SET = 'online_students';           // SET уникальных id
 const keyOf = (id) => `online_students:${id}`;  // TTL-ключ на студента
 
-const DASHBOARD_ROLES = new Set(['main_admin', 'seo', 'admin']);
+const DASHBOARD_ROLES = new Set(['main_admin', 'ceo', 'admin']);
 
 /**
  * Socket.IO не ловит reject async-листенеров — необработанная ошибка Redis

@@ -26,7 +26,7 @@ const router = Router();
  *       `groupRevenue = monthlyPrice × activeStudents` per group the mentor teaches
  *       during the month. Access: the mentor may only view their own suggestion;
  *       admin only for mentors in their own branch (404 if a foreign branch, to
- *       avoid disclosure); seo/main_admin unrestricted.
+ *       avoid disclosure); ceo/main_admin unrestricted.
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - name: mentorId
@@ -86,7 +86,7 @@ router.get(
  *   get:
  *     tags: [Mentor Salary]
  *     summary: List a mentor's salary records for a year
- *     description: Same ownership rules as the suggestion endpoint (self, or admin/seo/main_admin).
+ *     description: Same ownership rules as the suggestion endpoint (self, or admin/ceo/main_admin).
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - name: mentorId

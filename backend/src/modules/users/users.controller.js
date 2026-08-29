@@ -6,7 +6,7 @@ import * as usersService from './users.service.js';
 
 /**
  * GET /api/users/me — текущий пользователь + `orgFeatures` (Karis, 13.08.2026):
- * staff-фронт (admin/seo/branch-manager/mentor/methodist) дёргает этот
+ * staff-фронт (admin/ceo/branch-manager/mentor/methodist) дёргает этот
  * эндпоинт на каждую загрузку — удобная точка, чтобы прятать Shop/Telegram
  * в sidebar, не заводя отдельный роут. Только свой профиль — чужие через
  * GET /:id этого не получают.
@@ -31,7 +31,7 @@ export const updateMe = asyncHandler(async (req, res) => {
 
 /**
  * GET /api/users/:id — карточка пользователя строго в своём скоупе:
- * main_admin — вся платформа; seo — своя организация;
+ * main_admin — вся платформа; ceo — своя организация;
  * остальные — свой филиал. Чужой скоуп неотличим от несуществующего (404).
  */
 export const getUser = asyncHandler(async (req, res) => {
@@ -39,7 +39,7 @@ export const getUser = asyncHandler(async (req, res) => {
 
   const requester = req.user;
   if (requester.role !== 'main_admin') {
-    const inScope = requester.role === 'seo'
+    const inScope = requester.role === 'ceo'
       ? user.organization_id === requester.organizationId
       : user.branch_id === requester.branchId;
     if (!inScope) throw new AppError(404, 'User not found');

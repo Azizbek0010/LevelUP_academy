@@ -7,7 +7,7 @@ import { itemIdParam, orderIdParam, restockItemSchema, listOrdersQuery, createBr
 /**
  * K-SHOP (branch) — смонтирован в admin.routes.js под /shop, authenticate +
  * authorize('admin','branch_manager') уже навешаны родителем. Каталог (имя/
- * цена/фото) держит SEO — см. super.routes.js /shop/items; здесь только
+ * цена/фото) держит CEO — см. super.routes.js /shop/items; здесь только
  * остаток товара (restock) и заказы своего филиала (выдать/отменить+вернуть коины).
  */
 const router = Router();
@@ -33,7 +33,7 @@ router.post('/items', validate({ body: createBranchShopItemSchema }), ctrl.creat
  * /api/admin/shop/items/{id}/stock:
  *   patch:
  *     tags: [Admin Shop]
- *     summary: Restock a branch item (only field the branch may change — price/name is SEO's)
+ *     summary: Restock a branch item (only field the branch may change — price/name is CEO's)
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - { $ref: '#/components/parameters/IdParam' }

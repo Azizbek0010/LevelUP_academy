@@ -10,7 +10,7 @@ import { Panel } from './_ui.jsx';
 
 /**
  * Методику заводит методист (frontend/staff/src/pages/methodist/TrainingTypes.jsx) —
- * только с названием, без цены. Здесь SEO один раз назначает ей цену абонемента
+ * только с названием, без цены. Здесь CEO один раз назначает ей цену абонемента
  * и лимит студентов в группе; ДО этого момента методика не появляется в форме
  * создания группы у admin/branch_manager (см. admin.repository.listPricedTrainingTypes —
  * фильтр price IS NOT NULL). Karis, 08.08.2026.
@@ -60,7 +60,7 @@ export default function SuperTrainingTypes() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Методики" subtitle="Цену и лимит группы назначает только SEO — методист заводит только название" />
+      <PageHeader title="Методики" subtitle="Цену и лимит группы назначает только CEO — методист заводит только название" />
 
       {err && <div className="alert alert-error text-sm py-2">{err}</div>}
 

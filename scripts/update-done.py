@@ -109,7 +109,7 @@ def generate_done_md(completed, stats):
     lines.append("## Jamoa boyicha")
     lines.append("")
 
-    karis_sections = [s for s in sections if "Karis" in s or any(x in s for x in ["Auth", "Main Admin", "SEO", "Admin", "K-TEST"])]
+    karis_sections = [s for s in sections if "Karis" in s or any(x in s for x in ["Auth", "Main Admin", "CEO", "Admin", "K-TEST"])]
     abdulaziz_sections = [s for s in sections if "Abdulaziz" in s or any(x in s for x in ["Mentor", "Student", "Parent", "Shared", "AB-"])]
     frontend_sections = [s for s in sections if "Frontend" in s]
 

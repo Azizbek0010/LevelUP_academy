@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import Cta from '../components/Cta.jsx';
 import Icon from '../components/Icon.jsx';
-import { breadcrumb, faqPage, useSeo } from '../lib/seo.js';
+import { breadcrumb, faqPage, useCeo } from '../lib/ceo.js';
 import { useLang, useT } from '../i18n/index.js';
 
 export default function Features() {
@@ -32,19 +32,19 @@ export default function Features() {
     () => [
       breadcrumb(
         [
-          { name: t.seo.breadcrumbHome, path: '/landing' },
+          { name: t.ceo.breadcrumbHome, path: '/landing' },
           { name: f.badge, path: '/landing/features' },
         ],
         lang,
       ),
       faqPage(f.faq),
     ],
-    [t.seo.breadcrumbHome, f.badge, f.faq, lang],
+    [t.ceo.breadcrumbHome, f.badge, f.faq, lang],
   );
 
-  useSeo({
-    title: t.seo.features.title,
-    description: t.seo.features.description,
+  useCeo({
+    title: t.ceo.features.title,
+    description: t.ceo.features.description,
     path: '/landing/features',
     jsonLd,
   });

@@ -4,6 +4,8 @@ import { redis } from '../../config/redis.js';
 import * as service from './auth.service.js';
 import { resolveUserByQrToken } from './qr-login.service.js';
 import { AppError } from '../../utils/AppError.js';
+import { logger } from '../../config/logger.js';
+import * as authRepo from './auth.repository.js';
 
 const REFRESH_COOKIE = 'refresh_token';
 const REFRESH_COOKIE_PATH = '/api/auth';
@@ -39,11 +41,11 @@ const readRefreshCookie = (req) => readCookie(req, REFRESH_COOKIE);
 
 // три раздельных входа — каждый пускает только свою группу ролей (безопасность):
 //   main   → main_admin (владелец платформы)
-//   staff  → admin, seo, mentor (сотрудники, вход по email)
+//   staff  → admin, ceo, mentor (сотрудники, вход по email)
 //   member → student, parent (вход по логин-коду)
 const ROLE_GROUPS = {
   main: ['main_admin'],
-  staff: ['admin', 'seo', 'mentor', 'methodist', 'branch_manager', 'finance_manager', 'employee'],
+  staff: ['admin', 'ceo', 'mentor', 'methodist', 'branch_manager', 'finance_manager', 'employee'],
   member: ['student', 'parent'],
 };
 
@@ -52,10 +54,27 @@ const ROLE_GROUPS = {
 // и новую group-scoped (на неё переведены /main|staff|member/refresh и /logout ниже).
 function makeLogin(allowedRoles, group) {
   return asyncHandler(async (req, res) => {
-    const { user, accessToken, refreshToken } = await service.login(req.body, allowedRoles);
-    res.cookie(REFRESH_COOKIE, refreshToken, refreshCookieOptions());
-    res.cookie(cookieNameFor(group), refreshToken, refreshCookieOptions());
-    res.json({ user, accessToken });
+    const audit = (user, success) => authRepo.insertLoginAudit({
+      user,
+      login: req.body?.login,
+      success,
+      group,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    }).catch((err) => logger.warn({ err }, 'Login audit write failed'));
+
+    try {
+      const { user, accessToken, refreshToken } = await service.login(req.body, allowedRoles);
+      await audit(user, true);
+      res.cookie(REFRESH_COOKIE, refreshToken, refreshCookieOptions());
+      res.cookie(cookieNameFor(group), refreshToken, refreshCookieOptions());
+      res.json({ user, accessToken });
+    } catch (err) {
+      // Record only authentication rejections. Infrastructure/validation errors
+      // are not login attempts and would only add noise to the security feed.
+      if (err?.statusCode === 401 || err?.statusCode === 403) await audit(null, false);
+      throw err;
+    }
   });
 }
 
@@ -79,7 +98,7 @@ export const qrLoginMember = asyncHandler(async (req, res) => {
 });
 
 // вход через Google (Firebase) — по группам ролей, как обычный логин.
-// доступен main_admin И staff (admin/seo/mentor). Один Firebase-проект на всех.
+// доступен main_admin И staff (admin/ceo/mentor). Один Firebase-проект на всех.
 // member (student/parent) — без Google (нет email, вход по логин-коду).
 function makeGoogleLogin(allowedRoles, group) {
   return asyncHandler(async (req, res) => {

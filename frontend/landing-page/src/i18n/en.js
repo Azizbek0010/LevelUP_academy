@@ -4,7 +4,7 @@
  * The structure must match ru.js and uz.js key for key: a missing key renders as
  * `undefined` in the markup rather than failing the build.
  *
- * SEO note: the English version targets global queries ("school management software",
+ * CEO note: the English version targets global queries ("school management software",
  * "student management system", "learning center software", "education CRM"), not
  * translations of the Russian ones. The product is the same; the search intent is not.
  */
@@ -122,7 +122,7 @@ export default {
     rolesLead:
       'After login, the role in the token opens the right workspace by itself. Nobody sees more than they should — the server decides access.',
     roles: [
-      { tag: 'SA', title: 'SEO', text: 'The whole branch network and global reports with no branch filter.' },
+      { tag: 'SA', title: 'CEO', text: 'The whole branch network and global reports with no branch filter.' },
       { tag: 'A', title: 'Admin', text: 'Payments, groups, students and reports for their own branch.' },
       { tag: 'M', title: 'Mentor', text: 'Attendance, homework review, coins, exams and their own payroll.' },
       { tag: 'ME', title: 'Methodist', text: 'Curriculum, topics and lessons with video, question bank for tests.' },
@@ -184,7 +184,7 @@ export default {
       },
       {
         q: 'What roles does the system have?',
-        a: 'Main Admin (platform owner), SEO (organization), Admin (branch), Mentor (teacher), Student, Parent and Methodist — each role has its own workspace and permissions.',
+        a: 'Main Admin (platform owner), CEO (organization), Admin (branch), Mentor (teacher), Student, Parent and Methodist — each role has its own workspace and permissions.',
       },
       {
         q: 'What can it do?',
@@ -265,7 +265,7 @@ export default {
       {
         icon: 'building',
         title: 'Multi-branch',
-        text: 'Every branch is isolated: an admin sees only their own. The SEO looks at the whole network — compares branches and finds room to grow.',
+        text: 'Every branch is isolated: an admin sees only their own. The CEO looks at the whole network — compares branches and finds room to grow.',
         tags: ['Data isolation', 'Branch network'],
       },
     ],
@@ -293,7 +293,7 @@ export default {
       },
       {
         q: 'How many branches can we connect?',
-        a: 'There is no limit. Multi-branch support is built in from day one: each branch is isolated, while the SEO sees the entire network.',
+        a: 'There is no limit. Multi-branch support is built in from day one: each branch is isolated, while the CEO sees the entire network.',
       },
       {
         q: 'Do parents need to install an app?',
@@ -315,7 +315,7 @@ export default {
     items: [
       {
         tag: 'SA',
-        title: 'SEO — the whole network at a glance',
+        title: 'CEO — the whole network at a glance',
         text: 'Sees every branch and the entire network at once: total revenue, debts, a live online counter. Manages branches, admins and the global chat.',
         list: [
           'Consolidated reports across all branches, no filter',
@@ -505,7 +505,7 @@ export default {
 
     plansHead: 'Plans — by number of active accounts',
     plansLead:
-      'Every active account counts: students, parents, SEO, admins, mentors, methodists, branch managers and finance managers.',
+      'Every active account counts: students, parents, CEO, admins, mentors, methodists, branch managers and finance managers.',
     free: 'Free',
     negotiable: 'On request',
     per: 'UZS/mo',
@@ -927,8 +927,8 @@ export default {
     articles: {
       'excel-to-crm': {
         title: 'How to move a learning center from Excel to a CRM',
-        seoTitle: 'Excel to CRM migration: a guide for learning centers | LevelUp',
-        seoDescription:
+        ceoTitle: 'Excel to CRM migration: a guide for learning centers | LevelUp',
+        ceoDescription:
           'A step-by-step move from Excel to a CRM for a learning center: what to migrate (students, groups, payments, debts), how to lose nothing and where to start. Migration checklist.',
         excerpt:
           'Spreadsheets break somewhere past the second hundred students. Here is what to move into a CRM, how to lose nothing and where to start.',
@@ -966,8 +966,8 @@ export default {
       },
       'student-debts': {
         title: 'How to stop losing money on student debts',
-        seoTitle: 'How to stop losing money on student debts | LevelUp',
-        seoDescription:
+        ceoTitle: 'How to stop losing money on student debts | LevelUp',
+        ceoDescription:
           'Why student debts grow unnoticed and how to control them: an automatic debtor list, Telegram reminders to parents and freezing without losing history.',
         excerpt:
           'Debts in a learning center pile up quietly and surface at month end. How to make them visible and recover the money without conflict.',
@@ -997,8 +997,8 @@ export default {
       },
       'attendance-automation': {
         title: 'How to automate attendance tracking in a learning center',
-        seoTitle: 'Automating attendance tracking in a center | LevelUp',
-        seoDescription:
+        ceoTitle: 'Automating attendance tracking in a center | LevelUp',
+        ceoDescription:
           'How to stop tracking attendance on paper: an electronic register filled in a minute, automatic Telegram alerts to parents about absences and reports for the admin.',
         excerpt:
           'A paper attendance register steals time and does not prevent absences. How to move attendance into electronic form and notify parents automatically.',
@@ -1592,7 +1592,7 @@ export default {
     button: 'Go to home page',
   },
 
-  seo: {
+  ceo: {
     home: {
       title: 'School Management Software & Education CRM | LevelUp',
       description:
@@ -1606,7 +1606,7 @@ export default {
     roles: {
       title: 'Roles and permissions — 6 workspaces | LevelUp Academy',
       description:
-        'SEO, Admin, Mentor, Methodist, Parent and Student — each role has its own workspace. Access is decided by server-side RBAC: nobody sees more than they should.',
+        'CEO, Admin, Mentor, Methodist, Parent and Student — each role has its own workspace. Access is decided by server-side RBAC: nobody sees more than they should.',
     },
     finance: {
       title: 'Student payment and debt tracking | LevelUp Academy',

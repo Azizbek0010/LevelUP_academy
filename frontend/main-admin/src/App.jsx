@@ -1,20 +1,31 @@
-import { useRef } from 'react';
+import { lazy, Suspense, useRef } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './auth.jsx';
 import { useDashboard } from './queries.js';
 import Layout from './components/Layout.jsx';
 import Splash from './components/Splash.jsx';
-import Login from './pages/Login.jsx';
-import Dashboard from './pages/Dashboard.jsx';
-import Leads from './pages/Leads.jsx';
-import Organizations from './pages/Organizations.jsx';
-import OrgDetail from './pages/OrgDetail.jsx';
-import Billing from './pages/Billing.jsx';
-import Revenue from './pages/Revenue.jsx';
-import Settings from './pages/Settings.jsx';
-import Announcements from './pages/Announcements.jsx';
-import Features from './pages/Features.jsx';
-import VideoStorage from './pages/VideoStorage.jsx';
+const Login = lazy(() => import('./pages/Login.jsx'));
+const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
+const Leads = lazy(() => import('./pages/Leads.jsx'));
+const Organizations = lazy(() => import('./pages/Organizations.jsx'));
+const OrgDetail = lazy(() => import('./pages/OrgDetail.jsx'));
+const Billing = lazy(() => import('./pages/Billing.jsx'));
+const Revenue = lazy(() => import('./pages/Revenue.jsx'));
+const Settings = lazy(() => import('./pages/Settings.jsx'));
+const Announcements = lazy(() => import('./pages/Announcements.jsx'));
+const Features = lazy(() => import('./pages/Features.jsx'));
+const VideoStorage = lazy(() => import('./pages/VideoStorage.jsx'));
+const Audit = lazy(() => import('./pages/Audit.jsx'));
+const ActionCenter = lazy(() => import('./pages/ActionCenter.jsx'));
+const SiteAnalytics = lazy(() => import('./pages/SiteAnalytics.jsx'));
+const ChatModeration = lazy(() => import('./pages/ChatModeration.jsx'));
+const SystemHealth = lazy(() => import('./pages/SystemHealth.jsx'));
+const ErrorLog = lazy(() => import('./pages/ErrorLog.jsx'));
+const QueueHealth = lazy(() => import('./pages/QueueHealth.jsx'));
+const Invoices = lazy(() => import('./pages/Invoices.jsx'));
+const PartnerHealth = lazy(() => import('./pages/PartnerHealth.jsx'));
+const ProductActivity = lazy(() => import('./pages/ProductActivity.jsx'));
+const PartnerChanges = lazy(() => import('./pages/PartnerChanges.jsx'));
 
 function BootGate({ children }) {
   const { token, loading } = useAuth();
@@ -36,7 +47,7 @@ export default function App() {
   const { token } = useAuth();
   return (
     <BootGate>
-      <Routes>
+      <Suspense fallback={<Splash />}><Routes>
         <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
         <Route element={<Protected><Layout /></Protected>}>
           <Route path="/" element={<Dashboard />} />
@@ -48,10 +59,21 @@ export default function App() {
           <Route path="/revenue" element={<Revenue />} />
           <Route path="/features" element={<Features />} />
           <Route path="/video-storage" element={<VideoStorage />} />
+          <Route path="/action-center" element={<ActionCenter />} />
+          <Route path="/site-analytics" element={<SiteAnalytics />} />
+          <Route path="/chat-moderation" element={<ChatModeration />} />
+          <Route path="/system-health" element={<SystemHealth />} />
+          <Route path="/error-log" element={<ErrorLog />} />
+          <Route path="/queue-health" element={<QueueHealth />} />
+          <Route path="/invoices" element={<Invoices />} />
+          <Route path="/partner-health" element={<PartnerHealth />} />
+          <Route path="/product-activity" element={<ProductActivity />} />
+          <Route path="/partner-changes" element={<PartnerChanges />} />
+          <Route path="/audit" element={<Audit />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      </Routes></Suspense>
     </BootGate>
   );
 }

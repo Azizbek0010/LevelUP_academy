@@ -8,7 +8,7 @@
 *   [Backend Tasks](file:///home/uromix/Рабочий%20стол/SRM-System/backend/TASKS.md) — Распределение задач бэкенда (Karis / Abdulaziz / Bilol).
 *   [Frontend Architecture](file:///home/uromix/Рабочий%20стол/SRM-System/docs/FRONTEND-ARCHITECTURE.md) — Общий скелет SPA-приложения, кэширование TanStack Query и авторизация.
 *   [Frontend Design System](file:///home/uromix/Рабочий%20стол/SRM-System/docs/FRONTEND-DESIGN-SYSTEM.md) — Цветовые токены, шрифты и компоненты (светлая лайм-тема).
-*   [SEO Frontend Tasks](file:///home/uromix/Рабочий%20стол/SRM-System/docs/TASK-frontend-super-admin.md) — Первоначальное задание для реализации панели SEO.
+*   [CEO Frontend Tasks](file:///home/uromix/Рабочий%20стол/SRM-System/docs/TASK-frontend-super-admin.md) — Первоначальное задание для реализации панели CEO.
 
 ---
 
