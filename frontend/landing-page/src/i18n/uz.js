@@ -119,7 +119,7 @@ export default {
     rolesLead:
       "Kirgandan so'ng tizim tokendagi rolga qarab kerakli kabinetni o'zi ochadi. Ortiqcha ma'lumotni hech kim ko'rmaydi — ruxsatni serverdagi RBAC hal qiladi.",
     roles: [
-      { tag: 'SA', title: 'CEO', text: "Butun filiallar tarmog'i va filtrsiz umumiy hisobotlar." },
+      { tag: 'C', title: 'CEO', text: "Butun filiallar tarmog'i va filtrsiz umumiy hisobotlar." },
       { tag: 'A', title: 'Admin', text: "O'z filialining to'lovlari, guruhlari, o'quvchilari va hisobotlari." },
       { tag: 'M', title: 'Mentor', text: "Davomat, uy vazifasini tekshirish, koinlar, imtihonlar va o'z maoshi." },
       { tag: 'ME', title: 'Metodist', text: "Ta'lim dasturi, mavzu va darslar video bilan, testlar uchun savollar banki." },
@@ -311,7 +311,7 @@ export default {
     lead: "Bitta login — va tizim kerakli interfeysni o'zi ochadi. Ruxsatni server (RBAC) hal qiladi, shuning uchun brauzer orqali «birovnikini ko'rish» imkonsiz.",
     items: [
       {
-        tag: 'SA',
+        tag: 'C',
         title: "CEO — butun tarmoq kaft ustida",
         text: "Har bir filialni va butun tarmoqni birdan ko'radi: umumiy tushum, qarzlar, onlayn hisoblagich. Filiallar, adminlar va umumiy chatni boshqaradi.",
         list: [

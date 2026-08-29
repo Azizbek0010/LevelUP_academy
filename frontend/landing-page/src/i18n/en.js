@@ -122,7 +122,7 @@ export default {
     rolesLead:
       'After login, the role in the token opens the right workspace by itself. Nobody sees more than they should — the server decides access.',
     roles: [
-      { tag: 'SA', title: 'CEO', text: 'The whole branch network and global reports with no branch filter.' },
+      { tag: 'C', title: 'CEO', text: 'The whole branch network and global reports with no branch filter.' },
       { tag: 'A', title: 'Admin', text: 'Payments, groups, students and reports for their own branch.' },
       { tag: 'M', title: 'Mentor', text: 'Attendance, homework review, coins, exams and their own payroll.' },
       { tag: 'ME', title: 'Methodist', text: 'Curriculum, topics and lessons with video, question bank for tests.' },
@@ -314,7 +314,7 @@ export default {
     lead: 'One login, and the system opens the right interface by itself. Access is decided by the server (RBAC), so peeking at someone else’s data from the browser is impossible.',
     items: [
       {
-        tag: 'SA',
+        tag: 'C',
         title: 'CEO — the whole network at a glance',
         text: 'Sees every branch and the entire network at once: total revenue, debts, a live online counter. Manages branches, admins and the global chat.',
         list: [
