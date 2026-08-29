@@ -169,7 +169,7 @@ export default function Home() {
       </section>
 
       {/* ===== Роли ===== */}
-      <section className="section">
+      <section className="section section--roles">
         <div className="container">
           <div className="section__head">
             <h2>{h.rolesHead}</h2>
@@ -237,7 +237,7 @@ export default function Home() {
       </section>
 
       {/* ===== Финансы ===== */}
-      <section className="section">
+      <section className="section section--invoice">
         <div className="container split">
           <div className="invoice">
             <div className="invoice__head">
