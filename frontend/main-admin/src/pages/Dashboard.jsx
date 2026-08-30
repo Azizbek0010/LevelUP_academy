@@ -20,7 +20,6 @@ import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonList } from '../components/Skeleton.jsx';
 import { Modal, ConfirmDialog, Avatar, CHART_PRIMARY, CHART_SERIES } from '../components/_ui.jsx';
 import ActionCenterPanel from '../components/ActionCenterPanel.jsx';
-import { useDashboardLive } from '../socket.js';
 
 // Цвет — из ORG_STATUS (общий с бейджами в остальной панели), подписи здесь
 // намеренно во множественном числе — это легенда по группе партнёров, а не
@@ -49,7 +48,6 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function Dashboard() {
   const { data, isLoading, error, refetch } = useDashboard();
   const { data: allLeads } = useLeads();
-  const liveConnected = useDashboardLive();
   const today = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
   const recentLeads = useMemo(
@@ -74,14 +72,8 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 border-b border-base-300 pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="border-b border-base-300 pb-4">
         <PageHeader title="Обзор" subtitle={<span className="capitalize">{today} · ключевые показатели платформы</span>} />
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 text-xs font-medium text-base-content/45" title={liveConnected ? 'Данные обновляются автоматически' : 'Переподключение к live-каналу'}>
-            <span className={`h-1.5 w-1.5 rounded-full ${liveConnected ? 'bg-success' : 'animate-pulse bg-warning'}`} />
-            {liveConnected ? 'Live' : 'Подключение…'}
-          </span>
-        </div>
       </div>
 
       <ActionCenterPanel />
@@ -235,9 +227,18 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         )}
       </div>
 
-      <div className="grid items-start lg:grid-cols-3 gap-6">
-        <div className="card overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)] lg:col-span-2">
-          <div className="card-body p-5 sm:p-6">
+      {/* Раньше здесь стоял items-start: без него сетка растягивала обе колонки
+          на высоту более длинной, а внутри карточки графика (фикс. height={240})
+          это растяжение оседало пустым отступом внутри карточки. С items-start
+          отступ ушёл из карточки, но вскрылся под ней — как голый фон страницы,
+          потому что правая колонка (2-3 карточки) естественно выше графика.
+          Правильный фикс — не выбирать, какую дыру спрятать, а убрать её: сетка
+          снова тянет обе колонки (default stretch), а сам график растёт вместе
+          с карточкой (flex-1 + height="100%" вместо фиксированных 240px) —
+          теперь лишняя высота уходит в сам график, а не в пустоту рядом с ним. */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="card flex flex-col overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)] lg:col-span-2">
+          <div className="card-body flex flex-1 flex-col p-5 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Crown size={17} className="text-primary" />
@@ -250,35 +251,37 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
             </div>
 
             {barData.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="flex flex-1 min-h-[240px] flex-col items-center justify-center text-center">
                 <Building2 size={32} className="mx-auto text-base-content/20 mb-2" />
                 <p className="text-base-content/40 text-sm">Пока нет партнёров</p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={barData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
-                  <defs>
-                    <linearGradient id="revenue-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={CHART_PRIMARY} />
-                      <stop offset="100%" stopColor={CHART_SERIES[3]} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: CHART_AXIS_TEXT }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}к`} tick={{ fontSize: 11, fill: CHART_AXIS_TEXT }} axisLine={false} tickLine={false} width={40} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: CHART_TOOLTIP_CURSOR }} />
-                  <Bar
-                    dataKey="value"
-                    fill="url(#revenue-grad)"
-                    maxBarSize={44}
-                    onClick={(d) => {
-                      const bp = partners.find((pp) => pp.id === d?.payload?.id);
-                      if (bp) setModal({ type: 'partner', p: bp });
-                    }}
-                    cursor="pointer"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="flex-1 min-h-[240px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={barData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
+                    <defs>
+                      <linearGradient id="revenue-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={CHART_PRIMARY} />
+                        <stop offset="100%" stopColor={CHART_SERIES[3]} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: CHART_AXIS_TEXT }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}к`} tick={{ fontSize: 11, fill: CHART_AXIS_TEXT }} axisLine={false} tickLine={false} width={40} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: CHART_TOOLTIP_CURSOR }} />
+                    <Bar
+                      dataKey="value"
+                      fill="url(#revenue-grad)"
+                      maxBarSize={44}
+                      onClick={(d) => {
+                        const bp = partners.find((pp) => pp.id === d?.payload?.id);
+                        if (bp) setModal({ type: 'partner', p: bp });
+                      }}
+                      cursor="pointer"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </div>
         </div>
