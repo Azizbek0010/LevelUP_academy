@@ -1917,7 +1917,12 @@ h1, h2, h3, h4, .display {
 
 /* ---------- Serious SaaS header ---------- */
 .header { padding: 0; background: rgba(250,252,246,.92); border-bottom: 1px solid rgba(29,36,23,.1); }
-.header > .container { max-width: 1240px; }
+/* max-width alone only centers the pill while the viewport is wider than
+   1240px — margin:auto has nothing left to distribute once the container
+   fills the viewport, so the pill's rounded card slams flush against the
+   screen edges on any laptop/tablet width below that. `calc(100% - 40px)`
+   keeps a permanent 20px gutter on both sides once that happens. */
+.header > .container { max-width: min(1240px, calc(100% - 40px)); }
 .header__inner { overflow: visible; min-height: 78px; padding: 0 20px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .header__inner::before { display: none; }
 .header__logo { gap: 11px; color: var(--text); }
