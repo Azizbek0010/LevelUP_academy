@@ -35,6 +35,18 @@ export default function Header() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [open]);
 
+  // Без этого скролл жеста внутри drawer уходил на страницу за ним (drawer
+  // не был выше по scroll-контексту) — пользователь не мог долистать до
+  // «Войти», фон под ним скроллился вместо списка ссылок.
+  useEffect(() => {
+    if (!open) return undefined;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
   const links = [
     { to: lp('/landing/features'), label: t.nav.features },
     { to: lp('/landing/roles'), label: t.nav.roles },
