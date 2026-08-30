@@ -26,6 +26,14 @@ import { useDashboardLive } from '../socket.js';
 // намеренно во множественном числе — это легенда по группе партнёров, а не
 // бейдж одного (тот берёт "Активен"/"Заморожен" прямо из ORG_STATUS).
 const PIE_LABELS = { active: 'Активные', trial: 'Триал', frozen: 'Заморожены' };
+
+// Здоровье считает ровно 3 сервиса (database/redis/storage) — счётчик
+// недоступных всегда 1..3, поэтому справочник проще, чем общий алгоритм
+// русских склонений. Было «1 проблем» — не согласовано по числу.
+const PLURAL_PROBLEM = { 1: 'проблема', 2: 'проблемы', 3: 'проблемы' };
+const PLURAL_SERVICE = { 1: 'сервис', 2: 'сервиса', 3: 'сервиса' };
+const pluralProblem = (n) => PLURAL_PROBLEM[n] ?? 'проблем';
+const pluralService = (n) => PLURAL_SERVICE[n] ?? 'сервисов';
 const STATUS_ICON = { new: Sparkles, contacted: PhoneCall, onboarded: CheckCircle2, rejected: XCircle };
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -79,10 +87,10 @@ export default function Dashboard() {
                   ? 'border-error/30 bg-error/10 text-error hover:bg-error/15'
                   : 'border-base-300 bg-base-100 text-base-content/45 hover:text-base-content/70'
               }`}
-              title={healthDownCount > 0 ? `${healthDownCount} сервис(а/ов) недоступны — открыть здоровье системы` : 'Все системы в норме'}
+              title={healthDownCount > 0 ? `${healthDownCount} ${pluralService(healthDownCount)} недоступн${healthDownCount === 1 ? 'а' : 'ы'} — открыть здоровье системы` : 'Все системы в норме'}
             >
               {healthDownCount > 0 ? <AlertTriangle size={12} /> : <HeartPulse size={12} />}
-              {healthDownCount > 0 ? `${healthDownCount} проблем` : 'Всё в норме'}
+              {healthDownCount > 0 ? `${healthDownCount} ${pluralProblem(healthDownCount)}` : 'Всё в норме'}
             </Link>
           )}
           <span className="flex items-center gap-1.5 text-xs font-medium text-base-content/45" title={liveConnected ? 'Данные обновляются автоматически' : 'Переподключение к live-каналу'}>
@@ -211,7 +219,12 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         <MetricCell Icon={Store} label="Филиалы" value={fmt(t.branches)} meta={`${partners.length ? (t.branches / partners.length).toFixed(1) : 0} на партнёра`} onClick={() => setModal('branches')} />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      {/* items-start — по умолчанию grid растягивает обе колонки под высоту
+          более высокой (stretch), а график внутри левой карточки — фиксированные
+          240px. Когда в правой колонке появилась ещё одна карточка («Собрано
+          за месяц»), левая вытянулась вслед за ней, оставив пустой хвост под
+          графиком — прямая противоположность просьбе «без пустых мест». */}
+      <div className="grid items-start lg:grid-cols-3 gap-6">
         <div className="card overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)] lg:col-span-2">
           <div className="card-body p-5 sm:p-6">
             <div className="flex items-center justify-between mb-4">
