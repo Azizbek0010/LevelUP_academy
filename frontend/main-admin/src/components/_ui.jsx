@@ -38,7 +38,11 @@ const AVATAR_SIZES = { sm: 28, md: 32, lg: 44 };
 function KpiSparkline({ data, positive }) {
   if (!data || data.length < 2) return null;
   const rows = data.map((v, i) => ({ i, v }));
-  const stroke = positive ? '#65a30d' : '#dc2626';
+  // Тот же success/error, что и у стрелки тренда рядом (было #65a30d/#dc2626 —
+  // близко, но не ровно тема DaisyUI: success #22c55e / error #ef4444
+  // из tailwind.config.js). SVG fill/stroke не берёт Tailwind-классы
+  // напрямую, поэтому здесь литерал, но теперь тот же самый.
+  const stroke = positive ? '#22c55e' : '#ef4444';
   return (
     <div className="absolute inset-x-0 bottom-0 h-9 opacity-70 pointer-events-none">
       <ResponsiveContainer width="100%" height="100%">

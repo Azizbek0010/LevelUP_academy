@@ -36,6 +36,14 @@ const pluralProblem = (n) => PLURAL_PROBLEM[n] ?? 'проблем';
 const pluralService = (n) => PLURAL_SERVICE[n] ?? 'сервисов';
 const STATUS_ICON = { new: Sparkles, contacted: PhoneCall, onboarded: CheckCircle2, rejected: XCircle };
 
+// Цвета сетки/осей/курсора графика — chrome вокруг данных, не сами данные
+// (для тех есть CHART_PRIMARY/CHART_SERIES), поэтому осознанно нейтральные,
+// не бренд-лайм: подсвеченные лаймом подписи осей отвлекали бы от бара.
+// Вынесены в константы, а не разбросаны по JSX — одно место на случай темы.
+const CHART_GRID = '#f0f0f0';
+const CHART_AXIS_TEXT = '#9ca3af';
+const CHART_TOOLTIP_CURSOR = '#F7FEE7';
+
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -137,7 +145,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
   // Реально собранные платежи (не путать с ourMonthlyIncome выше — тот
   // считается «здесь и сейчас» по тарифам активных партнёров, это — то, что
   // фактически пришло по месяцам, с историей для спарклайна и трендом).
-  const { data: finance } = useFinance();
+  const { data: finance, isLoading: financeLoading } = useFinance();
   const financeTrend = (finance?.trend || []).slice(-6).map((m) => m.revenue);
   const collectedThisMonth = finance?.thisMonth?.revenue ?? 0;
   const collectedLastMonth = finance?.lastMonth?.revenue ?? 0;
@@ -188,7 +196,13 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
 
   const togglePartnerStatus = async (p) => {
     if (!p) return;
-    const next = p.status === 'active' ? 'frozen' : 'active';
+    // Раньше было `active ? frozen : active` — для триального партнёра
+    // (status='trial') условие ложно, next='active', и кнопка «Заморозить»
+    // в PartnerModal (её подпись зависит только от frozen=status==='frozen')
+    // молча АКТИВИРОВАЛА триального партнёра вместо заморозки. Верная
+    // формула — как в OrgDetail.jsx: только frozen размораживается,
+    // всё остальное (active И trial) уходит в frozen.
+    const next = p.status === 'frozen' ? 'active' : 'frozen';
     setBusyId(p.id);
     setErr('');
     try {
@@ -252,10 +266,10 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
                       <stop offset="100%" stopColor={CHART_SERIES[3]} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}к`} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} width={40} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: '#F7FEE7' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: CHART_AXIS_TEXT }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}к`} tick={{ fontSize: 11, fill: CHART_AXIS_TEXT }} axisLine={false} tickLine={false} width={40} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: CHART_TOOLTIP_CURSOR }} />
                   <Bar
                     dataKey="value"
                     fill="url(#revenue-grad)"
@@ -279,7 +293,19 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
               месяцам из /main/finance). Поэтому не в общей плоской сетке
               KPI, а отдельной карточкой: у неё есть история (спарклайн)
               и своя логика перехода, кликабельные KPI выше её не имеют. */}
-          {finance && (
+          {financeLoading ? (
+            // Свой скелет на месте будущей карточки — без него /main/finance
+            // (отдельный от дашборда запрос) дотягивает позже, и карточка
+            // впрыгивает сверху колонки уже ПОСЛЕ первой отрисовки, двигая
+            // «По статусам»/«Активные заявки» вниз (layout shift).
+            <div className="card bg-base-100 border border-base-200/60 shadow-sm">
+              <div className="p-4 space-y-3">
+                <div className="skeleton h-8 w-8 rounded-md" />
+                <div className="skeleton h-7 w-28" />
+                <div className="skeleton h-3 w-16" />
+              </div>
+            </div>
+          ) : finance && (
             <Kpi
               Icon={Landmark}
               title="Собрано за месяц"
@@ -405,6 +431,10 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
                         <span className="truncate font-medium hover:text-primary transition-colors">{p.name}</span>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="hidden text-[10px] text-base-content/50 tabular-nums sm:inline">{share}%</span>
+                          {/* Тариф — уже в ответе API (p.tier), нигде на дашборде не
+                              показан, хотя счёт monthlyBill рядом печатается всегда:
+                              без него непонятно, ПОЧЕМУ у партнёра именно такая сумма. */}
+                          {p.tier && <span className="badge badge-ghost badge-xs hidden sm:inline-flex">{p.tier}</span>}
                           <span className={`badge badge-xs hidden sm:inline-flex ${statusInfo?.cls || 'badge-ghost'}`}>{statusInfo?.label || p.status}</span>
                           <span className="text-xs font-bold tabular-nums sm:text-sm">{fmt(p.monthlyBill)}</span>
                         </div>
@@ -489,10 +519,14 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
               отдаёт, и все три строки печатали пустое значение. */}
           <div className="rounded-md bg-base-200/50 p-4 space-y-2">
             <div className="text-xs font-semibold text-base-content/60 uppercase mb-1">Тарифы по числу активных аккаунтов</div>
-            {(pricing.tiers ?? []).map((t) => (
-              <div key={t.id} className="flex justify-between text-sm">
-                <span>{t.label} <span className="text-base-content/45">· {tierRange(t)}</span></span>
-                <span className="font-bold tabular-nums">{tierPriceLabel(t, cur)}</span>
+            {/* tier, не t — снаружи t уже занято data.totals (строка 126);
+                до сих пор случайно безопасно (внутри .map везде именно
+                тарифный объект), но одноимённая тень — заминированное
+                место для следующей правки. */}
+            {(pricing.tiers ?? []).map((tier) => (
+              <div key={tier.id} className="flex justify-between text-sm">
+                <span>{tier.label} <span className="text-base-content/45">· {tierRange(tier)}</span></span>
+                <span className="font-bold tabular-nums">{tierPriceLabel(tier, cur)}</span>
               </div>
             ))}
             <div className="text-xs text-base-content/45 pt-1">Филиалы входят в тариф без доплаты</div>
@@ -555,7 +589,27 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
           <div className="text-xs mt-2 opacity-70">В среднем {partners.length ? Math.round(t.students / partners.length) : 0} на партнёра</div>
         </div>
 
+        {/* Родители/сотрудники/итого — уже считает бэкенд (totals.parents/
+            staff/totalUsers), нигде на дашборде не показывалось. */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="rounded-md border border-base-200 p-3 text-center">
+            <div className="text-lg font-extrabold tabular-nums">{fmt(t.parents)}</div>
+            <div className="text-[10px] text-base-content/50 uppercase tracking-wide mt-0.5">Родителей</div>
+          </div>
+          <div className="rounded-md border border-base-200 p-3 text-center">
+            <div className="text-lg font-extrabold tabular-nums">{fmt(t.staff)}</div>
+            <div className="text-[10px] text-base-content/50 uppercase tracking-wide mt-0.5">Сотрудников</div>
+          </div>
+          <div className="rounded-md border border-base-200 p-3 text-center">
+            <div className="text-lg font-extrabold tabular-nums">{fmt(t.totalUsers)}</div>
+            <div className="text-[10px] text-base-content/50 uppercase tracking-wide mt-0.5">Всего аккаунтов</div>
+          </div>
+        </div>
+
         <div className="text-xs font-semibold text-base-content/50 uppercase mb-2">Топ-5 по ученикам</div>
+        {topByStudents.length === 0 && (
+          <div className="text-center py-8 text-sm text-base-content/40">Партнёров пока нет</div>
+        )}
         <div className="space-y-2">
           {topByStudents.map((p, i) => {
             const pct = Math.max(4, ((p.students || 0) / Math.max(1, topByStudents[0]?.students || 1)) * 100);
@@ -595,6 +649,9 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         </div>
 
         <div className="text-xs font-semibold text-base-content/50 uppercase mb-2">Топ-5 по филиалам</div>
+        {topByBranches.length === 0 && (
+          <div className="text-center py-8 text-sm text-base-content/40">Партнёров пока нет</div>
+        )}
         <div className="space-y-2">
           {topByBranches.map((p, i) => {
             const pct = Math.max(4, ((p.branches || 0) / Math.max(1, topByBranches[0]?.branches || 1)) * 100);
@@ -640,7 +697,7 @@ function MetricCell({ Icon, label, value, meta, trend, onClick, to }) {
   const inner = (
     <>
       <div className="flex items-center justify-between">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200 text-base-content/55 transition-colors group-hover:bg-primary/20 group-hover:text-lime-800"><Icon size={16} /></span>
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200 text-base-content/55 transition-colors group-hover:bg-primary/20 group-hover:text-primary"><Icon size={16} /></span>
         <ChevronRight size={14} className="text-base-content/20 transition-transform group-hover:translate-x-0.5 group-hover:text-base-content/45" />
       </div>
       <div className="mt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-base-content/40">{label}</div>
@@ -721,6 +778,7 @@ function PartnerModal({ p, totalIncome, cur, onClose, onToggle, busy }) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-lg truncate">{p.name}</span>
               <span className={`badge ${s.cls}`}>{s.label}</span>
+              {p.tier && <span className="badge badge-ghost">{p.tier}</span>}
             </div>
             <div className="text-xs text-base-content/50">Регистрация: {dateShort(p.createdAt)}</div>
           </div>
