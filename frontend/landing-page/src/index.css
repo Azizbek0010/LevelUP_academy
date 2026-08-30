@@ -1951,7 +1951,7 @@ h1, h2, h3, h4, .display {
 .drawer { color: var(--text); background: rgba(252,253,249,.98); border-left-color: var(--border); box-shadow: -20px 0 50px rgba(29,36,23,.15); }
 .drawer__head { border-color: var(--border); }
 .drawer__brand img { background: transparent; }
-.drawer__close { color: var(--text); border-color: var(--border); background: #f2f5ec; }
+.drawer__close { color: var(--text); border: 0; background: transparent; }
 .drawer__nav a { color: #596153; }
 .drawer__nav a:hover, .drawer__nav a:active { color: var(--text); background: #f2f5ec; }
 .drawer__nav a.active { color: var(--text); background: #e8f7c5; }
