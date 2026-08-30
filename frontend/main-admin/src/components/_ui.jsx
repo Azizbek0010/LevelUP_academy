@@ -79,7 +79,7 @@ function KpiSparkline({ data, positive }) {
  */
 export function Kpi({
   Icon, title, label, value, unit, sub, tone = 'neutral', tint, accent,
-  trend, trendLabel, sparkline, dense, to, onClick,
+  trend, trendLabel, sparkline, dense, to, onClick, cardClassName,
 }) {
   const heading = title ?? label;
   const caption = unit ?? sub;
@@ -115,11 +115,16 @@ export function Kpi({
     </div>
   );
 
-  const card = `card border shadow-sm ${
-    accent
-      ? 'bg-gradient-to-br from-primary to-primary/85 border-primary text-primary-content'
-      : 'bg-base-100 border-base-200/60'
-  }`;
+  // cardClassName ЗАМЕНЯЕТ, а не дописывает, дефолтный "скин" (border/
+  // shadow/bg) — для страниц вроде Dashboard, где рядом стоят карточки
+  // с другим языком (толще тень, свой border-base-300). Дописывать
+  // конфликтующий border-*/shadow-* утилити-класс поверх уже заданного
+  // нельзя: у Tailwind порядок в скомпилированном CSS не совпадает
+  // с порядком классов в JSX, итоговый вид зависел бы от сборки, не от
+  // пропа — ровно та же ловушка, что уже чинили на лендинге.
+  const card = accent
+    ? 'card border shadow-sm bg-gradient-to-br from-primary to-primary/85 border-primary text-primary-content'
+    : `card border ${cardClassName ?? 'shadow-sm bg-base-100 border-base-200/60'}`;
   const interactive =
     'hover:border-primary/40 hover:shadow-md transition-[border-color,box-shadow,transform] duration-150 active:scale-[0.98]';
   if (to) return <Link to={to} className={`${card} ${interactive} block`}>{body}</Link>;

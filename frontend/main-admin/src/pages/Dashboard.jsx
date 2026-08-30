@@ -5,7 +5,7 @@ import {
   Inbox, Crown, Sparkles, PhoneCall, CheckCircle2, XCircle,
   TrendingUp, Snowflake, Zap, PieChart as PieIcon,
   Calculator, Percent, Award, ChevronRight, Power, Pause,
-  HeartPulse, AlertTriangle, Landmark, Users,
+  Landmark, Users,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import { fmt, dateShort, LEAD_STATUS, ORG_STATUS } from '../format.js';
 import { tierRange, tierPriceLabel } from '../lib/pricing.js';
-import { useDashboard, useLeads, useInvalidate, useFinance, useSystemHealth } from '../queries.js';
+import { useDashboard, useLeads, useInvalidate, useFinance } from '../queries.js';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import PageHeader from '../components/PageHeader.jsx';
@@ -26,14 +26,6 @@ import { useDashboardLive } from '../socket.js';
 // намеренно во множественном числе — это легенда по группе партнёров, а не
 // бейдж одного (тот берёт "Активен"/"Заморожен" прямо из ORG_STATUS).
 const PIE_LABELS = { active: 'Активные', trial: 'Триал', frozen: 'Заморожены' };
-
-// Здоровье считает ровно 3 сервиса (database/redis/storage) — счётчик
-// недоступных всегда 1..3, поэтому справочник проще, чем общий алгоритм
-// русских склонений. Было «1 проблем» — не согласовано по числу.
-const PLURAL_PROBLEM = { 1: 'проблема', 2: 'проблемы', 3: 'проблемы' };
-const PLURAL_SERVICE = { 1: 'сервис', 2: 'сервиса', 3: 'сервиса' };
-const pluralProblem = (n) => PLURAL_PROBLEM[n] ?? 'проблем';
-const pluralService = (n) => PLURAL_SERVICE[n] ?? 'сервисов';
 const STATUS_ICON = { new: Sparkles, contacted: PhoneCall, onboarded: CheckCircle2, rejected: XCircle };
 
 // Цвета сетки/осей/курсора графика — chrome вокруг данных, не сами данные
@@ -57,10 +49,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function Dashboard() {
   const { data, isLoading, error, refetch } = useDashboard();
   const { data: allLeads } = useLeads();
-  const { data: health } = useSystemHealth();
   const liveConnected = useDashboardLive();
   const today = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
-  const healthDownCount = health ? Object.values(health.services || {}).filter((s) => !s.ok).length : 0;
 
   const recentLeads = useMemo(
     () => (allLeads || [])
@@ -87,20 +77,6 @@ export default function Dashboard() {
       <div className="flex flex-col gap-3 border-b border-base-300 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Обзор" subtitle={<span className="capitalize">{today} · ключевые показатели платформы</span>} />
         <div className="flex items-center gap-2">
-          {health && (
-            <Link
-              to="/system-health"
-              className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-semibold transition-colors ${
-                healthDownCount > 0
-                  ? 'border-error/30 bg-error/10 text-error hover:bg-error/15'
-                  : 'border-base-300 bg-base-100 text-base-content/45 hover:text-base-content/70'
-              }`}
-              title={healthDownCount > 0 ? `${healthDownCount} ${pluralService(healthDownCount)} недоступн${healthDownCount === 1 ? 'а' : 'ы'} — открыть здоровье системы` : 'Все системы в норме'}
-            >
-              {healthDownCount > 0 ? <AlertTriangle size={12} /> : <HeartPulse size={12} />}
-              {healthDownCount > 0 ? `${healthDownCount} ${pluralProblem(healthDownCount)}` : 'Всё в норме'}
-            </Link>
-          )}
           <span className="flex items-center gap-1.5 text-xs font-medium text-base-content/45" title={liveConnected ? 'Данные обновляются автоматически' : 'Переподключение к live-каналу'}>
             <span className={`h-1.5 w-1.5 rounded-full ${liveConnected ? 'bg-success' : 'animate-pulse bg-warning'}`} />
             {liveConnected ? 'Live' : 'Подключение…'}
@@ -298,7 +274,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
             // (отдельный от дашборда запрос) дотягивает позже, и карточка
             // впрыгивает сверху колонки уже ПОСЛЕ первой отрисовки, двигая
             // «По статусам»/«Активные заявки» вниз (layout shift).
-            <div className="card bg-base-100 border border-base-200/60 shadow-sm">
+            <div className="card rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)]">
               <div className="p-4 space-y-3">
                 <div className="skeleton h-8 w-8 rounded-md" />
                 <div className="skeleton h-7 w-28" />
@@ -315,6 +291,11 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
               trendLabel="к прошлому месяцу"
               sparkline={financeTrend}
               to="/revenue"
+              // Тот же язык, что у «По статусам»/«Активные заявки» и у
+              // карточки графика слева (rounded-xl, border-base-300, та же
+              // тень) — иначе Kpi (со своим более лёгким дефолтом) торчит
+              // единственной другой по стилю карточкой в колонке.
+              cardClassName="rounded-xl border-base-300 shadow-[0_4px_24px_rgba(29,36,23,0.05)]"
             />
           )}
           {pieData.length > 0 && (
@@ -417,38 +398,58 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
                 const pct = Math.max(4, ((p.monthlyBill || 0) / maxBill) * 100);
                 const share = totalIncome > 0 ? ((p.monthlyBill / totalIncome) * 100).toFixed(1) : '0.0';
                 const statusInfo = ORG_STATUS[p.status];
+                // Топ-3 — медаль вместо серого номера (то же ранжирование,
+                // которое уже управляет цветом полосы ниже, теперь видно
+                // и на самом ранге, а не только в градиенте бара #1).
+                const medal = [
+                  { bg: 'bg-gradient-to-br from-amber-300 to-amber-500', text: 'text-amber-950', ring: 'ring-amber-300/50' },
+                  { bg: 'bg-gradient-to-br from-slate-300 to-slate-400', text: 'text-slate-900', ring: 'ring-slate-300/50' },
+                  { bg: 'bg-gradient-to-br from-orange-300 to-orange-500', text: 'text-orange-950', ring: 'ring-orange-300/50' },
+                ][i];
                 return (
                   <button
                     type="button"
                     key={p.id}
-                    className="w-full flex items-center gap-3 rounded-lg border border-transparent p-2.5 text-left transition-colors hover:border-primary/20 hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className={`w-full flex items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary/20 hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                      medal ? 'border-base-200 bg-base-200/25' : 'border-transparent'
+                    }`}
                     onClick={() => setModal({ type: 'partner', p })}
                   >
-                    <span className="w-6 text-center text-xs font-extrabold text-base-content/40 tabular-nums">{i + 1}</span>
-                    <Avatar name={p.name} size={32} />
+                    {medal ? (
+                      <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-black ring-2 ${medal.bg} ${medal.text} ${medal.ring}`}>
+                        {i + 1}
+                      </span>
+                    ) : (
+                      <span className="w-7 text-center text-xs font-extrabold text-base-content/40 tabular-nums shrink-0">{i + 1}</span>
+                    )}
+                    <Avatar name={p.name} size={36} />
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between text-sm mb-1 gap-2 items-center">
-                        <span className="truncate font-medium hover:text-primary transition-colors">{p.name}</span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="hidden text-[10px] text-base-content/50 tabular-nums sm:inline">{share}%</span>
-                          {/* Тариф — уже в ответе API (p.tier), нигде на дашборде не
-                              показан, хотя счёт monthlyBill рядом печатается всегда:
-                              без него непонятно, ПОЧЕМУ у партнёра именно такая сумма. */}
-                          {p.tier && <span className="badge badge-ghost badge-xs hidden sm:inline-flex">{p.tier}</span>}
-                          <span className={`badge badge-xs hidden sm:inline-flex ${statusInfo?.cls || 'badge-ghost'}`}>{statusInfo?.label || p.status}</span>
-                          <span className="text-xs font-bold tabular-nums sm:text-sm">{fmt(p.monthlyBill)}</span>
-                        </div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="truncate font-semibold text-sm hover:text-primary transition-colors">{p.name}</span>
+                        {/* Тариф — уже в ответе API (p.tier), нигде на дашборде не
+                            показан, хотя счёт monthlyBill рядом печатается всегда:
+                            без него непонятно, ПОЧЕМУ у партнёра именно такая сумма. */}
+                        {p.tier && <span className="badge badge-ghost badge-xs hidden sm:inline-flex shrink-0">{p.tier}</span>}
+                        <span className={`badge badge-xs hidden sm:inline-flex shrink-0 ${statusInfo?.cls || 'badge-ghost'}`}>{statusInfo?.label || p.status}</span>
                       </div>
-                      <div className="flex items-center gap-3 mb-1.5 text-[10px] text-base-content/45">
+                      <div className="flex items-center gap-3 mb-1.5 text-[11px] text-base-content/45">
                         <span className="inline-flex items-center gap-1"><Store size={10} />{fmt(p.branches)} фил.</span>
                         <span className="inline-flex items-center gap-1"><Users size={10} />{fmt(p.students)} учен.</span>
+                        <span className="tabular-nums">{share}% дохода</span>
                       </div>
-                      <div className="h-2 rounded-full bg-base-200 overflow-hidden">
+                      <div className="h-1.5 rounded-full bg-base-200 overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-700"
                           style={{ width: `${pct}%`, background: i === 0 ? `linear-gradient(90deg,${CHART_PRIMARY},${CHART_SERIES[3]})` : CHART_PRIMARY }}
                         />
                       </div>
+                    </div>
+                    {/* Сумма — единственная главная цифра в строке (раньше
+                        делила внимание с процентом/тарифом/статусом на той же
+                        линии, что и имя партнёра). */}
+                    <div className="text-right shrink-0">
+                      <div className="font-extrabold tabular-nums text-sm sm:text-base">{fmt(p.monthlyBill)}</div>
+                      <div className="text-[10px] text-base-content/35">{cur}/мес</div>
                     </div>
                     <ChevronRight size={16} className="text-base-content/30 shrink-0" />
                   </button>
