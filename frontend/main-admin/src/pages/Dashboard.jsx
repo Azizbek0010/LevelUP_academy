@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import {
   Wallet, Building2, GraduationCap, Store, RefreshCw, ArrowRight,
   Inbox, Crown, Sparkles, PhoneCall, CheckCircle2, XCircle,
-  X, TrendingUp, Snowflake, Zap, PieChart as PieIcon,
+  TrendingUp, Snowflake, Zap, PieChart as PieIcon,
   Calculator, Percent, Award, ChevronRight, Power, Pause,
+  HeartPulse, AlertTriangle, Landmark, Users,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -12,16 +13,18 @@ import {
 } from 'recharts';
 import { fmt, dateShort, LEAD_STATUS, ORG_STATUS } from '../format.js';
 import { tierRange, tierPriceLabel } from '../lib/pricing.js';
-import { useDashboard, useLeads, useInvalidate } from '../queries.js';
+import { useDashboard, useLeads, useInvalidate, useFinance, useSystemHealth } from '../queries.js';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonList } from '../components/Skeleton.jsx';
-import { Modal, Avatar, CHART_PRIMARY, CHART_SERIES } from '../components/_ui.jsx';
+import { Modal, ConfirmDialog, Avatar, Kpi, CHART_PRIMARY, CHART_SERIES } from '../components/_ui.jsx';
 import ActionCenterPanel from '../components/ActionCenterPanel.jsx';
 import { useDashboardLive } from '../socket.js';
 
-const PIE_COLORS = { active: '#A3E635', trial: '#FCD34D', frozen: '#F87171' };
+// Цвет — из ORG_STATUS (общий с бейджами в остальной панели), подписи здесь
+// намеренно во множественном числе — это легенда по группе партнёров, а не
+// бейдж одного (тот берёт "Активен"/"Заморожен" прямо из ORG_STATUS).
 const PIE_LABELS = { active: 'Активные', trial: 'Триал', frozen: 'Заморожены' };
 const STATUS_ICON = { new: Sparkles, contacted: PhoneCall, onboarded: CheckCircle2, rejected: XCircle };
 
@@ -38,8 +41,10 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function Dashboard() {
   const { data, isLoading, error, refetch } = useDashboard();
   const { data: allLeads } = useLeads();
+  const { data: health } = useSystemHealth();
   const liveConnected = useDashboardLive();
   const today = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+  const healthDownCount = health ? Object.values(health.services || {}).filter((s) => !s.ok).length : 0;
 
   const recentLeads = useMemo(
     () => (allLeads || [])
@@ -66,6 +71,20 @@ export default function Dashboard() {
       <div className="flex flex-col gap-3 border-b border-base-300 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Обзор" subtitle={<span className="capitalize">{today} · ключевые показатели платформы</span>} />
         <div className="flex items-center gap-2">
+          {health && (
+            <Link
+              to="/system-health"
+              className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-semibold transition-colors ${
+                healthDownCount > 0
+                  ? 'border-error/30 bg-error/10 text-error hover:bg-error/15'
+                  : 'border-base-300 bg-base-100 text-base-content/45 hover:text-base-content/70'
+              }`}
+              title={healthDownCount > 0 ? `${healthDownCount} сервис(а/ов) недоступны — открыть здоровье системы` : 'Все системы в норме'}
+            >
+              {healthDownCount > 0 ? <AlertTriangle size={12} /> : <HeartPulse size={12} />}
+              {healthDownCount > 0 ? `${healthDownCount} проблем` : 'Всё в норме'}
+            </Link>
+          )}
           <span className="flex items-center gap-1.5 text-xs font-medium text-base-content/45" title={liveConnected ? 'Данные обновляются автоматически' : 'Переподключение к live-каналу'}>
             <span className={`h-1.5 w-1.5 rounded-full ${liveConnected ? 'bg-success' : 'animate-pulse bg-warning'}`} />
             {liveConnected ? 'Live' : 'Подключение…'}
@@ -102,11 +121,21 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
   const partners = data.partners || [];
 
   const [modal, setModal] = useState(null); // 'income' | 'partners' | 'students' | 'branches' | { type:'partner', p }
-  const [barModal, setBarModal] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [err, setErr] = useState('');
   const { token } = useAuth();
   const invalidate = useInvalidate();
+
+  // Реально собранные платежи (не путать с ourMonthlyIncome выше — тот
+  // считается «здесь и сейчас» по тарифам активных партнёров, это — то, что
+  // фактически пришло по месяцам, с историей для спарклайна и трендом).
+  const { data: finance } = useFinance();
+  const financeTrend = (finance?.trend || []).slice(-6).map((m) => m.revenue);
+  const collectedThisMonth = finance?.thisMonth?.revenue ?? 0;
+  const collectedLastMonth = finance?.lastMonth?.revenue ?? 0;
+  const collectedDelta = collectedLastMonth > 0
+    ? ((collectedThisMonth - collectedLastMonth) / collectedLastMonth) * 100
+    : null;
 
   /* Здесь был блок «Скоро разморозка»: он читал дату разморозки из
      localStorage браузера. Ни база, ни API такого поля не хранят — напоминание
@@ -115,8 +144,6 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
      заморозки (см. Organizations.jsx). Если напоминание нужно по-настоящему —
      это поля frozen_until/frozen_reason у organizations плюс отдача их в
      /main/dashboard, то есть работа на бэкенде, а не в браузере. */
-
-  const barPartner = barModal ? partners.find((p) => p.id === barModal.id) : null;
 
   const sorted = [...partners].sort((a, b) => (b.monthlyBill || 0) - (a.monthlyBill || 0));
   const topPartners = sorted.slice(0, 6);
@@ -128,6 +155,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
   const avgBill = partners.length ? Math.round(totalIncome / partners.length) : 0;
   const activeShare = partners.length ? Math.round((activeCount / partners.length) * 100) : 0;
   const frozenShare = partners.length ? Math.round((frozenCount / partners.length) * 100) : 0;
+  const trialShare = partners.length ? Math.round((trialCount / partners.length) * 100) : 0;
 
   const barData = topPartners.map((p) => ({
     name: p.name.length > 14 ? p.name.slice(0, 12) + '…' : p.name,
@@ -144,7 +172,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
     name: PIE_LABELS[status] || status,
     key: status,
     value: count,
-    color: PIE_COLORS[status] || '#94a3b8',
+    color: ORG_STATUS[status]?.color || '#94a3b8',
   }));
 
   const topByStudents = [...partners].sort((a, b) => (b.students || 0) - (a.students || 0)).slice(0, 5);
@@ -159,7 +187,6 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
       await api.setPartnerStatus(token, p.id, next);
       invalidate('dashboard');
       setModal(null);
-      setBarModal(null);
     } catch (e) {
       // было alert(): единственное место в панели, где ошибка выпадала
       // системным окном поверх интерфейса — везде остальное показывается в вёрстке
@@ -220,7 +247,10 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
                     dataKey="value"
                     fill="url(#revenue-grad)"
                     maxBarSize={44}
-                    onClick={(d) => setBarModal(d?.payload || null)}
+                    onClick={(d) => {
+                      const bp = partners.find((pp) => pp.id === d?.payload?.id);
+                      if (bp) setModal({ type: 'partner', p: bp });
+                    }}
                     cursor="pointer"
                   />
                 </BarChart>
@@ -230,6 +260,24 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         </div>
 
         <div className="flex flex-col gap-5">
+          {/* Фактически собранные платежи — другая метрика, чем «Доход /
+              месяц» выше (тот считается по текущим тарифам активных
+              партнёров прямо сейчас, это — реальные поступления по
+              месяцам из /main/finance). Поэтому не в общей плоской сетке
+              KPI, а отдельной карточкой: у неё есть история (спарклайн)
+              и своя логика перехода, кликабельные KPI выше её не имеют. */}
+          {finance && (
+            <Kpi
+              Icon={Landmark}
+              title="Собрано за месяц"
+              value={fmt(collectedThisMonth)}
+              unit={cur}
+              trend={collectedDelta}
+              trendLabel="к прошлому месяцу"
+              sparkline={financeTrend}
+              to="/revenue"
+            />
+          )}
           {pieData.length > 0 && (
             <div className="card rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)]">
               <div className="card-body p-5">
@@ -329,8 +377,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
               {topPartners.map((p, i) => {
                 const pct = Math.max(4, ((p.monthlyBill || 0) / maxBill) * 100);
                 const share = totalIncome > 0 ? ((p.monthlyBill / totalIncome) * 100).toFixed(1) : '0.0';
-                const statusCls = { active: 'badge-success', trial: 'badge-warning', frozen: 'badge-error' };
-                const statusLabel = { active: 'Активен', trial: 'Триал', frozen: 'Заморожен' };
+                const statusInfo = ORG_STATUS[p.status];
                 return (
                   <button
                     type="button"
@@ -341,13 +388,17 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
                     <span className="w-6 text-center text-xs font-extrabold text-base-content/40 tabular-nums">{i + 1}</span>
                     <Avatar name={p.name} size={32} />
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between text-sm mb-1.5 gap-2 items-center">
+                      <div className="flex justify-between text-sm mb-1 gap-2 items-center">
                         <span className="truncate font-medium hover:text-primary transition-colors">{p.name}</span>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="hidden text-[10px] text-base-content/50 tabular-nums sm:inline">{share}%</span>
-                          <span className={`badge badge-xs hidden sm:inline-flex ${statusCls[p.status] || 'badge-ghost'}`}>{statusLabel[p.status] || p.status}</span>
+                          <span className={`badge badge-xs hidden sm:inline-flex ${statusInfo?.cls || 'badge-ghost'}`}>{statusInfo?.label || p.status}</span>
                           <span className="text-xs font-bold tabular-nums sm:text-sm">{fmt(p.monthlyBill)}</span>
                         </div>
+                      </div>
+                      <div className="flex items-center gap-3 mb-1.5 text-[10px] text-base-content/45">
+                        <span className="inline-flex items-center gap-1"><Store size={10} />{fmt(p.branches)} фил.</span>
+                        <span className="inline-flex items-center gap-1"><Users size={10} />{fmt(p.students)} учен.</span>
                       </div>
                       <div className="h-2 rounded-full bg-base-200 overflow-hidden">
                         <div
@@ -365,7 +416,9 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         </div>
       )}
 
-      {/* Platform metrics — pill cards */}
+      {/* Platform metrics — pill cards. "Доля активных" раньше дублировала
+          то же число из meta KPI «Партнёры» выше — заменена на «Триал»:
+          единственная сводка по этому статусу вне модалки. */}
       {partners.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <PillMetric
@@ -375,11 +428,11 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
             tone="primary"
           />
           <PillMetric
-            Icon={TrendingUp}
-            title="Доля активных"
-            value={`${activeShare}%`}
-            sub={`${activeCount} из ${partners.length}`}
-            tone="success"
+            Icon={Sparkles}
+            title="На триале"
+            value={`${trialShare}%`}
+            sub={`${trialCount} партнёров`}
+            tone="warning"
           />
           <PillMetric
             Icon={Snowflake}
@@ -393,7 +446,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
 
       {/* ---------- MODALS ---------- */}
       <Modal
-        open={modal === 'income'}
+        isOpen={modal === 'income'}
         onClose={() => setModal(null)}
         title="Наш доход / месяц"
         subtitle="Как считается выручка платформы"
@@ -439,7 +492,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
       </Modal>
 
       <Modal
-        open={modal === 'partners'}
+        isOpen={modal === 'partners'}
         onClose={() => setModal(null)}
         title="Партнёры по статусам"
         subtitle={`Всего ${partners.length} учебных центров`}
@@ -447,9 +500,9 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         size="lg"
       >
         <div className="grid grid-cols-3 gap-3 mb-5">
-          <StatusTile color="#A3E635" label="Активные" count={activeCount} total={partners.length} Icon={Zap} />
-          <StatusTile color="#FCD34D" label="Триал" count={trialCount} total={partners.length} Icon={Sparkles} />
-          <StatusTile color="#F87171" label="Заморожены" count={frozenCount} total={partners.length} Icon={Snowflake} />
+          <StatusTile color={ORG_STATUS.active.color} label="Активные" count={activeCount} total={partners.length} Icon={Zap} />
+          <StatusTile color={ORG_STATUS.trial.color} label="Триал" count={trialCount} total={partners.length} Icon={Sparkles} />
+          <StatusTile color={ORG_STATUS.frozen.color} label="Заморожены" count={frozenCount} total={partners.length} Icon={Snowflake} />
         </div>
 
         <div className="text-xs font-semibold text-base-content/50 uppercase mb-2">Партнёры</div>
@@ -476,7 +529,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
       </Modal>
 
       <Modal
-        open={modal === 'students'}
+        isOpen={modal === 'students'}
         onClose={() => setModal(null)}
         title="Ученики платформы"
         subtitle={`Всего ${fmt(t.students)} учеников на платформе`}
@@ -513,7 +566,7 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
       </Modal>
 
       <Modal
-        open={modal === 'branches'}
+        isOpen={modal === 'branches'}
         onClose={() => setModal(null)}
         title="Филиалы по партнёрам"
         subtitle={`Всего ${fmt(t.branches)} филиалов`}
@@ -551,7 +604,10 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         </div>
       </Modal>
 
-      {/* Partner detail modal */}
+      {/* Партнёр открыт — с топ-листа или кликом по бару графика.
+          Раньше это были два отдельных стейта (modal/barModal) с почти
+          одинаковыми блоками JSX ниже — клик по бару теперь просто ищет
+          того же партнёра по id и кладёт в тот же modal. */}
       {modal && modal.type === 'partner' && (
         <PartnerModal
           p={modal.p}
@@ -562,34 +618,32 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
           busy={busyId === modal.p?.id}
         />
       )}
-
-      {/* Bar click modal */}
-      {barModal && barPartner && (
-        <PartnerModal
-          p={barPartner}
-          totalIncome={totalIncome}
-          cur={cur}
-          onClose={() => setBarModal(null)}
-          onToggle={() => togglePartnerStatus(barPartner)}
-          busy={busyId === barPartner.id}
-        />
-      )}
     </>
   );
 }
 
-function MetricCell({ Icon, label, value, meta, onClick }) {
-  return (
-    <button type="button" onClick={onClick} className="group relative min-h-[132px] border-b border-base-300 p-4 text-left transition-colors hover:bg-base-200/55 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:border-r lg:border-b-0 last:border-b-0 last:border-r-0">
+function MetricCell({ Icon, label, value, meta, trend, onClick, to }) {
+  const cls = 'group relative min-h-[118px] border-b border-base-300 p-3.5 text-left transition-colors hover:bg-base-200/55 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:border-r lg:border-b-0 last:border-b-0 last:border-r-0';
+  const inner = (
+    <>
       <div className="flex items-center justify-between">
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-base-200 text-base-content/55 transition-colors group-hover:bg-primary/20 group-hover:text-lime-800"><Icon size={16} /></span>
         <ChevronRight size={14} className="text-base-content/20 transition-transform group-hover:translate-x-0.5 group-hover:text-base-content/45" />
       </div>
-      <div className="mt-4 text-[10px] font-bold uppercase tracking-[0.12em] text-base-content/40">{label}</div>
+      <div className="mt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-base-content/40">{label}</div>
       <div className="mt-0.5 text-2xl font-extrabold tracking-tight tabular-nums">{value}</div>
-      <div className="mt-0.5 text-[11px] font-medium text-base-content/40">{meta}</div>
-    </button>
+      <div className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-base-content/40">
+        {trend != null && (
+          <span className={`inline-flex items-center gap-0.5 font-bold ${trend >= 0 ? 'text-success' : 'text-error'}`}>
+            {trend >= 0 ? <TrendingUp size={11} /> : <TrendingUp size={11} className="rotate-90" />}
+          </span>
+        )}
+        <span className="truncate">{meta}</span>
+      </div>
+    </>
   );
+  if (to) return <Link to={to} className={cls}>{inner}</Link>;
+  return <button type="button" onClick={onClick} className={cls}>{inner}</button>;
 }
 
 function StatusTile({ color, label, count, total, Icon }) {
@@ -597,7 +651,10 @@ function StatusTile({ color, label, count, total, Icon }) {
   return (
     <div className="rounded-lg border border-base-200 p-4">
       <div className="flex items-center gap-2 mb-2">
-        <span className="w-8 h-8 rounded-md grid place-items-center" style={{ background: `${color}33`, color: '#365314' }}>
+        {/* Текст/иконка тем же цветом, что и фон (только непрозрачным) —
+            раньше был захардкожен один зелёный вне зависимости от color,
+            и «Заморожены» (красный фон) читалась как ошибка вёрстки. */}
+        <span className="w-8 h-8 rounded-md grid place-items-center" style={{ background: `${color}26`, color }}>
           <Icon size={15} />
         </span>
         <span className="text-xs font-semibold uppercase tracking-wider text-base-content/50">{label}</span>
@@ -609,15 +666,19 @@ function StatusTile({ color, label, count, total, Icon }) {
 }
 
 function PillMetric({ Icon, title, value, sub, tone }) {
+  // Ключи раньше не совпадали с тем, что реально передавали (primary/
+  // success/danger против lime/green/red) — фоллбэк на lime молча съедал
+  // цветовую семантику успеха/тревоги на всех трёх плитках подряд.
   const tones = {
-    lime: 'bg-primary/10 text-primary',
-    green: 'bg-emerald-50 text-emerald-700',
-    red: 'bg-rose-50 text-rose-700',
+    primary: 'bg-primary/10 text-primary',
+    success: 'bg-emerald-50 text-emerald-700',
+    warning: 'bg-amber-50 text-amber-700',
+    danger: 'bg-rose-50 text-rose-700',
   };
   return (
     <div className="card bg-base-100 shadow-sm border border-base-200/60">
       <div className="card-body p-4 flex flex-row items-center gap-3">
-        <span className={`w-11 h-11 rounded-md grid place-items-center shrink-0 ${tones[tone] || tones.lime}`}>
+        <span className={`w-11 h-11 rounded-md grid place-items-center shrink-0 ${tones[tone] || tones.primary}`}>
           <Icon size={20} strokeWidth={2.2} />
         </span>
         <div className="min-w-0">
@@ -634,8 +695,12 @@ function PartnerModal({ p, totalIncome, cur, onClose, onToggle, busy }) {
   const share = totalIncome > 0 ? ((p.monthlyBill / totalIncome) * 100).toFixed(1) : '0.0';
   const s = ORG_STATUS[p.status] || { label: p.status, cls: 'badge-ghost' };
   const frozen = p.status === 'frozen';
+  // Заморозка/разморозка бьёт в API сразу по клику, без шага «вы уверены» —
+  // единственное действие на странице, которое реально меняет доступ
+  // платящего партнёра. ConfirmDialog в _ui.jsx для этого и был написан.
+  const [confirming, setConfirming] = useState(false);
   return (
-    <Modal open={true} onClose={onClose} title={p.name} subtitle={p.domain || 'домен не задан'} Icon={Building2} size="xl">
+    <Modal isOpen={true} onClose={onClose} title={p.name} subtitle={p.domain || 'домен не задан'} Icon={Building2} size="xl">
       <div className="space-y-5">
         <div className="flex items-center gap-3">
           <Avatar name={p.name} size={56} />
@@ -665,7 +730,7 @@ function PartnerModal({ p, totalIncome, cur, onClose, onToggle, busy }) {
           </Link>
           <button
             className={`btn gap-2 ${frozen ? 'btn-success' : 'btn-outline btn-error'}`}
-            onClick={onToggle}
+            onClick={() => setConfirming(true)}
             disabled={busy}
           >
             {busy ? (
@@ -677,6 +742,20 @@ function PartnerModal({ p, totalIncome, cur, onClose, onToggle, busy }) {
             )}
           </button>
         </div>
+
+        <ConfirmDialog
+          open={confirming}
+          onClose={() => setConfirming(false)}
+          title={frozen ? 'Разморозить партнёра?' : 'Заморозить партнёра?'}
+          text={
+            frozen
+              ? `«${p.name}» снова получит доступ ко всем панелям сразу после подтверждения.`
+              : `«${p.name}» и все его сотрудники/ученики потеряют доступ к панелям до разморозки. Счёт продолжит копиться по тарифу.`
+          }
+          confirmLabel={frozen ? 'Активировать' : 'Заморозить'}
+          onConfirm={() => { setConfirming(false); onToggle(); }}
+          pending={busy}
+        />
       </div>
     </Modal>
   );
