@@ -3,7 +3,7 @@ import {
   Search, Building2, CheckCircle2, Clock, PauseCircle, UserPlus, ArrowRight,
   GraduationCap, Wallet, LayoutGrid, List, Play, Pause, Globe,
   Snowflake, X, Calendar, CheckCircle, RefreshCw,
-  Megaphone, Percent, StickyNote, FileText,
+  Megaphone, Percent, StickyNote, FileText, AlertTriangle,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
@@ -440,8 +440,22 @@ function DetailModal({ partner, cur, totalIncome, onClose, onFreezeRequest, onAc
                   rows={5}
                   className="textarea textarea-bordered w-full text-sm focus:border-lime-400 focus:outline-lime-200 resize-none"
                 />
-                <div className="text-[11px] text-base-content/40 mt-1">
-                  Сохраняется локально в браузере
+                {/* Ровно тот же провал, что уже нашли и вырезали для причины
+                    заморозки (см. комментарий у FreezeModal выше): у
+                    organizations нет колонки под заметки, значит это НЕ
+                    "сохранено", а видно только в этом браузере и пропадёт
+                    при очистке кэша. Раз поле уже приглашает писать сюда
+                    историю переговоров и причину инвестиции — предупреждение
+                    должно быть explicit, не мелким текстом внизу. Убрать
+                    поле совсем нельзя (реальная нужда есть), но обманывать
+                    видом «сохранено» тоже нельзя. Настоящее решение — колонка
+                    organizations.notes + приём в PATCH статуса, это бэкенд. */}
+                <div className="flex items-start gap-1.5 text-[11px] text-warning mt-1.5">
+                  <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+                  <span>
+                    Видно только вам, в этом браузере. Другие Main Admin'ы это не увидят,
+                    очистка кэша — сотрёт. Для важного — дублируйте в чат команды.
+                  </span>
                 </div>
               </div>
             </>
