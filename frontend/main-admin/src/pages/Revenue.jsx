@@ -12,6 +12,7 @@ import { useRevenue } from '../queries.js';
 import { fmt, ORG_STATUS } from '../format.js';
 import PageHeader from '../components/PageHeader.jsx';
 import Avatar from '../components/Avatar.jsx';
+import { Kpi } from '../components/_ui.jsx';
 import { SkeletonKpis, SkeletonList } from '../components/Skeleton.jsx';
 
 // ВАЖНО: это ПРОГНОЗ, а не фактическая выручка за период.
@@ -26,27 +27,9 @@ const PERIODS = [
   { key: 'year', label: 'Год', mult: 12 },
 ];
 
-function Kpi({ Icon, tint, title, value, unit, accent }) {
-  return (
-    <div className={`card shadow-sm border transition-shadow hover:shadow-md ${accent ? 'bg-gradient-to-br from-lime-400 to-lime-500 border-lime-400' : 'bg-base-100 border-base-200/60'}`}>
-      <div className="card-body p-5">
-        <div className="flex items-center gap-3">
-          <span
-            className="w-10 h-10 rounded-md grid place-items-center shrink-0"
-            style={accent ? { background: 'rgba(0,0,0,0.12)', color: '#1a2e05' } : { background: tint.bg, color: tint.fg }}
-          >
-            <Icon size={20} strokeWidth={2.2} />
-          </span>
-          <div className={`text-[11px] font-semibold uppercase tracking-wider leading-tight ${accent ? 'text-lime-950/60' : 'text-base-content/45'}`}>
-            {title}
-          </div>
-        </div>
-        <div className={`text-3xl font-extrabold mt-3 leading-none ${accent ? 'text-lime-950' : ''}`}>{value}</div>
-        {unit && <div className={`text-xs mt-1.5 ${accent ? 'text-lime-950/55' : 'text-base-content/45'}`}>{unit}</div>}
-      </div>
-    </div>
-  );
-}
+// Локальный Kpi убран (30.08.2026) — мигрировано на общий Kpi из _ui.jsx
+// (тот же компонент, что теперь используется на Dashboard). Алиасы полей
+// (title/unit/tint/accent) совпадают, вызовы ниже не переписывались.
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -58,7 +41,8 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-const PIE_COLORS = { active: '#A3E635', trial: '#FCD34D', frozen: '#F87171' };
+// Цвет — из ORG_STATUS (та же связка, что теперь на Dashboard), подписи
+// во множественном числе — легенда по группе, не бейдж одного партнёра.
 const PIE_LABELS = { active: 'Активные', trial: 'Триал', frozen: 'Заморожены' };
 
 function BarDetailModal({ bar, partner, total, cur, onClose }) {
@@ -184,7 +168,7 @@ export default function Revenue() {
     const pieData = Object.entries(statusCounts).map(([status, count]) => ({
       name: PIE_LABELS[status] || status,
       value: count,
-      color: PIE_COLORS[status] || '#94a3b8',
+      color: ORG_STATUS[status]?.color || '#94a3b8',
     }));
 
     // Лучшие / слабые партнёры

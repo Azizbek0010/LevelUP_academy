@@ -13,7 +13,7 @@ import { fmt, money, dateShort, ORG_STATUS } from '../format.js';
 import { tierForUsers, tierRange, tierPriceLabel } from '../lib/pricing.js';
 import Avatar from '../components/Avatar.jsx';
 import OnboardModal from '../components/OnboardModal.jsx';
-import { Modal } from '../components/_ui.jsx';
+import { Modal, Kpi } from '../components/_ui.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
 
 const PAYMENT_METHODS = [
@@ -280,25 +280,7 @@ function FeatureToggles({ partner, token, invalidate }) {
   );
 }
 
-function Kpi({ Icon, label, value, sub, tint, accent }) {
-  return (
-    <div className={`card shadow-sm border transition-shadow hover:shadow-md ${accent ? 'bg-gradient-to-br from-lime-400 to-lime-500 border-lime-400' : 'bg-base-100 border-base-200/60'}`}>
-      <div className="card-body p-5">
-        <div className="flex items-center gap-2 mb-2">
-          <span
-            className="w-8 h-8 rounded-md grid place-items-center shrink-0"
-            style={accent ? { background: 'rgba(0,0,0,0.12)', color: '#1a2e05' } : { background: tint.bg, color: tint.fg }}
-          >
-            <Icon size={15} strokeWidth={2.3} />
-          </span>
-          <span className={`text-[11px] font-semibold uppercase tracking-wider ${accent ? 'text-lime-950/60' : 'text-base-content/45'}`}>{label}</span>
-        </div>
-        <div className={`text-3xl font-extrabold leading-none ${accent ? 'text-lime-950' : ''}`}>{value}</div>
-        {sub && <div className={`text-xs mt-1 ${accent ? 'text-lime-950/55' : 'text-base-content/45'}`}>{sub}</div>}
-      </div>
-    </div>
-  );
-}
+// Локальный Kpi убран (30.08.2026) — мигрировано на общий Kpi из _ui.jsx.
 
 function BillingRow({ Icon, tint, label, sub, value }) {
   return (
