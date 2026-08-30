@@ -9,32 +9,37 @@ export const fmtNum = (n) => nf.format(Number(n) || 0);
 const CURRENCY_WORD = { ru: 'сум', uz: "so'm", en: 'UZS' };
 export const fmtMoney = (n, lang = 'ru') => `${nf.format(Number(n) || 0)} ${CURRENCY_WORD[lang] || CURRENCY_WORD.ru}`;
 
-const LOCALES = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
-/* Браузер без данных узбекской локали (редкие окружения) выбросит RangeError
-   на toLocaleDateString('uz-UZ') — тогда молча откатываемся на русскую. */
-const localeOf = (lang) => {
-  const loc = LOCALES[lang] ?? 'ru-RU';
-  try {
-    new Intl.DateTimeFormat(loc).format(new Date());
-    return loc;
-  } catch {
-    return 'ru-RU';
-  }
+/* Названия месяцев задаём сами, а не через Intl month:'short':
+   в этом окружении ICU-данные для 'uz-UZ' отдают «M09» вместо «сен»
+   (тот же баг ловили в Announcements 22.08.2026, но fmtDate/fmtDateTime
+   его не чинили — из-за этого «muddati M09 1 19:18» в ДЗ, тестах, видео). */
+const MONTHS_SHORT = {
+  ru: ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'],
+  uz: ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek'],
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
 };
+const monthsOf = (lang) => MONTHS_SHORT[lang] || MONTHS_SHORT.ru;
+const pad2 = (n) => String(n).padStart(2, '0');
 
 export function fmtDate(value, lang = 'ru') {
   if (!value) return '—';
-  return new Date(value).toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short', year: 'numeric' });
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  const m = monthsOf(lang);
+  return lang === 'en'
+    ? `${m[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
+    : `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 export function fmtDateTime(value, lang = 'ru') {
   if (!value) return '—';
-  return new Date(value).toLocaleString(localeOf(lang), {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  const m = monthsOf(lang);
+  const time = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  return lang === 'en'
+    ? `${m[d.getMonth()]} ${d.getDate()}, ${time}`
+    : `${d.getDate()} ${m[d.getMonth()]}, ${time}`;
 }
 
 /** 125 сек → «2:05» */

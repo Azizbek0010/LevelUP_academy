@@ -118,6 +118,9 @@ export default function Login() {
       if (err.status === 401) setError(t.login.error.invalid);
       else if (err.status === 429) setError(t.login.error.rateLimit);
       else if (err.status === 422) setError(t.login.error.empty);
+      // без .status — сеть не ответила (fetch бросил TypeError «Failed to
+      // fetch»): раньше это показывалось сырым текстом, теперь понятно.
+      else if (!err.status) setError(t.login.error.network);
       else setError(err.message || t.login.error.generic);
     } finally {
       setBusy(false);

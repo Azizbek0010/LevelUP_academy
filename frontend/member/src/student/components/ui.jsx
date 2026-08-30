@@ -27,29 +27,70 @@ import { useI18n } from '../../i18n/index.jsx';
  * Убран только Mascot (по прямому запросу, использований больше нет).
  */
 
+/* v5 «Grove» (2026-08-30, Abduloh) — зеркалит токены :root / :root
+   [data-kid-theme="dark"] из index.css. Значения — CSS-переменные, а не
+   hex: инлайновые стили тогда сами переключаются между light/dark, без
+   второго объекта палитры и ре-рендера. Бренд — зелёный: тёмный лес
+   якорь, рабочий лайм действие, тёплый мёд награда. */
 export const C = {
-  bg: '#F6F8F3',
-  card: '#FFFFFF',
-  text: '#1C231A',
-  muted: '#707F68',
-  line: '#E4EAE0',
-  lime: '#5FA33C',    // средний зелёный — ближе к бренду LevelUp (#C6FF34), не неон
-  limeDk: '#3E6E26',  // тёмный вариант для акцентов
-  limeSoft: '#EDF5E1',// светло-зелёная подложка карточек/активных вкладок
-  limeLine: '#D7E7C2',// зелёная окантовка карточек
-  ink: '#12190E',
-  violet: '#6E62A6',
-  blue: '#3E7CAE',
-  coral: '#BD5B45',
-  amber: '#B9832E',
-  teal: '#2E8F76',
-  pink: '#AD5A78',
+  bg: 'var(--k-bg)',
+  bgTint: 'var(--k-bg-tint)',
+  card: 'var(--k-card)',
+  text: 'var(--k-text)',
+  muted: 'var(--k-muted)',
+  line: 'var(--k-line)',
+  hair: 'var(--k-hair)',
+
+  lime: 'var(--k-lime)',        // действие — кнопки, активная навигация
+  limeDk: 'var(--k-lime-dk)',   // акцентный текст (тёмный лайм / светлый в dark)
+  limeSoft: 'var(--k-lime-soft)',
+  limeLine: 'var(--k-lime-line)',
+
+  forest: 'var(--k-heading)',   // заголовки, активная навигация, HUD-подписи
+  forest2: 'var(--k-hero-2)',   // (совместимость — герой красит сам)
+  forestSoft: 'var(--k-forest-soft)',
+  hero1: 'var(--k-hero-1)',
+  hero2: 'var(--k-hero-2)',
+  header1: 'var(--k-header-1)',
+  header2: 'var(--k-header-2)',
+
+  honey: 'var(--k-honey)',      // награда — коины, монеты, звёзды
+  honeyDk: 'var(--k-honey-dk)',
+  honeySoft: 'var(--k-honey-soft)',
+
+  ink: 'var(--k-ink)',
+  violet: 'var(--k-violet)',
+  blue: 'var(--k-blue)',
+  coral: 'var(--k-coral)',
+  amber: 'var(--k-amber)',      // = honey, обратная совместимость страниц
+  teal: 'var(--k-teal)',
+  pink: 'var(--k-pink)',
+  gold: 'var(--k-gold)',
+  goldDk: 'var(--k-gold-dk)',
+
+  // ── Семантика статусов ──
+  danger: 'var(--k-danger)',
+  dangerSoft: 'var(--k-danger-soft)',
+  info: 'var(--k-info)',
+  infoSoft: 'var(--k-info-soft)',
+  success: 'var(--k-success)',
+  successSoft: 'var(--k-success-soft)',
+  onAccent: 'var(--k-on-accent)',
+  scrim: 'var(--k-scrim)',
 
   // ── Семантическая тройка: цвет = значение с одного взгляда ──
-  action: '#5FA33C', // действие — кнопки, активное меню (= lime)
-  learn: '#6E62A6',  // учёба — уроки, тесты, задания, видео (= violet)
-  warn: '#B9832E',   // внимание — оплата, сроки: мягкий янтарь, без красного (= amber)
+  action: 'var(--k-lime)', // действие — кнопки, активное меню (= lime)
+  learn: 'var(--k-violet)', // учёба — уроки, тесты, задания, видео (= violet)
+  warn: 'var(--k-honey)',   // внимание — оплата, сроки, награды (= honey)
 };
+
+/* alpha() — прозрачная версия цвета-переменной. Инлайновый стиль не может
+   склеить var(--k-x) с hex-суффиксом (`${C.violet}1c`), поэтому идём через
+   color-mix (поддержан всеми актуальными браузерами). pct — процент
+   непрозрачности (0..100). */
+export const alpha = (color, pct) => `color-mix(in srgb, ${color} ${pct}%, transparent)`;
+/* shade() — чуть затемнить цвет (для нижней точки градиента кнопки и т.п.) */
+export const shade = (color, pct) => `color-mix(in srgb, ${color}, #000 ${pct}%)`;
 
 /* Цвета категорий — чтобы разделы и типы заданий различались с одного взгляда */
 export const HUES = {
@@ -58,8 +99,10 @@ export const HUES = {
   blue: C.blue,
   coral: C.coral,
   amber: C.amber,
+  honey: C.honey,
   teal: C.teal,
   pink: C.pink,
+  forest: C.forest,
 };
 
 /* ── Значок категории — тонированный фон + цветная иконка ────────────────
@@ -67,7 +110,7 @@ export const HUES = {
    слишком по-детски. Теперь как в Apple Health/Notion: лёгкая тонировка
    цвета на фоне, сама иконка — в цвете, без заливки. Серьёзнее, но цвет
    категории всё ещё считывается мгновенно. */
-export function IconTile({ icon: Icon, hue = 'violet', size = 56, radius, className = '' }) {
+export function IconTile({ icon: Icon, hue = 'violet', size = 50, radius, className = '' }) {
   const fill = HUES[hue] ?? C.violet;
   return (
     <span
@@ -75,8 +118,8 @@ export function IconTile({ icon: Icon, hue = 'violet', size = 56, radius, classN
       style={{
         width: size,
         height: size,
-        background: `${fill}1c`,
-        borderRadius: radius ?? Math.round(size * 0.26),
+        background: alpha(fill, 12),
+        borderRadius: radius ?? Math.round(size * 0.3),
       }}
     >
       <Icon size={Math.round(size * 0.46)} strokeWidth={2.2} color={fill} />
@@ -84,24 +127,27 @@ export function IconTile({ icon: Icon, hue = 'violet', size = 56, radius, classN
   );
 }
 
-/* ── Кольцо прогресса (percent+children) — как в Apple Fitness/Activity ── */
-export function Ring({ percent = 0, size = 76, thickness = 7, color = C.lime, track = C.line, children }) {
+/* ── Кольцо прогресса (percent+children) — как в Apple Fitness/Activity.
+   centerBg: цвет «дырки» кольца. По умолчанию белый (кольцо на карточке),
+   на тёмном герое передают forest — иначе внутри белый блин и текст тонет. */
+export function Ring({ percent = 0, size = 76, thickness = 7, color = C.lime, track = C.line, centerBg = C.card, children }) {
   return (
     <span
       className="k-ring shrink-0"
       style={{ width: size, height: size, background: `conic-gradient(${color} ${percent}%, ${track} 0)` }}
     >
-      <i style={{ width: size - thickness * 2, height: size - thickness * 2 }}>{children}</i>
+      <i style={{ width: size - thickness * 2, height: size - thickness * 2, background: centerBg }}>{children}</i>
     </span>
   );
 }
 
-/* ── Кнопка — Apple-нажатие: scale(0.97) на :active, мягкая тень.
-   Раньше — «проседающая» 3D-тень как в играх; убрано по фидбеку. */
+/* ── Кнопка — Apple-нажатие: scale(0.97) на :active. Заливка с едва
+   заметным вертикальным градиентом (объём без «игровой» тени) + тонкий
+   внутренний блик сверху. */
 const BSIZE = {
-  sm: 'px-4 py-2 text-[13.5px] rounded-xl',
+  sm: 'px-4 py-2 text-[13.5px] rounded-[10px]',
   md: 'px-5 py-2.5 text-[14.5px] rounded-xl',
-  lg: 'px-7 py-3.5 text-[16px] rounded-2xl',
+  lg: 'px-7 py-3.5 text-[15.5px] rounded-xl',
 };
 
 export function Button({ hue = 'lime', size = 'md', className = '', disabled, children, ...props }) {
@@ -113,9 +159,11 @@ export function Button({ hue = 'lime', size = 'md', className = '', disabled, ch
       disabled={disabled}
       className={`k-press inline-flex items-center justify-center gap-2 font-bold whitespace-nowrap disabled:cursor-not-allowed ${BSIZE[size] ?? BSIZE.md} ${className}`}
       style={{
-        background: fill,
+        background: disabled ? fill : `linear-gradient(180deg, ${fill}, ${shade(fill, 9)})`,
         color: fg,
-        boxShadow: disabled ? 'none' : `0 1px 2px rgba(18,25,14,0.08), 0 4px 12px ${fill}3d`,
+        boxShadow: disabled
+          ? 'none'
+          : `inset 0 1px 0 rgba(255,255,255,0.22), 0 1px 2px rgba(14,22,12,0.10), 0 6px 16px ${alpha(fill, 22)}`,
       }}
     >
       {children}
@@ -127,20 +175,17 @@ export function Button({ hue = 'lime', size = 'md', className = '', disabled, ch
    Иконка = ребёнок узнаёт раздел по картинке, не читая название. */
 export function PageHeader({ title, subtitle, actions, icon: Icon, hue = 'violet' }) {
   return (
-    <div className="flex items-end justify-between gap-4 flex-wrap mb-5">
-      <div className="flex items-center gap-3.5 min-w-0">
-        {Icon && <IconTile icon={Icon} hue={hue} size={50} />}
+    <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+      <div className="flex items-center gap-3 min-w-0">
+        {Icon && <IconTile icon={Icon} hue={hue} size={44} />}
         <div className="min-w-0">
-          <h1 className="text-[26px] sm:text-[31px] font-extrabold leading-[1.1] tracking-[-0.02em]" style={{ color: C.text }}>
+          <h1 className="k-display text-[23px] sm:text-[27px]" style={{ color: C.forest }}>
             {title}
           </h1>
-          {subtitle && <p className="text-[15px] mt-1 font-semibold" style={{ color: C.muted }}>{subtitle}</p>}
-          {/* Зелёная линия-акцент под заголовком — фирменный цвет LevelUp
-              присутствует на каждой странице, не только в шапке. */}
-          <span className="block w-14 h-[3px] rounded-full mt-2.5" style={{ background: C.lime }} aria-hidden="true" />
+          {subtitle && <p className="text-[13.5px] mt-1 font-semibold" style={{ color: C.muted }}>{subtitle}</p>}
         </div>
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
     </div>
   );
 }
@@ -179,20 +224,24 @@ export function Panel({ title, icon: Icon, hue = 'violet', action, children, bod
 
 /* ── Ярлык ──────────────────────────────────────────────────────────── */
 export function Pill({ hue = 'muted', children, className = '' }) {
+  /* Подложка — прозрачный акцент (сам подстраивается под тему), текст —
+     тёмный лайм/мёд там, где он есть, иначе сам акцент. */
   const map = {
-    lime: { bg: '#E7F0DF', fg: C.limeDk },
-    teal: { bg: '#E0F1EC', fg: '#1F6552' },
-    coral: { bg: '#F5E4DF', fg: '#8C4432' },
-    amber: { bg: '#F3E9D8', fg: '#8A6321' },
-    blue: { bg: '#E1EDF5', fg: '#2E5E85' },
-    violet: { bg: '#E9E6F3', fg: '#514877' },
-    pink: { bg: '#F2E3EA', fg: '#83425B' },
-    muted: { bg: '#EEF1EA', fg: C.muted },
+    lime: { bg: alpha(C.lime, 15), fg: C.limeDk },
+    teal: { bg: alpha(C.teal, 15), fg: C.teal },
+    coral: { bg: alpha(C.coral, 15), fg: C.coral },
+    amber: { bg: C.honeySoft, fg: C.honeyDk },
+    honey: { bg: C.honeySoft, fg: C.honeyDk },
+    blue: { bg: alpha(C.blue, 15), fg: C.blue },
+    violet: { bg: alpha(C.violet, 15), fg: C.violet },
+    pink: { bg: alpha(C.pink, 15), fg: C.pink },
+    forest: { bg: C.forestSoft, fg: C.forest },
+    muted: { bg: alpha(C.muted, 14), fg: C.muted },
   };
   const s = map[hue] ?? map.muted;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 text-[12.5px] font-bold whitespace-nowrap px-2.5 py-1 rounded-lg ${className}`}
+      className={`inline-flex items-center gap-1.5 text-[12px] font-extrabold whitespace-nowrap px-2.5 py-1 rounded-full ${className}`}
       style={{ background: s.bg, color: s.fg }}
     >
       {children}
@@ -203,17 +252,20 @@ export function Pill({ hue = 'muted', children, className = '' }) {
 /* ── Вкладки ────────────────────────────────────────────────────────── */
 export function Tabs({ value, onChange, items }) {
   return (
-    <div className="inline-flex gap-1 p-1 rounded-xl" style={{ background: C.bg }}>
+    <div
+      className="inline-flex gap-0.5 p-1 rounded-full"
+      style={{ background: C.bg, border: `1px solid ${C.line}` }}
+    >
       {items.map((it) => {
         const on = it.value === value;
         return (
           <button
             key={it.value}
             onClick={() => onChange(it.value)}
-            className="k-press-sm px-4 py-2 rounded-lg text-[13.5px] font-bold"
+            className="k-press-sm px-3.5 py-1.5 rounded-full text-[13px] font-extrabold transition-colors"
             style={on
-              ? { background: C.limeSoft, color: C.limeDk, boxShadow: `0 1px 3px ${C.lime}40` }
-              : { background: 'transparent', color: C.muted }}
+              ? { background: C.card, color: C.forest, border: `1px solid ${C.line}`, boxShadow: 'var(--k-e1)' }
+              : { background: 'transparent', color: C.muted, border: '1px solid transparent' }}
           >
             {it.label}
           </button>
@@ -282,25 +334,24 @@ export function Modal({ title, onClose, children }) {
     return () => { document.body.style.overflow = prev; };
   }, []);
   return createPortal(
-    <div className="fixed inset-0 z-[70] grid place-items-center p-4" role="dialog" aria-modal="true">
+    <div className="kid fixed inset-0 z-[70] grid place-items-center p-4" role="dialog" aria-modal="true" style={{ background: 'transparent' }}>
       <button
         className="absolute inset-0 cursor-default"
-        style={{ background: 'rgba(18,25,14,0.4)', backdropFilter: 'blur(3px)' }}
+        style={{ background: C.scrim, backdropFilter: 'blur(3px)' }}
         onClick={onClose}
         aria-label={t.ui.close}
         tabIndex={-1}
       />
-      {/* k-card здесь не подходит: его фон/рамка заданы через CSS-переменные
-          .kid (--k-card, --k-lime-line), а portal рендерит модалку вне .kid —
-          фон стал бы прозрачным. Задаём белую карточку + зелёную окантовку
-          напрямую, из палитры C. */}
+      {/* Токены (--k-*) теперь на :root, поэтому var() резолвится и в portal.
+          Класс .kid на обёртке — ради шрифта; фон обёртки прозрачный, чтобы
+          сетка-текстура .kid не легла поверх затемнения. */}
       <div
         className="relative w-full max-w-md p-6 k-pop-in"
         style={{
           background: C.card,
-          border: `1px solid ${C.limeLine}`,
-          borderRadius: 16,
-          boxShadow: '0 1px 2px rgba(18,25,14,0.04), 0 6px 16px rgba(18,25,14,0.06)',
+          border: `1px solid ${C.line}`,
+          borderRadius: 'var(--k-r-md)',
+          boxShadow: 'var(--k-e3)',
         }}
       >
         <div className="flex items-start justify-between gap-3 mb-5">
@@ -366,7 +417,7 @@ export function Dropzone({ file, onFileChange, disabled, accept }) {
       onDragLeave={() => setDragOver(false)}
       onDrop={(e) => { e.preventDefault(); setDragOver(false); if (!disabled) take(e.dataTransfer.files); }}
       className={`flex flex-col items-center justify-center text-center rounded-2xl border-2 border-dashed transition-colors px-5 py-8 ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-      style={{ borderColor: dragOver ? C.lime : C.line, background: dragOver ? `${C.lime}14` : C.bg }}
+      style={{ borderColor: dragOver ? C.lime : C.line, background: dragOver ? alpha(C.lime, 9) : C.bg }}
     >
       <IconTile icon={UploadCloud} hue="lime" size={48} />
       <p className="text-[13.5px] font-bold mt-3" style={{ color: C.text }}>
@@ -403,7 +454,7 @@ export function StreakFlame({ days, hue = 'coral' }) {
       style={{ background: 'rgba(0,0,0,0.2)' }}
       title={t.ui.streakTitle(days)}
     >
-      <span className="w-7 h-7 rounded-full grid place-items-center shrink-0" style={{ background: lit ? `${fill}40` : 'transparent' }}>
+      <span className="w-7 h-7 rounded-full grid place-items-center shrink-0" style={{ background: lit ? alpha(fill, 25) : 'transparent' }}>
         <Flame size={14} strokeWidth={2.4} color={lit ? fill : 'rgba(255,255,255,0.5)'} fill={lit ? fill : 'transparent'} />
       </span>
       <span className="k-num text-[15px]" style={{ color: lit ? '#fff' : 'rgba(255,255,255,0.5)' }}>{days}</span>
@@ -428,7 +479,7 @@ export function LevelBar({ level, progress, hue = 'lime', size = 'md' }) {
     <div className="flex items-center gap-3 w-full">
       <span
         className="shrink-0 grid place-items-center rounded-lg k-num text-[12px]"
-        style={{ width: 28, height: 28, background: `${fill}1c`, color: fill }}
+        style={{ width: 28, height: 28, background: alpha(fill, 12), color: fill }}
       >
         {level}
       </span>
@@ -529,7 +580,7 @@ export function SurpriseCard() {
       type="button"
       onClick={() => setOpen((v) => !v)}
       className="k-card k-press w-full text-left p-4 flex items-center gap-4"
-      style={{ background: open ? `${C.violet}0f` : C.card }}
+      style={{ background: open ? alpha(C.violet, 6) : C.card }}
     >
       <IconTile icon={Sparkles} hue="violet" size={44} />
       <div className="min-w-0 flex-1">

@@ -29,7 +29,6 @@ import StudentShop from './student/pages/Shop.jsx';
 import StudentLeaderboard from './student/pages/Leaderboard.jsx';
 import StudentAnnouncements from './student/pages/Announcements.jsx';
 import StudentChat from './student/pages/Chat.jsx';
-import LanguageSwitcher from './components/LanguageSwitcher.jsx';
 
 function Protected({ children }) {
   const { token } = useAuth();

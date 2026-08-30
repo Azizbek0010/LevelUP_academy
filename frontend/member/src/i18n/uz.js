@@ -42,6 +42,7 @@ export default {
     notifications: 'Bildirishnomalar',
     noNotifsTitle: 'Hozircha bildirishnoma yo‘q',
     noNotifsText: 'Bu yerda to‘lov va maktab e’lonlari haqida eslatmalar chiqadi.',
+    allAnnouncements: 'Barcha e’lonlar',
     student: "O'QUVCHI",
     studentRole: "O'quvchi",
     logout: 'Hisobdan chiqish',
@@ -67,6 +68,20 @@ export default {
 
   langSwitch: {
     label: 'Til',
+  },
+
+  theme: {
+    label: 'Mavzu',
+    light: 'Yorug‘',
+    dark: 'Tungi',
+    system: 'Tizim bo‘yicha',
+  },
+
+  overdue: {
+    title: 'Kirish vaqtincha to‘xtatildi',
+    body: 'Hisobingda muddati o‘tgan qarz bor',
+    hint: 'Kabinet to‘lovdan so‘ng darhol ochiladi — o‘quv markazi administratoriga murojaat qil.',
+    logout: 'Chiqish',
   },
 
   ui: {
@@ -266,9 +281,9 @@ export default {
 
   testTake: {
     title: 'Test',
+    eyebrow: 'Test',
     questions: '{n} ta savol · {minutes} daqiqa',
     reward: '50% dan yuqori natija uchun +{n} tanga',
-    timerNotice: 'Vaqt darhol boshlanadi — chiqib qaytib bo‘lmaydi.',
     back: 'Orqaga',
     start: 'Testni boshlash',
     testPassed: 'Test topshirildi!',
@@ -279,8 +294,28 @@ export default {
     attemptDone: 'Urinish yakunlandi',
     toList: 'Testlar ro‘yxatiga',
     timeUp: 'Vaqt tugadi — javoblar qabul qilinmadi',
-    answered: 'Javob berildi',
-    finish: 'Testni yakunlash',
+    question: 'Savol {n}/{total}',
+    prev: 'Oldingi',
+    next: 'Keyingi',
+    review: 'Ko‘rib chiqish',
+    submitNow: 'Yakunlash',
+    reviewTitle: 'Yakunlashdan oldin',
+    unansweredWarn: '{n} ta savol javobsiz qoldi',
+    allAnswered: 'Hamma savolga javob berildi',
+    keepGoing: 'Davom etish',
+    rulesTitle: 'Test qoidalari',
+    rule1: 'Test to‘liq ekranda ochiladi',
+    rule2: 'Test oynasidan chiqma — boshqa ilova, oyna yoki skrinshot',
+    rule3: '{n} marta chiqsang, test avtomatik yakunlanadi',
+    proctorWarnTitle: 'Diqqat — test oynasidan chiqildi',
+    proctorWarnBody: 'Yana {n} marta chiqsang, test avtomatik yakunlanadi.',
+    proctorLastTitle: 'Oxirgi ogohlantirish',
+    proctorLastBody: 'Keyingi chiqishda test avtomatik topshiriladi.',
+    fsTitle: 'To‘liq ekran talab qilinadi',
+    fsBody: 'Testni davom ettirish uchun to‘liq ekranga qayt.',
+    fsButton: 'To‘liq ekranga qaytish',
+    autoSubmittedBody: 'Qoidalar buzilgani uchun test avtomatik topshirildi.',
+    understood: 'Tushunarli',
   },
 
   homework: {
@@ -429,6 +464,7 @@ export default {
       invalid: "Login-kod yoki parol noto'g'ri",
       rateLimit: "Juda ko'p urinish — keyinroq urinib ko'ring",
       generic: "Kirib bo'lmadi",
+      network: "Server bilan aloqa yo'q — internetni tekshirib, qaytadan urinib ko'ring",
       tgFailed: "Telegram orqali kirib bo'lmadi — keyinroq urinib ko'ring",
       tgExpired: "Telegram orqali kirish muddati tugadi — qaytadan urinib ko'ring",
     },

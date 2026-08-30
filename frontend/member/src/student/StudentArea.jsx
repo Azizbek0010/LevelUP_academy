@@ -5,6 +5,7 @@ import { fmtMoney } from './format.js';
 import { useI18n } from '../i18n/index.jsx';
 import { setAccessToken, setOnPaymentOverdue, setOnSessionExpired } from './api.js';
 import { Button } from './components/ui.jsx';
+import { KidThemeProvider } from './theme.jsx';
 
 function InfoScreen({ title, children, action }) {
   return (
@@ -22,17 +23,15 @@ function InfoScreen({ title, children, action }) {
 /** 402 от blockIfOverdue — просроченный счёт закрывает весь кабинет студента до оплаты. */
 function PaymentOverdue({ amount, onLogout }) {
   const { lang, t } = useI18n();
-  const uz = lang === 'uz';
+  const o = t.overdue;
   return (
     <InfoScreen
-      title={uz ? 'Kirish vaqtincha to‘xtatildi' : 'Доступ приостановлен'}
-      action={<Button hue="muted" onClick={onLogout}>{uz ? 'Chiqish' : 'Выйти'}</Button>}
+      title={o.title}
+      action={<Button hue="muted" onClick={onLogout}>{o.logout}</Button>}
     >
-      {uz ? 'Hisobingda muddati o‘tgan qarz bor' : 'По твоему счёту есть просроченная задолженность'}
+      {o.body}
       {amount ? <> — <b className="text-base-content">{fmtMoney(amount, lang)}</b></> : null}.
-      {uz
-        ? ' Kabinet to‘lovdan so‘ng darhol ochiladi — o‘quv markazi administratoriga murojaat qil.'
-        : ' Кабинет откроется сразу после оплаты — обратись к администратору учебного центра.'}
+      {' '}{o.hint}
     </InfoScreen>
   );
 }
@@ -56,7 +55,9 @@ export default function StudentArea() {
     setOnSessionExpired(() => logout());
   }, [logout]);
 
-  if (overdue) return <PaymentOverdue amount={overdue.amount} onLogout={logout} />;
-
-  return <Outlet />;
+  return (
+    <KidThemeProvider>
+      {overdue ? <PaymentOverdue amount={overdue.amount} onLogout={logout} /> : <Outlet />}
+    </KidThemeProvider>
+  );
 }

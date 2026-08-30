@@ -1,6 +1,12 @@
 const API_BASE = typeof import.meta !== 'undefined' ? import.meta.env.VITE_API_URL || '' : '';
+// По умолчанию — РЕАЛЬНЫЙ бэкенд (dev-прокси Vite → Render), моки только по
+// явному VITE_USE_MOCKS=true. Раньше здесь было наоборот («моки, если не
+// задано false»), а student/api.js уже перешёл на «реальный по умолчанию» —
+// из-за рассинхрона логин шёл через мок (выдавал фейковый accessToken), а
+// первый же запрос кабинета студента бил в настоящий бэкенд с этим фейком и
+// получал «Invalid or expired token» (2026-08-30, Abduloh).
 const USE_MOCKS =
-  typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS !== 'false' : true;
+  typeof import.meta !== 'undefined' ? import.meta.env.VITE_USE_MOCKS === 'true' : false;
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
 

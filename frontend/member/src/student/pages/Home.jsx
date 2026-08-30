@@ -9,7 +9,7 @@ import { useAuth } from '../../auth.jsx';
 import { useToast } from '../components/toast.jsx';
 import { fmt, useI18n } from '../../i18n/index.jsx';
 import {
-  IconTile, Ring, Button, Pill, Tabs, RowSkeleton, EmptyState, ErrorState, Avatar, C,
+  IconTile, Ring, Button, Pill, Tabs, RowSkeleton, EmptyState, ErrorState, Avatar, C, alpha,
   CountUp, ConfettiBurst, SurpriseCard, LevelBar, levelFromCoins,
 } from '../components/ui.jsx';
 import { useDailyStreak } from '../useDailyStreak.js';
@@ -35,9 +35,9 @@ import { isLessonCompleted } from './TopicDetail.jsx';
    "что делать сегодня", вместо сетки одинаковых плиток. */
 function FeaturedTask({ icon, hue, eyebrow, title, meta, cta, to }) {
   return (
-    <Link to={to} className="k-card k-hover k-pop-in block p-5 sm:p-6 relative overflow-hidden">
-      <div className="flex items-center gap-4">
-        <IconTile icon={icon} hue={hue} size={58} />
+    <Link to={to} className="k-card k-hover k-pop-in block p-4 sm:p-5 relative overflow-hidden">
+      <div className="flex items-center gap-3.5">
+        <IconTile icon={icon} hue={hue} size={52} />
         <div className="min-w-0 flex-1">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.08em]" style={{ color: HUES_TEXT[hue] }}>
             {eyebrow}
@@ -105,7 +105,7 @@ function RatingRows({ rows, userId, t }) {
     <>
       {rows.slice(0, 5).map((r, i) => {
         const me = r.studentId === userId;
-        const medal = [C.lime, '#FFB300', C.blue][i];
+        const medal = [C.lime, C.gold, C.blue][i];
         return (
           <div
             key={r.studentId ?? i}
@@ -115,7 +115,7 @@ function RatingRows({ rows, userId, t }) {
             <span
               className="w-7 h-7 rounded-lg grid place-items-center k-num text-[13px] shrink-0"
               style={medal
-                ? { background: medal, color: medal === '#FFB300' ? '#4A3400' : '#fff' }
+                ? { background: medal, color: medal === C.gold ? C.ink : '#fff' }
                 : { background: C.bg, color: C.muted }}
             >
               {r.rank ?? i + 1}
@@ -129,7 +129,7 @@ function RatingRows({ rows, userId, t }) {
             </div>
             <span className="k-num text-[14.5px] flex items-center gap-1.5 shrink-0" style={{ color: C.text }}>
               <CountUp value={Number(r.coins) || 0} />
-              <Star size={13} strokeWidth={2.2} color={C.lime} />
+              <Star size={13} strokeWidth={2.2} fill={C.honey} color={C.honey} />
             </span>
           </div>
         );
@@ -238,13 +238,18 @@ export default function Home() {
   return (
     <>
       {data?.payment?.currentInvoice && (
-        <div className="k-card p-4 mb-4 flex flex-col sm:flex-row sm:items-center gap-3" style={{ borderLeft: '4px solid #f59e0b' }}>
-          <Wallet size={22} style={{ color: '#d97706' }} />
+        <div
+          className="k-card k-rail k-rail-honey p-4 mb-4 flex flex-col sm:flex-row sm:items-center gap-3"
+          style={{ background: C.honeySoft, borderColor: alpha(C.honey, 30) }}
+        >
+          <span className="w-9 h-9 rounded-xl grid place-items-center shrink-0" style={{ background: alpha(C.honey, 18), color: C.honeyDk }}>
+            <Wallet size={18} strokeWidth={2.4} />
+          </span>
           <div className="flex-1">
-            <div className="font-extrabold" style={{ color: C.text }}>
+            <div className="font-extrabold text-[14px]" style={{ color: C.honeyDk }}>
               {t.home.paymentTitle}
             </div>
-            <div className="text-sm" style={{ color: C.muted }}>
+            <div className="text-[13px] font-semibold" style={{ color: C.honeyDk }}>
               {fmt(t.home.paymentDue, {
                 lessons: data.payment.currentInvoice.billableLessons ?? '—',
                 sum: `${Math.round(data.payment.currentInvoice.remainingAmount).toLocaleString(lang === 'uz' ? 'uz-UZ' : lang === 'en' ? 'en-US' : 'ru-RU')} ${t.home.currency}`,
@@ -253,32 +258,50 @@ export default function Home() {
           </div>
         </div>
       )}
-      {/* ══ Герой: цветной баннер — уровень, место в рейтинге, стрик ══ */}
+
+      {/* ══ Герой: тёмный лес — та же точка, что якорит шапку. Кольцо
+          уровня крупно, тёплый мёд на «сколько до следующего».
+          Многослойный фон (градиент + два радиальных пятна) + хайрлайн —
+          в тёмной теме отделяет героя от почти такого же тёмного фона. ══ */}
       <div
-        className="p-5 sm:p-6 mb-4 relative overflow-hidden rounded-2xl"
-        style={{ background: `linear-gradient(135deg, ${C.lime}, ${C.limeDk})` }}
+        className="p-5 sm:p-7 mb-4 relative overflow-hidden rounded-[22px]"
+        style={{
+          background: `linear-gradient(158deg, var(--k-hero-1) 0%, var(--k-hero-2) 100%)`,
+          border: '1px solid rgba(255,255,255,0.09)',
+          boxShadow: 'var(--k-e2)',
+        }}
       >
         <ConfettiBurst fireKey={celebrate} />
-        <span className="absolute -right-8 -top-10 w-40 h-40 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} aria-hidden="true" />
-        <span className="absolute right-16 -bottom-12 w-28 h-28 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }} aria-hidden="true" />
-        <div className="relative flex items-center gap-4 sm:gap-5 flex-wrap sm:flex-nowrap">
-          <Ring percent={Math.round(progress * 100)} size={82} thickness={6} color="#fff" track="rgba(255,255,255,0.28)">
+        {/* мягкое пятно света из-за кольца + холодный блик в дальнем углу */}
+        <span
+          className="absolute -left-12 -top-16 w-60 h-60 rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(222,149,38,0.22), transparent 70%)' }}
+          aria-hidden="true"
+        />
+        <span
+          className="absolute -right-16 -bottom-20 w-64 h-64 rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(120,190,90,0.12), transparent 70%)' }}
+          aria-hidden="true"
+        />
+        <div className="relative flex items-center gap-5 sm:gap-6 flex-wrap sm:flex-nowrap">
+          <Ring percent={Math.round(progress * 100)} size={92} thickness={8} color={C.honey} track="rgba(255,255,255,0.16)" centerBg="var(--k-hero-1)">
             <div className="text-center leading-none">
-              <div className="k-num text-[21px]" style={{ color: C.limeDk }}>{level}</div>
+              <div className="k-num text-[28px] text-white">{level}</div>
+              <div className="mt-0.5 font-extrabold" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8.5, letterSpacing: '0.16em' }}>LVL</div>
             </div>
           </Ring>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: 'rgba(255,255,255,0.75)' }}>
+            <div className="k-eyebrow" style={{ color: 'rgba(255,255,255,0.58)' }}>
               {fmt(t.home.hello, { name: user?.firstName || t.home.defaultName })}
             </div>
-            <h1 className="text-[22px] sm:text-[25px] font-extrabold leading-[1.15] tracking-[-0.01em] mt-1 text-white">
+            <h1 className="k-display text-[22px] sm:text-[26px] mt-1.5 text-white">
               {fmt(t.home.levelTitle, { level })}
             </h1>
-            <p className="text-[13px] font-semibold mt-0.5" style={{ color: 'rgba(255,255,255,0.8)' }}>
+            <p className="text-[13px] font-semibold mt-1.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
               {fmt(t.home.coinsToNext, { n: toNext, level: level + 1 })}
             </p>
           </div>
-          <div className="flex items-center gap-4 sm:gap-5 shrink-0">
+          <div className="flex items-center gap-5 shrink-0">
             {rank && (
               <StatChip icon={TrendingUp} label={t.home.placeWeek}>
                 #{rank}

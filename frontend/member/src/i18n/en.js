@@ -42,6 +42,7 @@ export default {
     notifications: 'Notifications',
     noNotifsTitle: 'No notifications yet',
     noNotifsText: 'Payment reminders and school announcements will show up here.',
+    allAnnouncements: 'All announcements',
     student: 'STUDENT',
     studentRole: 'Student',
     logout: 'Log out',
@@ -67,6 +68,20 @@ export default {
 
   langSwitch: {
     label: 'Language',
+  },
+
+  theme: {
+    label: 'Theme',
+    light: 'Light',
+    dark: 'Dark',
+    system: 'System',
+  },
+
+  overdue: {
+    title: 'Access paused',
+    body: 'Your account has an overdue balance',
+    hint: 'Your cabinet opens right after payment — contact your learning center administrator.',
+    logout: 'Log out',
   },
 
   ui: {
@@ -266,9 +281,9 @@ export default {
 
   testTake: {
     title: 'Test',
+    eyebrow: 'Test',
     questions: '{n} questions · {minutes} minutes',
     reward: '+{n} coins for a result of 50% or more',
-    timerNotice: 'The timer starts right away — you can’t leave and come back.',
     back: 'Back',
     start: 'Start test',
     testPassed: 'Test passed!',
@@ -279,8 +294,28 @@ export default {
     attemptDone: 'Attempt finished',
     toList: 'Back to test list',
     timeUp: 'Time’s up — answers were not accepted',
-    answered: 'Answered',
-    finish: 'Finish test',
+    question: 'Question {n}/{total}',
+    prev: 'Previous',
+    next: 'Next',
+    review: 'Review',
+    submitNow: 'Finish',
+    reviewTitle: 'Before you finish',
+    unansweredWarn: '{n} left unanswered',
+    allAnswered: 'Every question has an answer',
+    keepGoing: 'Keep going',
+    rulesTitle: 'Test rules',
+    rule1: 'The test opens in fullscreen',
+    rule2: 'Don’t leave the test window — other apps, windows or screenshots',
+    rule3: 'After {n} exits the test submits automatically',
+    proctorWarnTitle: 'Heads up — you left the test window',
+    proctorWarnBody: '{n} more exits and the test submits automatically.',
+    proctorLastTitle: 'Final warning',
+    proctorLastBody: 'The next exit submits the test automatically.',
+    fsTitle: 'Fullscreen required',
+    fsBody: 'Return to fullscreen to continue the test.',
+    fsButton: 'Back to fullscreen',
+    autoSubmittedBody: 'The test was submitted automatically due to a rule violation.',
+    understood: 'Got it',
   },
 
   homework: {
@@ -429,6 +464,7 @@ export default {
       invalid: 'Invalid login code or password',
       rateLimit: 'Too many attempts — try later',
       generic: 'Could not sign in',
+      network: 'No connection to the server — check your internet and try again',
       tgFailed: 'Could not sign in via Telegram — try again later',
       tgExpired: 'Telegram sign-in has expired — try again',
     },

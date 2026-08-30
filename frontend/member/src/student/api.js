@@ -434,8 +434,15 @@ export const api = {
   tests: () => request('/student/tests'),
   test: (testId) => request(`/student/tests/${testId}`),
   startTest: (testId) => request(`/student/tests/${testId}/start`, { method: 'POST' }),
-  submitTest: (testId, answers) =>
-    request(`/student/tests/${testId}/submit`, { method: 'POST', body: { answers } }),
+  /* violations — журнал нарушений proctoring кабинета (выход из fullscreen,
+     потеря фокуса вкладки). Бэкенд сейчас поле игнорирует; TODO для
+     Sardor/Karis: писать в test_attempts.violations, при превышении порога —
+     флаг ментору. Клиент шлёт всегда, чтобы контракт был готов. */
+  submitTest: (testId, answers, violations) =>
+    request(`/student/tests/${testId}/submit`, {
+      method: 'POST',
+      body: violations?.length ? { answers, violations } : { answers },
+    }),
 
   // -------- STUDENT: Homework --------
   homework: () => request('/student/homework'),
