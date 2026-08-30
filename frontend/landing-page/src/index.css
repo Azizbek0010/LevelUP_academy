@@ -2044,7 +2044,7 @@ h1, h2, h3, h4, .display {
 .header__cta.btn--dark { color: var(--text); background: var(--accent); }
 .header__cta.btn--dark:hover { color: var(--text); background: #d1ff58; }
 @media (max-width: 1080px) and (min-width: 821px) { .header .nav { gap: 16px; } }
-@media (max-width: 820px) { .header__inner { padding: 0 12px; border-color: rgba(255,255,255,.08); border-radius: 17px; background: #192217; } .header .header__logo { color: #fff; } .header .burger { border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.07); } .header .burger span { background: #fff; } }
+@media (max-width: 820px) { .header__inner { padding: 0 12px; border-color: rgba(255,255,255,.08); border-radius: 17px; background: #192217; } .header .header__logo { color: #fff; } .header .burger { border: 0; background: transparent; } .header .burger span { background: #fff; } }
 
 /* Header overlays the first screen: no empty strip behind it */
 .header { position: fixed; top: 0; right: 0; left: 0; width: 100%; }
