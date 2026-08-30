@@ -178,7 +178,7 @@ export default function Features() {
           </h2>
         </div>
         {pendingLoading ? (
-          <div className="p-5"><SkeletonList count={2} /></div>
+          <div className="p-5"><SkeletonList rows={2} /></div>
         ) : !pending?.length ? (
           <div className="text-sm text-base-content/40 p-6 text-center">Нет заявок</div>
         ) : (
@@ -197,7 +197,7 @@ export default function Features() {
         </div>
         <NewFeatureForm token={token} invalidate={invalidate} />
         {catalogLoading ? (
-          <div className="p-5"><SkeletonList count={3} /></div>
+          <div className="p-5"><SkeletonList rows={3} /></div>
         ) : !catalog?.length ? (
           <div className="text-sm text-base-content/40 p-6 text-center">Каталог пуст</div>
         ) : (
