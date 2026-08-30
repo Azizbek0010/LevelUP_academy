@@ -622,7 +622,12 @@ h1, h2, h3, h4, .display {
   gap: 16px;
 }
 
-.roles > * {
+/* :not(.roles--orbit) — this flex-basis is sized for the flat 6-card
+   gallery. The orbit variant (roles hub + two side lists) reuses the
+   .roles class but is a different layout with its own explicit sizing;
+   without the guard this rule turns the round hub badge into an oval on
+   any width where the orbit switches to display:flex (see below). */
+.roles:not(.roles--orbit) > * {
   flex: 0 1 calc((100% - 80px) / 6);
 }
 
@@ -1445,7 +1450,7 @@ h1, h2, h3, h4, .display {
     grid-template-columns: 1fr;
   }
 
-  .roles > * {
+  .roles:not(.roles--orbit) > * {
     flex-basis: calc((100% - 16px) / 2);
   }
 
@@ -1487,7 +1492,7 @@ h1, h2, h3, h4, .display {
   .cards-3 > *,
   .cards-2 > *,
   .steps > *,
-  .roles > * {
+  .roles:not(.roles--orbit) > * {
     flex-basis: 100%;
   }
 
