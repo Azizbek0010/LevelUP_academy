@@ -18,7 +18,7 @@ import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis, SkeletonList } from '../components/Skeleton.jsx';
-import { Modal, ConfirmDialog, Avatar, Kpi, CHART_PRIMARY, CHART_SERIES } from '../components/_ui.jsx';
+import { Modal, ConfirmDialog, Avatar, CHART_PRIMARY, CHART_SERIES } from '../components/_ui.jsx';
 import ActionCenterPanel from '../components/ActionCenterPanel.jsx';
 import { useDashboardLive } from '../socket.js';
 
@@ -119,10 +119,14 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
   const invalidate = useInvalidate();
 
   // Реально собранные платежи (не путать с ourMonthlyIncome выше — тот
-  // считается «здесь и сейчас» по тарифам активных партнёров, это — то, что
-  // фактически пришло по месяцам, с историей для спарклайна и трендом).
+  // считается «здесь и сейчас» по тарифам активных партнёров, это — то,
+  // что фактически пришло по месяцам). Раньше карточка стояла отдельно
+  // в правой колонке специально ради спарклайна по finance.trend — но
+  // третья карточка там делала колонку заметно длиннее графика слева,
+  // и разница высот вскрывалась пустым фоном страницы. Теперь это плоская
+  // MetricCell в общей ленте сверху (не поддерживает спарклайн) — trend
+  // (дельта в %) при этом остался настоящим, только линия графика ушла.
   const { data: finance, isLoading: financeLoading } = useFinance();
-  const financeTrend = (finance?.trend || []).slice(-6).map((m) => m.revenue);
   const collectedThisMonth = finance?.thisMonth?.revenue ?? 0;
   const collectedLastMonth = finance?.lastMonth?.revenue ?? 0;
   const collectedDelta = collectedLastMonth > 0
@@ -202,18 +206,35 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         </div>
       )}
 
-      <div className="grid overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-[0_2px_12px_rgba(29,36,23,0.04)] sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-[0_2px_12px_rgba(29,36,23,0.04)] sm:grid-cols-2 lg:grid-cols-5">
         <MetricCell Icon={Wallet} label="Доход / месяц" value={fmt(t.ourMonthlyIncome)} meta={`${cur} · ${activeCount} активных`} onClick={() => setModal('income')} />
         <MetricCell Icon={Building2} label="Партнёры" value={fmt(t.partners)} meta={`${activeShare}% активны`} onClick={() => setModal('partners')} />
         <MetricCell Icon={GraduationCap} label="Ученики" value={fmt(t.students)} meta={`${partners.length ? Math.round(t.students / partners.length) : 0} в среднем`} onClick={() => setModal('students')} />
         <MetricCell Icon={Store} label="Филиалы" value={fmt(t.branches)} meta={`${partners.length ? (t.branches / partners.length).toFixed(1) : 0} на партнёра`} onClick={() => setModal('branches')} />
+        {/* «Собрано за месяц» — раньше отдельной карточкой в правой колонке
+            (см. историю коммитов): третья карточка делала правую колонку
+            заметно длиннее графика слева, а с items-start (нужен сам по
+            себе — без него колонки растягивались друг под друга) разница
+            высот обнажалась пустым фоном страницы под графиком. Здесь,
+            в плоской ленте, высоты не зависят от количества карточек. */}
+        {financeLoading ? (
+          <div className="border-b border-base-300 p-3.5 sm:border-r lg:border-b-0 last:border-r-0">
+            <div className="skeleton h-8 w-8 rounded-md mb-3" />
+            <div className="skeleton h-6 w-20 mb-1" />
+            <div className="skeleton h-3 w-14" />
+          </div>
+        ) : finance && (
+          <MetricCell
+            Icon={Landmark}
+            label="Собрано за месяц"
+            value={fmt(collectedThisMonth)}
+            meta={collectedDelta == null ? `${cur} · факт оплат` : `${collectedDelta >= 0 ? '+' : ''}${collectedDelta.toFixed(0)}% к прошлому`}
+            trend={collectedDelta}
+            to="/revenue"
+          />
+        )}
       </div>
 
-      {/* items-start — по умолчанию grid растягивает обе колонки под высоту
-          более высокой (stretch), а график внутри левой карточки — фиксированные
-          240px. Когда в правой колонке появилась ещё одна карточка («Собрано
-          за месяц»), левая вытянулась вслед за ней, оставив пустой хвост под
-          графиком — прямая противоположность просьбе «без пустых мест». */}
       <div className="grid items-start lg:grid-cols-3 gap-6">
         <div className="card overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)] lg:col-span-2">
           <div className="card-body p-5 sm:p-6">
@@ -263,41 +284,6 @@ function Loaded({ data, recentLeads, newLeadsCount, allLeadsCount }) {
         </div>
 
         <div className="flex flex-col gap-5">
-          {/* Фактически собранные платежи — другая метрика, чем «Доход /
-              месяц» выше (тот считается по текущим тарифам активных
-              партнёров прямо сейчас, это — реальные поступления по
-              месяцам из /main/finance). Поэтому не в общей плоской сетке
-              KPI, а отдельной карточкой: у неё есть история (спарклайн)
-              и своя логика перехода, кликабельные KPI выше её не имеют. */}
-          {financeLoading ? (
-            // Свой скелет на месте будущей карточки — без него /main/finance
-            // (отдельный от дашборда запрос) дотягивает позже, и карточка
-            // впрыгивает сверху колонки уже ПОСЛЕ первой отрисовки, двигая
-            // «По статусам»/«Активные заявки» вниз (layout shift).
-            <div className="card rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)]">
-              <div className="p-4 space-y-3">
-                <div className="skeleton h-8 w-8 rounded-md" />
-                <div className="skeleton h-7 w-28" />
-                <div className="skeleton h-3 w-16" />
-              </div>
-            </div>
-          ) : finance && (
-            <Kpi
-              Icon={Landmark}
-              title="Собрано за месяц"
-              value={fmt(collectedThisMonth)}
-              unit={cur}
-              trend={collectedDelta}
-              trendLabel="к прошлому месяцу"
-              sparkline={financeTrend}
-              to="/revenue"
-              // Тот же язык, что у «По статусам»/«Активные заявки» и у
-              // карточки графика слева (rounded-xl, border-base-300, та же
-              // тень) — иначе Kpi (со своим более лёгким дефолтом) торчит
-              // единственной другой по стилю карточкой в колонке.
-              cardClassName="rounded-xl border-base-300 shadow-[0_4px_24px_rgba(29,36,23,0.05)]"
-            />
-          )}
           {pieData.length > 0 && (
             <div className="card rounded-xl border border-base-300 bg-base-100 shadow-[0_4px_24px_rgba(29,36,23,0.05)]">
               <div className="card-body p-5">
