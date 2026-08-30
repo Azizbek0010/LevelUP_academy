@@ -48,7 +48,6 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function Dashboard() {
   const { data, isLoading, error, refetch } = useDashboard();
   const { data: allLeads } = useLeads();
-  const today = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
   const recentLeads = useMemo(
     () => (allLeads || [])
@@ -72,9 +71,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5">
-      <div className="border-b border-base-300 pb-4">
-        <PageHeader title="Обзор" subtitle={<span className="capitalize">{today} · ключевые показатели платформы</span>} />
-      </div>
+      <PageHeader title="Обзор" />
 
       <ActionCenterPanel />
 
