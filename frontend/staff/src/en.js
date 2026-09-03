@@ -731,6 +731,7 @@ const en = {
   'methodist.types.no_types_hint': "Create the first type to start adding content",
   'methodist.types.create_first': "Create first type",
   'methodist.types.topics_count': "{{count}} topics",
+  'methodist.types.description': "Description",
   'methodist.types.description_short': "description",
   'methodist.types.archive_tooltip': "Archive",
   'methodist.types.open_topics': "Open topics",

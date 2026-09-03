@@ -731,6 +731,7 @@ const ru = {
   'methodist.types.no_types_hint': "Создайте первый тип, чтобы начать наполнять контентом",
   'methodist.types.create_first': "Создать первый тип",
   'methodist.types.topics_count': "{{count}} тем",
+  'methodist.types.description': "Описание",
   'methodist.types.description_short': "описание",
   'methodist.types.archive_tooltip': "Архивировать",
   'methodist.types.open_topics': "Открыть темы",
