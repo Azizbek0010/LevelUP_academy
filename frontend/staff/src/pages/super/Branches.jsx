@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Plus, Building2, AlertTriangle } from 'lucide-react';
 import { fmt, money } from '../../format.js';
 import { useSuperBranches } from '../../queries.js';
@@ -19,13 +20,14 @@ import { Card, SearchInput, EmptyState } from './_ui.jsx';
  */
 
 export default function SuperBranches() {
+  const { t } = useTranslation();
   const { data, isLoading, error, refetch } = useSuperBranches();
   const [q, setQ] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
-    document.title = 'Филиалы | LevelUp Academy';
-  }, []);
+    document.title = t('super.branches.docTitle');
+  }, [t]);
 
   const branches = data?.branches || [];
   const rows = branches.filter(
@@ -47,9 +49,9 @@ export default function SuperBranches() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Филиалы" subtitle="Управление филиалами организации">
+      <PageHeader title={t('super.branches.title')} subtitle={t('super.branches.subtitle')}>
         <button className="btn btn-primary btn-sm gap-1.5" onClick={() => setCreateOpen(true)}>
-          <Plus size={16} /> Новый филиал
+          <Plus size={16} /> {t('super.branches.newBranch')}
         </button>
       </PageHeader>
 
@@ -57,11 +59,11 @@ export default function SuperBranches() {
         <Card className="max-w-lg mx-auto mt-6">
           <EmptyState
             icon={AlertTriangle}
-            title="Ошибка загрузки филиалов"
-            hint={error.message || 'Произошла непредвиденная ошибка при запросе к серверу.'}
+            title={t('super.branches.loadErrorTitle')}
+            hint={error.message || t('super.branches.loadErrorHint')}
             action={
               <button className="btn btn-primary btn-sm px-6" onClick={() => refetch()}>
-                Повторить попытку
+                {t('super.branches.retry')}
               </button>
             }
           />
@@ -74,14 +76,14 @@ export default function SuperBranches() {
             <SearchInput
               value={q}
               onChange={setQ}
-              placeholder="Поиск филиалов…"
+              placeholder={t('super.branches.searchPlaceholder')}
               className="max-w-xs"
             />
             {topEarner && (topEarner.revenue > 0 || (topSpender && topSpender.expenses > 0)) && (
               <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
                 {topEarner.revenue > 0 && (
                   <span className="text-base-content/60">
-                    Больше всех зарабатывает:{' '}
+                    {t('super.branches.topEarner')}{' '}
                     <Link to={`/branches/${topEarner.id}`} className="font-bold text-success hover:underline">
                       {topEarner.name}
                     </Link>{' '}
@@ -90,7 +92,7 @@ export default function SuperBranches() {
                 )}
                 {topSpender && topSpender.expenses > 0 && (
                   <span className="text-base-content/60">
-                    Больше всех тратит:{' '}
+                    {t('super.branches.topSpender')}{' '}
                     <Link to={`/branches/${topSpender.id}`} className="font-bold hover:underline">
                       {topSpender.name}
                     </Link>{' '}
@@ -105,12 +107,12 @@ export default function SuperBranches() {
             <Card className="border-dashed">
               <EmptyState
                 icon={Building2}
-                title="Нет филиалов"
-                hint={q ? 'По вашему запросу ничего не найдено. Попробуйте изменить поисковый запрос.' : 'Филиалов пока нет. Создайте первый филиал, чтобы начать работу.'}
+                title={t('super.branches.emptyTitle')}
+                hint={q ? t('super.branches.emptySearchHint') : t('super.branches.emptyHint')}
                 action={
                   !q && (
                     <button className="btn btn-primary btn-sm gap-1.5" onClick={() => setCreateOpen(true)}>
-                      <Plus size={16} /> Создать первый филиал
+                      <Plus size={16} /> {t('super.branches.createFirst')}
                     </button>
                   )
                 }
@@ -130,40 +132,40 @@ export default function SuperBranches() {
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="font-semibold truncate">{b.name}</span>
                       <span className="text-xs text-base-content/45 shrink-0">
-                        {b.isArchived ? 'в архиве' : b.isMain ? 'главный' : ''}
+                        {b.isArchived ? t('super.branches.archivedBadge') : b.isMain ? t('super.branches.mainBadge') : ''}
                       </span>
                     </div>
 
                     <div className="text-xs text-base-content/50 space-y-0.5">
-                      <div className="truncate">{b.address || 'адрес не указан'}</div>
-                      <div>{b.phone ? phoneDisplay(b.phone) : 'телефон не указан'}</div>
+                      <div className="truncate">{b.address || t('super.branches.addressNotSpecified')}</div>
+                      <div>{b.phone ? phoneDisplay(b.phone) : t('super.branches.phoneNotSpecified')}</div>
                     </div>
 
                     <dl className="grid grid-cols-3 gap-y-2 text-sm">
                       <div>
-                        <dt className="text-xs text-base-content/45">Ученики</dt>
+                        <dt className="text-xs text-base-content/45">{t('super.branches.colStudents')}</dt>
                         <dd className="font-semibold tabular-nums">{fmt(b.students)}</dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-base-content/45">Группы</dt>
+                        <dt className="text-xs text-base-content/45">{t('super.branches.colGroups')}</dt>
                         <dd className="font-semibold tabular-nums">{fmt(b.groups)}</dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-base-content/45">Сотрудники</dt>
+                        <dt className="text-xs text-base-content/45">{t('super.branches.colStaff')}</dt>
                         <dd className="font-semibold tabular-nums">
                           {fmt((b.admins || 0) + (b.mentors || 0))}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-base-content/45">Доход</dt>
+                        <dt className="text-xs text-base-content/45">{t('super.branches.colRevenue')}</dt>
                         <dd className="font-semibold tabular-nums">{money(b.revenue)}</dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-base-content/45">Расход</dt>
+                        <dt className="text-xs text-base-content/45">{t('super.branches.colExpense')}</dt>
                         <dd className="font-semibold tabular-nums">{money(b.expenses)}</dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-base-content/45">Долг</dt>
+                        <dt className="text-xs text-base-content/45">{t('super.branches.colDebt')}</dt>
                         <dd className={`font-semibold tabular-nums ${b.debt > 0 ? 'text-error' : ''}`}>
                           {money(b.debt)}
                         </dd>

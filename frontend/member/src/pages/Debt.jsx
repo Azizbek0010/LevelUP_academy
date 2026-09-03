@@ -5,17 +5,19 @@ import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonKpis } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState, ProgressBar } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
+import { useI18n, fmt as fmtStr } from '../i18n/index.jsx';
 
 export default function Debt() {
+  const { t } = useI18n();
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
 
-  if (!selectedChild) return <EmptyState icon="user-circle" title="Выберите ребёнка" />;
+  if (!selectedChild) return <EmptyState icon="user-circle" title={t.dash.noChildTitle} />;
 
   if (isLoading) {
     return (
       <>
-        <PageHeader title="Оплата" />
+        <PageHeader title={t.debt.title} />
         <SkeletonKpis count={2} className="grid-cols-1 lg:grid-cols-2" />
       </>
     );
@@ -33,7 +35,7 @@ export default function Debt() {
   return (
     <>
       <PageHeader
-        title="Оплата"
+        title={t.debt.title}
         subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
       />
 
@@ -56,11 +58,11 @@ export default function Debt() {
                 <Icon name="wallet" className="w-6 h-6" style={{ color: totalDebt > 0 ? '#ef4444' : '#22c55e' }} />
               </div>
               <div>
-                <span className="text-sm font-medium opacity-60">Общий долг</span>
+                <span className="text-sm font-medium opacity-60">{t.debt.total}</span>
                 {totalDebt > 0 && (
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-error animate-pulse" />
-                    <span className="text-[10px] text-error font-medium">Требуется внимание</span>
+                    <span className="text-[10px] text-error font-medium">{t.debt.attention}</span>
                   </div>
                 )}
               </div>
@@ -71,8 +73,8 @@ export default function Debt() {
             {totalDebt > 0 && d.currentInvoice?.totalAmount > 0 && (
               <div className="mt-4">
                 <div className="flex justify-between text-[11px] opacity-40 mb-1">
-                  <span>Оплачено {money(d.currentInvoice.paidAmount)}</span>
-                  <span>Ожидает {money(d.currentInvoice.totalAmount - d.currentInvoice.paidAmount)}</span>
+                  <span>{fmtStr(t.debt.paid, { sum: money(d.currentInvoice.paidAmount) })}</span>
+                  <span>{fmtStr(t.debt.pending, { sum: money(d.currentInvoice.totalAmount - d.currentInvoice.paidAmount) })}</span>
                 </div>
                 <ProgressBar
                   value={(d.currentInvoice.paidAmount / d.currentInvoice.totalAmount) * 100}
@@ -86,9 +88,9 @@ export default function Debt() {
 
         <div className="card bg-base-100">
           <div className="card-body">
-            <span className="text-sm font-medium opacity-60">Баланс оплаты</span>
+            <span className="text-sm font-medium opacity-60">{t.debt.balanceLabel}</span>
             <p className="text-3xl font-extrabold text-success">{money(paymentBalance)}</p>
-            <p className="text-[11px] opacity-40 mt-2">Остаток автоматически перейдёт на следующий месяц</p>
+            <p className="text-[11px] opacity-40 mt-2">{t.debt.balanceNote}</p>
           </div>
         </div>
 
@@ -101,12 +103,12 @@ export default function Debt() {
               <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10">
                 <Icon name="star" className="w-6 h-6 text-primary" />
               </div>
-              <span className="text-sm font-medium opacity-60">Коины</span>
+              <span className="text-sm font-medium opacity-60">{t.debt.coins}</span>
             </div>
             <p className="text-3xl font-extrabold text-primary">{fmt(coins)}</p>
             <p className="text-[11px] opacity-30 mt-2 flex items-center gap-1">
               <Icon name="sparkles" className="w-3 h-3" />
-              Заработанные баллы за достижения
+              {t.debt.coinsSub}
             </p>
           </div>
         </div>
@@ -115,14 +117,14 @@ export default function Debt() {
       {d.currentInvoice && (
         <div className="card bg-base-100 mb-6">
           <div className="card-body">
-            <h3 className="font-bold">Расчёт текущей оплаты</h3>
+            <h3 className="font-bold">{t.debt.calcTitle}</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm mt-2">
-              <div><span className="opacity-50">Цена за месяц</span><p className="font-bold">{money(d.currentInvoice.monthlyPrice)}</p></div>
-              <div><span className="opacity-50">Занятий в месяце</span><p className="font-bold">{d.currentInvoice.lessonsInMonth ?? '—'}</p></div>
-              <div><span className="opacity-50">К оплате занятий</span><p className="font-bold">{d.currentInvoice.billableLessons ?? '—'}</p></div>
-              <div><span className="opacity-50">Оплатить до</span><p className="font-bold">{d.currentInvoice.paymentDate ?? d.currentInvoice.dueDate}</p></div>
+              <div><span className="opacity-50">{t.debt.monthlyPrice}</span><p className="font-bold">{money(d.currentInvoice.monthlyPrice)}</p></div>
+              <div><span className="opacity-50">{t.debt.lessonsInMonth}</span><p className="font-bold">{d.currentInvoice.lessonsInMonth ?? '—'}</p></div>
+              <div><span className="opacity-50">{t.debt.billableLessons}</span><p className="font-bold">{d.currentInvoice.billableLessons ?? '—'}</p></div>
+              <div><span className="opacity-50">{t.debt.payBy}</span><p className="font-bold">{d.currentInvoice.paymentDate ?? d.currentInvoice.dueDate}</p></div>
             </div>
-            <p className="text-xs opacity-50 mt-3">После 5-го числа при неоплаченном счёте кабинет ученика будет временно заблокирован.</p>
+            <p className="text-xs opacity-50 mt-3">{t.debt.blockNote}</p>
           </div>
         </div>
       )}
@@ -139,14 +141,13 @@ export default function Debt() {
                 <Icon name="exclamation-circle" className="w-3 h-3 text-white" />
               </div>
             </div>
-            <h3 className="text-lg font-bold mb-2">Есть задолженность</h3>
+            <h3 className="text-lg font-bold mb-2">{t.debt.status.debt}</h3>
             <p className="text-sm text-base-content/50 max-w-sm mx-auto mb-4">
-              Сумма долга составляет <span className="font-bold text-error">{money(d.totalDebt)}</span>.
-              Обратитесь к администратору для оплаты.
+              {t.debt.status.debtMsgStart} <span className="font-bold text-error">{money(d.totalDebt)}</span>{t.debt.status.debtMsgEnd}
             </p>
             <div className="inline-flex items-center gap-2 text-xs opacity-40">
               <div className="w-2 h-2 rounded-full bg-error animate-pulse" />
-              Требуется внимание
+              {t.debt.attention}
             </div>
           </div>
         </div>
@@ -156,8 +157,8 @@ export default function Debt() {
             <div className="w-20 h-20 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
               <Icon name="check-circle" className="w-10 h-10 text-success" />
             </div>
-            <h3 className="text-lg font-bold mb-2">Задолженностей нет</h3>
-            <p className="text-sm text-base-content/50">Все счета оплачены вовремя</p>
+            <h3 className="text-lg font-bold mb-2">{t.debt.status.noDebt}</h3>
+            <p className="text-sm text-base-content/50">{t.debt.status.noDebtMsg}</p>
           </div>
         </div>
       )}

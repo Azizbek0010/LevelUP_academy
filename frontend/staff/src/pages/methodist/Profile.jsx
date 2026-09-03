@@ -10,8 +10,8 @@ import MyDiscipline from '../../components/MyDiscipline.jsx';
 import { useMe } from '../../queries.js';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
-import { LangProvider, useLang } from './i18n.js';
-import LangSwitcher from './LangSwitcher.jsx';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher.jsx';
 
 /**
  * Профиль методиста. У методиста нет групп/грейда/навыков ментора — карточка
@@ -31,7 +31,7 @@ function InfoRow({ icon: Icon, label, value }) {
 }
 
 function MethodistProfileView() {
-  const { t, lang } = useLang();
+  const { t, i18n } = useTranslation(); const lang = i18n.language;
   const { token, user, logout, patchUser } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -60,9 +60,9 @@ function MethodistProfileView() {
   );
 
   const validate = () => {
-    if (!firstName.trim()) return t('profile.enter_name');
-    if (!lastName.trim()) return t('profile.enter_last');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return t('profile.invalid_email');
+    if (!firstName.trim()) return t('methodist.profile.enter_name');
+    if (!lastName.trim()) return t('methodist.profile.enter_last');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return t('methodist.profile.invalid_email');
     return '';
   };
 
@@ -80,7 +80,7 @@ function MethodistProfileView() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
-      setError(err.message || t('profile.save_failed'));
+      setError(err.message || t('methodist.profile.save_failed'));
     } finally {
       setSaving(false);
     }
@@ -111,24 +111,24 @@ function MethodistProfileView() {
             <ShieldCheck size={18} className="text-[var(--mt-accent)]" />
           </div>
           <div>
-            <h1 className="text-[20px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('profile.personal_data')}</h1>
+            <h1 className="text-[20px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('methodist.profile.personal_data')}</h1>
             <p className="text-[12px] text-[var(--mt-text-muted)]">{fullName || '—'}</p>
           </div>
         </div>
-        <LangSwitcher />
+        <LanguageSwitcher />
       </div>
       {isError && (
         <div className="alert alert-error w-full shrink-0">
           <AlertTriangle size={20} className="shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm">{t('profile.load_error')}</p>
-            <p className="text-xs opacity-80">{meError?.message || t('common.loading_failed')}</p>
+            <p className="font-bold text-sm">{t('methodist.profile.load_error')}</p>
+            <p className="text-xs opacity-80">{meError?.message || t('methodist.common.loading_failed')}</p>
           </div>
           <button
             className="btn btn-ghost btn-sm gap-1.5 shrink-0"
             onClick={() => window.location.reload()}
           >
-            <RefreshCw size={14} /> {t('common.retry')}
+            <RefreshCw size={14} /> {t('methodist.common.retry')}
           </button>
         </div>
       )}
@@ -149,15 +149,15 @@ function MethodistProfileView() {
               </h2>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="badge badge-primary badge-sm gap-1">
-                  <ShieldCheck size={11} /> {t('profile.role_methodist')}
+                  <ShieldCheck size={11} /> {t('methodist.profile.role_methodist')}
                 </span>
               </div>
             </div>
 
             <div className="divide-y divide-base-200 border-t border-base-200">
-              <InfoRow icon={Mail} label={t('profile.email')} value={isLoading ? <span className="skeleton inline-block h-4 w-24 align-middle" /> : (me?.email ?? user?.email)} />
-              <InfoRow icon={Building2} label={t('profile.branch')} value={isLoading ? <span className="skeleton inline-block h-4 w-24 align-middle" /> : me?.branchName} />
-              <InfoRow icon={CalendarDays} label={t('profile.registered')} value={isLoading ? <span className="skeleton inline-block h-4 w-24 align-middle" /> : formatDate(me?.createdAt)} />
+              <InfoRow icon={Mail} label={t('methodist.profile.email')} value={isLoading ? <span className="skeleton inline-block h-4 w-24 align-middle" /> : (me?.email ?? user?.email)} />
+              <InfoRow icon={Building2} label={t('methodist.profile.branch')} value={isLoading ? <span className="skeleton inline-block h-4 w-24 align-middle" /> : me?.branchName} />
+              <InfoRow icon={CalendarDays} label={t('methodist.profile.registered')} value={isLoading ? <span className="skeleton inline-block h-4 w-24 align-middle" /> : formatDate(me?.createdAt)} />
             </div>
           </section>
         </div>
@@ -168,15 +168,15 @@ function MethodistProfileView() {
         <div className="space-y-5">
           <section className="card bg-base-100">
             <header className="px-5 py-4 border-b border-base-200">
-              <h2 className="font-bold">{t('profile.personal_data')}</h2>
+              <h2 className="font-bold">{t('methodist.profile.personal_data')}</h2>
               <p className="text-xs text-base-content/45 mt-0.5">
-                {t('profile.personal_data_hint')}
+                {t('methodist.profile.personal_data_hint')}
               </p>
             </header>
 
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="form-control">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('profile.first_name')}</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('methodist.profile.first_name')}</span>
                 <input
                   className="input input-bordered"
                   value={firstName}
@@ -186,7 +186,7 @@ function MethodistProfileView() {
                 />
               </label>
               <label className="form-control">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('profile.last_name')}</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('methodist.profile.last_name')}</span>
                 <input
                   className="input input-bordered"
                   value={lastName}
@@ -196,7 +196,7 @@ function MethodistProfileView() {
                 />
               </label>
               <label className="form-control sm:col-span-2">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('profile.email')}</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('methodist.profile.email')}</span>
                 <input
                   type="email"
                   className="input input-bordered"
@@ -206,7 +206,7 @@ function MethodistProfileView() {
                   disabled={isLoading}
                 />
                 <span className="text-[11px] text-base-content/45 mt-1.5">
-                  {t('profile.email_hint')}
+                  {t('methodist.profile.email_hint')}
                 </span>
               </label>
             </div>
@@ -219,17 +219,17 @@ function MethodistProfileView() {
                   </span>
                 ) : saved ? (
                   <span className="flex items-center gap-1.5 text-success font-semibold">
-                    <Check size={14} /> {t('profile.saved')}
+                    <Check size={14} /> {t('methodist.profile.saved')}
                   </span>
                 ) : dirty ? (
-                  <span className="text-base-content/50">{t('profile.dirty')}</span>
+                  <span className="text-base-content/50">{t('methodist.profile.dirty')}</span>
                 ) : null}
               </span>
 
               <span className="flex items-center gap-2 shrink-0">
                 {dirty && (
                   <button className="btn btn-ghost btn-sm" onClick={reset} disabled={saving}>
-                    {t('common.cancel')}
+                    {t('methodist.common.cancel')}
                   </button>
                 )}
                 <button
@@ -238,7 +238,7 @@ function MethodistProfileView() {
                   disabled={saving || !dirty}
                 >
                   {saving ? <span className="loading loading-spinner loading-xs" /> : <Check size={15} />}
-                  {t('common.save')}
+                  {t('methodist.common.save')}
                 </button>
               </span>
             </footer>
@@ -246,38 +246,38 @@ function MethodistProfileView() {
 
           <section className="card bg-base-100">
             <header className="px-5 py-4 border-b border-base-200">
-              <h2 className="font-bold">{t('profile.security')}</h2>
+              <h2 className="font-bold">{t('methodist.profile.security')}</h2>
             </header>
 
             <div className="divide-y divide-base-200">
               <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
-                    <KeyRound size={15} className="text-base-content/40" /> {t('profile.password')}
+                    <KeyRound size={15} className="text-base-content/40" /> {t('methodist.profile.password')}
                   </div>
                   <p className="text-xs text-base-content/50 mt-1 max-w-md">
-                    {t('profile.password_hint')}
+                    {t('methodist.profile.password_hint')}
                   </p>
                 </div>
                 <button
                   className="btn btn-outline btn-sm shrink-0"
                   onClick={() => navigate('/login?reset=1')}
                 >
-                  {t('profile.reset_password')}
+                  {t('methodist.profile.reset_password')}
                 </button>
               </div>
 
               <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
-                    <LogOut size={15} className="text-base-content/40" /> {t('profile.end_session')}
+                    <LogOut size={15} className="text-base-content/40" /> {t('methodist.profile.end_session')}
                   </div>
                   <p className="text-xs text-base-content/50 mt-1">
-                    {t('profile.session_hint')}
+                    {t('methodist.profile.session_hint')}
                   </p>
                 </div>
                 <button className="btn btn-outline btn-error btn-sm shrink-0" onClick={onLogout}>
-                  {t('profile.logout')}
+                  {t('methodist.profile.logout')}
                 </button>
               </div>
             </div>
@@ -294,8 +294,6 @@ function MethodistProfileView() {
 
 export default function MethodistProfile() {
   return (
-    <LangProvider>
-      <MethodistProfileView />
-    </LangProvider>
+    <MethodistProfileView />
   );
 }

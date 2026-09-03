@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Users, UserCheck, UserX, Mail, Phone, Award, MessageCircle, Download, Copy, Check, KeyRound } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useAdminMentors } from '../../queries.js';
@@ -14,10 +15,10 @@ const fullName = (m) =>
 
 const emptyForm = { id: null, firstName: '', lastName: '', phone: '', email: '' };
 
-const STATUS_COLORS = {
-  active: { bg: '#2ECC7115', text: '#2ECC71', label: 'Активен' },
-  frozen: { bg: '#E8543E15', text: '#E8543E', label: 'Заморожен' },
-};
+const statusColorsMap = (t) => ({
+  active: { bg: '#2ECC7115', text: '#2ECC71', label: t('status.active') },
+  frozen: { bg: '#E8543E15', text: '#E8543E', label: t('status.frozen') },
+});
 
 const GRADE_LABELS = { junior: 'Junior', middle: 'Middle', senior: 'Senior' };
 
@@ -26,7 +27,9 @@ const GRADE_LABELS = { junior: 'Junior', middle: 'Middle', senior: 'Senior' };
    как read-only — PATCH /api/users/me это поле не принимает. */
 /* ═══════════════ Mentor Card ═══════════════ */
 function MentorCard({ m, onEdit, canMessage }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const STATUS_COLORS = statusColorsMap(t);
   const status = STATUS_COLORS[m.status] || STATUS_COLORS.active;
 
   return (
@@ -76,16 +79,16 @@ function MentorCard({ m, onEdit, canMessage }) {
 
           {/* Action buttons */}
           <div className="flex items-center gap-1 mt-3 flex-wrap">
-            <span className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold bg-base-200 text-base-content/65" title="Грейд назначает CEO">
-              <Award size={11} /> {GRADE_LABELS[m.grade] || 'Не задан'}
+            <span className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold bg-base-200 text-base-content/65" title={t('admin.mentors.gradeTooltip')}>
+              <Award size={11} /> {GRADE_LABELS[m.grade] || t('admin.mentors.gradeNotSet')}
             </span>
             <button className="h-7 px-2.5 rounded-[8px] flex items-center gap-1 text-[11px] font-semibold text-base-content/70 bg-base-100 border border-base-300 hover:border-primary/40 hover:bg-primary/10 transition-all"
               onClick={() => onEdit(m)}>
-              <Pencil size={11} /> Изменить
+              <Pencil size={11} /> {t('admin.mentors.edit')}
             </button>
             {canMessage && <button
               className="h-7 w-7 rounded-[8px] flex items-center justify-center text-base-content/45 hover:bg-primary/10 hover:text-primary transition-all"
-              title="Написать в чат"
+              title={t('admin.mentors.chatTooltip')}
               onClick={() => navigate(`/chat?with=${m.id}`)}
             >
               <MessageCircle size={13} />
@@ -99,6 +102,7 @@ function MentorCard({ m, onEdit, canMessage }) {
 
 /* ═══════════════ Main Mentors ═══════════════ */
 export default function AdminMentors() {
+  const { t } = useTranslation();
   const { token, user } = useAuth();
   const { data, isLoading, error, refetch } = useAdminMentors();
   const [form, setForm] = useState(null);
@@ -133,7 +137,7 @@ export default function AdminMentors() {
         }
       }
       refetch();
-    } catch (e) { setErr(e.message || 'Ошибка'); }
+    } catch (e) { setErr(e.message || t('admin.mentors.genericError')); }
     finally { setBusy(false); }
   };
 
@@ -141,32 +145,32 @@ export default function AdminMentors() {
 
   return (
     <div className="space-y-6 pb-8">
-      <PageHeader title="Менторы" subtitle="Преподаватели филиала">
+      <PageHeader title={t('admin.mentors.title')} subtitle={t('admin.mentors.subtitle')}>
         <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={rows.length === 0}>
-          <Download size={14} /> Экспорт
+          <Download size={14} /> {t('admin.mentors.export')}
         </button>
         <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
-          <Plus size={16} /> Добавить ментора
+          <Plus size={16} /> {t('admin.mentors.addMentor')}
         </button>
       </PageHeader>
 
       {/* ═══ Stats ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Kpi Icon={Users} title="Всего" value={rows.length}  tone="neutral" />
-        <Kpi Icon={UserCheck} title="Активные" value={activeCount}  tone="success" />
-        <Kpi Icon={UserX} title="Заморожены" value={frozenCount}  tone="danger" />
+        <Kpi Icon={Users} title={t('admin.mentors.total')} value={rows.length}  tone="neutral" />
+        <Kpi Icon={UserCheck} title={t('admin.mentors.active')} value={activeCount}  tone="success" />
+        <Kpi Icon={UserX} title={t('admin.mentors.frozen')} value={frozenCount}  tone="danger" />
       </div>
 
       {/* ═══ Mentor Cards ═══ */}
       {isLoading ? (
         <RowSkeleton count={4} />
       ) : error ? (
-        <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
+        <div className="alert alert-error mt-4">{t('admin.mentors.loadError', { message: error.message })}</div>
       ) : rows.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="Нет менторов"
-          hint="Добавьте первого преподавателя"
+          title={t('admin.mentors.emptyTitle')}
+          hint={t('admin.mentors.emptyHint')}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -187,20 +191,20 @@ export default function AdminMentors() {
       {form && (
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-4">{form.id ? 'Изменить ментора' : 'Новый ментор'}</h3>
+            <h3 className="font-bold text-lg mb-4">{form.id ? t('admin.mentors.editTitle') : t('admin.mentors.newTitle')}</h3>
             {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
             <div className="space-y-3">
-              <input className="input input-bordered w-full" placeholder="Имя" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
-              <input className="input input-bordered w-full" placeholder="Фамилия" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+              <input className="input input-bordered w-full" placeholder={t('admin.mentors.firstNamePlaceholder')} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+              <input className="input input-bordered w-full" placeholder={t('admin.mentors.lastNamePlaceholder')} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
               <PhoneInput className="input input-bordered w-full" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
               {!form.id && (
-                <input className="input input-bordered w-full" type="email" placeholder="Email (для входа)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                <input className="input input-bordered w-full" type="email" placeholder={t('admin.mentors.emailPlaceholder')} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               )}
             </div>
             <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>
+              <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>{t('admin.mentors.cancel')}</button>
               <button className="btn btn-primary" onClick={save} disabled={busy || !form.firstName || !form.lastName || (!form.id && !form.email)}>
-                {busy && <span className="loading loading-spinner loading-xs" />} Сохранить
+                {busy && <span className="loading loading-spinner loading-xs" />} {t('admin.mentors.save')}
               </button>
             </div>
           </div>
@@ -212,18 +216,18 @@ export default function AdminMentors() {
       {creds && (
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300 max-w-sm">
-            <h3 className="font-bold text-lg mb-1 flex items-center gap-2"><KeyRound size={18} className="text-primary" /> Ментор создан</h3>
-            <p className="text-[12px] text-base-content/45 mb-4">Пароль показывается один раз — передайте его ментору сейчас.</p>
+            <h3 className="font-bold text-lg mb-1 flex items-center gap-2"><KeyRound size={18} className="text-primary" /> {t('admin.mentors.createdTitle')}</h3>
+            <p className="text-[12px] text-base-content/45 mb-4">{t('admin.mentors.createdHint')}</p>
             <div className="space-y-2">
               <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-200/60">
                 <div>
-                  <div className="text-[10px] font-bold text-base-content/45 uppercase">Email</div>
+                  <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.mentors.emailLabel')}</div>
                   <div className="text-[13px] font-semibold text-base-content">{creds.email}</div>
                 </div>
               </div>
               <div className="flex items-center justify-between p-3 rounded-[10px] bg-base-200/60">
                 <div>
-                  <div className="text-[10px] font-bold text-base-content/45 uppercase">Пароль</div>
+                  <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.mentors.passwordLabel')}</div>
                   <div className="text-[15px] font-mono font-extrabold text-base-content">{creds.password}</div>
                 </div>
                 <button onClick={() => copyToClipboard(creds.password, 'pw')} className="btn btn-ghost btn-sm">
@@ -232,7 +236,7 @@ export default function AdminMentors() {
               </div>
             </div>
             <div className="modal-action">
-              <button className="btn btn-primary" onClick={() => setCreds(null)}>Готово</button>
+              <button className="btn btn-primary" onClick={() => setCreds(null)}>{t('admin.mentors.done')}</button>
             </div>
           </div>
           <div className="modal-backdrop" onClick={() => setCreds(null)} />

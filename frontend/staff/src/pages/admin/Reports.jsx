@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart3, TrendingUp, Users, AlertTriangle, Activity, Filter, Search,
   Download, X, RefreshCw, Banknote
@@ -18,13 +19,14 @@ const COLORS = ['#3B82F6', '#E8543E', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899'
 /* ═══════════════ KPI Card ═══════════════ */
 /* ═══════════════ Custom Tooltip ═══════════════ */
 function ChartTooltip({ active, payload, label }) {
+  const { i18n } = useTranslation();
   if (!active || !payload?.length) return null;
   return (
     <div className="card bg-base-100 p-3 shadow-lg border border-base-300">
       <p className="text-[12px] font-bold text-base-content mb-1">{label}</p>
       {payload.map((p, i) => (
         <p key={i} className="text-[11px]" style={{ color: p.color }}>
-          {p.name}: {money(p.value)}
+          {p.name}: {money(p.value, 'UZS', i18n.language)}
         </p>
       ))}
     </div>
@@ -33,6 +35,8 @@ function ChartTooltip({ active, payload, label }) {
 
 /* ═══════════════ Main Reports ═══════════════ */
 export default function AdminReports() {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const { token } = useAuth();
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -101,9 +105,9 @@ export default function AdminReports() {
       <div className="space-y-6 pb-8 animate-page-enter">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Отчёты</h1>
+            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">{t('admin.reports.title')}</h1>
           </div>
-          <p className="text-[13px] text-base-content/70">Загрузка...</p>
+          <p className="text-[13px] text-base-content/70">{t('admin.reports.loading')}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -124,7 +128,7 @@ export default function AdminReports() {
       <div className="space-y-6 pb-8 animate-page-enter">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Отчёты</h1>
+            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">{t('admin.reports.title')}</h1>
           </div>
         </div>
         <div
@@ -134,13 +138,13 @@ export default function AdminReports() {
           <div className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: 'rgba(232,84,62,0.12)' }}>
             <AlertTriangle className="w-4 h-4" />
           </div>
-          <span className="flex-1">Ошибка загрузки: {error.message || error}</span>
+          <span className="flex-1">{t('admin.reports.loadError', { message: error.message || error })}</span>
           <button
             onClick={() => refetch()}
             className="flex items-center gap-1.5 px-3 h-7 rounded-[8px] text-[11px] font-semibold hover:bg-[rgba(232,84,62,0.12)] transition-all"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            Повторить
+            {t('admin.reports.retry')}
           </button>
         </div>
       </div>
@@ -154,10 +158,10 @@ export default function AdminReports() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Отчёты</h1>
+            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">{t('admin.reports.title')}</h1>
           </div>
           <p className="text-[13px] text-base-content/70">
-            Анализ доходов и долгов по группам
+            {t('admin.reports.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
@@ -167,7 +171,7 @@ export default function AdminReports() {
             disabled={byGroup.length === 0}
           >
             <Download className="w-4 h-4" />
-            Экспорт
+            {t('admin.reports.export')}
           </button>
         </div>
       </div>
@@ -179,7 +183,7 @@ export default function AdminReports() {
           <div className="relative flex-1 w-full sm:max-w-xs">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/45 pointer-events-none" />
             <input
-              placeholder="Поиск по названию группы..."
+              placeholder={t('admin.reports.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full h-10 pl-10 pr-10 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
@@ -198,7 +202,7 @@ export default function AdminReports() {
           <div className="flex items-center gap-2">
             <span className="text-[12px] font-semibold text-base-content/45 shrink-0 hidden sm:block">
               <Filter size={14} className="inline mr-1" />
-              Период:
+              {t('admin.reports.period')}
             </span>
             <input
               type="date"
@@ -225,7 +229,7 @@ export default function AdminReports() {
             }`}
           >
             <X className="w-3.5 h-3.5" />
-            Сбросить
+            {t('admin.reports.reset')}
           </button>
         </div>
       </div>
@@ -234,28 +238,28 @@ export default function AdminReports() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi
           Icon={TrendingUp}
-          title="Общий доход"
-          value={money(totalRevenue)}
+          title={t('admin.reports.totalRevenue')}
+          value={money(totalRevenue, 'UZS', lang)}
           tone="success"
         />
         <Kpi
           Icon={AlertTriangle}
-          title="Общий долг"
-          value={money(totalDebt)}
-          unit={groupsWithDebt > 0 ? `${groupsWithDebt} группа(-ы)` : ''}
+          title={t('admin.reports.totalDebt')}
+          value={money(totalDebt, 'UZS', lang)}
+          unit={groupsWithDebt > 0 ? t('admin.reports.groupsCount', { count: groupsWithDebt }) : ''}
           tone="danger"
         />
         <Kpi
           Icon={Users}
-          title="Ученики"
-          value={fmt(totalStudents)}
-          unit={`${byGroup.length} группа(-ы)`}
+          title={t('admin.reports.students')}
+          value={fmt(totalStudents, lang)}
+          unit={t('admin.reports.groupsCount', { count: byGroup.length })}
           tone="neutral"
         />
         <Kpi
           Icon={BarChart3}
-          title="Средний доход"
-          value={money(avgRevenue)}
+          title={t('admin.reports.avgRevenue')}
+          value={money(avgRevenue, 'UZS', lang)}
           tone="neutral"
         />
       </div>
@@ -265,11 +269,11 @@ export default function AdminReports() {
         {/* Bar Chart */}
         <div className="lg:col-span-2 card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-3">
           <div className="flex items-center gap-2.5 mb-5">
-            <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Доход по группам</h2>
+            <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">{t('admin.reports.revenueByGroup')}</h2>
           </div>
           {barData.length === 0 ? (
             <div className="flex items-center justify-center h-48 text-[13px] text-base-content/45">
-              <Activity size={16} className="mr-2 opacity-40" /> Данные отсутствуют
+              <Activity size={16} className="mr-2 opacity-40" /> {t('admin.reports.noData')}
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
@@ -278,8 +282,8 @@ export default function AdminReports() {
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                 <RechartsTooltip content={<ChartTooltip />} />
-                <Bar dataKey="revenue" name="Доход" fill="#3B82F6" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="debt" name="Долг" fill="#E8543E" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="revenue" name={t('admin.reports.revenue')} fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="debt" name={t('admin.reports.debt')} fill="#E8543E" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -288,11 +292,11 @@ export default function AdminReports() {
         {/* Pie Chart */}
         <div className="card bg-base-100 p-5 card-hover-premium animate-fade-in stagger-4">
           <div className="flex items-center gap-2.5 mb-5">
-            <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">Доля дохода</h2>
+            <h2 className="text-[15px] font-extrabold text-base-content tracking-[-0.02em]">{t('admin.reports.revenueShare')}</h2>
           </div>
           {pieData.length === 0 ? (
             <div className="flex items-center justify-center h-48 text-[13px] text-base-content/45">
-              <Activity size={16} className="mr-2 opacity-40" /> Данные отсутствуют
+              <Activity size={16} className="mr-2 opacity-40" /> {t('admin.reports.noData')}
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
@@ -324,11 +328,11 @@ export default function AdminReports() {
           <table className="w-full text-left">
             <thead>
               <tr className="text-[10px] font-bold uppercase tracking-[0.07em] text-base-content/45 bg-base-100">
-                <th className="px-5 py-4">Группа</th>
-                <th className="px-5 py-4 text-right">Ученики</th>
-                <th className="px-5 py-4 text-right">Доход</th>
-                <th className="px-5 py-4 text-right">Долг</th>
-                <th className="px-5 py-4 text-right">Соотношение</th>
+                <th className="px-5 py-4">{t('admin.reports.colGroup')}</th>
+                <th className="px-5 py-4 text-right">{t('admin.reports.colStudents')}</th>
+                <th className="px-5 py-4 text-right">{t('admin.reports.colRevenue')}</th>
+                <th className="px-5 py-4 text-right">{t('admin.reports.colDebt')}</th>
+                <th className="px-5 py-4 text-right">{t('admin.reports.colRatio')}</th>
               </tr>
             </thead>
             <tbody>
@@ -340,10 +344,10 @@ export default function AdminReports() {
                         <Banknote className="w-7 h-7 text-base-content/45" />
                       </div>
                       <p className="text-[14px] font-bold text-base-content mb-1">
-                        {search ? "Ничего не найдено" : "Данные отсутствуют"}
+                        {search ? t('admin.reports.nothingFound') : t('admin.reports.noData')}
                       </p>
                       <p className="text-[12px] text-base-content/70 max-w-[280px]">
-                        {search ? "Попробуйте другой запрос" : "Пока нет данных по отчётам"}
+                        {search ? t('admin.reports.tryAnotherQuery') : t('admin.reports.noReportData')}
                       </p>
                     </div>
                   </td>
@@ -364,13 +368,13 @@ export default function AdminReports() {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-right tabular-nums text-base-content/70">
-                        {fmt(g.students ?? g.studentsCount ?? 0)}
+                        {fmt(g.students ?? g.studentsCount ?? 0, lang)}
                       </td>
                       <td className="px-5 py-4 text-right tabular-nums font-bold text-primary">
-                        {money(revenue)}
+                        {money(revenue, 'UZS', lang)}
                       </td>
                       <td className="px-5 py-4 text-right tabular-nums font-semibold" style={{ color: debt > 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
-                        {money(debt)}
+                        {money(debt, 'UZS', lang)}
                       </td>
                       <td className="px-5 py-4 text-right">
                         <span
@@ -398,16 +402,16 @@ export default function AdminReports() {
         {byGroup.length > 0 && (
           <div className="flex items-center justify-between px-5 py-3.5 border-t border-base-300 bg-base-100">
             <span className="text-[11px] text-base-content/45">
-              {byGroup.length} группа(-ы)
+              {t('admin.reports.groupsCount', { count: byGroup.length })}
             </span>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Общий доход:</span>
-                <span className="text-[13px] font-extrabold text-primary tabular-nums">{money(totalRevenue)}</span>
+                <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">{t('admin.reports.totalRevenueColon')}</span>
+                <span className="text-[13px] font-extrabold text-primary tabular-nums">{money(totalRevenue, 'UZS', lang)}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Общий долг:</span>
-                <span className="text-[13px] font-extrabold text-error tabular-nums">{money(totalDebt)}</span>
+                <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">{t('admin.reports.totalDebtColon')}</span>
+                <span className="text-[13px] font-extrabold text-error tabular-nums">{money(totalDebt, 'UZS', lang)}</span>
               </div>
             </div>
           </div>

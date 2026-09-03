@@ -65,11 +65,6 @@ export default function Billing() {
         title="Тарифы и биллинг"
         subtitle={`Цена зависит от общего числа пользователей (ученики+родители+сотрудники), филиалы включены безлимитом (в ${cur})`}
       >
-        {partners.length > 0 && tiers.length > 0 && (
-          <button className="btn btn-outline btn-sm gap-2" onClick={() => exportCsv(partners, tiers, cur)}>
-            <Download size={15} /> Экспорт CSV
-          </button>
-        )}
       </PageHeader>
 
       {pLoading ? (

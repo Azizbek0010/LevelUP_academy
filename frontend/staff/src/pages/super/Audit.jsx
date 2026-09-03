@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   ChevronDown, ChevronRight, CheckCircle, XCircle,
   LogIn, LogOut, Plus, Pencil, Trash2, Archive,
@@ -11,43 +12,45 @@ import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { Card, SearchInput, StatusBadge } from './_ui.jsx';
 
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+
 // ---- Constants ----
 
-const ACTION_META = {
-  'auth.login':          { label: 'Вход',           Icon: LogIn,       color: 'text-success' },
-  'auth.logout':         { label: 'Выход',          Icon: LogOut,      color: 'text-base-content/50' },
-  'auth.login.failed':   { label: 'Ошибка входа',   Icon: ShieldAlert, color: 'text-error' },
-  'student.create':      { label: 'Студент создан',  Icon: Plus,        color: 'text-info' },
-  'student.update':      { label: 'Студент изменён', Icon: Pencil,      color: 'text-warning' },
-  'student.delete':      { label: 'Студент удалён',  Icon: Trash2,      color: 'text-error' },
-  'student.freeze':      { label: 'Заморожен',       Icon: ShieldAlert, color: 'text-warning' },
-  'student.unfreeze':    { label: 'Разморожен',      Icon: CheckCircle, color: 'text-success' },
-  'admin.create':        { label: 'Админ создан',    Icon: Plus,        color: 'text-info' },
-  'admin.update':        { label: 'Админ изменён',   Icon: Pencil,      color: 'text-warning' },
-  'admin.freeze':        { label: 'Админ заморожен', Icon: ShieldAlert, color: 'text-warning' },
-  'branch.create':       { label: 'Филиал создан',   Icon: Plus,        color: 'text-info' },
-  'branch.update':       { label: 'Филиал изменён',  Icon: Pencil,      color: 'text-warning' },
-  'branch.archive':      { label: 'Филиал архивирован', Icon: Archive,  color: 'text-warning' },
-  'branch.unarchive':    { label: 'Разархивирован',  Icon: RefreshCw,   color: 'text-success' },
-  'group.create':        { label: 'Группа создана',  Icon: Plus,        color: 'text-info' },
-  'group.update':        { label: 'Группа изменена', Icon: Pencil,      color: 'text-warning' },
-  'group.archive':       { label: 'Группа архивирована', Icon: Archive, color: 'text-warning' },
-  'payment.create':      { label: 'Платёж создан',   Icon: Plus,        color: 'text-success' },
-  'payment.refund':      { label: 'Возврат',         Icon: XCircle,     color: 'text-error' },
-  'settings.update':     { label: 'Настройки',       Icon: Pencil,      color: 'text-base-content/60' },
-  'announcement.create': { label: 'Анонс создан',    Icon: Plus,        color: 'text-info' },
-  'announcement.delete': { label: 'Анонс удалён',    Icon: Trash2,      color: 'text-error' },
-};
+const actionMetaFor = (t) => ({
+  'auth.login':          { label: t('super.audit.actionAuthLogin'),          Icon: LogIn,       color: 'text-success' },
+  'auth.logout':         { label: t('super.audit.actionAuthLogout'),         Icon: LogOut,      color: 'text-base-content/50' },
+  'auth.login.failed':   { label: t('super.audit.actionAuthLoginFailed'),    Icon: ShieldAlert, color: 'text-error' },
+  'student.create':      { label: t('super.audit.actionStudentCreate'),      Icon: Plus,        color: 'text-info' },
+  'student.update':      { label: t('super.audit.actionStudentUpdate'),      Icon: Pencil,      color: 'text-warning' },
+  'student.delete':      { label: t('super.audit.actionStudentDelete'),      Icon: Trash2,      color: 'text-error' },
+  'student.freeze':      { label: t('super.audit.actionStudentFreeze'),      Icon: ShieldAlert, color: 'text-warning' },
+  'student.unfreeze':    { label: t('super.audit.actionStudentUnfreeze'),    Icon: CheckCircle, color: 'text-success' },
+  'admin.create':        { label: t('super.audit.actionAdminCreate'),        Icon: Plus,        color: 'text-info' },
+  'admin.update':        { label: t('super.audit.actionAdminUpdate'),        Icon: Pencil,      color: 'text-warning' },
+  'admin.freeze':        { label: t('super.audit.actionAdminFreeze'),        Icon: ShieldAlert, color: 'text-warning' },
+  'branch.create':       { label: t('super.audit.actionBranchCreate'),       Icon: Plus,        color: 'text-info' },
+  'branch.update':       { label: t('super.audit.actionBranchUpdate'),       Icon: Pencil,      color: 'text-warning' },
+  'branch.archive':      { label: t('super.audit.actionBranchArchive'),      Icon: Archive,     color: 'text-warning' },
+  'branch.unarchive':    { label: t('super.audit.actionBranchUnarchive'),    Icon: RefreshCw,   color: 'text-success' },
+  'group.create':        { label: t('super.audit.actionGroupCreate'),        Icon: Plus,        color: 'text-info' },
+  'group.update':        { label: t('super.audit.actionGroupUpdate'),        Icon: Pencil,      color: 'text-warning' },
+  'group.archive':       { label: t('super.audit.actionGroupArchive'),       Icon: Archive,     color: 'text-warning' },
+  'payment.create':      { label: t('super.audit.actionPaymentCreate'),      Icon: Plus,        color: 'text-success' },
+  'payment.refund':      { label: t('super.audit.actionPaymentRefund'),      Icon: XCircle,     color: 'text-error' },
+  'settings.update':     { label: t('super.audit.actionSettingsUpdate'),     Icon: Pencil,      color: 'text-base-content/60' },
+  'announcement.create': { label: t('super.audit.actionAnnouncementCreate'), Icon: Plus,        color: 'text-info' },
+  'announcement.delete': { label: t('super.audit.actionAnnouncementDelete'), Icon: Trash2,      color: 'text-error' },
+});
 
-const ROLE_LABEL = {
-  ceo:         'CEO',
-  admin:       'Администратор',
-  mentor:      'Ментор',
-  methodist:   'Методист',
-  student:     'Студент',
-  parent:      'Родитель',
-  main_admin:  'Main Admin',
-};
+const roleLabelFor = (t) => ({
+  ceo:         t('super.audit.roleCeo'),
+  admin:       t('super.audit.roleAdmin'),
+  mentor:      t('super.audit.roleMentor'),
+  methodist:   t('super.audit.roleMethodist'),
+  student:     t('super.audit.roleStudent'),
+  parent:      t('super.audit.roleParent'),
+  main_admin:  t('super.audit.roleMainAdmin'),
+});
 
 const ROLE_TONE = {
   ceo: 'primary',
@@ -61,22 +64,22 @@ const ROLE_TONE = {
 
 // ---- Helpers ----
 
-function timeAgo(iso) {
+function timeAgo(iso, t) {
   if (!iso) return '—';
   const diff = Date.now() - new Date(iso).getTime();
   const s = Math.floor(diff / 1000);
-  if (s < 60) return `${s}с назад`;
+  if (s < 60) return t('super.audit.secondsAgo', { n: s });
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}м назад`;
+  if (m < 60) return t('super.audit.minutesAgo', { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}ч назад`;
+  if (h < 24) return t('super.audit.hoursAgo', { n: h });
   const d = Math.floor(h / 24);
-  return `${d}д назад`;
+  return t('super.audit.daysAgo', { n: d });
 }
 
-function formatFull(iso) {
+function formatFull(iso, locale) {
   if (!iso) return '—';
-  return new Intl.DateTimeFormat('ru-RU', {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
   }).format(new Date(iso));
@@ -109,6 +112,10 @@ function useAuditQuery() {
 // ---- Component ----
 
 export default function SuperAudit() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const ACTION_META = actionMetaFor(t);
+  const ROLE_LABEL = roleLabelFor(t);
   const { data, isLoading, error } = useAuditQuery();
   const [search, setSearch] = useState('');
   const [entityFilter, setEntityFilter] = useState('all');
@@ -148,14 +155,14 @@ export default function SuperAudit() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Журнал аудита" subtitle="История действий в системе" />
+      <PageHeader title={t('super.audit.title')} subtitle={t('super.audit.subtitle')} />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Поиск по имени, действию, IP..."
+          placeholder={t('super.audit.searchPlaceholder')}
           className="flex-1 max-w-sm"
         />
         <select
@@ -164,7 +171,7 @@ export default function SuperAudit() {
           onChange={(e) => setEntityFilter(e.target.value)}
         >
           {entityTypes.map((et) => (
-            <option key={et} value={et}>{et === 'all' ? 'Все объекты' : et}</option>
+            <option key={et} value={et}>{et === 'all' ? t('super.audit.allEntities') : et}</option>
           ))}
         </select>
       </div>
@@ -175,7 +182,7 @@ export default function SuperAudit() {
       ) : error && error.status !== 401 ? (
         <div className="alert alert-error text-sm"><span>{error.message}</span></div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-base-content/40 text-sm">Записей не найдено</div>
+        <div className="text-center py-16 text-base-content/40 text-sm">{t('super.audit.noneFound')}</div>
       ) : (
         <Card>
           <div className="overflow-x-auto">
@@ -183,11 +190,11 @@ export default function SuperAudit() {
               <thead>
                 <tr>
                   <th className="w-8" />
-                  <th>Действие</th>
-                  <th>Кто</th>
-                  <th>Объект</th>
-                  <th>IP</th>
-                  <th>Время</th>
+                  <th>{t('super.audit.colAction')}</th>
+                  <th>{t('super.audit.colWho')}</th>
+                  <th>{t('super.audit.colEntity')}</th>
+                  <th>{t('super.audit.colIp')}</th>
+                  <th>{t('super.audit.colTime')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -238,7 +245,7 @@ export default function SuperAudit() {
                       <td className="text-sm text-base-content/70">{entityLabel}</td>
                       <td className="text-xs font-mono text-base-content/50">{ip}</td>
                       <td className="text-xs text-base-content/50 whitespace-nowrap">
-                        {timeAgo(createdAt)}
+                        {timeAgo(createdAt, t)}
                       </td>
                     </tr>,
                     isExpanded && (
@@ -246,32 +253,32 @@ export default function SuperAudit() {
                         <td colSpan={6} className="px-6 py-4">
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2 text-xs">
                             <div>
-                              <div className="font-semibold text-base-content/50 mb-0.5">Точное время</div>
-                              <div>{formatFull(createdAt)}</div>
+                              <div className="font-semibold text-base-content/50 mb-0.5">{t('super.audit.exactTime')}</div>
+                              <div>{formatFull(createdAt, locale)}</div>
                             </div>
                             <div>
-                              <div className="font-semibold text-base-content/50 mb-0.5">Кто</div>
+                              <div className="font-semibold text-base-content/50 mb-0.5">{t('super.audit.who')}</div>
                               <div>{actorName} ({ROLE_LABEL[actorRole] ?? actorRole})</div>
                             </div>
                             <div>
-                              <div className="font-semibold text-base-content/50 mb-0.5">Действие</div>
+                              <div className="font-semibold text-base-content/50 mb-0.5">{t('super.audit.action')}</div>
                               <div className="font-mono">{action}</div>
                             </div>
                             <div>
-                              <div className="font-semibold text-base-content/50 mb-0.5">Объект</div>
+                              <div className="font-semibold text-base-content/50 mb-0.5">{t('super.audit.entity')}</div>
                               <div>{entityLabel}</div>
                             </div>
                             <div>
-                              <div className="font-semibold text-base-content/50 mb-0.5">IP</div>
+                              <div className="font-semibold text-base-content/50 mb-0.5">{t('super.audit.ip')}</div>
                               <div className="font-mono">{ip}</div>
                             </div>
                             <div>
-                              <div className="font-semibold text-base-content/50 mb-0.5">User Agent</div>
+                              <div className="font-semibold text-base-content/50 mb-0.5">{t('super.audit.userAgent')}</div>
                               <div className="truncate max-w-xs">{userAgent}</div>
                             </div>
                             {metaStr && (
                               <div className="col-span-2 md:col-span-3">
-                                <div className="font-semibold text-base-content/50 mb-0.5">Meta</div>
+                                <div className="font-semibold text-base-content/50 mb-0.5">{t('super.audit.meta')}</div>
                                 <pre className="bg-base-300 rounded p-2 text-xs overflow-x-auto max-h-32">
                                   {metaStr}
                                 </pre>

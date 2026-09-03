@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import {
   Home, BookOpen, ShoppingBag, Trophy, LogOut, Send, Bell, BellOff, Star, ChevronDown, MessageCircle,
+  Megaphone, ChevronRight, Flame, Sun, Moon, MonitorSmartphone,
 } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
-import { Avatar, C, StreakFlame, CountUp, LevelBar, levelFromCoins, EmptyState, Modal } from './ui.jsx';
+import { Avatar, C, alpha, CountUp, LevelBar, levelFromCoins, EmptyState, Modal } from './ui.jsx';
 import { LANGS, useI18n } from '../../i18n/index.jsx';
 import { useDailyStreak } from '../useDailyStreak.js';
+import { useKidTheme } from '../theme.jsx';
 import { api } from '../api.js';
 
 /**
@@ -22,11 +25,10 @@ import { api } from '../api.js';
  * бэкенде нет источника, чтобы цифра не врала.
  */
 
-/* Тёмная шапка. Первая версия (взята из палитры Staff-панели) была
-   почти чёрной — зелёный едва читался. Эта явно зелёная, а не тёмная
-   вообще. */
-const DARK_BG = 'linear-gradient(135deg, #21391A 0%, #142A0F 100%)';
-const SIDEBAR_W = 252;
+/* Шапка — тёмный лес (--k-header-*). Явно зелёная, не «просто тёмная»,
+   и в light, и в dark: бренд LevelUp читается в самом тёмном месте UI. */
+const DARK_BG = 'linear-gradient(160deg, var(--k-header-1) 0%, var(--k-header-2) 100%)';
+const SIDEBAR_W = 248;
 
 /* Меню — минимально (4 пункта). «Мои уроки» ведёт сразу на темы (/lessons) —
    раньше вело на промежуточное меню (/study, 4 карточки Уроки/Тесты/Задания/
@@ -65,42 +67,154 @@ function useHeaderStats() {
   return stats;
 }
 
-/* Счётчик в шапке: цветной кружок-значок + число. Форма одна, меняются
-   цвет и иконка — так монеты и энергия читаются как элементы одной HUD.
-   Число — CountUp: докручивается при смене, а не просто перерисовывается. */
-function Counter({ icon: Icon, value, fill, title }) {
+/* ── Медальон уровня — подпись кабинета ─────────────────────────────
+   Кольцо прогресса до следующего уровня (SVG, честный % из настоящих
+   coins) с номером уровня в центре. Живёт в шапке всегда — это «аватар
+   достижений» ученика, вокруг которого построен весь кабинет. */
+function LevelMedallion({ coins, size = 34 }) {
+  const reduce = useReducedMotion();
+  const { level, progress } = levelFromCoins(coins);
+  const r = (size - 4) / 2;
+  const circ = 2 * Math.PI * r;
   return (
-    <span
-      className="inline-flex items-center gap-2 h-10 pl-1.5 pr-3.5 rounded-full"
-      style={{ background: 'rgba(0,0,0,0.2)' }}
-      title={title}
-    >
-      <span
-        className="w-7 h-7 rounded-full grid place-items-center shrink-0"
-        style={{ background: `${fill}40`, color: fill }}
-      >
-        <Icon size={14} strokeWidth={2.4} />
+    <span className="relative shrink-0 grid place-items-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="3" />
+        <motion.circle
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke={C.honey} strokeWidth="3" strokeLinecap="round"
+          strokeDasharray={circ}
+          initial={{ strokeDashoffset: circ }}
+          animate={{ strokeDashoffset: circ * (1 - (coins == null ? 0 : progress)) }}
+          transition={reduce ? { duration: 0 } : { duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+        />
+      </svg>
+      <span className="absolute k-num text-white text-[12px] leading-none">
+        {coins == null ? '·' : level}
       </span>
+    </span>
+  );
+}
+
+/* Счётчик в HUD: маленький значок-иконка + число. Одна форма для монет
+   и стрика — читаются как элементы одного табло. */
+function HudStat({ icon: Icon, value, fill, title, lit = true }) {
+  return (
+    <span className="inline-flex items-center gap-1.5" title={title}>
+      <Icon
+        size={13}
+        strokeWidth={2.6}
+        style={{ color: lit ? fill : 'rgba(255,255,255,0.4)' }}
+        fill={lit && (Icon === Star || Icon === Flame) ? fill : 'transparent'}
+      />
       {typeof value === 'number' ? (
-        <CountUp value={value} className="text-[15px]" style={{ color: '#fff' }} />
+        <CountUp value={value} className="text-[13.5px]" style={{ color: '#fff' }} />
       ) : (
-        <span className="k-num text-[15px] text-white">{value}</span>
+        <span className="k-num text-[13.5px]" style={{ color: lit ? '#fff' : 'rgba(255,255,255,0.5)' }}>{value}</span>
       )}
     </span>
+  );
+}
+
+/* ── Пункт бокового меню ───────────────────────────────────────────
+   Активный: подложка forest-soft + лес-текст + лаймовая полоска слева,
+   которая ПЕРЕЕЗЖАЕт между пунктами (motion layoutId), а не мигает. */
+function NavItem({ to, label, icon: Icon, end, active, hue = C.forest }) {
+  const reduce = useReducedMotion();
+  const content = (isActive) => {
+    const on = active ?? isActive;
+    return (
+      <span
+        className="relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-[14.5px] font-extrabold transition-colors"
+        style={{ color: on ? hue : C.muted, background: on ? C.forestSoft : 'transparent' }}
+        onMouseEnter={(e) => { if (!on) { e.currentTarget.style.background = C.hair; } }}
+        onMouseLeave={(e) => { if (!on) { e.currentTarget.style.background = 'transparent'; } }}
+      >
+        {on && (
+          <motion.span
+            layoutId="student-nav-rail"
+            className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full"
+            style={{ background: hue === C.forest ? C.lime : hue }}
+            transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 480, damping: 38 }}
+          />
+        )}
+        <Icon size={19} strokeWidth={on ? 2.5 : 2} className="shrink-0" />
+        {label}
+      </span>
+    );
+  };
+  if (active !== undefined) return <NavLink to={to} className="block">{() => content()}</NavLink>;
+  return <NavLink to={to} end={end} className="block">{({ isActive }) => content(isActive)}</NavLink>;
+}
+
+/* Весь статус ученика — в одном стеклянном контейнере, а не тремя
+   отдельными тёмными таблетками. */
+function StatusHud({ coins, streak, t }) {
+  return (
+    <div
+      className="flex items-center gap-2.5 h-10 pl-1 pr-3 rounded-full"
+      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+    >
+      <LevelMedallion coins={coins} />
+      <span className="w-px h-4" style={{ background: 'rgba(255,255,255,0.14)' }} />
+      <HudStat icon={Star} value={coins == null ? '···' : coins} fill={C.honey} title={t.header.coins} />
+      <span className="w-px h-4" style={{ background: 'rgba(255,255,255,0.14)' }} />
+      <HudStat icon={Flame} value={streak} fill={C.coral} lit={streak > 0} title={t.ui.streakTitle(streak)} />
+    </div>
+  );
+}
+
+/* ── Переключатель темы ────────────────────────────────────────────
+   Цикл light → dark → system. Иконка меняется с поворотом (morph),
+   под reduced-motion — просто без анимации. Живёт в шапке всегда. */
+function ThemeToggle({ t }) {
+  const { mode, resolved, cycle } = useKidTheme();
+  const reduce = useReducedMotion();
+  const Icon = mode === 'system' ? MonitorSmartphone : resolved === 'dark' ? Moon : Sun;
+  const label =
+    mode === 'system' ? t.theme.system : resolved === 'dark' ? t.theme.dark : t.theme.light;
+  return (
+    <button
+      type="button"
+      onClick={cycle}
+      title={`${t.theme.label}: ${label}`}
+      aria-label={`${t.theme.label}: ${label}`}
+      className="k-press-sm relative w-10 h-10 rounded-full grid place-items-center shrink-0 overflow-hidden transition-colors"
+      style={{ background: 'rgba(0,0,0,0.2)', color: 'rgba(255,255,255,0.82)' }}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={`${mode}-${resolved}`}
+          initial={reduce ? false : { rotate: -90, opacity: 0, scale: 0.6 }}
+          animate={{ rotate: 0, opacity: 1, scale: 1 }}
+          exit={reduce ? { opacity: 0 } : { rotate: 90, opacity: 0, scale: 0.6 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          className="grid place-items-center"
+        >
+          <Icon size={18} strokeWidth={2.4} />
+        </motion.span>
+      </AnimatePresence>
+    </button>
   );
 }
 
 export default function Layout() {
   const { user, token, logout } = useAuth();
   const { lang, setLanguage, t } = useI18n();
-  const [hasAnnouncements, setHasAnnouncements] = useState(false);
+  const navigate = useNavigate();
+  // Раньше: bool + жёстко пустой EmptyState в колокольчике всегда. Теперь
+  // держим сами объявления — колокольчик показывает 3 свежих + переход на
+  // полную страницу, точка-индикатор загорается, когда есть непрочитанные.
+  const [announcements, setAnnouncements] = useState(null); // null — ещё не грузили
+  const hasAnnouncements = (announcements?.length ?? 0) > 0;
   const nav = buildNav(t, user?.orgFeatures);
-  if (hasAnnouncements) nav.rest.unshift({ to: '/student/announcements', label: t.nav.announcements, icon: Bell });
+  if (hasAnnouncements) nav.rest.unshift({ to: '/student/announcements', label: t.nav.announcements, icon: Megaphone });
   const location = useLocation();
+  const reduceMotion = useReducedMotion();
   const stats = useHeaderStats();
   const streak = useDailyStreak();
   const inLessons = LESSON_PATHS.some((p) => location.pathname.startsWith(p));
-  const name = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || (lang === 'uz' ? "O'quvchi" : 'Ученик');
+  const name = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || t.header.studentRole;
   // Уведомления и профиль — выпадающие панели от кнопки (как в Mentor-панели),
   // не модалки по центру экрана: закрываются кликом снаружи или Escape.
   const [showNotifications, setShowNotifications] = useState(false);
@@ -110,7 +224,9 @@ export default function Layout() {
 
   useEffect(() => {
     let alive = true;
-    api.announcements().then((r) => { if (alive) setHasAnnouncements((r.announcements || []).length > 0); }).catch(() => {});
+    api.announcements()
+      .then((r) => { if (alive) setAnnouncements(r.announcements || []); })
+      .catch(() => { if (alive) setAnnouncements([]); });
     return () => { alive = false; };
   }, []);
 
@@ -172,11 +288,7 @@ export default function Layout() {
       // чтобы кнопка сама переключилась на «привязан», без перезагрузки страницы.
       setTimeout(loadTgStatus, 4000);
     } catch (e) {
-      setTgError(
-        e?.status === 503
-          ? 'Telegram hali sozlanmagan — administratorga ayting'
-          : 'Ulab bo‘lmadi, keyinroq urinib ko‘ring',
-      );
+      setTgError(e?.status === 503 ? t.header.tgNotConfigured : t.header.tgBindError);
     } finally {
       setTgBusy(false);
     }
@@ -198,7 +310,7 @@ export default function Layout() {
       await loadTgStatus();
       closeTgModal();
     } catch {
-      setTgError('Uzib bo‘lmadi, keyinroq urinib ko‘ring');
+      setTgError(t.header.tgUnlinkError);
     } finally {
       setTgBusy(false);
     }
@@ -223,14 +335,18 @@ export default function Layout() {
 
         <div className="flex items-center gap-2 sm:gap-2.5">
           <div className="hidden sm:block">
-            <StreakFlame days={streak} />
+            <StatusHud coins={stats ? stats.coins : null} streak={streak} t={t} />
           </div>
-          <div className="hidden sm:block">
-            <Counter icon={Star} fill={C.lime} value={stats ? stats.coins : '···'} title={t.header.coins} />
+          {/* Мобильный минимум: медальон уровня + монеты */}
+          <div
+            className="sm:hidden flex items-center gap-2 h-9 pl-1 pr-2.5 rounded-full"
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+          >
+            <LevelMedallion coins={stats ? stats.coins : null} size={30} />
+            <HudStat icon={Star} value={stats ? stats.coins : '··'} fill={C.honey} title={t.header.coins} />
           </div>
-          {/* Энергия убрана из отображения: показывать бы пришлось только "—"
-             (доп-фича, источника ещё нет) — заглушка выглядела хуже, чем
-             её отсутствие. Вернуть, когда появятся реальные данные. */}
+
+          <ThemeToggle t={t} />
 
           <div className="relative" ref={notifRef}>
             <button
@@ -246,6 +362,13 @@ export default function Layout() {
               }}
             >
               <Bell size={18} strokeWidth={2.4} />
+              {hasAnnouncements && (
+                <span
+                  className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
+                  style={{ background: C.lime, boxShadow: '0 0 0 2px rgba(20,42,15,0.9)' }}
+                  aria-hidden="true"
+                />
+              )}
             </button>
 
             {showNotifications && (
@@ -256,12 +379,44 @@ export default function Layout() {
                 <div className="px-4 py-3 text-[14.5px] font-extrabold" style={{ color: C.text, borderBottom: `1px solid ${C.line}` }}>
                   {t.header.notifications}
                 </div>
-                <EmptyState
-                  icon={BellOff}
-                  hue="blue"
-                  title={t.header.noNotifsTitle}
-                  text={t.header.noNotifsText}
-                />
+                {!hasAnnouncements ? (
+                  <EmptyState
+                    icon={BellOff}
+                    hue="blue"
+                    title={t.header.noNotifsTitle}
+                    text={t.header.noNotifsText}
+                  />
+                ) : (
+                  <>
+                    <div className="max-h-[60vh] sm:max-h-80 overflow-y-auto">
+                      {announcements.slice(0, 4).map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => { setShowNotifications(false); navigate('/student/announcements'); }}
+                          className="k-press-sm w-full flex items-start gap-3 px-4 py-3 text-left transition-colors"
+                          style={{ borderBottom: `1px solid ${C.line}` }}
+                        >
+                          <span className="w-8 h-8 rounded-lg grid place-items-center shrink-0 mt-0.5" style={{ background: alpha(C.violet, 12), color: C.violet }}>
+                            <Megaphone size={15} strokeWidth={2.4} />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[13.5px] font-extrabold truncate" style={{ color: C.text }}>{a.title}</span>
+                            <span className="text-[12px] font-semibold mt-0.5 line-clamp-2" style={{ color: C.muted }}>{a.body}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setShowNotifications(false); navigate('/student/announcements'); }}
+                      className="k-press-sm w-full flex items-center justify-center gap-1.5 py-3 text-[13px] font-extrabold"
+                      style={{ color: C.violet }}
+                    >
+                      {t.header.allAnnouncements} <ChevronRight size={14} strokeWidth={2.6} />
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -312,22 +467,22 @@ export default function Layout() {
                         }}
                         disabled={tgBusy}
                         className="k-press-sm w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13.5px] font-bold disabled:opacity-40"
-                        style={{ color: tg?.linked ? C.text : '#1668B8' }}
+                        style={{ color: tg?.linked ? C.text : C.info }}
                       >
                         <Send size={16} strokeWidth={2.6} className="shrink-0" />
                         <span className="truncate">
                           {tg?.linked
                             ? tg.username
                               ? `@${tg.username}`
-                              : 'Telegram ulangan'
-                            : 'Telegramni ulash'}
+                              : t.header.tgLinked
+                            : t.header.tgBind}
                         </span>
                         {tg?.linked && (
                           <span
                             className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded shrink-0"
-                            style={{ background: '#E8F6EC', color: '#1F7A3D' }}
+                            style={{ background: C.successSoft, color: C.success }}
                           >
-                            ULANGAN
+                            {t.header.tgLinkedBadge}
                           </span>
                         )}
                       </button>
@@ -335,7 +490,7 @@ export default function Layout() {
                       {tgError && (
                         <div
                           className="px-3 pb-1.5 text-[11px] font-semibold leading-snug"
-                          style={{ color: '#C0392B' }}
+                          style={{ color: C.danger }}
                         >
                           {tgError}
                         </div>
@@ -378,7 +533,7 @@ export default function Layout() {
                     role="menuitem"
                     onClick={logout}
                     className="k-press-sm w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13.5px] font-bold"
-                    style={{ color: '#C0392B' }}
+                    style={{ color: C.danger }}
                   >
                     <LogOut size={16} strokeWidth={2.6} /> {t.header.logout}
                   </button>
@@ -395,63 +550,22 @@ export default function Layout() {
            виджетом прогресса, а не просто увеличенными отступами. ══ */}
       <aside
         className="hidden lg:flex fixed top-20 bottom-0 left-0 z-40 flex-col"
-        style={{ width: SIDEBAR_W, background: C.bg }}
+        style={{ width: SIDEBAR_W, borderRight: `1px solid ${C.line}` }}
       >
-        <nav className="shrink-0 px-1.5 py-5 space-y-1">
-          {nav.main.map(({ to, label, icon: Icon, end }) => (
-            <NavLink key={to} to={to} end={end} className="block">
-              {({ isActive }) => (
-                <span
-                  className="k-press-sm flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-[15.5px] font-bold transition-colors"
-                  style={{
-                    color: isActive ? C.limeDk : C.muted,
-                    background: isActive ? `${C.lime}1c` : 'transparent',
-                  }}
-                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = C.card; e.currentTarget.style.color = C.text; } }}
-                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.muted; } }}
-                >
-                  <Icon size={20} strokeWidth={isActive ? 2.4 : 2} className="shrink-0" />
-                  {label}
-                </span>
-              )}
-            </NavLink>
+        <nav className="shrink-0 px-2.5 py-5 space-y-1">
+          {nav.main.map(({ to, label, icon, end }) => (
+            <NavItem key={to} to={to} label={label} icon={icon} end={end} />
           ))}
-
-          {/* «Мои уроки» — ведёт на отдельную страницу-меню (/study) */}
-          <NavLink to={nav.lessons.to} className="block">
-            {({ isActive }) => (
-              <span
-                className="k-press-sm flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-[15.5px] font-bold transition-colors"
-                style={{
-                  color: inLessons ? C.learn : C.muted,
-                  background: inLessons ? `${C.learn}1c` : 'transparent',
-                }}
-                onMouseEnter={(e) => { if (!inLessons) { e.currentTarget.style.background = C.card; e.currentTarget.style.color = C.text; } }}
-                onMouseLeave={(e) => { if (!inLessons) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.muted; } }}
-              >
-                <BookOpen size={20} strokeWidth={inLessons ? 2.4 : 2} className="shrink-0" />
-                {nav.lessons.label}
-              </span>
-            )}
-          </NavLink>
-
-          {nav.rest.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} className="block">
-              {({ isActive }) => (
-                <span
-                  className="k-press-sm flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-[15.5px] font-bold transition-colors"
-                  style={{
-                    color: isActive ? C.limeDk : C.muted,
-                    background: isActive ? `${C.lime}1c` : 'transparent',
-                  }}
-                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = C.card; e.currentTarget.style.color = C.text; } }}
-                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.muted; } }}
-                >
-                  <Icon size={20} strokeWidth={isActive ? 2.4 : 2} className="shrink-0" />
-                  {label}
-                </span>
-              )}
-            </NavLink>
+          {/* «Мои уроки» — активно на всём дереве уроков (/lessons, /tests…) */}
+          <NavItem
+            to={nav.lessons.to}
+            label={nav.lessons.label}
+            icon={BookOpen}
+            active={inLessons}
+            hue={C.violet}
+          />
+          {nav.rest.map(({ to, label, icon }) => (
+            <NavItem key={to} to={to} label={label} icon={icon} />
           ))}
         </nav>
 
@@ -460,11 +574,16 @@ export default function Layout() {
         {/* Виджет прогресса у низа сайдбара (настоящие данные: те же coins,
             что и в шапке). */}
         <div className="px-2.5 pb-3">
-          <div
-            className="rounded-xl p-4"
-            style={{ background: C.limeSoft, border: `1px solid ${C.limeLine}` }}
-          >
-            <div className="text-[11px] font-semibold mb-2.5" style={{ color: C.limeDk }}>{t.header.progress}</div>
+          <div className="rounded-2xl p-4" style={{ background: C.forestSoft, border: `1px solid ${C.line}` }}>
+            <div className="flex items-baseline justify-between mb-2.5">
+              <span className="k-eyebrow" style={{ color: C.forest }}>{t.header.progress}</span>
+              {stats?.coins != null && (
+                <span className="text-[11px] font-bold flex items-center gap-1" style={{ color: C.honeyDk }}>
+                  <Star size={10} strokeWidth={2.6} fill={C.honey} color={C.honey} />
+                  {levelFromCoins(stats.coins).toNext}
+                </span>
+              )}
+            </div>
             <LevelBar {...levelFromCoins(stats?.coins)} hue="lime" />
           </div>
         </div>
@@ -485,13 +604,13 @@ export default function Layout() {
             <div className="flex items-center gap-3">
               <div
                 className="w-11 h-11 rounded-xl grid place-items-center shrink-0"
-                style={{ background: '#E4F1FF', color: '#1668B8' }}
+                style={{ background: C.infoSoft, color: C.info }}
               >
                 <Send size={19} strokeWidth={2.6} />
               </div>
               <div className="min-w-0">
                 <div className="text-[15px] font-extrabold truncate" style={{ color: C.text }}>
-                  {tg.username ? `@${tg.username}` : tg.firstName || 'Telegram ulangan'}
+                  {tg.username ? `@${tg.username}` : tg.firstName || t.header.tgLinked}
                 </div>
                 {tg.firstName && tg.username && (
                   <div className="text-[12px] font-semibold truncate" style={{ color: C.muted }}>
@@ -502,8 +621,8 @@ export default function Layout() {
             </div>
             {tg.linkedAt && (
               <div className="text-[12px] font-semibold mt-3" style={{ color: C.muted }}>
-                Ulangan sana:{' '}
-                {new Date(tg.linkedAt).toLocaleDateString('ru-RU', {
+                {t.header.tgLinkedAt}{' '}
+                {new Date(tg.linkedAt).toLocaleDateString(lang === 'uz' ? 'uz-UZ' : lang === 'en' ? 'en-US' : 'ru-RU', {
                   day: '2-digit',
                   month: '2-digit',
                   year: 'numeric',
@@ -513,35 +632,32 @@ export default function Layout() {
           </div>
 
           <div className="text-[13px] leading-relaxed mb-4" style={{ color: C.muted }}>
-            Botda <b style={{ color: C.text }}>/home</b>, <b style={{ color: C.text }}>/coins</b> va{' '}
-            <b style={{ color: C.text }}>/rating</b> buyruqlari ishlaydi. Saytga parolsiz kirish
-            ham shu ulanish orqali.
+            {t.header.tgCommands}
           </div>
 
           {tgError && (
-            <div className="text-[12px] font-semibold mb-3" style={{ color: '#C0392B' }}>
+            <div className="text-[12px] font-semibold mb-3" style={{ color: C.danger }}>
               {tgError}
             </div>
           )}
 
           {/* Второй шаг: до него кнопка «Uzish» ничего не отвязывает. */}
           {tgConfirmUnlink ? (
-            <div className="rounded-xl p-4" style={{ background: '#FFF2EF' }}>
-              <div className="text-[13px] font-bold mb-1" style={{ color: '#8E2C1B' }}>
-                Aniq uzmoqchimisiz?
+            <div className="rounded-xl p-4" style={{ background: C.dangerSoft }}>
+              <div className="text-[13px] font-bold mb-1" style={{ color: C.danger }}>
+                {t.header.tgConfirmTitle}
               </div>
-              <div className="text-[12px] leading-snug mb-3" style={{ color: '#8E2C1B' }}>
-                Xabarlar to‘xtaydi va Telegram orqali kirish ishlamay qoladi. Qayta ulash uchun
-                yana shu tugmadan o‘tish kerak.
+              <div className="text-[12px] leading-snug mb-3" style={{ color: C.danger }}>
+                {t.header.tgConfirmText}
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={onUnlinkTelegram}
                   disabled={tgBusy}
                   className="k-press-sm flex-1 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40"
-                  style={{ background: '#C0392B', color: '#fff' }}
+                  style={{ background: C.danger, color: '#fff' }}
                 >
-                  {tgBusy ? 'Uzilmoqda…' : 'Ha, uz'}
+                  {tgBusy ? t.header.tgBusy : t.header.tgYes}
                 </button>
                 <button
                   onClick={() => setTgConfirmUnlink(false)}
@@ -549,7 +665,7 @@ export default function Layout() {
                   className="k-press-sm flex-1 py-2.5 rounded-xl text-[13px] font-extrabold disabled:opacity-40"
                   style={{ background: C.card, color: C.text, border: `1px solid ${C.line}` }}
                 >
-                  Bekor qilish
+                  {t.header.tgCancel}
                 </button>
               </div>
             </div>
@@ -557,19 +673,25 @@ export default function Layout() {
             <button
               onClick={() => setTgConfirmUnlink(true)}
               className="k-press-sm w-full py-2.5 rounded-xl text-[13px] font-extrabold"
-              style={{ background: '#FFE6E2', color: '#C0392B' }}
+              style={{ background: C.dangerSoft, color: C.danger }}
             >
-              Ulanishni uzish
+              {t.header.tgUnlink}
             </button>
           )}
         </Modal>
       )}
 
       {/* ══ Контент ══ */}
-      <main className="pt-20 lg:pl-[252px] min-h-screen">
-        <div className="animate-page-enter max-w-[1080px] mx-auto p-4 sm:p-5 lg:p-7 pb-28 lg:pb-8">
+      <main className="pt-20 lg:pl-[248px] min-h-screen">
+        <motion.div
+          key={location.pathname}
+          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          className="max-w-[1040px] mx-auto p-4 sm:p-5 lg:p-8 pb-28 lg:pb-10"
+        >
           <Outlet />
-        </div>
+        </motion.div>
       </main>
 
       {/* ══ Нижняя навигация (мобильные) — 4 слота, без раскрытия ══ */}

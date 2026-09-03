@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import Avatar from '../../components/Avatar.jsx';
 import MyDiscipline from '../../components/MyDiscipline.jsx';
@@ -47,11 +48,12 @@ const GRADES = {
 };
 
 function GradeBadge({ grade }) {
+  const { t } = useTranslation();
   const g = GRADES[grade];
   if (!g) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-base-300 text-base-content/45">
-        Уровень не установлен
+        {t('mentor.profile.gradeNotSet')}
       </span>
     );
   }
@@ -65,6 +67,7 @@ function GradeBadge({ grade }) {
 /* Навыки тегами. Ввод по Enter или запятой: перечисляя список, человек
    печатает запятые машинально, и терять на них ввод — раздражает. */
 function SkillsInput({ value, onChange, max = 20 }) {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState('');
 
   const add = (raw) => {
@@ -82,7 +85,7 @@ function SkillsInput({ value, onChange, max = 20 }) {
     <div>
       <div className="flex flex-wrap gap-2 mb-2.5">
         {value.length === 0 && (
-          <span className="text-xs text-base-content/40 py-1">Навыки пока не добавлены</span>
+          <span className="text-xs text-base-content/40 py-1">{t('mentor.profile.noSkills')}</span>
         )}
         {value.map((s) => (
           <span
@@ -93,7 +96,7 @@ function SkillsInput({ value, onChange, max = 20 }) {
             <button
               onClick={() => onChange(value.filter((x) => x !== s))}
               className="w-5 h-5 rounded grid place-items-center hover:bg-primary/20 transition-colors"
-              aria-label={`${s} — удалить`}
+              aria-label={t('mentor.profile.removeSkill', { skill: s })}
             >
               <X size={12} />
             </button>
@@ -104,7 +107,7 @@ function SkillsInput({ value, onChange, max = 20 }) {
       <div className="flex gap-2">
         <input
           className="input input-bordered input-sm flex-1"
-          placeholder="Например: IELTS, Грамматика..."
+          placeholder={t('mentor.profile.skillPlaceholder')}
           value={draft}
           maxLength={40}
           disabled={value.length >= max}
@@ -125,11 +128,11 @@ function SkillsInput({ value, onChange, max = 20 }) {
           onClick={() => add(draft)}
           disabled={!draft.trim() || value.length >= max}
         >
-          <Plus size={14} /> Добавить
+          <Plus size={14} /> {t('mentor.profile.add')}
         </button>
       </div>
       <div className="text-[11px] text-base-content/40 mt-1.5">
-        {value.length}/{max} · Нажмите Enter или запятую для добавления
+        {t('mentor.profile.skillsHint', { count: value.length, max })}
       </div>
     </div>
   );
@@ -146,6 +149,7 @@ function Stat({ icon: Icon, value, label }) {
 }
 
 export default function MentorProfile() {
+  const { t, i18n } = useTranslation();
   const { token, user, logout, patchUser } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -188,9 +192,9 @@ export default function MentorProfile() {
   );
 
   const validate = () => {
-    if (!firstName.trim()) return 'Введите имя';
-    if (!lastName.trim()) return 'Введите фамилию';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Некорректный email';
+    if (!firstName.trim()) return t('mentor.profile.enterFirstName');
+    if (!lastName.trim()) return t('mentor.profile.enterLastName');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return t('mentor.profile.invalidEmail');
     return '';
   };
 
@@ -215,7 +219,7 @@ export default function MentorProfile() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
-      setError(err.message || 'Не удалось сохранить');
+      setError(err.message || t('mentor.profile.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -238,8 +242,9 @@ export default function MentorProfile() {
   };
 
   const fullName = `${me?.firstName ?? user?.firstName ?? ''} ${me?.lastName ?? user?.lastName ?? ''}`.trim();
+  const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
   const formatDate = (iso) =>
-    iso ? new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+    iso ? new Date(iso).toLocaleDateString(LOCALE_OF[i18n.language] || 'ru-RU', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
 
   return (
     /* Заголовок страницы убран: карточка слева и так представляет человека,
@@ -270,7 +275,7 @@ export default function MentorProfile() {
               </h2>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="badge badge-primary badge-sm gap-1">
-                  <ShieldCheck size={11} /> Mentor
+                  <ShieldCheck size={11} /> {t('role.mentor')}
                 </span>
                 <GradeBadge grade={me?.grade} />
               </div>
@@ -293,16 +298,16 @@ export default function MentorProfile() {
             {/* Показатели: профиль без единой цифры выглядит анкетой,
                 а не рабочим экраном. */}
             <div className="flex border-t border-base-200 py-3.5">
-              <Stat icon={BookOpen} value={groups.length} label="Групп" />
+              <Stat icon={BookOpen} value={groups.length} label={t('mentor.profile.groupsLabel')} />
               <div className="w-px bg-base-200" />
-              <Stat icon={Users} value={studentsTotal} label="Учеников" />
+              <Stat icon={Users} value={studentsTotal} label={t('mentor.profile.studentsLabel')} />
             </div>
 
             <div className="divide-y divide-base-200 border-t border-base-200">
-              <InfoRow icon={Mail} label="Email" value={me?.email ?? user?.email} />
-              <InfoRow icon={Phone} label="Телефон" value={me?.phone} />
-              <InfoRow icon={Building2} label="Филиал" value={me?.branchName} />
-              <InfoRow icon={CalendarDays} label="Зарегистрирован" value={formatDate(me?.createdAt)} />
+              <InfoRow icon={Mail} label={t('mentor.profile.email')} value={me?.email ?? user?.email} />
+              <InfoRow icon={Phone} label={t('mentor.profile.phone')} value={me?.phone} />
+              <InfoRow icon={Building2} label={t('mentor.profile.branch')} value={me?.branchName} />
+              <InfoRow icon={CalendarDays} label={t('mentor.profile.registered')} value={formatDate(me?.createdAt)} />
             </div>
           </section>
         </div>
@@ -313,15 +318,15 @@ export default function MentorProfile() {
         <div className="space-y-5">
           <section className="card bg-base-100">
             <header className="px-5 py-4 border-b border-base-200">
-              <h2 className="font-bold">Личные данные</h2>
+              <h2 className="font-bold">{t('mentor.profile.personalData')}</h2>
               <p className="text-xs text-base-content/45 mt-0.5">
-                Эти данные видят родители и администратор.
+                {t('mentor.profile.personalDataHint')}
               </p>
             </header>
 
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="form-control">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Имя</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('mentor.profile.firstName')}</span>
                 <input
                   className="input input-bordered"
                   value={firstName}
@@ -331,7 +336,7 @@ export default function MentorProfile() {
                 />
               </label>
               <label className="form-control">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Фамилия</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('mentor.profile.lastName')}</span>
                 <input
                   className="input input-bordered"
                   value={lastName}
@@ -341,7 +346,7 @@ export default function MentorProfile() {
                 />
               </label>
               <label className="form-control sm:col-span-2">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Email</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('mentor.profile.email')}</span>
                 <input
                   type="email"
                   className="input input-bordered"
@@ -351,25 +356,25 @@ export default function MentorProfile() {
                   disabled={isLoading}
                 />
                 <span className="text-[11px] text-base-content/45 mt-1.5">
-                  Вы входите в систему с этим email, код восстановления пароля также приходит на этот адрес.
+                  {t('mentor.profile.emailHint')}
                 </span>
               </label>
 
               {/* ── Профессиональная часть ── */}
               <div className="sm:col-span-2 border-t border-base-200 pt-4 mt-1">
-                <h3 className="text-sm font-bold">Профессиональная информация</h3>
+                <h3 className="text-sm font-bold">{t('mentor.profile.professionalInfo')}</h3>
                 <p className="text-xs text-base-content/45 mt-0.5">
-                  Эти данные показываются родителям для знакомства с вами.
+                  {t('mentor.profile.professionalHint')}
                 </p>
               </div>
 
               <label className="form-control sm:col-span-2">
                 <span className="text-xs font-semibold text-base-content/55 mb-1.5">
-                  О себе
+                  {t('mentor.profile.about')}
                 </span>
                 <textarea
                   className="textarea textarea-bordered min-h-[104px] leading-relaxed"
-                  placeholder="Ваш опыт, стиль преподавания, достижения..."
+                  placeholder={t('mentor.profile.aboutPlaceholder')}
                   value={bio}
                   maxLength={1000}
                   onChange={(e) => { setBio(e.target.value); setError(''); }}
@@ -382,7 +387,7 @@ export default function MentorProfile() {
 
               <div className="form-control sm:col-span-2">
                 <span className="text-xs font-semibold text-base-content/55 mb-1.5">
-                  Навыки
+                  {t('mentor.profile.skills')}
                 </span>
                 <SkillsInput
                   value={skills}
@@ -395,12 +400,12 @@ export default function MentorProfile() {
                   выглядит сломанным. */}
               <div className="form-control sm:col-span-2">
                 <span className="text-xs font-semibold text-base-content/55 mb-1.5 flex items-center gap-1.5">
-                  <Lock size={11} /> Уровень
+                  <Lock size={11} /> {t('mentor.profile.grade')}
                 </span>
                 <div className="flex items-center gap-3 flex-wrap px-3.5 py-3 rounded-lg bg-base-200/50 border border-base-200">
                   <GradeBadge grade={me?.grade} />
                   <span className="text-xs text-base-content/50">
-                    Уровень устанавливает администратор — вы не можете изменить его самостоятельно.
+                    {t('mentor.profile.gradeHint')}
                   </span>
                 </div>
               </div>
@@ -416,17 +421,17 @@ export default function MentorProfile() {
                   </span>
                 ) : saved ? (
                   <span className="flex items-center gap-1.5 text-success font-semibold">
-                    <Check size={14} /> Сохранено
+                    <Check size={14} /> {t('mentor.profile.saved')}
                   </span>
                 ) : dirty ? (
-                  <span className="text-base-content/50">Есть несохранённые изменения</span>
+                  <span className="text-base-content/50">{t('mentor.profile.unsavedChanges')}</span>
                 ) : null}
               </span>
 
               <span className="flex items-center gap-2 shrink-0">
                 {dirty && (
                   <button className="btn btn-ghost btn-sm" onClick={reset} disabled={saving}>
-                    Отмена
+                    {t('mentor.profile.cancel')}
                   </button>
                 )}
                 <button
@@ -435,7 +440,7 @@ export default function MentorProfile() {
                   disabled={saving || !dirty}
                 >
                   {saving ? <span className="loading loading-spinner loading-xs" /> : <Check size={15} />}
-                  Сохранить
+                  {t('mentor.profile.save')}
                 </button>
               </span>
             </footer>
@@ -443,25 +448,24 @@ export default function MentorProfile() {
 
           <section className="card bg-base-100">
             <header className="px-5 py-4 border-b border-base-200">
-              <h2 className="font-bold">Безопасность</h2>
+              <h2 className="font-bold">{t('mentor.profile.security')}</h2>
             </header>
 
             <div className="divide-y divide-base-200">
               <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
-                    <KeyRound size={15} className="text-base-content/40" /> Пароль
+                    <KeyRound size={15} className="text-base-content/40" /> {t('mentor.profile.password')}
                   </div>
                   <p className="text-xs text-base-content/50 mt-1 max-w-md">
-                    В целях безопасности пароль не изменяется здесь — он
-                    восстанавливается через код подтверждения, отправляемый на ваш email.
+                    {t('mentor.profile.passwordHint')}
                   </p>
                 </div>
                 <button
                   className="btn btn-outline btn-sm shrink-0"
                   onClick={() => navigate('/login?reset=1')}
                 >
-                  Восстановить пароль
+                  {t('mentor.profile.resetPassword')}
                 </button>
               </div>
 
@@ -470,14 +474,14 @@ export default function MentorProfile() {
               <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
-                    <LogOut size={15} className="text-base-content/40" /> Завершить сеанс
+                    <LogOut size={15} className="text-base-content/40" /> {t('mentor.profile.endSession')}
                   </div>
                   <p className="text-xs text-base-content/50 mt-1">
-                    Вы выйдете из аккаунта на этом устройстве.
+                    {t('mentor.profile.endSessionHint')}
                   </p>
                 </div>
                 <button className="btn btn-outline btn-error btn-sm shrink-0" onClick={onLogout}>
-                  Выйти
+                  {t('mentor.profile.logout')}
                 </button>
               </div>
             </div>

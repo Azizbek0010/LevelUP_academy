@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ShieldAlert, Ban, Coins, Plus, ScrollText, UserX, BookOpen, AlertTriangle, AlertCircle, Percent, Lightbulb, Info } from 'lucide-react';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
@@ -25,22 +26,26 @@ import { TYPE_META, LevelBadge } from '../../discipline-meta.jsx';
 
 const TYPE_ICONS = { sariq: AlertTriangle, qizil: AlertCircle, qora: Ban };
 
-const ROLE_LABEL = {
-  mentor: 'Ментор',
-  methodist: 'Методист',
-  admin: 'Администратор',
-};
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
 
-function dateTime(iso) {
+const roleLabelMap = (t) => ({
+  mentor: t('admin.discipline.roleMentor'),
+  methodist: t('admin.discipline.roleMethodist'),
+  admin: t('admin.discipline.roleAdmin'),
+});
+
+function dateTime(iso, locale = 'ru-RU') {
   if (!iso) return '—';
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? '—'
-    : d.toLocaleString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    : d.toLocaleString(locale, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 /* ── Модалка «Выписать взыскание» ──────────────────────────────────────── */
 function IssueModal({ open, onClose, staffList, onDone }) {
+  const { t } = useTranslation();
+  const ROLE_LABEL = roleLabelMap(t);
   const { token } = useAuth();
   const [type, setType] = useState('sariq');
   const [targetUserId, setTarget] = useState('');
@@ -81,12 +86,12 @@ function IssueModal({ open, onClose, staffList, onDone }) {
 
   const submit = async () => {
     setErr('');
-    if (!targetUserId) return setErr('Выберите сотрудника');
-    if (!reason.trim()) return setErr('Укажите причину');
+    if (!targetUserId) return setErr(t('admin.discipline.selectStaff'));
+    if (!reason.trim()) return setErr(t('admin.discipline.specifyReason'));
 
     const parsed = amount !== '' ? Number(amount) : undefined;
     if (parsed != null && (isNaN(parsed) || parsed < 0 || parsed > 100)) {
-      return setErr('Процент должен быть от 0 до 100');
+      return setErr(t('admin.discipline.percentRange'));
     }
 
     setBusy(true);
@@ -111,12 +116,12 @@ function IssueModal({ open, onClose, staffList, onDone }) {
     <Modal
       isOpen={open}
       onClose={onClose}
-      title="Взыскание сотруднику"
+      title={t('admin.discipline.issueTitle')}
       actions={
         <>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>Отмена</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>{t('admin.discipline.cancel')}</button>
           <button className="btn btn-primary btn-sm" onClick={submit} disabled={busy}>
-            {busy ? <span className="loading loading-spinner loading-xs" /> : 'Выписать'}
+            {busy ? <span className="loading loading-spinner loading-xs" /> : t('admin.discipline.issue')}
           </button>
         </>
       }
@@ -157,14 +162,14 @@ function IssueModal({ open, onClose, staffList, onDone }) {
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            Сотрудник
+            {t('admin.discipline.staffLabel')}
           </span>
           <select
             className="select select-bordered select-sm rounded-lg"
             value={targetUserId}
             onChange={(e) => setTarget(e.target.value)}
           >
-            <option value="">Выберите сотрудника</option>
+            <option value="">{t('admin.discipline.chooseStaff')}</option>
             {staffList.map((m) => (
               <option key={m.id} value={m.id}>
                 {[m.firstName || m.first_name, m.lastName || m.last_name].filter(Boolean).join(' ')} — {ROLE_LABEL[m.role] ?? m.role}
@@ -173,14 +178,14 @@ function IssueModal({ open, onClose, staffList, onDone }) {
           </select>
           {staffList.length === 0 && (
             <span className="text-xs text-warning mt-1">
-              Сотрудников не найдено
+              {t('admin.discipline.noStaffFound')}
             </span>
           )}
         </label>
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            Процент от оклада (необязательно)
+            {t('admin.discipline.percentLabel')}
           </span>
           <div className="join w-full">
             <input
@@ -195,34 +200,34 @@ function IssueModal({ open, onClose, staffList, onDone }) {
             <span className="join-item btn btn-sm btn-ghost pointer-events-none text-base-content/45">%</span>
           </div>
           <span className="text-xs text-base-content/45 mt-1">
-            Процент от оклада, который вычитается (например, 5 = −5% от оклада)
+            {t('admin.discipline.percentHint')}
           </span>
         </label>
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            Причина
+            {t('admin.discipline.reasonLabel')}
           </span>
           <textarea
             rows={3}
             className="textarea textarea-bordered rounded-lg text-base sm:text-sm resize-none"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="За что выносится взыскание"
+            placeholder={t('admin.discipline.reasonPlaceholder')}
           />
         </label>
 
         {type === 'qora' && (
           <div className="alert alert-warning text-sm py-2">
             <UserX size={15} className="shrink-0" />
-            <span>Сотрудник потеряет доступ к системе. Вернуть его может Super Admin.</span>
+            <span>{t('admin.discipline.qoraWarning')}</span>
           </div>
         )}
 
         {rules.length > 0 && (
           <label className="form-control">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5 flex items-center gap-1.5">
-              Правило дисциплины
+              {t('admin.discipline.ruleLabel')}
               <Info size={13} className="text-primary" />
             </span>
             <div className="relative">
@@ -231,17 +236,17 @@ function IssueModal({ open, onClose, staffList, onDone }) {
                 value={selectedRuleId}
                 onChange={(e) => setSelectedRuleId(e.target.value)}
               >
-                <option value="">Правило танланг (avtomatik foiz)</option>
+                <option value="">{t('admin.discipline.chooseRule')}</option>
                 {rules.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.description} — {TYPE_META[r.type]?.short || r.type} {r.amount !== undefined ? `(${r.amount}%)` : ''}
                   </option>
                 ))}
               </select>
-              <Lightbulb size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500" title="Tanlanganda foiz avtomatik to'ldiriladi" />
+              <Lightbulb size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500" title={t('admin.discipline.ruleTooltip')} />
             </div>
             <span className="text-xs text-base-content/45 mt-1">
-              Super Admin belgilagan qoidalardan birini tanlang — foiz avtomatik to'ldiriladi
+              {t('admin.discipline.ruleHint')}
             </span>
           </label>
         )}
@@ -250,9 +255,8 @@ function IssueModal({ open, onClose, staffList, onDone }) {
           <div className="alert alert-warning text-sm py-2">
             <Info size={15} className="shrink-0" />
             <span>
-              Список правил для Admin пока недоступен — заполните процент вручную.
-              Правила ведёт Super Admin (фронт ждёт{' '}
-              <code>GET /admin/discipline-rules</code> от Karis).
+              {t('admin.discipline.rulesUnavailablePrefix')}{' '}
+              <code>GET /admin/discipline-rules</code> {t('admin.discipline.rulesUnavailableSuffix')}
             </span>
           </div>
         )}
@@ -276,6 +280,7 @@ function IssueModal({ open, onClose, staffList, onDone }) {
    если бэкенд ответит 404 — показываем честную жёлтую заглушку вместо ошибки
    (тот же подход, что в Task 6 для email/пароля ментора). */
 function NewRuleModal({ open, onClose, onDone }) {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const [type, setType] = useState('sariq');
   const [amount, setAmount] = useState('');
@@ -289,7 +294,7 @@ function NewRuleModal({ open, onClose, onDone }) {
   const submit = async () => {
     setErr('');
     setGap(false);
-    if (!description.trim()) return setErr('Опишите, за что выдаётся это правило');
+    if (!description.trim()) return setErr(t('admin.discipline.describeRule'));
 
     setBusy(true);
     try {
@@ -314,12 +319,12 @@ function NewRuleModal({ open, onClose, onDone }) {
     <Modal
       isOpen={open}
       onClose={onClose}
-      title="Новое правило"
+      title={t('admin.discipline.newRuleTitle')}
       actions={
         <>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>Отмена</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>{t('admin.discipline.cancel')}</button>
           <button className="btn btn-primary btn-sm" onClick={submit} disabled={busy}>
-            {busy ? <span className="loading loading-spinner loading-xs" /> : 'Сохранить'}
+            {busy ? <span className="loading loading-spinner loading-xs" /> : t('admin.discipline.save')}
           </button>
         </>
       }
@@ -330,16 +335,15 @@ function NewRuleModal({ open, onClose, onDone }) {
           <div className="alert alert-warning text-sm py-2">
             <AlertTriangle size={15} className="shrink-0" />
             <span>
-              Создание правил для Admin на бэкенде ещё не подключено — пока это
-              доступно только Super Admin («Новое правило» в его панели Дисциплины).
-              Фронт готов, ждём <code>POST /admin/discipline-rules</code> от Karis.
+              {t('admin.discipline.gapWarningPrefix')}{' '}
+              <code>POST /admin/discipline-rules</code> {t('admin.discipline.gapWarningSuffix')}
             </span>
           </div>
         )}
 
         <div>
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5 block">
-            Уровень
+            {t('admin.discipline.levelLabel')}
           </span>
           <div className="grid grid-cols-2 gap-2">
             {Object.entries(TYPE_META).map(([key, m]) => {
@@ -374,7 +378,7 @@ function NewRuleModal({ open, onClose, onDone }) {
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            Процент от оклада, % (необязательно)
+            {t('admin.discipline.percentAmountLabel')}
           </span>
           <input
             type="number"
@@ -383,26 +387,26 @@ function NewRuleModal({ open, onClose, onDone }) {
             className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="Например, 5"
+            placeholder={t('admin.discipline.percentPlaceholder')}
           />
         </label>
 
         <label className="form-control">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-            За что
+            {t('admin.discipline.whatForLabel')}
           </span>
           <textarea
             rows={2}
             className="textarea textarea-bordered rounded-lg text-base sm:text-sm resize-none"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Например: опоздание более 15 минут"
+            placeholder={t('admin.discipline.whatForPlaceholder')}
           />
         </label>
 
         <div className="alert alert-info text-sm py-2">
           <BookOpen size={15} className="shrink-0" />
-          <span>Правило применяется ко всем сотрудникам организации — выбирать конкретного ментора не нужно.</span>
+          <span>{t('admin.discipline.appliesToAll')}</span>
         </div>
       </div>
     </Modal>
@@ -411,6 +415,8 @@ function NewRuleModal({ open, onClose, onDone }) {
 
 /* ── Панель правил дисциплины (каталог) ───────────────────────────────── */
 function RulesPanel() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
   const qc = useQueryClient();
   const { data, isLoading } = useMyDisciplineRules();
   const rules = data?.data ?? data ?? [];
@@ -420,12 +426,12 @@ function RulesPanel() {
 
   return (
     <Panel
-      title="Правила дисциплины"
+      title={t('admin.discipline.rulesTitle')}
       icon={BookOpen}
       bodyClass="p-0"
       action={
         <button className="btn btn-outline btn-xs gap-1" onClick={() => setOpen(true)}>
-          <Plus size={13} /> Новое правило
+          <Plus size={13} /> {t('admin.discipline.newRule')}
         </button>
       }
     >
@@ -434,18 +440,18 @@ function RulesPanel() {
       ) : rules.length === 0 ? (
         <EmptyState
           icon={BookOpen}
-          title="Правил пока нет"
-          hint="Опишите нарушение и уровень взыскания за него — правило применяется ко всем сотрудникам организации."
+          title={t('admin.discipline.noRulesTitle')}
+          hint={t('admin.discipline.noRulesHint')}
         />
       ) : (
         <div className="overflow-x-auto">
           <table className="table table-sm">
             <thead>
               <tr>
-                <th>Правило</th>
-                <th>Уровень</th>
-                <th className="text-right w-24">% от оклада</th>
-                <th className="w-40">Добавлено</th>
+                <th>{t('admin.discipline.colRule')}</th>
+                <th>{t('admin.discipline.colLevel')}</th>
+                <th className="text-right w-24">{t('admin.discipline.colPercent')}</th>
+                <th className="w-40">{t('admin.discipline.colAdded')}</th>
               </tr>
             </thead>
             <tbody>
@@ -461,7 +467,7 @@ function RulesPanel() {
                     ) : '—'}
                   </td>
                   <td className="text-xs text-base-content/55">
-                    {dateTime(r.created_at || r.createdAt)}
+                    {dateTime(r.created_at || r.createdAt, locale)}
                   </td>
                 </tr>
               ))}
@@ -477,6 +483,9 @@ function RulesPanel() {
 
 /* ── Основной компонент ────────────────────────────────────────────────── */
 export default function AdminDiscipline() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const ROLE_LABEL = roleLabelMap(t);
   const { token } = useAuth();
   const qc = useQueryClient();
   const [filter, setFilter] = useState('all');
@@ -508,12 +517,12 @@ export default function AdminDiscipline() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Дисциплина" subtitle="Взыскания сотрудников филиала">
+      <PageHeader title={t('admin.discipline.title')} subtitle={t('admin.discipline.subtitle')}>
         <button
           className="btn btn-primary btn-sm gap-1.5"
           onClick={() => setIssueOpen(true)}
         >
-          <Plus size={15} /> Взыскание
+          <Plus size={15} /> {t('admin.discipline.issueBtn')}
         </button>
       </PageHeader>
 
@@ -521,19 +530,19 @@ export default function AdminDiscipline() {
         <SkeletonKpis count={3} className="grid-cols-2 lg:grid-cols-3" />
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <Kpi Icon={AlertTriangle} tone="warning" title="Сарық" value={fmt(totals.sariq)} unit="предупреждений" />
-          <Kpi Icon={AlertCircle} tone="danger" title="Қизил" value={fmt(totals.qizil)} unit="предупреждений" />
-          <Kpi Icon={Ban} tone="neutral" title="Қора" value={fmt(totals.qora)} unit="увольнений" />
+          <Kpi Icon={AlertTriangle} tone="warning" title={t('admin.discipline.yellow')} value={fmt(totals.sariq, i18n.language)} unit={t('admin.discipline.warningsUnit')} />
+          <Kpi Icon={AlertCircle} tone="danger" title={t('admin.discipline.red')} value={fmt(totals.qizil, i18n.language)} unit={t('admin.discipline.warningsUnit')} />
+          <Kpi Icon={Ban} tone="neutral" title={t('admin.discipline.black')} value={fmt(totals.qora, i18n.language)} unit={t('admin.discipline.dismissalsUnit')} />
         </div>
       )}
 
       <Panel
-        title="История взысканий"
+        title={t('admin.discipline.historyTitle')}
         icon={ScrollText}
         bodyClass="p-0"
         action={
           <div className="join">
-            {[['all', 'Все'], ['sariq', 'Сарық'], ['qizil', 'Қизил'], ['qora', 'Қора']].map(([key, label]) => (
+            {[['all', t('admin.discipline.filterAll')], ['sariq', t('admin.discipline.yellow')], ['qizil', t('admin.discipline.red')], ['qora', t('admin.discipline.black')]].map(([key, label]) => (
               <button
                 key={key}
                 className={`btn btn-xs join-item ${filter === key ? 'btn-primary' : 'btn-outline'}`}
@@ -550,20 +559,20 @@ export default function AdminDiscipline() {
         ) : shown.length === 0 ? (
           <EmptyState
             icon={ShieldAlert}
-            title={items.length === 0 ? 'Взысканий нет' : 'В этой категории пусто'}
-            hint={items.length === 0 ? 'Хорошая новость: сотрудники работают без нарушений.' : undefined}
+            title={items.length === 0 ? t('admin.discipline.noPenaltiesTitle') : t('admin.discipline.emptyCategoryTitle')}
+            hint={items.length === 0 ? t('admin.discipline.noPenaltiesHint') : undefined}
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="table table-sm">
               <thead>
                 <tr>
-                  <th>Сотрудник</th>
-                  <th>Вид</th>
-                  <th className="text-right">% от оклада</th>
-                  <th>Причина</th>
-                  <th>Выписал</th>
-                  <th>Когда</th>
+                  <th>{t('admin.discipline.colStaff')}</th>
+                  <th>{t('admin.discipline.colType')}</th>
+                  <th className="text-right">{t('admin.discipline.colPercent')}</th>
+                  <th>{t('admin.discipline.colReason')}</th>
+                  <th>{t('admin.discipline.colIssuedBy')}</th>
+                  <th>{t('admin.discipline.colWhen')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -590,7 +599,7 @@ export default function AdminDiscipline() {
                         </div>
                       </td>
                       <td className="text-xs text-base-content/55 whitespace-nowrap">
-                        {dateTime(p.created_at ?? p.createdAt)}
+                        {dateTime(p.created_at ?? p.createdAt, locale)}
                       </td>
                     </tr>
                   );

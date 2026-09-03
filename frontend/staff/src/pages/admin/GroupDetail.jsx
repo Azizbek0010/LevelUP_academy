@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, UserPlus, X, Users, KeyRound, Phone,
   CalendarDays, Check, Minus, Clock, CreditCard,
@@ -23,8 +24,13 @@ import { GroupFormModal } from './Groups.jsx';
 /* ─── helpers ─── */
 const fullName = (s) => s.fullName || [s.firstName || s.first_name, s.lastName || s.last_name].filter(Boolean).join(' ') || '—';
 
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 /* Короткие ярлыки дней для строки расписания в шапке группы. */
-const DAY_LABEL = { mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс' };
+const dayLabelsFor = (locale) => Object.fromEntries(
+  DAYS.map((key, i) => [key, new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: 'short' })]),
+);
+const monthLabelsFor = (locale) => Array.from({ length: 12 }, (_, i) => new Date(2024, i, 1).toLocaleDateString(locale, { month: 'long' }));
 
 const groupArchived = (g) => g?.isArchived ?? g?.is_archived ?? false;
 
@@ -35,11 +41,11 @@ const GROUP_PRESETS = [
   { label: '2-4-6', days: ['tue', 'thu', 'sat'] },
 ];
 
-function scheduleText(group) {
+function scheduleText(group, dayLabels) {
   let sched = group?.schedule;
   if (typeof sched === 'string') { try { sched = JSON.parse(sched); } catch { sched = []; } }
   if (!Array.isArray(sched) || sched.length === 0) return null;
-  const days = sched.map((s) => DAY_LABEL[String(s.day).toLowerCase()] || s.day).join(', ');
+  const days = sched.map((s) => dayLabels[String(s.day).toLowerCase()] || s.day).join(', ');
   const start = group.startTime || sched[0]?.start;
   const end = group.endTime || sched[0]?.end;
   const time = start ? (end ? `${start}–${end}` : start) : null;
@@ -62,10 +68,6 @@ function Meta({ Icon, label, value }) {
 }
 const pad = (n) => String(n).padStart(2, '0');
 const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-const MONTHS = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
-];
 
 function buildMonthStrip(base) {
   const list = [];
@@ -78,6 +80,9 @@ function buildMonthStrip(base) {
 
 /* ═══════════════ AttendanceTab — Calendar Table ═══════════════ */
 function AttendanceTab({ groupId, token }) {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const MONTHS = useMemo(() => monthLabelsFor(locale), [locale]);
   const now = useMemo(() => new Date(), []);
   const todayStr = now.toLocaleDateString('en-CA');
 
@@ -384,39 +389,39 @@ function AttendanceTab({ groupId, token }) {
             <span className="w-6 h-6 rounded-lg border grid place-items-center bg-emerald-100 text-emerald-700 border-emerald-300">
               <Check size={13} strokeWidth={3} />
             </span>
-            Пришёл
+            {t('admin.groupDetail.legendPresent')}
           </li>
           <li className="flex items-center gap-1.5">
             <span className="w-6 h-6 rounded-lg border grid place-items-center bg-amber-200 text-amber-800 border-amber-400">
               <Clock size={13} strokeWidth={2.5} />
             </span>
-            Опоздал
+            {t('admin.groupDetail.legendLate')}
           </li>
           <li className="flex items-center gap-1.5">
             <span className="w-6 h-6 rounded-lg border grid place-items-center bg-red-500 text-white border-red-500">
               <X size={13} strokeWidth={3} />
             </span>
-            Не пришёл
+            {t('admin.groupDetail.legendAbsent')}
           </li>
           <li className="flex items-center gap-1.5">
             <span className="w-6 h-6 rounded-lg border border-gray-200 grid place-items-center text-gray-300">
               <Minus size={13} />
             </span>
-            Не отмечен
+            {t('admin.groupDetail.legendUnmarked')}
           </li>
           <li className="flex items-center gap-1.5">
             <span className="relative w-6 h-6 rounded-lg border border-base-300 grid place-items-center ring-2 ring-indigo-500 ring-offset-1">
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-base-100" />
             </span>
-            Исправлено админом
+            {t('admin.groupDetail.legendCorrected')}
           </li>
         </ul>
         <span className="flex items-center gap-1.5 text-xs text-base-content/45">
-          {saveState === 'saving' && <><Loader2 size={13} className="animate-spin" /> Сохранение...</>}
-          {saveState === 'saved' && <>Сохранено</>}
+          {saveState === 'saving' && <><Loader2 size={13} className="animate-spin" /> {t('admin.groupDetail.saving')}</>}
+          {saveState === 'saved' && <>{t('admin.groupDetail.saved')}</>}
           {saveState === 'error' && (
             <button onClick={flush} className="text-red-500 hover:underline">
-              Не сохранено — повторить
+              {t('admin.groupDetail.saveErrorRetry')}
             </button>
           )}
         </span>
@@ -429,7 +434,7 @@ function AttendanceTab({ groupId, token }) {
             onClick={() => { setSlideDir('right'); setPageIndex((p) => Math.max(0, p - 1)); }}
             disabled={pageIndex === 0}
             className="w-8 h-8 rounded-xl border border-base-300 grid place-items-center text-base-content/45 hover:bg-base-100 hover:text-base-content disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
-            aria-label="Предыдущая страница"
+            aria-label={t('admin.groupDetail.prevPage')}
           >
             <ChevronLeft size={15} />
           </button>
@@ -440,7 +445,7 @@ function AttendanceTab({ groupId, token }) {
             onClick={() => { setSlideDir('left'); setPageIndex((p) => Math.min(totalPages - 1, p + 1)); }}
             disabled={pageIndex >= totalPages - 1}
             className="w-8 h-8 rounded-xl border border-base-300 grid place-items-center text-base-content/45 hover:bg-base-100 hover:text-base-content disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-90"
-            aria-label="Следующая страница"
+            aria-label={t('admin.groupDetail.nextPage')}
           >
             <ChevronRight size={15} />
           </button>
@@ -450,7 +455,7 @@ function AttendanceTab({ groupId, token }) {
       {/* ── Calendar table ── */}
       <div className="overflow-auto flex-1 min-h-0">
         {students.length === 0 ? (
-          <EmptyState icon={Users} title="В этой группе нет учеников" />
+          <EmptyState icon={Users} title={t('admin.groupDetail.noStudentsInGroup')} />
         ) : (
           <div
             className={slideDir ? `animate-slide-${slideDir}` : ''}
@@ -461,7 +466,7 @@ function AttendanceTab({ groupId, token }) {
               <tr>
                 {/* Sticky student name column */}
                 <th className="sticky left-0 top-0 z-20 bg-base-100 w-[160px] sm:w-[240px] min-w-[160px] sm:min-w-[240px] px-3 sm:px-4 py-3 text-left text-[13px] font-bold text-base-content">
-                  Ученик
+                  {t('admin.groupDetail.colStudent')}
                 </th>
                 {/* Day columns (current 15-day chunk) */}
                 {currentChunk.map((d) => {
@@ -480,14 +485,14 @@ function AttendanceTab({ groupId, token }) {
                         {pad(d)}.{pad(month + 1)}
                       </div>
                       <div className="text-[8px] uppercase mt-0.5 opacity-70">
-                        {new Date(year, month, d).toLocaleDateString('ru-RU', { weekday: 'short' })}
+                        {new Date(year, month, d).toLocaleDateString(locale, { weekday: 'short' })}
                       </div>
                     </th>
                   );
                 })}
                 {/* Summary column */}
                 <th className="sticky right-0 top-0 z-20 bg-base-100 w-[80px] min-w-[80px] px-4 py-3 text-center border-l border-base-300 text-[13px] font-bold text-base-content">
-                  Итого
+                  {t('admin.groupDetail.colTotal')}
                 </th>
               </tr>
             </thead>
@@ -541,8 +546,8 @@ function AttendanceTab({ groupId, token }) {
                             onClick={() => toggleDay(sid, d)}
                             disabled={future}
                             title={
-                              future ? 'Будущий урок — отметить нельзя'
-                                : corrected ? 'Исправлено администратором' : undefined
+                              future ? t('admin.groupDetail.futureLessonTooltip')
+                                : corrected ? t('admin.groupDetail.correctedByAdminTooltip') : undefined
                             }
                             className={`relative mx-auto w-8 h-8 grid place-items-center rounded-lg border transition-colors ${cellStyle(status)} ${corrected ? 'ring-2 ring-indigo-500 ring-offset-1' : ''} ${future ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'}`}
                           >
@@ -581,7 +586,7 @@ function AttendanceTab({ groupId, token }) {
         const hsCode = hs.login_code || hs.loginCode || '—';
         const hsStatus = hs.status || 'active';
         const hsDebt = hs.totalDebt ?? hs.debt ?? 0;
-        const statusLabel = hsStatus === 'active' ? 'Активен' : hsStatus === 'frozen' ? 'Заморожен' : hsStatus;
+        const statusLabel = hsStatus === 'active' ? t('status.active') : hsStatus === 'frozen' ? t('status.frozen') : hsStatus;
         const statusColor = hsStatus === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
         return (
           <div
@@ -612,7 +617,7 @@ function AttendanceTab({ groupId, token }) {
               </div>
               {hsDebt > 0 && (
                 <div className="flex items-center gap-2 text-red-500 font-semibold">
-                  <span>Долг: {hsDebt.toLocaleString()} сум</span>
+                  <span>{t('admin.groupDetail.debtLabel', { amount: hsDebt.toLocaleString(locale) })}</span>
                 </div>
               )}
             </div>
@@ -628,6 +633,7 @@ function AttendanceTab({ groupId, token }) {
 // менеджеру филиала оставлен только просмотр — видно, задано ДЗ или нет,
 // без права создать/отредактировать (Karis, 08.08.2026).
 function HomeworkTab({ groupId, token, canManage = true }) {
+  const { t } = useTranslation();
   const { data: hwData, refetch } = useAdminGroupHomework(groupId);
   const hw = hwData?.data || hwData || [];
   const [showAdd, setShowAdd] = useState(false);
@@ -642,7 +648,7 @@ function HomeworkTab({ groupId, token, canManage = true }) {
     if (s === 'overdue') return 'bg-red-100 text-red-700';
     return 'bg-gray-100 text-gray-500';
   };
-  const statusLabel = (s) => s === 'active' ? 'Активна' : s === 'completed' ? 'Выполнено' : s === 'overdue' ? 'Просрочено' : s;
+  const statusLabel = (s) => s === 'active' ? t('admin.groupDetail.hwStatusActive') : s === 'completed' ? t('admin.groupDetail.hwStatusCompleted') : s === 'overdue' ? t('admin.groupDetail.hwStatusOverdue') : s;
 
   const filteredHw = hw.filter((h) => {
     if (statusFilter !== 'all' && h.status !== statusFilter) return false;
@@ -668,11 +674,11 @@ function HomeworkTab({ groupId, token, canManage = true }) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <span className="text-[13px] font-bold text-base-content/70 whitespace-nowrap">
-            Домашние задания ({filteredHw.length})
+            {t('admin.groupDetail.homeworkCount', { count: filteredHw.length })}
           </span>
           <input
             type="search"
-            placeholder="Поиск..."
+            placeholder={t('admin.groupDetail.searchPlaceholder')}
             value={hwSearch}
             onChange={(e) => setHwSearch(e.target.value)}
             className="input input-bordered input-xs w-32 sm:w-40 rounded-lg text-[12px]"
@@ -680,7 +686,7 @@ function HomeworkTab({ groupId, token, canManage = true }) {
         </div>
         {canManage && (
           <button className="btn btn-primary btn-sm gap-1 shrink-0" onClick={() => setShowAdd(true)}>
-            <Plus size={14} /> Добавить
+            <Plus size={14} /> {t('admin.groupDetail.add')}
           </button>
         )}
       </div>
@@ -697,7 +703,7 @@ function HomeworkTab({ groupId, token, canManage = true }) {
             }`}
             onClick={() => setStatusFilter(f)}
           >
-            {f === 'all' ? 'Все' : statusLabel(f)}
+            {f === 'all' ? t('admin.groupDetail.filterAll') : statusLabel(f)}
           </button>
         ))}
       </div>
@@ -705,7 +711,7 @@ function HomeworkTab({ groupId, token, canManage = true }) {
       {filteredHw.length === 0 ? (
         <div className="text-center py-12 text-base-content/45 text-[13px]">
           <BookOpen size={32} className="mx-auto mb-2 opacity-30" />
-          {hw.length === 0 ? "Пока нет заданий" : "Ничего не найдено"}
+          {hw.length === 0 ? t('admin.groupDetail.noHomeworkYet') : t('admin.groupDetail.nothingFound')}
         </div>
       ) : (
         <div className="space-y-3">
@@ -721,8 +727,8 @@ function HomeworkTab({ groupId, token, canManage = true }) {
                 </span>
               </div>
               <div className="flex items-center gap-4 text-[11px] text-base-content/45">
-                {h.dueDate && <span>Срок: {h.dueDate}</span>}
-                <span>{h.submissions || 0} / {h.totalStudents || 0} сдано</span>
+                {h.dueDate && <span>{t('admin.groupDetail.dueDateLabel', { date: h.dueDate })}</span>}
+                <span>{t('admin.groupDetail.submissionsCount', { submitted: h.submissions || 0, total: h.totalStudents || 0 })}</span>
               </div>
               {h.totalStudents > 0 && (
                 <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
@@ -738,13 +744,13 @@ function HomeworkTab({ groupId, token, canManage = true }) {
       )}
 
       {/* Add Modal */}
-      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Добавить задание"
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title={t('admin.groupDetail.addHomeworkTitle')}
         actions={
           <>
-            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Отмена</button>
+            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>{t('admin.groupDetail.cancel')}</button>
             <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.title.trim() || submitting}>
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-              Добавить
+              {t('admin.groupDetail.add')}
             </button>
           </>
         }
@@ -752,13 +758,13 @@ function HomeworkTab({ groupId, token, canManage = true }) {
         <div className="space-y-3">
           <input
             className="input input-bordered w-full"
-            placeholder="Заголовок"
+            placeholder={t('admin.groupDetail.titlePlaceholder')}
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
           <textarea
             className="textarea textarea-bordered w-full"
-            placeholder="Описание (необязательно)"
+            placeholder={t('admin.groupDetail.descriptionOptionalPlaceholder')}
             rows={3}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -779,6 +785,7 @@ function HomeworkTab({ groupId, token, canManage = true }) {
 // canManage=false — branch_manager: отзыв пишет сам ученик/ментор, а не
 // сотрудник филиала за них (та же логика, что и у HomeworkTab выше, Karis 08.08.2026).
 function FeedbackTab({ groupId, token, canManage = true }) {
+  const { t } = useTranslation();
   const { data: fbData, refetch } = useAdminGroupFeedback(groupId);
   const fb = fbData?.data || fbData || [];
   const [filter, setFilter] = useState('all');
@@ -830,13 +837,13 @@ function FeedbackTab({ groupId, token, canManage = true }) {
               }`}
               onClick={() => setFilter(f)}
             >
-              {f === 'all' ? 'Все' : f === 'student' ? 'Ученик' : 'Ментор'}
+              {f === 'all' ? t('admin.groupDetail.filterAll') : f === 'student' ? t('admin.groupDetail.filterStudent') : t('admin.groupDetail.filterMentor')}
             </button>
           ))}
         </div>
         {canManage && (
           <button className="btn btn-primary btn-sm gap-1" onClick={() => setShowAdd(true)}>
-            <Plus size={14} /> Добавить
+            <Plus size={14} /> {t('admin.groupDetail.add')}
           </button>
         )}
       </div>
@@ -844,7 +851,7 @@ function FeedbackTab({ groupId, token, canManage = true }) {
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-base-content/45 text-[13px]">
           <MessageSquare size={32} className="mx-auto mb-2 opacity-30" />
-          Пока нет отзывов
+          {t('admin.groupDetail.noFeedbackYet')}
         </div>
       ) : (
         <div className="space-y-3">
@@ -855,13 +862,13 @@ function FeedbackTab({ groupId, token, canManage = true }) {
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${
                     f.type === 'student' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
                   }`}>
-                    {f.type === 'student' ? 'О' : 'М'}
+                    {f.type === 'student' ? t('admin.groupDetail.studentInitial') : t('admin.groupDetail.mentorInitial')}
                   </div>
-                  <span className="text-[13px] font-bold text-base-content">{f.authorName || 'Аноним'}</span>
+                  <span className="text-[13px] font-bold text-base-content">{f.authorName || t('admin.groupDetail.anonymous')}</span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     f.type === 'student' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
                   }`}>
-                    {f.type === 'student' ? 'Ученик' : 'Ментор'}
+                    {f.type === 'student' ? t('admin.groupDetail.filterStudent') : t('admin.groupDetail.filterMentor')}
                   </span>
                 </div>
                 {renderStars(f.rating)}
@@ -874,46 +881,46 @@ function FeedbackTab({ groupId, token, canManage = true }) {
       )}
 
       {/* Add Modal */}
-      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Добавить отзыв"
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title={t('admin.groupDetail.addFeedbackTitle')}
         actions={
           <>
-            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Отмена</button>
+            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>{t('admin.groupDetail.cancel')}</button>
             <button className="btn btn-primary gap-1" onClick={handleAdd} disabled={!form.content.trim() || submitting}>
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-              Отправить
+              {t('admin.groupDetail.send')}
             </button>
           </>
         }
       >
         <div className="space-y-3">
           <div className="flex gap-2">
-            {['student', 'teacher'].map((t) => (
+            {['student', 'teacher'].map((ft) => (
               <button
-                key={t}
+                key={ft}
                 className={`flex-1 py-2 rounded-[10px] text-[13px] font-bold transition-all ${
-                  form.type === t ? 'bg-primary text-white' : 'bg-base-100 border border-base-300 text-base-content/45'
+                  form.type === ft ? 'bg-primary text-white' : 'bg-base-100 border border-base-300 text-base-content/45'
                 }`}
-                onClick={() => setForm({ ...form, type: t })}
+                onClick={() => setForm({ ...form, type: ft })}
               >
-                {t === 'student' ? 'Ученик' : 'Ментор'}
+                {ft === 'student' ? t('admin.groupDetail.filterStudent') : t('admin.groupDetail.filterMentor')}
               </button>
             ))}
           </div>
           <input
             className="input input-bordered w-full"
-            placeholder="Имя автора"
+            placeholder={t('admin.groupDetail.authorNamePlaceholder')}
             value={form.authorName}
             onChange={(e) => setForm({ ...form, authorName: e.target.value })}
           />
           <textarea
             className="textarea textarea-bordered w-full"
-            placeholder="Текст отзыва..."
+            placeholder={t('admin.groupDetail.feedbackTextPlaceholder')}
             rows={4}
             value={form.content}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
           />
           <div>
-            <label className="text-[12px] font-bold text-base-content/70 mb-1 block">Оценка</label>
+            <label className="text-[12px] font-bold text-base-content/70 mb-1 block">{t('admin.groupDetail.ratingLabel')}</label>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((i) => (
                 <button
@@ -933,13 +940,17 @@ function FeedbackTab({ groupId, token, canManage = true }) {
 }
 
 /* ═══════════════ Main GroupDetail ═══════════════ */
-const TABS = [
-  { key: 'attendance', label: 'Посещаемость', icon: CalendarDays },
-  { key: 'homework', label: 'Домашние задания', icon: BookOpen },
-  { key: 'feedback', label: 'Отзывы', icon: MessageSquare },
+const tabsFor = (t) => [
+  { key: 'attendance', label: t('admin.groupDetail.tabAttendance'), icon: CalendarDays },
+  { key: 'homework', label: t('admin.groupDetail.tabHomework'), icon: BookOpen },
+  { key: 'feedback', label: t('admin.groupDetail.tabFeedback'), icon: MessageSquare },
 ];
 
 export default function AdminGroupDetail() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const DAY_LABEL = useMemo(() => dayLabelsFor(locale), [locale]);
+  const TABS = useMemo(() => tabsFor(t), [t]);
   const { id } = useParams();
   const { token, user } = useAuth();
   const { data, isLoading, error, refetch } = useAdminGroupDetail(id);
@@ -965,7 +976,7 @@ export default function AdminGroupDetail() {
     finally { setTgBusy(false); }
   };
   const unlinkTelegram = async () => {
-    if (!confirm('Отвязать родительскую Telegram-группу?')) return;
+    if (!confirm(t('admin.groupDetail.tgUnlinkConfirm'))) return;
     setTgBusy(true);
     try { await api.adminGroupTelegramUnlink(token, id); setTgBind(null); await loadTelegram(); } catch (e) { alert(e.message); }
     finally { setTgBusy(false); }
@@ -1005,12 +1016,12 @@ export default function AdminGroupDetail() {
   const add = async () => {
     if (!pick) return;
     try { await api.adminAddStudentToGroup(token, id, pick); setPick(''); setAdding(false); refetch(); }
-    catch (e) { alert(e.message || 'Ошибка'); }
+    catch (e) { alert(e.message || t('admin.groupDetail.genericError')); }
   };
   const remove = async (sid) => {
-    if (!confirm('Убрать студента из группы?')) return;
+    if (!confirm(t('admin.groupDetail.removeStudentConfirm'))) return;
     try { await api.adminRemoveStudentFromGroup(token, id, sid); refetch(); }
-    catch (e) { alert(e.message || 'Ошибка'); }
+    catch (e) { alert(e.message || t('admin.groupDetail.genericError')); }
   };
 
   /* ── Edit / Archive ── */
@@ -1041,13 +1052,13 @@ export default function AdminGroupDetail() {
 
   const toggleArchive = async () => {
     if (groupArchived(group)) {
-      if (!confirm('Вернуть группу из архива?')) return;
+      if (!confirm(t('admin.groupDetail.restoreFromArchiveConfirm'))) return;
       try { await api.adminUnarchiveGroup(token, group.id); refetch(); }
-      catch (e) { alert(e.message || 'Ошибка'); }
+      catch (e) { alert(e.message || t('admin.groupDetail.genericError')); }
     } else {
-      if (!confirm('Архивировать группу? Данные и расписание сохранятся.')) return;
+      if (!confirm(t('admin.groupDetail.archiveConfirm'))) return;
       try { await api.adminArchiveGroup(token, group.id); refetch(); }
-      catch (e) { alert(e.message || 'Ошибка'); }
+      catch (e) { alert(e.message || t('admin.groupDetail.genericError')); }
     }
   };
 
@@ -1063,14 +1074,14 @@ export default function AdminGroupDetail() {
         mentorName: r.mentor?.name,
         students: r.students || [],
       });
-    } catch (e) { alert(e.message || 'Не удалось собрать PDF'); }
+    } catch (e) { alert(e.message || t('admin.groupDetail.pdfGenericError')); }
     finally { setCredsBusy(false); }
   };
 
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Группа" />
+        <PageHeader title={t('admin.groupDetail.groupTitleLoading')} />
         <div className="mt-6"><RowSkeleton count={2} /></div>
       </div>
     );
@@ -1078,8 +1089,8 @@ export default function AdminGroupDetail() {
   if (error) {
     return (
       <div>
-        <PageHeader title="Группа" />
-        <div className="alert alert-error mt-6">Ошибка: {error.message}</div>
+        <PageHeader title={t('admin.groupDetail.groupTitleLoading')} />
+        <div className="alert alert-error mt-6">{t('admin.groupDetail.loadError', { message: error.message })}</div>
       </div>
     );
   }
@@ -1088,25 +1099,25 @@ export default function AdminGroupDetail() {
     <div className="space-y-5 pb-8">
       {/* Back link */}
       <Link to="/groups" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-base-content/45 hover:text-primary transition-colors animate-fade-in">
-        <ArrowLeft size={16} /> К группам
+        <ArrowLeft size={16} /> {t('admin.groupDetail.backToGroups')}
       </Link>
 
       <PageHeader
         title={
           <span className="inline-flex items-center gap-2.5 flex-wrap">
-            {group.name || 'Группа'}
+            {group.name || t('admin.groupDetail.groupFallback')}
             {groupArchived(group) && (
               <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-base-200 text-base-content/50 uppercase tracking-wider">
-                Архив
+                {t('admin.groupDetail.archivedBadge')}
               </span>
             )}
           </span>
         }
-        subtitle={group.mentorName ? `Ментор: ${group.mentorName}` : group.mentor?.name ? `Ментор: ${group.mentor.name}` : undefined}
+        subtitle={group.mentorName ? t('admin.groupDetail.mentorSubtitle', { name: group.mentorName }) : group.mentor?.name ? t('admin.groupDetail.mentorSubtitle', { name: group.mentor.name }) : undefined}
       >
         {!groupArchived(group) && (
           <button className="btn btn-ghost btn-sm gap-1.5" onClick={openEdit}>
-            <Pencil size={14} /> Редактировать
+            <Pencil size={14} /> {t('admin.groupDetail.edit')}
           </button>
         )}
         <button
@@ -1114,19 +1125,19 @@ export default function AdminGroupDetail() {
           onClick={toggleArchive}
         >
           {groupArchived(group) ? <ArchiveRestore size={14} /> : <Archive size={14} />}
-          {groupArchived(group) ? 'Вернуть из архива' : 'Архивировать'}
+          {groupArchived(group) ? t('admin.groupDetail.restoreFromArchive') : t('admin.groupDetail.archive')}
         </button>
         <button className="btn btn-primary btn-sm gap-1" onClick={() => setAdding(true)}>
-          <UserPlus size={16} /> Добавить
+          <UserPlus size={16} /> {t('admin.groupDetail.add')}
         </button>
         <button
           className="btn btn-ghost btn-sm gap-1.5"
           onClick={downloadCredentials}
           disabled={credsBusy || students.length === 0}
-          title="PDF с QR-кодом, логином и паролем каждого ученика группы"
+          title={t('admin.groupDetail.credentialsTooltip')}
         >
           {credsBusy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-          Пароли группы
+          {t('admin.groupDetail.groupPasswords')}
         </button>
       </PageHeader>
 
@@ -1137,12 +1148,12 @@ export default function AdminGroupDetail() {
           цена и суммарный долг (последнее важно именно админу). */}
       <div className="card bg-base-100 px-4 py-3.5 animate-fade-in stagger-1">
         <div className="flex items-center gap-x-8 gap-y-3 flex-wrap">
-          <Meta Icon={Users} label="Ученики" value={students.length} />
-          {group.subject && <Meta Icon={BookOpen} label="Направление" value={group.subject} />}
-          <Meta Icon={DoorOpen} label="Кабинет" value={group.roomName || group.room || 'Не назначен'} />
-          {scheduleText(group) && <Meta Icon={CalendarDays} label="Расписание" value={scheduleText(group)} />}
-          {group.monthlyPrice > 0 && <Meta Icon={CreditCard} label="Оплата/мес" value={money(group.monthlyPrice)} />}
-          {totalDebt > 0 && <Meta Icon={Clock} label="Общий долг" value={money(totalDebt)} />}
+          <Meta Icon={Users} label={t('admin.groupDetail.metaStudents')} value={students.length} />
+          {group.subject && <Meta Icon={BookOpen} label={t('admin.groupDetail.metaDirection')} value={group.subject} />}
+          <Meta Icon={DoorOpen} label={t('admin.groupDetail.metaRoom')} value={group.roomName || group.room || t('admin.groupDetail.roomNotAssigned')} />
+          {scheduleText(group, DAY_LABEL) && <Meta Icon={CalendarDays} label={t('admin.groupDetail.metaSchedule')} value={scheduleText(group, DAY_LABEL)} />}
+          {group.monthlyPrice > 0 && <Meta Icon={CreditCard} label={t('admin.groupDetail.metaPricePerMonth')} value={money(group.monthlyPrice)} />}
+          {totalDebt > 0 && <Meta Icon={Clock} label={t('admin.groupDetail.metaTotalDebt')} value={money(totalDebt)} />}
         </div>
       </div>
 
@@ -1150,25 +1161,25 @@ export default function AdminGroupDetail() {
         <div className="card bg-base-100 border border-base-300 p-4 animate-fade-in">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <div className="flex items-center gap-2 font-extrabold"><Send size={17} className="text-info" /> Telegram-группа родителей</div>
+              <div className="flex items-center gap-2 font-extrabold"><Send size={17} className="text-info" /> {t('admin.groupDetail.tgParentGroupTitle')}</div>
               <p className="text-xs text-base-content/50 mt-1">
-                {tgStatus?.linked ? `Подключена: ${tgStatus.title || 'группа Telegram'}` : 'Подключите отдельную группу родителей именно к этой учебной группе.'}
+                {tgStatus?.linked ? t('admin.groupDetail.tgConnected', { title: tgStatus.title || t('admin.groupDetail.tgDefaultGroupName') }) : t('admin.groupDetail.tgConnectHint')}
               </p>
             </div>
             {tgStatus?.linked ? (
-              <button className="btn btn-error btn-outline btn-sm" disabled={tgBusy} onClick={unlinkTelegram}>Отвязать</button>
+              <button className="btn btn-error btn-outline btn-sm" disabled={tgBusy} onClick={unlinkTelegram}>{t('admin.groupDetail.tgUnlink')}</button>
             ) : (
-              <button className="btn btn-primary btn-sm" disabled={tgBusy} onClick={createTelegramCode}>Получить код</button>
+              <button className="btn btn-primary btn-sm" disabled={tgBusy} onClick={createTelegramCode}>{t('admin.groupDetail.tgGetCode')}</button>
             )}
           </div>
           {tgBind?.token && (
             <div className="mt-3 rounded-xl bg-base-200 p-3 text-sm">
               <ol className="list-decimal ml-5 space-y-1 text-base-content/70">
-                <li>Создайте группу родителей и добавьте бота <a className="link link-primary" target="_blank" rel="noreferrer" href={`https://t.me/${String(tgBind.botUsername).replace('@', '')}`}>@{String(tgBind.botUsername).replace('@', '')}</a>.</li>
-                <li>Отправьте в этой Telegram-группе команду:</li>
+                <li>{t('admin.groupDetail.tgStep1')} <a className="link link-primary" target="_blank" rel="noreferrer" href={`https://t.me/${String(tgBind.botUsername).replace('@', '')}`}>@{String(tgBind.botUsername).replace('@', '')}</a>.</li>
+                <li>{t('admin.groupDetail.tgStep2')}</li>
               </ol>
               <button className="mt-2 w-full rounded-lg bg-base-100 border border-base-300 px-3 py-2 font-mono font-bold text-left" onClick={() => navigator.clipboard.writeText(`/bindgroup ${tgBind.token}`)}>
-                /bindgroup {tgBind.token} <span className="float-right text-xs font-sans text-primary">копировать</span>
+                /bindgroup {tgBind.token} <span className="float-right text-xs font-sans text-primary">{t('admin.groupDetail.tgCopy')}</span>
               </button>
             </div>
           )}
@@ -1201,16 +1212,16 @@ export default function AdminGroupDetail() {
       </div>
 
       {/* Add Student Modal */}
-      <Modal isOpen={adding} onClose={() => setAdding(false)} title="Добавить ученика"
+      <Modal isOpen={adding} onClose={() => setAdding(false)} title={t('admin.groupDetail.addStudentTitle')}
         actions={
           <>
-            <button className="btn btn-ghost" onClick={() => setAdding(false)}>Отмена</button>
-            <button className="btn btn-primary" onClick={add} disabled={!pick}>Добавить</button>
+            <button className="btn btn-ghost" onClick={() => setAdding(false)}>{t('admin.groupDetail.cancel')}</button>
+            <button className="btn btn-primary" onClick={add} disabled={!pick}>{t('admin.groupDetail.add')}</button>
           </>
         }
       >
         <select className="select select-bordered w-full" value={pick} onChange={(e) => setPick(e.target.value)}>
-          <option value="">Выберите ученика...</option>
+          <option value="">{t('admin.groupDetail.selectStudentOption')}</option>
           {candidates.map((s) => <option key={s.id} value={s.id}>{fullName(s)}</option>)}
         </select>
       </Modal>

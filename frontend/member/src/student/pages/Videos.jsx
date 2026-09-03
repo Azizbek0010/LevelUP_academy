@@ -53,13 +53,14 @@ export default function Videos() {
               tabIndex={0}
               onClick={() => play(v)}
               onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && play(v)}
-              className="k-pop-in k-press flex items-center gap-3 px-4 py-3.5 flex-wrap sm:flex-nowrap cursor-pointer hover:bg-[#EDF5E1] transition-colors"
+              className="k-pop-in k-press k-row-hover flex items-center gap-3 px-4 py-3.5 flex-wrap sm:flex-nowrap cursor-pointer transition-colors"
               style={{ animationDelay: `${Math.min(i, 9) * 50}ms` }}
             >
-              <IconTile icon={PlayCircle} hue="violet" size={42} />                <div className="min-w-0 flex-1">
-                  <div className="text-[15px] font-extrabold truncate" style={{ color: C.text }}>{v.title}</div>
-                  <div className="text-[13px] font-bold mt-0.5" style={{ color: C.muted }}>{fmtDate(v.created_at, lang)}</div>
-                </div>
+              <IconTile icon={PlayCircle} hue="violet" size={42} />
+              <div className="min-w-0 flex-1">
+                <div className="text-[15px] font-extrabold truncate" style={{ color: C.text }}>{v.title}</div>
+                <div className="text-[13px] font-bold mt-0.5" style={{ color: C.muted }}>{fmtDate(v.created_at, lang)}</div>
+              </div>
               {v.duration_sec > 0 && <Pill hue="muted" className="tabular-nums">{fmtDuration(v.duration_sec)}</Pill>}
             </div>
           ))}

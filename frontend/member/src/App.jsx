@@ -14,7 +14,6 @@ import Chat from './pages/Chat.jsx';
 import Notifications from './pages/Notifications.jsx';
 import Profile from './pages/Profile.jsx';
 import { ToastProvider } from './student/components/toast.jsx';
-import { I18nProvider } from './i18n/index.jsx';
 import StudentArea from './student/StudentArea.jsx';
 import StudentLayout from './student/components/Layout.jsx';
 import StudentHome from './student/pages/Home.jsx';
@@ -72,7 +71,6 @@ export default function App() {
   if (loading) return <Splash />;
 
   return (
-    <I18nProvider>
       <ErrorBoundary>
         <Routes>
           <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
@@ -141,7 +139,6 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </ErrorBoundary>
-    </I18nProvider>
+       </ErrorBoundary>
   );
 }

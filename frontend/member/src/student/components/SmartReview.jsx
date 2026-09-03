@@ -1,7 +1,7 @@
 import { Brain, TrendingUp, Lightbulb, Sparkles } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useI18n, fmt } from '../../i18n/index.jsx';
-import { C, IconTile } from './ui.jsx';
+import { C, alpha, IconTile } from './ui.jsx';
 
 /**
  * «Умный разбор» — реальная версия FeedbackDemo.jsx (макет, XOB, 2026-08-07/08).
@@ -20,7 +20,7 @@ import { C, IconTile } from './ui.jsx';
  * состояния, ни "AI ещё считает" — блок либо есть с готовым ответом, либо
  * его нет на странице совсем.
  */
-const AMBER_FG = '#8A6321';
+const AMBER_FG = 'var(--k-honey-dk)';
 
 export default function SmartReview({ review }) {
   const { user } = useAuth();
@@ -83,7 +83,7 @@ export default function SmartReview({ review }) {
         {/* ── Точка роста + Советы — рядом ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2.5">
           {growth?.topic && (
-            <div className="rounded-xl p-3" style={{ background: `${C.amber}12`, border: `1px solid ${C.amber}55` }}>
+            <div className="rounded-xl p-3" style={{ background: alpha(C.amber, 8), border: `1px solid ${alpha(C.amber, 34)}` }}>
               <div className="flex items-center gap-1.5">
                 <TrendingUp size={14} strokeWidth={2.6} color={C.amber} />
                 <span className="text-[10.5px] font-extrabold uppercase tracking-[0.06em]" style={{ color: AMBER_FG }}>
@@ -98,7 +98,7 @@ export default function SmartReview({ review }) {
           )}
 
           {Array.isArray(tips) && tips.length > 0 && (
-            <div className="rounded-xl p-3" style={{ background: `${C.blue}0f`, border: `1px solid ${C.blue}44` }}>
+            <div className="rounded-xl p-3" style={{ background: alpha(C.blue, 7), border: `1px solid ${alpha(C.blue, 27)}` }}>
               <div className="flex items-center gap-1.5">
                 <Lightbulb size={14} strokeWidth={2.6} color={C.blue} />
                 <span className="text-[10.5px] font-extrabold uppercase tracking-[0.06em]" style={{ color: C.blue }}>{f.tipTitle}</span>
@@ -106,7 +106,7 @@ export default function SmartReview({ review }) {
               <ul className="mt-1.5 space-y-1">
                 {tips.map((tip, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span className="k-num text-[11px] font-extrabold w-4 h-4 rounded grid place-items-center shrink-0 mt-[2px]" style={{ background: `${C.blue}1c`, color: C.blue }}>
+                    <span className="k-num text-[11px] font-extrabold w-4 h-4 rounded grid place-items-center shrink-0 mt-[2px]" style={{ background: alpha(C.blue, 12), color: C.blue }}>
                       {i + 1}
                     </span>
                     <span className="text-[11.5px] font-semibold leading-snug" style={{ color: C.text }}>{tip}</span>
@@ -119,7 +119,7 @@ export default function SmartReview({ review }) {
 
         {/* ── Общий итог ── */}
         {summary && (
-          <div className="mt-2.5 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5" style={{ background: `${C.lime}12`, border: `1px solid ${C.limeLine}` }}>
+          <div className="mt-2.5 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5" style={{ background: alpha(C.lime, 8), border: `1px solid ${C.limeLine}` }}>
             <span className="text-[18px] leading-none shrink-0" aria-hidden="true">🤝</span>
             <div className="min-w-0">
               <div className="text-[10px] font-extrabold uppercase tracking-[0.07em]" style={{ color: C.limeDk }}>{f.summaryTitle}</div>

@@ -1,4 +1,5 @@
 import { forwardRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
 
 /**
@@ -12,6 +13,7 @@ import { Eye, EyeOff } from 'lucide-react';
  * (`{...register('password')}`), а он передаёт ref именно на input.
  */
 const PasswordInput = forwardRef(function PasswordInput({ className = '', ...rest }, ref) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   return (
@@ -28,8 +30,8 @@ const PasswordInput = forwardRef(function PasswordInput({ className = '', ...res
         // tabIndex -1: кнопка не должна вставать между полем и следующим полем
         // при переходе по Tab
         tabIndex={-1}
-        aria-label={visible ? 'Скрыть пароль' : 'Показать пароль'}
-        title={visible ? 'Скрыть пароль' : 'Показать пароль'}
+        aria-label={visible ? t('components.passwordInput.hide') : t('components.passwordInput.show')}
+        title={visible ? t('components.passwordInput.hide') : t('components.passwordInput.show')}
         className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg
                    text-base-content/40 hover:text-base-content/70 hover:bg-base-200
                    transition-colors"

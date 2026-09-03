@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import ru from './ru.js';
 import uz from './uz.js';
+import en from './en.js';
 
 /**
  * I18n кабинета ученика.
@@ -17,24 +18,39 @@ import uz from './uz.js';
 export const LANGS = [
   { code: 'ru', label: 'Русский', short: 'RU' },
   { code: 'uz', label: "O'zbekcha", short: 'UZ' },
+  { code: 'en', label: 'English', short: 'EN' },
 ];
 export const DEFAULT_LANG = 'ru';
 const KEY = 'member_lang';
-const DICTS = { ru, uz };
+const DICTS = { ru, uz, en };
 
 const I18nCtx = createContext(null);
 
+function loadLang() {
+  try {
+    const saved = localStorage.getItem(KEY);
+    return DICTS[saved] ? saved : DEFAULT_LANG;
+  } catch {
+    return DEFAULT_LANG;
+  }
+}
+
+/** Текущий язык вне React (format.js, ErrorBoundary — класс-компонент). */
+let currentLang = loadLang();
+export function getLang() {
+  return currentLang;
+}
+
+/** Словарь текущего языка вне React. Не реактивен — только для разового чтения. */
+export function getDict() {
+  return DICTS[currentLang];
+}
+
 export function I18nProvider({ children }) {
-  const [lang, setLang] = useState(() => {
-    try {
-      const saved = localStorage.getItem(KEY);
-      return DICTS[saved] ? saved : DEFAULT_LANG;
-    } catch {
-      return DEFAULT_LANG;
-    }
-  });
+  const [lang, setLang] = useState(loadLang);
 
   useEffect(() => {
+    currentLang = lang;
     try {
       localStorage.setItem(KEY, lang);
       document.documentElement.lang = lang;

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { api } from '../api.js';
+import { useI18n } from '../i18n/index.jsx';
 
 function EyeIcon({ off }) {
   return off ? (
@@ -19,15 +20,10 @@ function EyeIcon({ off }) {
   );
 }
 
-const FEATURES = [
-  'Тесты и домашние задания',
-  'Коины, магазин и рейтинг',
-  'Успеваемость и посещаемость',
-];
-
 // Вход учеников и родителей: логин-код + пароль.
 // Google-входа НЕТ. «Забыли пароль» НЕТ — код перевыдаёт администратор центра.
 export default function Login() {
+  const { t } = useI18n();
   const { login, adoptSession } = useAuth();
   const navigate = useNavigate();
   const [code, setCode] = useState('');
@@ -70,7 +66,7 @@ export default function Login() {
         if (Date.now() - startedAt > data.expiresIn * 1000) {
           clearInterval(pollTimer.current);
           setTgWaiting(false);
-          setError('Telegram orqali kirish muddati tugadi — qaytadan urinib ko‘ring');
+          setError(t.login.error.tgExpired);
           return;
         }
 
@@ -84,7 +80,7 @@ export default function Login() {
           } else if (res.data.status === 'unknown') {
             clearInterval(pollTimer.current);
             setTgWaiting(false);
-            setError('Telegram orqali kirish muddati tugadi — qaytadan urinib ko‘ring');
+            setError(t.login.error.tgExpired);
           }
         } catch (err) {
           // err.status есть только у настоящего ответа сервера (4xx/5xx) — значит
@@ -94,14 +90,14 @@ export default function Login() {
           if (err?.status) {
             clearInterval(pollTimer.current);
             setTgWaiting(false);
-            setError(err.message || 'Telegram orqali kirib bo‘lmadi — keyinroq urinib ko‘ring');
+            setError(err.message || t.login.error.tgFailed);
           }
         }
       }, 2000);
     } catch (err) {
       // 503 — на сервере не задан бот. Кнопку прячем: она гарантированно не сработает.
       if (err?.status === 503) setTgAvailable(false);
-      else setError('Telegram orqali kirib bo‘lmadi — keyinroq urinib ko‘ring');
+      else setError(t.login.error.tgFailed);
     } finally {
       setTgBusy(false);
     }
@@ -111,7 +107,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     if (!code.trim() || !password) {
-      setError('Введите логин-код и пароль');
+      setError(t.login.error.empty);
       return;
     }
     setBusy(true);
@@ -119,10 +115,13 @@ export default function Login() {
       await login(code.trim(), password);
       navigate('/', { replace: true });
     } catch (err) {
-      if (err.status === 401) setError('Неверный логин-код или пароль');
-      else if (err.status === 429) setError('Слишком много попыток — попробуйте позже');
-      else if (err.status === 422) setError('Введите логин-код и пароль');
-      else setError(err.message || 'Не удалось войти');
+      if (err.status === 401) setError(t.login.error.invalid);
+      else if (err.status === 429) setError(t.login.error.rateLimit);
+      else if (err.status === 422) setError(t.login.error.empty);
+      // без .status — сеть не ответила (fetch бросил TypeError «Failed to
+      // fetch»): раньше это показывалось сырым текстом, теперь понятно.
+      else if (!err.status) setError(t.login.error.network);
+      else setError(err.message || t.login.error.generic);
     } finally {
       setBusy(false);
     }
@@ -136,12 +135,12 @@ export default function Login() {
         <div className="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full" style={{ background: 'rgba(64, 131, 59, 0.07)', filter: 'blur(80px)' }} />
         <img src="/logo-white.svg" alt="LevelUp Academy" className="relative h-10 w-auto self-start" />
         <div className="relative">
-          <h2 className="text-3xl font-bold leading-tight">Кабинет ученика</h2>
+          <h2 className="text-3xl font-bold leading-tight">{t.login.brandTitle}</h2>
           <p className="opacity-60 mt-2 max-w-sm">
-            Тесты, домашние задания, коины и рейтинг — всё в личном кабинете ученика и родителя.
+            {t.login.brandDesc}
           </p>
           <ul className="mt-8 space-y-3">
-            {FEATURES.map((f) => (
+            {t.login.features.map((f) => (
               <li key={f} className="flex items-center gap-3 text-sm opacity-80">
                 <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full" style={{ background: 'rgba(64, 131, 59, 0.15)', color: '#40833B' }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -153,7 +152,7 @@ export default function Login() {
             ))}
           </ul>
         </div>
-        <div className="relative text-xs opacity-40">LevelUp Academy · Ученик / Родитель</div>
+        <div className="relative text-xs opacity-40">{t.login.footer}</div>
       </div>
 
       {/* Правая панель — форма */}
@@ -161,8 +160,8 @@ export default function Login() {
         <div className="w-full max-w-md">
           <img src="/logo-primary.svg" alt="LevelUp Academy" className="h-8 w-auto mb-6 lg:hidden" />
           <div className="rounded-2xl border border-base-300 bg-base-100 p-8 shadow-[0_1px_2px_rgba(29,36,23,0.04),0_18px_50px_-12px_rgba(29,36,23,0.14)] sm:p-10">
-            <h1 className="text-2xl font-bold tracking-tight">Вход</h1>
-            <p className="text-sm opacity-60 mb-6">Ученик / Родитель</p>
+            <h1 className="text-2xl font-bold tracking-tight">{t.login.title}</h1>
+            <p className="text-sm opacity-60 mb-6">{t.login.subtitle}</p>
             {error && (
               <div role="alert" className="alert alert-error text-sm py-2 mb-4">
                 <span>{error}</span>
@@ -171,7 +170,7 @@ export default function Login() {
 
             <form onSubmit={onSubmit} className="space-y-4" noValidate>
               <label className="form-control w-full">
-                <span className="label-text mb-1 font-medium">Логин-код</span>
+                <span className="label-text mb-1 font-medium">{t.login.loginCode}</span>
                 <input
                   type="text"
                   required
@@ -182,12 +181,12 @@ export default function Login() {
                   autoComplete="username"
                   value={code}
                   onChange={(e) => setCode(e.target.value.trim())}
-                  placeholder="напр. demostud"
+                  placeholder={t.login.placeholderCode}
                   className="input input-bordered w-full tracking-widest"
                 />
               </label>
               <label className="form-control w-full">
-                <span className="label-text mb-1 font-medium">Пароль</span>
+                <span className="label-text mb-1 font-medium">{t.login.password}</span>
                 <div className="relative">
                   <input
                     type={showPw ? 'text' : 'password'}
@@ -196,14 +195,14 @@ export default function Login() {
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="6-значный код"
+                    placeholder={t.login.placeholderPw}
                     className="input input-bordered w-full pr-11"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPw((s) => !s)}
                     tabIndex={-1}
-                    aria-label={showPw ? 'Скрыть пароль' : 'Показать пароль'}
+                    aria-label={showPw ? t.login.hidePassword : t.login.showPassword}
                     className="absolute inset-y-0 right-0 grid w-11 place-items-center text-base-content/40 hover:text-base-content transition-colors"
                   >
                     <EyeIcon off={showPw} />
@@ -211,13 +210,13 @@ export default function Login() {
                 </div>
               </label>
               <button type="submit" className="btn btn-primary w-full" disabled={busy}>
-                {busy ? <span className="loading loading-spinner loading-sm" /> : 'Войти'}
+                {busy ? <span className="loading loading-spinner loading-sm" /> : t.login.submit}
               </button>
             </form>
 
             {tgAvailable && (
               <>
-                <div className="divider text-xs opacity-40 my-4">или</div>
+                <div className="divider text-xs opacity-40 my-4">{t.common.or}</div>
                 <button
                   type="button"
                   onClick={onTelegramLogin}
@@ -228,32 +227,31 @@ export default function Login() {
                   {tgWaiting ? (
                     <>
                       <span className="loading loading-spinner loading-sm" />
-                      Telegram’da tasdiqlang…
+                      {t.login.tg.verify}
                     </>
                   ) : (
                     <>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                         <path d="M21.9 4.3 18.9 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.3.3-.5.5-1 .5l.3-4.7 8.5-7.7c.4-.3-.1-.5-.6-.2L6.9 13 2.4 11.6c-1-.3-1-1 .2-1.4l18-7c.8-.3 1.5.2 1.3 1.1z" />
                       </svg>
-                      Telegram orqali kirish
+                      {t.login.tg.enter}
                     </>
                   )}
                 </button>
                 {tgWaiting && (
                   <p className="text-xs opacity-60 text-center pt-2 leading-snug">
-                    Telegram ochildi — botdagi «Start» tugmasini bosing.
-                    Bu oyna o‘zi ochiladi.
+                    {t.login.tg.waiting}
                   </p>
                 )}
               </>
             )}
 
             <p className="text-xs opacity-50 text-center pt-4">
-              Логин-код и пароль выдаёт администратор вашего учебного центра.
-              {tgAvailable && ' Telegram orqali kirish faqat kabinetda botni ulaganlarda ishlaydi.'}
+              {t.login.note}
+              {tgAvailable && t.login.noteTg}
             </p>
           </div>
-          <p className="text-center text-xs opacity-40 mt-6">© LevelUp Academy</p>
+          <p className="text-center text-xs opacity-40 mt-6">{t.login.copyright}</p>
         </div>
       </div>
     </div>

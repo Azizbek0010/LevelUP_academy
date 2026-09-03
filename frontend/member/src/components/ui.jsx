@@ -1,29 +1,34 @@
 import Icon from './Icons.jsx';
+import { useI18n } from '../i18n/index.jsx';
 
-export function EmptyState({ icon = 'inbox', title = 'Пусто', message = 'Данных пока нет' }) {
+export function EmptyState({ icon = 'inbox', title, message }) {
+  const { t } = useI18n();
+  const resolvedTitle = title ?? t.common.empty;
+  const resolvedMessage = message ?? t.common.noData;
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center mb-4">
         <Icon name={icon} className="w-8 h-8 text-base-content/25" />
       </div>
-      <h3 className="text-lg font-bold mb-1">{title}</h3>
-      <p className="text-sm text-base-content/50 max-w-xs">{message}</p>
+      <h3 className="text-lg font-bold mb-1">{resolvedTitle}</h3>
+      <p className="text-sm text-base-content/50 max-w-xs">{resolvedMessage}</p>
     </div>
   );
 }
 
-export function ErrorState({ message = 'Произошла ошибка', onRetry }) {
+export function ErrorState({ message, onRetry }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="w-16 h-16 rounded-2xl bg-error/10 flex items-center justify-center mb-4">
         <Icon name="exclamation-circle" className="w-8 h-8 text-error" />
       </div>
-      <h3 className="text-lg font-bold mb-1">Ошибка</h3>
-      <p className="text-sm text-base-content/50 max-w-xs mb-4">{message}</p>
+      <h3 className="text-lg font-bold mb-1">{t.common.error}</h3>
+      <p className="text-sm text-base-content/50 max-w-xs mb-4">{message ?? t.common.errorMsg}</p>
       {onRetry && (
         <button className="btn btn-primary btn-sm rounded-xl gap-2" onClick={onRetry}>
           <Icon name="arrow-trending-up" className="w-4 h-4" />
-          Попробовать снова
+          {t.common.retry}
         </button>
       )}
     </div>

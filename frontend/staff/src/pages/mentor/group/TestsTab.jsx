@@ -3,6 +3,7 @@ import {
   FileText, Plus, Trash2, X, Check, Clock, Coins, Users, ChevronRight, AlertCircle,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../../../auth.jsx';
 import { api } from '../../../api.js';
@@ -24,6 +25,7 @@ import { EmptyState, Panel, RowSkeleton } from '../_ui.jsx';
 const emptyQuestion = () => ({ q: '', options: ['', ''], correct: 0 });
 
 function QuestionEditor({ index, question, onChange, onRemove, canRemove }) {
+  const { t } = useTranslation();
   const setField = (patch) => onChange({ ...question, ...patch });
 
   const setOption = (i, value) => {
@@ -47,12 +49,12 @@ function QuestionEditor({ index, question, onChange, onRemove, canRemove }) {
   return (
     <div className="rounded-xl border border-base-300 p-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-bold text-base-content/50">ВОПРОС {index + 1}</span>
+        <span className="text-xs font-bold text-base-content/50">{t('mentor.tests.questionN', { n: index + 1 })}</span>
         {canRemove && (
           <button
             className="btn btn-ghost btn-xs text-error"
             onClick={onRemove}
-            aria-label={`Удалить вопрос ${index + 1}`}
+            aria-label={t('mentor.tests.removeQuestion', { n: index + 1 })}
           >
             <Trash2 size={13} />
           </button>
@@ -61,7 +63,7 @@ function QuestionEditor({ index, question, onChange, onRemove, canRemove }) {
 
       <input
         className="input input-bordered input-sm w-full mb-3"
-        placeholder="Текст вопроса"
+        placeholder={t('mentor.tests.questionText')}
         value={question.q}
         maxLength={1000}
         onChange={(e) => setField({ q: e.target.value })}
@@ -78,14 +80,14 @@ function QuestionEditor({ index, question, onChange, onRemove, canRemove }) {
                   ? 'bg-success border-success text-white'
                   : 'border-base-300 hover:border-success/50'
               }`}
-              title="Отметить как правильный ответ"
-              aria-label={`Вариант ${i + 1} — правильный`}
+              title={t('mentor.tests.markCorrect')}
+              aria-label={t('mentor.tests.optionCorrect', { n: i + 1 })}
             >
               {question.correct === i && <Check size={13} />}
             </button>
             <input
               className="input input-bordered input-sm flex-1"
-                placeholder={`${i + 1}-вариант`}
+                placeholder={t('mentor.tests.optionN', { n: i + 1 })}
               value={opt}
               maxLength={300}
               onChange={(e) => setOption(i, e.target.value)}
@@ -94,7 +96,7 @@ function QuestionEditor({ index, question, onChange, onRemove, canRemove }) {
               <button
                 className="btn btn-ghost btn-xs"
                 onClick={() => removeOption(i)}
-                aria-label={`Удалить вариант ${i + 1}`}
+                aria-label={t('mentor.tests.removeOption', { n: i + 1 })}
               >
                 <X size={13} />
               </button>
@@ -104,13 +106,14 @@ function QuestionEditor({ index, question, onChange, onRemove, canRemove }) {
       </div>
 
       <button className="btn btn-ghost btn-xs mt-2 gap-1" onClick={addOption}>
-        <Plus size={12} /> Добавить вариант
+        <Plus size={12} /> {t('mentor.tests.addOption')}
       </button>
     </div>
   );
 }
 
 function ResultsPanel({ testId, onClose }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useMentorTestResults(testId);
   const results = data?.data ?? [];
 
@@ -121,11 +124,11 @@ function ResultsPanel({ testId, onClose }) {
 
   return (
     <Panel
-      title="Результаты"
+      title={t('mentor.tests.results')}
       icon={Users}
       bodyClass="p-4"
       action={
-        <button className="btn btn-ghost btn-xs btn-circle" onClick={onClose} aria-label="Закрыть">
+        <button className="btn btn-ghost btn-xs btn-circle" onClick={onClose} aria-label={t('mentor.tests.close')}>
           <X size={15} />
         </button>
       }
@@ -133,13 +136,13 @@ function ResultsPanel({ testId, onClose }) {
       {isLoading ? (
         <RowSkeleton count={3} height="h-11" />
       ) : results.length === 0 ? (
-        <EmptyState icon={Users} title="Пока никто не проходил тест" />
+        <EmptyState icon={Users} title={t('mentor.tests.nobodyTookTest')} />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="rounded-xl bg-base-200/60 px-3 py-2.5">
               <div className="text-[11px] uppercase tracking-wider text-base-content/45 font-semibold">
-                Прошли
+                {t('mentor.tests.passed')}
               </div>
               <div className="text-lg font-extrabold tabular-nums mt-0.5">
                 {finished.length}<span className="text-base-content/40">/{results.length}</span>
@@ -147,7 +150,7 @@ function ResultsPanel({ testId, onClose }) {
             </div>
             <div className="rounded-xl bg-base-200/60 px-3 py-2.5">
               <div className="text-[11px] uppercase tracking-wider text-base-content/45 font-semibold">
-                Средний балл
+                {t('mentor.tests.avgScore')}
               </div>
               <div className="text-lg font-extrabold tabular-nums mt-0.5">
                 {avg !== null ? avg : '—'}
@@ -174,7 +177,7 @@ function ResultsPanel({ testId, onClose }) {
                       </span>
                     </span>
                   ) : (
-                    <span className="text-xs text-base-content/40 shrink-0">Не прошёл</span>
+                    <span className="text-xs text-base-content/40 shrink-0">{t('mentor.tests.notPassed')}</span>
                   )}
                 </li>
               );
@@ -187,6 +190,7 @@ function ResultsPanel({ testId, onClose }) {
 }
 
 export default function TestsTab({ groupId }) {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const qc = useQueryClient();
 
@@ -213,17 +217,17 @@ export default function TestsTab({ groupId }) {
 
   /** Проверяем ровно то, что проверит zod на бэкенде — чтобы не ловить 422. */
   const validate = () => {
-    if (!title.trim()) return 'Введите название теста';
-    if (!Number(durationMin) || Number(durationMin) < 1) return 'Введите продолжительность (минуты)';
-    if (questions.length === 0) return 'Нужен хотя бы один вопрос';
+    if (!title.trim()) return t('mentor.tests.enterTitle');
+    if (!Number(durationMin) || Number(durationMin) < 1) return t('mentor.tests.enterDuration');
+    if (questions.length === 0) return t('mentor.tests.needOneQuestion');
 
     for (let i = 0; i < questions.length; i += 1) {
       const q = questions[i];
-      if (!q.q.trim()) return `Вопрос ${i + 1}: текст пустой`;
-      if (q.options.length < 2) return `Вопрос ${i + 1}: нужно минимум 2 варианта`;
-      if (q.options.some((o) => !o.trim())) return `Вопрос ${i + 1}: есть пустой вариант`;
+      if (!q.q.trim()) return t('mentor.tests.questionEmpty', { n: i + 1 });
+      if (q.options.length < 2) return t('mentor.tests.needTwoOptions', { n: i + 1 });
+      if (q.options.some((o) => !o.trim())) return t('mentor.tests.emptyOption', { n: i + 1 });
       if (q.correct < 0 || q.correct >= q.options.length) {
-        return `Вопрос ${i + 1}: правильный ответ не выбран`;
+        return t('mentor.tests.correctNotChosen', { n: i + 1 });
       }
     }
     return '';
@@ -251,7 +255,7 @@ export default function TestsTab({ groupId }) {
       setCreating(false);
       setOpenResultsFor(null); // иначе всплыла бы панель результатов прошлого теста
     } catch (err) {
-      setFormError(err.message || 'Не удалось сохранить тест');
+      setFormError(err.message || t('mentor.tests.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -263,13 +267,13 @@ export default function TestsTab({ groupId }) {
         {/* ---------- Список тестов ---------- */}
         <div className={openResultsFor || creating ? 'lg:col-span-2' : 'lg:col-span-5'}>
           <Panel
-            title="Тесты"
+            title={t('mentor.tests.tests')}
             icon={FileText}
             bodyClass="p-3"
             action={
               !creating && (
                 <button className="btn btn-primary btn-xs gap-1" onClick={() => setCreating(true)}>
-                  <Plus size={13} /> Новый тест
+                  <Plus size={13} /> {t('mentor.tests.newTest')}
                 </button>
               )
             }
@@ -279,40 +283,40 @@ export default function TestsTab({ groupId }) {
             ) : tests.length === 0 ? (
               <EmptyState
                 icon={FileText}
-                title="В этой группе пока нет тестов"
-                hint="Нажмите кнопку «Новый тест», чтобы создать первый."
+                title={t('mentor.tests.noTestsInGroup')}
+                hint={t('mentor.tests.noTestsHint')}
                 action={
                   <button className="btn btn-sm btn-primary gap-1.5" onClick={() => setCreating(true)}>
-                    <Plus size={14} /> Новый тест
+                    <Plus size={14} /> {t('mentor.tests.newTest')}
                   </button>
                 }
               />
             ) : (
               <div className="space-y-2">
-                {tests.map((t) => (
+                {tests.map((test) => (
                   <button
-                    key={t.id}
-                    onClick={() => { setOpenResultsFor(t.id); setCreating(false); }}
-                    aria-current={openResultsFor === t.id ? 'true' : undefined}
+                    key={test.id}
+                    onClick={() => { setOpenResultsFor(test.id); setCreating(false); }}
+                    aria-current={openResultsFor === test.id ? 'true' : undefined}
                     className={`w-full text-left rounded-xl border p-3.5 transition-colors ${
-                      openResultsFor === t.id
+                      openResultsFor === test.id
                         ? 'border-primary bg-primary/5'
                         : 'border-base-200 hover:bg-base-200/50'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="font-semibold text-sm truncate">{t.title}</div>
+                        <div className="font-semibold text-sm truncate">{test.title}</div>
                         <div className="flex flex-wrap items-center gap-3 mt-1.5 text-[11px] text-base-content/50">
                           <span className="flex items-center gap-1">
-                            <FileText size={11} /> {t.questions?.length ?? 0} вопрос(ов)
+                            <FileText size={11} /> {t('mentor.tests.questionsCount', { count: test.questions?.length ?? 0 })}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Clock size={11} /> {t.duration_min} мин
+                            <Clock size={11} /> {t('mentor.tests.minutes', { n: test.duration_min })}
                           </span>
-                          {t.coin_reward > 0 && (
+                          {test.coin_reward > 0 && (
                             <span className="flex items-center gap-1">
-                              <Coins size={11} /> {t.coin_reward}
+                              <Coins size={11} /> {test.coin_reward}
                             </span>
                           )}
                         </div>
@@ -330,14 +334,14 @@ export default function TestsTab({ groupId }) {
         {creating && (
           <div className="lg:col-span-3">
             <Panel
-              title="Новый тест"
+              title={t('mentor.tests.newTest')}
               icon={Plus}
               bodyClass="p-4"
               action={
                 <button
                   className="btn btn-ghost btn-xs btn-circle"
                   onClick={() => { setCreating(false); resetForm(); }}
-                  aria-label="Закрыть"
+                  aria-label={t('mentor.tests.close')}
                 >
                   <X size={15} />
                 </button>
@@ -346,11 +350,11 @@ export default function TestsTab({ groupId }) {
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-4">
                 <label className="form-control sm:col-span-2">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-                    Название теста
+                    {t('mentor.tests.testTitle')}
                   </span>
                   <input
                     className="input input-bordered input-sm"
-                    placeholder="Например: Present Simple"
+                    placeholder={t('mentor.tests.titlePlaceholder')}
                     value={title}
                     maxLength={200}
                     onChange={(e) => setTitle(e.target.value)}
@@ -358,7 +362,7 @@ export default function TestsTab({ groupId }) {
                 </label>
                 <label className="form-control">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-                    Длительность (мин)
+                    {t('mentor.tests.duration')}
                   </span>
                   <input
                     type="number"
@@ -370,7 +374,7 @@ export default function TestsTab({ groupId }) {
                 </label>
                 <label className="form-control">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 mb-1.5">
-                    Награда коинами
+                    {t('mentor.tests.coinReward')}
                   </span>
                   <input
                     type="number"
@@ -401,7 +405,7 @@ export default function TestsTab({ groupId }) {
                 className="btn btn-outline btn-sm gap-1.5 mt-3"
                 onClick={() => setQuestions((prev) => [...prev, emptyQuestion()])}
               >
-                <Plus size={14} /> Добавить вопрос
+                <Plus size={14} /> {t('mentor.tests.addQuestion')}
               </button>
 
               {formError && (
@@ -416,13 +420,13 @@ export default function TestsTab({ groupId }) {
                   className="btn btn-ghost btn-sm"
                   onClick={() => { setCreating(false); resetForm(); }}
                 >
-                  Отмена
+                  {t('mentor.tests.cancel')}
                 </button>
                 <button className="btn btn-primary btn-sm" onClick={handleCreate} disabled={saving}>
                   {saving
                     ? <span className="loading loading-spinner loading-xs" />
                     : <Check size={15} />}
-                  Сохранить
+                  {t('mentor.tests.save')}
                 </button>
               </div>
             </Panel>

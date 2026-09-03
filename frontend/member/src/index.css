@@ -575,56 +575,199 @@ main > * {
    Анимации — только transform/opacity/box-shadow (GPU-дешёвые). Общий
    @media (prefers-reduced-motion) выше по файлу уже глушит все duration —
    отдельно дублировать не нужно. */
-.kid {
-  --k-bg: #F6F8F3;
+/* ─────────────────────────────────────────────────────────────────
+   v5 «Grove» (2026-08-30, Abduloh) — dark/light + editorial-проход.
+
+   Токены живут на :root (а не на .kid), чтобы модалка-portal в body
+   тоже их видела. .kid ниже только ПРИМЕНЯЕТ их (фон/текст/шрифт/
+   текстура). Тёмная палитра — :root[data-kid-theme="dark"].
+   Атрибут именно data-kid-theme, а НЕ data-theme: последний занят
+   daisyUI (<html data-theme="levelup">), трогать нельзя.
+
+   Свет = editorial: почти белая бумага, много воздуха, минимум цвета,
+   зелёный только акцентом. Тьма = deep: глубокий лесной уголь,
+   акценты чуть ярче для контраста, статичная звёздная пыль на фоне
+   (без мерцания — мерцание читается как «детский/AI»).
+   ───────────────────────────────────────────────────────────────── */
+:root {
+  --k-bg: #F6F8F2;          /* почти белая бумага с зелёным подтоном */
+  --k-bg-tint: #EDF1E4;     /* мягкая заливка секций */
   --k-card: #FFFFFF;
-  --k-text: #1C231A;
-  --k-muted: #707F68;
-  --k-line: #E4EAE0;
-  --k-lime: #5FA33C;
-  --k-lime-dk: #3E6E26;
-  --k-lime-soft: #EDF5E1;
-  --k-lime-line: #D7E7C2;
-  --k-ink: #12190E;
+  --k-text: #16201A;
+  --k-muted: #5E6E58;
+  --k-line: #E4E9DB;
+  --k-hair: #EEF1E8;        /* внутренние разделители */
 
-  --k-violet: #6E62A6;
-  --k-blue: #3E7CAE;
-  --k-coral: #BD5B45;
-  --k-amber: #B9832E;
-  --k-teal: #2E8F76;
-  --k-pink: #AD5A78;
+  --k-heading: #17261B;     /* заголовки — глубокий лес по тексту */
 
+  --k-lime: #4E9A2E;        /* действие: кнопки, активная навигация */
+  --k-lime-dk: #33621D;     /* тёмный лайм для текста-акцента */
+  --k-lime-soft: #EAF3DC;   /* подложка активных вкладок/карточек */
+  --k-lime-line: #D5E5BF;
+
+  --k-hero-1: #1E3A24;      /* герой на странице — верхняя точка */
+  --k-hero-2: #16301C;      /* герой — нижняя точка */
+  --k-header-1: #1E3A24;    /* глобальная шапка — всегда лес (бренд) */
+  --k-header-2: #16301C;
+  --k-forest-soft: #E7EFE1; /* очень светлый лес — подложки */
+
+  --k-honey: #DE9526;       /* награда: коины, монеты, звёзды */
+  --k-honey-dk: #9A6410;
+  --k-honey-soft: #FBEFD8;
+
+  --k-ink: #0E160C;         /* тёмный текст на ярких заливках (лайм) */
+
+  --k-violet: #675DA8;      /* учёба: уроки/тесты/задания */
+  --k-blue: #3A79AD;
+  --k-coral: #C15743;
+  --k-amber: #DE9526;       /* = honey, обратная совместимость */
+  --k-teal: #2A8E76;
+  --k-pink: #AF5A7C;
+  --k-gold: #E0A11C;        /* 2-е место на подиуме, кубок */
+  --k-gold-dk: #8A5A00;
+
+  /* Семантика статусов — свои подложки, чтобы не хардкодить hex по коду */
+  --k-danger: #C0392B;
+  --k-danger-soft: #FCE9E5;
+  --k-info: #1668B8;
+  --k-info-soft: #E4F1FF;
+  --k-success: #1F7A3D;
+  --k-success-soft: #E8F6EC;
+
+  --k-on-accent: #FFFFFF;   /* текст на залитой кнопке */
+  --k-scrim: rgba(18, 25, 14, 0.42);   /* фон модалки */
+  --k-dots: rgba(30, 58, 36, 0.035);   /* текстура фона */
+  --k-sheen: rgba(255, 255, 255, 0.55);/* блик по level-bar */
+
+  /* Шкала подъёма — с зелёным подтоном тени, мягкая и глубокая */
+  --k-e1: 0 1px 1px rgba(22, 40, 20, 0.04), 0 3px 10px rgba(22, 40, 20, 0.05);
+  --k-e2: 0 2px 6px rgba(22, 40, 20, 0.06), 0 14px 32px rgba(22, 40, 20, 0.10);
+  --k-e3: 0 10px 24px rgba(22, 40, 20, 0.14), 0 32px 60px rgba(22, 40, 20, 0.16);
+  --k-glow: 0 8px 24px rgba(78, 154, 46, 0.22);
+
+  --k-r-sm: 12px;
+  --k-r-md: 16px;
+  --k-r-lg: 22px;
+}
+
+:root[data-kid-theme="dark"] {
+  --k-bg: #0F1712;          /* глубокий лесной уголь */
+  --k-bg-tint: #16211A;
+  --k-card: #16211A;
+  --k-text: #E8EFE4;
+  --k-muted: #91A088;
+  --k-line: rgba(255, 255, 255, 0.09);
+  --k-hair: rgba(255, 255, 255, 0.06);
+
+  --k-heading: #F1F6ED;
+
+  --k-lime: #63B23F;        /* чуть ярче — читается на угле */
+  --k-lime-dk: #9BD37A;     /* акцентный текст на тёмном */
+  --k-lime-soft: rgba(99, 178, 63, 0.15);
+  --k-lime-line: rgba(99, 178, 63, 0.30);
+
+  --k-hero-1: #1C3522;
+  --k-hero-2: #122019;
+  --k-header-1: #14241A;
+  --k-header-2: #0E1B14;
+  --k-forest-soft: rgba(255, 255, 255, 0.05);
+
+  --k-honey: #E8A742;
+  --k-honey-dk: #F1C888;
+  --k-honey-soft: rgba(232, 167, 66, 0.16);
+
+  --k-ink: #0E160C;
+
+  --k-violet: #9187D8;
+  --k-blue: #64A6D8;
+  --k-coral: #E17A63;
+  --k-amber: #E8A742;
+  --k-teal: #45B89B;
+  --k-pink: #CF89A9;
+  --k-gold: #F0B84A;
+  --k-gold-dk: #F2CE8C;
+
+  --k-danger: #E5705C;
+  --k-danger-soft: rgba(229, 112, 92, 0.16);
+  --k-info: #5AA9E4;
+  --k-info-soft: rgba(90, 169, 228, 0.16);
+  --k-success: #52C07A;
+  --k-success-soft: rgba(82, 192, 122, 0.16);
+
+  --k-on-accent: #0E160C;   /* тёмный текст на ярком лайме в тёмной теме */
+  --k-scrim: rgba(0, 0, 0, 0.62);
+  --k-dots: rgba(255, 255, 255, 0.028);
+  --k-sheen: rgba(255, 255, 255, 0.28);
+
+  --k-e1: 0 1px 2px rgba(0, 0, 0, 0.30), 0 4px 14px rgba(0, 0, 0, 0.34);
+  --k-e2: 0 2px 8px rgba(0, 0, 0, 0.36), 0 16px 36px rgba(0, 0, 0, 0.44);
+  --k-e3: 0 12px 30px rgba(0, 0, 0, 0.48), 0 36px 70px rgba(0, 0, 0, 0.55);
+  --k-glow: 0 8px 28px rgba(99, 178, 63, 0.28);
+}
+
+.kid {
   background: var(--k-bg);
   color: var(--k-text);
+  font-family: 'Manrope Variable', 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* тонкая органическая текстура — почти незаметная сетка точек */
+  background-image: radial-gradient(var(--k-dots) 1px, transparent 1px);
+  background-size: 22px 22px;
+  /* плавная смена темы — только цвет, не layout */
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-/* Карточка: белая, спокойная тень, умеренное скругление.
-   Тонкая зелёная окантовка — фирменный цвет LevelUp виден и на белых
-   карточках, не только в шапке. */
+/* Тёмная тема: поверх сетки точек — редкая «звёздная пыль» (статична,
+   не мерцает). Два слоя разного шага + размера дают ощущение глубины. */
+:root[data-kid-theme="dark"] .kid {
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.10) 0.6px, transparent 0.7px),
+    radial-gradient(rgba(255, 255, 255, 0.06) 0.6px, transparent 0.7px),
+    radial-gradient(var(--k-dots) 1px, transparent 1px);
+  background-size: 137px 137px, 89px 89px, 22px 22px;
+  background-position: 0 0, 43px 61px, 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kid { transition: none; }
+}
+
+/* Карточка: белая, хайрлайн-граница, мягкая глубокая тень. */
 .k-card {
   background: var(--k-card);
-  border: 1px solid var(--k-lime-line);
-  border-radius: 16px;
-  box-shadow: 0 1px 2px rgba(18, 25, 14, 0.04), 0 6px 16px rgba(18, 25, 14, 0.06);
+  border: 1px solid var(--k-line);
+  border-radius: var(--k-r-md);
+  box-shadow: var(--k-e1);
 }
-/* Выпадающая панель от кнопки (уведомления, профиль) — тот же приём,
-   что .popover-surface в Staff: белая, окантована, приподнята тенью. */
 .k-popover {
   background: var(--k-card);
   border: 1px solid var(--k-line);
-  border-radius: 16px;
-  box-shadow: 0 16px 40px rgba(18, 25, 14, 0.16), 0 4px 12px rgba(18, 25, 14, 0.08);
+  border-radius: var(--k-r-md);
+  box-shadow: var(--k-e3);
 }
 
-/* Лёгкий "подъём" для нажимаемых карточек (задания и т.п.).
-   Hover — зелёный: окантовка и тень в фирменный цвет, белая карточка
-   "отвечает" зелёным. */
-.k-hover { transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease, border-color 0.16s ease; }
+/* Нажимаемые карточки: подъём + лайм-отклик по краю и в тени. */
+.k-hover { transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, border-color 0.18s ease; }
 .k-hover:hover:not(:disabled) {
-  transform: translateY(-2px);
-  border-color: var(--k-lime);
-  box-shadow: 0 2px 6px rgba(95, 163, 60, 0.14), 0 10px 22px rgba(95, 163, 60, 0.16);
+  transform: translateY(-3px);
+  border-color: var(--k-lime-line);
+  box-shadow: 0 3px 8px rgba(78, 154, 46, 0.12), 0 16px 30px rgba(78, 154, 46, 0.14);
 }
+
+/* Тонкая полоска-акцент слева у «активной» карточки-действия */
+.k-rail { position: relative; }
+.k-rail::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 14px; bottom: 14px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--k-lime);
+}
+.k-rail-honey::before { background: var(--k-honey); }
+.k-rail-violet::before { background: var(--k-violet); }
+
+/* Строка-ссылка в списке: тихая подсветка при наведении (тема-независимо) */
+.k-row-hover { transition: background-color 0.15s ease; }
+.k-row-hover:hover { background: var(--k-bg-tint); }
 
 /* Apple-нажатие: scale(0.97) на :active — быстрая, тихая обратная связь
    (emil-design-eng/apple-design), без игровой "проседающей" тени. */
@@ -635,7 +778,7 @@ main > * {
 
 /* Кольцо прогресса (страницы, которым нужен percent+children) */
 .k-ring { border-radius: 50%; display: grid; place-items: center; }
-.k-ring > i { border-radius: 50%; background: #fff; display: grid; place-items: center; font-style: normal; }
+.k-ring > i { border-radius: 50%; background: var(--k-card); display: grid; place-items: center; font-style: normal; }
 
 /* Активный пункт навигации — залитая лаймовая таблетка */
 .k-nav-on {
@@ -643,7 +786,31 @@ main > * {
   color: #fff;
 }
 
-.k-num { font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: -0.01em; }
+/* ── Типографика: Manrope во всю силу ──────────────────────────────
+   В геймифицированном кабинете ЦИФРЫ — это контент (коины, уровень,
+   место, баллы). Даём им отдельную трактовку: Manrope 800, плотный
+   трекинг, tabular — они читаются как «табло», а не как обычный текст. */
+.k-num {
+  font-family: 'Manrope Variable', 'Manrope', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-feature-settings: 'ss01', 'cv11';
+}
+/* Заголовки страниц/секций — тот же голос, что у цифр */
+.k-display {
+  font-family: 'Manrope Variable', 'Manrope', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+/* Надзаголовок-ярлычок: капитель, широкий трекинг, приглушён */
+.k-eyebrow {
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
 
 /* Мягкое «дыхание» для текущего/призывного элемента */
 @keyframes k-pulse {
@@ -655,10 +822,10 @@ main > * {
 /* Вход карточек/модалок — чистый ease-out, без пружинного нахлёста
    (сериознее, чем bounce; всё ещё не с нуля — из 0.96, не 0). */
 @keyframes k-pop-in {
-  0%   { opacity: 0; transform: scale(0.96) translateY(4px); }
+  0%   { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: none; }
 }
-.k-pop-in { animation: k-pop-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.k-pop-in { animation: k-pop-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
 /* Блик, бегущий по заполненной части полосы уровня */
 @keyframes k-levelbar-sheen {
@@ -675,7 +842,7 @@ main > * {
   position: absolute;
   inset: 0;
   width: 40%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  background: linear-gradient(90deg, transparent, var(--k-sheen), transparent);
   animation: k-levelbar-sheen 2.4s ease-in-out infinite;
 }
 

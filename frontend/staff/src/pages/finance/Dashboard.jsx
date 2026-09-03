@@ -9,13 +9,15 @@ import { Link } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
 import { Metric, Card, compactMoney } from './_ui.jsx';
-import { useT } from './_i18n.jsx';
+import { useTranslation } from 'react-i18next';
 import { useSuperStats } from '../../queries.js';
 
 const BRANCH_COLORS = ['#16a34a', '#f59e0b', '#0ea5e9'];
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
 
 export default function FinanceDashboard() {
-  const { t, lang } = useT();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const { data, isLoading, error, refetch } = useSuperStats('30d');
 
   if (error) return <button className="btn btn-error" onClick={() => refetch()}>{error.message}</button>;
@@ -23,7 +25,7 @@ export default function FinanceDashboard() {
 
   const totals = data.totals;
   const chartData = (data.revenueSeries || []).map((row) => ({
-    name: new Date(row.date).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'uz-UZ', { day: '2-digit', month: '2-digit' }),
+    name: new Date(row.date).toLocaleDateString(LOCALE_OF[lang] || 'ru-RU', { day: '2-digit', month: '2-digit' }),
     income: Number(row.revenue || 0),
   }));
 
@@ -34,32 +36,32 @@ export default function FinanceDashboard() {
 
   return (
     <div className="space-y-6 pb-8 animate-fade-in">
-      <PageHeader title={t('dash.title')} subtitle={t('dash.subtitle')} />
+      <PageHeader title={t('finance.dash.title')} subtitle={t('finance.dash.subtitle')} />
 
       {/* ── KPI организации за текущий месяц ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
         <Metric
           Icon={Wallet}
-          label={t('kpi.income')}
+          label={t('finance.kpi.income')}
           value={money(totals.periodRevenue)}
-          sub={lang === 'ru' ? 'Последние 30 дней · вся организация' : lang === 'uz' ? "So‘nggi 30 kun · butun tashkilot" : 'Last 30 days · whole org'}
+          sub={t('finance.dash.days30Org')}
           tone="success"
         />
         <Metric
           Icon={TriangleAlert}
-          label={lang === 'ru' ? 'Долг' : 'Qarzdorlik'}
+          label={t('kpi.debt')}
           value={money(totals.outstandingDebt)}
           tone="warning"
         />
         <Metric
           Icon={Users}
-          label={lang === 'ru' ? 'Ученики' : "O‘quvchilar"}
+          label={t('kpi.students')}
           value={totals.activeStudents}
           tone="info"
         />
         <Metric
           Icon={Building2}
-          label={lang === 'ru' ? 'Филиалы' : 'Filiallar'}
+          label={t('finance.dash.branches')}
           value={totals.branches}
           tone="neutral"
         />
@@ -67,7 +69,7 @@ export default function FinanceDashboard() {
 
       {/* ── Тренд по месяцам + доля филиалов ── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
-        <Card title={t('dash.trendChart')} subtitle={lang === 'ru' ? 'Фактические поступления за 30 дней' : '30 kunlik haqiqiy tushum'} className="xl:col-span-2" bodyClass="p-4 h-[340px]">
+        <Card title={t('finance.dash.trendChart')} subtitle={t('finance.dash.chartSub')} className="xl:col-span-2" bodyClass="p-4 h-[340px]">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-base-300)" vertical={false} />
@@ -86,7 +88,7 @@ export default function FinanceDashboard() {
           </ResponsiveContainer>
         </Card>
 
-        <Card title={t('dash.branchShare')} bodyClass="p-4 h-[340px]">
+        <Card title={t('finance.dash.branchShare')} bodyClass="p-4 h-[340px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie data={branchIncome} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={3}>
@@ -104,7 +106,7 @@ export default function FinanceDashboard() {
       {/* ── Быстрые действия ── */}
       <div className="flex gap-3">
         <Link to="/finance/reports" className="btn btn-primary gap-2">
-          <TrendingUp size={16} /> {t('dash.viewReports')}
+          <TrendingUp size={16} /> {t('finance.dash.viewReports')}
         </Link>
       </div>
     </div>

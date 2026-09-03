@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Plus, Snowflake, Sun, Archive, KeyRound, GraduationCap, UserCheck, UserX,
   Copy, Check, Coins, LayoutGrid, List, AlertTriangle, Download
@@ -45,15 +46,17 @@ function Lbl({ children }) {
   return <label className="text-[10px] font-extrabold text-primary uppercase tracking-wide mb-1 block">{children}</label>;
 }
 
-const STATUS_COLORS = {
-  active: { bg: '#2ECC7115', text: '#2ECC71', label: 'Активен' },
-  frozen: { bg: '#E8543E15', text: '#E8543E', label: 'Заморожен' },
-};
+const statusClassesMap = (t) => ({
+  active: { className: 'bg-success/10 text-success', label: t('status.active') },
+  frozen: { className: 'bg-error/10 text-error', label: t('status.frozen') },
+});
 
 /* ═══════════════ Stat Card ═══════════════ */
 /* ═══════════════ Student Card ═══════════════ */
 function StudentCard({ s, onNavigate }) {
-  const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
+  const { t } = useTranslation();
+  const STATUS_CLASSES = statusClassesMap(t);
+  const status = STATUS_CLASSES[s.status] || STATUS_CLASSES.active;
   const groupNames = (s.groups || []).map((g) => g.name).filter(Boolean);
 
   return (
@@ -68,8 +71,7 @@ function StudentCard({ s, onNavigate }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-bold text-base-content truncate">{fullName(s)}</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-              style={{ background: status.bg, color: status.text }}>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${status.className}`}>
               {status.label}
             </span>
           </div>
@@ -105,6 +107,8 @@ function StudentCard({ s, onNavigate }) {
 
 /* ═══════════════ Main Students ═══════════════ */
 export default function AdminStudents() {
+  const { t } = useTranslation();
+  const STATUS_CLASSES = statusClassesMap(t);
   const { token, user } = useAuth();
   // Main Admin включает/выключает "кабинет родителя" всей организации
   // (parent_panel) — когда включён, backend требует данные родителя при
@@ -168,26 +172,26 @@ export default function AdminStudents() {
       setForm(null);
       setCreds({ login_code: r.student?.loginCode, password: r.student?.password, parent: r.parent });
       refetch();
-    } catch (e) { setErr(e.message || 'Ошибка'); }
+    } catch (e) { setErr(e.message || t('admin.mentors.genericError')); }
     finally { setBusy(false); }
   };
 
   const toggleFreeze = async (s) => {
     const frozen = s.status === 'frozen';
     try { await api.adminFreezeStudent(token, s.id, !frozen, ''); refetch(); }
-    catch (e) { alert(e.message || 'Ошибка'); }
+    catch (e) { alert(e.message || t('admin.mentors.genericError')); }
   };
   const archive = async (s) => {
-    if (!confirm(`Архивировать студента ${fullName(s)}?\n\nСтудент будет скрыт из списка, но данные сохранятся.`)) return;
+    if (!confirm(t('admin.students.archiveConfirm', { name: fullName(s) }))) return;
     try { await api.adminDeleteStudent(token, s.id); refetch(); }
-    catch (e) { alert(e.message || 'Ошибка'); }
+    catch (e) { alert(e.message || t('admin.mentors.genericError')); }
   };
   const regen = async (s) => {
     try {
       const res = await api.adminRegenStudentPassword(token, s.id);
       const r = res?.data || res;
       setCreds({ login_code: s.login_code || s.loginCode, password: r.password });
-    } catch (e) { alert(e.message || 'Ошибка'); }
+    } catch (e) { alert(e.message || t('admin.mentors.genericError')); }
   };
 
   const copyToClipboard = (text, field) => {
@@ -199,20 +203,20 @@ export default function AdminStudents() {
 
   return (
     <div className="space-y-6 pb-8">
-      <PageHeader title="Студенты" subtitle="Учёт студентов филиала">
+      <PageHeader title={t('admin.students.title')} subtitle={t('admin.students.subtitle')}>
         <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={filteredRows.length === 0}>
-          <Download size={14} /> Экспорт
+          <Download size={14} /> {t('admin.mentors.export')}
         </button>
         <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
-          <Plus size={16} /> Добавить студента
+          <Plus size={16} /> {t('admin.students.add')}
         </button>
       </PageHeader>
 
       {/* ═══ Stats ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Kpi Icon={GraduationCap} title="Всего" value={rows.length}  tone="neutral" />
-        <Kpi Icon={UserCheck} title="Активные" value={activeCount}  tone="success" />
-        <Kpi Icon={UserX} title="Заморожены" value={frozenCount}  tone="danger" />
+        <Kpi Icon={GraduationCap} title={t('admin.mentors.total')} value={rows.length}  tone="neutral" />
+        <Kpi Icon={UserCheck} title={t('admin.mentors.active')} value={activeCount}  tone="success" />
+        <Kpi Icon={UserX} title={t('admin.mentors.frozen')} value={frozenCount}  tone="danger" />
       </div>
 
       {/* ═══ Search + View Toggle ═══ */}
@@ -220,16 +224,16 @@ export default function AdminStudents() {
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Поиск по имени, фамилии или телефону…"
+          placeholder={t('admin.students.searchPlaceholder')}
           className="flex-1"
         />
         {/* Status filter tabs */}
         <div className="hidden sm:flex items-center gap-1 p-1 rounded-[12px] bg-base-100 border border-base-300">
           {[
-            { key: 'all', label: 'Все', count: rows.length },
-            { key: 'active', label: 'Активные', count: activeCount },
-            { key: 'frozen', label: 'Заморожены', count: frozenCount },
-            { key: 'debt', label: 'Задолжен', count: debtCount },
+            { key: 'all', label: t('admin.students.filterAll'), count: rows.length },
+            { key: 'active', label: t('admin.mentors.active'), count: activeCount },
+            { key: 'frozen', label: t('admin.mentors.frozen'), count: frozenCount },
+            { key: 'debt', label: t('admin.students.filterDebt'), count: debtCount },
           ].map(f => (
             <button
               key={f.key}
@@ -273,15 +277,15 @@ export default function AdminStudents() {
       {isLoading ? (
         <RowSkeleton count={5} />
       ) : error ? (
-        <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
+        <div className="alert alert-error mt-4">{t('admin.mentors.loadError', { message: error.message })}</div>
       ) : filteredRows.length === 0 ? (
         <EmptyState
           icon={GraduationCap}
-          title={search ? 'Попробуйте изменить запрос' : 'Нет студентов'}
-          hint={search ? undefined : 'Добавьте первого студента'}
+          title={search ? t('admin.students.emptySearchTitle') : t('admin.students.emptyTitle')}
+          hint={search ? undefined : t('admin.students.emptyHint')}
           action={!search ? (
             <button className="btn btn-primary btn-sm gap-1" onClick={() => { setForm(emptyForm); setErr(''); }}>
-              <Plus size={14} /> Добавить
+              <Plus size={14} /> {t('admin.students.addShort')}
             </button>
           ) : undefined}
         />
@@ -299,25 +303,24 @@ export default function AdminStudents() {
             <table className="table w-full text-[13px]">
               <thead>
                 <tr>
-                  <th>Студент</th>
-                  <th>Телефон</th>
-                  <th>Ментор</th>
-                  <th>Группа</th>
-                  <th>Направление</th>
+                  <th>{t('admin.students.colStudent')}</th>
+                  <th>{t('admin.students.colPhone')}</th>
+                  <th>{t('admin.students.colMentor')}</th>
+                  <th>{t('admin.students.colGroup')}</th>
+                  <th>{t('admin.students.colDirection')}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRows.map((s, i) => {
                   const g0 = (s.groups || [])[0];
-                  const status = STATUS_COLORS[s.status] || STATUS_COLORS.active;
+                  const status = STATUS_CLASSES[s.status] || STATUS_CLASSES.active;
                   return (
                     <tr key={s.id} className="hover:bg-base-200 cursor-pointer" onClick={() => navigate(`/students/${s.id}`)}>
                       <td>
                         <div className="flex items-center gap-2">
                           <span className="text-base-content/40 font-mono text-[11px] tabular-nums">{i + 1}.</span>
                           <span className="font-semibold text-base-content">{fullName(s)}</span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
-                            style={{ background: status.bg, color: status.text }}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${status.className}`}>
                             {status.label}
                           </span>
                         </div>
@@ -345,9 +348,12 @@ export default function AdminStudents() {
       {form && (
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300 max-w-6xl p-0 max-h-[85vh] flex flex-col">
-            <div className="px-8 pt-7 pb-5 border-b border-base-200 shrink-0">
-              <h3 className="font-extrabold text-2xl text-base-content">Новый студент</h3>
-              <p className="text-[13px] text-base-content/50 mt-1">Заполните данные — логин и пароль сгенерируются автоматически</p>
+            <div className="flex justify-between items-start px-8 pt-7 pb-5 border-b border-base-200 shrink-0">
+              <div>
+                <h3 className="font-extrabold text-2xl text-base-content">{t('admin.students.newTitle')}</h3>
+                <p className="text-[13px] text-base-content/50 mt-1">{t('admin.students.newSubtitle')}</p>
+              </div>
+              <button className="btn btn-ghost btn-sm btn-square" onClick={() => setForm(null)}><Check size={18} className="hidden" /><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
             </div>
 
             <div className="px-8 pt-5 pb-6 overflow-y-auto">
@@ -357,42 +363,42 @@ export default function AdminStudents() {
                 <div>
                   <div className="space-y-3">
                     <div>
-                      <Lbl>Имя *</Lbl>
+                      <Lbl>{t('admin.students.firstNameLabel')}</Lbl>
                       <input className="input input-bordered input-sm w-full" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
                     </div>
                     <div>
-                      <Lbl>Фамилия *</Lbl>
+                      <Lbl>{t('admin.students.lastNameLabel')}</Lbl>
                       <input className="input input-bordered input-sm w-full" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
                     </div>
 
                     {/* Пол — визуальное поле по референсу, backend его не хранит (нет колонки) */}
                     <div>
-                      <Lbl>Пол</Lbl>
+                      <Lbl>{t('admin.students.genderLabel')}</Lbl>
                       <div className="flex items-center gap-3">
                         <label className={`flex-1 flex items-center justify-center gap-2 cursor-pointer input input-bordered ${form.gender === 'male' ? 'border-primary text-primary' : ''}`}>
                           <input type="radio" name="gender" className="radio radio-xs" checked={form.gender === 'male'} onChange={() => setForm({ ...form, gender: 'male' })} />
-                          Мужской
+                          {t('admin.students.male')}
                         </label>
                         <label className={`flex-1 flex items-center justify-center gap-2 cursor-pointer input input-bordered ${form.gender === 'female' ? 'border-primary text-primary' : ''}`}>
                           <input type="radio" name="gender" className="radio radio-xs" checked={form.gender === 'female'} onChange={() => setForm({ ...form, gender: 'female' })} />
-                          Женский
+                          {t('admin.students.female')}
                         </label>
                       </div>
                     </div>
 
                     <div>
-                      <Lbl>Дата рождения</Lbl>
+                      <Lbl>{t('admin.students.birthDateLabel')}</Lbl>
                       <input className="input input-bordered input-sm w-full" type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
                     </div>
 
                     <div className="grid grid-cols-[3fr_2fr] gap-3">
                       <div>
-                        <Lbl>Телефон *</Lbl>
+                        <Lbl>{t('admin.students.phoneLabel')}</Lbl>
                         <PhoneInput className="input input-bordered input-sm w-full" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
                       </div>
                       <div>
-                        <Lbl>Кому принадлежит</Lbl>
-                        <input className="input input-bordered input-sm w-full" placeholder="Студенту" value={form.phoneOwner} onChange={(e) => setForm({ ...form, phoneOwner: e.target.value })} />
+                        <Lbl>{t('admin.students.phoneOwnerLabel')}</Lbl>
+                        <input className="input input-bordered input-sm w-full" placeholder={t('admin.students.phoneOwnerPlaceholder')} value={form.phoneOwner} onChange={(e) => setForm({ ...form, phoneOwner: e.target.value })} />
                       </div>
                     </div>
 
@@ -403,17 +409,17 @@ export default function AdminStudents() {
                     {parentPanelEnabled && (
                       <>
                         <div>
-                          <Lbl>Имя родителя *</Lbl>
+                          <Lbl>{t('admin.students.parentNameLabel')}</Lbl>
                           <input className="input input-bordered input-sm w-full" value={form.parentName} onChange={(e) => setForm({ ...form, parentName: e.target.value })} />
                         </div>
                         <div className="grid grid-cols-[3fr_2fr] gap-3">
                           <div>
-                            <Lbl>Телефон родителя *</Lbl>
+                            <Lbl>{t('admin.students.parentPhoneLabel')}</Lbl>
                             <PhoneInput className="input input-bordered input-sm w-full" value={form.parentPhone} onChange={(v) => setForm({ ...form, parentPhone: v })} />
                           </div>
                           <div>
-                            <Lbl>Кому принадлежит</Lbl>
-                            <input className="input input-bordered input-sm w-full" placeholder="Родителю" value={form.parentPhoneOwner} onChange={(e) => setForm({ ...form, parentPhoneOwner: e.target.value })} />
+                            <Lbl>{t('admin.students.phoneOwnerLabel')}</Lbl>
+                            <input className="input input-bordered input-sm w-full" placeholder={t('admin.students.parentPhoneOwnerPlaceholder')} value={form.parentPhoneOwner} onChange={(e) => setForm({ ...form, parentPhoneOwner: e.target.value })} />
                           </div>
                         </div>
                       </>
@@ -422,11 +428,11 @@ export default function AdminStudents() {
                     {/* Доп. телефон — визуальное поле по референсу, backend хранит только один номер родителя */}
                     <div className="grid grid-cols-[3fr_2fr] gap-3">
                       <div>
-                        <Lbl>Доп. телефон</Lbl>
+                        <Lbl>{t('admin.students.extraPhoneLabel')}</Lbl>
                         <PhoneInput className="input input-bordered input-sm w-full" value={form.extraPhone} onChange={(v) => setForm({ ...form, extraPhone: v })} />
                       </div>
                       <div>
-                        <Lbl>Кому принадлежит</Lbl>
+                        <Lbl>{t('admin.students.phoneOwnerLabel')}</Lbl>
                         <input className="input input-bordered input-sm w-full" value={form.extraPhoneOwner} onChange={(e) => setForm({ ...form, extraPhoneOwner: e.target.value })} />
                       </div>
                     </div>
@@ -436,58 +442,58 @@ export default function AdminStudents() {
                 <div>
                   <div className="space-y-3">
                     <div>
-                      <Lbl>Группа</Lbl>
+                      <Lbl>{t('admin.students.groupLabel')}</Lbl>
                       <select className="select select-bordered select-sm w-full" value={form.groupId} onChange={(e) => setForm({ ...form, groupId: e.target.value })}>
-                        <option value="">Без группы</option>
+                        <option value="">{t('admin.students.noGroup')}</option>
                         {groupOptions.map((g) => <option key={g.id} value={g.id}>{g.name} · {g.subject}</option>)}
                       </select>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Lbl>Язык обучения</Lbl>
+                        <Lbl>{t('admin.students.languageLabel')}</Lbl>
                         <select className="select select-bordered select-sm w-full" value={form.preferredLanguage} onChange={(e) => setForm({ ...form, preferredLanguage: e.target.value })}>
                           <option value="">----</option>
                           <option value="uz">O'zbekcha</option>
-                          <option value="ru">Русский</option>
+                          <option value="ru">{t('admin.students.langRu')}</option>
                         </select>
                       </div>
                       <div>
-                        <Lbl>Источник</Lbl>
+                        <Lbl>{t('admin.students.sourceLabel')}</Lbl>
                         <select className="select select-bordered select-sm w-full" value={form.leadSource} onChange={(e) => setForm({ ...form, leadSource: e.target.value })}>
                           <option value="">----</option>
                           <option value="instagram">Instagram</option>
                           <option value="telegram">Telegram</option>
-                          <option value="referral">По рекомендации</option>
-                          <option value="walk-in">Пришёл сам</option>
+                          <option value="referral">{t('admin.students.sourceReferral')}</option>
+                          <option value="walk-in">{t('admin.students.sourceWalkIn')}</option>
                         </select>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Lbl>Номер школы</Lbl>
+                        <Lbl>{t('admin.students.schoolLabel')}</Lbl>
                         <input className="input input-bordered input-sm w-full" value={form.school} onChange={(e) => setForm({ ...form, school: e.target.value })} />
                       </div>
                       <div>
-                        <Lbl>Адрес</Lbl>
+                        <Lbl>{t('admin.students.addressLabel')}</Lbl>
                         <input className="input input-bordered input-sm w-full" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
                       </div>
                     </div>
                     <div>
-                      <Lbl>Комментарий для преподавателя</Lbl>
+                      <Lbl>{t('admin.students.commentLabel')}</Lbl>
                       <textarea className="textarea textarea-bordered textarea-sm w-full" rows={2} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
                     </div>
                     <div className="flex items-center gap-4 pt-1">
                       <label className="flex items-center gap-1.5 text-[12px] font-semibold text-base-content/70 cursor-pointer">
                         <input type="checkbox" className="checkbox checkbox-sm checkbox-primary" checked={form.hasLaptop} onChange={(e) => setForm({ ...form, hasLaptop: e.target.checked })} />
-                        Есть ноутбук
+                        {t('admin.students.hasLaptop')}
                       </label>
                       <label className="flex items-center gap-1.5 text-[12px] font-semibold text-base-content/70 cursor-pointer">
                         <input type="checkbox" className="checkbox checkbox-sm checkbox-primary" checked={form.offerSigned} onChange={(e) => setForm({ ...form, offerSigned: e.target.checked })} />
-                        Оферта подписана
+                        {t('admin.students.offerSigned')}
                       </label>
                     </div>
                     <p className="text-[11px] text-base-content/40">
-                      Если заполнены имя, фамилия и телефон родителя слева — ему тоже создастся отдельный вход.
+                      {t('admin.students.parentNote')}
                     </p>
                   </div>
                 </div>
@@ -495,7 +501,7 @@ export default function AdminStudents() {
             </div>
 
             <div className="modal-action px-8 pb-7 pt-4 mt-0 border-t border-base-200 shrink-0">
-              <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>Отмена</button>
+              <button className="btn btn-ghost" onClick={() => setForm(null)} disabled={busy}>{t('admin.students.cancel')}</button>
               <button
                 className="btn btn-primary gap-1.5"
                 onClick={create}
@@ -505,7 +511,7 @@ export default function AdminStudents() {
                   (parentPanelEnabled && !(form.parentName.trim() && form.parentPhone))
                 }
               >
-                {busy && <span className="loading loading-spinner loading-xs" />} Создать
+                {busy && <span className="loading loading-spinner loading-xs" />} {t('admin.students.create')}
               </button>
             </div>
           </div>
@@ -519,11 +525,14 @@ export default function AdminStudents() {
       {creds && (
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-2">Данные для входа</h3>
-            <p className="text-sm text-base-content/45 mb-4">Передайте студенту. Пароль показывается один раз.</p>
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="font-bold text-lg">{t('admin.students.credsTitle')}</h3>
+              <button className="btn btn-ghost btn-sm btn-square" onClick={() => setCreds(null)}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
+            <p className="text-sm text-base-content/45 mb-4">{t('admin.students.credsHint')}</p>
             <div className="space-y-2">
               <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
-                <span className="text-[13px] text-base-content/70">Логин-код</span>
+                <span className="text-[13px] text-base-content/70">{t('admin.students.loginCode')}</span>
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-bold text-[14px]">{creds.login_code || '—'}</span>
                   {creds.login_code && (
@@ -535,7 +544,7 @@ export default function AdminStudents() {
                 </div>
               </div>
               <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
-                <span className="text-[13px] text-base-content/70">Пароль</span>
+                <span className="text-[13px] text-base-content/70">{t('admin.students.password')}</span>
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-bold text-[14px]">{creds.password || '—'}</span>
                   {creds.password && (
@@ -550,10 +559,10 @@ export default function AdminStudents() {
 
             {creds.parent && (
               <>
-                <p className="text-sm text-base-content/45 mt-4 mb-2">Родитель ({creds.parent.firstName} {creds.parent.lastName})</p>
+                <p className="text-sm text-base-content/45 mt-4 mb-2">{t('admin.students.parentLabel', { firstName: creds.parent.firstName, lastName: creds.parent.lastName })}</p>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
-                    <span className="text-[13px] text-base-content/70">Логин-код</span>
+                    <span className="text-[13px] text-base-content/70">{t('admin.students.loginCode')}</span>
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-[14px]">{creds.parent.loginCode || '—'}</span>
                       {creds.parent.loginCode && (
@@ -565,7 +574,7 @@ export default function AdminStudents() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-[12px] bg-base-100 border border-base-300">
-                    <span className="text-[13px] text-base-content/70">Пароль</span>
+                    <span className="text-[13px] text-base-content/70">{t('admin.students.password')}</span>
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-[14px]">{creds.parent.password || '—'}</span>
                       {creds.parent.password && (
@@ -581,7 +590,7 @@ export default function AdminStudents() {
             )}
 
             <div className="modal-action">
-              <button className="btn btn-primary" onClick={() => setCreds(null)}>Понятно</button>
+              <button className="btn btn-primary" onClick={() => setCreds(null)}>{t('admin.students.gotIt')}</button>
             </div>
           </div>
         </dialog>

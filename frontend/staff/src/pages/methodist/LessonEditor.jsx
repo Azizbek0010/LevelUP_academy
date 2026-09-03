@@ -8,8 +8,8 @@ import { useLessonDetails, useInvalidate } from '../../queries.js';
 import { api, uploadToPresignedUrl } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
-import { LangProvider, useLang } from './i18n.js';
-import LangSwitcher from './LangSwitcher.jsx';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher.jsx';
 
 // 'riddle' и 'open' на бэке проверяются одинаково (текст без учёта регистра) —
 // два значения существуют только чтобы методист различал их в списке, разница
@@ -21,16 +21,16 @@ const QUESTION_TYPES = [
 ];
 
 const makeChoiceSchema = (t) => z.object({
-  questionText: z.string().trim().min(1, t('editor.question_required')).max(1000),
-  optionA: z.string().trim().min(1, t('editor.option_required', { letter: 'A' })).max(300),
-  optionB: z.string().trim().min(1, t('editor.option_required', { letter: 'B' })).max(300),
-  optionC: z.string().trim().min(1, t('editor.option_required', { letter: 'C' })).max(300),
-  optionD: z.string().trim().min(1, t('editor.option_required', { letter: 'D' })).max(300),
+  questionText: z.string().trim().min(1, t('methodist.editor.question_required')).max(1000),
+  optionA: z.string().trim().min(1, t('methodist.editor.option_required', { letter: 'A' })).max(300),
+  optionB: z.string().trim().min(1, t('methodist.editor.option_required', { letter: 'B' })).max(300),
+  optionC: z.string().trim().min(1, t('methodist.editor.option_required', { letter: 'C' })).max(300),
+  optionD: z.string().trim().min(1, t('methodist.editor.option_required', { letter: 'D' })).max(300),
   correctAnswer: z.enum(['A', 'B', 'C', 'D']),
 });
 const makeTextSchema = (t) => z.object({
-  questionText: z.string().trim().min(1, t('editor.question_required')).max(1000),
-  correctTextAnswer: z.string().trim().min(1, t('editor.correct_answer_required')).max(300),
+  questionText: z.string().trim().min(1, t('methodist.editor.question_required')).max(1000),
+  correctTextAnswer: z.string().trim().min(1, t('methodist.editor.correct_answer_required')).max(300),
 });
 
 // Схема формы вопроса зависит от выбранного типа — обычный статический
@@ -71,13 +71,13 @@ function questionPayload(q) {
 // tekshiradi (backend: content.schemas.js, xuddi shu qoida). Bo'sh bo'lsa
 // AI vazifa nima ekanini bilmaydi, faqat kodning umumiy sifatini baholaydi.
 const makeLessonSettingsSchema = (t, isPractical) => z.object({
-  title: z.string().trim().min(1, t('editor.title_required')).max(200),
+  title: z.string().trim().min(1, t('methodist.editor.title_required')).max(200),
   description: isPractical
-    ? z.string().trim().min(1, t('editor.description_required_practical')).max(4000)
+    ? z.string().trim().min(1, t('methodist.editor.description_required_practical')).max(4000)
     : z.string().trim().max(4000).optional(),
   instruction: z.string().trim().max(2000).optional(),
   coinReward: z.coerce.number().int().min(0).default(0),
-  videoUrl: z.string().trim().url(t('editor.invalid_url')).or(z.literal('')).optional(),
+  videoUrl: z.string().trim().url(t('methodist.editor.invalid_url')).or(z.literal('')).optional(),
 });
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
@@ -100,7 +100,7 @@ const EMPTY_QUESTION_FORM = {
 };
 
 function LessonEditorView() {
-  const { t } = useLang();
+  const { t } = useTranslation();
   const { lessonId } = useParams();
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -298,11 +298,11 @@ function LessonEditorView() {
         qs.push({
           lessonId,
           questionType: 'choice',
-          questionText: `${t('editor.question_prefix')} ${questions.length + i + 1}`,
-          optionA: t('editor.option_label', { letter: 'A' }),
-          optionB: t('editor.option_label', { letter: 'B' }),
-          optionC: t('editor.option_label', { letter: 'C' }),
-          optionD: t('editor.option_label', { letter: 'D' }),
+          questionText: `${t('methodist.editor.question_prefix')} ${questions.length + i + 1}`,
+          optionA: t('methodist.editor.option_label', { letter: 'A' }),
+          optionB: t('methodist.editor.option_label', { letter: 'B' }),
+          optionC: t('methodist.editor.option_label', { letter: 'C' }),
+          optionD: t('methodist.editor.option_label', { letter: 'D' }),
           correctAnswer: 'A',
         });
       }
@@ -321,9 +321,9 @@ function LessonEditorView() {
     <div className="mt-page-bg space-y-6 p-6">
       <div className="mt-fade-in">
         <div className="flex items-center gap-1.5 text-[12px] text-[var(--mt-text-muted)] mb-3">
-          <button onClick={() => navigate(-1)} className="hover:text-[var(--mt-accent)] transition-colors font-medium cursor-pointer">← {t('common.back')}</button>
+          <button onClick={() => navigate(-1)} className="hover:text-[var(--mt-accent)] transition-colors font-medium cursor-pointer">← {t('methodist.common.back')}</button>
           <span className="opacity-50">/</span>
-          <span className="text-[var(--mt-text)] font-semibold">{t('editor.title')}</span>
+          <span className="text-[var(--mt-text)] font-semibold">{t('methodist.editor.title')}</span>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -333,8 +333,8 @@ function LessonEditorView() {
             <ArrowLeft size={18} className="text-[var(--mt-text-muted)]" />
           </button>
           <div>
-            <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('editor.title')}</h1>
-            <p className="text-[13px] text-[var(--mt-text-muted)]">{t('editor.subtitle')}</p>
+            <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('methodist.editor.title')}</h1>
+            <p className="text-[13px] text-[var(--mt-text-muted)]">{t('methodist.editor.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -344,14 +344,14 @@ function LessonEditorView() {
             <AlertTriangle size={22} className="text-[var(--mt-danger)]" />
           </div>
           <div className="flex-1">
-            <p className="text-[14px] font-bold text-[var(--mt-text)] mb-0.5">{t('common.loading_error')}</p>
-            <p className="text-[12px] text-[var(--mt-text-muted)]">{error?.message || t('common.loading_failed')}</p>
+            <p className="text-[14px] font-bold text-[var(--mt-text)] mb-0.5">{t('methodist.common.loading_error')}</p>
+            <p className="text-[12px] text-[var(--mt-text-muted)]">{error?.message || t('methodist.common.loading_failed')}</p>
           </div>
           <button
             className="mt-btn-ghost"
             onClick={() => window.location.reload()}
           >
-            <RefreshCw size={14} /> {t('common.retry')}
+            <RefreshCw size={14} /> {t('methodist.common.retry')}
           </button>
         </div>
       </div>
@@ -363,15 +363,15 @@ function LessonEditorView() {
       {/* Header */}
       <div className="mt-fade-in">
         <div className="flex items-center gap-1.5 text-[12px] text-[var(--mt-text-muted)] mb-3">
-          <button onClick={() => navigate(-1)} className="hover:text-[var(--mt-accent)] transition-colors font-medium cursor-pointer">← {t('common.back')}</button>
+          <button onClick={() => navigate(-1)} className="hover:text-[var(--mt-accent)] transition-colors font-medium cursor-pointer">← {t('methodist.common.back')}</button>
           <span className="opacity-50">/</span>
-          <span className="text-[var(--mt-text)] font-semibold">{t('editor.title')}</span>
+          <span className="text-[var(--mt-text)] font-semibold">{t('methodist.editor.title')}</span>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={openSettings}
             className="w-10 h-10 rounded-[10px] bg-[var(--surface-hover)] grid place-items-center hover:bg-base-300 transition-colors"
-            title={t('editor.settings_tooltip')}
+            title={t('methodist.editor.settings_tooltip')}
           >
             <Settings size={18} className="text-[var(--text-secondary)]" />
           </button>
@@ -382,10 +382,10 @@ function LessonEditorView() {
             <ArrowLeft size={18} className="text-[var(--mt-text-muted)]" />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight truncate">{lesson?.title || t('editor.title')}</h1>
-            <p className="text-[13px] text-[var(--mt-text-muted)]">{isTest ? t('editor.test_count', { count: questions.length }) : t('editor.type_practical')}</p>
+            <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight truncate">{lesson?.title || t('methodist.editor.title')}</h1>
+            <p className="text-[13px] text-[var(--mt-text-muted)]">{isTest ? t('methodist.editor.test_count', { count: questions.length }) : t('methodist.editor.type_practical')}</p>
           </div>
-          <LangSwitcher />
+          <LanguageSwitcher />
         </div>
       </div>
 
@@ -407,7 +407,7 @@ function LessonEditorView() {
               <Play size={18} />
             </div>
             <div>
-              <h3 className="font-semibold text-sm">{t('editor.video_label')}</h3>
+              <h3 className="font-semibold text-sm">{t('methodist.editor.video_label')}</h3>
               <a href={lesson?.video_url || lesson?.videoUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline font-medium break-all">
                 {lesson?.video_url || lesson?.videoUrl}
               </a>
@@ -423,7 +423,7 @@ function LessonEditorView() {
             <div className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: 'rgba(217,119,6,0.12)' }}>
               <FileQuestion size={14} className="text-[var(--mt-warning)]" />
             </div>
-            <h3 className="text-[13px] font-bold text-[var(--mt-text)]">{t('editor.task_desc')}</h3>
+            <h3 className="text-[13px] font-bold text-[var(--mt-text)]">{t('methodist.editor.task_desc')}</h3>
           </div>
           <p className="text-[13px] text-[var(--mt-text-muted)] whitespace-pre-wrap leading-relaxed pl-[42px]">{lesson.description}</p>
         </div>
@@ -448,13 +448,13 @@ function LessonEditorView() {
                 <FileText size={18} />
               </div>
               <div>
-                <h3 className="font-semibold text-sm">{t('editor.attachment_label')}</h3>
+                <h3 className="font-semibold text-sm">{t('methodist.editor.attachment_label')}</h3>
                 {(lesson?.file_key || lesson?.fileKey) ? (
                   <p className="text-xs opacity-60 mt-0.5 break-all max-w-xs md:max-w-md">
-                    {String(lesson?.file_key || lesson?.fileKey).split('/').pop()}
+                    {String(lesson?.file_key || lesson?.fileKey).split('methodist./').pop()}
                   </p>
                 ) : (
-                  <p className="text-xs opacity-40 mt-0.5">{t('editor.no_file')}</p>
+                  <p className="text-xs opacity-40 mt-0.5">{t('methodist.editor.no_file')}</p>
                 )}
               </div>
             </div>
@@ -466,7 +466,7 @@ function LessonEditorView() {
                 disabled={uploading}
                 onChange={handleFileUpload}
               />
-              <span className="text-[11px] opacity-40">{t('editor.upload_drop_hint')}</span>
+              <span className="text-[11px] opacity-40">{t('methodist.editor.upload_drop_hint')}</span>
             </div>
           </div>
         </div>
@@ -479,7 +479,7 @@ function LessonEditorView() {
             <div className="w-8 h-8 rounded-lg grid place-items-center" style={{ background: 'rgba(37,99,235,0.12)' }}>
               <HelpCircle size={14} className="text-[#2563EB]" />
             </div>
-            <h3 className="text-[13px] font-bold text-[var(--mt-text)]">{t('editor.instruction')}</h3>
+            <h3 className="text-[13px] font-bold text-[var(--mt-text)]">{t('methodist.editor.instruction')}</h3>
           </div>
           <p className="text-[13px] text-[var(--mt-text-muted)] whitespace-pre-wrap leading-relaxed pl-[42px]">{lesson.instruction}</p>
         </div>
@@ -494,12 +494,12 @@ function LessonEditorView() {
                 <ListChecks size={16} className="text-[var(--mt-warning)]" />
               </div>
               <div>
-                <h3 className="text-[14px] font-bold text-[var(--mt-text)]">{t('editor.requirements_title')}</h3>
-                <p className="text-[12px] text-[var(--mt-text-muted)]">{t('editor.requirements_hint')}</p>
+                <h3 className="text-[14px] font-bold text-[var(--mt-text)]">{t('methodist.editor.requirements_title')}</h3>
+                <p className="text-[12px] text-[var(--mt-text-muted)]">{t('methodist.editor.requirements_hint')}</p>
               </div>
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold" style={{ background: 'var(--mt-accent-light)', color: 'var(--mt-accent)' }}>
-              <Check size={13} /> {t('editor.requirements_total', { points: reqTotal })}
+              <Check size={13} /> {t('methodist.editor.requirements_total', { points: reqTotal })}
             </div>
           </div>
 
@@ -509,7 +509,7 @@ function LessonEditorView() {
                 <div className="w-12 h-12 rounded-2xl grid place-items-center mb-2.5" style={{ background: 'rgba(217,119,6,0.1)' }}>
                   <ListChecks size={22} className="text-[var(--mt-warning)]" />
                 </div>
-                <p className="text-[13px] text-[var(--mt-text-muted)] font-medium">{t('editor.no_requirements')}</p>
+                <p className="text-[13px] text-[var(--mt-text-muted)] font-medium">{t('methodist.editor.no_requirements')}</p>
               </div>
             </div>
           ) : (
@@ -520,7 +520,7 @@ function LessonEditorView() {
                     type="text"
                     value={r.text}
                     onChange={(e) => updateReq(idx, 'text', e.target.value)}
-                    placeholder={t('editor.requirement_text')}
+                    placeholder={t('methodist.editor.requirement_text')}
                     className="mt-input flex-1"
                   />
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -530,14 +530,14 @@ function LessonEditorView() {
                       value={r.points}
                       onChange={(e) => updateReq(idx, 'points', e.target.value)}
                       className="mt-input w-20 text-center"
-                      title={t('editor.requirement_points')}
+                      title={t('methodist.editor.requirement_points')}
                     />
-                    <span className="text-[11px] text-[var(--mt-text-muted)] font-semibold whitespace-nowrap">{t('editor.requirement_points')}</span>
+                    <span className="text-[11px] text-[var(--mt-text-muted)] font-semibold whitespace-nowrap">{t('methodist.editor.requirement_points')}</span>
                   </div>
                   <button
                     className="w-8 h-8 rounded-lg grid place-items-center hover:bg-[rgba(220,38,38,0.08)] transition-colors shrink-0"
                     onClick={() => removeReq(idx)}
-                    title={t('common.delete')}
+                    title={t('methodist.common.delete')}
                   >
                     <Trash2 size={14} className="text-[var(--mt-danger)]" />
                   </button>
@@ -548,10 +548,10 @@ function LessonEditorView() {
 
           <div className="flex items-center gap-2.5 mt-4">
             <button className="mt-btn-ghost" onClick={addRequirement} disabled={reqBusy}>
-              <Plus size={14} /> {t('editor.add_requirement')}
+              <Plus size={14} /> {t('methodist.editor.add_requirement')}
             </button>
             <button className="mt-btn-primary" onClick={saveRequirements} disabled={reqBusy}>
-              {reqBusy ? <span className="loading loading-spinner loading-xs" /> : <Check size={14} />} {t('editor.save_requirements')}
+              {reqBusy ? <span className="loading loading-spinner loading-xs" /> : <Check size={14} />} {t('methodist.editor.save_requirements')}
             </button>
           </div>
         </div>
@@ -565,12 +565,12 @@ function LessonEditorView() {
             {editingId ? <Pencil size={16} className="text-[var(--mt-accent)]" /> : <Plus size={16} className="text-[var(--mt-accent)]" />}
           </div>
           <h3 className="text-[14px] font-bold text-[var(--mt-text)]">
-            {editingId ? t('editor.edit_question') : t('editor.add_question')}
+            {editingId ? t('methodist.editor.edit_question') : t('methodist.editor.add_question')}
           </h3>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)] block">{t('editor.question_type')}</span>
+            <span className="label-text mb-1.5 font-semibold text-[12px] text-[var(--text-secondary)] block">{t('methodist.editor.question_type')}</span>
             <div className="inline-flex p-1 rounded-[12px] bg-[var(--surface-hover)] gap-1">
               {QUESTION_TYPES.map(({ value, labelKey, icon: Icon }) => {
                 const active = questionType === value;
@@ -591,11 +591,11 @@ function LessonEditorView() {
           </div>
 
           <label className="form-control w-full">
-            <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('editor.question_text')}</span>
+            <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('methodist.editor.question_text')}</span>
             <input
               type="text"
               {...register('questionText')}
-              placeholder={t('editor.question_placeholder')}
+              placeholder={t('methodist.editor.question_placeholder')}
               className={`mt-input ${errors.questionText ? 'border-[var(--mt-danger)]' : ''}`}
             />
             {errors.questionText && <span className="text-[11px] text-[var(--mt-danger)] mt-1 block">{errors.questionText.message}</span>}
@@ -607,13 +607,13 @@ function LessonEditorView() {
                 const s = OPTION_STYLES[letter];
                 return (
                   <label key={letter} className="form-control w-full">
-                    <span className="text-[12px] font-semibold mb-1.5 block" style={{ color: s.text }}>{t('editor.option_label', { letter })}</span>
+                    <span className="text-[12px] font-semibold mb-1.5 block" style={{ color: s.text }}>{t('methodist.editor.option_label', { letter })}</span>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-bold opacity-60" style={{ color: s.text }}>{letter})</span>
                       <input
                         type="text"
                         {...register(`option${letter}`)}
-                        placeholder={t('editor.option_label', { letter })}
+                        placeholder={t('methodist.editor.option_label', { letter })}
                         className={`mt-input pl-8 ${errors[`option${letter}`] ? 'border-[var(--mt-danger)]' : ''}`}
                       />
                     </div>
@@ -625,18 +625,18 @@ function LessonEditorView() {
 
           {questionType === 'choice' ? (
             <label className="form-control w-full max-w-xs">
-              <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('editor.correct_answer')}</span>
+              <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('methodist.editor.correct_answer')}</span>
               <select {...register('correctAnswer')} className="mt-select">
                 {OPTION_LETTERS.map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </label>
           ) : (
             <label className="form-control w-full">
-              <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('editor.correct_answer')}</span>
+              <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('methodist.editor.correct_answer')}</span>
               <input
                 type="text"
                 {...register('correctTextAnswer')}
-                placeholder={t('editor.correct_answer_required')}
+                placeholder={t('methodist.editor.correct_answer_required')}
                 className={`mt-input ${errors.correctTextAnswer ? 'border-[var(--mt-danger)]' : ''}`}
               />
               {errors.correctTextAnswer && <span className="text-[11px] text-[var(--mt-danger)] mt-1 block">{errors.correctTextAnswer.message}</span>}
@@ -645,11 +645,11 @@ function LessonEditorView() {
 
           <div className="flex gap-2 pt-2">
             <button type="submit" className="mt-btn-primary" disabled={busy}>
-              {busy ? <span className="loading loading-spinner loading-xs" /> : editingId ? t('common.save') : t('editor.add_question')}
+              {busy ? <span className="loading loading-spinner loading-xs" /> : editingId ? t('methodist.common.save') : t('methodist.editor.add_question')}
             </button>
             {editingId && (
               <button type="button" className="mt-btn-ghost" onClick={openAdd}>
-                {t('common.cancel')}
+                {t('methodist.common.cancel')}
               </button>
             )}
           </div>
@@ -664,7 +664,7 @@ function LessonEditorView() {
           <div className="w-9 h-9 rounded-xl grid place-items-center shrink-0" style={{ background: 'rgba(124,58,237,0.1)' }}>
             <Layers size={16} className="text-[var(--mt-accent)]" />
           </div>
-          <span className="text-[13px] font-semibold text-[var(--mt-text)]">{t('editor.batch_title')}</span>
+          <span className="text-[13px] font-semibold text-[var(--mt-text)]">{t('methodist.editor.batch_title')}</span>
         </div>
         <div className="flex items-center gap-3 mt-3 pl-[44px]">
           <input
@@ -675,13 +675,13 @@ function LessonEditorView() {
             onChange={(e) => setQuestionCount(Math.min(20, Math.max(1, Number(e.target.value))))}
             className="mt-input w-20 text-center"
           />
-          <span className="text-[12px] text-[var(--mt-text-muted)]">{t('editor.empty_questions')}</span>
+          <span className="text-[12px] text-[var(--mt-text-muted)]">{t('methodist.editor.empty_questions')}</span>
           <button
             className="mt-btn-ghost"
             onClick={addBatch}
             disabled={busy}
           >
-            <Plus size={14} /> {t('common.create')}
+            <Plus size={14} /> {t('methodist.common.create')}
           </button>
         </div>
       </div>
@@ -691,7 +691,7 @@ function LessonEditorView() {
       {isTest && (
       <div className="space-y-3 mt-animate-in mt-stagger-6">
         <div className="flex items-center gap-2.5">
-          <h3 className="text-[15px] font-bold text-[var(--mt-text)]">{t('editor.questions')}</h3>
+          <h3 className="text-[15px] font-bold text-[var(--mt-text)]">{t('methodist.editor.questions')}</h3>
           <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-[11px] font-bold tabular-nums" style={{ background: 'var(--mt-accent-light)', color: 'var(--mt-accent)' }}>
             {questions.length}
           </span>
@@ -702,7 +702,7 @@ function LessonEditorView() {
               <div className="w-14 h-14 rounded-2xl grid place-items-center mb-3" style={{ background: 'var(--mt-accent-light)' }}>
                 <FileQuestion size={24} className="text-[var(--mt-accent)]" />
               </div>
-              <p className="text-[13px] text-[var(--mt-text-muted)] font-medium">{t('editor.no_questions')}</p>
+              <p className="text-[13px] text-[var(--mt-text-muted)] font-medium">{t('methodist.editor.no_questions')}</p>
             </div>
           </div>
         ) : (
@@ -726,7 +726,7 @@ function LessonEditorView() {
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide"
                       style={{ background: 'var(--mt-accent-light)', color: 'var(--mt-accent)' }}
                     >
-                      {qType === 'choice' ? t('editor.type_choice') : qType === 'riddle' ? t('editor.type_riddle') : t('editor.type_open')}
+                      {qType === 'choice' ? t('methodist.editor.type_choice') : qType === 'riddle' ? t('methodist.editor.type_riddle') : t('methodist.editor.type_open')}
                     </span>
                   </div>
                   <p className="text-[13px] font-semibold text-[var(--mt-text)] mb-3 leading-relaxed">{q.question_text}</p>
@@ -760,14 +760,14 @@ function LessonEditorView() {
                   <button
                     className="w-8 h-8 rounded-lg grid place-items-center hover:bg-[var(--mt-accent-light)] transition-colors"
                     onClick={() => openEdit(q)}
-                    title={t('common.edit')}
+                    title={t('methodist.common.edit')}
                   >
                     <Pencil size={13} className="text-[var(--mt-accent)]" />
                   </button>
                   <button
                     className="w-8 h-8 rounded-lg grid place-items-center hover:bg-[rgba(220,38,38,0.08)] transition-colors"
-                    onClick={() => { if (window.confirm(t('editor.delete_confirm'))) deleteQ(q.id); }}
-                    title={t('common.delete')}
+                    onClick={() => { if (window.confirm(t('methodist.editor.delete_confirm'))) deleteQ(q.id); }}
+                    title={t('methodist.common.delete')}
                   >
                     <Trash2 size={13} className="text-[var(--mt-danger)]" />
                   </button>
@@ -784,46 +784,46 @@ function LessonEditorView() {
         <div className="modal modal-open">
           <div className="modal-box border border-[#E6EDD8] shadow-xl bg-white max-w-lg">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-lg">{t('editor.settings_title')}</h3>
+              <h3 className="font-bold text-lg">{t('methodist.editor.settings_title')}</h3>
               <button onClick={() => setSettingsOpen(false)} className="btn btn-ghost btn-sm btn-circle" disabled={busy}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             <form onSubmit={handleSettingsSubmit(onSaveSettings)} className="space-y-4 mt-4">
               <label className="form-control w-full">
-                <span className="label-text mb-1 font-medium">{t('editor.settings_name')}</span>
+                <span className="label-text mb-1 font-medium">{t('methodist.editor.settings_name')}</span>
                 <input type="text" {...regSettings('title')} className={`input input-bordered w-full ${settingsErrors.title ? 'input-error' : ''}`} />
                 {settingsErrors.title && <span className="text-xs text-error mt-1">{settingsErrors.title.message}</span>}
               </label>
 
               {isPractical && (
                 <label className="form-control w-full">
-                  <span className="label-text mb-1 font-medium">{t('editor.task_desc')} <span className="text-error">*</span></span>
+                  <span className="label-text mb-1 font-medium">{t('methodist.editor.task_desc')} <span className="text-error">*</span></span>
                   <textarea {...regSettings('description')} className={`textarea textarea-bordered w-full ${settingsErrors.description ? 'textarea-error' : ''}`} rows={3} />
                   {settingsErrors.description && <span className="text-xs text-error mt-1">{settingsErrors.description.message}</span>}
                 </label>
               )}
 
               <label className="form-control w-full">
-                <span className="label-text mb-1 font-medium">{t('editor.instruction')}</span>
+                <span className="label-text mb-1 font-medium">{t('methodist.editor.instruction')}</span>
                 <textarea {...regSettings('instruction')} className="textarea textarea-bordered w-full" rows={2} />
               </label>
 
               <label className="form-control w-full">
-                <span className="label-text mb-1 font-medium">{t('editor.video_url_label')}</span>
+                <span className="label-text mb-1 font-medium">{t('methodist.editor.video_url_label')}</span>
                 <input type="text" {...regSettings('videoUrl')} placeholder="https://youtube.com/watch?v=..." className={`input input-bordered w-full ${settingsErrors.videoUrl ? 'input-error' : ''}`} />
                 {settingsErrors.videoUrl && <span className="text-xs text-error mt-1">{settingsErrors.videoUrl.message}</span>}
               </label>
 
               <label className="form-control w-full">
-                <span className="label-text mb-1 font-medium">{t('editor.coin_label')}</span>
+                <span className="label-text mb-1 font-medium">{t('methodist.editor.coin_label')}</span>
                 <input type="number" {...regSettings('coinReward')} className="input input-bordered w-full" />
               </label>
 
               <div className="modal-action">
-                <button type="button" className="btn btn-ghost" onClick={() => setSettingsOpen(false)} disabled={busy}>{t('common.cancel')}</button>
+                <button type="button" className="btn btn-ghost" onClick={() => setSettingsOpen(false)} disabled={busy}>{t('methodist.common.cancel')}</button>
                 <button type="submit" className="btn btn-primary font-bold" disabled={busy}>
-                  {busy ? <span className="loading loading-spinner loading-xs" /> : t('common.save')}
+                  {busy ? <span className="loading loading-spinner loading-xs" /> : t('methodist.common.save')}
                 </button>
               </div>
             </form>
@@ -836,8 +836,6 @@ function LessonEditorView() {
 
 export default function LessonEditor() {
   return (
-    <LangProvider>
-      <LessonEditorView />
-    </LangProvider>
+    <LessonEditorView />
   );
 }

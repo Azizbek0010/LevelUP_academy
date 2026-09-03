@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Wallet, CreditCard, Banknote, Clock, CheckCircle2, AlertTriangle,
   AlertCircle, TrendingUp, Search, ChevronLeft, ChevronRight, Plus, X,
@@ -13,37 +14,37 @@ import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
 import { Avatar, Kpi, RowSkeleton, Tip } from '../mentor/_ui.jsx';
+import { paymentMethodLabel } from '../finance/_ui.jsx';
 
-const STATUS = {
-  paid: { label: 'Оплачен', bg: '#2ECC7115', text: '#2ECC71', icon: CheckCircle2 },
-  partially_paid: { label: 'Частично', bg: '#10B98115', text: '#10B981', icon: Clock },
-  pending: { label: 'Ожидает', bg: '#6B728015', text: '#6B7280', icon: AlertCircle },
-  overdue: { label: 'Просрочен', bg: '#E8543E15', text: '#E8543E', icon: AlertTriangle },
-  cancelled: { label: 'Отменён', bg: '#6B728008', text: '#6B7280', icon: AlertCircle },
-};
+const statusMap = (t) => ({
+  paid: { label: t('status.paid'), className: 'bg-success/10 text-success', icon: CheckCircle2 },
+  partially_paid: { label: t('status.partiallyPaid'), className: 'bg-success/10 text-success', icon: Clock },
+  pending: { label: t('status.pending'), className: 'bg-base-200 text-base-content/70', icon: AlertCircle },
+  overdue: { label: t('status.overdue'), className: 'bg-error/10 text-error', icon: AlertTriangle },
+  cancelled: { label: t('status.cancelled'), className: 'bg-base-200 text-base-content/70', icon: AlertCircle },
+});
 
 const STATUS_LIST = ['all', 'pending', 'partially_paid', 'paid', 'overdue', 'cancelled'];
-const STATUS_LABELS = {
-  all: 'Все', pending: 'Ожидает', partially_paid: 'Частично',
-  paid: 'Оплачен', overdue: 'Просрочен', cancelled: 'Отменён',
-};
-
-const METHODS = { cash: 'Наличные', card: 'Карта', transfer: 'Перевод' };
+const statusLabelsMap = (t) => ({
+  all: t('admin.payments.filterAll'), pending: t('status.pending'), partially_paid: t('status.partiallyPaid'),
+  paid: t('status.paid'), overdue: t('status.overdue'), cancelled: t('status.cancelled'),
+});
 
 /* ══════════ StatCard ══════════ */
 /* ══════════ SplitPartsForm (reused in pay + ad-hoc modals) ══════════ */
 function SplitPartsForm({ parts, onChange, onAdd, onRemove, maxParts = 5 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2">
       {parts.map((part, i) => (
         <div key={i} className="flex items-center gap-2">
           <select className="select select-bordered select-sm w-[120px]" value={part.method}
             onChange={(e) => onChange(i, 'method', e.target.value)}>
-            <option value="cash">Наличные</option>
-            <option value="card">Карта</option>
-            <option value="transfer">Перевод</option>
+            <option value="cash">{paymentMethodLabel('cash', t)}</option>
+            <option value="card">{paymentMethodLabel('card', t)}</option>
+            <option value="transfer">{paymentMethodLabel('transfer', t)}</option>
           </select>
-          <input className="input input-bordered input-sm flex-1" type="number" placeholder="Сумма"
+          <input className="input input-bordered input-sm flex-1" type="number" placeholder={t('admin.payments.amountPlaceholder')}
             value={part.amount} onChange={(e) => onChange(i, 'amount', e.target.value)} />
           {parts.length > 1 && (
             <button className="btn btn-ghost btn-xs text-error" onClick={() => onRemove(i)}><X size={14} /></button>
@@ -52,7 +53,7 @@ function SplitPartsForm({ parts, onChange, onAdd, onRemove, maxParts = 5 }) {
       ))}
       {parts.length < maxParts && (
         <button className="btn btn-ghost btn-xs gap-1" onClick={onAdd}>
-          <Plus size={12} /> Добавить часть (сплит)
+          <Plus size={12} /> {t('admin.payments.addPart')}
         </button>
       )}
     </div>
@@ -61,6 +62,9 @@ function SplitPartsForm({ parts, onChange, onAdd, onRemove, maxParts = 5 }) {
 
 /* ══════════ Invoice Card ══════════ */
 function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
+  const STATUS = statusMap(t);
   const st = STATUS[inv.status] || STATUS.pending;
   const StIcon = st.icon;
   const total = Number(inv.totalAmount || inv.amount || 0);
@@ -73,7 +77,7 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
     <div className="card bg-base-100 p-5 card-hover-premium group">
       <div className="flex items-start gap-3 mb-3">
         {/* Student avatar */}
-        <div onClick={() => onStudentClick(inv)} title="Открыть профиль студента" className="shrink-0 cursor-pointer">
+        <div onClick={() => onStudentClick(inv)} title={t('admin.payments.openStudentProfile')} className="shrink-0 cursor-pointer">
           <Avatar name={studentName} size="lg" />
         </div>
         <div className="flex-1 min-w-0">
@@ -83,19 +87,18 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
           </h3>
           <p className="text-[11px] text-base-content/45 mt-0.5 truncate">{inv.group || inv.groupName || '—'}</p>
         </div>
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 ml-2"
-          style={{ background: st.bg, color: st.text }}>
+        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 ml-2 ${st.className}`}>
           <StIcon size={12} /> {st.label}
         </span>
       </div>
       <div className="flex items-center justify-between mb-3">
         <div>
-          <div className="text-[10px] font-bold text-base-content/45 uppercase tracking-wider">Сумма</div>
-          <div className="text-[18px] font-extrabold text-base-content tabular-nums">{money(total)}</div>
+          <div className="text-[10px] font-bold text-base-content/45 uppercase tracking-wider">{t('admin.payments.amount')}</div>
+          <div className="text-[18px] font-extrabold text-base-content tabular-nums">{money(total, 'UZS', lang)}</div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] font-bold text-base-content/45 uppercase tracking-wider">Оплачено</div>
-          <div className="text-[14px] font-bold tabular-nums text-success">{money(paid)}</div>
+          <div className="text-[10px] font-bold text-base-content/45 uppercase tracking-wider">{t('admin.payments.paidAmount')}</div>
+          <div className="text-[14px] font-bold tabular-nums text-success">{money(paid, 'UZS', lang)}</div>
         </div>
       </div>
       <div className="w-full h-1.5 rounded-full bg-base-100 mb-3 overflow-hidden">
@@ -104,15 +107,15 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
       <div className="flex items-center justify-between">
         <button className="flex items-center gap-1 text-[11px] text-base-content/45 hover:text-secondary transition-colors"
           onClick={() => onDetail(inv)}>
-          <Info size={10} /> Детали
+          <Info size={10} /> {t('admin.payments.details')}
         </button>
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1 text-[11px] text-base-content/45">
-            <Clock size={10} /> {dateShort(inv.dueDate || inv.due_date)}
+            <Clock size={10} /> {dateShort(inv.dueDate || inv.due_date, lang)}
           </span>
           {inv.status !== 'paid' && inv.status !== 'cancelled' && (
             <button className="btn btn-primary btn-sm gap-1 h-7 px-3" onClick={() => onPay(inv)}>
-              <Wallet size={12} /> {remaining > 0 ? money(remaining) : 'Оплатить'}
+              <Wallet size={12} /> {remaining > 0 ? money(remaining, 'UZS', lang) : t('admin.payments.pay')}
             </button>
           )}
         </div>
@@ -123,6 +126,10 @@ function InvoiceCard({ inv, onPay, onDetail, onStudentClick }) {
 
 /* ═══════════════ Main Payments ═══════════════ */
 export default function AdminPayments() {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
+  const STATUS = statusMap(t);
+  const STATUS_LABELS = statusLabelsMap(t);
   const { token } = useAuth();
   const navigate = useNavigate();
   const params = useParams();
@@ -252,7 +259,7 @@ export default function AdminPayments() {
       setPay(null);
       refetch();
     } catch (e) {
-      setErr(e.message || 'Ошибка');
+      setErr(e.message || t('admin.payments.genericError'));
     } finally {
       setBusy(false);
     }
@@ -276,7 +283,7 @@ export default function AdminPayments() {
     // Backend createAdHocPaymentSchema parts yig'indisi aynan totalAmount ga
     // teng bo'lishini talab qiladi — oldindan tekshirib friendly xato beramiz.
     if (Math.abs(adhocTotal - total) > 0.005) {
-      setErr(`Сумма частей (${money(adhocTotal)}) не совпадает с суммой счёта (${money(total)})`);
+      setErr(t('admin.payments.sumMismatch', { parts: money(adhocTotal, 'UZS', lang), total: money(total, 'UZS', lang) }));
       return;
     }
     setBusy(true); setErr('');
@@ -294,7 +301,7 @@ export default function AdminPayments() {
       setStudentSearch('');
       refetch();
     } catch (e) {
-      setErr(e.message || 'Ошибка');
+      setErr(e.message || t('admin.payments.genericError'));
     } finally {
       setBusy(false);
     }
@@ -326,7 +333,7 @@ export default function AdminPayments() {
         );
       }
     } catch (e) {
-      setErr(e.message || 'Не удалось получить данные студента');
+      setErr(e.message || t('admin.payments.studentFetchFailed'));
     } finally {
       setAdhocLoading(false);
     }
@@ -360,7 +367,7 @@ export default function AdminPayments() {
       setReverseReason('');
       refetch();
     } catch (e) {
-      setErr(e.message || 'Ошибка');
+      setErr(e.message || t('admin.payments.genericError'));
     } finally {
       setBusy(false);
     }
@@ -387,7 +394,7 @@ export default function AdminPayments() {
       setUploadTxId(null);
       setUploadFile(null);
     } catch (er) {
-      setErr(er.message || 'Ошибка загрузки чека');
+      setErr(er.message || t('admin.payments.receiptUploadFailed'));
     } finally {
       setUploading(false);
     }
@@ -395,19 +402,19 @@ export default function AdminPayments() {
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title="Платежи" subtitle="Счета и оплаты (наличные + карта)">
+      <PageHeader title={t('admin.payments.title')} subtitle={t('admin.payments.subtitle')}>
         <div className="flex items-center gap-2.5">
           {allRows.length > 0 && (
-            <span className="text-sm text-base-content/45 tabular-nums">{meta.total || allRows.length} счетов</span>
+            <span className="text-sm text-base-content/45 tabular-nums">{t('admin.payments.invoicesCount', { count: meta.total || allRows.length })}</span>
           )}
           <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={rows.length === 0}>
-            <Download size={14} /> Экспорт
+            <Download size={14} /> {t('admin.payments.export')}
           </button>
           <button
             className="btn btn-primary btn-sm gap-1.5"
             onClick={() => { setShowAdHoc(true); setErr(''); setStudentSearch(''); }}
           >
-            <Plus size={14} /> Разовый платёж
+            <Plus size={14} /> {t('admin.payments.oneTimePayment')}
           </button>
         </div>
       </PageHeader>
@@ -416,7 +423,7 @@ export default function AdminPayments() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/45" />
-          <input type="text" placeholder="Поиск по имени студента..."
+          <input type="text" placeholder={t('admin.payments.searchPlaceholder')}
             className="w-full h-10 pl-9 pr-4 rounded-[12px] text-[13px] font-medium bg-base-100 border border-base-300 text-base-content placeholder:text-base-content/45 focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary transition-all"
             value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
@@ -438,28 +445,28 @@ export default function AdminPayments() {
 
       {/* ═══ Stats ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Kpi Icon={TrendingUp} title="Всего счетов" value={allRows.length}  tone="neutral" />
-        <Kpi Icon={CheckCircle2} title="Оплачено" value={stats.paid}  tone="success" />
-        <Kpi Icon={Clock} title="Ожидает" value={stats.waiting}  tone="warning" />
-        <Kpi Icon={AlertTriangle} title="Просрочено" value={stats.overdue}  tone="danger" />
+        <Kpi Icon={TrendingUp} title={t('admin.payments.totalInvoices')} value={allRows.length}  tone="neutral" />
+        <Kpi Icon={CheckCircle2} title={t('admin.payments.paid')} value={stats.paid}  tone="success" />
+        <Kpi Icon={Clock} title={t('admin.payments.waiting')} value={stats.waiting}  tone="warning" />
+        <Kpi Icon={AlertTriangle} title={t('admin.payments.overdue')} value={stats.overdue}  tone="danger" />
       </div>
 
       {/* ═══ Invoice List ═══ */}
       {isLoading ? (
         <div className="mt-4"><RowSkeleton count={6} /></div>
       ) : error ? (
-        <div className="alert alert-error mt-4">Ошибка загрузки: {error.message}</div>
+        <div className="alert alert-error mt-4">{t('admin.payments.loadError', { message: error.message })}</div>
       ) : allRows.length === 0 ? (
         <div className="card bg-base-100 p-12 text-center animate-fade-in mt-4">
           <Wallet size={40} className="mx-auto mb-3 text-base-content/45 opacity-30" />
-          <p className="text-[14px] font-medium text-base-content/45">Нет счетов</p>
-          <p className="text-[12px] text-base-content/45 mt-1 opacity-60">Счета появятся здесь</p>
+          <p className="text-[14px] font-medium text-base-content/45">{t('admin.payments.noInvoicesTitle')}</p>
+          <p className="text-[12px] text-base-content/45 mt-1 opacity-60">{t('admin.payments.noInvoicesHint')}</p>
         </div>
       ) : rows.length === 0 ? (
         <div className="card bg-base-100 p-8 text-center animate-fade-in mt-4">
           <Search size={32} className="mx-auto mb-2 text-base-content/45 opacity-30" />
-          <p className="text-[13px] font-medium text-base-content/45">Ничего не найдено</p>
-          <p className="text-[11px] text-base-content/45 mt-1 opacity-60">Попробуйте изменить фильтры</p>
+          <p className="text-[13px] font-medium text-base-content/45">{t('admin.payments.nothingFoundTitle')}</p>
+          <p className="text-[11px] text-base-content/45 mt-1 opacity-60">{t('admin.payments.nothingFoundHint')}</p>
         </div>
       ) : (
         <>
@@ -482,7 +489,7 @@ export default function AdminPayments() {
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
-              <span className="text-sm text-base-content/45 tabular-nums">Страница {meta.page || page} из {totalPages}</span>
+              <span className="text-sm text-base-content/45 tabular-nums">{t('admin.payments.pageOf', { page: meta.page || page, total: totalPages })}</span>
               <div className="flex gap-2">
                 <button className="btn btn-ghost btn-sm" disabled={(meta.page || page) <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}><ChevronLeft size={16} /></button>
@@ -500,10 +507,16 @@ export default function AdminPayments() {
       {pay && createPortal(
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300">
-            <h3 className="font-bold text-lg mb-1">Приём оплаты</h3>
+            <div className="flex justify-between items-start mb-1">
+              <h3 className="font-bold text-lg">{t('admin.payments.acceptPaymentTitle')}</h3>
+              <button className="btn btn-ghost btn-sm btn-square -mt-1 -mr-1" onClick={() => setPay(null)}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
             <p className="text-sm text-base-content/45 mb-4">{pay.student} · {pay.group || '—'}</p>
             <p className="text-xs text-base-content/45 mb-3">
-              Счёт: {dateShort(pay.dueDate || pay.due_date)} · Остаток: {money(Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0))}
+              {t('admin.payments.invoiceLine', {
+                date: dateShort(pay.dueDate || pay.due_date, lang),
+                amount: money(Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0), 'UZS', lang),
+              })}
             </p>
             {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
             <SplitPartsForm parts={payParts} onChange={(i, f, v) => {
@@ -512,17 +525,17 @@ export default function AdminPayments() {
               onRemove={(i) => setPayParts(payParts.filter((_, idx) => idx !== i))} />
             {payParts.length > 1 && (
               <p className="text-xs text-base-content/45 mt-2 tabular-nums">
-                Итого: {money(payPartsSum)}
+                {t('admin.payments.total', { amount: money(payPartsSum, 'UZS', lang) })}
                 {payPartsSum > Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0) && (
-                  <span className="text-error ml-1">· Превышает остаток!</span>
+                  <span className="text-error ml-1">· {t('admin.payments.exceedsRemaining')}</span>
                 )}
               </p>
             )}
             <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => setPay(null)} disabled={busy}>Отмена</button>
+              <button className="btn btn-ghost" onClick={() => setPay(null)} disabled={busy}>{t('admin.payments.cancel')}</button>
               <button className="btn btn-primary" onClick={submitPay}
                 disabled={busy || payParts.some((p) => !p.amount || Number(p.amount) <= 0) || payPartsSum > Number(pay.totalAmount || pay.amount || 0) - Number(pay.paidAmount || pay.paid_amount || 0)}>
-                {busy && <span className="loading loading-spinner loading-xs" />} Принять
+                {busy && <span className="loading loading-spinner loading-xs" />} {t('admin.payments.accept')}
               </button>
             </div>
           </div>
@@ -534,14 +547,17 @@ export default function AdminPayments() {
       {showAdHoc && createPortal(
         <dialog className="modal modal-open">
           <div className="modal-box card bg-base-100 border border-base-300 max-w-lg">
-            <h3 className="font-bold text-lg mb-1">Разовый платёж</h3>
-            <p className="text-sm text-base-content/45 mb-4">Создать счёт и принять оплату вне графика начислений</p>
+            <div className="flex justify-between items-start mb-1">
+              <h3 className="font-bold text-lg">{t('admin.payments.oneTimeTitle')}</h3>
+              <button className="btn btn-ghost btn-sm btn-square -mt-1 -mr-1" onClick={() => { setShowAdHoc(false); setErr(''); setStudentSearch(''); }}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
+            <p className="text-sm text-base-content/45 mb-4">{t('admin.payments.oneTimeHint')}</p>
             {err && <div className="alert alert-error mb-3 py-2 text-sm">{err}</div>}
 
             <div className="space-y-3">
               {/* Searchable student selection */}
               <div>
-                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Студент</label>
+                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">{t('admin.payments.studentLabel')}</label>
                 {adhocForm.studentId && adhocForm.studentName ? (
                   <div className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-100 border border-base-300">
                     <div className="flex items-center gap-2">
@@ -558,8 +574,8 @@ export default function AdminPayments() {
                 ) : (
                   <div className="relative">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/45" />
-                    <input type="text" className="w-full h-10 pl-9 pr-4 rounded-[10px] text-[13px] bg-base-100 border border-base-300 text-base-content placeholder:text-base-content/45 focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary" 
-                      placeholder="Искать по имени, фамилии или дате..."
+                    <input type="text" className="w-full h-10 pl-9 pr-4 rounded-[10px] text-[13px] bg-base-100 border border-base-300 text-base-content placeholder:text-base-content/45 focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary"
+                      placeholder={t('admin.payments.studentSearchPlaceholder')}
                       value={studentSearch} onChange={(e) => setStudentSearch(e.target.value)}
                       autoFocus />
                     {studentSearch && filteredStudents.length > 0 && (
@@ -571,14 +587,14 @@ export default function AdminPayments() {
                             <Avatar name={[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')} size="sm" />
                             <div className="flex-1 min-w-0">
                               <div className="text-[12px] font-bold text-base-content truncate">{[s.firstName || '', s.lastName || ''].filter(Boolean).join(' ')}</div>
-                              <div className="text-[10px] text-base-content/45">{Array.isArray(s.groups) && s.groups.length ? s.groups.map((g) => g.name || g.groupName).filter(Boolean).join(', ') : (s.groupName || '—')} · {s.createdAt ? dateShort(s.createdAt) : ''}</div>
+                              <div className="text-[10px] text-base-content/45">{Array.isArray(s.groups) && s.groups.length ? s.groups.map((g) => g.name || g.groupName).filter(Boolean).join(', ') : (s.groupName || '—')} · {s.createdAt ? dateShort(s.createdAt, lang) : ''}</div>
                             </div>
                           </button>
                         ))}
                       </div>
                     )}
                     {studentSearch && filteredStudents.length === 0 && (
-                      <p className="text-[11px] text-base-content/45 mt-1 pl-1">Студент не найден</p>
+                      <p className="text-[11px] text-base-content/45 mt-1 pl-1">{t('admin.payments.studentNotFound')}</p>
                     )}
                   </div>
                 )}
@@ -586,15 +602,15 @@ export default function AdminPayments() {
 
               {/* Total amount */}
               <div>
-                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Сумма счета {adhocLoading && <span className="loading loading-spinner loading-xs text-secondary ml-1 align-middle" />}</label>
-                <input className="input input-bordered w-full h-10 text-[13px]" type="number" placeholder="Сумма"
+                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">{t('admin.payments.invoiceAmountLabel')} {adhocLoading && <span className="loading loading-spinner loading-xs text-secondary ml-1 align-middle" />}</label>
+                <input className="input input-bordered w-full h-10 text-[13px]" type="number" placeholder={t('admin.payments.amountPlaceholder')}
                   value={adhocForm.totalAmount}
                   onChange={(e) => setAdhocForm((f) => ({ ...f, totalAmount: e.target.value }))} />
               </div>
 
               {/* Split parts */}
               <div>
-                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">Части оплаты</label>
+                <label className="text-[11px] font-bold text-base-content/45 uppercase tracking-wider block mb-1">{t('admin.payments.partsLabel')}</label>
                 <SplitPartsForm parts={adhocParts}
                   onChange={(i, f, v) => {
                     const u = [...adhocParts]; u[i] = { ...u[i], [f]: v }; setAdhocParts(u);
@@ -606,12 +622,12 @@ export default function AdminPayments() {
 
               {adhocParts.length > 1 && (
                 <p className={`text-xs tabular-nums ${adhocTotal > Number(adhocForm.totalAmount) ? 'text-error' : 'text-base-content/45'}`}>
-                  Итого частей: {money(adhocTotal)}
+                  {t('admin.payments.partsTotal', { amount: money(adhocTotal, 'UZS', lang) })}
                   {adhocTotal > Number(adhocForm.totalAmount) && (
-                    <span className="ml-1">· Превышает сумму счёта!</span>
+                    <span className="ml-1">· {t('admin.payments.exceedsInvoice')}</span>
                   )}
                   {adhocTotal < Number(adhocForm.totalAmount) && (
-                    <span className="ml-1 text-success">· Остаток: {money(Number(adhocForm.totalAmount) - adhocTotal)}</span>
+                    <span className="ml-1 text-success">· {t('admin.payments.remaining', { amount: money(Number(adhocForm.totalAmount) - adhocTotal, 'UZS', lang) })}</span>
                   )}
                 </p>
               )}
@@ -621,10 +637,10 @@ export default function AdminPayments() {
             </div>
 
             <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => { setShowAdHoc(false); setErr(''); setStudentSearch(''); }} disabled={busy}>Отмена</button>
+              <button className="btn btn-ghost" onClick={() => { setShowAdHoc(false); setErr(''); setStudentSearch(''); }} disabled={busy}>{t('admin.payments.cancel')}</button>
               <button className="btn btn-primary" onClick={submitAdHoc}
                 disabled={busy || !adhocForm.studentId || !adhocForm.totalAmount || Number(adhocForm.totalAmount) <= 0 || adhocTotal <= 0 || adhocTotal > Number(adhocForm.totalAmount)}>
-                {busy && <span className="loading loading-spinner loading-xs" />} Создать
+                {busy && <span className="loading loading-spinner loading-xs" />} {t('admin.payments.create')}
               </button>
             </div>
           </div>
@@ -641,28 +657,30 @@ export default function AdminPayments() {
                 <h3 className="font-bold text-lg">{detail.student || '—'}</h3>
                 <p className="text-sm text-base-content/45">{detail.group || '—'}</p>
               </div>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                style={{ background: (STATUS[detail.status] || STATUS.pending).bg, color: (STATUS[detail.status] || STATUS.pending).text }}>
-                {(STATUS[detail.status] || STATUS.pending).icon && (
-                  <StatusIcon s={detail.status} />
-                )}
-                {(STATUS[detail.status] || STATUS.pending).label}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${(STATUS[detail.status] || STATUS.pending).className}`}>
+                  {(STATUS[detail.status] || STATUS.pending).icon && (
+                    <StatusIcon s={detail.status} />
+                  )}
+                  {(STATUS[detail.status] || STATUS.pending).label}
+                </span>
+                <button className="btn btn-ghost btn-sm btn-square -mt-1 -mr-1" onClick={() => { setDetail(null); setErr(''); }}><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+              </div>
             </div>
 
             {/* Summary */}
             <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="card bg-base-100 p-3 text-center">
-                <div className="text-[10px] font-bold text-base-content/45 uppercase">Сумма</div>
-                <div className="text-[16px] font-extrabold tabular-nums">{money(Number(detail.totalAmount || detail.amount || 0))}</div>
+                <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.payments.summary')}</div>
+                <div className="text-[16px] font-extrabold tabular-nums">{money(Number(detail.totalAmount || detail.amount || 0), 'UZS', lang)}</div>
               </div>
               <div className="card bg-base-100 p-3 text-center">
-                <div className="text-[10px] font-bold text-base-content/45 uppercase">Оплачено</div>
-                <div className="text-[16px] font-extrabold tabular-nums" style={{ color: '#2ECC71' }}>{money(Number(detail.paidAmount || detail.paid_amount || 0))}</div>
+                <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.payments.paidAmount')}</div>
+                <div className="text-[16px] font-extrabold tabular-nums" style={{ color: '#2ECC71' }}>{money(Number(detail.paidAmount || detail.paid_amount || 0), 'UZS', lang)}</div>
               </div>
               <div className="card bg-base-100 p-3 text-center">
-                <div className="text-[10px] font-bold text-base-content/45 uppercase">Срок</div>
-                <div className="text-[12px] font-bold tabular-nums">{dateShort(detail.dueDate || detail.due_date)}</div>
+                <div className="text-[10px] font-bold text-base-content/45 uppercase">{t('admin.payments.dueDate')}</div>
+                <div className="text-[12px] font-bold tabular-nums">{dateShort(detail.dueDate || detail.due_date, lang)}</div>
               </div>
             </div>
 
@@ -670,15 +688,15 @@ export default function AdminPayments() {
             <div className="flex gap-2 mb-3 border-b border-base-300 pb-2">
               <button className={`text-[12px] font-bold px-3 py-1 rounded-lg transition-all ${detailTab === 'transactions' ? 'bg-secondary text-secondary-content' : 'text-base-content/45 hover:text-base-content'}`}
                 onClick={() => setDetailTab('transactions')}>
-                Транзакции ({invoiceTx.length})
+                {t('admin.payments.transactions', { count: invoiceTx.length })}
               </button>
               <button className={`text-[12px] font-bold px-3 py-1 rounded-lg transition-all ${detailTab === 'reverse' ? 'bg-secondary text-secondary-content' : 'text-base-content/45 hover:text-base-content'}`}
                 onClick={() => setDetailTab('reverse')}>
-                Возврат / Аннулирование
+                {t('admin.payments.reverseTab')}
               </button>
               <button className={`text-[12px] font-bold px-3 py-1 rounded-lg transition-all ${detailTab === 'receipt' ? 'bg-secondary text-secondary-content' : 'text-base-content/45 hover:text-base-content'}`}
                 onClick={() => setDetailTab('receipt')}>
-                Чек
+                {t('admin.payments.receiptTab')}
               </button>
             </div>
 
@@ -686,7 +704,7 @@ export default function AdminPayments() {
             {detailTab === 'transactions' && (
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {invoiceTx.length === 0 ? (
-                  <p className="text-[12px] text-base-content/45 text-center py-4">Нет транзакций для этого счёта</p>
+                  <p className="text-[12px] text-base-content/45 text-center py-4">{t('admin.payments.noTransactions')}</p>
                 ) : (
                   invoiceTx.map((tx, i) => (
                     <div key={tx.id || i} className="flex items-center justify-between p-2.5 rounded-[10px] bg-base-100">
@@ -695,13 +713,13 @@ export default function AdminPayments() {
                           : tx.method === 'card' ? <CreditCard size={14} className="text-base-content/45" />
                             : <Wallet size={14} className="text-base-content/45" />}
                         <div>
-                          <span className="text-[12px] font-bold text-base-content">{METHODS[tx.method] || tx.method}</span>
+                          <span className="text-[12px] font-bold text-base-content">{paymentMethodLabel(tx.method, t)}</span>
                           <span className={`ml-2 text-[11px] font-semibold ${tx.status === 'completed' ? 'text-success' : tx.status === 'refunded' ? 'text-error' : 'text-warning'}`}>
                             {tx.status}
                           </span>
                         </div>
                       </div>
-                      <span className="text-[13px] font-bold tabular-nums">{money(Number(tx.amount))}</span>
+                      <span className="text-[13px] font-bold tabular-nums">{money(Number(tx.amount), 'UZS', lang)}</span>
                     </div>
                   ))
                 )}
@@ -711,16 +729,16 @@ export default function AdminPayments() {
             {/* ── Tab: Refund / Void ── */}
             {detailTab === 'reverse' && (
               <div className="space-y-3">
-                <p className="text-[12px] text-base-content/45">Выберите завершённую транзакцию для возврата или аннулирования:</p>
+                <p className="text-[12px] text-base-content/45">{t('admin.payments.chooseCompletedTx')}</p>
                 {invoiceTx.filter((t) => t.status === 'completed').length === 0 ? (
-                  <p className="text-[12px] text-base-content/45 text-center py-4">Нет завершённых транзакций</p>
+                  <p className="text-[12px] text-base-content/45 text-center py-4">{t('admin.payments.noCompletedTx')}</p>
                 ) : (
                   <select className="select select-bordered w-full text-[13px]"
                     value={reverseTxId || ''} onChange={(e) => setReverseTxId(e.target.value)}>
-                    <option value="">Выберите транзакцию...</option>
+                    <option value="">{t('admin.payments.chooseTx')}</option>
                     {invoiceTx.filter((t) => t.status === 'completed').map((tx, i) => (
                       <option key={tx.id || i} value={tx.id}>
-                        {METHODS[tx.method] || tx.method} — {money(Number(tx.amount))} ({tx.id?.slice(0, 8) || '—'})
+                        {paymentMethodLabel(tx.method, t)} — {money(Number(tx.amount), 'UZS', lang)} ({tx.id?.slice(0, 8) || '—'})
                       </option>
                     ))}
                   </select>
@@ -730,20 +748,20 @@ export default function AdminPayments() {
                     <div className="flex gap-2">
                       <button className={`flex-1 h-9 rounded-[10px] text-[12px] font-bold transition-all ${reverseMode === 'refund' ? 'bg-error text-white' : 'bg-base-100 text-base-content/45'}`}
                         onClick={() => setReverseMode('refund')}>
-                        <RotateCcw size={14} className="inline mr-1" /> Возврат (Refund)
+                        <RotateCcw size={14} className="inline mr-1" /> {t('admin.payments.refund')}
                       </button>
                       <button className={`flex-1 h-9 rounded-[10px] text-[12px] font-bold transition-all ${reverseMode === 'void' ? 'bg-warning text-white' : 'bg-base-100 text-base-content/45'}`}
                         onClick={() => setReverseMode('void')}>
-                        <Ban size={14} className="inline mr-1" /> Аннулировать (Void)
+                        <Ban size={14} className="inline mr-1" /> {t('admin.payments.void')}
                       </button>
                     </div>
                     <input className="input input-bordered w-full text-[13px]" type="text"
-                      placeholder="Причина (обязательно для возврата)" value={reverseReason}
+                      placeholder={t('admin.payments.reasonPlaceholder')} value={reverseReason}
                       onChange={(e) => setReverseReason(e.target.value)} />
                     <button className="btn btn-error btn-sm w-full" onClick={submitReverse}
                       disabled={busy || (reverseMode === 'refund' && !reverseReason.trim())}>
                       {busy && <span className="loading loading-spinner loading-xs" />}
-                      {reverseMode === 'refund' ? 'Выполнить возврат' : 'Аннулировать'}
+                      {reverseMode === 'refund' ? t('admin.payments.doRefund') : t('admin.payments.doVoid')}
                     </button>
                   </>
                 )}
@@ -753,17 +771,17 @@ export default function AdminPayments() {
             {/* ── Tab: Receipt ── */}
             {detailTab === 'receipt' && (
               <div className="space-y-3">
-                <p className="text-[12px] text-base-content/45">Загрузить чек для транзакции:</p>
+                <p className="text-[12px] text-base-content/45">{t('admin.payments.uploadReceiptLabel')}</p>
                 {invoiceTx.filter((t) => t.status === 'completed').length === 0 ? (
-                  <p className="text-[12px] text-base-content/45 text-center py-4">Нет завершённых транзакций</p>
+                  <p className="text-[12px] text-base-content/45 text-center py-4">{t('admin.payments.noCompletedTx')}</p>
                 ) : (
                   <select className="select select-bordered w-full text-[13px]"
                     value={uploadTxId || ''} onChange={(e) => setUploadTxId(e.target.value)}>
-                    <option value="">Выберите транзакцию...</option>
+                    <option value="">{t('admin.payments.chooseTx')}</option>
                     {invoiceTx.filter((t) => t.status === 'completed').map((tx, i) => (
                       <option key={tx.id || i} value={tx.id}>
-                        {METHODS[tx.method] || tx.method} — {money(Number(tx.amount))}
-                        {tx.receiptKey ? ' (✅ чек есть)' : ''}
+                        {paymentMethodLabel(tx.method, t)} — {money(Number(tx.amount), 'UZS', lang)}
+                        {tx.receiptKey ? t('admin.payments.receiptExists') : ''}
                       </option>
                     ))}
                   </select>
@@ -772,7 +790,7 @@ export default function AdminPayments() {
                   <div className="border-2 border-dashed border-base-300 rounded-[12px] p-6 text-center hover:border-secondary/50 transition-colors cursor-pointer"
                     onClick={() => document.getElementById('receipt-file-input')?.click()}>
                     <Upload size={24} className="mx-auto mb-2 text-base-content/45" />
-                    <p className="text-[12px] text-base-content/45">{uploadFile ? uploadFile.name : 'Нажмите для выбора файла'}</p>
+                    <p className="text-[12px] text-base-content/45">{uploadFile ? uploadFile.name : t('admin.payments.clickToChooseFile')}</p>
                     <input id="receipt-file-input" type="file" accept="image/*,.pdf" className="hidden"
                       onChange={(e) => {
                         setUploadFile(e.target.files?.[0] || null);
@@ -782,14 +800,14 @@ export default function AdminPayments() {
                 )}
                 {uploading && (
                   <div className="flex items-center justify-center gap-2 text-[12px] text-base-content/45">
-                    <span className="loading loading-spinner loading-xs" /> Загрузка...
+                    <span className="loading loading-spinner loading-xs" /> {t('admin.payments.uploading')}
                   </div>
                 )}
               </div>
             )}
 
             <div className="modal-action">
-              <button className="btn btn-ghost" onClick={() => { setDetail(null); setErr(''); }}>Закрыть</button>
+              <button className="btn btn-ghost" onClick={() => { setDetail(null); setErr(''); }}>{t('admin.payments.close')}</button>
             </div>
           </div>
           <div className="modal-backdrop" onClick={() => { setDetail(null); setErr(''); }} />
@@ -801,6 +819,8 @@ export default function AdminPayments() {
 
 /* Tiny helper for status icon */
 function StatusIcon({ s }) {
+  const { t } = useTranslation();
+  const STATUS = statusMap(t);
   const st = STATUS[s] || STATUS.pending;
   const Ic = st.icon;
   return <Ic size={12} className="inline" />;

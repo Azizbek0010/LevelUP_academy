@@ -1,63 +1,62 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-  Search, Plus, Trash2, DollarSign, CalendarDays, BarChart3,
-  RefreshCw, MoreVertical, Eye, Pencil, X, Banknote,
-  Clock, ChevronDown, AlertTriangle, Download, SlidersHorizontal,
+  Search, Plus, Trash2, CalendarDays, RefreshCw, MoreVertical, Eye, Pencil,
+  X, Banknote, CreditCard, ChevronDown, AlertTriangle, Download,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useAdminExpenses } from '../../queries.js';
-import PageHeader from '../../components/PageHeader.jsx';
-import { SearchInput, RowSkeleton, Kpi, Tip } from '../mentor/_ui.jsx';
 import ExportDialog from '../../components/ExportDialog.jsx';
+import { Modal } from '../mentor/_ui.jsx';
+
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
 
 const CATEGORIES = ['All', 'Rent', 'Salary', 'Materials', 'Utility', 'Other'];
-const CATEGORY_LABELS = {
-  All: 'Все', Rent: 'Аренда', Salary: 'Зарплата', Materials: 'Материалы', Utility: 'Коммунальные', Other: 'Другое',
-};
+const categoryLabelsMap = (t) => ({
+  All: t('admin.expenses.catAll'), Rent: t('admin.expenses.catRent'), Salary: t('admin.expenses.catSalary'),
+  Materials: t('admin.expenses.catMaterials'), Utility: t('admin.expenses.catUtility'), Other: t('admin.expenses.catOther'),
+});
 const CATEGORY_COLORS = {
-  Rent: '#2ECC71', Salary: '#8B5CF6', Materials: '#F59E0B',
+  Rent: '#2ECC71', Salary: '#1D2417', Materials: '#5E6E52',
   Utility: '#E8543E', Other: '#2ECC71',
 };
 const CATEGORY_COLORS_LIGHT = {
-  Rent: 'rgba(46,204,113,0.12)', Salary: 'rgba(139,92,246,0.12)', Materials: 'rgba(245,158,11,0.12)',
+  Rent: 'rgba(46,204,113,0.12)', Salary: 'rgba(29,36,23,0.12)', Materials: 'rgba(94,110,82,0.12)',
   Utility: 'rgba(232,84,62,0.12)', Other: 'rgba(46,204,113,0.12)',
 };
 
-const STATUSES = ['All', 'Paid', 'Pending', 'Rejected', 'Cancelled'];
-const STATUS_LABELS = {
-  All: 'Все статусы', Paid: 'Оплачен', Pending: 'Ожидает', Rejected: 'Отклонён', Cancelled: 'Отменён',
+const statusClassesMap = (t) => ({
+  paid: { className: 'bg-success/10 text-success', label: t('status.paid'), dot: 'bg-success' },
+  pending: { className: 'bg-[rgba(94,110,82,0.12)] text-[#5E6E52]', label: t('status.pending'), dot: 'bg-[#5E6E52]' },
+  rejected: { className: 'bg-error/10 text-error', label: t('admin.expenses.statusRejected'), dot: 'bg-error' },
+  cancelled: { className: 'bg-base-200 text-base-content/70', label: t('status.cancelled'), dot: 'bg-base-content/40' },
+});
+
+/* Значения — канонические (Наличные/Карта), уходят на бэкенд как есть;
+   локализуется только отображаемая подпись, не значение поля. */
+const PAYMENT_METHODS = ['Наличные', 'Карта'];
+const paymentMethodDisplay = (value, t) => {
+  if (value === 'Наличные' || value === 'Naqt') return t('admin.expenses.methodCash');
+  if (value === 'Карта') return t('admin.expenses.methodCard');
+  if (value === 'Банк') return t('admin.expenses.methodBank');
+  if (value === 'Перевод') return t('admin.expenses.methodTransfer');
+  return value;
 };
-const STATUS_MAP = {
-  paid: { bg: 'rgba(46,204,113,0.14)', color: '#2ECC71', label: 'Оплачен', dot: '#2ECC71' },
-  pending: { bg: 'rgba(245,158,11,0.14)', color: '#F59E0B', label: 'Ожидает', dot: '#F59E0B' },
-  rejected: { bg: 'rgba(232,84,62,0.14)', color: '#E8543E', label: 'Отклонён', dot: '#E8543E' },
-  cancelled: { bg: 'rgba(46,204,113,0.14)', color: '#2ECC71', label: 'Отменён', dot: '#2ECC71' },
-};
 
-const SORT_OPTIONS = [
-  { value: 'newest', label: 'Сначала новые' },
-  { value: 'oldest', label: 'Сначала старые' },
-  { value: 'amount-high', label: 'Сумма (большая)' },
-  { value: 'amount-low', label: 'Сумма (малая)' },
-  { value: 'category', label: 'Категория' },
-];
-
-const PAYMENT_METHODS = ['Наличные', 'Карта', 'Перевод', 'Банк'];
-
-function formatCurrency(n) {
-  return Number(n || 0).toLocaleString('ru-RU') + ' сум';
+function formatCurrency(n, locale = 'ru-RU', currencyWord = 'сум') {
+  return `${Number(n || 0).toLocaleString(locale)} ${currencyWord}`;
 }
 
-function formatDate(isoStr) {
+function formatDate(isoStr, locale = 'ru-RU') {
   if (!isoStr) return '—';
   const d = new Date(isoStr);
-  return d.toLocaleDateString('ru-RU');
+  return d.toLocaleDateString(locale);
 }
 
-function getMonthName(date) {
-  return date.toLocaleDateString('ru-RU', { month: 'short' });
+function getMonthName(date, locale = 'ru-RU') {
+  return date.toLocaleDateString(locale, { month: 'short' });
 }
 
 function getStatusFromExpense(e) {
@@ -82,12 +81,14 @@ function getCreatedBy(e) {
 
 // ─── Chart Tooltip ───
 function ChartTooltip({ active, payload, label }) {
+  const { i18n, t } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
   if (!active || !payload) return null;
   return (
     <div className="card bg-base-100 px-3.5 py-2.5 text-[11px] shadow-[0_8px_24px_var(--shadow-lg)]">
       <p className="font-bold text-base-content mb-1.5 text-[12px]">{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color }} className="tabular-nums font-semibold">{formatCurrency(p.value)}</p>
+        <p key={i} style={{ color: p.color }} className="tabular-nums font-semibold">{formatCurrency(p.value, locale, t('admin.expenses.currency'))}</p>
       ))}
     </div>
   );
@@ -95,6 +96,7 @@ function ChartTooltip({ active, payload, label }) {
 
 // ─── Action Dropdown ───
 function ActionDropdown({ expense, onView, onEdit, onDelete }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -124,14 +126,14 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Eye className="w-4 h-4" /></span>
-            Просмотр
+            {t('admin.expenses.view')}
           </button>
           <button
             onClick={() => { onEdit(expense); setOpen(false); }}
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Pencil className="w-4 h-4" /></span>
-            Редактировать
+            {t('admin.expenses.edit')}
           </button>
           <div className="border-t border-base-300 my-1" />
           <button
@@ -139,7 +141,7 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-semibold text-error hover:bg-[rgba(232,84,62,0.08)] transition-colors"
           >
             <span className="w-5 h-5 flex items-center justify-center"><Trash2 className="w-4 h-4" /></span>
-            Удалить
+            {t('admin.expenses.delete')}
           </button>
         </div>
       )}
@@ -149,13 +151,14 @@ function ActionDropdown({ expense, onView, onEdit, onDelete }) {
 
 // ─── Status Badge ───
 function StatusBadge({ status }) {
-  const config = STATUS_MAP[status] || STATUS_MAP.paid;
+  const { t } = useTranslation();
+  const STATUS_CLASSES = statusClassesMap(t);
+  const config = STATUS_CLASSES[status] || STATUS_CLASSES.paid;
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap"
-      style={{ background: config.bg, color: config.color }}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${config.className}`}
     >
-      <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: config.dot }} />
+      <span className={`w-1.5 h-1.5 rounded-full animate-pulse-dot ${config.dot}`} />
       {config.label}
     </span>
   );
@@ -163,6 +166,8 @@ function StatusBadge({ status }) {
 
 // ─── Category Badge ───
 function CategoryBadge({ category }) {
+  const { t } = useTranslation();
+  const CATEGORY_LABELS = categoryLabelsMap(t);
   const color = CATEGORY_COLORS[category] || '#2ECC71';
   const bg = CATEGORY_COLORS_LIGHT[category] || 'rgba(46,204,113,0.12)';
   return (
@@ -180,38 +185,25 @@ function CategoryBadge({ category }) {
 //  Main Component
 // ═══════════════════════════════════════════
 export default function Expenses() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const currencyWord = t('admin.expenses.currency');
+  const CATEGORY_LABELS = categoryLabelsMap(t);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState(null);
-  const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', paymentMethod: 'Наличные' });
+  const [formData, setFormData] = useState({ category: 'Other', amount: '', spentAt: '', note: '', title: '', paymentMethod: 'Наличные', isRecurring: false, recurringPeriod: 'monthly', nextPaymentAt: '' });
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showExport, setShowExport] = useState(false);
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [actionError, setActionError] = useState(null);
 
   const { token } = useAuth();
 
-  const qs = useMemo(() => {
-    const params = new URLSearchParams();
-    if (dateFrom) params.set('from', dateFrom);
-    if (dateTo) params.set('to', dateTo);
-    /* со знаком вопроса: строка подставляется прямо в путь —
-       `/admin/expenses${qs}`. Без него первый же выбранный день давал
-       запрос к `/admin/expensesfrom=2026-01-01` и список расходов падал в 404.
-       Так же сделано на всех остальных страницах панели. */
-    const s = params.toString();
-    return s ? `?${s}` : '';
-  }, [dateFrom, dateTo]);
-
-  const { data: expensesRes, isLoading: loading, error: queryError, refetch } = useAdminExpenses(qs);
+  const { data: expensesRes, isLoading: loading, error: queryError, refetch } = useAdminExpenses();
   const expenses = useMemo(() => {
     const data = expensesRes?.data?.expenses || expensesRes?.data || expensesRes || {};
     return data.expenses || [];
@@ -226,10 +218,6 @@ export default function Expenses() {
       result = result.filter((e) => e.category === filter);
     }
 
-    if (statusFilter !== 'All') {
-      result = result.filter((e) => getStatusFromExpense(e) === statusFilter.toLowerCase());
-    }
-
     if (search) {
       const q = search.toLowerCase();
       result = result.filter((e) => {
@@ -240,68 +228,17 @@ export default function Expenses() {
       });
     }
 
-    if (dateFrom) {
-      const from = new Date(dateFrom);
-      result = result.filter((e) => e.spentAt && new Date(e.spentAt) >= from);
-    }
-    if (dateTo) {
-      const to = new Date(dateTo);
-      to.setHours(23, 59, 59, 999);
-      result = result.filter((e) => e.spentAt && new Date(e.spentAt) <= to);
-    }
-
-    result.sort((a, b) => {
-      switch (sortBy) {
-        case 'oldest': return new Date(a.spentAt || 0) - new Date(b.spentAt || 0);
-        case 'amount-high': return (b.amount || 0) - (a.amount || 0);
-        case 'amount-low': return (a.amount || 0) - (b.amount || 0);
-        case 'category': return (a.category || '').localeCompare(b.category || '');
-        default: return new Date(b.spentAt || 0) - new Date(a.spentAt || 0);
-      }
-    });
+    result.sort((a, b) => new Date(b.spentAt || 0) - new Date(a.spentAt || 0));
 
     return result;
-  }, [expenses, filter, search, statusFilter, dateFrom, dateTo, sortBy]);
-
-  // ─── Statistics ───
-  const stats = useMemo(() => {
-    const total = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-    const now = new Date();
-    const thisMonthExpenses = expenses.filter((e) => {
-      if (!e.spentAt) return false;
-      const d = new Date(e.spentAt);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    });
-    const thisMonth = thisMonthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthExpenses = expenses.filter((e) => {
-      if (!e.spentAt) return false;
-      const d = new Date(e.spentAt);
-      return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear();
-    });
-    const lastMonthTotal = lastMonthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-    const trend = lastMonthTotal > 0 ? ((thisMonth - lastMonthTotal) / lastMonthTotal) * 100 : 0;
-
-    const pendingAmount = expenses
-      .filter((e) => getStatusFromExpense(e) === 'pending')
-      .reduce((sum, e) => sum + (e.amount || 0), 0);
-
-    const approvedAmount = expenses
-      .filter((e) => getStatusFromExpense(e) === 'paid')
-      .reduce((sum, e) => sum + (e.amount || 0), 0);
-
-    const avgAmount = expenses.length > 0 ? Math.round(total / expenses.length) : 0;
-
-    return { total, thisMonth, pendingAmount, approvedAmount, avgAmount, trend, count: expenses.length, thisMonthCount: thisMonthExpenses.length };
-  }, [expenses]);
+  }, [expenses, filter, search]);
 
   // ─── Chart Data ───
   const budgetData = useMemo(() => CATEGORIES.filter((c) => c !== 'All').map((cat) => ({
-    name: cat,
+    name: CATEGORY_LABELS[cat] || cat,
     amount: expenses.filter((e) => e.category === cat).reduce((s, e) => s + (e.amount || 0), 0),
     fill: CATEGORY_COLORS[cat],
-  })), [expenses]);
+  })), [expenses, CATEGORY_LABELS]);
 
   const monthlyData = useMemo(() => {
     const months = {};
@@ -317,16 +254,16 @@ export default function Expenses() {
       .map(([key, amount]) => {
         const [y, m] = key.split('-');
         const date = new Date(Number(y), Number(m) - 1);
-        return { name: getMonthName(date), amount, fill: 'var(--primary)' };
+        return { name: getMonthName(date, locale), amount, fill: 'var(--primary)' };
       });
-  }, [expenses]);
+  }, [expenses, locale]);
 
   // ─── Modal handlers ───
   const openModal = () => {
     const today = new Date().toISOString().split('T')[0];
-    setFormData({ category: 'Other', amount: '', spentAt: today, note: '', paymentMethod: 'Наличные' });
+    setFormData({ category: 'Other', amount: '', spentAt: today, note: '', title: '', paymentMethod: 'Наличные', isRecurring: false, recurringPeriod: 'monthly', nextPaymentAt: '' });
     setEditingId(null);
-    setError(null);
+    setActionError(null);
     setModalOpen(true);
   };
 
@@ -341,23 +278,34 @@ export default function Expenses() {
       amount: String(expense.amount || ''),
       spentAt: expense.spentAt ? expense.spentAt.split('T')[0] : new Date().toISOString().split('T')[0],
       note: expense.note || '',
+      title: expense.category === 'Other' ? (expense.note || '') : '',
       paymentMethod: getPaymentMethod(expense) !== '—' ? getPaymentMethod(expense) : 'Наличные',
+      isRecurring: expense.isRecurring || false,
+      recurringPeriod: expense.recurringPeriod || 'monthly',
+      nextPaymentAt: expense.nextPaymentAt ? expense.nextPaymentAt.split('T')[0] : '',
     });
     setEditingId(expense.id);
-    setError(null);
+    setActionError(null);
     setModalOpen(true);
   };
 
   const handleSave = useCallback(async () => {
     setSaving(true);
-    setError(null);
+    setActionError(null);
     try {
+      const note = formData.category === 'Other'
+        ? (formData.title || '').trim()
+        : (formData.note || '').trim();
+
       const body = {
         category: formData.category,
         amount: Number(formData.amount),
         spentAt: formData.spentAt || undefined,
-        paymentMethod: formData.paymentMethod || undefined,
-        note: formData.note || undefined,
+        note: note || undefined,
+        paymentMethod: formData.paymentMethod,
+        isRecurring: formData.isRecurring,
+        recurringPeriod: formData.isRecurring ? formData.recurringPeriod : undefined,
+        nextPaymentAt: formData.isRecurring ? formData.nextPaymentAt : undefined,
       };
 
       if (editingId) {
@@ -372,9 +320,9 @@ export default function Expenses() {
       console.error('Save expense failed:', err);
       const msg = err.response?.data?.message || err.message;
       if (editingId && err.status === 404) {
-        setActionError("Редактирование пока не работает — на бэкенде нет PATCH. Сообщите Карису.");
+        setActionError(t('admin.expenses.editUnavailable'));
       } else {
-        setActionError(msg || "Ошибка сохранения расхода");
+        setActionError(msg || t('admin.expenses.saveFailed'));
       }
     } finally {
       setSaving(false);
@@ -391,7 +339,7 @@ export default function Expenses() {
       refetch();
     } catch (err) {
       console.error('Delete expense failed:', err);
-      setActionError(err.response?.data?.message || err.message || "Ошибка удаления");
+      setActionError(err.response?.data?.message || err.message || t('admin.expenses.deleteFailed'));
     } finally {
       setSaving(false);
     }
@@ -402,19 +350,12 @@ export default function Expenses() {
   const clearFilters = () => {
     setSearch('');
     setFilter('All');
-    setStatusFilter('All');
-    setDateFrom('');
-    setDateTo('');
-    setSortBy('newest');
   };
 
-  const hasActiveFilters = search || filter !== 'All' || statusFilter !== 'All' || dateFrom || dateTo || sortBy !== 'newest';
+  const hasActiveFilters = search || filter !== 'All';
 
   const getCategoryCount = (cat) =>
     cat === 'All' ? expenses.length : expenses.filter((e) => e.category === cat).length;
-
-  const getStatusCount = (status) =>
-    status === 'All' ? expenses.length : expenses.filter((e) => getStatusFromExpense(e) === status.toLowerCase()).length;
 
   // ═══════════════════════════════════════════
   //  Render
@@ -434,13 +375,13 @@ export default function Expenses() {
           <span className="flex-1">{error}</span>
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => loadExpenses()}
+              onClick={() => refetch()}
               className="flex items-center gap-1.5 px-3 h-7 rounded-[8px] text-[11px] font-semibold hover:bg-[rgba(232,84,62,0.12)] transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Обновить
+              {t('admin.expenses.refresh')}
             </button>
-            <button onClick={() => setError(null)} className="w-7 h-7 rounded-[8px] flex items-center justify-center hover:bg-[rgba(232,84,62,0.1)] transition-all shrink-0">
+            <button onClick={() => setActionError(null)} className="w-7 h-7 rounded-[8px] flex items-center justify-center hover:bg-[rgba(232,84,62,0.1)] transition-all shrink-0">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -451,35 +392,22 @@ export default function Expenses() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1.5">
-            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">Расходы</h1>
+            <h1 className="text-[28px] font-extrabold text-base-content tracking-[-0.035em] leading-none">{t('admin.expenses.title')}</h1>
           </div>
           <p className="text-[13px] text-base-content/70">
-            Учёт, управление и анализ расходов организации
+            {t('admin.expenses.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <button className="btn btn-ghost btn-sm gap-1.5" onClick={() => setShowExport(true)} disabled={filtered.length === 0}>
             <Download className="w-4 h-4" />
-            Экспорт
+            {t('admin.expenses.export')}
           </button>
           <button className="btn btn-primary btn-sm gap-1.5" onClick={openModal}>
             <Plus className="w-4 h-4" />
-            Добавить расход
+            {t('admin.expenses.addExpense')}
           </button>
         </div>
-      </div>
-
-      {/* Статистические карточки */}
-      {/* Раньше это была локальная копия KPI-плитки, и только у «Bu oy» была
-          строка тренда «+0.0% o'tgan oyga nisbatan» — из-за неё одна карточка
-          оказывалась выше остальных четырёх, и ряд ехал. Теперь общий Kpi без
-          тренда: все плитки одной высоты, как в панели ментора. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Kpi Icon={Banknote} title="Все расходы" value={formatCurrency(stats.total)} tone="neutral" />
-        <Kpi Icon={CalendarDays} title="В этом месяце" value={formatCurrency(stats.thisMonth)} tone="neutral" />
-        <Kpi Icon={Clock} title="Ожидает" value={formatCurrency(stats.pendingAmount)} tone="warning" />
-        <Kpi Icon={DollarSign} title="Одобрено" value={formatCurrency(stats.approvedAmount)} tone="success" />
-        <Kpi Icon={BarChart3} title="Средний расход" value={formatCurrency(stats.avgAmount)} tone="neutral" />
       </div>
 
       {/* ═══ Filter Toolbar ═══ */}
@@ -490,7 +418,7 @@ export default function Expenses() {
           <div className="relative flex-1 w-full sm:max-w-xs">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/45 pointer-events-none" />
             <input
-              placeholder="Поиск расходов..."
+              placeholder={t('admin.expenses.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full h-10 pl-10 pr-10 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
@@ -511,112 +439,16 @@ export default function Expenses() {
               value={filter}
               onChange={setFilter}
               options={CATEGORIES.map((cat) => ({ value: cat, label: `${CATEGORY_LABELS[cat] || cat} (${getCategoryCount(cat)})` }))}
-              placeholder="Категория"
+              placeholder={t('admin.expenses.categoryFilterLabel')}
             />
-            <SelectFilter
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={STATUSES.map((s) => ({
-                value: s,
-                label: s === 'All' ? 'Все статусы' : `${STATUS_MAP[s.toLowerCase()]?.label || STATUS_LABELS[s] || s} (${getStatusCount(s)})`,
-              }))}
-              placeholder="Статус"
-            />
-            <div className="relative">
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all [color-scheme:light] cursor-pointer"
-              />
-            </div>
-            <div className="relative">
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="appearance-none w-[140px] h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all [color-scheme:light] cursor-pointer"
-              />
-            </div>
-            <SelectFilter
-              value={sortBy}
-              onChange={setSortBy}
-              options={SORT_OPTIONS}
-              placeholder="Сортировка"
-            />
-          </div>
-
-          {/* Mobile filter toggle + clear */}
-          <div className="flex items-center gap-2 lg:hidden flex-nowrap">
-            <button
-              onClick={() => setFiltersExpanded(!filtersExpanded)}
-              className={`flex items-center gap-1.5 h-10 px-3.5 rounded-[12px] border text-[12px] font-semibold transition-all shrink-0 ${
-                filtersExpanded || hasActiveFilters
-                  ? 'border-primary text-primary bg-primary/10'
-                  : 'border-base-300 text-base-content/70 hover:border-base-content/45'
-              }`}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              Фильтры
-              {hasActiveFilters && (
-                <span className="w-5 h-5 rounded-full bg-primary text-[#141B10] text-[9px] font-bold flex items-center justify-center">
-                  {[filter !== 'All', statusFilter !== 'All', !!search, !!dateFrom, !!dateTo, sortBy !== 'newest'].filter(Boolean).length}
-                </span>
-              )}
-            </button>
           </div>
 
           {/* Desktop clear filters — moved to category pills row */}
         </div>
 
-        {/* Mobile expanded filters */}
-        {filtersExpanded && (
-          <div className="px-4 pb-4 lg:hidden space-y-2.5 animate-slide-up">
-            <div className="grid grid-cols-2 gap-2.5">
-              <SelectFilter
-                value={filter}
-                onChange={setFilter}
-                options={CATEGORIES.map((cat) => ({ value: cat, label: `${CATEGORY_LABELS[cat] || cat} (${getCategoryCount(cat)})` }))}
-                placeholder="Категория"
-              />
-              <SelectFilter
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={STATUSES.map((s) => ({
-                  value: s,
-                  label: s === 'All' ? 'Все статусы' : `${STATUS_MAP[s.toLowerCase()]?.label || STATUS_LABELS[s] || s} (${getStatusCount(s)})`,
-                }))}
-                placeholder="Статус"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                placeholder="С"
-                className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary [color-scheme:light] transition-all"
-              />
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                placeholder="По"
-                className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[12px] text-base-content/70 outline-none hover:border-base-content/45 focus:border-primary [color-scheme:light] transition-all"
-              />
-            </div>
-            <SelectFilter
-              value={sortBy}
-              onChange={setSortBy}
-              options={SORT_OPTIONS}
-              placeholder="Сортировка"
-            />
-          </div>
-        )}
-
         {/* Category pills */}
         <div className="flex items-center gap-1.5 flex-wrap px-4 pb-4">
-          <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em] mr-0.5">Категория:</span>
+          <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em] mr-0.5">{t('admin.expenses.categoryLabel')}</span>
           {CATEGORIES.map((cat) => {
             const isActive = filter === cat;
             const catColor = cat === 'All' ? 'var(--primary)' : CATEGORY_COLORS[cat] || '#2ECC71';
@@ -645,7 +477,7 @@ export default function Expenses() {
               className="flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[11px] font-semibold text-base-content/45 hover:text-base-content hover:bg-base-200 transition-all ml-auto shrink-0"
             >
               <X className="w-3.5 h-3.5" />
-              Сбросить
+              {t('admin.expenses.reset')}
             </button>
           )}
         </div>
@@ -687,15 +519,15 @@ export default function Expenses() {
                   <Banknote className="w-8 h-8 text-base-content/45" />
                 </div>
                 <h3 className="text-[15px] font-bold text-base-content mb-1.5">
-                  {search || hasActiveFilters ? 'Ничего не найдено' : 'Пока нет расходов'}
+                  {search || hasActiveFilters ? t('admin.expenses.nothingFoundTitle') : t('admin.expenses.emptyTitle')}
                 </h3>
                 <p className="text-[12px] text-base-content/70 max-w-[280px] mb-5">
-                  {search || hasActiveFilters ? 'Попробуйте изменить параметры поиска или фильтров' : 'Добавьте первый расход, чтобы начать'}
+                  {search || hasActiveFilters ? t('admin.expenses.nothingFoundHint') : t('admin.expenses.emptyHint')}
                 </p>
                 {!search && !hasActiveFilters && (
                   <button className="btn btn-primary btn-sm gap-1.5" onClick={openModal}>
                     <Plus className="w-4 h-4" />
-                    Добавить расход
+                    {t('admin.expenses.addExpense')}
                   </button>
                 )}
                 {!search && !hasActiveFilters && (
@@ -721,13 +553,14 @@ export default function Expenses() {
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-[10px] font-bold uppercase tracking-[0.07em] text-base-content/45 bg-base-100">
-                      <th className="px-5 py-4">Категория</th>
-                      <th className="px-5 py-4">Примечание</th>
-                      <th className="px-5 py-4 text-right">Сумма</th>
-                      <th className="px-5 py-4">Способ оплаты</th>
-                      <th className="px-5 py-4">Дата</th>
-                      <th className="px-5 py-4">Статус</th>
-                      <th className="px-5 py-4 hidden md:table-cell">Создал</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colCategory')}</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colNote')}</th>
+                      <th className="px-5 py-4 text-right">{t('admin.expenses.colAmount')}</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colMethod')}</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colDate')}</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colRecurring')}</th>
+                      <th className="px-5 py-4">{t('admin.expenses.colStatus')}</th>
+                      <th className="px-5 py-4 hidden md:table-cell">{t('admin.expenses.colCreatedBy')}</th>
                       <th className="px-5 py-4 w-10"></th>
                     </tr>
                   </thead>
@@ -747,18 +580,37 @@ export default function Expenses() {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right font-bold text-base-content tabular-nums whitespace-nowrap text-[14px]">
-                          {formatCurrency(e.amount)}
+                          {formatCurrency(e.amount, locale, currencyWord)}
                         </td>
                         <td className="px-5 py-4">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-[11px] font-medium text-base-content/70 bg-base-100 border border-base-300">
-                            {getPaymentMethod(e)}
-                          </span>
+                          {(() => {
+                            const pm = getPaymentMethod(e);
+                            if (pm === '—') return <span className="text-base-content/45 text-[11px]">—</span>;
+                            const Icon = pm === 'Наличные' || pm === 'Naqt' ? Banknote : CreditCard;
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-[11px] font-medium text-base-content/70 bg-base-100 border border-base-300">
+                                <Icon className="w-3.5 h-3.5 shrink-0" />
+                                {paymentMethodDisplay(pm, t)}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-5 py-4 text-base-content/70 tabular-nums whitespace-nowrap text-[12px]">
                           <span className="flex items-center gap-1.5">
                             <CalendarDays className="w-3 h-3 text-base-content/45" />
-                            {formatDate(e.spentAt)}
+                            {formatDate(e.spentAt, locale)}
                           </span>
+                        </td>
+                        <td className="px-5 py-4 text-base-content/70 text-[11px]">
+                          {e.isRecurring ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-[6px] bg-[rgba(94,110,82,0.12)] text-[10px] font-medium" style={{ color: '#5E6E52' }}>
+                              <RefreshCw className="w-3 h-3" />
+                              {e.recurringPeriod === 'monthly' ? t('admin.expenses.everyMonth') : e.recurringPeriod === 'quarterly' ? t('admin.expenses.everyQuarter') : t('admin.expenses.everyYear')}
+                              {e.nextPaymentAt && ` → ${formatDate(e.nextPaymentAt, locale)}`}
+                            </span>
+                          ) : (
+                            <span className="text-base-content/45">—</span>
+                          )}
                         </td>
                         <td className="px-5 py-4">
                           <StatusBadge status={getStatusFromExpense(e)} />
@@ -771,7 +623,7 @@ export default function Expenses() {
                             expense={e}
                             onView={openViewModal}
                             onEdit={openEditModal}
-                            onDelete={(exp) => { setDeleteTarget(exp); setError(null); }}
+                            onDelete={(exp) => { setDeleteTarget(exp); setActionError(null); }}
                           />
                         </td>
                       </tr>
@@ -781,21 +633,21 @@ export default function Expenses() {
               </div>
 
               {/* Table footer */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-t border-base-300 bg-base-100">
+              <div className="flex flex-wrap items-center justify-between px-5 py-3.5 border-t border-base-300 bg-base-100 gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-base-content/45">
-                    {filtered.length} расходов
+                    {t('admin.expenses.expensesCount', { count: filtered.length })}
                   </span>
                   {filtered.length !== expenses.length && (
                     <span className="text-[10px] text-base-content/45 opacity-60">
-                      ({expenses.length} всего)
+                      {t('admin.expenses.ofTotal', { count: expenses.length })}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">Итого:</span>
+                  <span className="text-[10px] font-semibold text-base-content/45 uppercase tracking-[0.06em]">{t('admin.expenses.total')}</span>
                   <span className="text-[13px] font-extrabold text-base-content tabular-nums">
-                    {formatCurrency(filteredTotal)}
+                    {formatCurrency(filteredTotal, locale, currencyWord)}
                   </span>
                 </div>
               </div>
@@ -805,7 +657,7 @@ export default function Expenses() {
           {loading && expenses.length > 0 && (
             <div className="flex items-center justify-center gap-2.5 py-4 text-[12px] text-base-content/45">
               <RefreshCw className="w-4 h-4 animate-spin" />
-              Обновление...
+              {t('admin.expenses.updating')}
             </div>
           )}
         </div>
@@ -815,8 +667,8 @@ export default function Expenses() {
           {/* Budget by Category */}
           <div className="card bg-base-100 p-5 card-hover-premium">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[14px] font-bold text-base-content">По категориям</h3>
-              <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em]">Бюджет</span>
+              <h3 className="text-[14px] font-bold text-base-content">{t('admin.expenses.byCategory')}</h3>
+              <span className="text-[9px] font-bold text-base-content/45 uppercase tracking-[0.08em]">{t('admin.expenses.budget')}</span>
             </div>
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -831,7 +683,7 @@ export default function Expenses() {
             </div>
             <div className="mt-4 pt-4 border-t border-base-300 space-y-2.5">
               {budgetData.filter((item) => item.amount > 0).length === 0 ? (
-                <p className="text-[11px] text-base-content/45 text-center py-2">Данные о расходах отсутствуют</p>
+                <p className="text-[11px] text-base-content/45 text-center py-2">{t('admin.expenses.noExpenseData')}</p>
               ) : (
                 budgetData.filter((item) => item.amount > 0).map((item, i) => (
                   <div key={i} className="flex items-center justify-between text-[11px] group/chart">
@@ -839,7 +691,7 @@ export default function Expenses() {
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: item.fill }} />
                       <span className="text-base-content/70 group-hover/chart:text-base-content transition-colors">{item.name}</span>
                     </div>
-                    <span className="font-bold text-base-content tabular-nums">{formatCurrency(item.amount)}</span>
+                    <span className="font-bold text-base-content tabular-nums">{formatCurrency(item.amount, locale, currencyWord)}</span>
                   </div>
                 ))
               )}
@@ -848,10 +700,10 @@ export default function Expenses() {
 
           {/* Monthly Trend */}
           <div className="card bg-base-100 p-5 card-hover-premium">
-            <h3 className="text-[14px] font-bold text-base-content mb-5">Тренд по месяцам</h3>
+            <h3 className="text-[14px] font-bold text-base-content mb-5">{t('admin.expenses.monthlyTrend')}</h3>
             {monthlyData.length === 0 ? (
               <div className="h-[140px] flex items-center justify-center">
-                <p className="text-[11px] text-base-content/45">Данные о тренде отсутствуют</p>
+                <p className="text-[11px] text-base-content/45">{t('admin.expenses.noTrendData')}</p>
               </div>
             ) : (
               <div className="h-[140px]">
@@ -870,75 +722,94 @@ export default function Expenses() {
       </div>
 
       {/* ═══ View Detail Modal ═══ */}
-      {viewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box card bg-base-100 max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-base-content mb-4">Детали расхода</h3>
-          {viewTarget && (
-            <div className="space-y-5">
-              <div className="flex items-center gap-3 pb-4 border-b border-base-300">
-                <CategoryBadge category={viewTarget.category} />
-                <StatusBadge status={getStatusFromExpense(viewTarget)} />
-              </div>
+      <Modal
+        isOpen={viewModalOpen}
+        onClose={() => { setViewModalOpen(false); setViewTarget(null); }}
+        boxClass="max-w-lg"
+        title={t('admin.expenses.detailsTitle')}
+      >
+        {viewTarget && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-3 pb-4 border-b border-base-300">
+              <CategoryBadge category={viewTarget.category} />
+              <StatusBadge status={getStatusFromExpense(viewTarget)} />
+            </div>
 
               <div className="space-y-0">
                 <div className="flex justify-between items-center py-3 border-b border-base-300">
-                  <span className="text-[12px] text-base-content/70 font-medium">Сумма</span>
-                  <span className="text-[18px] font-extrabold text-base-content tabular-nums">{formatCurrency(viewTarget.amount)}</span>
+                  <span className="text-[12px] text-base-content/70 font-medium">{t('admin.expenses.amountLabel')}</span>
+                  <span className="text-[18px] font-extrabold text-base-content tabular-nums">{formatCurrency(viewTarget.amount, locale, currencyWord)}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-base-300">
-                  <span className="text-[12px] text-base-content/70 font-medium">Дата</span>
-                  <span className="text-[13px] font-semibold text-base-content">{formatDate(viewTarget.spentAt)}</span>
+                  <span className="text-[12px] text-base-content/70 font-medium">{t('admin.expenses.dateLabel')}</span>
+                  <span className="text-[13px] font-semibold text-base-content">{formatDate(viewTarget.spentAt, locale)}</span>
                 </div>
                 {getPaymentMethod(viewTarget) !== '—' && (
                   <div className="flex justify-between items-center py-3 border-b border-base-300">
-                    <span className="text-[12px] text-base-content/70 font-medium">Способ оплаты</span>
-                    <span className="text-[13px] font-semibold text-base-content">{getPaymentMethod(viewTarget)}</span>
+                    <span className="text-[12px] text-base-content/70 font-medium">{t('admin.expenses.methodLabel')}</span>
+                    <span className="text-[13px] font-semibold text-base-content">{paymentMethodDisplay(getPaymentMethod(viewTarget), t)}</span>
+                  </div>
+                )}
+                {viewTarget.isRecurring && (
+                  <div className="flex justify-between items-center py-3 border-b border-base-300">
+                    <span className="text-[12px] text-base-content/70 font-medium">{t('admin.expenses.recurringLabel')}</span>
+                    <span className="text-[13px] font-semibold text-base-content">
+                      {viewTarget.recurringPeriod === 'monthly' ? t('admin.expenses.everyMonth') : viewTarget.recurringPeriod === 'quarterly' ? t('admin.expenses.everyQuarter') : t('admin.expenses.everyYear')}
+                      {viewTarget.nextPaymentAt && t('admin.expenses.nextPayment', { date: formatDate(viewTarget.nextPaymentAt, locale) })}
+                    </span>
                   </div>
                 )}
                 {getCreatedBy(viewTarget) !== '—' && (
                   <div className="flex justify-between items-center py-3 border-b border-base-300">
-                    <span className="text-[12px] text-base-content/70 font-medium">Создал</span>
+                    <span className="text-[12px] text-base-content/70 font-medium">{t('admin.expenses.createdByLabel')}</span>
                     <span className="text-[13px] font-semibold text-base-content">{getCreatedBy(viewTarget)}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-start py-3">
-                  <span className="text-[12px] text-base-content/70 font-medium pt-0.5">Примечание</span>
-                  <span className="text-[13px] text-base-content text-right max-w-[250px] leading-relaxed">{viewTarget.note || <span className="text-base-content/45 italic">Нет</span>}</span>
+                  <span className="text-[12px] text-base-content/70 font-medium pt-0.5">{t('admin.expenses.noteLabel')}</span>
+                  <span className="text-[13px] text-base-content text-right max-w-[250px] leading-relaxed">{viewTarget.note || <span className="text-base-content/45 italic">{t('admin.expenses.none')}</span>}</span>
                 </div>
               </div>
 
               <div className="flex justify-end gap-2.5 pt-3 border-t border-base-300">
                 <button className="btn btn-ghost btn-sm" onClick={() => { setViewModalOpen(false); setViewTarget(null); }}>
-                  Закрыть
+                  {t('admin.expenses.close')}
                 </button>
                 <button className="btn btn-primary btn-sm gap-1.5" onClick={() => { setViewModalOpen(false); setViewTarget(null); openEditModal(viewTarget); }}>
                   <Pencil className="w-4 h-4" />
-                  Редактировать
+                  {t('admin.expenses.edit')}
                 </button>
               </div>
             </div>
           )}
-        </div>
-        </div>
-      )}
+      </Modal>
 
       {/* ═══ Add/Edit Modal ═══ */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setModalOpen(false); }}>
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box card bg-base-100 max-w-lg relative z-10" onClick={(e) => e.stopPropagation()}>
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setModalOpen(false)}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-base-content mb-4">{editingId ? 'Редактировать расход' : 'Добавить расход'}</h3>
-          <div className="space-y-5">
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => { if (!saving) setModalOpen(false); }}
+        boxClass="max-w-lg"
+        title={editingId ? t('admin.expenses.editTitle') : t('admin.expenses.addExpense')}
+        actions={
+          <div className="flex justify-end gap-2.5 pt-2">
+            <button className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={saving}>{t('admin.expenses.cancel')}</button>
+            <button className="btn btn-primary btn-sm gap-1.5" onClick={handleSave} disabled={saving || !formData.amount || (formData.category === 'Other' && !(formData.title || '').trim())}>
+              {saving ? (
+                <span className="flex items-center gap-1.5">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  {t('admin.expenses.saving')}
+                </span>
+              ) : editingId ? t('admin.expenses.save') : t('admin.expenses.add')}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
             <div>
-              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Категория *</label>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.categoryRequired')}</label>
               <div className="grid grid-cols-3 gap-2">
                 {CATEGORIES.filter((c) => c !== 'All').map((cat) => {
                   const isActive = formData.category === cat;
-                  const catColor = CATEGORY_COLORS[cat] || '#8FA283';
                   return (
                     <button
                       key={cat}
@@ -946,70 +817,118 @@ export default function Expenses() {
                       onClick={() => setFormData({ ...formData, category: cat })}
                       className="px-3 py-2.5 rounded-[12px] text-[12px] font-semibold border transition-all duration-200"
                       style={{
-                        background: isActive ? catColor : 'var(--surface)',
-                        color: isActive ? '#141B10' : 'var(--text-secondary)',
-                        borderColor: isActive ? catColor : 'var(--border)',
+                        background: isActive ? 'var(--primary)' : 'var(--surface)',
+                        color: isActive ? '#fff' : 'var(--text-secondary)',
+                        borderColor: isActive ? 'var(--primary)' : 'var(--border)',
                       }}
                     >
-                {CATEGORY_LABELS[cat] || cat}
+                      {CATEGORY_LABELS[cat] || cat}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {formData.category === 'Other' && (
+                <div>
+                  <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.titleRequired')}</label>
+                  <input
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder={t('admin.expenses.titlePlaceholder')}
+                    className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.amountRequired')}</label>
+              <input
+                type="number"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                placeholder="500000"
+                className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.methodLabel')}</label>
+              <div className="grid grid-cols-2 gap-2">
+                {PAYMENT_METHODS.map((method) => {
+                  const Icon = method === 'Наличные' ? Banknote : CreditCard;
+                  return (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, paymentMethod: method })}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-[12px] text-[12px] font-semibold border transition-all duration-200"
+                      style={{
+                        background: formData.paymentMethod === method ? 'var(--primary)' : 'var(--surface)',
+                        color: formData.paymentMethod === method ? '#fff' : 'var(--text-secondary)',
+                        borderColor: formData.paymentMethod === method ? 'var(--primary)' : 'var(--border)',
+                      }}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {paymentMethodDisplay(method, t)}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.recurringExpenseLabel')}</label>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isRecurring}
+                    onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                    className="checkbox checkbox-primary w-4 h-4"
+                  />
+                  <span className="text-[12px] text-base-content/70">{t('admin.expenses.autoAddMonthly')}</span>
+                </label>
+              </div>
+              {formData.isRecurring && (
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.recurringPeriodLabel')}</label>
+                    <select
+                      value={formData.recurringPeriod}
+                      onChange={(e) => setFormData({ ...formData, recurringPeriod: e.target.value })}
+                      className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
+                    >
+                      <option value="monthly">{t('admin.expenses.everyMonth')}</option>
+                      <option value="quarterly">{t('admin.expenses.everyQuarter')}</option>
+                      <option value="yearly">{t('admin.expenses.everyYear')}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.nextPaymentDateRequired')}</label>
+                    <input
+                      type="date"
+                      value={formData.nextPaymentAt}
+                      onChange={(e) => setFormData({ ...formData, nextPaymentAt: e.target.value })}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {formData.category !== 'Other' && (
               <div>
-                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Сумма *</label>
+                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">{t('admin.expenses.noteLabel')}</label>
                 <input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  placeholder="500000"
+                  value={formData.note}
+                  onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                  placeholder={t('admin.expenses.noteCommentPlaceholder')}
                   className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
                 />
               </div>
-              <div>
-                <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Дата</label>
-                <input
-                  type="date"
-                  value={formData.spentAt}
-                  onChange={(e) => setFormData({ ...formData, spentAt: e.target.value })}
-                  className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 [color-scheme:light]"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Способ оплаты</label>
-              <div className="grid grid-cols-2 gap-2">
-                {PAYMENT_METHODS.map((method) => (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, paymentMethod: method })}
-                    className="px-4 py-2.5 rounded-[12px] text-[12px] font-semibold border transition-all duration-200"
-                    style={{
-                      background: formData.paymentMethod === method ? 'var(--primary)' : 'var(--surface)',
-                      color: formData.paymentMethod === method ? '#fff' : 'var(--text-secondary)',
-                      borderColor: formData.paymentMethod === method ? 'var(--primary)' : 'var(--border)',
-                    }}
-                  >
-                    {method}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold text-base-content/70 mb-2 uppercase tracking-[0.06em]">Примечание</label>
-              <input
-                value={formData.note}
-                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                placeholder="Комментарий к расходу"
-                className="w-full h-10 px-3.5 rounded-[12px] border border-base-300 bg-base-100 text-[13px] text-base-content outline-none placeholder:text-base-content/45 hover:border-base-content/45 focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
-              />
-            </div>
+            )}
 
             {error && (
               <div
@@ -1020,73 +939,58 @@ export default function Expenses() {
                 {error}
               </div>
             )}
-
-            <div className="flex justify-end gap-2.5 pt-2">
-              <button className="btn btn-ghost btn-sm" onClick={() => setModalOpen(false)} disabled={saving}>Отмена</button>
-              <button className="btn btn-primary btn-sm gap-1.5" onClick={handleSave} disabled={saving || !formData.amount}>
-                {saving ? (
-                  <span className="flex items-center gap-1.5">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    Сохранение...
-                  </span>
-                ) : editingId ? "Сохранить" : "Добавить"}
-              </button>
-            </div>
-          </div>
         </div>
-        </div>
-      )}
+      </Modal>
 
       {/* ═══ Delete Confirmation Modal ═══ */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { if (!saving) setDeleteTarget(null); }}>
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="modal-box card bg-base-100 max-w-md relative z-10" onClick={(e) => e.stopPropagation()}>
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" disabled={saving} onClick={() => setDeleteTarget(null)}><X className="w-4 h-4" /></button>
-          <h3 className="font-bold text-[16px] text-base-content mb-4">Удалить расход</h3>
-          <div className="space-y-5">
-            <div className="flex items-start gap-4">
-              <div className="w-11 h-11 rounded-[14px] bg-[rgba(232,84,62,0.12)] flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-error" />
-              </div>
-              <div className="flex-1">
-                <p className="text-[14px] font-bold text-base-content mb-1.5">Вы уверены?</p>
-                <p className="text-[12px] text-base-content/70 leading-relaxed">
-                  <CategoryBadge category={deleteTarget?.category} />{' '}
-                  <span className="tabular-nums font-semibold text-base-content">{formatCurrency(deleteTarget?.amount)}</span>{' '}
-                  — удалить этот расход? Это действие нельзя отменить.
-                </p>
-              </div>
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => { if (!saving) setDeleteTarget(null); }}
+        boxClass="max-w-md"
+        title={t('admin.expenses.deleteTitle')}
+        actions={
+          <div className="flex justify-end gap-2.5 pt-2 border-t border-base-300">
+            <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>{t('admin.expenses.cancel')}</button>
+            <button className="btn btn-error btn-sm gap-1.5 text-white" onClick={handleDelete} disabled={saving}>
+              {saving ? (
+                <span className="flex items-center gap-1.5">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  {t('admin.expenses.deleting')}
+                </span>
+              ) : t('admin.expenses.delete')}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 rounded-[14px] bg-[rgba(232,84,62,0.12)] flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5 text-error" />
             </div>
-
-            {error && (
-              <div
-                className="text-[12px] text-error font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
-                style={{ background: 'rgba(232,84,62,0.08)', border: '1px solid rgba(232,84,62,0.15)' }}
-              >
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                {error}
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2.5 pt-2 border-t border-base-300">
-              <button className="btn btn-ghost btn-sm" onClick={() => setDeleteTarget(null)} disabled={saving}>Отмена</button>
-              <button className="btn btn-error btn-sm gap-1.5 text-white" onClick={handleDelete} disabled={saving}>
-                {saving ? (
-                  <span className="flex items-center gap-1.5">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    Удаление...
-                  </span>
-                ) : "Удалить"}
-              </button>
+            <div className="flex-1">
+              <p className="text-[14px] font-bold text-base-content mb-1.5">{t('admin.expenses.confirmTitle')}</p>
+              <p className="text-[12px] text-base-content/70 leading-relaxed">
+                <CategoryBadge category={deleteTarget?.category} />{' '}
+                <span className="tabular-nums font-semibold text-base-content">{formatCurrency(deleteTarget?.amount, locale, currencyWord)}</span>{' '}
+                {t('admin.expenses.confirmBody')}
+              </p>
             </div>
           </div>
+
+          {error && (
+            <div
+              className="text-[12px] text-error font-semibold rounded-[12px] px-4 py-3 flex items-center gap-2.5"
+              style={{ background: 'rgba(232,84,62,0.08)', border: '1px solid rgba(232,84,62,0.15)' }}
+            >
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
+          )}
         </div>
-        </div>
-      )}
+      </Modal>
 
       {/* ═══ Export Dialog ═══ */}
-      <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="expenses" data={filtered} filename="расходы" />
+      <ExportDialog open={showExport} onClose={() => setShowExport(false)} pageKey="expenses" data={filtered} filename={t('admin.expenses.filename')} />
     </div>
   );
 }
