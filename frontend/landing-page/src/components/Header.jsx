@@ -7,7 +7,6 @@ export default function Header() {
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const lastScrollY = useRef(0);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const close = () => setOpen(false);
   const t = useT();
   const lang = useLang();
@@ -107,49 +106,6 @@ export default function Header() {
             <Link to={lp('/landing/contacts')} className="btn btn--dark header__cta">
               <span>{t.nav.login}</span>
             </Link>
-          </div>
-
-          {/* Пользовательский профиль (выпадающее меню) */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              aria-label="Меню аккаунта"
-              className="flex items-center gap-2 p-1 rounded-full hover:bg-[var(--gray-100)] transition-colors"
-            >
-              <img
-                src="/avatar.svg"
-                alt="User"
-                className="w-8 h-8 rounded-full object-cover"
-              />
-              <svg
-                className="w-4 h-4 text-[var(--gray-500)] transition-transform"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M9 5a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1V5zm3 4a1 1 0 000 2h3a1 1 0 000-2v-3a1 1 0 000-2h-3a1 1 0 000 2zm4-6a1 1 0 011 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-3a1 1 0 01-1-1zm1.5 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-              </svg>
-            </button>
-
-            {/* Меню аккаунта */}
-            {showUserMenu && (
-              <div
-                className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200"
-              >
-                <a
-                  href="#"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Профиль
-                </a>
-                <a
-                  href="#"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Выйти
-                </a>
-              </div>
-            )}
           </div>
 
           {/* Мобильный бургер */}
