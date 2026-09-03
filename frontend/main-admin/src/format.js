@@ -20,8 +20,12 @@ export const LEAD_STATUS = {
   rejected: { label: 'Отклонена', cls: 'badge-error' },
 };
 
+// `color` — сырой hex для мест, где DaisyUI-класса (`cls`) недостаточно:
+// сегменты pie-графика, инлайновые style-цвета. Раньше эти три статуса
+// параллельно жили в PIE_COLORS/statusCls/statusLabel внутри Dashboard.jsx —
+// один источник правды вместо трёх (30.08.2026).
 export const ORG_STATUS = {
-  active: { label: 'Активен', cls: 'badge-success' },
-  trial: { label: 'Триал', cls: 'badge-warning' },
-  frozen: { label: 'Заморожен', cls: 'badge-error' },
+  active: { label: 'Активен', cls: 'badge-success', color: '#A3E635' },
+  trial: { label: 'Триал', cls: 'badge-warning', color: '#FCD34D' },
+  frozen: { label: 'Заморожен', cls: 'badge-error', color: '#F87171' },
 };

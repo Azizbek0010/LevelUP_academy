@@ -8,19 +8,19 @@ import { useLessons, useInvalidate } from '../../queries.js';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { SkeletonTable } from '../../components/Skeleton.jsx';
-import { LangProvider, useLang } from './i18n.js';
-import LangSwitcher from './LangSwitcher.jsx';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/LanguageSwitcher.jsx';
 
 // practical → Aqlli tahlil (AI-review, Groq) shu description'ga qarab
 // tekshiradi (backend: content.schemas.js, xuddi shu qoida).
 const makeSchema = (t) => z.object({
-  title: z.string().trim().min(1, t('lessons.title_required')).max(200),
+  title: z.string().trim().min(1, t('methodist.lessons.title_required')).max(200),
   lessonType: z.enum(['test', 'practical']),
   description: z.string().trim().max(2000).optional(),
   instruction: z.string().trim().max(2000).optional(),
   coinReward: z.coerce.number().int().min(0).default(0),
 }).refine((v) => v.lessonType !== 'practical' || Boolean(v.description?.trim()), {
-  message: t('editor.description_required_practical'),
+  message: t('methodist.editor.description_required_practical'),
   path: ['description'],
 });
 
@@ -29,13 +29,13 @@ function LessonTypeBadge({ type, t }) {
   return (
     <span className={`mt-badge ${isTest ? 'mt-badge-test' : 'mt-badge-practical'}`}>
       {isTest ? <FileQuestion size={10} /> : <ClipboardCheck size={10} />}
-      {isTest ? t('lessons.badge_test') : t('lessons.badge_practical')}
+      {isTest ? t('methodist.lessons.badge_test') : t('methodist.lessons.badge_practical')}
     </span>
   );
 }
 
 function LessonsView() {
-  const { t } = useLang();
+  const { t } = useTranslation();
   const { topicId } = useParams();
   const { token } = useAuth();
   const { data, isLoading, error } = useLessons(topicId);
@@ -97,11 +97,11 @@ function LessonsView() {
     <div className="mt-page-bg space-y-6 p-6">
       <div className="mt-fade-in">
         <div className="flex items-center gap-1.5 text-[12px] text-[var(--mt-text-muted)] mb-3">
-          <Link to="/methodist/types" className="hover:text-[var(--mt-accent)] transition-colors font-medium">{t('lessons.breadcrumb_types')}</Link>
+          <Link to="/methodist/types" className="hover:text-[var(--mt-accent)] transition-colors font-medium">{t('methodist.lessons.breadcrumb_types')}</Link>
           <span className="opacity-50">/</span>
-          <Link to="/methodist/types" className="hover:text-[var(--mt-accent)] transition-colors font-medium">{t('lessons.breadcrumb_topics')}</Link>
+          <Link to="/methodist/types" className="hover:text-[var(--mt-accent)] transition-colors font-medium">{t('methodist.lessons.breadcrumb_topics')}</Link>
           <span className="opacity-50">/</span>
-          <span className="text-[var(--mt-text)] font-semibold">{t('lessons.breadcrumb_lessons')}</span>
+          <span className="text-[var(--mt-text)] font-semibold">{t('methodist.lessons.breadcrumb_lessons')}</span>
         </div>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -112,11 +112,11 @@ function LessonsView() {
               <ArrowLeft size={18} className="text-[var(--mt-text-muted)]" />
             </button>
             <div>
-              <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('lessons.title')}</h1>
-              <p className="text-[13px] text-[var(--mt-text-muted)]">{t('lessons.subtitle')}</p>
+              <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('methodist.lessons.title')}</h1>
+              <p className="text-[13px] text-[var(--mt-text-muted)]">{t('methodist.lessons.subtitle')}</p>
             </div>
           </div>
-          <LangSwitcher />
+          <LanguageSwitcher />
         </div>
       </div>
       <div className="mt-card-flat p-6 mt-animate-in">
@@ -125,14 +125,14 @@ function LessonsView() {
             <AlertTriangle size={22} className="text-[var(--mt-danger)]" />
           </div>
           <div className="flex-1">
-            <p className="text-[14px] font-bold text-[var(--mt-text)] mb-0.5">{t('common.loading_error')}</p>
-            <p className="text-[12px] text-[var(--mt-text-muted)]">{error?.message || t('common.loading_failed')}</p>
+            <p className="text-[14px] font-bold text-[var(--mt-text)] mb-0.5">{t('methodist.common.loading_error')}</p>
+            <p className="text-[12px] text-[var(--mt-text-muted)]">{error?.message || t('methodist.common.loading_failed')}</p>
           </div>
           <button
             className="mt-btn-ghost"
             onClick={() => window.location.reload()}
           >
-            <RefreshCw size={14} /> {t('common.retry')}
+            <RefreshCw size={14} /> {t('methodist.common.retry')}
           </button>
         </div>
       </div>
@@ -144,11 +144,11 @@ function LessonsView() {
       {/* Breadcrumb + Header */}
       <div className="mt-fade-in">
         <div className="flex items-center gap-1.5 text-[12px] text-[var(--mt-text-muted)] mb-3">
-          <Link to="/methodist/types" className="hover:text-[var(--mt-accent)] transition-colors font-medium">{t('lessons.breadcrumb_types')}</Link>
+          <Link to="/methodist/types" className="hover:text-[var(--mt-accent)] transition-colors font-medium">{t('methodist.lessons.breadcrumb_types')}</Link>
           <span className="opacity-50">/</span>
-          <Link to="/methodist/types" className="hover:text-[var(--mt-accent)] transition-colors font-medium">{t('lessons.breadcrumb_topics')}</Link>
+          <Link to="/methodist/types" className="hover:text-[var(--mt-accent)] transition-colors font-medium">{t('methodist.lessons.breadcrumb_topics')}</Link>
           <span className="opacity-50">/</span>
-          <span className="text-[var(--mt-text)] font-semibold">{t('lessons.breadcrumb_lessons')}</span>
+          <span className="text-[var(--mt-text)] font-semibold">{t('methodist.lessons.breadcrumb_lessons')}</span>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -159,14 +159,14 @@ function LessonsView() {
               <ArrowLeft size={18} className="text-[var(--mt-text-muted)]" />
             </button>
             <div>
-              <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('lessons.title')}</h1>
-              <p className="text-[13px] text-[var(--mt-text-muted)]">{t('lessons.subtitle')}</p>
+              <h1 className="text-[22px] font-extrabold text-[var(--mt-text)] tracking-tight">{t('methodist.lessons.title')}</h1>
+              <p className="text-[13px] text-[var(--mt-text-muted)]">{t('methodist.lessons.subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <LangSwitcher />
+            <LanguageSwitcher />
             <button className="mt-btn-primary" onClick={openCreate}>
-              <Plus size={16} strokeWidth={2.5} /> {t('lessons.create')}
+              <Plus size={16} strokeWidth={2.5} /> {t('methodist.lessons.create')}
             </button>
           </div>
         </div>
@@ -189,10 +189,10 @@ function LessonsView() {
             <div className="w-20 h-20 rounded-[20px] grid place-items-center mb-5" style={{ background: 'rgba(217,119,6,0.08)' }}>
               <FileQuestion size={32} className="text-[var(--mt-warning)]" />
             </div>
-            <p className="text-[15px] font-bold text-[var(--mt-text)] mb-1">{t('lessons.no_lessons')}</p>
-            <p className="text-[13px] text-[var(--mt-text-muted)] mb-5">{t('lessons.no_lessons_hint')}</p>
+            <p className="text-[15px] font-bold text-[var(--mt-text)] mb-1">{t('methodist.lessons.no_lessons')}</p>
+            <p className="text-[13px] text-[var(--mt-text-muted)] mb-5">{t('methodist.lessons.no_lessons_hint')}</p>
             <button className="mt-btn-primary" onClick={openCreate}>
-              <Plus size={16} strokeWidth={2.5} /> {t('lessons.create')}
+              <Plus size={16} strokeWidth={2.5} /> {t('methodist.lessons.create')}
             </button>
           </div>
         </div>
@@ -218,8 +218,8 @@ function LessonsView() {
                     <LessonTypeBadge type={ls.lesson_type} t={t} />
                     <span className="text-[11px] text-[var(--mt-text-muted)] font-medium">
                       {ls.lesson_type === 'practical'
-                        ? t('lessons.requirements_count', { count: ls.requirements_count || 0 })
-                        : t('lessons.questions_count', { count: ls.questions_count || 0 })}
+                        ? t('methodist.lessons.requirements_count', { count: ls.requirements_count || 0 })
+                        : t('methodist.lessons.questions_count', { count: ls.questions_count || 0 })}
                     </span>
                     {ls.coin_reward > 0 && (
                       <span className="mt-badge" style={{ background: 'rgba(217,119,6,0.1)', color: '#B45309' }}>
@@ -232,14 +232,14 @@ function LessonsView() {
                   <button
                     className="w-8 h-8 rounded-lg grid place-items-center hover:bg-[var(--mt-accent-light)] transition-colors"
                     onClick={() => copyLesson(ls.id)}
-                    title={t('lessons.copy_tooltip')}
+                    title={t('methodist.lessons.copy_tooltip')}
                   >
                     <Copy size={14} className="text-[var(--mt-accent)]" />
                   </button>
                   <button
                     className="w-8 h-8 rounded-lg grid place-items-center hover:bg-[rgba(220,38,38,0.08)] transition-colors"
                     onClick={() => setConfirmArchive({ id: ls.id, name: ls.title })}
-                    title={t('lessons.archive_tooltip')}
+                    title={t('methodist.lessons.archive_tooltip')}
                   >
                     <Trash2 size={14} className="text-[var(--mt-danger)]" />
                   </button>
@@ -247,7 +247,7 @@ function LessonsView() {
                 <Link
                   to={`/methodist/lessons/${ls.id}/edit`}
                   className="w-9 h-9 rounded-xl grid place-items-center bg-[var(--mt-surface-warm)] hover:bg-[var(--mt-accent-light)] transition-all group/edit shrink-0"
-                  title={t('lessons.edit_tooltip')}
+                  title={t('methodist.lessons.edit_tooltip')}
                 >
                   <Pencil size={14} className="text-[var(--mt-text-muted)] group-hover/edit:text-[var(--mt-accent)] transition-colors" />
                 </Link>
@@ -267,18 +267,18 @@ function LessonsView() {
                 <Trash2 size={18} className="text-[var(--mt-danger)]" />
               </div>
               <div>
-                <h3 className="font-bold text-[15px] text-[var(--mt-text)]">{t('lessons.archive_confirm')}</h3>
+                <h3 className="font-bold text-[15px] text-[var(--mt-text)]">{t('methodist.lessons.archive_confirm')}</h3>
                 <p className="text-[12px] text-[var(--mt-text-muted)] truncate max-w-[200px]">«{confirmArchive.name}»</p>
               </div>
             </div>
             <div className="flex gap-2 mt-4">
-              <button className="mt-btn-ghost flex-1 justify-center" onClick={() => setConfirmArchive(null)}>{t('common.cancel')}</button>
+              <button className="mt-btn-ghost flex-1 justify-center" onClick={() => setConfirmArchive(null)}>{t('methodist.common.cancel')}</button>
               <button
                 className="flex-1 h-10 px-4 rounded-xl text-[13px] font-bold transition-colors"
                 style={{ background: 'rgba(220,38,38,0.1)', color: '#DC2626' }}
                 onClick={() => doArchive(confirmArchive.id)}
               >
-                {t('lessons.archive')}
+                {t('methodist.lessons.archive')}
               </button>
             </div>
           </div>
@@ -296,8 +296,8 @@ function LessonsView() {
                   <FileQuestion size={18} className="text-[var(--mt-warning)]" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[16px] text-[var(--mt-text)]">{t('lessons.new_title')}</h3>
-                  <p className="text-[11px] text-[var(--mt-text-muted)]">{t('lessons.new_hint')}</p>
+                  <h3 className="font-bold text-[16px] text-[var(--mt-text)]">{t('methodist.lessons.new_title')}</h3>
+                  <p className="text-[11px] text-[var(--mt-text-muted)]">{t('methodist.lessons.new_hint')}</p>
                 </div>
               </div>
               <button onClick={() => setModalOpen(false)} className="w-8 h-8 rounded-lg grid place-items-center hover:bg-[var(--mt-accent-light)] transition-colors">
@@ -306,32 +306,32 @@ function LessonsView() {
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="mt-modal-body space-y-4">
               <label className="form-control w-full">
-                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('lessons.field_title')}</span>
+                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('methodist.lessons.field_title')}</span>
                 <input
                   type="text"
                   {...register('title')}
-                  placeholder={t('lessons.title_placeholder')}
+                  placeholder={t('methodist.lessons.title_placeholder')}
                   className={`mt-input ${errors.title ? 'border-[var(--mt-danger)]' : ''}`}
                 />
                 {errors.title && <span className="text-[11px] text-[var(--mt-danger)] mt-1 block">{errors.title.message}</span>}
               </label>
 
               <label className="form-control w-full">
-                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('lessons.lesson_type_label')}</span>
+                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('methodist.lessons.lesson_type_label')}</span>
                 <select {...register('lessonType')} className="mt-select">
-                  <option value="test">{t('lessons.type_test')}</option>
-                  <option value="practical">{t('lessons.type_practical')}</option>
+                  <option value="test">{t('methodist.lessons.type_test')}</option>
+                  <option value="practical">{t('methodist.lessons.type_practical')}</option>
                 </select>
               </label>
 
               {lessonType === 'practical' && (
                 <label className="form-control w-full">
                   <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">
-                    {t('lessons.desc_label')} <span className="text-error">*</span>
+                    {t('methodist.lessons.desc_label')} <span className="text-error">*</span>
                   </span>
                   <textarea
                     {...register('description')}
-                    placeholder={t('lessons.desc_placeholder')}
+                    placeholder={t('methodist.lessons.desc_placeholder')}
                     className={`mt-textarea ${errors.description ? 'textarea-error' : ''}`}
                     rows={3}
                   />
@@ -340,17 +340,17 @@ function LessonsView() {
               )}
 
               <label className="form-control w-full">
-                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('lessons.instruction_label')}</span>
+                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('methodist.lessons.instruction_label')}</span>
                 <textarea
                   {...register('instruction')}
-                  placeholder={t('lessons.instruction_placeholder')}
+                  placeholder={t('methodist.lessons.instruction_placeholder')}
                   className="mt-textarea"
                   rows={2}
                 />
               </label>
 
               <label className="form-control w-full">
-                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('lessons.coin_label')}</span>
+                <span className="text-[12px] font-semibold text-[var(--mt-text-muted)] mb-1.5 block">{t('methodist.lessons.coin_label')}</span>
                 <input
                   type="number"
                   {...register('coinReward')}
@@ -360,10 +360,10 @@ function LessonsView() {
 
               <div className="flex gap-2 pt-2">
                 <button type="button" className="mt-btn-ghost flex-1 justify-center" onClick={() => setModalOpen(false)} disabled={busy}>
-                  {t('common.cancel')}
+                  {t('methodist.common.cancel')}
                 </button>
                 <button type="submit" className="mt-btn-primary flex-1 justify-center" disabled={busy}>
-                  {busy ? <span className="loading loading-spinner loading-xs" /> : t('lessons.create_and_edit')}
+                  {busy ? <span className="loading loading-spinner loading-xs" /> : t('methodist.lessons.create_and_edit')}
                 </button>
               </div>
             </form>
@@ -376,8 +376,6 @@ function LessonsView() {
 
 export default function Lessons() {
   return (
-    <LangProvider>
-      <LessonsView />
-    </LangProvider>
+    <LessonsView />
   );
 }

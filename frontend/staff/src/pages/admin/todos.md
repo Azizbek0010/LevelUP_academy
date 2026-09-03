@@ -2,6 +2,7 @@
 
 > Status: ⬜ qilinmagan | 🔄 jarayonda | ✅ tayyor
 > Sana: 2026-08-01
+> Yangilangan: 2026-08-11
 
 ## 1. Students — «Задолжен» filtri
 - ✅ «Задолжен» tugmasi hozir **tasdiqlash so'rayapti** (confirm dialog) — bu noto'g'ri. → Kodda confirm dialog **yo'q** (Students.jsx:214-233 — oddiy tab filter, `setStatusFilter('debt')`), olib tashlash kerak emas.
@@ -58,3 +59,53 @@
 ## 10. Reports — tozalash + ranglar
 - ✅ Jadvalni olib tashlash: «Группа / Ученики / Доход / Долг / Соотношение» + «4 группы» + «Общий доход» + «Общий долг» → butun table blok (thead/tbody + footer) o'chirildi; KPI kartalar va grafiklar qoldi. `Banknote`, `Tip`, `maxRevenue`, `useAuth`/`token` (ishlatilmagan) ham olib tashlandi.
 - ✅ Ranglar juda yomon — **design system ranglari ishlatildi** → COLORS endi `index.css` `:root` palitrasidan (--primary #40833B, --danger #dc2626, --warning #b45309, --info #2563eb, --success #15803d, text-secondary/muted); bar chart fill `var(--primary)` + `var(--danger)`.
+
+## 11. Expenses — admindan olib tashlash
+- ✅ `/expenses` route admindan olib tashlandi (App.jsx) — faqat branch_manager uchun qoldi.
+- ✅ Admin sidebar'dan "Xarajatlar" havolasi o'chirildi.
+- ✅ Branch Manager o'z Expenses.jsx fayliga ega (pages/branch-manager/Expenses.jsx).
+
+## 12. Schedule — sidebar'dan olib tashlash, guruh ichiga qo'shish
+- ✅ `/schedule` route kommentariyaga olingan (App.jsx:152).
+- ✅ Admin sidebar'dan "Raspisaniye" havolasi o'chirildi.
+- ✅ GroupDetail.jsx da yangi **"Расписание" tab** qo'shildi (ScheduleTab komponenti, line 977-1039).
+- ✅ Guruhning haftalik raspisaniyasi read-only grid sifatida ko'rinadi.
+
+## 13. Shop — olib tashlash
+- ✅ `/shop` route kommentariyaga olingan (App.jsx:151).
+- ✅ Admin sidebar'dan "Shop" havolasi o'chirildi.
+
+## 14. Mentor level o'zgartirish — olib tashlash
+- ✅ Mentors.jsx da grade/level o'zgartirish funksiyasi olib tashlandi (Karis, 11.08.2026).
+- ✅ Grade endi **read-only badge** sifatida ko'rinadi (MentorCard komponentida).
+- ✅ Edit modal'da grade picker yo'q — faqat ism, familiya, telefon o'zgartiriladi.
+- ✅ API da `PATCH /users/me` grade ni ignore qiladi (backend ham qabul qilmaydi).
+
+## 15. Chat — mentorlar bilan ishlash
+- 🔄 Admin Chat.jsx — mentorlar bilan real-time chat sahifasi qurish.
+- 🔄 Mentor Chat.jsx — boshqa mentorlar bilan chat sahifasi qurish.
+- ⬜ Chat kontaktlar ro'yxatida **faqat mentorlar** ko'rinishi kerak (studentlar/ota-onalar emas).
+- ⬜ Filialda bor **barcha mentorlar** chiqishi kerak.
+- ⬜ Socket.io orqali real-time xabar almashish.
+
+---
+
+## Jarvis TODO (ichki)
+
+> Bu bo'lim Jarvis (AI assistant) uchun — qolgan ishlar va eslatmalar.
+
+### Bajarilgan
+- [x] Loyiha tuzilishini o'rganish (CLAUDE.md, App.jsx, Layout.jsx)
+- [x] Expenses: admindan olib tashlangan, branch_manager da bor — tekshirildi ✅
+- [x] Schedule: sidebar'dan olib tashlangan, GroupDetail ichida tab — tekshirildi ✅
+- [x] Shop: route kommentariya — tekshirildi ✅
+- [x] Mentor level: read-only qilingan — tekshirildi ✅
+- [x] Chat sahifalarini yaratish boshlandi
+
+### Jarayonda
+- [ ] Admin Chat.jsx — to'liq chat sahifasini yaratish (subagent ishlamoqda)
+- [ ] Mentor Chat.jsx — to'liq chat sahifasini yaratish (subagent ishlamoqda)
+
+### Keyingi qadamlar
+- [ ] Chat sahifalarini test qilish (`npm run dev`)
+- [ ] Socket.io integratsiyasini tekshirish

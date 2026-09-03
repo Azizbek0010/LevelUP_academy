@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useMentorGroups } from '../../queries.js';
 import { EmptyState } from './_ui.jsx';
 
@@ -11,6 +12,7 @@ import { EmptyState } from './_ui.jsx';
  * оказаться в работе — открываем первую группу.
  */
 export default function MentorGroupsIndex() {
+  const { t } = useTranslation();
   const { data, isLoading } = useMentorGroups();
   const { search } = useLocation();
   const groups = data?.data || [];
@@ -28,8 +30,8 @@ export default function MentorGroupsIndex() {
       <div className="card bg-base-100">
         <EmptyState
           icon={BookOpen}
-          title="У вас пока нет групп"
-          hint="Когда группа будет назначена, она появится в списке слева."
+          title={t('mentor.noGroupsTitle')}
+          hint={t('mentor.noGroupsHint')}
         />
       </div>
     );

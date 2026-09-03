@@ -3,7 +3,6 @@
    DaisyUI, тон — из дизайн-системы остальных панелей.
    ────────────────────────────────────────────────────────────────────────── */
 import { money } from '../../format.js';
-import { LANGS, useLang } from './_i18n.jsx';
 
 /* Последние N календарных месяцев, самый свежий — текущий. Раньше был жёсткий
    список из 6 строк в _data.js — переставал работать в следующем месяце и не
@@ -38,27 +37,6 @@ export function monthRange(monthKey) {
   const from = new Date(Date.UTC(y, m - 1, 1));
   const to = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999)); // последний день месяца
   return { from: from.toISOString(), to: to.toISOString() };
-}
-
-/* ── Переключатель языка RU/UZ/EN ── */
-export function LangSwitch() {
-  const { lang, setLang } = useLang();
-  return (
-    <div className="join bg-base-200 p-0.5 rounded-lg">
-      {LANGS.map((l) => (
-        <button
-          key={l.code}
-          type="button"
-          onClick={() => setLang(l.code)}
-          className={`join-item btn btn-xs border-0 rounded-md transition-colors ${
-            lang === l.code ? 'btn-primary text-primary-content' : 'btn-ghost text-base-content/60'
-          }`}
-        >
-          {l.label}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 /* ── KPI-карточка с иконкой и подписью ──
@@ -161,6 +139,25 @@ export function MonthSelect({ value, onChange, months }) {
       ))}
     </select>
   );
+}
+
+/* ── Подпись способа оплаты (payment_method enum) — Humo/Uzcard/Uzum/Payme/
+   Click торговые марки, не переводятся ни в одном языке. ── */
+const METHOD_KEY = {
+  cash: 'finance.method.cash', card: 'finance.method.card', transfer: 'finance.method.transfer',
+  bank_transfer: 'finance.method.bankTransfer',
+};
+const METHOD_BRAND = { humo: 'Humo', uzcard: 'Uzcard', uzum: 'Uzum', payme: 'Payme', click: 'Click' };
+export function paymentMethodLabel(method, t) {
+  return METHOD_BRAND[method] || (METHOD_KEY[method] ? t(METHOD_KEY[method]) : method);
+}
+
+/* ── Подпись статуса зарплаты (mentor_salaries.status enum) ── */
+const SALARY_STATUS_KEY = {
+  draft: 'finance.salaryStatus.draft', approved: 'finance.salaryStatus.approved', paid: 'finance.salaryStatus.paid',
+};
+export function salaryStatusLabel(status, t) {
+  return SALARY_STATUS_KEY[status] ? t(SALARY_STATUS_KEY[status]) : status;
 }
 
 /* ── Деньги с компактным форматированием (млн/тыс) ── */

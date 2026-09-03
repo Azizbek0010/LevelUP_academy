@@ -1,42 +1,107 @@
-import { useState } from 'react';
-import { TrendingUp, Wallet, CheckCircle2, CalendarDays, CreditCard } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { TrendingUp, Wallet, CheckCircle2, CalendarDays, CreditCard, Info, Plus } from 'lucide-react';
 import { money } from '../../format.js';
 import PageHeader from '../../components/PageHeader.jsx';
-import { Panel, Kpi } from '../mentor/_ui.jsx';
+import { Panel, Kpi, SearchInput, EmptyState } from '../mentor/_ui.jsx';
 import { PaymentStatusBadge } from './_ui.jsx';
 import { useBranchManagerIncome } from '../../queries.js';
 
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+
+/** Генерирует последние 6 месяцев в формате {key, label} */
+function monthNamesFor(locale) {
+  return Array.from({ length: 12 }, (_, i) => new Date(2024, i, 1).toLocaleDateString(locale, { month: 'long' }));
+}
+
+function generateMonths(count, locale) {
+  const MONTH_NAMES = monthNamesFor(locale);
+  const result = [];
+  const now = new Date();
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    result.push({ key, label: MONTH_NAMES[d.getMonth()] });
+  }
+  return result;
+}
+
 export default function BranchManagerIncome() {
-  const [monthKey, setMonthKey] = useState('2026-08');
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const MONTHS = useMemo(() => generateMonths(6, locale), [locale]);
+  const [monthKey, setMonthKey] = useState(MONTHS[MONTHS.length - 1].key);
+  const [search, setSearch] = useState('');
   const { data, isLoading, error } = useBranchManagerIncome(monthKey);
 
-  if (isLoading) return <div className="p-8 text-center text-base-content/45">Yuklanmoqda...</div>;
-  if (error) return <div className="p-8 text-center text-error">Xatolik yuz berdi</div>;
+  const month = MONTHS.find((m) => m.key === monthKey) ?? MONTHS[MONTHS.length - 1];
 
-  const rows = data?.payments || [];
+  if (isLoading) {
+    return (
+      <div className="space-y-6 pb-8 animate-page-enter">
+        <PageHeader title={t('branchManager.income.title')} subtitle={t('branchManager.income.loadingSubtitle')} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="rounded-2xl bg-base-200/60 animate-pulse h-28" />
+          ))}
+        </div>
+        <div className="rounded-2xl bg-base-200/60 animate-pulse h-64" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <div className="inline-flex flex-col items-center gap-3 text-error">
+          <span className="text-4xl">⚠</span>
+          <span className="text-lg font-semibold">{t('branchManager.income.loadErrorMessage')}</span>
+          <button
+            className="btn btn-sm btn-error btn-outline mt-2"
+            onClick={() => window.location.reload()}
+          >
+            {t('branchManager.income.retry')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const allRows = data?.payments || [];
+  const rows = search
+    ? allRows.filter(p =>
+        p.student?.toLowerCase().includes(search.toLowerCase()) ||
+        p.group?.toLowerCase().includes(search.toLowerCase())
+      )
+    : allRows;
   const total = data?.total || 0;
   const paid = data?.paidCount || 0;
   const overdue = data?.overdueCount || 0;
   const debt = data?.debt || 0;
 
-  const MONTHS = [
-    { key: '2026-03', label: 'Mart' },
-    { key: '2026-04', label: 'Aprel' },
-    { key: '2026-05', label: 'May' },
-    { key: '2026-06', label: 'Iyun' },
-    { key: '2026-07', label: 'Iyul' },
-    { key: '2026-08', label: 'Avgust' },
-  ];
-  const month = MONTHS.find((m) => m.key === monthKey) ?? MONTHS[MONTHS.length - 1];
-
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
       <PageHeader
-        title="Daromad"
-        subtitle={`Filial · to'lovlar va qarzdorlik`}
+        title={t('branchManager.income.title')}
+        subtitle={t('branchManager.income.subtitle')}
       />
 
-      {/* ── Oy tanlash ── */}
+      {/* ── Подсказка: доход создаётся через «Платежи» ── */}
+      <div className="alert bg-primary/5 border border-primary/15 rounded-2xl p-4">
+        <Info size={20} className="text-primary shrink-0" />
+        <div className="flex flex-1 flex-wrap items-center justify-between gap-2 min-w-0">
+          <div>
+            <p className="text-[13px] font-semibold">{t('branchManager.income.hintTitle')}</p>
+            <p className="text-[12px] text-base-content/55">{t('branchManager.income.hintText')}</p>
+          </div>
+          <Link to="/payments" className="btn btn-sm btn-primary rounded-lg shrink-0">
+            <Plus size={16} /> {t('branchManager.income.makePayment')}
+          </Link>
+        </div>
+      </div>
+
+      {/* ── Выбор месяца ── */}
       <div className="flex flex-wrap gap-2">
         {MONTHS.map((m) => (
           <button
@@ -55,34 +120,52 @@ export default function BranchManagerIncome() {
 
       {/* ── KPI ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Kpi Icon={TrendingUp} title="Oy daromadi" value={money(total)} unit={`${month.label} oyi`} tone="success" />
-        <Kpi Icon={CheckCircle2} title="To'langan" value={paid} unit={`${rows.length} ta to'lovdan`} tone="neutral" />
-        <Kpi Icon={Wallet} title="Muddati o'tgan" value={overdue} unit="qarzdor to'lovlar" tone="danger" />
-        <Kpi Icon={CalendarDays} title="Umumiy qarzdorlik" value={money(debt)} unit="filial bo'yicha" tone="warning" />
+        <Kpi Icon={TrendingUp} title={t('branchManager.income.kpiMonthRevenue')} value={money(total)} unit={`${month.label}`} tone="success" />
+        <Kpi Icon={CheckCircle2} title={t('branchManager.income.kpiPaid')} value={paid} unit={t('branchManager.income.kpiPaidUnit', { count: allRows.length })} tone="neutral" />
+        <Kpi Icon={Wallet} title={t('branchManager.income.kpiOverdue')} value={overdue} unit={t('branchManager.income.kpiOverdueUnit')} tone="danger" />
+        <Kpi Icon={CalendarDays} title={t('branchManager.income.kpiTotalDebt')} value={money(debt)} unit={t('branchManager.income.kpiTotalDebtUnit')} tone="danger" />
       </div>
 
-      {/* ── To'lovlar jadvali ── */}
-      <Panel title={`To'lovlar — ${month.label}`} icon={CreditCard} bodyClass="p-0">
+      {/* ── Таблица платежей ── */}
+      <Panel title={t('branchManager.income.paymentsPanelTitle', { month: month.label })} icon={CreditCard} bodyClass="p-0">
+        {/* Поиск */}
+        {allRows.length > 0 && (
+          <div className="px-5 pt-4 pb-2">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder={t('branchManager.income.searchPlaceholder')}
+              className="max-w-sm"
+            />
+          </div>
+        )}
+
         {rows.length === 0 ? (
-          <p className="text-[13px] text-base-content/45 text-center py-10">Bu oyda to'lovlar yo'q</p>
+          <EmptyState
+            icon={CreditCard}
+            title={search ? t('branchManager.income.nothingFoundTitle') : t('branchManager.income.emptyMonthTitle')}
+            hint={search
+              ? t('branchManager.income.searchHint')
+              : t('branchManager.income.emptyMonthHint')}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="table table-sm">
               <thead>
                 <tr className="text-[11px] uppercase tracking-wider text-base-content/45">
-                  <th className="pl-5">Sana</th>
-                  <th>Talaba</th>
-                  <th>Guruh</th>
-                  <th className="hidden md:table-cell">Usul</th>
-                  <th className="text-right">Summa</th>
-                  <th className="pr-5 text-right">Holat</th>
+                  <th className="pl-5">{t('branchManager.income.colDate')}</th>
+                  <th>{t('branchManager.income.colStudent')}</th>
+                  <th>{t('branchManager.income.colGroup')}</th>
+                  <th className="hidden md:table-cell">{t('branchManager.income.colMethod')}</th>
+                  <th className="text-right">{t('branchManager.income.colAmount')}</th>
+                  <th className="pr-5 text-right">{t('branchManager.income.colStatus')}</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((p) => (
                   <tr key={p.id} className="hover:bg-base-200/50 transition-colors">
                     <td className="pl-5 text-[13px] text-base-content/60 tabular-nums whitespace-nowrap">
-                      {new Date(p.date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                      {new Date(p.date).toLocaleDateString(locale, { day: '2-digit', month: 'short' })}
                     </td>
                     <td className="text-[13px] font-semibold">{p.student}</td>
                     <td className="text-[13px] text-base-content/70">{p.group}</td>
@@ -94,7 +177,7 @@ export default function BranchManagerIncome() {
               </tbody>
               <tfoot>
                 <tr className="border-t border-base-200">
-                  <td colSpan={4} className="pl-5 text-[12px] font-semibold text-base-content/60">Jami</td>
+                  <td colSpan={4} className="pl-5 text-[12px] font-semibold text-base-content/60">{t('branchManager.income.total')}</td>
                   <td className="text-right text-[15px] font-extrabold tabular-nums text-success">{money(total)}</td>
                   <td />
                 </tr>

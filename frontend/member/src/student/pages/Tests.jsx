@@ -60,7 +60,7 @@ export default function Tests() {
                 tabIndex={clickable ? 0 : undefined}
                 onClick={clickable ? () => navigate(`/tests/${test.id}`) : undefined}
                 onKeyDown={clickable ? (e) => (e.key === 'Enter' || e.key === ' ') && navigate(`/tests/${test.id}`) : undefined}
-                className={`k-pop-in flex items-center gap-3 px-4 py-3.5 flex-wrap sm:flex-nowrap transition-colors ${clickable ? 'k-press cursor-pointer hover:bg-[#EDF5E1]' : ''}`}
+                className={`k-pop-in flex items-center gap-3 px-4 py-3.5 flex-wrap sm:flex-nowrap transition-colors ${clickable ? 'k-press k-row-hover cursor-pointer' : ''}`}
                 style={{ animationDelay: `${Math.min(i, 9) * 50}ms` }}
               >
                 <IconTile icon={ClipboardCheck} hue="blue" size={42} />

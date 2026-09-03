@@ -6,7 +6,7 @@ import { api } from '../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useToast } from '../components/toast.jsx';
 import {
-  PageHeader, EmptyState, ErrorState, Tabs, Avatar, CountUp, C, LevelBar, levelFromCoins,
+  PageHeader, EmptyState, ErrorState, Tabs, Avatar, CountUp, C, alpha, shade, LevelBar, levelFromCoins,
 } from '../components/ui.jsx';
 import { fmt, useI18n } from '../../i18n/index.jsx';
 
@@ -37,8 +37,8 @@ const PODIUM_ORDER = [2, 1, 3]; // экранный порядок: 2-е сле�
 
 function PodiumCard({ row, rank, meId }) {
   const { t } = useI18n();
-  const color = rank === 1 ? C.lime : rank === 2 ? '#FFB300' : C.blue;
-  const coinColor = rank === 1 ? C.limeDk : rank === 2 ? '#8A5A00' : '#2E5E85';
+  const color = rank === 1 ? C.lime : rank === 2 ? C.gold : C.blue;
+  const coinColor = rank === 1 ? C.limeDk : rank === 2 ? C.goldDk : C.blue;
   const first = rank === 1;
   const isMe = row?.studentId === meId;
 
@@ -61,15 +61,15 @@ function PodiumCard({ row, rank, meId }) {
       style={{
         paddingTop: first ? 24 : 18,
         paddingBottom: isMe ? 20 : 12,
-        background: `linear-gradient(180deg, ${color}24 0%, ${color}0d 100%)`,
-        border: `1.5px solid ${color}55`,
-        boxShadow: first ? `0 4px 14px ${color}33` : `0 1px 3px ${color}22`,
+        background: `linear-gradient(180deg, ${alpha(color, 14)} 0%, ${alpha(color, 5)} 100%)`,
+        border: `1.5px solid ${alpha(color, 33)}`,
+        boxShadow: first ? `0 4px 14px ${alpha(color, 20)}` : `0 1px 3px ${alpha(color, 13)}`,
       }}
     >
       {/* Бейдж места — корона у 1-го, число у остальных */}
       <span
         className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full grid place-items-center text-white z-10"
-        style={{ width: 27, height: 27, background: color, boxShadow: `0 1px 5px ${color}66` }}
+        style={{ width: 27, height: 27, background: color, boxShadow: `0 1px 5px ${alpha(color, 40)}` }}
       >
         {first ? <Crown size={14} strokeWidth={2.6} /> : <span className="k-num text-[13px] font-extrabold">{rank}</span>}
       </span>
@@ -77,7 +77,7 @@ function PodiumCard({ row, rank, meId }) {
       {isMe && (
         <span
           className="absolute -bottom-2 z-10 text-[10px] font-extrabold px-2 py-0.5 rounded-full text-white"
-          style={{ background: C.lime, boxShadow: `0 1px 4px ${C.lime}55` }}
+          style={{ background: C.lime, boxShadow: `0 1px 4px ${alpha(C.lime, 33)}` }}
         >
           {t.leaderboard.you}
         </span>
@@ -89,9 +89,9 @@ function PodiumCard({ row, rank, meId }) {
           width: first ? 76 : 60,
           height: first ? 76 : 60,
           padding: 3,
-          background: '#fff',
+          background: C.card,
           border: `2.5px solid ${color}`,
-          boxShadow: isMe ? `0 0 0 3px ${C.lime}40` : undefined,
+          boxShadow: isMe ? `0 0 0 3px ${alpha(C.lime, 25)}` : undefined,
         }}
       >
         <Avatar name={`${row.firstName ?? ''} ${row.lastName ?? ''}`} size={first ? 64 : 48} />
@@ -131,7 +131,7 @@ function RatingRow({ r, meId }) {
         style={
           isMe
             ? { background: C.lime, color: '#fff' }
-            : { background: '#fff', color: C.muted, border: `1px solid ${C.line}` }
+            : { background: C.card, color: C.muted, border: `1px solid ${C.line}` }
         }
       >
         {r.rank ?? '—'}
@@ -148,7 +148,7 @@ function RatingRow({ r, meId }) {
       </div>
       <span className="k-num shrink-0 font-extrabold flex items-center gap-1 text-[14px]" style={{ color: isMe ? C.limeDk : C.text }}>
         {Number(r.coins) || 0}
-        <Star size={12} strokeWidth={2.6} fill={C.lime} color={C.lime} />
+        <Star size={12} strokeWidth={2.6} fill={C.honey} color={C.honey} />
       </span>
     </div>
   );
@@ -167,7 +167,7 @@ function RatingList({ top, meId, myRow }) {
     <div className="k-card p-4 sm:p-5 mb-4" style={{ borderColor: C.limeLine }}>
       {/* Заголовок секции */}
       <div className="flex items-center gap-2.5 mb-3.5">
-        <span className="w-9 h-9 rounded-xl grid place-items-center shrink-0" style={{ background: `${C.amber}1c`, color: C.amber }}>
+        <span className="w-9 h-9 rounded-xl grid place-items-center shrink-0" style={{ background: alpha(C.amber, 12), color: C.amber }}>
           <Trophy size={18} strokeWidth={2.4} />
         </span>
         <h2 className="text-[16.5px] font-extrabold" style={{ color: C.text }}>{t.leaderboard.topTitle}</h2>
@@ -236,7 +236,7 @@ function StatsCard({ homework, myCoins, topCoins, growth, overtakeName }) {
   return (
     <div className="k-card p-5 sm:p-7 mt-5" style={{ borderColor: C.limeLine }}>
       <div className="flex items-center gap-3 mb-2">
-        <span className="w-12 h-12 rounded-xl grid place-items-center shrink-0" style={{ background: `${C.violet}1c` }}>
+        <span className="w-12 h-12 rounded-xl grid place-items-center shrink-0" style={{ background: alpha(C.violet, 12) }}>
           <TrendingUp size={24} strokeWidth={2.4} color={C.violet} />
         </span>
         <div className="min-w-0">
@@ -257,7 +257,7 @@ function StatsCard({ homework, myCoins, topCoins, growth, overtakeName }) {
             <div key={b.key} className="flex-1 flex flex-col items-center gap-3 min-w-0">
               {/* Иконка и цифра меньше на телефоне: в 4 колонках при 360px
                   на колонку приходится ~70px, а 74px-иконка вылезала за край. */}
-              <span className="w-14 h-14 sm:w-[74px] sm:h-[74px] rounded-2xl grid place-items-center shrink-0" style={{ background: `${b.hue}1c` }}>
+              <span className="w-14 h-14 sm:w-[74px] sm:h-[74px] rounded-2xl grid place-items-center shrink-0" style={{ background: alpha(b.hue, 12) }}>
                 <b.icon size={38} strokeWidth={2.2} color={b.hue} className="w-7 h-7 sm:w-[38px] sm:h-[38px]" />
               </span>
               <span className="k-num font-extrabold leading-none text-[25px] sm:text-[34px]" style={{ color: b.value == null ? C.muted : c }}>
@@ -270,7 +270,7 @@ function StatsCard({ homework, myCoins, topCoins, growth, overtakeName }) {
                   className="w-full rounded-t-xl rounded-b-md k-chart-grow max-h-[180px] sm:max-h-[250px]"
                   style={{
                     height: h,
-                    background: b.value == null ? C.line : `linear-gradient(180deg, ${c}, ${c}bb)`,
+                    background: b.value == null ? C.line : `linear-gradient(180deg, ${c}, ${alpha(c, 72)})`,
                     animationDelay: `${idx * 90}ms`,
                   }}
                 />
@@ -452,16 +452,16 @@ export default function Leaderboard() {
       {/* Баннер */}
       <div
         className="relative overflow-hidden mb-4 rounded-2xl"
-        style={{ background: 'linear-gradient(120deg, #FFF7E2 0%, #FFEDC2 100%)', border: `1px solid ${C.line}` }}
+        style={{ background: `linear-gradient(120deg, ${C.honeySoft} 0%, ${alpha(C.honey, 16)} 100%)`, border: `1px solid ${C.line}` }}
       >
         <div className="absolute -right-5 -top-8 w-40 h-40 sm:w-48 sm:h-48 pointer-events-none select-none" aria-hidden="true">
           <TrophyArt />
         </div>
         <div className="relative z-10 px-4 sm:px-5 py-4 pr-28 sm:pr-32">
-          <div className="text-[11px] font-extrabold uppercase tracking-[0.1em]" style={{ color: '#8A6A1F' }}>
+          <div className="text-[11px] font-extrabold uppercase tracking-[0.1em]" style={{ color: C.honeyDk }}>
             {t.leaderboard.bannerTag}
           </div>
-          <div className="text-[16px] sm:text-[17px] font-extrabold leading-snug mt-1" style={{ color: '#5C4613' }}>
+          <div className="text-[16px] sm:text-[17px] font-extrabold leading-snug mt-1" style={{ color: C.text }}>
             {t.leaderboard.bannerText}
           </div>
         </div>
@@ -487,7 +487,7 @@ export default function Leaderboard() {
             <div className="flex items-center gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
               <span
                 className="shrink-0 w-16 h-16 rounded-2xl grid place-items-center k-num text-[24px] text-white"
-                style={{ background: `linear-gradient(135deg, ${C.lime}, ${C.limeDk})`, boxShadow: `0 4px 14px ${C.lime}55` }}
+                style={{ background: `linear-gradient(135deg, ${C.lime}, ${shade(C.lime, 24)})`, boxShadow: `0 4px 14px ${alpha(C.lime, 33)}` }}
               >
                 {level}
               </span>
@@ -508,7 +508,7 @@ export default function Leaderboard() {
               <div className="text-right shrink-0">
                 <div className="k-num text-[22px] font-extrabold flex items-center justify-end gap-1.5" style={{ color: C.text }}>
                   <CountUp value={Number(myRow?.coins) || 0} />
-                  <Star size={14} strokeWidth={2.4} fill={C.lime} color={C.lime} />
+                  <Star size={14} strokeWidth={2.4} fill={C.honey} color={C.honey} />
                 </div>
                 <div className="text-[11px] font-semibold" style={{ color: C.muted }}>{t.leaderboard.myCoins}</div>
               </div>
@@ -517,12 +517,12 @@ export default function Leaderboard() {
             {ahead ? (
               <div
                 className="mt-3.5 flex items-center gap-3 rounded-xl px-3.5 py-2.5"
-                style={{ background: '#FFF3D6', border: '1px solid #FFD77A' }}
+                style={{ background: C.honeySoft, border: `1px solid ${alpha(C.honey, 30)}` }}
               >
-                <Target size={18} strokeWidth={2.4} color="#E89400" className="shrink-0" />
+                <Target size={18} strokeWidth={2.4} color={C.honey} className="shrink-0" />
                 <Avatar name={`${ahead.firstName ?? ''} ${ahead.lastName ?? ''}`} size={32} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em]" style={{ color: '#B97F00' }}>
+                  <div className="text-[10.5px] font-extrabold uppercase tracking-[0.06em]" style={{ color: C.honeyDk }}>
                     {t.leaderboard.catchUp}
                   </div>
                   <div className="text-[13.5px] font-extrabold truncate" style={{ color: C.text }}>
@@ -530,9 +530,9 @@ export default function Leaderboard() {
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="k-num text-[14px] font-extrabold flex items-center gap-1 justify-end" style={{ color: '#B97F00' }}>
+                  <div className="k-num text-[14px] font-extrabold flex items-center gap-1 justify-end" style={{ color: C.honeyDk }}>
                     {aheadGap.toLocaleString('ru-RU')}
-                    <Star size={11} strokeWidth={2.4} fill="#E89400" color="#E89400" />
+                    <Star size={11} strokeWidth={2.4} fill={C.honey} color={C.honey} />
                   </div>
                   <div className="text-[11px] font-semibold" style={{ color: C.muted }}>{t.leaderboard.coinsNeeded}</div>
                 </div>

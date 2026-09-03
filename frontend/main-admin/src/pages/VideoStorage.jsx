@@ -1,6 +1,7 @@
 import { HardDrive, Eye } from 'lucide-react';
 import { useVideoStorageCosts } from '../queries.js';
 import PageHeader from '../components/PageHeader.jsx';
+import { Kpi } from '../components/_ui.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
 
 function formatBytes(n) {
@@ -39,30 +40,20 @@ export default function VideoStorage() {
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="card bg-gradient-to-br from-lime-400 to-lime-500 border-0 shadow-sm">
-              <div className="card-body p-5">
-                <div className="flex items-center gap-3">
-                  <span className="w-10 h-10 rounded-md grid place-items-center shrink-0" style={{ background: 'rgba(0,0,0,0.12)', color: '#1a2e05' }}>
-                    <HardDrive size={20} strokeWidth={2.2} />
-                  </span>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider leading-tight text-lime-950/60">Хранение / мес</div>
-                </div>
-                <div className="text-3xl font-extrabold mt-3 leading-none text-lime-950">{formatUsd(totals?.totalStorageCostUsdPerMonth)}</div>
-                <div className="text-xs mt-1.5 text-lime-950/55">по тарифу с наценкой, Storj</div>
-              </div>
-            </div>
-            <div className="card bg-base-100 border border-base-200/60 shadow-sm">
-              <div className="card-body p-5">
-                <div className="flex items-center gap-3">
-                  <span className="w-10 h-10 rounded-md grid place-items-center shrink-0" style={{ background: '#E0F2FE', color: '#075985' }}>
-                    <HardDrive size={20} strokeWidth={2.2} />
-                  </span>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider leading-tight text-base-content/45">Всего размер</div>
-                </div>
-                <div className="text-3xl font-extrabold mt-3 leading-none">{formatBytes(totals?.totalSizeBytes)}</div>
-                <div className="text-xs mt-1.5 text-base-content/45">{totals?.count ?? 0} тем с файлом</div>
-              </div>
-            </div>
+            <Kpi
+              Icon={HardDrive}
+              title="Хранение / мес"
+              value={formatUsd(totals?.totalStorageCostUsdPerMonth)}
+              unit="по тарифу с наценкой, Storj"
+              accent
+            />
+            <Kpi
+              Icon={HardDrive}
+              title="Всего размер"
+              value={formatBytes(totals?.totalSizeBytes)}
+              unit={`${totals?.count ?? 0} тем с файлом`}
+              tint={{ bg: '#E0F2FE', fg: '#075985' }}
+            />
           </div>
 
           <div className="card bg-base-100 shadow-sm border border-base-200/60">

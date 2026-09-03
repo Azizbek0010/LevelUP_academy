@@ -1,8 +1,7 @@
 import { CheckCircle2, XCircle, Layers } from 'lucide-react';
 import { useQueueHealth } from '../queries.js';
 import PageHeader from '../components/PageHeader.jsx';
-import { Panel } from '../components/_ui.jsx';
-import { RowSkeleton } from '../components/_ui.jsx';
+import { Panel, RowSkeleton } from '../components/_ui.jsx';
 
 /**
  * Очереди BullMQ (Karis 26.08.2026).

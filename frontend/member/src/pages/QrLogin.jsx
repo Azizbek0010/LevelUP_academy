@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { api } from '../api.js';
+import { useI18n } from '../i18n/index.jsx';
 
 /**
  * Вход по QR: admin показывает код в StudentDetail (staff-панель), студент
@@ -12,6 +13,7 @@ import { api } from '../api.js';
  * «QR перевыпущен/студент удалён», а не «истёк по времени».
  */
 export default function QrLogin() {
+  const { t } = useI18n();
   const [params] = useSearchParams();
   const { adoptSession } = useAuth();
   const navigate = useNavigate();
@@ -38,14 +40,14 @@ export default function QrLogin() {
         {status === 'loading' ? (
           <>
             <span className="loading loading-spinner loading-lg text-primary" />
-            <p className="text-sm opacity-60 mt-4">Kirilmoqda…</p>
+            <p className="text-sm opacity-60 mt-4">{t.qr.loading}</p>
           </>
         ) : (
           <>
             <div role="alert" className="alert alert-error text-sm mb-4">
-              <span>QR-kod noto'g'ri yoki qayta chiqarilgan</span>
+              <span>{t.qr.invalid}</span>
             </div>
-            <Link to="/login" className="btn btn-primary btn-sm w-full">Login va parol bilan kirish</Link>
+            <Link to="/login" className="btn btn-primary btn-sm w-full">{t.qr.backToLogin}</Link>
           </>
         )}
       </div>

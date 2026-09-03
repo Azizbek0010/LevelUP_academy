@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import {
   Plus, Edit2, ShieldAlert, KeyRound, Copy, Check, AlertTriangle,
   MoreVertical, ChevronDown, Users, UserCheck, Building2,
@@ -35,91 +36,94 @@ const phoneRegex = /^\+?\d{7,20}$/;
 // Оклад — метаданные карточки, не пересчитывается автоматически (см. backend
 // super.schemas.js). Пустое поле = не трогать текущее значение, поэтому '' до
 // coerce превращается в undefined, а не в 0.
-const monthlySalaryField = z.preprocess(
+const monthlySalaryFieldFor = (t) => z.preprocess(
   (v) => (v === '' || v === undefined ? undefined : v),
-  z.coerce.number().min(0, 'Не может быть отрицательным').max(1_000_000_000_000).optional(),
+  z.coerce.number().min(0, t('super.admins.salaryNegative')).max(1_000_000_000_000).optional(),
 );
 
-const adminCreateSchema = z.object({
-  firstName: z.string().trim().min(1, 'Имя обязательно').max(80),
-  lastName:  z.string().trim().min(1, 'Фамилия обязательна').max(80),
-  email:     z.string().trim().min(1, 'Email обязателен').email('Неверный формат email').max(120),
-  branchId:  z.string().uuid('Выберите филиал').min(1, 'Выберите филиал'),
-  phone:     z.string().trim().regex(phoneRegex, 'Формат: +998901234567').or(z.literal('')),
+const adminCreateSchemaFor = (t) => z.object({
+  firstName: z.string().trim().min(1, t('super.admins.firstNameRequired')).max(80),
+  lastName:  z.string().trim().min(1, t('super.admins.lastNameRequired')).max(80),
+  email:     z.string().trim().min(1, t('super.admins.emailRequired')).email(t('super.admins.emailInvalid')).max(120),
+  branchId:  z.string().uuid(t('super.admins.selectBranch')).min(1, t('super.admins.selectBranch')),
+  phone:     z.string().trim().regex(phoneRegex, t('super.admins.phoneFormat')).or(z.literal('')),
 });
 
-const adminEditSchema = z.object({
-  firstName: z.string().trim().min(1, 'Имя обязательно').max(80),
-  lastName:  z.string().trim().min(1, 'Фамилия обязательна').max(80),
-  branchId:  z.string().uuid('Выберите филиал').min(1, 'Выберите филиал'),
-  phone:     z.string().trim().regex(phoneRegex, 'Формат: +998901234567').or(z.literal('')),
-  monthlySalary: monthlySalaryField,
+const adminEditSchemaFor = (t) => z.object({
+  firstName: z.string().trim().min(1, t('super.admins.firstNameRequired')).max(80),
+  lastName:  z.string().trim().min(1, t('super.admins.lastNameRequired')).max(80),
+  branchId:  z.string().uuid(t('super.admins.selectBranch')).min(1, t('super.admins.selectBranch')),
+  phone:     z.string().trim().regex(phoneRegex, t('super.admins.phoneFormat')).or(z.literal('')),
+  monthlySalary: monthlySalaryFieldFor(t),
 });
 
-const employeeCreateSchema = adminCreateSchema.extend({
-  jobTitle: z.string().trim().min(2, 'Укажите должность').max(120),
+const employeeCreateSchemaFor = (t) => adminCreateSchemaFor(t).extend({
+  jobTitle: z.string().trim().min(2, t('super.admins.jobTitleRequired')).max(120),
 });
-const employeeEditSchema = adminEditSchema.extend({
-  jobTitle: z.string().trim().min(2, 'Укажите должность').max(120),
-});
-
-const methodistCreateSchema = z.object({
-  firstName: z.string().trim().min(1, 'Имя обязательно').max(80),
-  lastName:  z.string().trim().min(1, 'Фамилия обязательна').max(80),
-  email:     z.string().trim().min(1, 'Email обязателен').email('Неверный формат email').max(120),
-  phone:     z.string().trim().regex(phoneRegex, 'Формат: +998901234567').or(z.literal('')),
+const employeeEditSchemaFor = (t) => adminEditSchemaFor(t).extend({
+  jobTitle: z.string().trim().min(2, t('super.admins.jobTitleRequired')).max(120),
 });
 
-const methodistEditSchema = z.object({
-  firstName: z.string().trim().min(1, 'Имя обязательно').max(80),
-  lastName:  z.string().trim().min(1, 'Фамилия обязательна').max(80),
-  phone:     z.string().trim().regex(phoneRegex, 'Формат: +998901234567').or(z.literal('')),
-  monthlySalary: monthlySalaryField,
+const methodistCreateSchemaFor = (t) => z.object({
+  firstName: z.string().trim().min(1, t('super.admins.firstNameRequired')).max(80),
+  lastName:  z.string().trim().min(1, t('super.admins.lastNameRequired')).max(80),
+  email:     z.string().trim().min(1, t('super.admins.emailRequired')).email(t('super.admins.emailInvalid')).max(120),
+  phone:     z.string().trim().regex(phoneRegex, t('super.admins.phoneFormat')).or(z.literal('')),
+});
+
+const methodistEditSchemaFor = (t) => z.object({
+  firstName: z.string().trim().min(1, t('super.admins.firstNameRequired')).max(80),
+  lastName:  z.string().trim().min(1, t('super.admins.lastNameRequired')).max(80),
+  phone:     z.string().trim().regex(phoneRegex, t('super.admins.phoneFormat')).or(z.literal('')),
+  monthlySalary: monthlySalaryFieldFor(t),
 });
 
 // admin и branch_manager заводятся/правятся одинаково (firstName/lastName/email/branchId/phone) —
 // у обоих ровно один филиал, в отличие от methodist (вся организация, без филиала).
 const needsBranch = (role) => role === 'admin' || role === 'branch_manager' || role === 'employee' || role === 'mentor';
 
-function schemaFor(role, mode) {
-  if (role === 'employee') return mode === 'create' ? employeeCreateSchema : employeeEditSchema;
-  if (needsBranch(role)) return mode === 'create' ? adminCreateSchema : adminEditSchema;
-  return mode === 'create' ? methodistCreateSchema : methodistEditSchema;
+function schemaFor(role, mode, t) {
+  if (role === 'employee') return mode === 'create' ? employeeCreateSchemaFor(t) : employeeEditSchemaFor(t);
+  if (needsBranch(role)) return mode === 'create' ? adminCreateSchemaFor(t) : adminEditSchemaFor(t);
+  return mode === 'create' ? methodistCreateSchemaFor(t) : methodistEditSchemaFor(t);
 }
 
-const STATUS_META = {
-  active: { label: 'Активен', tone: 'success' },
-  frozen: { label: 'Заморожен', tone: 'danger' },
-  fired:  { label: 'Уволен', tone: 'danger' },
-};
+const statusMetaFor = (t) => ({
+  active: { label: t('super.admins.statusActive'), tone: 'success' },
+  frozen: { label: t('super.admins.statusFrozen'), tone: 'danger' },
+  fired:  { label: t('super.admins.statusFired'), tone: 'danger' },
+});
 
 // Тон роли — не success/warning/error: те заняты статусом и уровнями
 // дисциплины, брать их для роли было бы путаницей («красный» ментор ≠
 // проблема). primary/info/neutral свободны на этой странице.
-const ROLE_META = {
-  admin:            { label: 'Администратор', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  mentor:           { label: 'Ментор', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  methodist:        { label: 'Методист', cls: 'bg-violet-50 text-violet-700 border-violet-200' },
-  branch_manager:   { label: 'Branch Manager', cls: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
-  employee:         { label: 'Другой сотрудник', cls: 'bg-slate-50 text-slate-700 border-slate-200' },
-};
+const roleMetaFor = (t) => ({
+  admin:            { label: t('super.admins.roleAdmin'), cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  mentor:           { label: t('super.admins.roleMentor'), cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  methodist:        { label: t('super.admins.roleMethodist'), cls: 'bg-violet-50 text-violet-700 border-violet-200' },
+  branch_manager:   { label: t('super.admins.roleBranchManager'), cls: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+  employee:         { label: t('super.admins.roleEmployee'), cls: 'bg-slate-50 text-slate-700 border-slate-200' },
+});
 
 // винительный падеж для «Создать/Редактировать ...» — ROLE_META.label в именительном
-const ROLE_ACCUSATIVE = {
-  admin: 'администратора',
-  methodist: 'методиста',
-  branch_manager: 'branch-менеджера',
-  employee: 'сотрудника',
-  mentor: 'ментора',
-};
+const roleAccusativeFor = (t) => ({
+  admin: t('super.admins.roleAccAdmin'),
+  methodist: t('super.admins.roleAccMethodist'),
+  branch_manager: t('super.admins.roleAccBranchManager'),
+  employee: t('super.admins.roleAccEmployee'),
+  mentor: t('super.admins.roleAccMentor'),
+});
 
 function RoleBadge({ role }) {
+  const { t } = useTranslation();
+  const ROLE_META = roleMetaFor(t);
   const m = ROLE_META[role] ?? { label: role, cls: 'bg-base-200 text-base-content/70 border-base-300' };
   return <span className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold leading-none ${m.cls}`}>{m.label}</span>;
 }
 
 // ─── Показ сгенерированного пароля (один раз) ────────────────
 function TempPasswordModal({ email, password, onClose }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard?.writeText(password || '');
@@ -127,34 +131,34 @@ function TempPasswordModal({ email, password, onClose }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <Modal isOpen title="Пароль сгенерирован" onClose={onClose} className="max-w-lg border border-base-300" actions={<button className="btn btn-primary w-full" onClick={onClose}>Готово</button>}>
+    <Modal isOpen title={t('super.admins.passwordGeneratedTitle')} onClose={onClose} className="max-w-lg border border-base-300" actions={<button className="btn btn-primary w-full" onClick={onClose}>{t('super.admins.done')}</button>}>
       <div className="flex items-center gap-3 mb-4">
         <div className="w-12 h-12 rounded-full bg-success/20 grid place-items-center">
           <Check size={24} className="text-success" />
         </div>
         <div>
-          <h4 className="font-bold text-success">Готово!</h4>
-          <p className="text-sm text-base-content/60">Пароль сгенерирован автоматически</p>
+          <h4 className="font-bold text-success">{t('super.admins.doneExclaim')}</h4>
+          <p className="text-sm text-base-content/60">{t('super.admins.passwordAutoGenerated')}</p>
         </div>
       </div>
       <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
         <div className="flex items-start gap-2 mb-3">
           <AlertTriangle size={16} className="text-warning shrink-0 mt-0.5" />
-          <p className="text-sm font-semibold text-warning">Сохраните пароль — показывается только один раз!</p>
+          <p className="text-sm font-semibold text-warning">{t('super.admins.savePasswordWarning')}</p>
         </div>
         <div className="bg-base-100 rounded-lg p-3 space-y-2">
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-base-content/55 w-16 shrink-0">Логин:</span>
+            <span className="text-base-content/55 w-16 shrink-0">{t('super.admins.loginLabel')}</span>
             <span className="font-semibold">{email}</span>
           </div>
           <div className="border-t border-base-200 pt-2 mt-2">
-            <div className="text-xs text-base-content/50 mb-1.5 font-semibold uppercase tracking-wider">Пароль</div>
+            <div className="text-xs text-base-content/50 mb-1.5 font-semibold uppercase tracking-wider">{t('super.admins.passwordLabel')}</div>
             <div className="flex items-center gap-2">
               <code className="font-mono font-bold text-xl tracking-widest bg-base-200 px-3 py-2 rounded-lg flex-1 text-center">
                 {password}
               </code>
               <button className={`btn btn-sm ${copied ? 'btn-success' : 'btn-outline'} gap-1.5`} onClick={copy}>
-                {copied ? <><Check size={14} /> Скопировано</> : <><Copy size={14} /> Копировать</>}
+                {copied ? <><Check size={14} /> {t('super.admins.copied')}</> : <><Copy size={14} /> {t('super.admins.copy')}</>}
               </button>
             </div>
           </div>
@@ -168,8 +172,9 @@ function TempPasswordModal({ email, password, onClose }) {
 // Ментор — read-only для CEO (заводит и правит его Admin филиала),
 // поэтому у него в меню нечего показывать.
 function StaffActionsMenu({ row, resetBusy, onEdit, onResetPassword, onToggleFreeze }) {
+  const { t } = useTranslation();
   if (row.role === 'mentor') {
-    return <span className="text-xs text-base-content/30 px-2">только просмотр</span>;
+    return <span className="text-xs text-base-content/30 px-2">{t('super.admins.viewOnly')}</span>;
   }
   const frozen = row.status === 'frozen';
   return (
@@ -188,14 +193,14 @@ function StaffActionsMenu({ row, resetBusy, onEdit, onResetPassword, onToggleFre
           {!frozen && (
             <>
               <DropdownItem icon={Edit2} onClick={() => { onEdit(row); close(); }}>
-                Редактировать
+                {t('super.admins.edit')}
               </DropdownItem>
               <DropdownItem
                 icon={KeyRound}
                 disabled={resetBusy}
                 onClick={() => { onResetPassword(row); close(); }}
               >
-                {resetBusy ? 'Сброс пароля…' : 'Сбросить пароль'}
+                {resetBusy ? t('super.admins.resettingPassword') : t('super.admins.resetPassword')}
               </DropdownItem>
               <div className="border-t border-base-300 my-1" />
             </>
@@ -205,7 +210,7 @@ function StaffActionsMenu({ row, resetBusy, onEdit, onResetPassword, onToggleFre
             danger={!frozen}
             onClick={() => { onToggleFreeze(row); close(); }}
           >
-            {frozen ? 'Разморозить' : 'Заморозить'}
+            {frozen ? t('super.admins.unfreeze') : t('super.admins.freeze')}
           </DropdownItem>
         </>
       )}
@@ -215,6 +220,7 @@ function StaffActionsMenu({ row, resetBusy, onEdit, onResetPassword, onToggleFre
 
 // ─── Кнопка «Добавить» — выбор роли (ментора CEO не заводит) ────
 function AddStaffButton({ onPick, disabled }) {
+  const { t } = useTranslation();
   return (
     <Dropdown
       trigger={(toggle) => (
@@ -223,17 +229,17 @@ function AddStaffButton({ onPick, disabled }) {
           onClick={(e) => { e.stopPropagation(); toggle(); }}
           disabled={disabled}
         >
-          <Plus size={16} /> Добавить <ChevronDown size={14} />
+          <Plus size={16} /> {t('super.admins.add')} <ChevronDown size={14} />
         </button>
       )}
     >
       {(close) => (
         <>
-          <DropdownItem onClick={() => { onPick('admin'); close(); }}>Администратора</DropdownItem>
-          <DropdownItem onClick={() => { onPick('methodist'); close(); }}>Методиста</DropdownItem>
-          <DropdownItem onClick={() => { onPick('branch_manager'); close(); }}>Branch-менеджера</DropdownItem>
-          <DropdownItem onClick={() => { onPick('employee'); close(); }}>Другого сотрудника</DropdownItem>
-          <DropdownItem onClick={() => { onPick('mentor'); close(); }}>Ментора</DropdownItem>
+          <DropdownItem onClick={() => { onPick('admin'); close(); }}>{t('super.admins.pickAdmin')}</DropdownItem>
+          <DropdownItem onClick={() => { onPick('methodist'); close(); }}>{t('super.admins.pickMethodist')}</DropdownItem>
+          <DropdownItem onClick={() => { onPick('branch_manager'); close(); }}>{t('super.admins.pickBranchManager')}</DropdownItem>
+          <DropdownItem onClick={() => { onPick('employee'); close(); }}>{t('super.admins.pickEmployee')}</DropdownItem>
+          <DropdownItem onClick={() => { onPick('mentor'); close(); }}>{t('super.admins.pickMentor')}</DropdownItem>
         </>
       )}
     </Dropdown>
@@ -241,6 +247,9 @@ function AddStaffButton({ onPick, disabled }) {
 }
 
 export default function SuperAdmins() {
+  const { t } = useTranslation();
+  const ROLE_ACCUSATIVE = roleAccusativeFor(t);
+  const STATUS_META = statusMetaFor(t);
   const { token } = useAuth();
   const navigate = useNavigate();
   const invalidate = useInvalidate();
@@ -260,7 +269,7 @@ export default function SuperAdmins() {
   const [resetBusyId, setResetBusyId] = useState(null);
   const [tempPassword, setTempPassword] = useState(null); // { email, password }
 
-  const schema = formModal ? schemaFor(formModal.role, formModal.mode) : adminCreateSchema;
+  const schema = formModal ? schemaFor(formModal.role, formModal.mode, t) : adminCreateSchemaFor(t);
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
   const branches = branchesQ.data?.branches || [];
@@ -404,7 +413,7 @@ export default function SuperAdmins() {
       }
       setFormModal(null);
     } catch (e) {
-      setErr(e.status === 409 ? 'Email уже занят' : e.message);
+      setErr(e.status === 409 ? t('super.admins.emailTaken') : e.message);
     } finally {
       setBusy(false);
     }
@@ -461,7 +470,7 @@ export default function SuperAdmins() {
   return (
     <div className="space-y-6 pb-8">
       <div className="relative z-[60]">
-        <PageHeader title="Команда" subtitle="Сотрудники всех филиалов в одном месте">
+        <PageHeader title={t('super.admins.teamTitle')} subtitle={t('super.admins.teamSubtitle')}>
           <AddStaffButton onPick={openCreate} disabled={!branches.length} />
         </PageHeader>
       </div>
@@ -469,15 +478,15 @@ export default function SuperAdmins() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card className="p-4 flex flex-row items-center gap-3">
           <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary grid place-items-center"><Users size={19} /></span>
-          <div><div className="text-2xl font-extrabold tabular-nums">{allRows.length}</div><div className="text-xs text-base-content/50">Всего сотрудников</div></div>
+          <div><div className="text-2xl font-extrabold tabular-nums">{allRows.length}</div><div className="text-xs text-base-content/50">{t('super.admins.totalStaff')}</div></div>
         </Card>
         <Card className="p-4 flex flex-row items-center gap-3">
           <span className="w-10 h-10 rounded-xl bg-success/10 text-success grid place-items-center"><UserCheck size={19} /></span>
-          <div><div className="text-2xl font-extrabold tabular-nums">{allRows.filter((r) => r.status === 'active').length}</div><div className="text-xs text-base-content/50">Активные аккаунты</div></div>
+          <div><div className="text-2xl font-extrabold tabular-nums">{allRows.filter((r) => r.status === 'active').length}</div><div className="text-xs text-base-content/50">{t('super.admins.activeAccounts')}</div></div>
         </Card>
         <Card className="p-4 flex flex-row items-center gap-3">
           <span className="w-10 h-10 rounded-xl bg-info/10 text-info grid place-items-center"><Building2 size={19} /></span>
-          <div><div className="text-2xl font-extrabold tabular-nums">{activeBranches.length}</div><div className="text-xs text-base-content/50">Активные филиалы</div></div>
+          <div><div className="text-2xl font-extrabold tabular-nums">{activeBranches.length}</div><div className="text-xs text-base-content/50">{t('super.admins.activeBranches')}</div></div>
         </Card>
       </div>
 
@@ -487,19 +496,19 @@ export default function SuperAdmins() {
             <SearchInput
               value={q}
               onChange={setQ}
-              placeholder="Поиск по имени, email, филиалу…"
+              placeholder={t('super.admins.searchPlaceholder')}
               className="w-full lg:max-w-md bg-base-100"
             />
             <div className="flex items-center justify-between gap-3">
               <span className="text-xs text-base-content/45">
-                Показано {rows.length} из {allRows.length}
+                {t('super.admins.shownOfTotal', { shown: rows.length, total: allRows.length })}
               </span>
             </div>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1">
               {[
-                ['all', 'Все'], ['admin', 'Администраторы'], ['mentor', 'Менторы'],
-                ['methodist', 'Методисты'], ['branch_manager', 'Branch Managers'], ['employee', 'Другие'],
+                ['all', t('super.admins.filterAll')], ['admin', t('super.admins.filterAdmins')], ['mentor', t('super.admins.filterMentors')],
+                ['methodist', t('super.admins.filterMethodists')], ['branch_manager', t('super.admins.filterBranchManagers')], ['employee', t('super.admins.filterOther')],
               ].map(([value, label]) => (
                 <button key={value} onClick={() => setRoleFilter(value)} className={`btn btn-sm whitespace-nowrap ${roleFilter === value ? 'btn-primary' : 'btn-ghost bg-base-200/70'}`}>
                   {label}
@@ -514,15 +523,15 @@ export default function SuperAdmins() {
             <SkeletonTable rows={6} cols={7} />
           ) : rows.length === 0 ? (
             <p className="text-center opacity-50 py-8 text-sm">
-              {allRows.length === 0 ? 'Сотрудников пока нет' : 'По запросу ничего не найдено'}
+              {allRows.length === 0 ? t('super.admins.noStaffYet') : t('super.admins.nothingFoundQuery')}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="table table-pin-rows">
                 <thead>
                   <tr className="bg-base-200/60 text-[11px] uppercase tracking-wider text-base-content/55">
-                    <th>ФИО</th><th>Роль</th><th>Email</th><th>Телефон</th>
-                    <th>Филиал</th><th>Создан</th><th>Статус</th><th className="w-10"></th>
+                    <th>{t('super.admins.colFullName')}</th><th>{t('super.admins.colRole')}</th><th>{t('super.admins.colEmail')}</th><th>{t('super.admins.colPhone')}</th>
+                    <th>{t('super.admins.colBranch')}</th><th>{t('super.admins.colCreated')}</th><th>{t('super.admins.colStatus')}</th><th className="w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -570,8 +579,8 @@ export default function SuperAdmins() {
         onClose={() => setFormModal(null)}
         title={formModal ? (
           formModal.mode === 'create'
-            ? `Создать ${ROLE_ACCUSATIVE[formModal.role] ?? formModal.role}`
-            : `Редактировать ${ROLE_ACCUSATIVE[formModal.role] ?? formModal.role}`
+            ? t('super.admins.createRolePrefix', { role: ROLE_ACCUSATIVE[formModal.role] ?? formModal.role })
+            : t('super.admins.editRolePrefix', { role: ROLE_ACCUSATIVE[formModal.role] ?? formModal.role })
         ) : ''}
       >
         {formModal && (
@@ -580,38 +589,38 @@ export default function SuperAdmins() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <label className="form-control w-full">
-                  <span className="label-text mb-1">Имя *</span>
-                  <input {...register('firstName')} placeholder="Имя" className={`input input-bordered w-full ${errors.firstName ? 'input-error' : ''}`} />
+                  <span className="label-text mb-1">{t('super.admins.firstNameLabel')}</span>
+                  <input {...register('firstName')} placeholder={t('super.admins.firstNamePlaceholder')} className={`input input-bordered w-full ${errors.firstName ? 'input-error' : ''}`} />
                   {errors.firstName && <span className="text-xs text-error mt-1">{errors.firstName.message}</span>}
                 </label>
                 <label className="form-control w-full">
-                  <span className="label-text mb-1">Фамилия *</span>
-                  <input {...register('lastName')} placeholder="Фамилия" className={`input input-bordered w-full ${errors.lastName ? 'input-error' : ''}`} />
+                  <span className="label-text mb-1">{t('super.admins.lastNameLabel')}</span>
+                  <input {...register('lastName')} placeholder={t('super.admins.lastNamePlaceholder')} className={`input input-bordered w-full ${errors.lastName ? 'input-error' : ''}`} />
                   {errors.lastName && <span className="text-xs text-error mt-1">{errors.lastName.message}</span>}
                 </label>
               </div>
               {formModal.mode === 'create' ? (
                 <label className="form-control w-full">
-                  <span className="label-text mb-1">Email (Логин) *</span>
+                  <span className="label-text mb-1">{t('super.admins.emailLoginLabel')}</span>
                   <input {...register('email')} placeholder={`${formModal.role}@levelup.local`} className={`input input-bordered w-full ${errors.email ? 'input-error' : ''}`} />
                   {errors.email && <span className="text-xs text-error mt-1">{errors.email.message}</span>}
-                  <span className="text-xs text-base-content/45 mt-1">Пароль сгенерируется автоматически и покажется после создания</span>
+                  <span className="text-xs text-base-content/45 mt-1">{t('super.admins.passwordAutoGenHint')}</span>
                 </label>
               ) : needsBranch(formModal.role) ? (
                 <label className="form-control w-full">
-                  <span className="label-text mb-1">Email (Логин)</span>
+                  <span className="label-text mb-1">{t('super.admins.emailLoginLabelNoStar')}</span>
                   <input type="email" disabled value={formModal.email || ''} className="input input-bordered w-full bg-base-200 cursor-not-allowed opacity-70" />
                 </label>
               ) : (
                 <div className="text-xs text-base-content/50 bg-base-200 rounded-lg px-3 py-2">
-                  Email нельзя изменить после создания
+                  {t('super.admins.emailCannotChange')}
                 </div>
               )}
               {needsBranch(formModal.role) && (
                 <label className="form-control w-full">
-                  <span className="label-text mb-1">Назначить в филиал *</span>
+                  <span className="label-text mb-1">{t('super.admins.assignBranchLabel')}</span>
                   <select {...register('branchId')} className={`select select-bordered w-full ${errors.branchId ? 'select-error' : ''}`}>
-                    <option value="" disabled>Выберите филиал</option>
+                    <option value="" disabled>{t('super.admins.selectBranchOption')}</option>
                     {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                   {errors.branchId && <span className="text-xs text-error mt-1">{errors.branchId.message}</span>}
@@ -619,13 +628,13 @@ export default function SuperAdmins() {
               )}
               {formModal.role === 'employee' && (
                 <label className="form-control w-full">
-                  <span className="label-text mb-1">Должность *</span>
-                  <input {...register('jobTitle')} placeholder="Например: уборщица, охранник, завхоз" className={`input input-bordered w-full ${errors.jobTitle ? 'input-error' : ''}`} />
+                  <span className="label-text mb-1">{t('super.admins.jobTitleLabel')}</span>
+                  <input {...register('jobTitle')} placeholder={t('super.admins.jobTitlePlaceholder')} className={`input input-bordered w-full ${errors.jobTitle ? 'input-error' : ''}`} />
                   {errors.jobTitle && <span className="text-xs text-error mt-1">{errors.jobTitle.message}</span>}
                 </label>
               )}
               <label className="form-control w-full">
-                <span className="label-text mb-1">Телефон</span>
+                <span className="label-text mb-1">{t('super.admins.phoneLabel')}</span>
                 <Controller
                   name="phone"
                   control={control}
@@ -642,25 +651,25 @@ export default function SuperAdmins() {
               </label>
               {formModal.mode === 'edit' && formModal.role !== 'branch_manager' && (
                 <label className="form-control w-full">
-                  <span className="label-text mb-1">Оклад, UZS</span>
+                  <span className="label-text mb-1">{t('super.admins.salaryLabel')}</span>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     {...register('monthlySalary')}
-                    placeholder="Не указан"
+                    placeholder={t('super.admins.salaryPlaceholder')}
                     className={`input input-bordered w-full ${errors.monthlySalary ? 'input-error' : ''}`}
                   />
                   {errors.monthlySalary
                     ? <span className="text-xs text-error mt-1">{errors.monthlySalary.message}</span>
-                    : <span className="text-xs text-base-content/45 mt-1">Метаданные карточки — не участвует в автоматических расчётах</span>}
+                    : <span className="text-xs text-base-content/45 mt-1">{t('super.admins.salaryHint')}</span>}
                 </label>
               )}
               <div className="modal-action">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFormModal(null)} disabled={busy}>Отмена</button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFormModal(null)} disabled={busy}>{t('super.admins.cancel')}</button>
                 <button type="submit" className="btn btn-primary btn-sm" disabled={busy}>
                   {busy && <span className="loading loading-spinner loading-sm" />}
-                  {formModal.mode === 'create' ? 'Создать' : 'Сохранить'}
+                  {formModal.mode === 'create' ? t('super.admins.create') : t('super.admins.save')}
                 </button>
               </div>
             </form>

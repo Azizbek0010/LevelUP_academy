@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import i18n from '../i18n.js';
 
 // После каждого деплоя старые вкладки ссылаются на JS-чанки с прежним
 // content-hash'ем, которых уже нет — Vercel отдаёт на них index.html (200,
@@ -32,9 +33,9 @@ export default class ErrorBoundary extends Component {
           <div className="card bg-base-100 max-w-md w-full">
             <div className="card-body text-center">
               <div className="text-5xl mb-4">⚠️</div>
-              <h2 className="card-title justify-center text-lg">Что-то пошло не так</h2>
+              <h2 className="card-title justify-center text-lg">{i18n.t('components.errorBoundary.title')}</h2>
               <p className="text-sm text-base-content/60 mt-1">
-                {this.state.error?.message || 'Произошла непредвиденная ошибка'}
+                {this.state.error?.message || i18n.t('components.errorBoundary.unexpectedError')}
               </p>
               <div className="card-actions justify-center mt-4">
                 <button
@@ -44,7 +45,7 @@ export default class ErrorBoundary extends Component {
                     window.location.reload();
                   }}
                 >
-                  Обновить страницу
+                  {i18n.t('components.errorBoundary.reload')}
                 </button>
               </div>
             </div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Archive, ArchiveRestore, Trash2, Users, Layers, Banknote } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
@@ -10,10 +11,11 @@ import { SkeletonTable } from '../../components/Skeleton.jsx';
 import { fmt, money } from '../../format.js';
 import { Card, Metric, SearchInput, FilterPills, ConfirmDialog, Avatar } from './_ui.jsx';
 
-const DAY_LABEL = {
-  mon: 'Пн', tue: 'Вт', wed: 'Ср',
-  thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс',
-};
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const dayLabelsFor = (locale) => Object.fromEntries(
+  DAYS.map((key, i) => [key, new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: 'short' })]),
+);
 
 function useSuperGroups() {
   const { token, logout } = useAuth();
@@ -29,6 +31,9 @@ function useSuperGroups() {
 }
 
 export default function SuperGroups() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const DAY_LABEL = dayLabelsFor(locale);
   const { token } = useAuth();
   const qc = useQueryClient();
 
@@ -107,14 +112,14 @@ export default function SuperGroups() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Группы" subtitle="Все учебные группы организации" />
+      <PageHeader title={t('super.groupsList.title')} subtitle={t('super.groupsList.subtitle')} />
 
       {/* Stat pills */}
       <div className="flex flex-wrap gap-3">
-        <Metric size="sm" Icon={Layers} tone="primary" label="Всего" value={allGroups.length} />
-        <Metric size="sm" Icon={Layers} tone="success" label="Активных" value={activeCount} />
-        <Metric size="sm" Icon={Users} tone="info" label="Студентов" value={totalStudents} />
-        <Metric size="sm" Icon={Banknote} tone="warning" label="Сумма абонементов/мес" value={money(totalRevenue)} />
+        <Metric size="sm" Icon={Layers} tone="primary" label={t('super.groupsList.total')} value={allGroups.length} />
+        <Metric size="sm" Icon={Layers} tone="success" label={t('super.groupsList.activeCount')} value={activeCount} />
+        <Metric size="sm" Icon={Users} tone="info" label={t('super.groupsList.studentsCount')} value={totalStudents} />
+        <Metric size="sm" Icon={Banknote} tone="warning" label={t('super.groupsList.subscriptionSum')} value={money(totalRevenue)} />
       </div>
 
       {/* Filters */}
@@ -122,14 +127,14 @@ export default function SuperGroups() {
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Поиск по названию..."
+          placeholder={t('super.groupsList.searchPlaceholder')}
           className="flex-1 max-w-sm"
         />
         <FilterPills
           options={[
-            { key: 'active', label: 'Активные' },
-            { key: 'archived', label: 'Архив' },
-            { key: 'all', label: 'Все' },
+            { key: 'active', label: t('super.groupsList.filterActive') },
+            { key: 'archived', label: t('super.groupsList.filterArchived') },
+            { key: 'all', label: t('super.groupsList.filterAll') },
           ]}
           value={filter}
           onChange={setFilter}
@@ -145,7 +150,7 @@ export default function SuperGroups() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-base-content/40 text-sm">
-          Группы не найдены
+          {t('super.groupsList.noneFound')}
         </div>
       ) : (
         <Card>
@@ -153,13 +158,13 @@ export default function SuperGroups() {
             <table className="table table-sm">
               <thead>
                 <tr>
-                  <th>Группа</th>
-                  <th>Ментор</th>
-                  <th>Расписание</th>
-                  <th className="text-right">Студенты</th>
-                  <th className="text-right">Абонемент</th>
-                  <th>Статус</th>
-                  <th className="text-right">Действия</th>
+                  <th>{t('super.groupsList.colGroup')}</th>
+                  <th>{t('super.groupsList.colMentor')}</th>
+                  <th>{t('super.groupsList.colSchedule')}</th>
+                  <th className="text-right">{t('super.groupsList.colStudents')}</th>
+                  <th className="text-right">{t('super.groupsList.colSubscription')}</th>
+                  <th>{t('super.groupsList.colStatus')}</th>
+                  <th className="text-right">{t('super.groupsList.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -191,8 +196,8 @@ export default function SuperGroups() {
                       <td className="text-right text-sm tabular-nums">{formatPrice(g)}</td>
                       <td>
                         {archived
-                          ? <span className="badge badge-ghost badge-sm">Архив</span>
-                          : <span className="badge badge-success badge-sm">Активна</span>
+                          ? <span className="badge badge-ghost badge-sm">{t('super.groupsList.archived')}</span>
+                          : <span className="badge badge-success badge-sm">{t('super.groupsList.active')}</span>
                         }
                       </td>
                       <td className="text-right">
@@ -200,7 +205,7 @@ export default function SuperGroups() {
                           {archived ? (
                             <button
                               className="btn btn-ghost btn-xs text-success"
-                              title="Разархивировать"
+                              title={t('super.groupsList.unarchive')}
                               onClick={() => unarchiveMutation.mutate(g.id)}
                               disabled={unarchiveMutation.isPending}
                             >
@@ -209,7 +214,7 @@ export default function SuperGroups() {
                           ) : (
                             <button
                               className="btn btn-ghost btn-xs text-warning"
-                              title="Архивировать"
+                              title={t('super.groupsList.archive')}
                               onClick={() => archiveMutation.mutate(g.id)}
                               disabled={archiveMutation.isPending}
                             >
@@ -218,7 +223,7 @@ export default function SuperGroups() {
                           )}
                           <button
                             className="btn btn-ghost btn-xs text-error"
-                            title="Удалить"
+                            title={t('super.groupsList.delete')}
                             onClick={() => setDeleteTarget(g)}
                           >
                             <Trash2 size={14} />
@@ -238,8 +243,8 @@ export default function SuperGroups() {
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        title="Удалить группу?"
-        text={<>Вы уверены, что хотите удалить группу <strong>{deleteTarget?.name}</strong>? Это действие необратимо.</>}
+        title={t('super.groupsList.deleteGroupTitle')}
+        text={<>{t('super.groupsList.deleteConfirmPrefix')} <strong>{deleteTarget?.name}</strong>{t('super.groupsList.deleteConfirmSuffix')}</>}
         onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
         pending={deleteMutation.isPending}
         error={deleteMutation.error}

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import { useInvalidate } from '../../queries.js';
@@ -34,13 +35,13 @@ import PhoneInput from '../../components/PhoneInput.jsx';
  */
 export const round6 = (n) => (n == null || Number.isNaN(Number(n)) ? null : Math.round(Number(n) * 1e6) / 1e6);
 
-const branchSchema = z.object({
-  name:    z.string().trim().min(2, 'Минимум 2 символа').max(80, 'Макс. 80 символов'),
-  address: z.string().trim().max(160, 'Макс. 160 символов').or(z.literal('')),
+const branchSchemaFor = (t) => z.object({
+  name:    z.string().trim().min(2, t('super.branchForm.nameMin')).max(80, t('super.branchForm.nameMax')),
+  address: z.string().trim().max(160, t('super.branchForm.addressMax')).or(z.literal('')),
   phone:   z.string().trim()
     .refine(
       (val) => val === '' || /^\+998\d{9}$/.test(val),
-      'Формат телефона должен быть: +998XXXXXXXXX (9 цифр)',
+      t('super.branchForm.phoneFormat'),
     )
     .or(z.literal('')),
 });
@@ -48,6 +49,8 @@ const branchSchema = z.object({
 const EMPTY = { name: '', address: '', phone: '' };
 
 export default function BranchFormModal({ open, mode = 'create', branch = null, onClose, onSaved }) {
+  const { t } = useTranslation();
+  const branchSchema = useMemo(() => branchSchemaFor(t), [t]);
   const { token } = useAuth();
   const invalidate = useInvalidate();
 
@@ -121,11 +124,11 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
 
     // одна координата без второй — почти всегда недописанный ввод, а не намерение
     if (halfPoint) {
-      setErr('Укажите обе координаты: широту и долготу');
+      setErr(t('super.branchForm.bothCoordsRequired'));
       return;
     }
     if (mode === 'create' && mapAvailable && !hasPoint) {
-      setErr('Отметьте филиал на карте — без точки его не найдут ни родители, ни курьер');
+      setErr(t('super.branchForm.markOnMapRequired'));
       return;
     }
 
@@ -184,17 +187,17 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
         {confirmArchive ? (
           <>
             <h3 className="font-bold text-base">
-              {branch.isArchived ? 'Вернуть из архива?' : 'Архивировать филиал?'}
+              {branch.isArchived ? t('super.branchForm.restoreTitle') : t('super.branchForm.archiveTitle')}
             </h3>
             <p className="text-sm text-base-content/60 mt-3">
               {branch.isArchived
-                ? `Филиал «${branch.name}» снова появится в списке активных.`
-                : `Филиал «${branch.name}» скроется из активного списка. Данные останутся на месте, вернуть его можно в любой момент.`}
+                ? t('super.branchForm.restoreHint', { name: branch.name })
+                : t('super.branchForm.archiveHint', { name: branch.name })}
             </p>
             {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
             <div className="modal-action">
               <button type="button" className="btn btn-ghost btn-sm rounded-xl" onClick={() => setConfirmArchive(false)} disabled={busy}>
-                Отмена
+                {t('super.branchForm.cancel')}
               </button>
               <button
                 type="button"
@@ -203,14 +206,14 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
                 disabled={busy}
               >
                 {busy && <span className="loading loading-spinner loading-sm" />}
-                {branch.isArchived ? 'Вернуть' : 'Архивировать'}
+                {branch.isArchived ? t('super.branchForm.restore') : t('super.branchForm.archive')}
               </button>
             </div>
           </>
         ) : (
           <>
             <h3 className="font-bold text-base">
-              {mode === 'create' ? 'Новый филиал' : `Настройки — ${branch?.name ?? 'филиал'}`}
+              {mode === 'create' ? t('super.branchForm.newBranchTitle') : t('super.branchForm.settingsTitle', { name: branch?.name ?? t('super.branchForm.branchFallback') })}
             </h3>
             {err && <div className="alert alert-error text-sm py-2 mt-3"><span>{err}</span></div>}
 
@@ -221,28 +224,28 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
               <div className="grid md:grid-cols-[300px_minmax(0,1fr)] gap-x-5 gap-y-3">
                 <div className="space-y-3">
                   <label className="form-control w-full">
-                    <span className="text-xs text-base-content/60 mb-1">Название *</span>
+                    <span className="text-xs text-base-content/60 mb-1">{t('super.branchForm.nameLabel')}</span>
                     <input
                       {...register('name')}
                       autoFocus
-                      placeholder="Чиланзар"
+                      placeholder={t('super.branchForm.namePlaceholder')}
                       className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.name ? 'input-error' : ''}`}
                     />
                     {errors.name && <span className="text-xs text-error mt-1">{errors.name.message}</span>}
                   </label>
 
                   <label className="form-control w-full">
-                    <span className="text-xs text-base-content/60 mb-1">Адрес</span>
+                    <span className="text-xs text-base-content/60 mb-1">{t('super.branchForm.addressLabel')}</span>
                     <input
                       {...register('address')}
-                      placeholder="Улица, дом, ориентир"
+                      placeholder={t('super.branchForm.addressPlaceholder')}
                       className={`input input-bordered input-sm w-full rounded-lg text-base sm:text-sm ${errors.address ? 'input-error' : ''}`}
                     />
                     {errors.address && <span className="text-xs text-error mt-1">{errors.address.message}</span>}
                   </label>
 
                   <label className="form-control w-full">
-                    <span className="text-xs text-base-content/60 mb-1">Телефон</span>
+                    <span className="text-xs text-base-content/60 mb-1">{t('super.branchForm.phoneLabel')}</span>
                     <Controller
                       name="phone"
                       control={control}
@@ -267,9 +270,9 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
                       step="any"
                       min="-90"
                       max="90"
-                      aria-label="Широта"
+                      aria-label={t('super.branchForm.latitudeAria')}
                       className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
-                      placeholder="широта"
+                      placeholder={t('super.branchForm.latitudePlaceholder')}
                       value={location?.lat ?? ''}
                       onChange={(e) => {
                         const lat = e.target.value === '' ? null : round6(e.target.value);
@@ -283,9 +286,9 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
                       step="any"
                       min="-180"
                       max="180"
-                      aria-label="Долгота"
+                      aria-label={t('super.branchForm.longitudeAria')}
                       className="input input-bordered input-sm rounded-lg text-base sm:text-sm"
-                      placeholder="долгота"
+                      placeholder={t('super.branchForm.longitudePlaceholder')}
                       value={location?.lng ?? ''}
                       onChange={(e) => {
                         const lng = e.target.value === '' ? null : round6(e.target.value);
@@ -300,7 +303,7 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
                 <div className="space-y-2">
                   <div className="flex items-baseline justify-between">
                     <span className="text-xs text-base-content/60">
-                      На карте{mapAvailable && mode === 'create' && ' *'}
+                      {t('super.branchForm.onMapLabel')}{mapAvailable && mode === 'create' && ' *'}
                     </span>
                     {location ? (
                       <button
@@ -308,12 +311,12 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
                         className="text-xs text-base-content/45 hover:text-error"
                         onClick={() => setLocation(null)}
                       >
-                        сбросить
+                        {t('super.branchForm.reset')}
                       </button>
                     ) : (
                       /* Подсказка строкой у заголовка, а не плашкой поверх карты:
                          плашка закрывала часть карты и спорила с её же контролами. */
-                      <span className="text-xs text-base-content/40">найдите адрес или кликните по карте</span>
+                      <span className="text-xs text-base-content/40">{t('super.branchForm.findAddressHint')}</span>
                     )}
                   </div>
 
@@ -335,15 +338,15 @@ export default function BranchFormModal({ open, mode = 'create', branch = null, 
                     onClick={() => { setErr(''); setConfirmArchive(true); }}
                     disabled={busy}
                   >
-                    {branch?.isArchived ? 'вернуть из архива' : 'в архив'}
+                    {branch?.isArchived ? t('super.branchForm.restoreFromArchive') : t('super.branchForm.toArchive')}
                   </button>
                 )}
                 <button type="button" className="btn btn-ghost btn-sm rounded-xl" onClick={onClose} disabled={busy}>
-                  Отмена
+                  {t('super.branchForm.cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary btn-sm rounded-xl shadow-sm shadow-primary/10" disabled={busy}>
                   {busy && <span className="loading loading-spinner loading-sm" />}
-                  {mode === 'create' ? 'Создать' : 'Сохранить'}
+                  {mode === 'create' ? t('super.branchForm.create') : t('super.branchForm.save')}
                 </button>
               </div>
             </form>

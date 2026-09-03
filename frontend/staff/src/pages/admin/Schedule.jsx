@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DndContext, useDraggable, useDroppable, DragOverlay } from '@dnd-kit/core';
 import { Plus, Trash2, Pencil, DoorOpen, Users2, Search, Maximize2, ListFilter } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
@@ -7,14 +8,19 @@ import { api } from '../../api.js';
 import PageHeader from '../../components/PageHeader.jsx';
 import { EmptyState, RowSkeleton } from '../mentor/_ui.jsx';
 
-const DAYS = [
-  { key: 'mon', label: 'Пн' }, { key: 'tue', label: 'Вт' }, { key: 'wed', label: 'Ср' },
-  { key: 'thu', label: 'Чт' }, { key: 'fri', label: 'Пт' }, { key: 'sat', label: 'Сб' }, { key: 'sun', label: 'Вс' },
-];
-const DAY_MODES = [
-  { key: 'odd', label: 'Toq kunlar', days: ['mon', 'wed', 'fri'] },
-  { key: 'even', label: 'Juft kunlar', days: ['tue', 'thu', 'sat'] },
-  { key: 'other', label: 'Boshqa', days: ['sun'] },
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+/* Опорная неделя: 2024-01-01 — понедельник. Названия дней получаем через
+   Intl, а не хардкодим по языкам — так формат остаётся согласованным с
+   остальным приложением при добавлении нового языка. */
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const daysFor = (locale) => DAY_KEYS.map((key, i) => ({
+  key,
+  label: new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: 'short' }),
+}));
+const dayModesFor = (t) => [
+  { key: 'odd', label: t('admin.schedule.oddDays'), days: ['mon', 'wed', 'fri'] },
+  { key: 'even', label: t('admin.schedule.evenDays'), days: ['tue', 'thu', 'sat'] },
+  { key: 'other', label: t('admin.schedule.otherDays'), days: ['sun'] },
 ];
 const NO_ROOM = '__none__';
 const TONES = [
@@ -39,6 +45,7 @@ function shortDate(value) {
 }
 
 function GroupBlock({ group, onEdit }) {
+  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: group.id,
     data: { groupId: group.id },
@@ -69,7 +76,7 @@ function GroupBlock({ group, onEdit }) {
       </div>
       <div className="pl-1 truncate opacity-70">{group.mentor?.name || '—'}</div>
       <div className="pl-1 mt-1 pt-1 border-t flex items-center justify-between gap-2 text-[9px] opacity-65" style={{ borderColor: `${accent}25` }}>
-        <span className="truncate">{group.subject || 'Другие'}</span>
+        <span className="truncate">{group.subject || t('admin.schedule.otherSubject')}</span>
         <span className="shrink-0">{shortDate(group.createdAt)}</span>
       </div>
     </div>
@@ -98,6 +105,9 @@ function RoomRow({ room, groups, timeSlots, onEdit, showEmpty }) {
 }
 
 function EditTimeModal({ group, onClose, onSaved }) {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const DAYS = daysFor(locale);
   const { token } = useAuth();
   const [days, setDays] = useState(group.schedule.map((s) => s.day));
   const [startTime, setStartTime] = useState(group.schedule[0]?.start || '14:00');
@@ -105,25 +115,25 @@ function EditTimeModal({ group, onClose, onSaved }) {
   const [err, setErr] = useState('');
   const toggleDay = (key) => setDays((old) => old.includes(key) ? old.filter((day) => day !== key) : [...old, key]);
   const save = async () => {
-    if (!days.length) { setErr('Выберите хотя бы один день'); return; }
+    if (!days.length) { setErr(t('admin.schedule.selectDay')); return; }
     setBusy(true); setErr('');
     try { await api.adminUpdateGroup(token, group.id, { days, startTime }); onSaved(); }
-    catch (e) { setErr(e.message || 'Не удалось сохранить'); }
+    catch (e) { setErr(e.message || t('admin.schedule.saveFailed')); }
     finally { setBusy(false); }
   };
   return (
     <dialog className="modal modal-open">
       <div className="modal-box card bg-base-100 border border-base-300 max-w-sm">
         <h3 className="font-bold text-lg mb-1">{group.name}</h3>
-        <p className="text-[12px] text-base-content/45 mb-4">Дни и время начала занятий</p>
+        <p className="text-[12px] text-base-content/45 mb-4">{t('admin.schedule.timeSubtitle')}</p>
         {err && <div className="alert alert-error py-2 text-sm mb-3">{err}</div>}
         <div className="flex flex-wrap gap-1.5 mb-3">
           {DAYS.map((day) => <button key={day.key} type="button" className={`btn btn-xs ${days.includes(day.key) ? 'btn-primary' : 'btn-ghost border border-base-300'}`} onClick={() => toggleDay(day.key)}>{day.label}</button>)}
         </div>
         <input type="time" className="input input-bordered w-full" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
         <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>Отмена</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy}>{busy && <span className="loading loading-spinner loading-xs" />} Сохранить</button>
+          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>{t('admin.schedule.cancel')}</button>
+          <button className="btn btn-primary" onClick={save} disabled={busy}>{busy && <span className="loading loading-spinner loading-xs" />} {t('admin.schedule.save')}</button>
         </div>
       </div>
       <div className="modal-backdrop" onClick={onClose} />
@@ -132,6 +142,8 @@ function EditTimeModal({ group, onClose, onSaved }) {
 }
 
 export default function AdminSchedule() {
+  const { t } = useTranslation();
+  const DAY_MODES = dayModesFor(t);
   const { token } = useAuth();
   const invalidate = useInvalidate();
   const scheduleQ = useAdminSchedule();
@@ -173,7 +185,7 @@ export default function AdminSchedule() {
     const group = groups.find((item) => item.id === groupId);
     if (!group || group.roomId === targetRoomId) return;
     try { await api.adminUpdateGroup(token, groupId, { roomId: targetRoomId }); refreshAll(); }
-    catch (e) { setErr(e.message || 'Не удалось перенести группу'); }
+    catch (e) { setErr(e.message || t('admin.schedule.moveGroupFailed')); }
   };
   const createRoom = async () => {
     if (!newRoomName.trim()) return;
@@ -181,13 +193,13 @@ export default function AdminSchedule() {
     try {
       await api.adminCreateRoom(token, { name: newRoomName.trim(), capacity: newRoomCapacity ? Number(newRoomCapacity) : undefined });
       setNewRoomOpen(false); setNewRoomName(''); setNewRoomCapacity(''); refreshAll();
-    } catch (e) { setErr(e.message || 'Не удалось создать кабинет'); }
+    } catch (e) { setErr(e.message || t('admin.schedule.createRoomFailed')); }
     finally { setBusy(false); }
   };
   const deleteRoom = async (room) => {
-    if (!confirm(`Удалить кабинет «${room.name}»?`)) return;
+    if (!confirm(t('admin.schedule.confirmDeleteRoom', { name: room.name }))) return;
     try { await api.adminDeleteRoom(token, room.id); refreshAll(); }
-    catch (e) { alert(e.message || 'Не удалось удалить кабинет'); }
+    catch (e) { alert(e.message || t('admin.schedule.deleteRoomFailed')); }
   };
   const toggleFullscreen = async () => {
     try {
@@ -200,12 +212,12 @@ export default function AdminSchedule() {
 
   return (
     <div className="space-y-4 pb-8">
-      <PageHeader title="Расписание" subtitle="Кабинеты по строкам, время занятий по столбцам.">
-        <button className="btn btn-primary btn-sm gap-1.5" onClick={() => setNewRoomOpen(true)}><Plus size={16} /> Кабинет</button>
+      <PageHeader title={t('admin.schedule.title')} subtitle={t('admin.schedule.subtitle')}>
+        <button className="btn btn-primary btn-sm gap-1.5" onClick={() => setNewRoomOpen(true)}><Plus size={16} /> {t('admin.schedule.room')}</button>
       </PageHeader>
       {err && <div className="alert alert-error py-2 text-sm">{err}</div>}
       {loading ? <RowSkeleton count={5} height="h-16" /> : rooms.length === 0 && groups.length === 0 ? (
-        <EmptyState icon={DoorOpen} title="Пока нет кабинетов и групп" hint="Создайте кабинет — группы появятся на временной сетке" />
+        <EmptyState icon={DoorOpen} title={t('admin.schedule.emptyTitle')} hint={t('admin.schedule.emptyHint')} />
       ) : (
         <DndContext onDragStart={({ active }) => setActiveGroupId(active.data.current?.groupId ?? null)} onDragEnd={handleDragEnd}>
           <div ref={boardRef} className="card bg-base-100 border border-base-300 overflow-hidden min-h-[420px]">
@@ -216,16 +228,16 @@ export default function AdminSchedule() {
               <div className="flex items-center gap-2 ml-auto">
                 <label className="relative hidden sm:block">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/35" />
-                  <input className="input input-bordered input-sm pl-9 w-52" placeholder="Guruh yoki mentor" value={search} onChange={(e) => setSearch(e.target.value)} />
+                  <input className="input input-bordered input-sm pl-9 w-52" placeholder={t('admin.schedule.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
                 </label>
-                <button type="button" className={`btn btn-sm gap-1.5 ${showEmpty ? 'btn-primary' : 'btn-ghost border border-base-300'}`} onClick={() => setShowEmpty((value) => !value)}><ListFilter size={14} /> Bo'sh slotlar</button>
+                <button type="button" className={`btn btn-sm gap-1.5 ${showEmpty ? 'btn-primary' : 'btn-ghost border border-base-300'}`} onClick={() => setShowEmpty((value) => !value)}><ListFilter size={14} /> {t('admin.schedule.emptySlots')}</button>
                 <button type="button" className="btn btn-sm btn-square btn-ghost border border-base-300" onClick={toggleFullscreen}><Maximize2 size={15} /></button>
               </div>
             </div>
             <div className="overflow-auto flex-1">
               <div style={{ minWidth: `${68 + shownTimes.length * 128}px` }}>
                 <div className="grid border-b border-base-300 bg-base-100 sticky top-0 z-20" style={{ gridTemplateColumns: columns }}>
-                  <div className="p-2 text-[10px] font-bold text-base-content/45 uppercase border-r border-base-300 sticky left-0 bg-base-100">Slotlar</div>
+                  <div className="p-2 text-[10px] font-bold text-base-content/45 uppercase border-r border-base-300 sticky left-0 bg-base-100">{t('admin.schedule.slots')}</div>
                   {shownTimes.map((time) => <div key={time} className="p-2 text-[11px] font-extrabold text-base-content/50 text-center border-r border-base-300 last:border-r-0">{time}</div>)}
                 </div>
                 {rooms.map((room) => (
@@ -238,7 +250,7 @@ export default function AdminSchedule() {
               </div>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 px-3 py-2 border-t border-base-300 text-[10px] text-base-content/50">
-              {[...new Set(visibleGroups.map((group) => group.subject || 'Другие'))].map((subject) => {
+              {[...new Set(visibleGroups.map((group) => group.subject || t('admin.schedule.otherSubject')))].map((subject) => {
                 const [, accent] = toneFor(subject); return <span key={subject} className="inline-flex items-center gap-1"><i className="w-2 h-2 rounded-full" style={{ background: accent }} />{subject}</span>;
               })}
             </div>
@@ -249,12 +261,12 @@ export default function AdminSchedule() {
 
       {newRoomOpen && <dialog className="modal modal-open">
         <div className="modal-box card bg-base-100 border border-base-300 max-w-sm">
-          <h3 className="font-bold text-lg mb-4">Новый кабинет</h3>
+          <h3 className="font-bold text-lg mb-4">{t('admin.schedule.newRoom')}</h3>
           <div className="space-y-3">
-            <input className="input input-bordered w-full" placeholder="Название (например A1)" value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} />
-            <input type="number" min="1" className="input input-bordered w-full" placeholder="Вместимость" value={newRoomCapacity} onChange={(e) => setNewRoomCapacity(e.target.value)} />
+            <input className="input input-bordered w-full" placeholder={t('admin.schedule.roomNamePlaceholder')} value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} />
+            <input type="number" min="1" className="input input-bordered w-full" placeholder={t('admin.schedule.capacityPlaceholder')} value={newRoomCapacity} onChange={(e) => setNewRoomCapacity(e.target.value)} />
           </div>
-          <div className="modal-action"><button className="btn btn-ghost" onClick={() => setNewRoomOpen(false)} disabled={busy}>Отмена</button><button className="btn btn-primary" onClick={createRoom} disabled={busy || !newRoomName.trim()}>{busy && <span className="loading loading-spinner loading-xs" />} Создать</button></div>
+          <div className="modal-action"><button className="btn btn-ghost" onClick={() => setNewRoomOpen(false)} disabled={busy}>{t('admin.schedule.cancel')}</button><button className="btn btn-primary" onClick={createRoom} disabled={busy || !newRoomName.trim()}>{busy && <span className="loading loading-spinner loading-xs" />} {t('admin.schedule.create')}</button></div>
         </div><div className="modal-backdrop" onClick={() => setNewRoomOpen(false)} />
       </dialog>}
       {editGroup && <EditTimeModal group={editGroup} onClose={() => setEditGroup(null)} onSaved={() => { setEditGroup(null); refreshAll(); }} />}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tag, Users2, Layers, Archive, ArchiveRestore } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { useSuperTrainingTypes, useInvalidate } from '../../queries.js';
@@ -8,6 +9,8 @@ import { SkeletonTable } from '../../components/Skeleton.jsx';
 import TrainingTypeIcon from '../../components/TrainingTypeIcon.jsx';
 import { Panel } from './_ui.jsx';
 
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+
 /**
  * Методику заводит методист (frontend/staff/src/pages/methodist/TrainingTypes.jsx) —
  * только с названием, без цены. Здесь CEO один раз назначает ей цену абонемента
@@ -16,6 +19,8 @@ import { Panel } from './_ui.jsx';
  * фильтр price IS NOT NULL). Karis, 08.08.2026.
  */
 export default function SuperTrainingTypes() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
   const { token } = useAuth();
   const { data, isLoading } = useSuperTrainingTypes();
   const invalidate = useInvalidate();
@@ -35,13 +40,13 @@ export default function SuperTrainingTypes() {
   };
 
   const save = async (id) => {
-    if (!price || Number(price) < 0) { setErr('Укажите цену'); return; }
+    if (!price || Number(price) < 0) { setErr(t('super.trainingTypes.specifyPrice')); return; }
     setBusy(true); setErr('');
     try {
       await api.superSetTrainingTypePrice(token, id, Number(price), maxStudents ? Number(maxStudents) : undefined);
       invalidate('super-training-types');
       setEditingId(null);
-    } catch (e) { setErr(e.message || 'Ошибка'); }
+    } catch (e) { setErr(e.message || t('super.trainingTypes.genericError')); }
     finally { setBusy(false); }
   };
 
@@ -52,7 +57,7 @@ export default function SuperTrainingTypes() {
     try {
       await api.superSetTrainingTypeArchived(token, tt.id, !tt.isArchived);
       invalidate('super-training-types');
-    } catch (e) { setErr(e.message || 'Ошибка'); }
+    } catch (e) { setErr(e.message || t('super.trainingTypes.genericError')); }
     finally { setBusy(false); }
   };
 
@@ -60,14 +65,14 @@ export default function SuperTrainingTypes() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Методики" subtitle="Цену и лимит группы назначает только CEO — методист заводит только название" />
+      <PageHeader title={t('super.trainingTypes.title')} subtitle={t('super.trainingTypes.subtitle')} />
 
       {err && <div className="alert alert-error text-sm py-2">{err}</div>}
 
-      <Panel title="Все методики" icon={Tag}>
+      <Panel title={t('super.trainingTypes.allTrainingTypes')} icon={Tag}>
         {types.length === 0 ? (
           <p className="text-sm text-base-content/45 text-center py-8">
-            Пока ни один методист не создал методику.
+            {t('super.trainingTypes.noneCreatedYet')}
           </p>
         ) : (
           <div className="space-y-2">
@@ -79,15 +84,15 @@ export default function SuperTrainingTypes() {
                     <span className="font-bold text-[13px] text-base-content truncate">{tt.name}</span>
                     {tt.isArchived && (
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-base-300 text-base-content/60">
-                        Архивирован
+                        {t('super.trainingTypes.archivedBadge')}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 text-[11px] text-base-content/45 mt-0.5">
-                    <span className="flex items-center gap-1"><Layers size={11} /> {tt.groupsCount} групп</span>
-                    {tt.price == null && <span className="text-warning font-semibold">Цена не назначена</span>}
+                    <span className="flex items-center gap-1"><Layers size={11} /> {t('super.trainingTypes.groupsCount', { count: tt.groupsCount })}</span>
+                    {tt.price == null && <span className="text-warning font-semibold">{t('super.trainingTypes.priceNotSet')}</span>}
                     {tt.isArchived && tt.price != null && (
-                      <span className="text-warning font-semibold">Не виден при создании группы — архивирован</span>
+                      <span className="text-warning font-semibold">{t('super.trainingTypes.hiddenArchived')}</span>
                     )}
                   </div>
                 </div>
@@ -96,37 +101,37 @@ export default function SuperTrainingTypes() {
                   <div className="flex items-center gap-2 shrink-0">
                     <input
                       className="input input-bordered input-sm w-32"
-                      type="number" min="0" placeholder="Цена, сум"
+                      type="number" min="0" placeholder={t('super.trainingTypes.pricePlaceholder')}
                       value={price} onChange={(e) => setPrice(e.target.value)}
                     />
                     <input
                       className="input input-bordered input-sm w-28"
-                      type="number" min="1" placeholder="Макс. студ."
+                      type="number" min="1" placeholder={t('super.trainingTypes.maxStudentsPlaceholder')}
                       value={maxStudents} onChange={(e) => setMaxStudents(e.target.value)}
                     />
-                    <button className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)} disabled={busy}>Отмена</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)} disabled={busy}>{t('super.trainingTypes.cancel')}</button>
                     <button className="btn btn-primary btn-sm" onClick={() => save(tt.id)} disabled={busy}>
-                      {busy && <span className="loading loading-spinner loading-xs" />} Сохранить
+                      {busy && <span className="loading loading-spinner loading-xs" />} {t('super.trainingTypes.save')}
                     </button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="text-right">
                       <div className="text-[13px] font-extrabold text-base-content tabular-nums">
-                        {tt.price != null ? `${Number(tt.price).toLocaleString('ru-RU')} сум` : '—'}
+                        {tt.price != null ? t('super.trainingTypes.priceSum', { price: Number(tt.price).toLocaleString(locale) }) : '—'}
                       </div>
                       <div className="flex items-center justify-end gap-1 text-[11px] text-base-content/45">
                         <Users2 size={11} /> {tt.maxStudents ?? '—'}
                       </div>
                     </div>
                     <button className="btn btn-outline btn-sm" onClick={() => startEdit(tt)}>
-                      {tt.price != null ? 'Изменить' : 'Назначить цену'}
+                      {tt.price != null ? t('super.trainingTypes.edit') : t('super.trainingTypes.assignPrice')}
                     </button>
                     <button
                       className="btn btn-ghost btn-sm btn-square"
                       onClick={() => toggleArchive(tt)}
                       disabled={busy}
-                      title={tt.isArchived ? 'Вернуть из архива' : 'Архивировать'}
+                      title={tt.isArchived ? t('super.trainingTypes.restoreFromArchive') : t('super.trainingTypes.archive')}
                     >
                       {tt.isArchived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
                     </button>

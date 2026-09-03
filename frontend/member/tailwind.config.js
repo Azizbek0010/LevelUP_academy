@@ -4,7 +4,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Manrope', 'system-ui', 'sans-serif'],
+        // '@fontsource-variable/manrope' регистрирует семейство как
+        // 'Manrope Variable' — без него в списке шрифт не подхватывался и
+        // весь кабинет рендерился системным (2026-08-30, Abduloh).
+        sans: ['Manrope Variable', 'Manrope', 'system-ui', 'sans-serif'],
       },
       colors: {
         sidebar: '#16210f',

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { Search, Inbox, ArrowRight, ArrowUpRight, ArrowDownRight, X, Check } from 'lucide-react';
+import { Search, Inbox, ArrowRight, ArrowUpRight, ArrowDownRight, X, Minus } from 'lucide-react';
+import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 
 /**
  * Общие кирпичики панели Main Admin.
@@ -33,36 +34,97 @@ const AVATAR_PALETTE = [
 ];
 const AVATAR_SIZES = { sm: 28, md: 32, lg: 44 };
 
-/** KPI-плитка: иконка-чип, крупное число, подпись. Кликабельна, если задан `to`. */
-export function Kpi({ Icon, title, value, unit, tone = 'neutral', trend, trendLabel, to, onClick }) {
+/** Мини-график в углу KPI-плитки — форма тренда без осей и подписей. */
+function KpiSparkline({ data, positive }) {
+  if (!data || data.length < 2) return null;
+  const rows = data.map((v, i) => ({ i, v }));
+  // Тот же success/error, что и у стрелки тренда рядом (было #65a30d/#dc2626 —
+  // близко, но не ровно тема DaisyUI: success #22c55e / error #ef4444
+  // из tailwind.config.js). SVG fill/stroke не берёт Tailwind-классы
+  // напрямую, поэтому здесь литерал, но теперь тот же самый.
+  const stroke = positive ? '#22c55e' : '#ef4444';
+  return (
+    <div className="absolute inset-x-0 bottom-0 h-9 opacity-70 pointer-events-none">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={rows} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id={`spark-${positive ? 'up' : 'down'}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={stroke} stopOpacity={0.28} />
+              <stop offset="100%" stopColor={stroke} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.5}
+            fill={`url(#spark-${positive ? 'up' : 'down'})`} isAnimationActive={false} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/**
+ * KPI-плитка. По панели гуляет четыре чуть разных копии этого компонента
+ * (Revenue, Billing, OrgDetail — своя версия в каждом; плюс Dashboard.jsx
+ * держит родственные, но не идентичные MetricCell/StatusTile/PillMetric
+ * для других раскладок — плоская лента-стрип и горизонтальные плашки,
+ * не карточки). 30.08.2026 сюда добавлены спарклайн/тренд/`tint`, и
+ * Dashboard.jsx — первый, кто реально использует их (карточка «Собрано
+ * за месяц»). Revenue/Billing/OrgDetail на эту версию ЕЩЁ НЕ переведены —
+ * следующий шаг, не выдавать желаемое за сделанное. Алиасы полей
+ * (`title`/`label`, `unit`/`sub`, `tone`/`tint`) уже готовы под их старые
+ * вызовы, чтобы миграция не требовала переписывать пропы.
+ *
+ * `sparkline` — реальный числовой ряд (например месяцы дохода), не
+ * выдумывать данные под красивую линию, если бэкенд их не отдаёт — тогда
+ * просто не передавать проп.
+ */
+export function Kpi({
+  Icon, title, label, value, unit, sub, tone = 'neutral', tint, accent,
+  trend, trendLabel, sparkline, dense, to, onClick, cardClassName,
+}) {
+  const heading = title ?? label;
+  const caption = unit ?? sub;
+  const iconStyle = tint ? { background: tint.bg, color: tint.fg } : undefined;
+  const iconCls = tint ? '' : (TONES[tone] ?? TONES.neutral);
+  const pad = dense ? 'p-3.5' : 'p-4';
+
   const body = (
-    <div className="p-4 text-left w-full">
+    <div className={`relative overflow-hidden ${pad} text-left w-full`}>
       <div className="flex items-center gap-2.5">
-        <span className={`w-8 h-8 rounded-md grid place-items-center shrink-0 ${TONES[tone] ?? TONES.neutral}`}>
+        <span style={iconStyle} className={`w-8 h-8 rounded-md grid place-items-center shrink-0 ${iconCls}`}>
           <Icon size={16} strokeWidth={2.2} />
         </span>
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45">
-          {title}
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/45 truncate">
+          {heading}
         </span>
         {(to || onClick) && <ArrowRight size={14} className="ml-auto text-base-content/25 shrink-0" />}
       </div>
-      <div className="text-3xl font-extrabold mt-3 leading-none tabular-nums">{value}</div>
-      {unit && <div className="text-xs text-base-content/45 mt-1">{unit}</div>}
+      <div className={`font-extrabold mt-3 leading-none tabular-nums ${dense ? 'text-2xl' : 'text-3xl'}`}>{value}</div>
+      {caption && <div className="text-xs text-base-content/45 mt-1">{caption}</div>}
       {trend != null && (
         <div className="flex items-center gap-1.5 mt-2">
           <span className={`inline-flex items-center gap-0.5 text-[11px] font-bold ${
-            trend >= 0 ? 'text-success' : 'text-error'
+            trend > 0 ? 'text-success' : trend < 0 ? 'text-error' : 'text-base-content/40'
           }`}>
-            {trend >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-            {trend >= 0 ? '+' : ''}{typeof trend === 'number' ? trend.toFixed(1) : trend}%
+            {trend > 0 ? <ArrowUpRight size={12} /> : trend < 0 ? <ArrowDownRight size={12} /> : <Minus size={12} />}
+            {trend > 0 ? '+' : ''}{typeof trend === 'number' ? trend.toFixed(1) : trend}%
           </span>
           {trendLabel && <span className="text-[10px] text-base-content/40">{trendLabel}</span>}
         </div>
       )}
+      <KpiSparkline data={sparkline} positive={(trend ?? 0) >= 0} />
     </div>
   );
 
-  const card = 'card bg-base-100 border border-base-200/60 shadow-sm';
+  // cardClassName ЗАМЕНЯЕТ, а не дописывает, дефолтный "скин" (border/
+  // shadow/bg) — для страниц вроде Dashboard, где рядом стоят карточки
+  // с другим языком (толще тень, свой border-base-300). Дописывать
+  // конфликтующий border-*/shadow-* утилити-класс поверх уже заданного
+  // нельзя: у Tailwind порядок в скомпилированном CSS не совпадает
+  // с порядком классов в JSX, итоговый вид зависел бы от сборки, не от
+  // пропа — ровно та же ловушка, что уже чинили на лендинге.
+  const card = accent
+    ? 'card border shadow-sm bg-gradient-to-br from-primary to-primary/85 border-primary text-primary-content'
+    : `card border ${cardClassName ?? 'shadow-sm bg-base-100 border-base-200/60'}`;
   const interactive =
     'hover:border-primary/40 hover:shadow-md transition-[border-color,box-shadow,transform] duration-150 active:scale-[0.98]';
   if (to) return <Link to={to} className={`${card} ${interactive} block`}>{body}</Link>;
@@ -128,13 +190,26 @@ export function SearchInput({ value, onChange, placeholder = 'Поиск...', cl
   );
 }
 
-/** Аватар с хеш-палитрой (как в super/_ui.jsx). */
+/**
+ * Аватар с хеш-палитрой (как в super/_ui.jsx).
+ *
+ * `size` принимает И именованный размер ('sm'/'md'/'lg'), И число (px)
+ * напрямую — 16 из 17 вызовов в панели передавали число (28, 32, 40, 44,
+ * 46, 56, 68...), а компонент понимал только строку, так что все они молча
+ * откатывались на один и тот же дефолт 32px (25→30.08.2026, найдено при
+ * редизайне Dashboard).
+ */
 export function Avatar({ name = '?', size = 'md' }) {
+  // Дефолт параметра ловит только undefined — вызовы вида `name={a || b}`,
+  // где оба поля пришли из API как null (не отсутствуют, а именно null —
+  // частая форма пустого имени в этой базе), давали name=null и падение
+  // на .trim() ниже.
+  name = name || '?';
   const letter = (name.trim()[0] || '?').toUpperCase();
   let h = 0;
   for (const c of name) h = (h * 31 + c.charCodeAt(0)) % AVATAR_PALETTE.length;
   const [bg, fg] = AVATAR_PALETTE[h];
-  const px = AVATAR_SIZES[size] ?? AVATAR_SIZES.md;
+  const px = typeof size === 'number' ? size : (AVATAR_SIZES[size] ?? AVATAR_SIZES.md);
   return (
     <span
       style={{ width: px, height: px, background: bg, color: fg }}
@@ -224,7 +299,12 @@ export function ConfirmDialog({ open, onClose, title, text, confirmLabel = 'Уд
       isOpen={open}
       onClose={onClose}
       title={title}
-      className="max-w-sm border border-base-200"
+      size="sm"
+      // Раньше className нёс свой max-w-sm поверх Modal-евского max-w-xl по
+      // умолчанию (size не передавался) — какой из двух max-w-* побеждал,
+      // зависело от порядка правил в собранном Tailwind CSS, не от JSX.
+      // size="sm" даёт Modal's max-w-md напрямую, конфликта нет.
+      className="border border-base-200"
       actions={
         <>
           <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={pending}>Отмена</button>

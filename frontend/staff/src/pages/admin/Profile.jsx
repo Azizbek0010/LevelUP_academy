@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Mail, Phone, CalendarDays, ShieldCheck, KeyRound, Check, AlertCircle, LogOut,
 } from 'lucide-react';
@@ -40,19 +41,27 @@ function InfoRow({ icon: Icon, label, value }) {
   );
 }
 
-const ROLE_LABELS = {
-  admin: 'Администратор',
-  superadmin: 'Super Admin',
-  mentor: 'Ментор',
-  methodist: 'Методист',
-};
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+
+const roleLabelsMap = (t) => ({
+  admin: t('role.admin'),
+  superadmin: t('role.ceo'),
+  mentor: t('role.mentor'),
+  methodist: t('role.methodist'),
+});
 
 export default function AdminProfile() {
+  const { t, i18n } = useTranslation();
+  const ROLE_LABELS = roleLabelsMap(t);
   const { token, user, logout, patchUser } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
-  const { data, isLoading } = useMe();
+  // `loadError` отдельно от `error` ниже: тот про сохранение формы, этот про
+  // сам запрос. Раньше ошибку загрузки не забирали вовсе — упавший `/me`
+  // оставлял пустые поля без единого слова о причине, и это выглядело как
+  // «профиль пустой», а не «профиль не загрузился».
+  const { data, isLoading, error: loadError, refetch } = useMe();
   const me = data?.data ?? null;
 
   const [firstName, setFirstName] = useState('');
@@ -78,9 +87,9 @@ export default function AdminProfile() {
   );
 
   const validate = () => {
-    if (!firstName.trim()) return 'Введите имя';
-    if (!lastName.trim()) return 'Введите фамилию';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Некорректный email';
+    if (!firstName.trim()) return t('admin.profile.enterName');
+    if (!lastName.trim()) return t('admin.profile.enterLast');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return t('admin.profile.invalidEmail');
     return '';
   };
 
@@ -99,7 +108,7 @@ export default function AdminProfile() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
-      setError(err.message || 'Не удалось сохранить');
+      setError(err.message || t('admin.profile.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -119,13 +128,32 @@ export default function AdminProfile() {
   };
 
   const fullName = `${me?.firstName ?? user?.firstName ?? ''} ${me?.lastName ?? user?.lastName ?? ''}`.trim();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
   const formatDate = (iso) =>
-    iso ? new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+    iso ? new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
 
   return (
     /* /profile у админа — обычная страница с общим скроллом (в Layout
        полноэкранным помечен только профиль ментора), поэтому отступы даёт
        контейнер, а не этот блок: здесь только две колонки. */
+    <>
+      {/* Страницу целиком не подменяем: имя, email и роль есть в сессии через
+          useAuth(), поэтому при упавшем /me профиль остаётся читаемым. Но
+          сказать об этом надо — иначе пустые «Телефон» и «Зарегистрирован»
+          (их в сессии нет) выглядят как «не заполнено», а не «не загрузилось».
+          Фрагмент, а не ещё один flex-контейнер: обёртка сдвинула бы отступ у
+          ~170 строк ниже и утопила бы правку в шуме. */}
+      {loadError && (
+        <div className="alert alert-warning mb-5">
+          <span className="flex-1 text-sm">
+            {t('admin.profile.loadErrorPrefix', { message: loadError.message })}
+          </span>
+          <button className="btn btn-sm" onClick={() => refetch()}>
+            {t('admin.profile.retry')}
+          </button>
+        </div>
+      )}
+
     <div className="flex flex-col lg:flex-row gap-5">
       {/* ═════ Карточка личности ═════ */}
       <aside className="w-full lg:w-[380px] shrink-0">
@@ -143,15 +171,15 @@ export default function AdminProfile() {
               </h2>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="badge badge-primary badge-sm gap-1">
-                  <ShieldCheck size={11} /> {ROLE_LABELS[user?.role] || user?.role || 'Администратор'}
+                  <ShieldCheck size={11} /> {ROLE_LABELS[user?.role] || user?.role || t('role.admin')}
                 </span>
               </div>
             </div>
 
             <div className="divide-y divide-base-200 border-t border-base-200">
-              <InfoRow icon={Mail} label="Email" value={me?.email ?? user?.email} />
-              <InfoRow icon={Phone} label="Телефон" value={me?.phone} />
-              <InfoRow icon={CalendarDays} label="Зарегистрирован" value={formatDate(me?.createdAt)} />
+              <InfoRow icon={Mail} label={t('admin.profile.emailLabel')} value={me?.email ?? user?.email} />
+              <InfoRow icon={Phone} label={t('admin.profile.phoneLabel')} value={me?.phone} />
+              <InfoRow icon={CalendarDays} label={t('admin.profile.registeredLabel')} value={formatDate(me?.createdAt)} />
             </div>
           </section>
         </div>
@@ -162,15 +190,15 @@ export default function AdminProfile() {
         <div className="space-y-5">
           <section className="card bg-base-100">
             <header className="px-5 py-4 border-b border-base-200">
-              <h2 className="font-bold">Личные данные</h2>
+              <h2 className="font-bold">{t('admin.profile.personalData')}</h2>
               <p className="text-xs text-base-content/45 mt-0.5">
-                Эти данные видит администратор организации.
+                {t('admin.profile.personalDataHint')}
               </p>
             </header>
 
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="form-control">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Имя</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('admin.profile.firstNameLabel')}</span>
                 <input
                   className="input input-bordered"
                   value={firstName}
@@ -180,7 +208,7 @@ export default function AdminProfile() {
                 />
               </label>
               <label className="form-control">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Фамилия</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('admin.profile.lastNameLabel')}</span>
                 <input
                   className="input input-bordered"
                   value={lastName}
@@ -190,7 +218,7 @@ export default function AdminProfile() {
                 />
               </label>
               <label className="form-control sm:col-span-2">
-                <span className="text-xs font-semibold text-base-content/55 mb-1.5">Email</span>
+                <span className="text-xs font-semibold text-base-content/55 mb-1.5">{t('admin.profile.emailLabel')}</span>
                 <input
                   type="email"
                   className="input input-bordered"
@@ -200,7 +228,7 @@ export default function AdminProfile() {
                   disabled={isLoading}
                 />
                 <span className="text-[11px] text-base-content/45 mt-1.5">
-                  Вы входите в систему с этим email, код восстановления пароля также приходит на этот адрес.
+                  {t('admin.profile.emailHint')}
                 </span>
               </label>
             </div>
@@ -213,17 +241,17 @@ export default function AdminProfile() {
                   </span>
                 ) : saved ? (
                   <span className="flex items-center gap-1.5 text-success font-semibold">
-                    <Check size={14} /> Сохранено
+                    <Check size={14} /> {t('admin.profile.saved')}
                   </span>
                 ) : dirty ? (
-                  <span className="text-base-content/50">Есть несохранённые изменения</span>
+                  <span className="text-base-content/50">{t('admin.profile.dirty')}</span>
                 ) : null}
               </span>
 
               <span className="flex items-center gap-2 shrink-0">
                 {dirty && (
                   <button className="btn btn-ghost btn-sm" onClick={reset} disabled={saving}>
-                    Отмена
+                    {t('admin.profile.cancel')}
                   </button>
                 )}
                 <button
@@ -232,7 +260,7 @@ export default function AdminProfile() {
                   disabled={saving || !dirty}
                 >
                   {saving ? <span className="loading loading-spinner loading-xs" /> : <Check size={15} />}
-                  Сохранить
+                  {t('admin.profile.save')}
                 </button>
               </span>
             </footer>
@@ -240,39 +268,38 @@ export default function AdminProfile() {
 
           <section className="card bg-base-100">
             <header className="px-5 py-4 border-b border-base-200">
-              <h2 className="font-bold">Безопасность</h2>
+              <h2 className="font-bold">{t('admin.profile.security')}</h2>
             </header>
 
             <div className="divide-y divide-base-200">
               <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
-                    <KeyRound size={15} className="text-base-content/40" /> Пароль
+                    <KeyRound size={15} className="text-base-content/40" /> {t('admin.profile.password')}
                   </div>
                   <p className="text-xs text-base-content/50 mt-1 max-w-md">
-                    В целях безопасности пароль не изменяется здесь — он
-                    восстанавливается через код подтверждения, отправляемый на ваш email.
+                    {t('admin.profile.passwordHint')}
                   </p>
                 </div>
                 <button
                   className="btn btn-outline btn-sm shrink-0"
                   onClick={() => navigate('/login?reset=1')}
                 >
-                  Восстановить пароль
+                  {t('admin.profile.resetPassword')}
                 </button>
               </div>
 
               <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
-                    <LogOut size={15} className="text-base-content/40" /> Завершить сеанс
+                    <LogOut size={15} className="text-base-content/40" /> {t('admin.profile.endSession')}
                   </div>
                   <p className="text-xs text-base-content/50 mt-1">
-                    Вы выйдете из аккаунта на этом устройстве.
+                    {t('admin.profile.sessionHint')}
                   </p>
                 </div>
                 <button className="btn btn-outline btn-error btn-sm shrink-0" onClick={onLogout}>
-                  Выйти
+                  {t('admin.profile.logout')}
                 </button>
               </div>
             </div>
@@ -280,5 +307,6 @@ export default function AdminProfile() {
         </div>
       </div>
     </div>
+    </>
   );
 }

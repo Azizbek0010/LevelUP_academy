@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   Bell, Trash2, ChevronDown, ChevronRight,
   CheckCircle, XCircle, Clock, RefreshCw,
@@ -30,10 +31,10 @@ function useRemindersQuery() {
 
 // ---- Status helpers ----
 
-function statusBadge(status) {
-  if (status === 'sent') return <StatusBadge tone="success">Отправлено</StatusBadge>;
-  if (status === 'failed') return <StatusBadge tone="danger">Ошибка</StatusBadge>;
-  if (status === 'pending') return <StatusBadge tone="warning">В очереди</StatusBadge>;
+function statusBadge(status, t) {
+  if (status === 'sent') return <StatusBadge tone="success">{t('super.reminders.statusSent')}</StatusBadge>;
+  if (status === 'failed') return <StatusBadge tone="danger">{t('super.reminders.statusFailed')}</StatusBadge>;
+  if (status === 'pending') return <StatusBadge tone="warning">{t('super.reminders.statusPending')}</StatusBadge>;
   return <StatusBadge>{status}</StatusBadge>;
 }
 
@@ -46,6 +47,7 @@ function statusIcon(status) {
 // ---- Main Component ----
 
 export default function SuperReminders() {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const qc = useQueryClient();
 
@@ -81,13 +83,13 @@ export default function SuperReminders() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Напоминания" subtitle="Автоматические уведомления студентам и родителям" />
+      <PageHeader title={t('super.reminders.title')} subtitle={t('super.reminders.subtitle')} />
 
       {/* Tabs */}
       <FilterPills
         options={[
-          { key: 'rules', label: <span className="flex items-center gap-2"><ListOrdered size={14} /> Правила</span> },
-          { key: 'history', label: <span className="flex items-center gap-2"><History size={14} /> История</span> },
+          { key: 'rules', label: <span className="flex items-center gap-2"><ListOrdered size={14} /> {t('super.reminders.tabRules')}</span> },
+          { key: 'history', label: <span className="flex items-center gap-2"><History size={14} /> {t('super.reminders.tabHistory')}</span> },
         ]}
         value={tab}
         onChange={setTab}
@@ -98,8 +100,8 @@ export default function SuperReminders() {
         <Card>
           <EmptyState
             icon={Bell}
-            title="Автоматические правила скоро"
-            hint="Настройка триггеров, шаблонов и расписаний появится в следующем обновлении."
+            title={t('super.reminders.rulesComingSoonTitle')}
+            hint={t('super.reminders.rulesComingSoonHint')}
           />
         </Card>
       )}
@@ -109,19 +111,19 @@ export default function SuperReminders() {
         <>
           {/* Stat cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            <Metric Icon={Bell} tone="neutral" label="Всего" value={totalCount} />
-            <Metric Icon={CheckCircle} tone="success" label="Отправлено" value={sentCount} />
-            <Metric Icon={XCircle} tone="danger" label="Ошибка" value={failedCount} />
-            <Metric Icon={Clock} tone="warning" label="В очереди" value={pendingCount} />
+            <Metric Icon={Bell} tone="neutral" label={t('super.reminders.total')} value={totalCount} />
+            <Metric Icon={CheckCircle} tone="success" label={t('super.reminders.statusSent')} value={sentCount} />
+            <Metric Icon={XCircle} tone="danger" label={t('super.reminders.statusFailed')} value={failedCount} />
+            <Metric Icon={Clock} tone="warning" label={t('super.reminders.statusPending')} value={pendingCount} />
           </div>
 
           {/* Filter buttons */}
           <FilterPills
             options={[
-              { key: 'all', label: 'Все' },
-              { key: 'sent', label: 'Отправлено' },
-              { key: 'failed', label: 'Ошибка' },
-              { key: 'pending', label: 'В очереди' },
+              { key: 'all', label: t('super.reminders.filterAll') },
+              { key: 'sent', label: t('super.reminders.statusSent') },
+              { key: 'failed', label: t('super.reminders.statusFailed') },
+              { key: 'pending', label: t('super.reminders.statusPending') },
             ]}
             value={statusFilter}
             onChange={setStatusFilter}
@@ -134,7 +136,7 @@ export default function SuperReminders() {
             <div className="alert alert-error text-sm"><span>{error.message}</span></div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-base-content/40 text-sm">
-              Записей не найдено
+              {t('super.reminders.noneFound')}
             </div>
           ) : (
             <Card>
@@ -143,12 +145,12 @@ export default function SuperReminders() {
                   <thead>
                     <tr>
                       <th className="w-8" />
-                      <th>Студент</th>
-                      <th>Родитель</th>
-                      <th>Сообщение</th>
-                      <th>Статус</th>
-                      <th>Отправлено</th>
-                      <th className="text-right">Действия</th>
+                      <th>{t('super.reminders.colStudent')}</th>
+                      <th>{t('super.reminders.colParent')}</th>
+                      <th>{t('super.reminders.colMessage')}</th>
+                      <th>{t('super.reminders.colStatus')}</th>
+                      <th>{t('super.reminders.colSent')}</th>
+                      <th className="text-right">{t('super.reminders.colActions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -177,7 +179,7 @@ export default function SuperReminders() {
                           <td>
                             <div className="flex items-center gap-1.5">
                               {statusIcon(item.status)}
-                              {statusBadge(item.status)}
+                              {statusBadge(item.status, t)}
                             </div>
                           </td>
                           <td className="text-xs text-base-content/50">
@@ -188,7 +190,7 @@ export default function SuperReminders() {
                               {item.status === 'failed' && (
                                 <button
                                   className="btn btn-ghost btn-xs text-info"
-                                  title="Переотправить"
+                                  title={t('super.reminders.resend')}
                                   onClick={() => resendMutation.mutate(item.id)}
                                   disabled={resendMutation.isPending}
                                 >
@@ -197,7 +199,7 @@ export default function SuperReminders() {
                               )}
                               <button
                                 className="btn btn-ghost btn-xs text-error"
-                                title="Удалить"
+                                title={t('super.reminders.delete')}
                                 onClick={() => deleteMutation.mutate(item.id)}
                                 disabled={deleteMutation.isPending}
                               >
@@ -210,7 +212,7 @@ export default function SuperReminders() {
                           <tr key={`${item.id}-exp`} className="bg-base-200/40">
                             <td colSpan={7} className="px-6 py-4">
                               <p className="text-sm text-base-content/80 whitespace-pre-wrap leading-relaxed">
-                                {message || 'Нет текста'}
+                                {message || t('super.reminders.noText')}
                               </p>
                             </td>
                           </tr>

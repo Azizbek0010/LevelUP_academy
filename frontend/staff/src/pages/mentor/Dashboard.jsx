@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   BookOpen, Users, CalendarDays, Bell, ArrowRight,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useMentorGroups, useMentorAttendance } from '../../queries.js';
 import { Panel, EmptyState, RowSkeleton } from './_ui.jsx';
 
@@ -66,6 +67,7 @@ function Kpi({ Icon, title, value, unit, to }) {
 }
 
 export default function MentorDashboard() {
+  const { t } = useTranslation();
   const { data: groupsData, isLoading } = useMentorGroups();
   const groups = useMemo(() => groupsData?.data || [], [groupsData]);
 
@@ -122,10 +124,10 @@ export default function MentorDashboard() {
             </span>
             <div className="min-w-0">
               <p className="text-sm font-bold text-error truncate">
-                {activeGroup.name} — идёт урок
+                {t('mentor.dash.lessonInProgress', { group: activeGroup.name })}
               </p>
               <p className="text-xs text-base-content/55 truncate">
-                {activeGroup.subject || 'Предмет'} · {activeLesson.time} · посещаемость не отмечена
+                {activeGroup.subject || t('mentor.subject')} · {activeLesson.time} · {t('mentor.dash.attendanceNotMarked')}
               </p>
             </div>
           </div>
@@ -133,7 +135,7 @@ export default function MentorDashboard() {
             to={`/groups/${activeGroup.id}?tab=davomat`}
             className="btn btn-sm btn-error text-white gap-1.5 shrink-0"
           >
-            Отметить посещаемость <ArrowRight size={14} />
+            {t('mentor.dash.markAttendance')} <ArrowRight size={14} />
           </Link>
         </div>
       )}
@@ -149,11 +151,11 @@ export default function MentorDashboard() {
            в ленте ниже по метке «Tugagan» — цифра дублировала её и ничего
            не решала. */
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Kpi Icon={BookOpen} title="Группы" value={groups.length} unit="активных" to="/groups" />
-          <Kpi Icon={Users} title="Ученики" value={totalStudents} unit="всего" to="/students" />
+          <Kpi Icon={BookOpen} title={t('mentor.dash.groups')} value={groups.length} unit={t('mentor.dash.active')} to="/groups" />
+          <Kpi Icon={Users} title={t('mentor.dash.students')} value={totalStudents} unit={t('mentor.dash.total')} to="/students" />
           {/* Было жёстко «—»: плитка занимала место и ничего не сообщала.
               Считаем реальное число занятий с расписанием на сегодня. */}
-          <Kpi Icon={CalendarDays} title="Сегодняшние уроки" value={lessons.length} unit="по расписанию" />
+          <Kpi Icon={CalendarDays} title={t('mentor.dash.todayLessons')} value={lessons.length} unit={t('mentor.dash.bySchedule')} />
         </div>
       )}
 
@@ -163,12 +165,12 @@ export default function MentorDashboard() {
           живёт на своей странице, сюда ведёт ссылка в шапке. */}
       <div className="mt-6">
         <Panel
-          title="Расписание на сегодня"
+          title={t('mentor.dash.todaySchedule')}
           icon={CalendarDays}
           bodyClass="p-4"
           action={
             <Link to="/groups" className="btn btn-ghost btn-xs gap-1 text-primary">
-              Мои группы <ArrowRight size={13} />
+              {t('mentor.dash.myGroups')} <ArrowRight size={13} />
             </Link>
           }
         >
@@ -177,9 +179,9 @@ export default function MentorDashboard() {
           ) : lessons.length === 0 ? (
             <EmptyState
               icon={Bell}
-              title="Сегодня уроков нет в расписании"
-              hint="Даже если для группы не установлено время урока, вы можете отметить посещаемость вручную."
-              action={<Link to="/groups?tab=davomat" className="btn btn-sm btn-primary">Перейти к посещаемости</Link>}
+              title={t('mentor.dash.noLessonsTitle')}
+              hint={t('mentor.dash.noLessonsHint')}
+              action={<Link to="/groups?tab=davomat" className="btn btn-sm btn-primary">{t('mentor.dash.goToAttendance')}</Link>}
             />
           ) : (
             <ol className="relative space-y-2">
@@ -224,22 +226,22 @@ export default function MentorDashboard() {
                           <div className="min-w-0">
                             <div className="text-sm font-bold truncate">{g.name}</div>
                             <div className="text-xs text-base-content/45 truncate">
-                              {g.subject || 'Предмет'} · {g.students || 0} учеников
+                              {g.subject || t('mentor.subject')} · {t('mentor.dash.studentsCount', { count: g.students || 0 })}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {isNow && (
-                            <span className="badge badge-sm badge-primary">Идёт</span>
+                            <span className="badge badge-sm badge-primary">{t('mentor.dash.now')}</span>
                           )}
                           {isPast && (
-                            <span className="badge badge-sm badge-ghost text-base-content/45">Завершено</span>
+                            <span className="badge badge-sm badge-ghost text-base-content/45">{t('mentor.dash.done')}</span>
                           )}
                           <Link
                             to={`/groups/${g.id}?tab=davomat`}
                             className="btn btn-ghost btn-xs text-primary"
                           >
-                            Посещаемость
+                            {t('mentor.dash.attendance')}
                           </Link>
                         </div>
                       </div>

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight, ArrowRight } from 'lucide-react';
 
 /* ── DashboardPanel — strict card with optional header ─────────────────── */
@@ -87,19 +88,20 @@ export function KpiCard({ Icon, tone = 'primary', label, value, unit, to, childr
 
 /* ── BranchesTable — strict data table ──────────────────────────────────── */
 export function BranchesTable({ branches, fmt }) {
+  const { t } = useTranslation();
   if (!branches?.length) {
-    return <p className="text-[var(--text-muted)] text-sm py-6 text-center">Филиалов пока нет</p>;
+    return <p className="text-[var(--text-muted)] text-sm py-6 text-center">{t('components.ui.noBranchesYet')}</p>;
   }
   return (
     <div className="overflow-x-auto">
       <table className="branches-table w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--border-faint)]">
-            <th className="text-left px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Филиал</th>
-            <th className="text-right px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Ученики</th>
-            <th className="text-right px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Админы</th>
-            <th className="text-right px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Доход</th>
-            <th className="text-right px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Долг</th>
+            <th className="text-left px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">{t('components.ui.colBranch')}</th>
+            <th className="text-right px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">{t('components.ui.colStudents')}</th>
+            <th className="text-right px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">{t('components.ui.colAdmins')}</th>
+            <th className="text-right px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">{t('components.ui.colRevenue')}</th>
+            <th className="text-right px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">{t('components.ui.colDebt')}</th>
           </tr>
         </thead>
         <tbody>
@@ -122,7 +124,7 @@ export function BranchesTable({ branches, fmt }) {
                       ? 'bg-[var(--border-faint)] text-[var(--text-muted)]'
                       : 'bg-[var(--bg-success)] text-[var(--success)]'}
                 ">
-                  {b.isMain ? 'Главный' : b.isArchived ? 'Архив' : 'Филиал'}
+                  {b.isMain ? t('components.ui.mainBadge') : b.isArchived ? t('components.ui.archivedBadge') : t('components.ui.branchBadge')}
                 </span>
               </td>
               <td className="text-right px-3 py-2.5 text-[var(--text)] tabular-nums">{fmt(b.students)}</td>
@@ -139,6 +141,7 @@ export function BranchesTable({ branches, fmt }) {
 
 /* ── AnalyticsCTA — prominent call-to-action button ────────────────────── */
 export function AnalyticsCTA({ onClick, className = '' }) {
+  const { t } = useTranslation();
   return (
     <button 
       onClick={onClick}
@@ -160,7 +163,7 @@ export function AnalyticsCTA({ onClick, className = '' }) {
         ${className}
       "
     >
-      <span className="text-sm font-medium text-[var(--text)]">Подробная аналитика — графики, период, способы оплаты</span>
+      <span className="text-sm font-medium text-[var(--text)]">{t('components.ui.analyticsCta')}</span>
       <ArrowRight size={16} className="text-[var(--primary)] shrink-0" />
     </button>
   );

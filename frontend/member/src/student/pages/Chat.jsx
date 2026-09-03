@@ -5,8 +5,22 @@ import { useAuth } from '../../auth.jsx';
 import { useChatMessages, useChatThreads } from '../../queries.js';
 import { api } from '../../api.js';
 import { getSocket, useSocketConnected } from '../../socket.js';
-import { Avatar, EmptyState, C } from '../components/ui.jsx';
-import { useI18n } from '../../i18n/index.jsx';
+import { Avatar, EmptyState, C, alpha, shade } from '../components/ui.jsx';
+import { fmtDate } from '../format.js';
+import { useI18n, getLang } from '../../i18n/index.jsx';
+
+/* Локаль часов — с тем же откатом на ru-RU, что и в format.js: в редких
+   окружениях без данных узбекской локали Intl бросает RangeError. */
+const HOUR_LOCALE = { uz: 'uz-UZ', en: 'en-US', ru: 'ru-RU' };
+const clockLocale = () => {
+  const loc = HOUR_LOCALE[getLang()] || 'ru-RU';
+  try {
+    new Intl.DateTimeFormat(loc).format(new Date());
+    return loc;
+  } catch {
+    return 'ru-RU';
+  }
+};
 
 /**
  * Чат ученика с наставником/админом — роут /student/chat, ВНЕ StudentLayout
@@ -21,7 +35,7 @@ const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
 function formatTime(iso) {
   if (!iso) return '';
-  return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString(clockLocale(), { hour: '2-digit', minute: '2-digit' });
 }
 
 function formatDayLabel(iso, t) {
@@ -31,7 +45,8 @@ function formatDayLabel(iso, t) {
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
   if (d.toDateString() === yesterday.toDateString()) return t.chat.yesterday;
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+  // fmtDate: day/month-short/year, с безопасным откатом локали (format.js)
+  return fmtDate(iso, getLang());
 }
 
 function Bubble({ m, mine, groupStart, groupEnd, isLast }) {
@@ -40,9 +55,10 @@ function Bubble({ m, mine, groupStart, groupEnd, isLast }) {
       <div
         className={`max-w-[82%] sm:max-w-[60%] px-4 py-2.5 ${isLast ? 'k-pop-in' : ''}`}
         style={{
-          background: mine ? `linear-gradient(155deg, ${C.lime}, ${C.limeDk})` : '#fff',
+          background: mine ? `linear-gradient(155deg, ${C.lime}, ${shade(C.lime, 24)})` : C.card,
           color: mine ? '#fff' : C.text,
-          boxShadow: mine ? `0 2px 10px ${C.lime}40` : '0 1px 2px rgba(28,35,26,0.06), 0 1px 8px rgba(28,35,26,0.04)',
+          boxShadow: mine ? `0 2px 10px ${alpha(C.lime, 25)}` : 'var(--k-e1)',
+          border: mine ? 'none' : `1px solid ${C.line}`,
           borderRadius: 20,
           borderTopRightRadius: mine && groupStart ? 7 : 20,
           borderBottomRightRadius: mine && groupEnd ? 7 : 20,
@@ -73,9 +89,9 @@ function ContactPill({ r, isActive, roleLabel, onClick }) {
       onClick={onClick}
       className="k-press-sm relative shrink-0 flex items-center gap-2 pl-1.5 pr-4 py-1 rounded-full text-[13.5px] font-bold"
       style={{
-        background: isActive ? `linear-gradient(155deg, ${C.lime}, ${C.limeDk})` : 'rgba(28,35,26,0.05)',
+        background: isActive ? `linear-gradient(155deg, ${C.lime}, ${shade(C.lime, 24)})` : alpha(C.text, 6),
         color: isActive ? '#fff' : C.text,
-        boxShadow: isActive ? `0 3px 10px ${C.lime}4d` : 'none',
+        boxShadow: isActive ? `0 3px 10px ${alpha(C.lime, 30)}` : 'none',
         transition: 'background 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s cubic-bezier(0.16,1,0.3,1), color 0.2s',
       }}
     >
@@ -84,7 +100,7 @@ function ContactPill({ r, isActive, roleLabel, onClick }) {
         {r.unread_count > 0 && (
           <span
             className="k-num absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full grid place-items-center text-[9.5px] font-extrabold text-white"
-            style={{ background: C.coral, boxShadow: '0 0 0 2px #fff' }}
+            style={{ background: C.coral, boxShadow: `0 0 0 2px ${C.card}` }}
           >
             {r.unread_count > 99 ? '99+' : r.unread_count}
           </span>
@@ -223,20 +239,20 @@ export default function Chat() {
         style={{
           height: 62,
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: 'rgba(255,255,255,0.82)',
+          background: alpha(C.card, 82),
           backdropFilter: 'blur(20px) saturate(180%)',
-          borderBottom: '1px solid rgba(28,35,26,0.06)',
+          borderBottom: `1px solid ${C.line}`,
         }}
       >
         <button
           onClick={() => navigate('/student')}
           className="k-press-sm shrink-0 w-9 h-9 rounded-full grid place-items-center"
-          style={{ background: 'rgba(28,35,26,0.05)', color: C.text }}
+          style={{ background: alpha(C.text, 6), color: C.text }}
           aria-label="back"
         >
           <ChevronLeft size={20} strokeWidth={2.6} />
         </button>
-        <span className="shrink-0 w-9 h-9 rounded-full grid place-items-center" style={{ background: `${C.violet}1c` }}>
+        <span className="shrink-0 w-9 h-9 rounded-full grid place-items-center" style={{ background: alpha(C.violet, 12) }}>
           <MessageCircle size={18} strokeWidth={2.3} color={C.violet} />
         </span>
         <div className="min-w-0 flex-1">
@@ -247,7 +263,7 @@ export default function Chat() {
             {activeThread && roleLabelFor(activeThread.staff_role) && (
               <span
                 className="shrink-0 text-[10px] font-extrabold uppercase tracking-wide px-1.5 py-0.5 rounded-md"
-                style={{ background: `${C.violet}1c`, color: C.violet }}
+                style={{ background: alpha(C.violet, 12), color: C.violet }}
               >
                 {roleLabelFor(activeThread.staff_role)}
               </span>
@@ -262,7 +278,7 @@ export default function Chat() {
       {/* Контакты */}
       <div
         className="shrink-0 flex items-center gap-2 overflow-x-auto px-3 sm:px-4 py-2.5"
-        style={{ background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(20px) saturate(180%)', borderBottom: '1px solid rgba(28,35,26,0.06)' }}
+        style={{ background: alpha(C.card, 65), backdropFilter: 'blur(20px) saturate(180%)', borderBottom: `1px solid ${C.line}` }}
       >
         {threadsLoading && <div className="animate-pulse h-9 w-40 rounded-full" style={{ background: C.line }} />}
         {!threadsLoading && threads.length === 0 && (
@@ -311,9 +327,9 @@ export default function Chat() {
                   className="text-[10.5px] font-extrabold uppercase tracking-wider rounded-full px-3.5 py-1.5"
                   style={{
                     color: C.muted,
-                    background: 'rgba(255,255,255,0.75)',
+                    background: alpha(C.card, 78),
                     backdropFilter: 'blur(12px) saturate(180%)',
-                    boxShadow: '0 1px 3px rgba(28,35,26,0.06)',
+                    boxShadow: 'var(--k-e1)',
                   }}
                 >
                   {formatDayLabel(m.created_at, t)}
@@ -330,9 +346,9 @@ export default function Chat() {
         className="shrink-0 px-3 sm:px-4 pt-2.5"
         style={{
           paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom, 0px))',
-          background: 'rgba(255,255,255,0.82)',
+          background: alpha(C.card, 82),
           backdropFilter: 'blur(20px) saturate(180%)',
-          borderTop: '1px solid rgba(28,35,26,0.06)',
+          borderTop: `1px solid ${C.line}`,
         }}
       >
         {sendError && <p className="mb-1.5 text-[11.5px] font-bold" style={{ color: C.coral }}>{sendError}</p>}
@@ -342,7 +358,7 @@ export default function Chat() {
             rows={1}
             className="flex-1 min-w-0 resize-none rounded-[20px] px-4 py-2.5 text-[14.5px] leading-relaxed outline-none"
             style={{
-              background: '#fff',
+              background: C.card,
               border: `1px solid ${C.line}`,
               color: C.text,
               maxHeight: 100,
@@ -361,9 +377,9 @@ export default function Chat() {
             disabled={!canSend}
             className="k-press shrink-0 w-11 h-11 rounded-full grid place-items-center disabled:cursor-not-allowed"
             style={{
-              background: canSend ? `linear-gradient(155deg, ${C.lime}, ${C.limeDk})` : C.line,
+              background: canSend ? `linear-gradient(155deg, ${C.lime}, ${shade(C.lime, 24)})` : C.line,
               color: canSend ? '#fff' : C.muted,
-              boxShadow: canSend ? `0 3px 10px ${C.lime}4d` : 'none',
+              boxShadow: canSend ? `0 3px 10px ${alpha(C.lime, 30)}` : 'none',
               transition: 'background 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s cubic-bezier(0.16,1,0.3,1)',
             }}
             aria-label="send"

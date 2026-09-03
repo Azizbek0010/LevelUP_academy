@@ -6,6 +6,7 @@ import { useDashboard, usePricing } from '../queries.js';
 import { fmt } from '../format.js';
 import { tierForUsers, tierRange, tierPriceLabel } from '../lib/pricing.js';
 import PageHeader from '../components/PageHeader.jsx';
+import { Kpi } from '../components/_ui.jsx';
 import { SkeletonKpis, SkeletonTable } from '../components/Skeleton.jsx';
 
 /**
@@ -22,27 +23,7 @@ import { SkeletonKpis, SkeletonTable } from '../components/Skeleton.jsx';
  * ничего не сохраняла. Пока источник правды — конфиг, страница только читает.
  */
 
-function Kpi({ Icon, tint, title, value, unit, accent }) {
-  return (
-    <div className={`card shadow-sm border transition-shadow hover:shadow-md ${accent ? 'bg-gradient-to-br from-lime-400 to-lime-500 border-lime-400' : 'bg-base-100 border-base-200/60'}`}>
-      <div className="card-body p-5">
-        <div className="flex items-center gap-3">
-          <span
-            className="w-10 h-10 rounded-md grid place-items-center shrink-0"
-            style={accent ? { background: 'rgba(0,0,0,0.12)', color: '#1a2e05' } : { background: tint.bg, color: tint.fg }}
-          >
-            <Icon size={20} strokeWidth={2.2} />
-          </span>
-          <div className={`text-[11px] font-semibold uppercase tracking-wider leading-tight ${accent ? 'text-lime-950/60' : 'text-base-content/45'}`}>
-            {title}
-          </div>
-        </div>
-        <div className={`text-3xl font-extrabold mt-3 leading-none ${accent ? 'text-lime-950' : ''}`}>{value}</div>
-        {unit && <div className={`text-xs mt-1.5 ${accent ? 'text-lime-950/55' : 'text-base-content/45'}`}>{unit}</div>}
-      </div>
-    </div>
-  );
-}
+// Локальный Kpi убран (30.08.2026) — мигрировано на общий Kpi из _ui.jsx.
 
 function exportCsv(partners, tiers, cur) {
   const header = ['Партнёр', 'Филиалы', 'Пользователи', 'Тариф', 'Итого/мес', 'Валюта'];
@@ -84,11 +65,6 @@ export default function Billing() {
         title="Тарифы и биллинг"
         subtitle={`Цена зависит от общего числа пользователей (ученики+родители+сотрудники), филиалы включены безлимитом (в ${cur})`}
       >
-        {partners.length > 0 && tiers.length > 0 && (
-          <button className="btn btn-outline btn-sm gap-2" onClick={() => exportCsv(partners, tiers, cur)}>
-            <Download size={15} /> Экспорт CSV
-          </button>
-        )}
       </PageHeader>
 
       {pLoading ? (

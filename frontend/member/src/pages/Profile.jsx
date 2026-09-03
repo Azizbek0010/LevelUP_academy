@@ -6,6 +6,7 @@ import Avatar from '../components/Avatar.jsx';
 import Icon from '../components/Icons.jsx';
 import { fmt } from '../format.js';
 import { api } from '../api.js';
+import { useI18n, fmt as fmtStr } from '../i18n/index.jsx';
 
 /**
  * FE-PARENT-PROFILE-PREF: этих настроек нет ни в одной таблице на бэке, и
@@ -28,6 +29,7 @@ function usePreference(key, defaultValue) {
 }
 
 export default function Profile() {
+  const { t } = useI18n();
   const { user, token, logout } = useAuth();
   const { selectedChild } = useChild();
   const [notifyPush, toggleNotifyPush] = usePreference('pref_notify_push', true);
@@ -41,7 +43,7 @@ export default function Profile() {
       const res = await api.telegramStatus(token);
       setTg((current) => ({ ...current, status: 'idle', data: res.data, error: null }));
     } catch (err) {
-      setTg((current) => ({ ...current, status: 'error', error: err.message || 'Не удалось проверить Telegram' }));
+      setTg((current) => ({ ...current, status: 'error', error: err.message || t.prof.tgError }));
     }
   };
 
@@ -57,7 +59,7 @@ export default function Profile() {
       window.open(res.data.deepLink, '_blank', 'noopener,noreferrer');
       setTimeout(loadTelegramStatus, 4000);
     } catch (err) {
-      setTg((current) => ({ ...current, status: 'error', deepLink: null, error: err.message || 'Не удалось получить ссылку' }));
+      setTg((current) => ({ ...current, status: 'error', deepLink: null, error: err.message || t.prof.tgLinkError }));
     }
   };
 
@@ -68,13 +70,13 @@ export default function Profile() {
       setConfirmUnlink(false);
       await loadTelegramStatus();
     } catch (err) {
-      setTg((current) => ({ ...current, status: 'error', error: err.message || 'Не удалось отвязать Telegram' }));
+      setTg((current) => ({ ...current, status: 'error', error: err.message || t.prof.tgUnlinkError }));
     }
   };
 
   return (
     <>
-      <PageHeader title="Профиль" subtitle="Настройки аккаунта" />
+      <PageHeader title={t.prof.title} subtitle={t.prof.subtitle} />
 
       <div className="card bg-base-100 mb-6 border-l-4 border-l-primary">
         <div className="card-body py-5">
@@ -89,9 +91,9 @@ export default function Profile() {
               <h2 className="text-xl font-semibold">{user?.firstName} {user?.lastName}</h2>
               <p className="text-sm text-base-content/55 flex items-center gap-1.5 mt-0.5">
                 <Icon name="user-circle" className="w-4 h-4" />
-                Родитель
+                {t.prof.role}
               </p>
-              <p className="text-xs text-base-content/40 mt-1 font-mono">Код: {user?.loginCode}</p>
+              <p className="text-xs text-base-content/40 mt-1 font-mono">{fmtStr(t.prof.code, { code: user?.loginCode ?? '' })}</p>
             </div>
           </div>
         </div>
@@ -103,7 +105,7 @@ export default function Profile() {
           <div className="card-body">
             <h3 className="card-title text-sm gap-2">
               <Icon name="user" className="w-4 h-4 text-primary" />
-              Ребёнок
+              {t.prof.child}
             </h3>
             <div className="flex items-center gap-3 p-3.5 rounded border border-base-300 bg-base-200/30 mt-2">
               <div className="relative">
@@ -117,24 +119,24 @@ export default function Profile() {
                 <p className="text-xs opacity-40 flex items-center gap-1.5 mt-0.5">
                   <span className="flex items-center gap-0.5">
                     <Icon name="star" className="w-3 h-3" />
-                    {fmt(selectedChild.coins)} коинов
+                    {fmtStr(t.prof.coins, { coins: fmt(selectedChild.coins) })}
                   </span>
                   <span className="opacity-30">·</span>
                   {Number(selectedChild.totalDebt) > 0 ? (
                     <span className="text-error flex items-center gap-0.5">
                       <Icon name="wallet" className="w-3 h-3" />
-                      Долг
+                      {t.prof.debt}
                     </span>
                   ) : (
                     <span className="text-success flex items-center gap-0.5">
                       <Icon name="check-circle" className="w-3 h-3" />
-                      Без долга
+                      {t.prof.noDebt}
                     </span>
                   )}
                 </p>
               </div>
               <span className="text-[11px] px-2.5 py-1 rounded-full bg-primary text-primary-content font-bold flex items-center gap-1">
-                Активен
+                {t.prof.active}
               </span>
             </div>
           </div>
@@ -146,7 +148,7 @@ export default function Profile() {
         <div className="card-body">
           <h3 className="card-title text-sm gap-2">
             <Icon name="cog" className="w-4 h-4 text-primary" />
-            Настройки
+            {t.prof.settings}
           </h3>
           <div className="space-y-3 mt-2">
             <div className="flex items-center justify-between p-3.5 rounded-xl bg-base-200/40 hover:bg-base-200/60 transition-colors">
@@ -155,8 +157,8 @@ export default function Profile() {
                   <Icon name="bell" className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Уведомления</p>
-                  <p className="text-xs opacity-40">Push-уведомления о занятиях</p>
+                  <p className="text-sm font-medium">{t.prof.notifications}</p>
+                  <p className="text-xs opacity-40">{t.prof.notificationsSub}</p>
                 </div>
               </div>
               <input
@@ -172,8 +174,8 @@ export default function Profile() {
                   <Icon name="chat" className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Звуки чата</p>
-                  <p className="text-xs opacity-40">Звуковое оповещение</p>
+                  <p className="text-sm font-medium">{t.prof.chatSound}</p>
+                  <p className="text-xs opacity-40">{t.prof.chatSoundSub}</p>
                 </div>
               </div>
               <input
@@ -194,10 +196,10 @@ export default function Profile() {
         <div className="card-body">
           <h3 className="card-title text-sm gap-2">
             <Icon name="chat" className="w-4 h-4 text-primary" />
-            Telegram
+            {t.prof.telegram}
           </h3>
           <p className="text-xs opacity-40 mt-1 mb-2">
-            Привяжите Telegram, чтобы получать напоминания и входить в кабинет родителя без пароля.
+            {t.prof.telegramDesc}
           </p>
           {tg.status === 'loading' && !tg.data && (
             <span className="loading loading-spinner loading-sm" />
@@ -210,21 +212,21 @@ export default function Profile() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold truncate">
-                    {tg.data.username ? `@${tg.data.username}` : tg.data.firstName || 'Telegram подключён'}
+                    {tg.data.username ? `@${tg.data.username}` : tg.data.firstName || t.header.tgLinked}
                   </p>
-                  <p className="text-xs text-success font-semibold">Подключён · вход через Telegram активен</p>
+                  <p className="text-xs text-success font-semibold">{t.prof.linked}</p>
                 </div>
               </div>
               {confirmUnlink ? (
                 <div className="mt-4 rounded-xl bg-error/10 p-3">
-                  <p className="text-xs text-error mb-3">После отвязки уведомления и вход через Telegram перестанут работать.</p>
+                  <p className="text-xs text-error mb-3">{t.prof.unlinkWarning}</p>
                   <div className="flex gap-2">
-                    <button className="btn btn-error btn-sm flex-1 rounded-xl" onClick={onUnlinkTelegram} disabled={tg.status === 'loading'}>Да, отвязать</button>
-                    <button className="btn btn-ghost btn-sm flex-1 rounded-xl" onClick={() => setConfirmUnlink(false)}>Отмена</button>
+                    <button className="btn btn-error btn-sm flex-1 rounded-xl" onClick={onUnlinkTelegram} disabled={tg.status === 'loading'}>{t.prof.confirmUnlink}</button>
+                    <button className="btn btn-ghost btn-sm flex-1 rounded-xl" onClick={() => setConfirmUnlink(false)}>{t.prof.cancel}</button>
                   </div>
                 </div>
               ) : (
-                <button className="btn btn-outline btn-error btn-sm rounded-xl mt-4" onClick={() => setConfirmUnlink(true)}>Отвязать Telegram</button>
+                <button className="btn btn-outline btn-error btn-sm rounded-xl mt-4" onClick={() => setConfirmUnlink(true)}>{t.prof.unbind}</button>
               )}
             </div>
           ) : tg.status !== 'loading' && tg.status !== 'ready' && (
@@ -234,7 +236,7 @@ export default function Profile() {
               disabled={tg.status === 'loading'}
             >
               {tg.status === 'loading' ? <span className="loading loading-spinner loading-xs" /> : <Icon name="chat" className="w-4 h-4" />}
-              Привязать Telegram
+              {t.prof.bind}
             </button>
           )}
           {tg.status === 'error' && (
@@ -248,7 +250,7 @@ export default function Profile() {
               className="btn btn-primary btn-sm rounded-xl gap-2 w-fit"
             >
               <Icon name="chevron-right" className="w-4 h-4" />
-              Открыть в Telegram
+              {t.prof.openTg}
             </a>
           )}
         </div>
@@ -260,7 +262,7 @@ export default function Profile() {
         <div className="card-body">
           <button className="btn btn-outline btn-error w-full rounded-xl gap-2" onClick={logout}>
             <Icon name="logout" className="w-4 h-4" />
-            Выйти из аккаунта
+            {t.prof.logout}
           </button>
         </div>
       </div>

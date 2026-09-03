@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Puzzle, Send, XCircle, Clock3, CheckCircle2, History } from 'lucide-react';
 import { useAuth } from '../../auth.jsx';
 import { api } from '../../api.js';
@@ -7,11 +8,12 @@ import PageHeader from '../../components/PageHeader.jsx';
 import { SkeletonList } from '../../components/Skeleton.jsx';
 import { Card, EmptyState, StatusBadge } from './_ui.jsx';
 
-const money = (n) => `${Number(n || 0).toLocaleString('ru-RU')} UZS`;
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+const money = (n, locale) => `${Number(n || 0).toLocaleString(locale)} UZS`;
 
 const STATUS_TONE = { pending: 'warning', approved: 'success', rejected: 'danger' };
-const STATUS_LABEL = { pending: 'На рассмотрении', approved: 'Одобрено', rejected: 'Отклонено' };
-const TYPE_LABEL = { add: 'подключение', remove: 'отключение' };
+const statusLabelFor = (t) => ({ pending: t('super.features.statusPending'), approved: t('super.features.statusApproved'), rejected: t('super.features.statusRejected') });
+const typeLabelFor = (t) => ({ add: t('super.features.typeAdd'), remove: t('super.features.typeRemove') });
 
 function useCatalogQuery() {
   const { token, logout } = useAuth();
@@ -40,6 +42,9 @@ function useRequestsQuery() {
  * Main Admin рассматривает заявку на своей стороне (Main Admin → Фичи).
  */
 function FeatureRow({ feature, pendingByKey, onRequest, busy }) {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const TYPE_LABEL = typeLabelFor(t);
   const enabled = !!feature.enabled;
   const pending = pendingByKey.get(feature.feature_key);
 
@@ -48,14 +53,14 @@ function FeatureRow({ feature, pendingByKey, onRequest, busy }) {
       <div>
         <div className="font-semibold text-sm flex items-center gap-2">
           {feature.label}
-          {enabled && <StatusBadge tone="success">подключено</StatusBadge>}
+          {enabled && <StatusBadge tone="success">{t('super.features.enabled')}</StatusBadge>}
         </div>
-        <div className="text-xs text-base-content/45 mt-0.5">{money(feature.price)} / мес</div>
+        <div className="text-xs text-base-content/45 mt-0.5">{t('super.features.perMonth', { price: money(feature.price, locale) })}</div>
       </div>
 
       {pending ? (
         <StatusBadge tone="warning">
-          Заявка на {TYPE_LABEL[pending.type]} — на рассмотрении
+          {t('super.features.requestPendingLabel', { type: TYPE_LABEL[pending.type] })}
         </StatusBadge>
       ) : enabled ? (
         <button
@@ -63,7 +68,7 @@ function FeatureRow({ feature, pendingByKey, onRequest, busy }) {
           disabled={busy === feature.feature_key}
           onClick={() => onRequest(feature.feature_key, 'remove')}
         >
-          <XCircle size={13} /> Запросить отключение
+          <XCircle size={13} /> {t('super.features.requestDisable')}
         </button>
       ) : (
         <button
@@ -73,7 +78,7 @@ function FeatureRow({ feature, pendingByKey, onRequest, busy }) {
         >
           {busy === feature.feature_key
             ? <span className="loading loading-spinner loading-xs" />
-            : <><Send size={13} /> Запросить подключение</>}
+            : <><Send size={13} /> {t('super.features.requestEnable')}</>}
         </button>
       )}
     </div>
@@ -81,6 +86,10 @@ function FeatureRow({ feature, pendingByKey, onRequest, busy }) {
 }
 
 export default function SuperFeatures() {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_OF[i18n.language] || 'ru-RU';
+  const STATUS_LABEL = statusLabelFor(t);
+  const TYPE_LABEL = typeLabelFor(t);
   const { token } = useAuth();
   const qc = useQueryClient();
   const { data: catalog, isLoading: catalogLoading } = useCatalogQuery();
@@ -115,16 +124,16 @@ export default function SuperFeatures() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Фичи" subtitle="Доступные платные фичи и ваши заявки на подключение/отключение" />
+      <PageHeader title={t('super.features.title')} subtitle={t('super.features.subtitle')} />
 
       {err && <div className="alert alert-error text-sm"><span>{err}</span></div>}
 
       <section className="space-y-3">
-        <h2 className="font-bold text-sm flex items-center gap-2"><Puzzle size={15} className="text-primary" /> Доступные фичи</h2>
+        <h2 className="font-bold text-sm flex items-center gap-2"><Puzzle size={15} className="text-primary" /> {t('super.features.availableFeatures')}</h2>
         {catalogLoading ? (
           <SkeletonList rows={3} />
         ) : items.length === 0 ? (
-          <Card><EmptyState icon={Puzzle} title="Каталог пуст" /></Card>
+          <Card><EmptyState icon={Puzzle} title={t('super.features.catalogEmpty')} /></Card>
         ) : (
           <div className="space-y-2">
             {items.map((f) => (
@@ -141,11 +150,11 @@ export default function SuperFeatures() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-bold text-sm flex items-center gap-2"><History size={15} className="text-primary" /> Мои заявки</h2>
+        <h2 className="font-bold text-sm flex items-center gap-2"><History size={15} className="text-primary" /> {t('super.features.myRequests')}</h2>
         {requestsLoading ? (
           <SkeletonList rows={2} />
         ) : requestList.length === 0 ? (
-          <Card><EmptyState icon={Clock3} title="Заявок пока нет" /></Card>
+          <Card><EmptyState icon={Clock3} title={t('super.features.noRequestsYet')} /></Card>
         ) : (
           <div className="space-y-2">
             {requestList.map((r) => (
@@ -155,7 +164,7 @@ export default function SuperFeatures() {
                     {TYPE_LABEL[r.type]} — {r.feature_label ?? r.feature_key}
                   </div>
                   <div className="text-xs text-base-content/45">
-                    {new Date(r.created_at ?? r.createdAt).toLocaleDateString('ru-RU')}
+                    {new Date(r.created_at ?? r.createdAt).toLocaleDateString(locale)}
                   </div>
                 </div>
                 <StatusBadge tone={STATUS_TONE[r.status]}>

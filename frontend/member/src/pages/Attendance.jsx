@@ -6,9 +6,15 @@ import PageHeader from '../components/PageHeader.jsx';
 import { SkeletonTable } from '../components/Skeleton.jsx';
 import { EmptyState, ErrorState } from '../components/ui.jsx';
 import Icon from '../components/Icons.jsx';
+import { useI18n, fmt as fmtStr } from '../i18n/index.jsx';
 
 const PAGE_SIZE = 100;
-const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const WEEKDAYS_LABEL = {
+  ru: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+  uz: ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'],
+  en: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+};
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
 
 function calendarDays(monthKey) {
   const [year, month] = monthKey.split('-').map(Number);
@@ -21,15 +27,10 @@ function calendarDays(monthKey) {
   ];
 }
 
-const FILTERS = [
-  { key: 'all', label: 'Все' },
-  { key: 'present', label: 'Присутствовал' },
-  { key: 'absent', label: 'Отсутствовал' },
-  { key: 'late', label: 'Опоздал' },
-  { key: 'excused', label: 'По уважит.' },
-];
+const FILTER_KEYS = ['all', 'present', 'absent', 'late', 'excused'];
 
 export default function Attendance() {
+  const { t, lang } = useI18n();
   const { selectedChild } = useChild();
   const { data, isLoading, error, refetch } = useParentOverview(selectedChild?.id);
   const [filter, setFilter] = useState('all');
@@ -45,12 +46,12 @@ export default function Attendance() {
     refetch: refetchPage,
   } = useAttendancePage(selectedChild?.id, page, PAGE_SIZE);
 
-  if (!selectedChild) return <EmptyState icon="user-circle" title="Выберите ребёнка" />;
+  if (!selectedChild) return <EmptyState icon="user-circle" title={t.dash.noChildTitle} />;
 
   if (isLoading || isPageLoading) {
     return (
       <>
-        <PageHeader title="Посещаемость" />
+        <PageHeader title={t.att.title} />
         <SkeletonTable rows={6} cols={4} />
       </>
     );
@@ -76,7 +77,7 @@ export default function Attendance() {
     return acc;
   }, {});
   const [calendarYear, calendarMonth] = monthKey.split('-').map(Number);
-  const monthLabel = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' })
+  const monthLabel = new Intl.DateTimeFormat(LOCALE_OF[lang] || 'ru-RU', { month: 'long', year: 'numeric' })
     .format(new Date(calendarYear, calendarMonth - 1, 1));
   const todayKey = new Date().toISOString().slice(0, 10);
 
@@ -88,7 +89,7 @@ export default function Attendance() {
   return (
     <>
       <PageHeader
-        title="Посещаемость"
+        title={t.att.title}
         subtitle={`${selectedChild.firstName} ${selectedChild.lastName}`}
       />
 
@@ -102,11 +103,11 @@ export default function Attendance() {
           </div>
           <label className="parent-month-control">
             <Icon name="calendar" className="w-4 h-4" />
-            <input type="month" value={monthKey} onChange={(event) => setMonthKey(event.target.value)} aria-label="Выбрать месяц" />
+            <input type="month" value={monthKey} onChange={(event) => setMonthKey(event.target.value)} aria-label={t.att.selectMonth} />
           </label>
         </div>
         <div className="parent-calendar-body">
-          <div className="parent-calendar-weekdays">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
+          <div className="parent-calendar-weekdays">{(WEEKDAYS_LABEL[lang] || WEEKDAYS_LABEL.ru).map((day) => <span key={day}>{day}</span>)}</div>
           <h2 className="parent-calendar-month">{monthLabel}</h2>
           <div className="parent-calendar-grid">
             {calendarDays(monthKey).map((day, index) => {
@@ -127,7 +128,7 @@ export default function Attendance() {
       </section>
 
       <div className="parent-history-filters">
-        {FILTERS.map((item) => <button key={item.key} onClick={() => onFilterChange(item.key)} className={filter === item.key ? 'is-active' : ''}>{item.label}</button>)}
+        {FILTER_KEYS.map((key) => <button key={key} onClick={() => onFilterChange(key)} className={filter === key ? 'is-active' : ''}>{t.att.filter[key]}</button>)}
       </div>
 
       {/* History Table */}
@@ -135,10 +136,10 @@ export default function Attendance() {
         <div className="card-body">
           <h3 className="card-title text-sm gap-2">
             <Icon name="clock" className="w-4 h-4 text-primary" />
-            История посещений
+            {t.att.history}
           </h3>
           {filtered.length === 0 ? (
-            <EmptyState icon="calendar" title="Нет записей" message="Посещаемость ещё не отмечена" />
+            <EmptyState icon="calendar" title={t.att.emptyTitle} message={t.att.emptyMsg} />
           ) : (
             <>
               {/* Desktop Table */}
@@ -146,10 +147,10 @@ export default function Attendance() {
                 <table className="table table-sm">
                   <thead>
                     <tr>
-                      <th>Дата</th>
-                      <th>Группа</th>
-                      <th>Статус</th>
-                      <th>Комментарий</th>
+                      <th>{t.att.colDate}</th>
+                      <th>{t.att.colGroup}</th>
+                      <th>{t.att.colStatus}</th>
+                      <th>{t.att.colComment}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -206,7 +207,7 @@ export default function Attendance() {
           {/* FE-PARENT-PAGINATION */}
           {pageCount > 1 && (
             <div className="flex items-center justify-between px-1 py-3 mt-2 border-t border-base-200">
-              <span className="text-xs text-base-content/50">Страница {page} из {pageCount}</span>
+              <span className="text-xs text-base-content/50">{fmtStr(t.common.page, { page, total: pageCount })}</span>
               <div className="join">
                 <button className="join-item btn btn-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>«</button>
                 <button className="join-item btn btn-xs" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>»</button>

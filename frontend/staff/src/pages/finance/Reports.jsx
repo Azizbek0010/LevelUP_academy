@@ -3,19 +3,11 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import PageHeader from '../../components/PageHeader.jsx';
 import { money } from '../../format.js';
 import { useSuperStats } from '../../queries.js';
-import { Metric, Card, compactMoney } from './_ui.jsx';
-import { useT } from './_i18n.jsx';
-
-// Полный enum payment_method (backend) — раньше тут было 4 из 9 значений,
-// остальные пять (transfer/humo/uzcard/uzum/bank_transfer) показывались
-// сырым ключом вместо подписи.
-const METHOD_LABEL = {
-  cash: 'Наличные', card: 'Карта', transfer: 'Перевод', bank_transfer: 'Банковский перевод',
-  humo: 'Humo', uzcard: 'Uzcard', uzum: 'Uzum', payme: 'Payme', click: 'Click',
-};
+import { Metric, Card, compactMoney, paymentMethodLabel } from './_ui.jsx';
+import { useTranslation } from 'react-i18next';
 
 export default function FinanceReports() {
-  const { t } = useT();
+  const { t } = useTranslation();
   const { data, isLoading, error, refetch } = useSuperStats('30d');
 
   if (error) {
@@ -31,15 +23,15 @@ export default function FinanceReports() {
     debt: Number(branch.debt || 0),
   }));
   const methods = (data.paymentMethods || []).map((row) => ({
-    name: METHOD_LABEL[row.method] || row.method,
+    name: paymentMethodLabel(row.method, t),
     amount: Number(row.amount || 0),
   }));
 
   const handleExport = () => {
     const rows = [
-      ['Филиал', 'Ученики', 'Поступления за 30 дней', 'Текущий долг'],
+      [t('finance.common.branch'), t('finance.common.students'), t('finance.reports.incomeLabel'), t('finance.reports.debtLabel')],
       ...branches.map((branch) => [branch.name, branch.students, branch.revenue, branch.debt]),
-      ['ОРГАНИЗАЦИЯ', totals.activeStudents, totals.periodRevenue, totals.outstandingDebt],
+      [t('finance.reports.orgRow'), totals.activeStudents, totals.periodRevenue, totals.outstandingDebt],
     ];
     const csv = `\uFEFF${rows.map((row) => row.map((value) => `"${value}"`).join(',')).join('\n')}`;
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
@@ -52,37 +44,37 @@ export default function FinanceReports() {
 
   return (
     <div className="space-y-6 pb-8 animate-page-enter">
-      <PageHeader title={t('reports.title')} subtitle="Реальные данные backend · последние 30 дней">
+      <PageHeader title={t('finance.reports.title')} subtitle={t('finance.reports.subtitleLive')}>
         <button onClick={handleExport} className="btn btn-outline gap-2">
-          <Download size={16} /> {t('reports.export')}
+          <Download size={16} /> {t('finance.reports.export')}
         </button>
       </PageHeader>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
-        <Metric Icon={Wallet} label="Поступления за 30 дней" value={money(totals.periodRevenue)} tone="success" />
-        <Metric Icon={TriangleAlert} label="Текущий долг" value={money(totals.outstandingDebt)} tone="warning" />
-        <Metric Icon={Users} label="Активные ученики" value={totals.activeStudents} tone="info" />
-        <Metric Icon={Building2} label="Филиалы" value={totals.branches} tone="neutral" />
+        <Metric Icon={Wallet} label={t('finance.reports.incomeLabel')} value={money(totals.periodRevenue)} tone="success" />
+        <Metric Icon={TriangleAlert} label={t('finance.reports.debtLabel')} value={money(totals.outstandingDebt)} tone="warning" />
+        <Metric Icon={Users} label={t('finance.reports.activeStudents')} value={totals.activeStudents} tone="info" />
+        <Metric Icon={Building2} label={t('finance.dash.branches')} value={totals.branches} tone="neutral" />
       </div>
 
-      <Card title="Поступления и долги по филиалам" subtitle="Последние 30 дней" bodyClass="p-4 h-[340px]">
+      <Card title={t('finance.reports.incomeDebtByBranch')} subtitle={t('finance.reports.last30days')} bodyClass="p-4 h-[340px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-base-300)" vertical={false} />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
             <YAxis width={64} tickFormatter={(value) => compactMoney(value)} />
             <Tooltip formatter={(value) => money(value)} />
-            <Bar dataKey="revenue" name="Поступления" fill="#16a34a" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="debt" name="Долг" fill="#ef4444" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="revenue" name={t('finance.reports.incomeLabel')} fill="#16a34a" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="debt" name={t('finance.reports.debtLabel')} fill="#ef4444" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </Card>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
-        <Card title="Подробный отчёт по филиалам" className="xl:col-span-2" bodyClass="p-0">
+        <Card title={t('finance.reports.branchDetail')} className="xl:col-span-2" bodyClass="p-0">
           <div className="overflow-x-auto">
             <table className="table table-sm">
-              <thead><tr><th>Филиал</th><th>Ученики</th><th className="text-right">Поступления</th><th className="text-right">Долг</th><th className="text-right">Доля</th></tr></thead>
+              <thead><tr><th>{t('finance.common.branch')}</th><th>{t('finance.common.students')}</th><th className="text-right">{t('finance.reports.incomeLabel')}</th><th className="text-right">{t('finance.reports.debtLabel')}</th><th className="text-right">{t('finance.common.share')}</th></tr></thead>
               <tbody>
                 {branches.map((branch) => (
                   <tr key={branch.id}>
@@ -98,12 +90,12 @@ export default function FinanceReports() {
           </div>
         </Card>
 
-        <Card title="Способы оплаты" subtitle="Завершённые транзакции" bodyClass="p-4">
+        <Card title={t('finance.reports.byMethod')} subtitle={t('finance.reports.methodsSubtitle')} bodyClass="p-4">
           {methods.length ? methods.map((method) => (
             <div key={method.name} className="flex justify-between gap-3 py-2 border-b border-base-200 last:border-0">
               <span>{method.name}</span><span className="font-bold tabular-nums">{money(method.amount)}</span>
             </div>
-          )) : <p className="text-sm text-base-content/50">Нет завершённых платежей</p>}
+          )) : <p className="text-sm text-base-content/50">{t('finance.reports.noCompletedPayments')}</p>}
         </Card>
       </div>
     </div>

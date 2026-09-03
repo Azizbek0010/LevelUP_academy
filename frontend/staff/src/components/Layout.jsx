@@ -20,8 +20,8 @@ import Avatar from './Avatar.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { disconnectSocket, getSocket } from '../socket.js';
 import { useMentorGroups, useSuperBranches, useChatContacts } from '../queries.js';
-import { LangSwitch } from '../pages/finance/_ui.jsx';
-import { useT } from '../pages/finance/_i18n.jsx';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
 import {
   playNotificationSound, unlockSound, isSoundEnabled, setSoundEnabled,
 } from '../lib/notificationSound.js';
@@ -56,12 +56,12 @@ function useMediaQuery(query) {
  */
 const superNav = [
   { to: '/',           label: 'Дашборд',    labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
-  { to: '/people',     label: 'Люди и клиенты', Icon: HiOutlineUserGroup },
+  { to: '/people',     label: 'Люди и клиенты', labelKey: 'nav.people', Icon: HiOutlineUserGroup },
   { type: 'super-branches' },
   { to: '/admins',     label: 'Сотрудники', labelKey: 'nav.admins', Icon: HiOutlineUsers },
   // Финансы владельца центра — вся организация (доход/расход/зарплаты/отчёты)
   { to: '/finance',    label: 'Финансы',    labelKey: 'nav.finance', Icon: HiOutlineCurrencyDollar },
-  { to: '/org-expenses', label: 'Расходы', Icon: HiOutlineReceiptPercent },
+  { to: '/org-expenses', label: 'Расходы', labelKey: 'nav.expenses', Icon: HiOutlineReceiptPercent },
   {
     type: 'group',
     key: 'analytics',
@@ -90,10 +90,10 @@ const superNav = [
       { to: '/announcements', label: 'Объявления',  labelKey: 'nav.announcements' },
       { to: '/reminders',     label: 'Напоминания', labelKey: 'nav.reminders' },
       { to: '/audit',         label: 'Аудит',       labelKey: 'nav.audit' },
-      { to: '/features',      label: 'Фичи' },
-      { to: '/billing',       label: 'Оплата' },
-      { to: '/methodics',     label: 'Методики' },
-      { to: '/shop-catalog',  label: 'Магазин' },
+      { to: '/features',      label: 'Фичи', labelKey: 'nav.features' },
+      { to: '/billing',       label: 'Оплата', labelKey: 'nav.billing' },
+      { to: '/methodics',     label: 'Методики', labelKey: 'nav.methodics' },
+      { to: '/shop-catalog',  label: 'Магазин', labelKey: 'nav.shopCatalog' },
       { to: '/settings',      label: 'Настройки',   labelKey: 'nav.settings' },
     ],
   },
@@ -105,8 +105,8 @@ const adminNav = [
   { to: '/groups',    label: 'Группы',      labelKey: 'nav.groups', Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Менторы',     labelKey: 'nav.mentors', Icon: HiOutlineUserCircle },
   { to: '/chat',      label: 'Чат',         labelKey: 'nav.chat', Icon: HiOutlineChatBubbleLeftRight },
-  { to: '/shop',      label: 'Магазин',     Icon: HiOutlineGift },
-  { to: '/schedule',  label: 'Расписание',  Icon: HiOutlineCalendarDays },
+  { to: '/shop',      label: 'Магазин',     labelKey: 'nav.shopCatalog', Icon: HiOutlineGift },
+  { to: '/schedule',  label: 'Расписание',  labelKey: 'nav.schedule', Icon: HiOutlineCalendarDays },
   { to: '/payments',  label: 'Платежи',     labelKey: 'nav.payments', Icon: HiOutlineWallet },
   { to: '/expenses',  label: 'Расходы',     labelKey: 'nav.expenses', Icon: HiOutlineReceiptPercent },
   { to: '/reports',   label: 'Отчёты',      labelKey: 'nav.reports', Icon: HiOutlineChartBar },
@@ -124,12 +124,12 @@ const adminNav = [
 const branchManagerNav = [
   { to: '/announcements', label: 'Anonslar', labelKey: 'nav.announcements', Icon: HiOutlinePresentationChartLine },
   { to: '/',          label: 'Boshqaruv',  labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
-  { to: '/people',    label: 'Mijozlar bazasi', Icon: HiOutlineUserGroup },
+  { to: '/people',    label: 'Mijozlar bazasi', labelKey: 'nav.clientBase', Icon: HiOutlineUserGroup },
   { to: '/students',  label: 'Studentlar', labelKey: 'nav.students', Icon: HiOutlineAcademicCap },
   { to: '/groups',    label: 'Guruhlar',   labelKey: 'nav.groups', Icon: HiOutlineUsers },
   { to: '/mentors',   label: 'Mentorlar',  labelKey: 'nav.mentors', Icon: HiOutlineUserCircle },
-  { to: '/shop',      label: 'Do\'kon',    Icon: HiOutlineGift },
-  { to: '/schedule',  label: 'Jadval',     Icon: HiOutlineCalendarDays },
+  { to: '/shop',      label: 'Do\'kon',    labelKey: 'nav.shopCatalog', Icon: HiOutlineGift },
+  { to: '/schedule',  label: 'Jadval',     labelKey: 'nav.schedule', Icon: HiOutlineCalendarDays },
   { to: '/branch',    label: 'Filial',     labelKey: 'nav.branch', Icon: HiOutlineBuildingOffice2 },
   { to: '/payments',  label: 'To\'lovlar', labelKey: 'nav.payments', Icon: HiOutlineCreditCard },
   { to: '/income',    label: 'Daromad',    labelKey: 'nav.income', Icon: HiOutlineWallet },
@@ -153,14 +153,14 @@ const employeeNav = [
  */
 const mentorNav = [
   { to: '/',     label: 'Дашборд',  labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
-  { to: '/people', label: 'Мои ученики', Icon: HiOutlineUserGroup },
+  { to: '/people', label: 'Мои ученики', labelKey: 'nav.myStudents', Icon: HiOutlineUserGroup },
   { type: 'mentor-groups' },
   { to: '/chat', label: 'Чат', labelKey: 'nav.chat', Icon: HiOutlineChatBubbleLeftRight },
 ];
 
 const methodistNav = [
   { to: '/',                   label: 'Дашборд',      labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
-  { to: '/people',             label: 'База участников', Icon: HiOutlineUserGroup },
+  { to: '/people',             label: 'База участников', labelKey: 'nav.participantBase', Icon: HiOutlineUserGroup },
   { to: '/methodist/types',    label: 'Типы обучения', labelKey: 'nav.methodistTypes', Icon: HiOutlineBookOpen },
   { to: '/methodist/analytics',label: 'Аналитика',    labelKey: 'nav.analytics', Icon: HiOutlineArrowTrendingUp },
 ];
@@ -173,7 +173,7 @@ const methodistNav = [
  */
 const financeManagerNav = [
   { to: '/',          label: 'Boshqaruv',   labelKey: 'nav.dashboard', Icon: HiOutlineSquares2X2, end: true },
-  { to: '/people',    label: 'Mijozlar bazasi', Icon: HiOutlineUserGroup },
+  { to: '/people',    label: 'Mijozlar bazasi', labelKey: 'nav.clientBase', Icon: HiOutlineUserGroup },
   { to: '/finance',   label: 'Hisobot',     labelKey: 'nav.report', Icon: HiOutlinePresentationChartLine },
   { to: '/finance/income',    label: 'Daromad',   labelKey: 'nav.income', Icon: HiOutlineWallet },
   { to: '/finance/expenses',  label: 'Xarajatlar', labelKey: 'nav.expenses', Icon: HiOutlineReceiptPercent },
@@ -207,16 +207,6 @@ const ROLE_NAV = {
   methodist: methodistNav,
 };
 
-const ROLE_TITLE = {
-  ceo: 'CEO',
-  admin: 'Администратор',
-  branch_manager: 'Branch Manager',
-  finance_manager: 'Finance Manager',
-  employee: 'Сотрудник',
-  mentor: 'Ментор',
-  methodist: 'Методист',
-};
-
 const ROLE_COLORS = {
   ceo: '#8b5cf6',
   admin: '#3b82f6',
@@ -233,7 +223,7 @@ const ROLE_COLORS = {
 function MentorGroupsNav({ collapsed, onExpandSidebar }) {
   const { data } = useMentorGroups();
   const location = useLocation();
-  const { t } = useT();
+  const { t } = useTranslation();
   const groups = data?.data || [];
 
   const insideGroup = location.pathname.startsWith('/groups');
@@ -321,7 +311,7 @@ function MentorGroupsNav({ collapsed, onExpandSidebar }) {
 function SuperBranchesNav({ collapsed, onExpandSidebar }) {
   const { data } = useSuperBranches();
   const location = useLocation();
-  const { t } = useT();
+  const { t } = useTranslation();
   const branches = data?.branches ?? [];
 
   const inside = location.pathname.startsWith('/branches');
@@ -425,7 +415,7 @@ function SuperBranchesNav({ collapsed, onExpandSidebar }) {
    иначе после перехода группа схлопывалась бы и прятала текущую страницу. */
 function NavGroup({ label, labelKey, Icon, items, collapsed, onExpandSidebar }) {
   const location = useLocation();
-  const { t } = useT();
+  const { t } = useTranslation();
   const inside = items.some((i) => location.pathname === i.to);
   const [open, setOpen] = useState(inside);
 
@@ -498,7 +488,7 @@ function Sidebar({
   const { user } = useAuth();
   const nav = filterNavByFeatures(ROLE_NAV[role] || [], user?.orgFeatures);
   const location = useLocation();
-  const { t } = useT();
+  const { t } = useTranslation();
 
   return (
     <aside
@@ -675,21 +665,25 @@ function Sidebar({
    родителей. Цифра на значке — их настоящее количество, а не константа.
    Появится таблица notifications — сюда добавится второй источник. */
 
+const LOCALE_OF = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' };
+
 /** «14:30» сегодня, «Kecha» вчера, дальше — дата. Как в списке чата. */
-function formatWhen(iso) {
+function formatWhen(iso, lang, yesterdayLabel) {
   if (!iso) return '';
+  const locale = LOCALE_OF[lang] || 'ru-RU';
   const d = new Date(iso);
   const today = new Date();
   if (d.toDateString() === today.toDateString()) {
-    return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   }
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
+  if (d.toDateString() === yesterday.toDateString()) return yesterdayLabel;
+  return d.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
 }
 
 function Notifications() {
+  const { t, i18n } = useTranslation();
   const { user, token } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -754,7 +748,7 @@ function Notifications() {
           unlockSound();
           setOpen((v) => !v);
         }}
-        aria-label={total > 0 ? `Уведомления: ${total} новых` : 'Уведомления'}
+        aria-label={total > 0 ? `${t('notifications.title')}: ${total} ${t('notifications.new')}` : t('notifications.title')}
         aria-expanded={open}
         className={`relative w-10 h-10 rounded-full grid place-items-center transition-colors ${
           open
@@ -773,7 +767,7 @@ function Notifications() {
       {open && (
         <div
           role="dialog"
-          aria-label="Уведомления"
+          aria-label={t('notifications.title')}
           /* На телефоне панель шириной 320px, привязанная к правому краю
              кнопки, уезжала левым краем за экран (замер: left = -26px).
              Там она растягивается по ширине окна с отступами, на sm+ —
@@ -781,11 +775,11 @@ function Notifications() {
           className="popover-surface fixed sm:absolute left-3 right-3 top-[4.25rem] sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[360px] overflow-hidden animate-scale-in z-50"
         >
           <header className="flex items-center justify-between gap-2 px-4 py-3.5 border-b border-[var(--border)]">
-            <h2 className="text-[15px] font-bold text-[var(--text)]">Уведомления</h2>
+            <h2 className="text-[15px] font-bold text-[var(--text)]">{t('notifications.title')}</h2>
             <div className="flex items-center gap-1.5">
               {total > 0 && (
                 <span className="text-[11px] font-bold text-[var(--primary)] bg-[rgba(59,130,246,0.1)] rounded-full px-2 py-0.5 tabular-nums">
-                  {total} новых
+                  {total} {t('notifications.new')}
                 </span>
               )}
               <button
@@ -795,8 +789,8 @@ function Notifications() {
                   setSoundOn(next);
                   if (next) { unlockSound(); playNotificationSound(); }
                 }}
-                aria-label={soundOn ? 'Выключить звук' : 'Включить звук'}
-                title={soundOn ? 'Звук включён' : 'Звук выключен'}
+                aria-label={soundOn ? t('notifications.muteSound') : t('notifications.unmuteSound')}
+                title={soundOn ? t('notifications.soundOn') : t('notifications.soundOff')}
                 className={`w-7 h-7 rounded-lg grid place-items-center transition-colors ${
                   soundOn ? 'text-[var(--primary)] bg-[rgba(59,130,246,0.08)]' : 'text-[var(--text-muted)] hover:bg-[rgba(59,130,246,0.08)]'
                 }`}
@@ -813,10 +807,10 @@ function Notifications() {
                   <Bell size={22} />
                 </span>
                 <p className="text-sm font-semibold text-[var(--text)]">
-                  Нет новых уведомлений
+                  {t('notifications.empty')}
                 </p>
                 <p className="text-xs mt-1 text-[var(--text-muted)] max-w-[220px] mx-auto">
-                  Непрочитанные сообщения появятся здесь.
+                  {t('notifications.emptyDesc')}
                 </p>
               </div>
             ) : (
@@ -837,7 +831,7 @@ function Notifications() {
                           <span className="flex items-baseline justify-between gap-2">
                             <span className="text-sm font-bold text-[var(--text)] truncate">{name}</span>
                             <span className="text-[10px] text-[var(--text-muted)] shrink-0 tabular-nums">
-                              {formatWhen(c.last_message_at)}
+                              {formatWhen(c.last_message_at, i18n.language, t('common.yesterday'))}
                             </span>
                           </span>
                           {c.child_names && (
@@ -847,7 +841,7 @@ function Notifications() {
                           )}
                           <span className="flex items-center justify-between gap-2 mt-0.5">
                             <span className="text-xs text-[var(--text-secondary)] truncate">
-                              {c.last_message || 'Новое сообщение'}
+                              {c.last_message || t('notifications.newMessage')}
                             </span>
                             <span className="badge badge-primary badge-sm shrink-0 tabular-nums">
                               {c.unread_count}
@@ -867,7 +861,7 @@ function Notifications() {
               onClick={() => openChat(null)}
               className="w-full px-4 py-3 text-sm font-semibold text-[var(--primary)] border-t border-[var(--border)] hover:bg-[rgba(59,130,246,0.08)] transition-colors flex items-center justify-center gap-1.5"
             >
-              Все сообщения <ChevronRight size={14} />
+              {t('notifications.allMessages')} <ChevronRight size={14} />
             </button>
           )}
         </div>
@@ -878,6 +872,7 @@ function Notifications() {
 
 /* ──────────────────── HEADER ──────────────────── */
 function Header({ sidebarWidth, onMobileToggle }) {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const role = user?.role;
@@ -938,7 +933,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
         <button
           onClick={() => setShowUserMenu(!showUserMenu)}
           aria-expanded={showUserMenu}
-          aria-label="Меню аккаунта"
+          aria-label={t('common.accountMenu')}
           /* Было hover:scale — от наведения дёргался весь блок вместе с
              текстом. Подсветка фона спокойнее и не сдвигает соседей. */
           className={`flex items-center gap-2.5 p-1 sm:pr-3 rounded-full transition-colors ${
@@ -951,7 +946,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
               {user?.firstName} {user?.lastName}
             </span>
             <span className="block text-[11px] text-[var(--text-muted)]">
-              {ROLE_TITLE[role] || role}
+              {t(`role.${role}`, role)}
             </span>
           </span>
           <ChevronDown
@@ -979,13 +974,15 @@ function Header({ sidebarWidth, onMobileToggle }) {
                 </div>
                 <div className="text-[11px] text-[var(--text-muted)] truncate">{user?.email}</div>
                 <span className="inline-block mt-1 text-[10px] font-bold text-[var(--primary)] bg-[rgba(59,130,246,0.1)] rounded-full px-2 py-0.5">
-                  {ROLE_TITLE[role] || role}
+                  {t(`role.${role}`, role)}
                 </span>
               </div>
             </div>
 
             <div className="p-1.5">
-              <LangSwitch />
+              <div className="px-1.5 pb-1.5">
+                <LanguageSwitcher />
+              </div>
               <div className="border-t border-[var(--border)] my-1.5" />
               {hasProfilePage && (
                 <button
@@ -996,7 +993,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
                   <span className="w-7 h-7 rounded-lg bg-[var(--surface-hover)] grid place-items-center shrink-0">
                     <UserIcon size={14} />
                   </span>
-                  Профиль
+                  {t('common.profile')}
                 </button>
               )}
               <button
@@ -1007,7 +1004,7 @@ function Header({ sidebarWidth, onMobileToggle }) {
                 <span className="w-7 h-7 rounded-lg bg-[var(--danger-light)] grid place-items-center shrink-0">
                   <LogOut size={14} />
                 </span>
-                Выйти
+                {t('common.logout')}
               </button>
             </div>
           </div>

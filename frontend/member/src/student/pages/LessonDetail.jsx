@@ -6,7 +6,7 @@ import {
 import { api, uploadToPresignedUrl } from '../api.js';
 import { useToast } from '../components/toast.jsx';
 import {
-  IconTile, Ring, Pill, Button, Skeleton, EmptyState, ErrorState, CountUp, Dropzone, C,
+  IconTile, Ring, Pill, Button, Skeleton, EmptyState, ErrorState, CountUp, Dropzone, C, alpha,
 } from '../components/ui.jsx';
 import { fmt, useI18n } from '../../i18n/index.jsx';
 
@@ -144,7 +144,7 @@ function TestSection({ phase, questions, answers, setAnswers, score, busy, onSta
                     <label
                       key={oi}
                       className={`k-press flex items-center gap-3 rounded-2xl px-4 py-3 cursor-pointer text-sm transition-colors ${selected ? 'font-extrabold' : 'font-semibold'}`}
-                      style={selected ? { background: '#FFF1CE', color: '#8A5F00' } : { background: C.bg, color: C.text }}
+                      style={selected ? { background: C.honeySoft, color: C.honeyDk, boxShadow: `inset 0 0 0 1.5px ${alpha(C.honey, 40)}` } : { background: C.bg, color: C.text }}
                     >
                       <input
                         type="radio"

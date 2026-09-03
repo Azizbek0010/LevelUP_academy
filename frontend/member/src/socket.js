@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+import { mockChatSend } from './api.js';
 
 let socket = null;
 let currentToken = null;
@@ -40,12 +41,21 @@ class MockSocket {
 
     if (event === 'chat:global:send' && data?.body) {
       // Simulate sending — create message and broadcast
-      const { mockChatSend } = require('./api.js');
       const user = JSON.parse(localStorage.getItem('mock_member_user') || '{}');
       const msg = mockChatSend('global', data.body, user);
       ack?.({ ok: true, id: msg.id });
       // Simulate broadcast
       setTimeout(() => this._emit('chat:global:message', msg), 50);
+      return;
+    }
+
+    if (event === 'chat:dm:reply' && data?.staffId && data?.body) {
+      // Родитель отвечает в существующую комнату dm:<staffId>:<parentId>
+      const user = JSON.parse(localStorage.getItem('mock_member_user') || '{}');
+      const roomKey = `dm:${data.staffId}:${user.id}`;
+      const msg = mockChatSend(roomKey, data.body, user);
+      ack?.({ ok: true, id: msg.id, roomKey });
+      setTimeout(() => this._emit('chat:dm:message', msg), 50);
       return;
     }
 
