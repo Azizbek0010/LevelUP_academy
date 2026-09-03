@@ -76,16 +76,21 @@ export function useProctor({ active, maxViolations = 3, onWarn, onLimit }) {
       lastHitRef.current = now;
 
       violationsRef.current.push({ type, at: new Date().toISOString() });
-      setCount((c) => {
-        const next = c + 1;
-        if (next >= maxViolations && !limitFiredRef.current) {
-          limitFiredRef.current = true;
-          onLimitRef.current?.(violationsRef.current.slice());
-        } else {
-          onWarnRef.current?.(next, Math.max(0, maxViolations - next));
-        }
-        return next;
-      });
+
+      // Счёт берём из журнала, а не из состояния: колбэки onWarn/onLimit —
+      // побочные эффекты, и внутри updater'а setCount их вызывать нельзя.
+      // React в StrictMode прогоняет updater дважды, и авто-сдача с
+      // предупреждением уходили бы по два раза (onLimit спасал только ref).
+      const next = violationsRef.current.length;
+      setCount(next);
+
+      if (next >= maxViolations) {
+        if (limitFiredRef.current) return;
+        limitFiredRef.current = true;
+        onLimitRef.current?.(violationsRef.current.slice());
+      } else {
+        onWarnRef.current?.(next, maxViolations - next);
+      }
     },
     [maxViolations],
   );

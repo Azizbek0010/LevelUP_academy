@@ -22,6 +22,10 @@ import { useProctor } from '../proctor.js';
  *   авто-сдача. Журнал нарушений уходит с ответом.
  * · Таймер — от сервера (endsAt), восстанавливается из started_at при F5.
  */
+/* За сколько секунд до серверного дедлайна отправлять ответы сами —
+   запас на сеть, иначе submit прилетает уже после времени и получает 409. */
+const SUBMIT_LEAD = 2;
+
 export default function TestTake() {
   const { testId } = useParams();
   const toast = useToast();
@@ -134,13 +138,18 @@ export default function TestTake() {
     [testId, answers, toast],
   );
 
-  // тик таймера + автосабмит на нуле
+  // тик таймера + автосабмит ДО серверного дедлайна
   useEffect(() => {
     if (phase !== 'taking' || !endsAt) return undefined;
     const tick = () => {
       const left = Math.floor((endsAt - Date.now()) / 1000);
-      setRemaining(left);
-      if (left <= 0) submit(true);
+      setRemaining(Math.max(0, left));
+      // Сдаём за SUBMIT_LEAD секунд до конца, а не ровно в 0: сервер
+      // (tests.service.js submitAttempt) отвечает 409 'Time is up', если запрос
+      // пришёл ПОЗЖЕ started_at + duration_min. Отправка ровно в 0 доходила уже
+      // после дедлайна — попытка так и оставалась незавершённой, а ответы ученика
+      // терялись вместе с баллом.
+      if (left <= SUBMIT_LEAD) submit(true);
     };
     tick();
     const id = setInterval(tick, 1000);
